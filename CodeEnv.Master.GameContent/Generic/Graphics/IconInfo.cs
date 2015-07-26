@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Filename, AtlasID.GetName(), Color.GetName());
+            return _toStringFormat.Inject(GetType().Name, Filename, AtlasID.GetValueName(), Color.GetValueName());
         }
 
         #region IEquatable<IconInfo> Members

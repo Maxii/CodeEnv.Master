@@ -32,7 +32,7 @@ public class UniverseCenterModel : AItemModel, INavigableTarget, IShipOrbitable 
     }
 
     protected override void InitializeRadiiComponents() {
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
         collider.isTrigger = false;
@@ -48,7 +48,7 @@ public class UniverseCenterModel : AItemModel, INavigableTarget, IShipOrbitable 
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;

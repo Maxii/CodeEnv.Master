@@ -71,7 +71,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
         Thread.CurrentThread.CurrentCulture = newCulture;
         Thread.CurrentThread.CurrentUICulture = newCulture;
         D.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
-        D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
+        D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetValueName()));
     }
 
     protected override void Start() {
@@ -143,7 +143,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
         if (enabled) {
             // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
             // is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceCount, ((SceneLevel)level).GetName()));
+            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceCount, ((SceneLevel)level).GetValueName()));
             _gameMgr.OnLevelHasCompletedLoading((SceneLevel)level);
         }
     }

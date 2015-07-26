@@ -117,7 +117,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
         public void PlotCourse(INavigableTarget target, Speed speed) {
-            D.Assert(speed != default(Speed) && speed != Speed.Stop, "{0} speed of {1} is illegal.".Inject(_fleet.FullName, speed.GetName()));
+            D.Assert(speed != default(Speed) && speed != Speed.Stop, "{0} speed of {1} is illegal.".Inject(_fleet.FullName, speed.GetValueName()));
 
             TryCheckForSystemAccessPoints(target, out _fleetSystemExitPoint, out _targetSystemEntryPoint);
 
@@ -535,7 +535,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                 nonOpenSpaceNodes.ForAll(node => {
                     D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
                     Topography tag = (Topography)Mathf.Log((int)node.Tag, 2F);
-                    D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetName(), _seeker.tagPenalties[(int)tag]);
+                    D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetValueName(), _seeker.tagPenalties[(int)tag]);
                 });
             }
         }
@@ -781,7 +781,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         if (CurrentOrder != null) {
             Data.Target = CurrentOrder.Target;  // can be null
 
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FleetDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FleetDirective.Attack:
@@ -1112,7 +1112,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         D.Log("{0}.ExecuteJoinFleetOrder_EnterState called.", FullName);
         _moveTarget = CurrentOrder.Target;
         D.Assert(CurrentOrder.Speed == Speed.None,
-            "{0}.JoinFleetOrder has speed set to {1}.".Inject(FullName, CurrentOrder.Speed.GetName()));
+            "{0}.JoinFleetOrder has speed set to {1}.".Inject(FullName, CurrentOrder.Speed.GetValueName()));
         _moveSpeed = Speed.FleetStandard;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug

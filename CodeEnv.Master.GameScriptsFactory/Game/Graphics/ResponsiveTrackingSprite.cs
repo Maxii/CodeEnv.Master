@@ -30,6 +30,12 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveT
 
     public IMyNguiEventListener EventListener { get; private set; }
 
+    private IconInfo _iconInfo;
+    public IconInfo IconInfo {
+        get { return _iconInfo; }
+        set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
+    }
+
     private Collider _collider;
 
     protected override void Awake() {
@@ -55,6 +61,12 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveT
         base.Hide();
         _collider.enabled = false;
         // Note: donot disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
+    }
+
+    private void OnIconInfoChanged() {
+        AtlasID = IconInfo.AtlasID;
+        Set(IconInfo.Filename);
+        Color = IconInfo.Color;
     }
 
     public override string ToString() {

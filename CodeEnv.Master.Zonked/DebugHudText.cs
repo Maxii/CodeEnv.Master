@@ -150,7 +150,7 @@ namespace CodeEnv.Master.GameContent {
                 return colorEmbeddedLineText;
             }
 
-            string warn = "No LineKey {0} found.".Inject(lineKey.GetName());
+            string warn = "No LineKey {0} found.".Inject(lineKey.GetValueName());
             D.Warn(warn);
             return warn;
         }

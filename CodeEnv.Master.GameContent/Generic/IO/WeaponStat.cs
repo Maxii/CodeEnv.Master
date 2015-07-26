@@ -21,55 +21,55 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable class containing externally acquirable values for Weapons.
     /// </summary>
-    public class WeaponStat {
+    public class WeaponStat : ARangedEquipmentStat {
 
-        static private string _toStringFormat = "{0}: Name[{1}], Category[{2}], Strength[{3}], Range[{4}], Accuracy[{5:0.00}], ReloadPeriod[{6:0.#}], Size[{7}], Power[{8}]";
+        private static string _toStringFormat = "{0}: Name[{1}], ArmCategory[{2}], Strength[{3:0.}], Range[{4}({5:0.})].";
 
-        private string _rootName;   // = string.Empty cannot use initializers in a struct
-        public string RootName {
-            get { return _rootName.IsNullOrEmpty() ? "Weapon {0}".Inject(Strength) : _rootName; }
-        }
-
-        public ArmamentCategory Category { get; private set; }
+        public ArmamentCategory ArmamentCategory { get; private set; }
 
         public CombatStrength Strength { get; private set; }
-
-        public DistanceRange Range { get; private set; }
 
         public float Accuracy { get; private set; }
 
         public float ReloadPeriod { get; private set; }
 
-        public float PhysicalSize { get; private set; }
-
-        public float PowerRequirement { get; private set; }
+        public float Duration { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat" /> struct.
         /// </summary>
-        /// <param name="category">The ArmamentCategory this weapon belongs too.</param>
-        /// <param name="strength">The combat strength of the weapon.</param>
-        /// <param name="range">The range of the weapon.</param>
-        /// <param name="accuracy">The accuracy of the weapon. Range 0...1.0</param>
-        /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
+        /// <param name="description">The description.</param>
         /// <param name="size">The physical size of the weapon.</param>
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
-        /// <param name="rootName">The root name to use for this weapon before adding supplemental attributes.</param>
-        public WeaponStat(ArmamentCategory category, CombatStrength strength, DistanceRange range, float accuracy, float reloadPeriod, float size, float pwrRqmt, string rootName = Constants.Empty) {
-            Category = category;
+        /// <param name="rangeCat">The range category of the weapon.</param>
+        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
+        /// <param name="armamentCat">The ArmamentCategory of this weapon.</param>
+        /// <param name="strength">The combat strength of the weapon.</param>
+        /// <param name="accuracy">The accuracy of the weapon. Range 0...1.0</param>
+        /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
+        /// <param name="duration">The firing duration in hours. Applicable only to Beams.</param>
+        public WeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeDistanceCategory rangeCat, float baseRangeDistance, ArmamentCategory armamentCat, CombatStrength strength, float accuracy, float reloadPeriod, float duration = Constants.ZeroF)
+            : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt, rangeCat, baseRangeDistance) {
+            ArmamentCategory = armamentCat;
             Strength = strength;
-            Range = range;
-            Arguments.ValidateForRange(accuracy, Constants.ZeroF, Constants.OneF);
             Accuracy = accuracy;
             ReloadPeriod = reloadPeriod;
-            PhysicalSize = size;
-            PowerRequirement = pwrRqmt;
-            _rootName = rootName;
+            Duration = duration;
+            Validate();
+        }
+
+        private void Validate() {
+            Arguments.ValidateForRange(Accuracy, Constants.ZeroF, Constants.OneF);
+            D.Assert(ArmamentCategory != ArmamentCategory.Beam && Duration == Constants.ZeroF
+                || ArmamentCategory == ArmamentCategory.Beam && Duration > Constants.ZeroF);
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, RootName, Category.GetName(), Strength.Combined,
-                Range.GetName(), Accuracy, ReloadPeriod, PhysicalSize, PowerRequirement);
+            return _toStringFormat.Inject(typeof(AWeapon).Name, Name, ArmamentCategory.GetEnumAttributeText(), Strength.Combined,
+                RangeCategory.GetEnumAttributeText(), BaseRangeDistance);
         }
 
     }

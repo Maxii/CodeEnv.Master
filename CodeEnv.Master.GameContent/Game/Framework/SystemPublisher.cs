@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemPublisher : AItemPublisher<SystemReport, SystemData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return SystemDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

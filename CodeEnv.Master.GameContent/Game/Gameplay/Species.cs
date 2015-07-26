@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Species.cs
-// The species of a civilization.
+// The species of a player's civilization.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The species of a civilization.
+    /// The species of a player's civilization.
     /// </summary>
     public enum Species {
 

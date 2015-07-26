@@ -98,7 +98,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     protected override void RegisterComponentsToDisable() {
         base.RegisterComponentsToDisable();
         disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union(new Component[] { collider });
-        disableGameObjectOnNotDiscernible = disableGameObjectOnNotDiscernible.Union(new GameObject[] { gameObject.GetSafeMonoBehaviourInChildren<Billboard>().gameObject });
+        disableGameObjectOnNotDiscernible = disableGameObjectOnNotDiscernible.Union(new GameObject[] { gameObject.GetSafeFirstMonoBehaviourInChildren<Billboard>().gameObject });
     }
 
     private void OnTrackingTargetChanged() {
@@ -320,7 +320,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     #endregion
 
     private void InitializeFleetIcon() {
-        _fleetIconSprite = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
+        _fleetIconSprite = gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
         _fleetIconTransform = _fleetIconSprite.transform;
         _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviour<ScaleRelativeToCamera>();
         // I need the collider sitting over the fleet icon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon

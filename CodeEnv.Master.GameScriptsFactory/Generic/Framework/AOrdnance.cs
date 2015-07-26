@@ -33,7 +33,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string Name { get; private set; }
 
-    public ArmamentCategory Category { get; private set; }
+    public ArmamentCategory ArmamentCategory { get; private set; }
 
     public IElementAttackableTarget Target { get; private set; }
 
@@ -58,6 +58,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _gameMgr = GameManager.Instance;
         _gameTime = GameTime.Instance;
         Name = _transform.name + __instanceID;
+        _transform.name = Name;
         Subscribe();
         enabled = false;
     }
@@ -67,11 +68,11 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    public virtual void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
-        D.Assert((Layers)gameObject.layer == Layers.Ordnance, "{0} is not on Layer {1}.".Inject(Name, Layers.Ordnance.GetName()));
+    public virtual void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        D.Assert((Layers)gameObject.layer == Layers.Ordnance, "{0} is not on Layer {1}.".Inject(Name, Layers.Ordnance.GetValueName()));
         Target = target;
         Strength = weapon.Strength;
-        Category = weapon.Category;
+        ArmamentCategory = weapon.ArmamentCategory;
         weapon.OnFiringInitiated(target, this);
 
         Vector3 tgtBearing;
@@ -79,9 +80,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _transform.rotation = Quaternion.LookRotation(heading); // point ordnance in direction of target
         //D.Log("{0} heading: {1}, targetBearing: {2}.", Name, _transform.forward, tgtBearing);
 
-        var owner = weapon.RangeMonitor.Owner;
-        _range = weapon.Range.GetWeaponRange(owner);
-
+        _range = weapon.RangeDistance;
         ToShowEffects = toShowEffects;
     }
 
@@ -121,9 +120,9 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         return new Vector3(tgtBearing.x + xSpread, tgtBearing.y + ySpread, tgtBearing.z + zSpread).normalized;
     }
 
-    public void Terminate() {
-        //D.Log("{0}.Terminate() called.", Name);
-        CleanupOnTerminate();
+    protected void TerminateNow() {
+        //D.Log("{0} is terminating.", Name);
+        PrepareForTermination();
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
@@ -132,11 +131,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     /// <summary>
-    /// Called when Terminate() is called, this is a derived class'
-    /// opportunity to do any cleanup (stop audio, etc.) prior to the
-    /// gameObject being destroyed.
+    /// Called when this ordnance is about to be terminated, this is a derived class'
+    /// opportunity to do any cleanup (stop audio, etc.) prior to the gameObject being destroyed.
     /// </summary>
-    protected virtual void CleanupOnTerminate() { }
+    protected virtual void PrepareForTermination() { }
 
     #region Cleanup
 

@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Monitors whether the assigned ship is within the radius of it's Station in the Formation.
 /// </summary>
-public class FormationStationMonitor : AMonoBase, INavigableTarget {
+public class FormationStationMonitor : AMonitor, INavigableTarget {
 
     public bool IsOnStation { get; private set; }   // OPTIMIZE Eliminate collider and just test for distance to ship < stationRadius?
 
@@ -49,32 +49,6 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
     /// The vector from the currently assigned ship to the station.
     /// </summary>
     public Vector3 VectorToStation { get { return Position - AssignedShip.Position; } }
-
-    /// <summary>
-    /// Control for enabling/disabling the monitor's collider.
-    /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger
-    /// </summary>
-    private bool IsOperational {
-        get { return _collider.enabled; }
-        set {
-            if (_collider.enabled != value) {
-                _collider.enabled = value;
-                OnIsOperationalChanged();
-            }
-        }
-    }
-
-    private SphereCollider _collider;
-
-    protected override void Awake() {
-        base.Awake();
-        // kinematic rigidbody reqd to keep parent rigidbody from forming compound collider
-        var rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        rigidbody.isKinematic = true;
-        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
-        _collider.isTrigger = true;
-        IsOperational = false;  // IsOperational controlled when AssignedShip changes
-    }
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
@@ -125,7 +99,7 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
         // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
     }
 
-    private void OnIsOperationalChanged() { }
+    protected override void OnIsOperationalChanged() { }
 
     /// <summary>
     /// Manually detects whether the ship is on station by seeing whether the ship's

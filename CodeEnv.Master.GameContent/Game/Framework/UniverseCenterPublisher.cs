@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterPublisher : AIntelItemPublisher<UniverseCenterReport, UniverseCenterData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return UniverseCenterDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

@@ -32,7 +32,7 @@ public class StarGraphics : ItemGraphics {
         }
         disableGameObjectOnCameraDistance = disableGameObjectOnCameraDistance.Union(glowGameObjects).ToArray();
 
-        Component[] starAnimatingBehaviours = new Component[2] { gameObject.GetSafeMonoBehaviour<StarAnimator>(), gameObject.GetSafeMonoBehaviourInChildren<Billboard>() };
+        Component[] starAnimatingBehaviours = new Component[2] { gameObject.GetSafeMonoBehaviour<StarAnimator>(), gameObject.GetSafeFirstMonoBehaviourInChildren<Billboard>() };
         if (disableComponentOnCameraDistance.IsNullOrEmpty()) {
             disableComponentOnCameraDistance = new Component[0];
         }

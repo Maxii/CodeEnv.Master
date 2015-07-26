@@ -105,8 +105,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         InitializeContextMenu();
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     private void InitializeContextMenu() {
@@ -237,7 +237,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (CurrentOrder != null) {
             Data.Target = CurrentOrder.Target;  // can be null
 
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FleetDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FleetDirective.Attack:
@@ -260,7 +260,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 case FleetDirective.Refit:
                 case FleetDirective.Repair:
                 case FleetDirective.Retreat:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetName());
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetValueName());
                     break;
                 case FleetDirective.None:
                 default:
@@ -342,8 +342,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         });
     }
 
-    protected override void InitiateDeath() {
-        base.InitiateDeath();
+    protected override void SetDeadState() {
         CurrentState = FleetState.Dead;
     }
 
@@ -383,8 +382,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         AssessShowCoursePlot();
     }
 
-    protected override void ShowSelectionHud() {
-        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.Fleet, GetUserReport()));
+    protected override void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedFleet, GetUserReport());
     }
 
     protected override IconInfo MakeIconInfo() {
@@ -809,12 +808,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #endregion
 
-    #region ISelectable Members
-
-    //public override ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
-
-    #endregion
-
     #region Nested Classes
 
     /// <summary>
@@ -1100,7 +1093,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="waypoint">The waypoint.</param>
         /// <exception cref="System.NotImplementedException"></exception>
         protected override void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null) {
-            D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetName(), Course.Count);
+            D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.Assert(waypoint == null);
@@ -1225,7 +1218,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 nonOpenSpaceNodes.ForAll(node => {
                     D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
                     Topography topographyFromTag = __GetTopographyFromAStarTag(node.Tag);
-                    D.Warn("Node at {0} has Topography {1}, penalty = {2}.", (Vector3)node.position, topographyFromTag.GetName(), _seeker.tagPenalties[topographyFromTag.AStarTagValue()]);
+                    D.Warn("Node at {0} has Topography {1}, penalty = {2}.", (Vector3)node.position, topographyFromTag.GetValueName(), _seeker.tagPenalties[topographyFromTag.AStarTagValue()]);
                 });
             }
         }

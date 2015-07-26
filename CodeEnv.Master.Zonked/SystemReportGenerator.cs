@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string GetText(DisplayTargetID displayTgtID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
             if (!IsTextCurrent(displayTgtID, player, starReport, planetoidReports, includeUnknown)) {
-                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, displayTgtID.GetName(), player.LeaderName);
+                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, displayTgtID.GetValueName(), player.LeaderName);
                 GenerateText(displayTgtID, player, starReport, planetoidReports, includeUnknown);
             }
             return _stringBuilder.ToString();

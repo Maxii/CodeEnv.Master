@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ContentID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != PlanetoidCategory.None ? report.Category.GetName() : _unknown);
+                        colorizedText = _phrase.Inject(report.Category != PlanetoidCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
                     case ContentID.Capacity:
                         isSuccess = true;

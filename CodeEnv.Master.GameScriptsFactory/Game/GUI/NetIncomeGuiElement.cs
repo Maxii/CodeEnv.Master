@@ -23,13 +23,11 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Income and Expense of a Command.   
 /// </summary>
-public class NetIncomeGuiElement : GuiElement, IComparable<NetIncomeGuiElement> {
+public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement> {
 
-    private static string _unknown = Constants.QuestionMark;
     private static string _tooltipFormat = "Income: {0}" + Constants.NewLine + "Expense: {1}";
 
-    private string _tooltipContent;
-    protected override string TooltipContent { get { return _tooltipContent; } }
+    public override GuiElementID ElementID { get { return GuiElementID.NetIncome; } }
 
     private bool _isIncomeSet;
     private float? _income;
@@ -51,6 +49,9 @@ public class NetIncomeGuiElement : GuiElement, IComparable<NetIncomeGuiElement> 
         }
     }
 
+    private string _tooltipContent;
+    protected override string TooltipContent { get { return _tooltipContent; } }
+
     private bool AreAllValuesSet { get { return _isIncomeSet && _isExpenseSet; } }
 
     private float? _netIncome;
@@ -59,7 +60,7 @@ public class NetIncomeGuiElement : GuiElement, IComparable<NetIncomeGuiElement> 
     protected override void Awake() {
         base.Awake();
         Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
     }
 
     private void OnIncomeSet() {
@@ -102,17 +103,11 @@ public class NetIncomeGuiElement : GuiElement, IComparable<NetIncomeGuiElement> 
     }
 
     public override void Reset() {
-        base.Reset();
         _isIncomeSet = false;
         _isExpenseSet = false;
     }
 
-    private void Validate() {
-        if (elementID != GuiElementID.NetIncome) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.NetIncome;
-        }
-    }
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

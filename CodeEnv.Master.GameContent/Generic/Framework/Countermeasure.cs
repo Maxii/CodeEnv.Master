@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Countermeasure.cs
-// A MortalItem's defensive Countermeasures.
+// A MortalItem's defensive Countermeasure.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,58 +20,35 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// A MortalItem's defensive Countermeasures.
+    /// A MortalItem's defensive Countermeasure.
     /// </summary>
-    public class Countermeasure : APropertyChangeTracking {
+    public class Countermeasure : AEquipment {
 
-        static private string _toStringFormat = "{0}: Name[{1}], Operational[{2}], Strength[{3:0.#}], Size[{4:0.#}], Power[{5:0.#}]";
+        private static string _editorNameFormat = "{0}_{1:0.#}";
 
-        private static string _nameFormat = "{0}_{1:0.#}";
-
-        public event Action<Countermeasure> onIsOperationalChanged;
-
-        private bool _isOperational;
-        public bool IsOperational {
-            get { return _isOperational; }
-            set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
+        public override string Name {
+            get {
+#if UNITY_EDITOR
+                return _editorNameFormat.Inject(base.Name, Strength.Combined);
+#else
+                return base.Name;
+#endif
+            }
         }
 
-        public string Name { get { return _nameFormat.Inject(_stat.RootName, _stat.Strength.Combined); } }
+        public CombatStrength Strength { get { return Stat.Strength; } }
 
-        public CombatStrength Strength { get { return _stat.Strength; } }
-
-        public float PhysicalSize { get { return _stat.PhysicalSize; } }
-
-        public float PowerRequirement { get { return _stat.PowerRequirement; } }
-
-        private CountermeasureStat _stat;
+        protected new CountermeasureStat Stat { get { return base.Stat as CountermeasureStat; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Countermeasure" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        public Countermeasure(CountermeasureStat stat) {
-            _stat = stat;
+        public Countermeasure(CountermeasureStat stat)
+            : base(stat) {
         }
 
-        /// <summary>
-        /// Copy Constructor.
-        /// </summary>
-        /// <param name="counterMeasure">The Countermeasure to copy.</param>
-        public Countermeasure(Countermeasure counterMeasure)
-            : this(counterMeasure._stat) {
-            _isOperational = counterMeasure._isOperational;
-        }
-
-        private void OnIsOperationalChanged() {
-            if (onIsOperationalChanged != null) {
-                onIsOperationalChanged(this);
-            }
-        }
-
-        public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, PhysicalSize, PowerRequirement);
-        }
+        public override string ToString() { return Stat.ToString(); }
 
     }
 }

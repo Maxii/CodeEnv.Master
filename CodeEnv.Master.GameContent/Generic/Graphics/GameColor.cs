@@ -17,21 +17,27 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// My GameColor enum. Use gameColorConstant.ToUnityColor() to get Unity's Color.
+    /// My GameColor enum. Use gameColorValue.ToUnityColor() to get Unity's Color.
     /// </summary>
     public enum GameColor {
 
         None,
+
         Clear,
         Black,
+        Gray,
+        White,
+
         Blue,
         Cyan,
         Green,
-        Gray,
         Magenta,
         Red,
-        White,
-        Yellow
+        Yellow,
+        Brown,
+        Purple,
+        DarkGreen,
+        Teal
     }
 }
 

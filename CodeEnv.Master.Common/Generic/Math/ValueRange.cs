@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ValueRange.cs
-// Immutable helper class that holds a range of values in the form of a min and max value and 
+// Immutable helper struct that holds a range of values in the form of a min and max value and 
 // provides a simple method to determine whether a value is within that range, inclusive.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,13 +20,13 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Immutable helper class that holds a range of values in the form of a min and max value and 
+    /// Immutable helper struct that holds a range of values in the form of a min and max value and 
     /// provides a simple method to determine whether a value is within that range, inclusive. 
     /// WARNING: While immutable, this is a class not a struct
     /// and as such, all equality comparisons use Reference semantics not Value semantics.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ValueRange<T> where T : IComparable {
+    public struct ValueRange<T> where T : IComparable {
 
         private static string _toStringFormat = "[{0}-{1}]";
 
@@ -34,7 +34,8 @@ namespace CodeEnv.Master.Common {
 
         public T Maximum { get; private set; }
 
-        public ValueRange(T min, T max) {
+        public ValueRange(T min, T max)
+            : this() {
             Arguments.Validate(IsValid(min, max));
             Minimum = min;
             Maximum = max;

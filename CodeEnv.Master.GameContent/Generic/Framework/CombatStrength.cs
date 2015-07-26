@@ -29,10 +29,14 @@ namespace CodeEnv.Master.GameContent {
 
         private static string _toStringFormat = "B({0:0.#}), M({1:0.#}), P({2:0.#})";
 
-        private static string _toLabelFormat =
-              GameConstants.IconMarker_Beam + " {0:0.#}" + Constants.NewLine
-            + GameConstants.IconMarker_Missile + " {1:0.#}" + Constants.NewLine
-            + GameConstants.IconMarker_Projectile + "{2:0.#}";
+        private static string _labelFormatWithCombined = "{0}" + Constants.NewLine
+                                             + GameConstants.IconMarker_Beam + " {1}" + Constants.NewLine
+                                             + GameConstants.IconMarker_Missile + " {2}" + Constants.NewLine
+                                             + GameConstants.IconMarker_Projectile + " {3}";
+
+        private static string _labelFormatNoCombined = GameConstants.IconMarker_Beam + " {0}" + Constants.NewLine
+                                             + GameConstants.IconMarker_Missile + " {1}" + Constants.NewLine
+                                             + GameConstants.IconMarker_Projectile + " {2}";
 
         #region Operators Override
 
@@ -144,7 +148,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="beam"><c>ArmamentCategory.Beam</c> value.</param>
         /// <param name="missile"><c>ArmamentCategory.Missile</c> value.</param>
         /// <param name="projectile"><c>ArmamentCategory.Projectile</c> value.</param>
-        private CombatStrength(float beam, float missile, float projectile)
+        public CombatStrength(float beam, float missile, float projectile)
             : this() {
             Arguments.ValidateNotNegative(beam, missile, projectile);
             Beam = beam;
@@ -164,6 +168,18 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }
+        }
+
+        private string ConstructLabelOutput(bool includeCombined) {
+            string beamText = Beam.FormatValue();
+            string missileText = Missile.FormatValue();
+            string projectileText = Projectile.FormatValue();
+
+            if (includeCombined) {
+                string combinedText = Constants.FormatFloat_0Dp.Inject(Combined);
+                return _labelFormatWithCombined.Inject(combinedText, beamText, missileText, projectileText);
+            }
+            return _labelFormatNoCombined.Inject(beamText, missileText, projectileText);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -190,13 +206,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public string ToLabel() {
-            return _toLabelFormat.Inject(Beam, Missile, Projectile);
-        }
+        public string ToLabel(bool includeCombined = false) { return ConstructLabelOutput(includeCombined); }
 
-        public override string ToString() {
-            return _toStringFormat.Inject(Beam, Missile, Projectile);
-        }
+        public override string ToString() { return _toStringFormat.Inject(Beam, Missile, Projectile); }
 
         #region IEquatable<CombatStrength> Members
 

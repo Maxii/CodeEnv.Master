@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -117,9 +118,24 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The maximum number of AI Players allowed in any game instance.
-        /// Used to validate the New Game Gui setup.
         /// </summary>
-        public const int MaxAIPlayers = 7;
+        public static int MaxAIPlayers { get { return UniverseSize.Gigantic.DefaultPlayerCount() - 1; } }
+
+        /// <summary>
+        /// The colors acceptable for use by players.
+        /// </summary>
+        public static readonly GameColor[] AllPlayerColors = new GameColor[] {
+            GameColor.Blue,
+            GameColor.Red, 
+            GameColor.Cyan,
+            GameColor.Green,
+            GameColor.Magenta,
+            GameColor.Yellow,
+            GameColor.Brown, 
+            GameColor.Purple,
+            GameColor.Teal,
+            GameColor.DarkGreen
+        };
 
         public static float __GetMass(ShipCategory hull) {
             switch (hull) {
@@ -151,11 +167,6 @@ namespace CodeEnv.Master.GameContent {
 
         public static readonly CombatStrength NoCombatStrength = default(CombatStrength);
 
-        /// <summary>
-        /// The name of the only current image in MyGuiAtlas.
-        /// </summary>
-        public const string AnImageFilename = "image";
-
 
         public static GameColor SelectedColor { get { return GameColor.Green; } }
 
@@ -168,8 +179,30 @@ namespace CodeEnv.Master.GameContent {
 
         public static GameColor DisabledColor { get { return GameColor.Gray; } }
 
-        public const string BackgroundSpriteName = "Background";
+        /// <summary>
+        /// The name of the sprite (texture) used as a frame around an image.
+        /// </summary>
+        public const string ImageFrameSpriteName = "imageFrame";
 
+        /// <summary>
+        /// The name of the only current image in MyGuiAtlas.
+        /// </summary>
+        public const string AnImageFilename = "image";
+
+        /// <summary>
+        /// The name of the sprite (texture) used to represent an unknown image.
+        /// </summary>
+        public const string UnknownImageFilename = "Question1_16";
+
+        /// <summary>
+        /// The name of the UILabel GameObject used to show the title of a GuiElement.
+        /// </summary>
+        public const string TitleLabelName = "Title";
+
+        /// <summary>
+        /// The name of the UILabel GameObject used to show the "?" symbol.
+        /// </summary>
+        public const string UnknownLabelName = "Unknown";
 
     }
 }

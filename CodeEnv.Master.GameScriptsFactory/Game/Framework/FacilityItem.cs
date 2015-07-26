@@ -63,7 +63,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude; // ~ 0.25
         // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
         //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
@@ -75,8 +75,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.None;
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     protected override AIconDisplayManager MakeDisplayManager() {
@@ -105,7 +105,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FacilityDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FacilityDirective.Attack:
@@ -160,8 +160,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentOrder = newOrder;
     }
 
-    protected override void InitiateDeath() {
-        base.InitiateDeath();
+    protected override void SetDeadState() {
         CurrentState = FacilityState.Dead;
     }
 
@@ -239,7 +238,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetName());
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
@@ -247,7 +246,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void Idling_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -277,7 +276,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon, _primaryTarget);
     }
@@ -298,7 +297,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -332,7 +331,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         Return();
     }
 
-    void Repairing_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void Repairing_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }

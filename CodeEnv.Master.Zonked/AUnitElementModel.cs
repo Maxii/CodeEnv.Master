@@ -106,7 +106,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="rangeMonitor">The range monitor to pair with this weapon.</param>
-    public void AddWeapon(Weapon weapon, IWeaponRangeMonitor rangeMonitor) {
+    public void AddWeapon(AWeapon weapon, IWeaponRangeMonitor rangeMonitor) {
         if (_weaponRangeMonitorLookup == null) {
             _weaponRangeMonitorLookup = new Dictionary<Guid, IWeaponRangeMonitor>();
         }
@@ -114,7 +114,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
             // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
             _weaponRangeMonitorLookup.Add(rangeMonitor.ID, rangeMonitor);
             rangeMonitor.ParentFullName = FullName;
-            rangeMonitor.Range = weapon.Range;
+            rangeMonitor.RangeCategory = weapon.RangeCategory;
             rangeMonitor.Owner = Data.Owner;
             rangeMonitor.onEnemyInRange += OnEnemyInRange;
         }
@@ -129,7 +129,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
     /// if it is no longer in use.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    public void RemoveWeapon(Weapon weapon) {
+    public void RemoveWeapon(AWeapon weapon) {
         bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
         if (!isRangeTrackerStillInUse) {
             IWeaponRangeMonitor rangeTracker;
@@ -172,7 +172,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
         }
     }
 
-    private IEnumerator ReloadWeapon(Weapon weapon) {
+    private IEnumerator ReloadWeapon(AWeapon weapon) {
         while (true) {
             OnWeaponReady(weapon);
             yield return new WaitForSeconds(weapon.ReloadPeriod);
@@ -215,7 +215,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
     /// Called when this weapon is ready to fire on a target in range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    void OnWeaponReady(Weapon weapon) {
+    void OnWeaponReady(AWeapon weapon) {
         RelayToCurrentState(weapon);
     }
 

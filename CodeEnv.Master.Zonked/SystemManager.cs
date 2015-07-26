@@ -46,9 +46,9 @@ public class SystemManager : AMonoBase, ISelectable, IHasData {
 
     protected override void Awake() {
         base.Awake();
-        _orbitalPlane = gameObject.GetSafeMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>();
+        _orbitalPlane = gameObject.GetSafeFirstMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>();
         _systemGraphics = gameObject.GetSafeMonoBehaviour<SystemGraphics>();
-        _star = gameObject.GetSafeMonoBehaviourInChildren<Star>();
+        _star = gameObject.GetSafeFirstMonoBehaviourInChildren<Star>();
         _planetsAndMoons = gameObject.GetSafeMonoBehavioursInChildren<FollowableItem>();
         _eventMgr = GameEventManager.Instance;
         _selectionMgr = SelectionManager.Instance;

@@ -40,7 +40,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         base.Awake();
         _inputHelper = GameInputHelper.Instance;
         _inputMgr = InputManager.Instance;
-        _systemItemGo = gameObject.GetSafeMonoBehaviourInParents<SystemItem>().gameObject;
+        _systemItemGo = gameObject.GetSafeFirstMonoBehaviourInParents<SystemItem>().gameObject;
         Subscribe();
     }
 
@@ -55,8 +55,8 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             // currently checking for occluded objects while hovering over orbitalPlane
             switch (inputMode) {
                 case GameInputMode.NoInput:
-                case GameInputMode.PartialScreenPopup:
-                case GameInputMode.FullScreenPopup:
+                case GameInputMode.PartialPopup:
+                case GameInputMode.FullPopup:
                     EnableOnHoverCheckingForOccludedObjects(false);
                     break;
                 case GameInputMode.Normal:
@@ -139,7 +139,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     /// <returns><c>true</c> if an occluded object was found, else <c>false</c>.</returns>
     private bool TryCheckForOccludedObject(out GameObject occludedObject) {
         Layers orbitalPlaneLayer = (Layers)gameObject.layer;
-        D.Assert(orbitalPlaneLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, orbitalPlaneLayer.GetName(), Layers.SystemOrbitalPlane.GetName()));
+        D.Assert(orbitalPlaneLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, orbitalPlaneLayer.GetValueName(), Layers.SystemOrbitalPlane.GetValueName()));
 
         // UNCLEAR: For some unknown reason, using UICamera.Raycast() here can find the orbitalPlaneMesh (on the orbitalPlaneLayer) itself as
         // the occludedObject, even though the mask says it shouldn't be able too. That is, UICamera.hoveredObject returns the orbitalPlaneMesh.

@@ -155,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
             var playerIntelCoverage = star.GetIntelCoverage(Player);
             D.Assert(playerIntelCoverage != IntelCoverage.None);
             if (playerIntelCoverage > IntelCoverage.Basic) {
-                D.Log("{0}'s {1}: IntelCoverage for {2} = {3}.", Player.LeaderName, GetType().Name, star.FullName, playerIntelCoverage.GetName());
+                D.Log("{0}'s {1}: IntelCoverage for {2} = {3}.", Player.LeaderName, GetType().Name, star.FullName, playerIntelCoverage.GetValueName());
                 AddSystem(star.System);
             }
 

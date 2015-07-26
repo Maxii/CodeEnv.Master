@@ -53,17 +53,23 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="CombatStrength2.cs" />
+    <Compile Include="DamageStrength.cs" />
+    <Compile Include="DeliveryStrength.cs" />
+    <Compile Include="Generic\Framework\AEquipment.cs" />
+    <Compile Include="Generic\IO\AEquipmentStat.cs" />
+    <Compile Include="Generic\Framework\ARangedEquipment.cs" />
+    <Compile Include="Generic\IO\ARangedEquipmentStat.cs" />
     <Compile Include="Generic\Graphics\AElementItemDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AIntelItemDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AItemDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AMortalItemDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AUnitCmdDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\FleetDisplayInfoFactory.cs" />
-    <Compile Include="Generic\Graphics\IHud.cs" />
+    <Compile Include="Generic\Graphics\IHudWindow.cs" />
     <Compile Include="Game\GUI\PlanetoidDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\ColoredStringBuilder.cs" />
     <Compile Include="Game\GUI\FacilityDisplayInfoFactory.cs" />
-    <Compile Include="Generic\Graphics\AHudElementContent.cs" />
     <Compile Include="Generic\Graphics\ACmdIconInfoFactory.cs" />
     <Compile Include="Game\Graphics\FleetIconInfoFactory.cs" />
     <Compile Include="Generic\Graphics\ADisplayManager.cs" />
@@ -71,9 +77,8 @@
     <Compile Include="Generic\Graphics\AIconDisplayManager.cs" />
     <Compile Include="Game\Graphics\EffectsManager.cs" />
     <Compile Include="Game\Graphics\FacilityDisplayManager.cs" />
-    <Compile Include="Generic\Framework\BeamWeapon.cs" />
+    <Compile Include="Generic\Framework\BeamProjector.cs" />
     <Compile Include="Generic\Graphics\GameColor.cs" />
-    <Compile Include="Generic\IO\BeamWeaponStat.cs" />
     <Compile Include="Game\Graphics\CoursePlotLine.cs" />
     <Compile Include="Game\Graphics\CourseRefreshMode.cs" />
     <Compile Include="Generic\Framework\DetectionHandler.cs" />
@@ -128,8 +133,6 @@
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
     <Compile Include="Game\Framework\GameSettings.cs" />
     <Compile Include="Game\Framework\Player.cs" />
-    <Compile Include="Game\Framework\Race.cs" />
-    <Compile Include="Generic\IO\RaceStat.cs" />
     <Compile Include="Game\Gameplay\Species.cs" />
     <Compile Include="Game\Gameplay\SettlementCategory.cs" />
     <Compile Include="Game\Gameplay\ShipCategory.cs" />
@@ -194,7 +197,7 @@
     <Compile Include="Generic\Framework\ISensorRangeMonitor.cs" />
     <Compile Include="Generic\Graphics\GuiElementID.cs" />
     <Compile Include="Generic\Extensions\GuiMenuElementIDExtensions.cs" />
-    <Compile Include="Game\GUI\HudManager.cs" />
+    <Compile Include="Game\GUI\ItemHudManager.cs" />
     <Compile Include="Game\Framework\PlanetoidPublisher.cs" />
     <Compile Include="Game\Framework\PlanetoidReport.cs" />
     <Compile Include="Generic\Graphics\Highlighter.cs" />
@@ -223,21 +226,32 @@
     <Compile Include="Generic\Graphics\IconInfo.cs" />
     <Compile Include="Game\Graphics\SettlementIconInfoFactory.cs" />
     <Compile Include="Game\Graphics\StarbaseIconInfoFactory.cs" />
-    <Compile Include="Generic\Extensions\ResourceExtensions.cs" />
+    <Compile Include="Generic\Extensions\ResourceIDExtensions.cs" />
     <Compile Include="Game\Gameplay\ResourceID.cs" />
     <Compile Include="Game\Gameplay\ResourceCategory.cs" />
     <Compile Include="Game\Gameplay\ResourceYield.cs" />
-    <Compile Include="Game\GUI\ResourceHudContent.cs" />
-    <Compile Include="Game\GUI\TextHudContent.cs" />
     <Compile Include="Game\GUI\SectorDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\SettlementDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\ShipDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\StarbaseDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\StarDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\SystemDisplayInfoFactory.cs" />
-    <Compile Include="Game\GUI\SelectedItemHudContent.cs" />
     <Compile Include="Generic\Framework\IFacilityItem.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
+    <Compile Include="Generic\Graphics\IHoveredHudWindow.cs" />
+    <Compile Include="Generic\Graphics\FormID.cs" />
+    <Compile Include="Generic\Graphics\ISelectedItemHudWindow.cs" />
+    <Compile Include="Generic\Graphics\ITooltipHudWindow.cs" />
+    <Compile Include="Generic\IO\NewGamePreferenceSettings.cs" />
+    <Compile Include="Generic\IO\LeaderFactory.cs" />
+    <Compile Include="Generic\IO\LeaderStat.cs" />
+    <Compile Include="Generic\IO\SpeciesFactory.cs" />
+    <Compile Include="Generic\IO\SpeciesStat.cs" />
+    <Compile Include="Generic\Framework\RangeDistance.cs" />
+    <Compile Include="Generic\Framework\ITerminatableOrdnance.cs" />
+    <Compile Include="Generic\Framework\MissileLauncher.cs" />
+    <Compile Include="Generic\Framework\ProjectileLauncher.cs" />
+    <Compile Include="Generic\Framework\IRangedEquipmentMonitor.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
@@ -247,7 +261,7 @@
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="Game\Graphics\EffectID.cs" />
-    <Compile Include="Generic\Framework\Weapon.cs" />
+    <Compile Include="Generic\Framework\AWeapon.cs" />
     <Compile Include="Generic\Framework\ArmamentCategory.cs" />
     <Compile Include="Generic\Framework\ShipOrder.cs" />
     <Compile Include="Generic\IO\SettlementCmdStat.cs" />
@@ -257,8 +271,8 @@
     <Compile Include="Generic\IO\StarStat.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
     <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />
-    <Compile Include="Generic\Framework\DistanceRange.cs" />
-    <Compile Include="Generic\Extensions\DistanceRangeExtensions.cs" />
+    <Compile Include="Generic\Framework\RangeDistanceCategory.cs" />
+    <Compile Include="Generic\Extensions\RangeDistanceCategoryExtensions.cs" />
     <Compile Include="Generic\IO\SensorStat.cs" />
     <Compile Include="Generic\Framework\Sensor.cs" />
     <Compile Include="Game\GUI\UniverseSizeGuiSelection.cs" />
@@ -297,7 +311,6 @@
     <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
     <Compile Include="Game\Graphics\UniverseCenterDisplayManager.cs" />
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />
-    <Compile Include="Generic\Graphics\HudElementID.cs" />
     <Compile Include="Game\GUI\UniverseCenterDisplayInfoFactory.cs" />
   </ItemGroup>
   <ItemGroup>

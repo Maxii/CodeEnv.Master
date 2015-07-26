@@ -272,7 +272,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
         SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.universeEdge;
         if (universeEdgePrefab == null) {
             D.Warn("UniverseEdgePrefab on RequiredPrefabs is null.");
-            string universeEdgeName = Layers.UniverseEdge.GetName();
+            string universeEdgeName = Layers.UniverseEdge.GetValueName();
             universeEdge = new GameObject(universeEdgeName).AddComponent<SphereCollider>();
             universeEdge.gameObject.layer = (int)Layers.UniverseEdge;
             universeEdge.gameObject.isStatic = true;
@@ -288,7 +288,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
         Transform dummyTargetPrefab = RequiredPrefabs.Instance.cameraDummyTarget;
         if (dummyTargetPrefab == null) {
             D.Warn("DummyTargetPrefab on RequiredPrefabs is null.");
-            string dummyTargetName = Layers.DummyTarget.GetName();
+            string dummyTargetName = Layers.DummyTarget.GetValueName();
             _dummyTarget = new GameObject(dummyTargetName).transform;
             _dummyTarget.gameObject.layer = (int)Layers.DummyTarget;
             _dummyTarget.gameObject.AddComponent<SphereCollider>();
@@ -591,7 +591,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
-        _UpdateDebugHud(DebugHudLineKeys.CameraMode, cameraState.GetName());
+        _UpdateDebugHud(DebugHudLineKeys.CameraMode, cameraState.GetValueName());
     }
 
     /// <summary>

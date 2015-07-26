@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public ResourceInfo MakeInstance(RareResourceID resourceID) {
-            XElement resourceNameNode = _xElement.Elements(_resourceNameTagName).Where(e => e.Attribute(_resourceNameAttributeTagName).Value.Equals(resourceID.GetName())).Single();
+            XElement resourceNameNode = _xElement.Elements(_resourceNameTagName).Where(e => e.Attribute(_resourceNameAttributeTagName).Value.Equals(resourceID.GetValueName())).Single();
             string imageFilename = resourceNameNode.Elements(_imageFilenameTagName).Single().Value;
             string description = resourceNameNode.Elements(_descriptionTagName).Single().Value;
             string categoryName = resourceNameNode.Elements(_categoryTagName).Single().Value;

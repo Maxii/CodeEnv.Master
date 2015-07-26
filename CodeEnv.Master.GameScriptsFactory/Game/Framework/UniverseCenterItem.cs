@@ -47,7 +47,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
         collider.enabled = false;
@@ -58,7 +58,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -80,8 +80,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         InitializeContextMenu(Owner);
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -169,11 +169,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

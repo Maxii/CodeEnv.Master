@@ -274,7 +274,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_accessSource));
         }
         IsShowing = true;
-        InputManager.Instance.InputMode = GameInputMode.PartialScreenPopup;
+        InputManager.Instance.InputMode = GameInputMode.PartialPopup;
         _gameMgr.RequestPauseStateChange(toPause: true);
     }
 
@@ -285,7 +285,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         foreach (var directive in RemoteFleetDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = directive.GetName(),
+                text = directive.GetValueName(),
                 id = topLevelItemID
             };
             topLevelMenuItems.Add(topLevelItem);
@@ -304,7 +304,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         foreach (var directive in RemoteShipDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = directive.GetName(),
+                text = directive.GetValueName(),
                 id = topLevelItemID
             };
             topLevelMenuItems.Add(topLevelItem);
@@ -323,7 +323,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         foreach (var directive in RemoteBaseDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = directive.GetName(),
+                text = directive.GetValueName(),
                 id = topLevelItemID
             };
             topLevelMenuItems.Add(topLevelItem);

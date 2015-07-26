@@ -65,14 +65,14 @@ namespace CodeEnv.Master.GameContent {
                 healthColor = (health.Value > GeneralSettings.Instance.InjuredHealthThreshold) ? GameColor.Green :
                             (health.Value > GeneralSettings.Instance.CriticalHealthThreshold) ? GameColor.Yellow :
                                                                                                     GameColor.Red;
-                colorizedHealthText = Constants.FormatPercent_0Dp.Inject(health.Value).EmbedColor(healthColor);
+                colorizedHealthText = Constants.FormatPercent_0Dp.Inject(health.Value).SurroundWith(healthColor);
             }
 
             GameColor maxHpColor = GameColor.White;
             string colorizedMaxHpText = Constants.QuestionMark;
             if (maxHp.HasValue) {
                 maxHpColor = GameColor.Green;
-                colorizedMaxHpText = Constants.FormatFloat_1DpMax.Inject(maxHp.Value).EmbedColor(maxHpColor);
+                colorizedMaxHpText = Constants.FormatFloat_1DpMax.Inject(maxHp.Value).SurroundWith(maxHpColor);
             }
             return _phrase.Inject(colorizedHealthText, colorizedMaxHpText);
         }

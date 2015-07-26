@@ -96,7 +96,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
     public void MakeFleetInstance(string fleetName, ShipItem element, Action<FleetCmdItem> onCompletion) {
         FleetCmdStat cmdStat = new FleetCmdStat(fleetName, 10F, 100, Formation.Globe);
-        var countermeasureStats = new CountermeasureStat[] { new CountermeasureStat(new CombatStrength(), 0F, 0F) };
+        var countermeasureStats = new CountermeasureStat[] { new CountermeasureStat() };
         MakeFleetInstance(cmdStat, countermeasureStats, element, onCompletion);
     }
 
@@ -162,7 +162,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(ShipStat shipStat, IEnumerable<WeaponStat> weapStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, Player owner, ref ShipItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var categoryFromItem = item.category;
-        D.Assert(shipStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(shipStat.Category.GetName(), categoryFromItem.GetName()));
+        D.Assert(shipStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(shipStat.Category.GetValueName(), categoryFromItem.GetValueName()));
         item.Data = new ShipData(item.Transform, shipStat, owner) { };
         AttachCountermeasures(cmStats, item);
         AttachWeapons(weapStats, item);
@@ -258,7 +258,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="item">The item.</param>
     public void PopulateInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, Player owner, ref FacilityItem item) {
         var categoryFromItem = item.category;
-        D.Assert(facStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(facStat.Category.GetName(), categoryFromItem.GetName()));
+        D.Assert(facStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(facStat.Category.GetValueName(), categoryFromItem.GetValueName()));
         FacilityData data = new FacilityData(item.Transform, facStat, topography, owner) { };
         item.Data = data;
         AttachCountermeasures(cmStats, item);
@@ -304,12 +304,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="weapon">The weapon.</param>
     /// <param name="element">The element that owns the weapon and has weapon monitors as children.</param>
     /// <returns></returns>
-    public IWeaponRangeMonitor MakeMonitorInstance(Weapon weapon, AUnitElementItem element) {
+    public IWeaponRangeMonitor MakeMonitorInstance(AWeapon weapon, AUnitElementItem element) {
         var allMonitors = element.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
-        var monitorsInUse = allMonitors.Where(m => m.Range != DistanceRange.None);
+        var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeDistanceCategory.None);
 
         // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
-        var monitor = monitorsInUse.FirstOrDefault(m => m.Range == weapon.Range);
+        var monitor = monitorsInUse.FirstOrDefault(m => m.RangeCategory == weapon.RangeCategory);
         if (monitor == null) {
             var unusedMonitors = allMonitors.Except(monitorsInUse);
             if (unusedMonitors.Any()) {
@@ -318,9 +318,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeMonoBehaviourInChildren<WeaponRangeMonitor>();
+                monitor = monitorGo.GetSafeFirstMonoBehaviourInChildren<WeaponRangeMonitor>();
             }
-            monitor.ParentElement = element;
+            monitor.ParentItem = element;
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
         monitor.Add(weapon);
@@ -335,10 +335,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public ISensorRangeMonitor MakeMonitorInstance(Sensor sensor, AUnitCmdItem command) {
         var allSensorMonitors = command.gameObject.GetComponentsInChildren<SensorRangeMonitor>();
-        var sensorMonitorsInUse = allSensorMonitors.Where(m => m.Range != DistanceRange.None);
+        var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeDistanceCategory.None);
 
         // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
-        var monitor = sensorMonitorsInUse.FirstOrDefault(m => m.Range == sensor.Range);
+        var monitor = sensorMonitorsInUse.FirstOrDefault(m => m.RangeCategory == sensor.RangeCategory);
         if (monitor == null) {
             var unusedSensorMonitors = allSensorMonitors.Except(sensorMonitorsInUse);
             if (unusedSensorMonitors.Any()) {
@@ -347,9 +347,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeMonoBehaviourInChildren<SensorRangeMonitor>();
+                monitor = monitorGo.GetSafeFirstMonoBehaviourInChildren<SensorRangeMonitor>();
             }
-            monitor.ParentCommand = command;
+            monitor.ParentItem = command;
             //D.Log("{0} has had a {1} chosen for {2}.", command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
         }
         monitor.Add(sensor);

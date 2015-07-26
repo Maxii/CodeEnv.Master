@@ -17,7 +17,6 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -44,14 +43,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
     private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
-        Layers.DeepSpace, Layers.UI, Layers.UIPopup, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast, Layers.Water);
-
-    /// <summary>
-    /// The layers the UI EventDispatcher (2D) is allowed to 'see' when determining whether to raise an event.
-    /// This covers the case when a Popup menu is open which can receive events, but the fixed UI elements should not.
-    /// </summary>
-    public static LayerMask UIEventDispatcherMask_PopupInputOnly { get { return _uiEventDispatcherMask_PopupInputOnly; } }
-    private static LayerMask _uiEventDispatcherMask_PopupInputOnly = LayerMaskExtensions.CreateInclusiveMask(Layers.UIPopup);
+    Layers.DeepSpace, Layers.UI, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast, Layers.Water);
 
     /// <summary>
     /// The EventDispatcher (World or UI) mask that does not allow any events to be raised.
@@ -60,7 +52,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private GameInputMode _inputMode;
     /// <summary>
-    /// The GameInputMode the game is currently operate in.
+    /// The InputMode the game is currently operating in.
     /// </summary>
     public GameInputMode InputMode {
         get { return _inputMode; }
@@ -82,6 +74,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     public UICamera WorldEventDispatcher { get; private set; }
 
     protected override bool IsPersistentAcrossScenes { get { return true; } }
+
+    private bool _enableScreenEdge;
+    private bool _enableArrowKeys;
 
     private GameInputHelper _inputHelper;
     private PlayerViews _playerViews;
@@ -106,8 +101,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     private void InitializeLocalReferencesAndValues() {
         _inputHelper = GameInputHelper.Instance;
         _gameMgr = GameManager.Instance;
-        _currentScene = (SceneLevel)Application.loadedLevel;
-        enabled = false;
+        _currentScene = (SceneLevel)Application.loadedLevel; // IMPROVE = _gameMgr.CurrentScene; ?
     }
 
     private void InitializeNonpersistentReferences() {
@@ -120,7 +114,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeUIEventDispatcher() {
-        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSafeMonoBehaviourInChildren<UICamera>();
+        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSafeFirstMonoBehaviourInChildren<UICamera>();
 
         //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
         UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
@@ -131,7 +125,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeWorldEventDispatcher() {
-        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeMonoBehaviourInChildren<UICamera>();
+        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeFirstMonoBehaviourInChildren<UICamera>();
         WorldEventDispatcher.eventType = UICamera.EventType.World_3D;
         WorldEventDispatcher.useKeyboard = true;
         WorldEventDispatcher.useMouse = true;
@@ -170,20 +164,17 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void OnGameStateChanging(GameState incomingState) {
         var previousState = _gameMgr.CurrentState;
-        //D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetName());
-        if (previousState == GameState.Lobby) {
-            InputMode = GameInputMode.NoInput;
-        }
-        if (previousState == GameState.Running) {
+        //D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetValueName());
+        if (previousState == GameState.Lobby || previousState == GameState.Running) {
             InputMode = GameInputMode.NoInput;
         }
     }
 
     private void OnGameStateChanged() {
         var gameState = _gameMgr.CurrentState;
-        //D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, enteringGameState.GetName());
+        //D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, gameState.GetValueName());
         if (gameState == GameState.Lobby) {
-            InputMode = GameInputMode.PartialScreenPopup;   // as the Lobby only has UIPopup layer screens, this is the 'normal' InputMode for the Lobby
+            InputMode = GameInputMode.Lobby;
         }
         if (gameState == GameState.Running) {
             InputMode = GameInputMode.Normal;
@@ -194,57 +185,64 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         base.Update();
         CheckForArrowKeyActivity();
         CheckForScreenEdgeActivity();
-        if (InputMode != GameInputMode.PartialScreenPopup) {
-            // Update runs during PartialScreenPopup mode as arrow key and screen edge camera movement
-            // is desired, but VIewModeKey inputs are not supported during this mode
-            CheckForViewModeKeyActivity();
-        }
     }
 
     /// <summary>
-    /// Called when the GameInputMode changes.
+    /// Called when the InputMode changes.
     /// Notes: [Un]subscribing to world mouse events covers camera movement from dragging and scrolling, and pressing on empty space (for SelectionManager).
-    /// Enabling/disabling this script covers camera movement from arrow keys and the screen edge. It also covers other key detection used by PlayerViews.
+    /// Camera movement from arrow keys and the screen edge are covered by their specific bool as is other key detection used by PlayerViews.
     /// Changing the eventReceiverMask of the _worldEventDispatcher covers all OnHover, OnClick, OnDoubleClick, OnPress events embedded in world objects.
-    /// Changing the eventReceiverMask of the _uiEventDispatcher covers all OnHover, OnClick, OnDrag and OnPress events for UI elements.
+    /// Changing the eventReceiverMask of the _uiEventDispatcher covers all OnHover, OnTooltip, OnClick, OnDrag and OnPress events for UI elements.
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     private void OnInputModeChanged() {
-        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
+        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetValueName());
         __ValidateEventDispatchersNotDestroyed();
 
         switch (InputMode) {
             case GameInputMode.NoInput:
                 UIEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
+                _enableArrowKeys = false;
+                _enableScreenEdge = false;
+                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
                 if (_currentScene == SceneLevel.GameScene) {
-                    enabled = false;
                     WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
                     UnsubscribeToWorldMouseEvents();
                 }
                 break;
-            case GameInputMode.PartialScreenPopup:
-                UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_PopupInputOnly;
-                if (_currentScene == SceneLevel.GameScene) {
-                    enabled = true;
-                    WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
-                    UnsubscribeToWorldMouseEvents();
-                }
+            case GameInputMode.Lobby:
+                //D.Assert(_currentScene == SceneLevel.LobbyScene);   // fails during Startup simulation
+                UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
+                _enableArrowKeys = false;
+                _enableScreenEdge = false;
+                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
                 break;
-            case GameInputMode.FullScreenPopup:
-                UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_PopupInputOnly;
-                if (_currentScene == SceneLevel.GameScene) {
-                    enabled = false;
-                    WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
-                    UnsubscribeToWorldMouseEvents();
-                }
+            case GameInputMode.PartialPopup:
+                D.Assert(_currentScene == SceneLevel.GameScene);
+                UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
+                _enableArrowKeys = true;
+                _enableScreenEdge = true;
+                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
+                WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
+                UnsubscribeToWorldMouseEvents();
+                break;
+            case GameInputMode.FullPopup:
+                D.Assert(_currentScene == SceneLevel.GameScene);
+                UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
+                _enableArrowKeys = false;
+                _enableScreenEdge = false;
+                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
+                WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
+                UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.Normal:
+                D.Assert(_currentScene == SceneLevel.GameScene);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
-                if (_currentScene == SceneLevel.GameScene) {
-                    enabled = true;
-                    WorldEventDispatcher.eventReceiverMask = WorldEventDispatcherMask_NormalInput;
-                    SubscribeToWorldMouseEvents();
-                }
+                _enableArrowKeys = true;
+                _enableScreenEdge = true;
+                SubscribeToViewModeKeyEvents(); //_enableViewModeKeys = true;
+                WorldEventDispatcher.eventReceiverMask = WorldEventDispatcherMask_NormalInput;
+                SubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.None:
             default:
@@ -433,27 +431,29 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     public int activeScreenEdgeDepth = 5;
 
     private void CheckForScreenEdgeActivity() {
-        if (_inputHelper.IsAnyKeyOrMouseButtonDown) {
-            return;
-        }
+        if (_enableScreenEdge) {
+            if (_inputHelper.IsAnyKeyOrMouseButtonDown) {
+                return;
+            }
 
-        var activeEdge = ActiveScreenEdge.None;
-        Vector2 mPos = Input.mousePosition;
-        if (mPos.x <= activeScreenEdgeDepth) {
-            activeEdge = ActiveScreenEdge.Left;
-        }
-        else if (mPos.x >= Screen.width - activeScreenEdgeDepth) {
-            activeEdge = ActiveScreenEdge.Right;
-        }
-        else if (mPos.y <= activeScreenEdgeDepth) {
-            activeEdge = ActiveScreenEdge.Bottom;
-        }
-        else if (mPos.y >= Screen.height - activeScreenEdgeDepth) {
-            activeEdge = ActiveScreenEdge.Top;
-        }
+            var activeEdge = ActiveScreenEdge.None;
+            Vector2 mPos = Input.mousePosition;
+            if (mPos.x <= activeScreenEdgeDepth) {
+                activeEdge = ActiveScreenEdge.Left;
+            }
+            else if (mPos.x >= Screen.width - activeScreenEdgeDepth) {
+                activeEdge = ActiveScreenEdge.Right;
+            }
+            else if (mPos.y <= activeScreenEdgeDepth) {
+                activeEdge = ActiveScreenEdge.Bottom;
+            }
+            else if (mPos.y >= Screen.height - activeScreenEdgeDepth) {
+                activeEdge = ActiveScreenEdge.Top;
+            }
 
-        if (activeEdge != ActiveScreenEdge.None) {
-            RecordScreenEdgeEvent(activeEdge);
+            if (activeEdge != ActiveScreenEdge.None) {
+                RecordScreenEdgeEvent(activeEdge);
+            }
         }
     }
 
@@ -512,17 +512,23 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     #region ArrowKey Events
 
-    private KeyCode[] _arrowKeyCodesToSearch = new KeyCode[] { KeyCode.RightArrow, KeyCode.LeftArrow, KeyCode.UpArrow, KeyCode.DownArrow };
+    // Beginning with Ngui 3.9, all KeyCodes are now supported by the onKey delegate.
+    // However, the onKey delegate still only fires on individual presses and doesn't recognize being held down.
+    // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whos typical use case is holding down.
+
+    private KeyCode[] _arrowKeyCodes = new KeyCode[] { KeyCode.RightArrow, KeyCode.LeftArrow, KeyCode.UpArrow, KeyCode.DownArrow };
     private bool _isHorizontalAxisEventWaiting;
     private bool _isVerticalAxisEventWaiting;
 
     private void CheckForArrowKeyActivity() {
-        if (_inputHelper.IsAnyMouseButtonDown) { return; }
+        if (_enableArrowKeys) {
+            if (_inputHelper.IsAnyMouseButtonDown) { return; }
 
-        if (_inputHelper.IsAnyKeyOrMouseButtonDown) {
-            KeyCode keyPressed;
-            if (_inputHelper.TryIsKeyHeldDown(out keyPressed, _arrowKeyCodesToSearch)) {
-                RecordArrowKeyEvent(keyPressed);
+            if (_inputHelper.IsAnyKeyOrMouseButtonDown) {
+                KeyCode keyPressed;
+                if (_inputHelper.TryIsKeyHeldDown(out keyPressed, _arrowKeyCodes)) {
+                    RecordArrowKeyEvent(keyPressed);
+                }
             }
         }
     }
@@ -566,22 +572,28 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(axis));
         }
-        return Input.GetAxis(axis.GetName());
+        return Input.GetAxis(axis.GetValueName());
     }
 
     #endregion
 
     #region ViewModeKey Events
 
-    private void CheckForViewModeKeyActivity() {
-        if (_inputHelper.IsAnyMouseButtonDown) { return; }
+    // Beginning with Ngui 3.9, all KeyCodes are now supported by the onKey delegate.
+    // However, the onKey delegate still only fires on individual presses and doesn't recognize being held down.
+    // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whos typical use case is holding down.
 
-        if (_inputHelper.IsAnyKeyOrMouseButtonDown) {
-            // a key has been pressed with no mouseButton also pressed
-            KeyCode keyPressed;
-            if (_inputHelper.TryIsKeyDown(out keyPressed, _playerViews.ViewModeKeyCodes)) {
-                _playerViews.OnViewModeKeyPressed(keyPressed);
-            }
+    private void SubscribeToViewModeKeyEvents() {
+        UICamera.onKey += OnViewModeKey;
+    }
+
+    private void UnsubscribeToViewModeKeyEvents() {
+        UICamera.onKey -= OnViewModeKey;
+    }
+
+    private void OnViewModeKey(GameObject go, KeyCode key) {
+        if (_playerViews.ViewModeKeyCodes.Contains(key)) {
+            _playerViews.OnViewModeKeyPressed(key);
         }
     }
 
@@ -591,10 +603,10 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         if (DebugSettings.Instance.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
             NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
-            string touchID = (button ?? NguiMouseButton.None).GetName();
+            string touchID = (button ?? NguiMouseButton.None).GetValueName();
             string hoveredObject = UICamera.hoveredObject.name;
             string camera = UICamera.currentCamera.name;
-            string screenPosition = UICamera.lastTouchPosition.ToString();
+            string screenPosition = UICamera.lastEventPosition.ToString();  // UICamera.lastTouchPosition.ToString();
             UICamera.lastHit = new RaycastHit();    // clears any gameobject that was hit. Otherwise it is cached until the next hit
             string msg = @"{0}.{1}({2}) event. MouseButton = {3}, HoveredObject = {4}, Camera = {5}, ScreenPosition = {6}."
                 .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, hoveredObject, camera, screenPosition);
@@ -665,15 +677,27 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     #region Nested classes
 
     public enum ActiveScreenEdge {
-
         None,
 
         Left,
         Right,
         Top,
         Bottom
-
     }
+
+    //public enum GameInputMode {
+    //    None,
+
+    //    NoInput,
+
+    //    LobbyInput,
+
+    //    PartialPopupInput,
+
+    //    FullPopupInput,
+
+    //    NormalInput
+    //}
 
     /// <summary>
     /// Simple container for a scroll event so it can be retrieved when desired by MainCameraControl.

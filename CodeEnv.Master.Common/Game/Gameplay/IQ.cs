@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IQ.cs
-// The intelligence level of a player.
+// The intelligence level of an AI Player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// The intelligence level of a player.
+    /// The intelligence level of an AI Player.
     /// </summary>
     public enum IQ {
 

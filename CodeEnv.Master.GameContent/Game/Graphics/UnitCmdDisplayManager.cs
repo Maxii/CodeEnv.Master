@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.GameContent;
     using UnityEngine;
@@ -41,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetComponentInImmediateChildren<MeshRenderer>();
+            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
             _currentPrimaryMeshRadius = primaryMeshRenderer.bounds.size.x / 2F;
             primaryMeshRenderer.castShadows = false;
             primaryMeshRenderer.receiveShadows = false;
@@ -77,6 +78,11 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         protected override bool ShouldIconShow() {
             return IsDisplayEnabled && _isIconInMainCameraLOS;
+        }
+
+        protected override void DestroyIcon() {
+            throw new NotSupportedException("{0}'s cannot destroy Icons during runtime.".Inject(GetType().Name));
+            // UnitCmd's use the Icon as the transform upon which to center highlighting
         }
 
         public override string ToString() {

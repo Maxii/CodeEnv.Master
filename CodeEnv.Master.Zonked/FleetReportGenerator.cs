@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string GetText(DisplayTargetID displayTgtID, Player player, AIntel intel, ShipReport[] elementReports, bool includeUnknown) {
             if (!IsTextCurrent(displayTgtID, player, intel.CurrentCoverage, elementReports, includeUnknown)) {
-                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, displayTgtID.GetName(), player.LeaderName);
+                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, displayTgtID.GetValueName(), player.LeaderName);
                 GenerateText(displayTgtID, player, intel, elementReports, includeUnknown);
             }
             return _stringBuilder.ToString();

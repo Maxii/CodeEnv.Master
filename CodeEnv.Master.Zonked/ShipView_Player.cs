@@ -111,7 +111,7 @@ public class ShipView_Player : ShipView {
             var desiredShipMenuItems = new CtxMenu.Item[_shipMenuOrders.Length];
             for (int i = 0; i < _shipMenuOrders.Length; i++) {
                 var item = new CtxMenu.Item();
-                item.text = _shipMenuOrders[i].GetName();    // IMPROVE GetDescription would be better for the context menu display
+                item.text = _shipMenuOrders[i].GetValueName();    // IMPROVE GetDescription would be better for the context menu display
                 item.id = i;
                 desiredShipMenuItems[i] = item;
             }
@@ -200,7 +200,7 @@ public class ShipView_Player : ShipView {
                 // TODO
                 case ShipDirective.Refit:
                     // TODO
-                    D.Warn("{0} is not yet implemented.", order.GetName());
+                    D.Warn("{0} is not yet implemented.", order.GetValueName());
                     break;
                 case ShipDirective.None:
                 default:
@@ -214,7 +214,7 @@ public class ShipView_Player : ShipView {
         ValueRange<int> orderKey = _subMenuOrderLookup.Keys.Single<ValueRange<int>>(subMenuItemIdRange => subMenuItemIdRange.ContainsValue(subMenuItemId));
         ShipDirective orderSelected = _subMenuOrderLookup[orderKey];
         IMortalTarget targetSelected = GetTargetSelected(orderSelected, subMenuItemId);
-        D.Log("{0} selected order {1} and submenu item {2} from context menu.", Presenter.FullName, orderSelected.GetName(), targetSelected.FullName);
+        D.Log("{0} selected order {1} and submenu item {2} from context menu.", Presenter.FullName, orderSelected.GetValueName(), targetSelected.FullName);
         ShipOrder order = new ShipOrder(orderSelected, OrderSource.User, targetSelected);
         Presenter.Model.CurrentOrder = order;
     }

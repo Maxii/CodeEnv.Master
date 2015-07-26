@@ -53,7 +53,7 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     private void TransferChildren() {
         D.Log("{0}_{1} has {2} children being reparented to {3}_{4}.",
             this.name, this.InstanceCount, this._transform.childCount, Instance.name, Instance.InstanceCount);
-        var children = this.gameObject.GetComponentsInImmediateChildren<Transform>();
+        var children = this.gameObject.GetComponentsInImmediateChildrenOnly<Transform>();
         children.ForAll(child => {
             UnityUtility.AttachChildToParent(child.gameObject, Instance.gameObject);
             D.Log("Before being destroyed, {0}_{1} is attaching its child {2} \nto new parent {3}_{4}. The child may not survive.",
@@ -77,7 +77,7 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     /// to find any that persist and reparent them to this persistent instance.
     /// </summary>
     private void RecordAndDetachChildren() {
-        _formerChildren = gameObject.GetComponentsInImmediateChildren<Transform>();
+        _formerChildren = gameObject.GetComponentsInImmediateChildrenOnly<Transform>();
         Instance._transform.DetachChildren();
     }
 

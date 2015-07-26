@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         public ReportType GetReport(Player player, AIntel intel) {
             var intelCoverage = intel.CurrentCoverage;
             if (!IsReportCurrent(player, intelCoverage)) {
-                D.Log("{0} generating new {1} for Player {2}, IntelCoverage {3}.", GetType().Name, typeof(ReportType).Name, player.LeaderName, intelCoverage.GetName());
+                D.Log("{0} generating new {1} for Player {2}, IntelCoverage {3}.", GetType().Name, typeof(ReportType).Name, player.LeaderName, intelCoverage.GetValueName());
                 _report = GenerateReport(player, intel);
                 _data.AcceptChanges();
             }
@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
         public string GetText(DisplayTargetID displayTgtID, Player player, AIntel intel, bool includeUnknown) {
             var intelCoverage = intel.CurrentCoverage;
             if (!IsTextCurrent(displayTgtID, player, intelCoverage, includeUnknown)) {
-                D.Log("{0} generating new text for Label {1}, Player {2}, IntelCoverage {3}.", GetType().Name, displayTgtID.GetName(), player.LeaderName, intelCoverage.GetName());
+                D.Log("{0} generating new text for Label {1}, Player {2}, IntelCoverage {3}.", GetType().Name, displayTgtID.GetValueName(), player.LeaderName, intelCoverage.GetValueName());
                 GenerateText(displayTgtID, player, intel, includeUnknown);
             }
             return _stringBuilder.ToString();

@@ -99,7 +99,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
     }
 
     private void InitializeWorldEventDispatcher() {
-        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeMonoBehaviourInChildren<UICamera>();
+        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeFirstMonoBehaviourInChildren<UICamera>();
         WorldEventDispatcher.eventType = UICamera.EventType.World_3D;
         WorldEventDispatcher.useKeyboard = true;
         WorldEventDispatcher.useMouse = true;
@@ -154,7 +154,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
         base.Update();
         CheckForArrowKeyActivity();
         CheckForScreenEdgeActivity();
-        if (InputMode != GameInputMode.PartialScreenPopup) {
+        if (InputMode != GameInputMode.PartialPopup) {
             // Update runs during PartialScreenPopup mode as arrow key and screen edge camera movement
             // is desired, but VIewModeKey inputs are not supported during this mode
             CheckForViewModeKeyActivity();
@@ -170,7 +170,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     protected override void OnInputModeChanged() {
-        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
+        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetValueName());
         __ValidateEventDispatchersNotDestroyed();
 
         switch (InputMode) {
@@ -180,13 +180,13 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 enabled = false;
                 break;
-            case GameInputMode.PartialScreenPopup:
+            case GameInputMode.PartialPopup:
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_PopupInputOnly;
                 WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
                 UnsubscribeToWorldMouseEvents();
                 enabled = true;
                 break;
-            case GameInputMode.FullScreenPopup:
+            case GameInputMode.FullPopup:
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_PopupInputOnly;
                 WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
                 UnsubscribeToWorldMouseEvents();
@@ -508,7 +508,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(axis));
         }
-        return Input.GetAxis(axis.GetName());
+        return Input.GetAxis(axis.GetValueName());
     }
 
     #endregion
@@ -533,7 +533,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
         if (DebugSettings.Instance.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
             NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
-            string touchID = (button ?? NguiMouseButton.None).GetName();
+            string touchID = (button ?? NguiMouseButton.None).GetValueName();
             string hoveredObject = UICamera.hoveredObject.name;
             string camera = UICamera.currentCamera.name;
             string screenPosition = UICamera.lastTouchPosition.ToString();

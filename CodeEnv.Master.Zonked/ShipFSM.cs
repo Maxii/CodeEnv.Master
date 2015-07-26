@@ -88,7 +88,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         yield return null;
     }
 
-    void Idling_OnWeaponReady(Weapon weapon) {
+    void Idling_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -281,7 +281,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         Return();
     }
 
-    void Moving_OnWeaponReady(Weapon weapon) {
+    void Moving_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -359,7 +359,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
             _attackTarget = _primaryTarget;
@@ -502,7 +502,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -530,7 +530,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         Return();
     }
 
-    void Repairing_OnWeaponReady(Weapon weapon) {
+    void Repairing_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -673,7 +673,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     /// Attempts to fire the provided weapon at a target within range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void TryFireOnAnyTarget(Weapon weapon) {
+    private void TryFireOnAnyTarget(AWeapon weapon) {
         if (_ship._weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             //D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackStrength = weapon.Strength;

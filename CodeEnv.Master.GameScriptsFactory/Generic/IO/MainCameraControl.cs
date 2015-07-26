@@ -326,7 +326,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.universeEdge;
         if (universeEdgePrefab == null) {
             D.Warn("UniverseEdgePrefab on RequiredPrefabs is null.");
-            string universeEdgeName = Layers.UniverseEdge.GetName();
+            string universeEdgeName = Layers.UniverseEdge.GetValueName();
             universeEdge = new GameObject(universeEdgeName);
             universeEdge.AddComponent<SphereCollider>();
             universeEdge.isStatic = true;
@@ -344,7 +344,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         GameObject dummyTarget;
         if (dummyTargetPrefab == null) {
             D.Warn("DummyTargetPrefab on RequiredPrefabs is null.");
-            string dummyTargetName = Layers.DummyTarget.GetName();
+            string dummyTargetName = Layers.DummyTarget.GetValueName();
             dummyTarget = new GameObject(dummyTargetName);
             dummyTarget.AddComponent<SphereCollider>();
             dummyTarget.AddComponent<DummyTargetManager>();
@@ -450,7 +450,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 break;
             case PlayerViewMode.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PlayerViews.Instance.ViewMode.GetName()));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PlayerViews.Instance.ViewMode.GetValueName()));
         }
 
         // edgeFocusZoom already false

@@ -22,13 +22,13 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract base class for Gui Labels used as readouts. Supports Tooltips.
 /// </summary>
-public abstract class AGuiLabelReadout : AGuiTooltip {
+public abstract class AGuiLabelReadout : ATextTooltip {
 
     protected UILabel _readoutLabel;
 
     protected override void Awake() {
         base.Awake();
-        _readoutLabel = gameObject.GetSafeMonoBehaviourInImmediateChildren<UILabel>();
+        _readoutLabel = gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<UILabel>();
     }
 
     protected virtual void RefreshReadout(string text, GameColor color = GameColor.White) {

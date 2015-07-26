@@ -424,14 +424,15 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Waits one FixedUpdate cycle, then executes the provided delegate.
         /// Usage:
-        ///     WaitOneFixedUpdateToExecute(onWaitFinished: () =&gt; {
-        ///         Code to execute after the wait;
-        ///     });
-        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will 
-        /// immediately return which means the code you have following it will execute 
+        /// WaitOneFixedUpdateToExecute(onWaitFinished: () =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
         /// before the code assigned to the onWaitFinished delegate.
         /// </summary>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
+        /// <returns></returns>
         public static void WaitOneFixedUpdateToExecute(Action onWaitFinished) {
             new Job(WaitOneFixedUpdate(), toStart: true, onJobComplete: delegate {
                 onWaitFinished();

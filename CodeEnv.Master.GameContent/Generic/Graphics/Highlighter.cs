@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,6 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IHighlightable _highlightableObject;
         private Transform _trackedTransform;
+
         /// <summary>
         /// Performance optimization flag indicating whether the size of the 
         /// highlight on the screen should change or stay the same.
@@ -59,6 +60,7 @@ namespace CodeEnv.Master.GameContent {
         public Highlighter(IHighlightable highlightableObject, Transform trackedTransform, bool shouldHighlightSizeOnScreenChange) {
             _highlightableObject = highlightableObject;
             _trackedTransform = trackedTransform;
+            D.Log("{0} _trackedTransform assigned is named {1}.", highlightableObject.DisplayName + GetType().Name, trackedTransform.name);
             _shouldHighlightSizeOnScreenChange = shouldHighlightSizeOnScreenChange;
         }
 
@@ -66,6 +68,7 @@ namespace CodeEnv.Master.GameContent {
             if (_circles == null) {
                 string circlesTitle = "{0} Circle Highlight".Inject(_highlightableObject.DisplayName);
                 float innerCircleRadius = _highlightableObject.HighlightRadius;
+                D.Assert(_trackedTransform != null, "{0} _trackedTransform is null.".Inject(circlesTitle));
                 _circles = new HighlightCircle(circlesTitle, _trackedTransform, innerCircleRadius, _shouldHighlightSizeOnScreenChange, maxCircles: 3);
                 _circles.Colors = new GameColor[3] { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };
                 _circles.Widths = new float[3] { 2F, 2F, 1F };

@@ -37,13 +37,13 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.OffensiveStrength.HasValue ? report.OffensiveStrength.Value.ToString() : _unknown);
                         break;
-                    case ContentID.MaxWeaponsRange:
+                    case ContentID.WeaponsRange:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.MaxWeaponsRange.HasValue ? GetFormat(contentID).Inject(report.MaxWeaponsRange.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.WeaponsRange.HasValue ? report.WeaponsRange.Value.ToString() : _unknown);
                         break;
-                    case ContentID.MaxSensorRange:
+                    case ContentID.SensorRange:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.MaxSensorRange.HasValue ? GetFormat(contentID).Inject(report.MaxSensorRange.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.SensorRange.HasValue ? report.SensorRange.Value.ToString() : _unknown);
                         break;
                     case ContentID.Science:
                         isSuccess = true;

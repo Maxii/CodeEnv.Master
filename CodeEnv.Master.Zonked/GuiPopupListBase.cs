@@ -26,7 +26,7 @@ using CodeEnv.Master.Common.Unity;
 /// Base class for  Gui PopupLists that use Enums built with NGUI. 
 /// </summary>
 [Obsolete]
-public abstract class GuiPopupListBase : GuiTooltip, IDisposable {
+public abstract class GuiPopupListBase : TextTooltip, IDisposable {
 
     protected GameEventManager eventMgr;
     protected PlayerPrefsManager playerPrefsMgr;

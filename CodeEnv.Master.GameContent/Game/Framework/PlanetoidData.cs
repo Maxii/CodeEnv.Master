@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stat">The stat.</param>
         /// <param name="owner">The owner.</param>
         public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat, Player owner)
-            : base(planetoidTransform, stat.Category.GetName(), stat.MaxHitPoints, owner) {
+            : base(planetoidTransform, stat.Category.GetValueName(), stat.MaxHitPoints, owner) {
             Mass = stat.Mass;
             planetoidTransform.rigidbody.mass = stat.Mass;
             Category = stat.Category;

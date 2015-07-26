@@ -25,7 +25,7 @@ using UnityEngine;
 /// Beam ordnance containing effects for the muzzle flash, beam and its impact. 
 /// </summary>
 //[ExecuteInEditMode]
-public class PlasmaBeam : AOrdnance, IBeamOrdnance {
+public class PlasmaBeam : AOrdnance, ITerminatableOrdnance {
 
     private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
 
@@ -63,10 +63,10 @@ public class PlasmaBeam : AOrdnance, IBeamOrdnance {
         _initialBeamAnimationOffset = UnityEngine.Random.Range(0f, 5f);
     }
 
-    public override void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
+    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         base.Initiate(target, weapon, toShowEffects);
         weapon.OnFiringInitiated(target, this);
-        _durationInSeconds = (weapon as BeamWeapon).Duration / GameTime.HoursPerSecond;
+        _durationInSeconds = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
 
         _lineRenderer.SetPosition(0, Vector3.zero);  // start beam where ordnance located
         //_lineRenderer.enabled = toShowEffects;
@@ -213,12 +213,12 @@ public class PlasmaBeam : AOrdnance, IBeamOrdnance {
     /// Animates the beam at a constant pace, independent of GameSpeed or Pausing.
     /// </summary>
     private void AnimateBeam() {
-        float offset = _initialBeamAnimationOffset + beamAnimationSpeed * _gameTime.TimeInCurrentSession;
+        float offset = _initialBeamAnimationOffset + beamAnimationSpeed * _gameTime.CurrentUnitySessionTime;
         _lineRenderer.material.SetTextureOffset(UnityConstants.MainDiffuseTexture, new Vector2(offset, 0f));
     }
 
-    protected override void CleanupOnTerminate() {
-        base.CleanupOnTerminate();
+    protected override void PrepareForTermination() {
+        base.PrepareForTermination();
         //if (_audioSource != null && _audioSource.isPlaying) {
         //    D.Warn("{0}.OnTerminate() called. AudioSource stopping.", Name);
         //    _audioSource.Stop();

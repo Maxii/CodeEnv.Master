@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GameManager_State.cs
+// File: GameManager.cs
 // Singleton. The main manager for the game, implemented as a mono state machine.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -33,6 +33,18 @@ using UnityEngine;
 /// </summary>
 [SerializeAll]
 public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameManager {
+
+    public static bool IsFirstStartup {
+        get {
+            if (PlayerPrefs.HasKey("IsNotFirstStartup")) {
+                return false;
+            }
+            else {
+                PlayerPrefs.SetInt("IsNotFirstStartup", Constants.One);
+                return true;
+            }
+        }
+    }
 
     /// <summary>
     /// Fires when GameState changes to Running, then clears all subscribers.
@@ -70,6 +82,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public event Action onGameStateChanged;
 
+    /// <summary>
+    /// Occurs when a new game enters its Building state.
+    /// </summary>
     public event Action onNewGameBuilding;
 
     public GameSettings GameSettings { get; private set; }
@@ -152,7 +167,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         Thread.CurrentThread.CurrentCulture = newCulture;
         Thread.CurrentThread.CurrentUICulture = newCulture;
         D.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
-        D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
+        D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetValueName()));
     }
 
     #endregion
@@ -214,24 +229,35 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private GameSettings __CreateStartupSimulationGameSettings() {
-        var universeSize = UniverseSize.Large;
+        var universeSize = _playerPrefsMgr.UniverseSizeSelection.Convert();
+        var userPlayerColor = _playerPrefsMgr.UserPlayerColor;
+        IList<GameColor> unusedPlayerColors = TempGameValues.AllPlayerColors.Except(userPlayerColor).ToList();
 
-        int aiPlayerCount = universeSize.DefaultAIPlayerCount();
-        var aiPlayerRaces = new Race[aiPlayerCount];
+        int playerCount = _playerPrefsMgr.PlayerCount;
+        int aiPlayerCount = playerCount - 1;
+        Player[] aiPlayers = new Player[aiPlayerCount];
         for (int i = 0; i < aiPlayerCount; i++) {
-            var aiSpecies = Enums<Species>.GetRandomExcept(default(Species), Species.Human);
-            var aiColor = Enums<GameColor>.GetRandomExcept(default(GameColor), GameColor.Clear, GameColor.Black, GameColor.Gray);
-            aiPlayerRaces[i] = new Race(aiSpecies, aiColor);
+            var aiSpecies = Enums<Species>.GetRandom(excludeDefault: true);
+
+            var aiColor = Enums<GameColor>.GetRandomFrom(unusedPlayerColors);
+            unusedPlayerColors.Remove(aiColor);
+
+            IQ aiIQ = Enums<IQ>.GetRandom(excludeDefault: true);
+            SpeciesStat aiSpeciesStat = SpeciesFactory.Instance.MakeInstance(aiSpecies);
+            LeaderStat aiLeaderStat = LeaderFactory.Instance.MakeInstance(aiSpecies);
+            aiPlayers[i] = new Player(aiSpeciesStat, aiLeaderStat, aiIQ, aiColor);
         }
 
-        var userRaceStat = new RaceStat(_playerPrefsMgr.UserPlayerSpeciesSelection.Convert(), "Maxii",
-            TempGameValues.AnImageFilename, "Maxii description", _playerPrefsMgr.UserPlayerColor);
-
+        var userPlayerSpecies = _playerPrefsMgr.UserPlayerSpeciesSelection.Convert();
+        var userPlayerSpeciesStat = SpeciesFactory.Instance.MakeInstance(userPlayerSpecies);
+        var userPlayerLeaderStat = LeaderFactory.Instance.MakeInstance(userPlayerSpecies);
+        Player userPlayer = new Player(userPlayerSpeciesStat, userPlayerLeaderStat, IQ.None, userPlayerColor, isUser: true);
         var gameSettings = new GameSettings {
             __IsStartupSimulation = true,
             UniverseSize = universeSize,
-            UserPlayerRace = new Race(userRaceStat),
-            AIPlayerRaces = aiPlayerRaces
+            PlayerCount = playerCount,
+            UserPlayer = userPlayer,
+            AIPlayers = aiPlayers
         };
         return gameSettings;
     }
@@ -263,7 +289,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 D.Error("{0}'s GameState Progression Readiness System has timed out.", GetType().Name);
             }
             else {
-                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.".Inject(GetType().Name, InstanceCount, typeof(GameState).Name, CurrentState.GetName()), true);
+                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.".Inject(GetType().Name, InstanceCount, typeof(GameState).Name, CurrentState.GetValueName()), true);
                 //D.Log("{0}'s GameState Progression Readiness System has successfully completed.", GetType().Name);
             }
         });
@@ -306,12 +332,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     public void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady) {
         IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[maxGameStateUntilReady];
         if (!isReady) {
-            D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateUntilReady.GetName(), source.name));
+            D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateUntilReady.GetValueName(), source.name));
             unreadyElements.Add(source);
             //D.Log("{0} has registered as unready to progress beyond {1}.", source.name, maxGameStateUntilReady.GetName());
         }
         else {
-            D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetName(), source.name));
+            D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetValueName(), source.name));
             unreadyElements.Remove(source);
             //D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.",
             //source.name, maxGameStateUntilReady.GetName(), unreadyElements.Any() ? unreadyElements.Select(m => m.gameObject.name).Concatenate() : "None");
@@ -322,19 +348,17 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #region Players
 
-    private void CreatePlayers(GameSettings settings) {
-        var aiPlayerRaces = settings.AIPlayerRaces;
-        int aiPlayerCount = aiPlayerRaces.Length;
+    private void InitializePlayers() {
+        int playerCount = GameSettings.PlayerCount;
+        int aiPlayerCount = playerCount - 1;
+        AllPlayers = new List<Player>(playerCount);
 
-        AllPlayers = new List<Player>(aiPlayerCount + 1);
-        var userPlayer = new Player(settings.UserPlayerRace, IQ.None, isUser: true);
+        Player userPlayer = GameSettings.UserPlayer;
         AddPlayer(userPlayer);
-
         for (int i = 0; i < aiPlayerCount; i++) {
-            var aiRace = aiPlayerRaces[i];
-            var aiPlayer = new Player(aiRace, IQ.Normal);
+            Player aiPlayer = GameSettings.AIPlayers[i];
             // if not startupSimulation, all relationships default to None
-            if (settings.__IsStartupSimulation) {
+            if (GameSettings.__IsStartupSimulation) {
                 switch (i) {
                     case 0:
                         // makes sure there will always be an AIPlayer with DiploRelation.None
@@ -363,7 +387,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 }
                 userPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(userPlayer));
             }
-            D.Log("AI Player {0} created. User relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(userPlayer).GetName());
+            D.Log("AI Player {0} created. User relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(userPlayer).GetValueName());
             AddPlayer(aiPlayer);
         }
     }
@@ -446,7 +470,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        _gameTime.CheckForDateChange(); // CheckForDateChange() will ignore the call if clock is not enabled or is paused
+        _gameTime.CheckForDateChange(); // CheckForDateChange() will ignore the call if a GameInstance isn't running or is paused
     }
 
     #region New Game
@@ -456,7 +480,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void LoadAndBuildNewGame(GameSettings settings) {
-        D.Log("LoadAndBuildNewGame() called.");
+        D.Log("{0}.LoadAndBuildNewGame() called.", GetType().Name);
 
         GameSettings = settings;
         CurrentState = GameState.Loading;
@@ -638,7 +662,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Assert(!GameSettings.__IsStartupSimulation);
         LogEvent();
 
-        D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetName()));
+        D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetValueName()));
         OnSceneLoaded();
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: true);
@@ -673,7 +697,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         ResetConditionsForGameStartup();
         _gameTime.PrepareToBeginNewGame();
 
-        CreatePlayers(GameSettings);
+        InitializePlayers();
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
     }
@@ -832,11 +856,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Running_EnterState() {
         LogEvent();
-        _gameTime.EnableClock(true);
+        IsRunning = true;   // Note: My practice - IsRunning THEN pause changes
         if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
             RequestPauseStateChange(toPause: true, toOverride: true);
         }
-        IsRunning = true;
     }
 
     void Running_ExitState() {
@@ -863,12 +886,26 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     protected override void Cleanup() {
-        References.GameManager = null;
-        _gameTime.Dispose();
         if (__progressCheckJob != null) {
             __progressCheckJob.Dispose();
         }
+        DisposeOfGlobals();
+        References.GameManager = null;  // last as Globals may use it when disposing
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    private void DisposeOfGlobals() {
+        _gameTime.Dispose();
         _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
+
+        PlayerViews.Instance.Dispose();
+        SelectionManager.Instance.Dispose();
+        GeneralFactory.Instance.Dispose();
+        TrackingWidgetFactory.Instance.Dispose();
+        GameInputHelper.Instance.Dispose();
+        LeaderFactory.Instance.Dispose();
     }
 
     public override string ToString() {

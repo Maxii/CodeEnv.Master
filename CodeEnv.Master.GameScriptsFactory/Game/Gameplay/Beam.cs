@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Beam ordnance on the way to a target containing effects for muzzle flash, beam operation and impact. 
 /// </summary>
-public class Beam : AOrdnance {
+public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
 
@@ -77,7 +77,7 @@ public class Beam : AOrdnance {
     private bool _isImpact;
     private float _initialBeamAnimationOffset;
     private Job _animateOperatingEffectJob;
-    private BeamWeapon _weapon;
+    private BeamProjector _weapon;
     private Vector3 _impactLocation;
     private AudioSource _operatingAudioSource;
 
@@ -98,12 +98,18 @@ public class Beam : AOrdnance {
         D.Assert(!muzzleEffect.playOnAwake);
     }
 
-    public override void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
+    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         base.Initiate(target, weapon, toShowEffects);
-        _weapon = weapon as BeamWeapon;
+        _weapon = weapon as BeamProjector;
+        weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
         _beamDuration = _weapon.Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
         enabled = true; // enables Update() and FixedUpdate()
+    }
+
+    private void OnWeaponIsOperationalChanged(AEquipment weapon) {
+        D.Assert(!weapon.IsOperational);
+        TerminateNow(); // a beam requires its firing weapon to be operational to operate
     }
 
     protected override void Update() {
@@ -114,7 +120,7 @@ public class Beam : AOrdnance {
         if (_cumBeamOperatingTime > _beamDuration) {
             enabled = false;
             AssessApplyDamage();
-            Terminate();
+            TerminateNow();
         }
     }
 
@@ -187,6 +193,13 @@ public class Beam : AOrdnance {
             D.Assert(_unappliedCumHitStrength == default(CombatStrength));
             return;
         }
+        if (!_impactedTarget.IsOperational) {
+            // target is dead so don't apply more damage
+            _unappliedCumHitStrength = default(CombatStrength);
+            _impactedTarget = null;
+            return;
+        }
+
         //D.Log("{0} is applying hitStrength of {1} to {2}.", Name, _unappliedCumHitStrength, _impactedTarget.DisplayName);
         _impactedTarget.TakeHit(_unappliedCumHitStrength);
         _unappliedCumHitStrength = default(CombatStrength);
@@ -284,18 +297,24 @@ public class Beam : AOrdnance {
     /// </summary>
     private IEnumerator AnimateBeam() {
         while (true) {
-            float offset = _initialBeamAnimationOffset + beamAnimationSpeed * _gameTime.TimeInCurrentSession;
+            float offset = _initialBeamAnimationOffset + beamAnimationSpeed * _gameTime.CurrentUnitySessionTime;
             _operatingEffectRenderer.material.SetTextureOffset(UnityConstants.MainDiffuseTexture, new Vector2(offset, 0f));
             yield return null;
         }
     }
 
-    protected override void CleanupOnTerminate() {
-        base.CleanupOnTerminate();
+    public void Terminate() {
+        TerminateNow();
+    }
+
+
+    protected override void PrepareForTermination() {
+        base.PrepareForTermination();
         if (_operatingAudioSource != null && _operatingAudioSource.isPlaying) {
             //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
             _operatingAudioSource.Stop();
         }
+        _weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
         _weapon.OnFiringComplete(this);
     }
 

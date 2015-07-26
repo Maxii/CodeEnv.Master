@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             string targetText = Target != null ? Target.FullName : "null";
             string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "null";
-            return _toStringFormat.Inject(Directive.GetName(), Source.GetName(), targetText, Speed.GetName(), standingOrderText);
+            return _toStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(), standingOrderText);
         }
 
     }

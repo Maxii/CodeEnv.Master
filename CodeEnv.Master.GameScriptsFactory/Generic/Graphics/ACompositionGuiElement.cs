@@ -23,15 +23,17 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract base class for a GuiElement handling the display and tooltip content for the Composition of a Command.  
 /// </summary>
-public abstract class ACompositionGuiElement : GuiElement, IComparable<ACompositionGuiElement> {
+public abstract class ACompositionGuiElement : AGuiElement, IComparable<ACompositionGuiElement> {
 
-    protected override string TooltipContent { get { return "Size custom tooltip placeholder"; } }
+    public override GuiElementID ElementID { get { return GuiElementID.Composition; } }
 
     private IconInfo _iconInfo;
     public IconInfo IconInfo {
         get { return _iconInfo; }
         set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
     }
+
+    protected override string TooltipContent { get { return "Composition custom tooltip placeholder"; } }
 
     protected abstract bool AreAllValuesSet { get; }
 
@@ -40,9 +42,8 @@ public abstract class ACompositionGuiElement : GuiElement, IComparable<AComposit
 
     protected override void Awake() {
         base.Awake();
-        Validate();
-        _sprite = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _sprite = gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
     }
 
     private void OnIconInfoChanged() {
@@ -52,7 +53,7 @@ public abstract class ACompositionGuiElement : GuiElement, IComparable<AComposit
     }
 
     protected void PopulateElementWidgets() {
-        _sprite.atlas = MyNguiUtilities.GetAtlas(IconInfo.AtlasID);
+        _sprite.atlas = IconInfo.AtlasID.GetAtlas();
         _sprite.spriteName = IconInfo.Filename;
         _sprite.color = IconInfo.Color.ToUnityColor();
         //D.Log("{0}.PopulateElementWidgets() called. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetName());
@@ -63,15 +64,7 @@ public abstract class ACompositionGuiElement : GuiElement, IComparable<AComposit
     protected abstract string GetCategoryName();
 
     public override void Reset() {
-        base.Reset();
         _iconInfo = default(IconInfo);
-    }
-
-    private void Validate() {
-        if (elementID != GuiElementID.Composition) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.Composition;
-        }
     }
 
     #region IComparable<ACompositionGuiElement> Members

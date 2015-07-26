@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IDetectableItem.cs
-// Interface indicating an Item is detectable by sensors.
+// Interface indicating an Item is detectable by sensors and weapon targeting systems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface indicating an Item is detectable by sensors.
+    /// Interface indicating an Item is detectable by sensors and weapon targeting systems.
     /// </summary>
     public interface IDetectable {
+
+        event Action<IItem> onOwnerChanged;
+
+        Player Owner { get; }
 
         bool IsOperational { get; }
 
@@ -30,9 +34,9 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
-        void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange);
+        void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRangeCat);
 
-        void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange);
+        void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRangeCat);
     }
 }
 

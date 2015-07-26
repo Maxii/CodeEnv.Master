@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AProjectile.cs
-// Abstract base class for missile or projectile ordnance on the way to a target containing effects for muzzle flash, inFlightOperation and impact. 
+// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for missile or projectile ordnance on the way to a target containing effects for muzzle flash, inFlightOperation and impact. 
+/// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 /// </summary>
 public abstract class AProjectile : AOrdnance {
 
@@ -48,6 +48,7 @@ public abstract class AProjectile : AOrdnance {
     protected override void Awake() {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        _rigidbody.isKinematic = false;
         _rigidbody.drag = Constants.ZeroF;
         _rigidbody.useGravity = false;
         D.Assert(_rigidbody.mass != Constants.ZeroF, "{0} mass not set.".Inject(Name));
@@ -66,7 +67,7 @@ public abstract class AProjectile : AOrdnance {
         _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 
-    public override void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
+    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         base.Initiate(target, weapon, toShowEffects);
         _launchPosition = _transform.position;
 
@@ -101,24 +102,26 @@ public abstract class AProjectile : AOrdnance {
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
                 // target has a rigidbody so apply impact force
                 var force = _nominalThrust * _gameSpeedMultiplier;
-                D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
+                //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
                 impactedTargetRigidbody.AddForceAtPosition(force, contactPoint.point, ForceMode.Impulse);
             }
             if (impactedTarget.IsVisualDetailDiscernibleToUser) {
                 // target is being viewed by user so show impact effect
-                D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
+                //D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
                 var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.05F;    // HACK
                 // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
                 ShowImpactEffects(impactEffectLocation);
             }
-            impactedTarget.TakeHit(Strength);
+            if (impactedTarget.IsOperational) {
+                impactedTarget.TakeHit(Strength);
+            }
         }
         else {
             // if not an attackableTarget, then it might be another incoming or outgoing projectile. If so, ignore it
             var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
-            D.Assert(otherOrdnance == null);  // should not be able to impact another piece of ordnance
+            D.Assert(otherOrdnance == null);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
         }
-        Terminate();
+        TerminateNow();
     }
 
     private void ApplyThrust() {
@@ -135,7 +138,7 @@ public abstract class AProjectile : AOrdnance {
                 ShowImpactEffects(_transform.position); // self destruction effect
             }
             //D.Log("{0} actual distanceTraveled = {1}.", Name, Vector3.Distance(_transform.position, _launchPosition));
-            Terminate();
+            TerminateNow();
         }
     }
 

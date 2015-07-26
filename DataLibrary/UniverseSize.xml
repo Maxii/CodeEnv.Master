@@ -10,28 +10,28 @@
 
   <Integer>
     <Setting>
-      <PropertyName>TinyDefaultAIPlayerCount</PropertyName>
-      <PropertyValue>1</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>SmallDefaultAIPlayerCount</PropertyName>
+      <PropertyName>TinyDefaultPlayerCount</PropertyName>
       <PropertyValue>2</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>NormalDefaultAIPlayerCount</PropertyName>
-      <PropertyValue>4</PropertyValue>
+      <PropertyName>SmallDefaultPlayerCount</PropertyName>
+      <PropertyValue>3</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>LargeDefaultAIPlayerCount</PropertyName>
+      <PropertyName>NormalDefaultPlayerCount</PropertyName>
       <PropertyValue>5</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>EnormousDefaultAIPlayerCount</PropertyName>
+      <PropertyName>LargeDefaultPlayerCount</PropertyName>
       <PropertyValue>6</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>GiganticDefaultAIPlayerCount</PropertyName>
+      <PropertyName>EnormousDefaultPlayerCount</PropertyName>
       <PropertyValue>7</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>GiganticDefaultPlayerCount</PropertyName>
+      <PropertyValue>8</PropertyValue>
     </Setting>
   </Integer>
 

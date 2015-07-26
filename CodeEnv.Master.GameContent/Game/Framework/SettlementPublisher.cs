@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementPublisher : ACmdPublisher<SettlementReport, SettlementCmdData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return SettlementDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

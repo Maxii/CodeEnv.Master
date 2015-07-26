@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Monitor attached to regions of space that notifies ships of the SpaceTopography they are entering/exiting.
 /// </summary>
-public class TopographyMonitor : AMonoBase {
+public class TopographyMonitor : AMonitor {
 
     private ITopographyMonitorable _itemMonitored;
     public ITopographyMonitorable ItemMonitored {
@@ -34,31 +34,9 @@ public class TopographyMonitor : AMonoBase {
         }
     }
 
-    /// <summary>
-    /// Control for enabling/disabling the monitor's collider.
-    /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger
-    /// </summary>
-    private bool IsOperational {
-        get { return _collider.enabled; }
-        set {
-            if (_collider.enabled != value) {
-                _collider.enabled = value;
-                OnIsOperationalChanged();
-            }
-        }
-    }
-
     public Topography SurroundingTopography { get; set; }   // IMPROVE ItemMonitored should know about their surrounding topology
 
-    private SphereCollider _collider;
-
-    protected override void Awake() {
-        base.Awake();
-        // kinematic rigidbody not reqd as parent has no rigidbody to create compound collider
-        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
-        _collider.isTrigger = true;
-        IsOperational = false;  // IsOperational controlled when ItemMonitored added
-    }
+    protected override bool IsKinematicRigidbodyReqd { get { return false; } }
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
@@ -87,7 +65,7 @@ public class TopographyMonitor : AMonoBase {
         IsOperational = true;
     }
 
-    private void OnIsOperationalChanged() { }
+    protected override void OnIsOperationalChanged() { }
 
     protected override void Cleanup() { }
 

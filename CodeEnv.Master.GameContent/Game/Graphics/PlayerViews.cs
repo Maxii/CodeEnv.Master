@@ -64,12 +64,12 @@ namespace CodeEnv.Master.GameContent {
         private void ChangeViewMode(ViewModeKeys key) {
             _lastViewModeKeyPressed = key;
             PlayerViewModeKeyConfiguration activatedConfig = _keyConfigs.Single(config => config.IsActivated());
-            D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastViewModeKeyPressed.GetName()), true);
+            D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastViewModeKeyPressed.GetValueName()), true);
             ViewMode = activatedConfig.viewMode;
         }
 
         private void OnViewModeChanged() {
-            D.Log("ViewMode changed to {0}.", ViewMode.GetName());
+            D.Log("ViewMode changed to {0}.", ViewMode.GetValueName());
             switch (ViewMode) {
                 case PlayerViewMode.SectorView:
                     // allow the camera to see the sectorViewMode layer so the UICamera can also see it

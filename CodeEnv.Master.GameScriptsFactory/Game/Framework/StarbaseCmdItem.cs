@@ -39,8 +39,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
 
     #region Initialization
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     #endregion
@@ -55,8 +55,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 
@@ -68,8 +68,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
         return StarbaseIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
 
-    protected override void ShowSelectionHud() {
-        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.Starbase, GetUserReport()));
+    protected override void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, GetUserReport());
     }
 
     #endregion

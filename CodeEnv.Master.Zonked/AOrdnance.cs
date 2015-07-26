@@ -32,7 +32,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string Name { get; protected set; }
 
-    public ArmamentCategory Category { get { return _weapon.Category; } }
+    public ArmamentCategory ArmamentCategory { get { return _weapon.ArmamentCategory; } }
 
     public IElementAttackableTarget Target { get; private set; }
 
@@ -45,7 +45,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected CombatStrength Strength { get { return _weapon.Strength; } }
 
     protected float _range;
-    protected Weapon _weapon;
+    protected AWeapon _weapon;
     protected GameManager _gameMgr;
     protected GameTime _gameTime;
 
@@ -60,7 +60,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Name = _transform.name + __instanceID;
     }
 
-    public virtual void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
+    public virtual void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         Target = target;
         _weapon = weapon;
 
@@ -68,7 +68,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _transform.rotation = Quaternion.LookRotation(tgtBearing); // point ordnance in direction of target so _transform.forward is bearing
 
         var owner = weapon.RangeMonitor.ParentElement.Owner;
-        _range = weapon.Range.GetWeaponRange(owner);
+        _range = weapon.RangeCategory.GetWeaponRange(owner);
 
         ToShowEffects = toShowEffects;
     }
@@ -76,7 +76,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected abstract void OnToShowEffectsChanged();
 
     public void Terminate() {
-        CleanupOnTerminate();
+        PrepareForTermination();
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
@@ -89,7 +89,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// opportunity to do any cleanup (stop audio, etc.) prior to the
     /// gameObject being destroyed.
     /// </summary>
-    protected virtual void CleanupOnTerminate() { }
+    protected virtual void PrepareForTermination() { }
 
 
 

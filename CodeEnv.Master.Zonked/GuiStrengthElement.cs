@@ -54,12 +54,12 @@ public class GuiStrengthElement : GuiElement, IComparable<GuiStrengthElement> {
     protected override void Awake() {
         base.Awake();
         Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
     }
 
 
     private void OnOffensiveStrengthChanged() {
-        D.Assert(elementID != GuiElementID.DefensiveStrength, "Do not use {0}.OffensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetName()));
+        D.Assert(elementID != GuiElementID.DefensiveStrength, "Do not use {0}.OffensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetValueName()));
 
         if (elementID == GuiElementID.OffensiveStrength || (elementID == GuiElementID.TotalStrength && _valuesAreReady)) {
             PopulateElementWidgets();
@@ -68,7 +68,7 @@ public class GuiStrengthElement : GuiElement, IComparable<GuiStrengthElement> {
     }
 
     private void OnDefensiveStrengthChanged() {
-        D.Assert(elementID != GuiElementID.OffensiveStrength, "Do not use {0}.DefensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetName()));
+        D.Assert(elementID != GuiElementID.OffensiveStrength, "Do not use {0}.DefensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetValueName()));
         if (elementID == GuiElementID.DefensiveStrength || (elementID == GuiElementID.TotalStrength && _valuesAreReady)) {
             PopulateElementWidgets();
         }
@@ -115,7 +115,7 @@ public class GuiStrengthElement : GuiElement, IComparable<GuiStrengthElement> {
 
     private void Validate() {
         D.Assert(elementID == GuiElementID.OffensiveStrength || elementID == GuiElementID.DefensiveStrength
-            || elementID == GuiElementID.TotalStrength, "{0} has illegal ElementID: {1}.".Inject(GetType().Name, elementID.GetName()));
+            || elementID == GuiElementID.TotalStrength, "{0} has illegal ElementID: {1}.".Inject(GetType().Name, elementID.GetValueName()));
     }
 
     public override string ToString() {

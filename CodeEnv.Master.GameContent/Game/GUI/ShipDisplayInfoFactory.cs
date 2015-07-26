@@ -34,8 +34,8 @@ namespace CodeEnv.Master.GameContent {
             ContentID.Health,
             ContentID.Defense,
             ContentID.Offense,
-            ContentID.MaxWeaponsRange,
-            ContentID.MaxSensorRange,
+            ContentID.WeaponsRange,
+            ContentID.SensorRange,
             ContentID.Science,
             ContentID.Culture,
             ContentID.NetIncome,
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 switch (contentID) {
                     case ContentID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != ShipCategory.None ? report.Category.GetName() : _unknown);
+                        colorizedText = _phrase.Inject(report.Category != ShipCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
                     case ContentID.Target:
                         isSuccess = true;
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ContentID.CombatStance:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CombatStance != ShipCombatStance.None ? report.CombatStance.GetName() : _unknown);
+                        colorizedText = _phrase.Inject(report.CombatStance != ShipCombatStance.None ? report.CombatStance.GetValueName() : _unknown);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

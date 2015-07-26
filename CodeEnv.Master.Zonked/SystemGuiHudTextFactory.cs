@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
                     return (data.RareResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.RareResources)
                         : _emptyTextList;
                 case GuiHudLineKeys.Category:
-                    return (settleData != null) ? new ColoredTextList_String(settleData.Category.GetName(), settleData.Category.GetEnumAttributeText()) : _emptyTextList;
+                    return (settleData != null) ? new ColoredTextList_String(settleData.Category.GetValueName(), settleData.Category.GetEnumAttributeText()) : _emptyTextList;
                 case GuiHudLineKeys.SettlementDetails:
                     return (settleData != null) ? new ColoredTextList_Settlement(settleData) : _emptyTextList;
 

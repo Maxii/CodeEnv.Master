@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         string Name { get; }
 
-        ArmamentCategory Category { get; }
+        ArmamentCategory ArmamentCategory { get; }
 
         IElementAttackableTarget Target { get; }
 

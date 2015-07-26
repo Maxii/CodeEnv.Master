@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The transform the circle will encompass.
         /// </summary>
-        public Transform Target { get; set; }
+        public Transform Target { get; private set; }
 
         /// <summary>
         /// The desired radius of the circle in pixels when the Target is
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private IEnumerator DrawCircles() {
-            D.Log("{0} totalLinePoints = {1}.", GetType().Name, _line.points2.Count);
+            //D.Log("{0} totalLinePoints = {1}.", GetType().Name, _line.points2.Count);
             while (true) {
                 Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
                 float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
@@ -205,7 +205,7 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                D.Warn("{0} color count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Colors[0].GetName());
+                D.Warn("{0} color count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Colors[0].GetValueName());
                 _line.SetColor(GameColor.White.ToUnityColor());
             }
         }

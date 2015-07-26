@@ -22,19 +22,11 @@ namespace CodeEnv.Master.GameContent {
     /// Interface allowing access to the associated Unity-compiled script. 
     /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
-    public interface IWeaponRangeMonitor {
+    public interface IWeaponRangeMonitor : IRangedEquipmentMonitor {
 
-        string FullName { get; }
+        IUnitElementItem ParentItem { set; }
 
-        DistanceRange Range { get; }
-
-        Player Owner { get; }
-
-        IList<IElementAttackableTarget> EnemyTargets { get; }
-
-        IList<IElementAttackableTarget> AllTargets { get; }
-
-        void Add(Weapon weapon);
+        void Add(AWeapon weapon);
 
         /// <summary>
         /// Removes the specified weapon. Returns <c>true</c> if this monitor
@@ -42,7 +34,18 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="weapon">The weapon.</param>
         /// <returns></returns>
-        bool Remove(Weapon weapon);
+        bool Remove(AWeapon weapon);
+
+        /// <summary>
+        /// Checks the line of sight from this monitor (element) to the provided enemy target, returning <c>true</c>
+        /// if the LOS is clear to the target, otherwise <c>false</c>. If <c>false</c> and the interference is from 
+        /// another enemy target, then interferingEnemyTgt is assigned that target. Otherwise, interferingEnemyTgt
+        /// will always be null. In route ordnance does not interfere with this LOS.
+        /// </summary>
+        /// <param name="enemyTarget">The target.</param>
+        /// <param name="interferingEnemyTgt">The interfering enemy target.</param>
+        /// <returns></returns>
+        bool CheckLineOfSightTo(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt);
 
     }
 }

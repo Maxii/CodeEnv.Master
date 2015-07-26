@@ -85,7 +85,12 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         set { SetProperty<WidgetPlacement>(ref _placement, value, "Placement", OnPlacementChanged); }
     }
 
-    public Transform WidgetTransform { get { return Widget.transform; } }
+    public Transform WidgetTransform {
+        get {
+            D.Assert(Widget.transform != null, "{0}.WidgetTransform is null.".Inject(OptionalRootName));
+            return Widget.transform;
+        }
+    }
 
     private IWidgetTrackable _target;
     public virtual IWidgetTrackable Target {
@@ -103,10 +108,10 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        Widget = gameObject.GetSafeMonoBehaviourInChildren<UIWidget>();
+        Widget = gameObject.GetSafeFirstMonoBehaviourInChildren<UIWidget>();
         Widget.color = Color.ToUnityColor();
         Widget.enabled = false;
-        _panel = gameObject.GetSafeMonoBehaviourInChildren<UIPanel>();
+        _panel = gameObject.GetSafeFirstMonoBehaviourInChildren<UIPanel>();
         _panel.depth = DrawDepth;
         UpdateRate = FrameUpdateFrequency.Normal;
         enabled = false;

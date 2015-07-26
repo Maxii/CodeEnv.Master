@@ -68,7 +68,7 @@ public abstract class AItemView : AMonoBase, IViewable, IDisposable {
     }
 
     protected virtual void OnPlayerIntelCoverageChanged() {
-        CustomLogEvent("Coverage = {0}".Inject(PlayerIntel.CurrentCoverage.GetName()));
+        CustomLogEvent("Coverage = {0}".Inject(PlayerIntel.CurrentCoverage.GetValueName()));
         AssessDiscernability();
         if (HudPublisher.IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed

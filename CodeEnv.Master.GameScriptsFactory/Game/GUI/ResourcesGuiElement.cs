@@ -25,8 +25,12 @@ using UnityEngine;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Resources available to an Item. 
+/// OPTIMIZE Reduce number of sprites and labels
 /// </summary>
-public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> {
+public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement> {
+
+    private static string _labelFormat = Constants.FormatFloat_1DpMax;
+    private static int _maxResourcesAllowed = 6;
 
     /// <summary>
     /// The category of resources to be displayed.
@@ -34,9 +38,7 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
     /// </summary>
     public ResourceCategory resourceCategory;
 
-    private static string _labelFormat = Constants.FormatFloat_1DpMax;
-    private static int _maxResourcesAllowed = 6;
-
+    private bool _isResourcesSet = false;
     private ResourceYield? _resources;
     public ResourceYield? Resources {
         get { return _resources; }
@@ -45,6 +47,10 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
             OnResourcesSet();
         }
     }
+
+    public override GuiElementID ElementID { get { return GuiElementID.Resources; } }
+
+    private bool AreAllValuesSet { get { return _isResourcesSet; } }
 
     // Each Resource container and the unknown label, when showing will have a tooltip 
 
@@ -63,13 +69,13 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(resourceCategory != ResourceCategory.None, "{0}.{1} has not been set.".Inject(GetType().Name, typeof(ResourceCategory).Name));
-        InitializeReferences();
+        InitializeValuesAndReferences();
     }
 
-    private void InitializeReferences() {
-        // excludes the unknown widget label
-        var resourceContainers = gameObject.GetSafeMonoBehavioursInImmediateChildren<UIWidget>().Where(w => w.GetComponent<UILabel>() == null);
+    private void InitializeValuesAndReferences() {
+        _unknownLabel = gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UILabel>();
+
+        var resourceContainers = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UIWidget>().Except(_unknownLabel);
         float avgLocalX = resourceContainers.Average(s => s.transform.localPosition.x);
         float avgLocalY = resourceContainers.Average(s => s.transform.localPosition.y);    // ~ 0F
 
@@ -104,7 +110,6 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
             InitializeResourceContainer(slot, container);
         });
 
-        _unknownLabel = gameObject.GetSafeMonoBehaviourInImmediateChildren<UILabel>();
         MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip += (go, show) => OnUnknownTooltip(show);
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
@@ -121,62 +126,76 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
     private void OnResourceContainerTooltip(GameObject containerGo, bool show) {
         if (show) {
             var resourceID = _resourceIDLookup[containerGo];
-            Tooltip.Instance.Show(new ResourceHudContent(resourceID));
+            TooltipHudWindow.Instance.Show(resourceID);
         }
         else {
-            Tooltip.Instance.Hide();
+            TooltipHudWindow.Instance.Hide();
         }
     }
 
     private void OnUnknownTooltip(bool show) {
         if (show) {
-            Tooltip.Instance.Show("Resource presence unknown");
+            TooltipHudWindow.Instance.Show("Resource presence unknown");
         }
         else {
-            Tooltip.Instance.Hide();
+            TooltipHudWindow.Instance.Hide();
         }
     }
 
     private void OnResourcesSet() {
-        PopulateElementWidgets();
+        _isResourcesSet = true;
+        if (AreAllValuesSet) {
+            PopulateElementWidgets();
+        }
     }
 
     private void PopulateElementWidgets() {
-        if (Resources.HasValue) {
-            var resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == resourceCategory).ToList();
-            _resourcesCount = resourcesPresent.Count;
-            D.Assert(_resourcesCount <= _maxResourcesAllowed);
-            for (int i = Constants.Zero; i < _resourcesCount; i++) {
-                Slot slot = (Slot)i;
-                UIWidget container = _resourceContainerLookup[slot];
-                NGUITools.SetActive(container.gameObject, true);
-
-                UISprite sprite = container.gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
-                var resourceID = resourcesPresent[i];
-                sprite.atlas = MyNguiUtilities.GetAtlas(resourceID.GetIconAtlasID());
-                sprite.spriteName = resourceID.GetIconFilename();
-                _resourceIDLookup.Add(container.gameObject, resourceID);
-
-                var label = container.gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
-                label.text = _labelFormat.Inject(Resources.Value.GetYield(resourceID));
-            }
+        if (!Resources.HasValue) {
+            OnValuesUnknown();
+            return;
         }
-        else {
-            NGUITools.SetActive(_unknownLabel.gameObject, true);
+
+        var resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == resourceCategory).ToList();
+        _resourcesCount = resourcesPresent.Count;
+        D.Assert(_resourcesCount <= _maxResourcesAllowed);
+        for (int i = Constants.Zero; i < _resourcesCount; i++) {
+            Slot slot = (Slot)i;
+            UIWidget container = _resourceContainerLookup[slot];
+            NGUITools.SetActive(container.gameObject, true);
+
+            UISprite sprite = container.gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
+            var resourceID = resourcesPresent[i];
+            sprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
+            sprite.spriteName = resourceID.GetIconFilename();
+            _resourceIDLookup.Add(container.gameObject, resourceID);
+
+            var label = container.gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+            label.text = _labelFormat.Inject(Resources.Value.GetYield(resourceID));
         }
     }
 
+    private void OnValuesUnknown() {
+        NGUITools.SetActive(_unknownLabel.gameObject, true);
+    }
+
+    /// <summary>
+    /// Resets this GuiElement instance so it can be reused.
+    /// </summary>
     public override void Reset() {
-        base.Reset();
         _resourceContainerLookup.Values.ForAll(container => {
             NGUITools.SetActive(container.gameObject, false);
         });
         NGUITools.SetActive(_unknownLabel.gameObject, false);
         _resourceIDLookup.Clear();
+        _isResourcesSet = false;
+    }
+
+    protected override void Validate() {
+        base.Validate();
+        D.Assert(resourceCategory != ResourceCategory.None, "{0}.{1} has not been set.".Inject(GetType().Name, typeof(ResourceCategory).Name));
     }
 
     protected override void Cleanup() {
-        base.Cleanup();
         _resourceIDLookup.Keys.ForAll(containerGo => {
             MyNguiEventListener.Get(containerGo).onTooltip -= (go, show) => OnResourceContainerTooltip(go, show);
         });
@@ -197,7 +216,7 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
 
     #region Nested Classes
 
-    public enum Slot {
+    private enum Slot {
         // in the order they should be populated
         TopLeft = 0,
         CenterLeft = 1,
@@ -208,7 +227,6 @@ public class ResourcesGuiElement : GuiElement, IComparable<ResourcesGuiElement> 
     }
 
     #endregion
-
 
 }
 

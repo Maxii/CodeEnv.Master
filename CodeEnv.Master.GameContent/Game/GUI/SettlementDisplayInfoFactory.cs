@@ -37,8 +37,8 @@ namespace CodeEnv.Master.GameContent {
             ContentID.UnitOffense,
             ContentID.UnitDefense,
             ContentID.UnitHealth,
-            ContentID.UnitMaxWeaponsRange,
-            ContentID.UnitMaxSensorRange,
+            ContentID.UnitWeaponsRange,
+            ContentID.UnitSensorRange,
             ContentID.UnitScience,
             ContentID.UnitCulture,
             ContentID.UnitNetIncome,
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 switch (contentID) {
                     case ContentID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != SettlementCategory.None ? report.Category.GetName() : _unknown);
+                        colorizedText = _phrase.Inject(report.Category != SettlementCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
                     case ContentID.Composition:
                         isSuccess = true;

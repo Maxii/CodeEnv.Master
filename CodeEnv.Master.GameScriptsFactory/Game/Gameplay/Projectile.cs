@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Projectile.cs
-// Projectile ordnance on the way to a target containing effects for muzzle flash, inFlight operation and impact.
+// Unguided Projectile ordnance containing effects for muzzle flash, inFlight operation and impact.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,14 +21,13 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Projectile ordnance on the way to a target containing effects for muzzle flash, inFlight operation and impact.
+/// Unguided Projectile ordnance containing effects for muzzle flash, inFlight operation and impact.
 /// </summary>
 public class Projectile : AProjectile {
 
     public GameObject muzzleEffect;
     /// <summary>
-    /// The effect this Projectile will show while operating
-    /// including when the game is paused.
+    /// The effect this Projectile will show while operating including when the game is paused.
     /// </summary>
     public ParticleSystem operatingEffect;
     public ParticleSystem impactEffect;

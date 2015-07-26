@@ -59,6 +59,7 @@
     <Compile Include="ACombatItemModel.cs" />
     <Compile Include="ACommandData.cs" />
     <Compile Include="ACommandStats.cs" />
+    <Compile Include="ActiveAIPlayersManager.cs" />
     <Compile Include="AElementData.cs" />
     <Compile Include="AElementStats.cs" />
     <Compile Include="AFocusableItem.cs" />
@@ -77,6 +78,8 @@
     <Compile Include="AGuiPopupList.cs" />
     <Compile Include="AGuiStringPopupList.cs" />
     <Compile Include="AHud.cs" />
+    <Compile Include="AHudForm.cs" />
+    <Compile Include="AHudFormContent.cs" />
     <Compile Include="AHudManager.cs" />
     <Compile Include="AIconInfo.cs" />
     <Compile Include="AIconInfoFactory.cs" />
@@ -88,6 +91,7 @@
     <Compile Include="AItemModel.cs" />
     <Compile Include="AItemPresenter.cs" />
     <Compile Include="AItemStats.cs" />
+    <Compile Include="AItemTableRowHudForm.cs" />
     <Compile Include="AItemView.cs" />
     <Compile Include="ALabelFormatter.cs" />
     <Compile Include="ALabelFormatterBase.cs" />
@@ -127,6 +131,7 @@
     <Compile Include="BaseOrder.cs" />
     <Compile Include="BasesScreenManager.cs" />
     <Compile Include="BaseState.cs" />
+    <Compile Include="BeamWeaponStat.cs" />
     <Compile Include="BuildNewGameEvent.cs" />
     <Compile Include="CameraControl.cs" />
     <Compile Include="CameraControl_1.cs" />
@@ -221,7 +226,11 @@
     <Compile Include="GuiHudTextFactory.cs" />
     <Compile Include="GuiLabelText.cs" />
     <Compile Include="GuiLocationElement.cs" />
+    <Compile Include="GuiMenuCancelButton.cs" />
+    <Compile Include="GuiNewGameMenuLaunchButton.cs" />
     <Compile Include="GuiPauseRequestEvent.cs" />
+    <Compile Include="GuiPlayerColorPopupList.cs" />
+    <Compile Include="GuiPrefabLinker.cs" />
     <Compile Include="GuiSelectedReadout.cs" />
     <Compile Include="GuiSizeElement.cs" />
     <Compile Include="GuiStrengthElement.cs" />
@@ -240,9 +249,13 @@
     <Compile Include="GuiUniverseSizeSetting.cs" />
     <Compile Include="GameClockGuiManager.cs" />
     <Compile Include="GameOptionsGuiManager.cs" />
+    <Compile Include="GuiVisibilityMode.cs" />
+    <Compile Include="GuiVisibilityModeControlButton.cs" />
+    <Compile Include="GuiVisibilityModeControlButtonEditor.cs" />
     <Compile Include="GuiZoomOutOnCursorOption.cs" />
     <Compile Include="HealthGuiElement.cs" />
     <Compile Include="Helm.cs" />
+    <Compile Include="HudFormID.cs" />
     <Compile Include="HudPublisher.cs" />
     <Compile Include="HumanPlayer.cs" />
     <Compile Include="IAllPlayersKnowledge.cs" />
@@ -368,15 +381,21 @@
     <Compile Include="PlanetPresenter.cs" />
     <Compile Include="PlanetView.cs" />
     <Compile Include="PlasmaBeam.cs" />
+    <Compile Include="PlayerColorManager.cs" />
     <Compile Include="PlayerPrefsManager.cs" />
     <Compile Include="PlayerPrefsManager1.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
+    <Compile Include="Race.cs" />
+    <Compile Include="RaceStat.cs" />
     <Compile Include="RangeTracker.cs" />
     <Compile Include="RareResourceExtensions.cs" />
     <Compile Include="RareResourceID.cs" />
     <Compile Include="RareResourcesGuiElement.cs" />
     <Compile Include="RareResourceYield.cs" />
+    <Compile Include="ReportHudFormContent.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
+    <Compile Include="ResourceHudForm.cs" />
+    <Compile Include="ResourceHudFormContent.cs" />
     <Compile Include="ResourceInfo.cs" />
     <Compile Include="ResourceInfoFactory.cs" />
     <Compile Include="RowGuiElement.cs" />
@@ -398,6 +417,9 @@
     <Compile Include="SectorView.cs" />
     <Compile Include="SeekerMissile.cs" />
     <Compile Include="SeekerProjectile.cs" />
+    <Compile Include="SelectedItemHudForm.cs" />
+    <Compile Include="SelectedItemHudFormContent.cs" />
+    <Compile Include="SelectedSettlementHudForm.cs" />
     <Compile Include="SettlementCmdData.cs" />
     <Compile Include="SettlementCmdModel.cs" />
     <Compile Include="SettlementCmdPresenter.cs" />
@@ -471,6 +493,7 @@
     <Compile Include="StarView.cs" />
     <Compile Include="StationaryItem.cs" />
     <Compile Include="StrategicResourcesGuiElement.cs" />
+    <Compile Include="StrengthGuiElement.cs" />
     <Compile Include="SystemComposition.cs" />
     <Compile Include="SystemCreator.cs" />
     <Compile Include="SystemCtxControl_Player.cs" />
@@ -488,6 +511,8 @@
     <Compile Include="SystemsScreenManager.cs" />
     <Compile Include="SystemView.cs" />
     <Compile Include="TableRowOrganizer.cs" />
+    <Compile Include="TextHudForm.cs" />
+    <Compile Include="TextHudFormContent.cs" />
     <Compile Include="Tooltip.cs" />
     <Compile Include="TransformExtensions.cs" />
     <Compile Include="TriggerTracker.cs" />

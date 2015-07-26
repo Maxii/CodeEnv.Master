@@ -95,7 +95,7 @@ public class SeekerMissile : AOrdnance {
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    public override void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
+    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         base.Initiate(target, weapon, toShowEffects);
         weapon.OnFiringInitiated(target, this);
         _launchPosition = _transform.position;
@@ -179,7 +179,7 @@ public class SeekerMissile : AOrdnance {
     protected override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
         D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
-            Name, ((Layers)(gameObject.layer)).GetName(), collision.collider.name, ((Layers)collision.collider.gameObject.layer).GetName());
+            Name, ((Layers)(gameObject.layer)).GetValueName(), collision.collider.name, ((Layers)collision.collider.gameObject.layer).GetValueName());
         D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(_transform.position, Target.Position));
         var collidedGo = collision.collider.gameObject;
         var collidedTgt = collidedGo.GetInterface<IElementAttackableTarget>();

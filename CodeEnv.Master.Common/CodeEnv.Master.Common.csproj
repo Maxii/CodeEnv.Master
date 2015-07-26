@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\AXmlReader.cs" />
     <Compile Include="Game\Gameplay\IntelCoverage.cs" />
     <Compile Include="Generic\IO\IGameInputHelper.cs" />
     <Compile Include="Generic\Math\ResponseCurve.cs" />
@@ -76,7 +77,7 @@
     <Compile Include="Generic\Extensions\VectorExtensions.cs" />
     <Compile Include="Generic\Extensions\UnityUtility.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
-    <Compile Include="Generic\IO\AValuesHelper.cs" />
+    <Compile Include="Generic\IO\AXmlPropertyReader.cs" />
     <Compile Include="Game\Gameplay\DiplomaticRelationship.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangingSubscription.cs" />
     <Compile Include="Generic\IO\UnityMouseButton.cs" />
@@ -84,7 +85,7 @@
     <Compile Include="Generic\Framework\APropertyChangeTracking.cs" />
     <Compile Include="Generic\Framework\AEnumValueChangeEvent.cs" />
     <Compile Include="Generic\Framework\GameEventManager.cs" />
-    <Compile Include="Generic\IO\AEnumValuesHelper.cs" />
+    <Compile Include="Generic\IO\AXmlEnumPropertyReader.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />
     <Compile Include="Generic\Math\Mathfx.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />
@@ -95,7 +96,6 @@
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
     <Compile Include="Game\Framework\GamePlayOptionSettings.cs" />
-    <Compile Include="Game\GUI\GuiVisibilityMode.cs" />
     <Compile Include="Game\Framework\SceneLevel.cs" />
     <Compile Include="Generic\_Debug\D.cs" />
     <Compile Include="Generic\_Debug\IInstanceCount.cs" />
@@ -138,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Graphics\" />
+    <Folder Include="Game\GUI\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

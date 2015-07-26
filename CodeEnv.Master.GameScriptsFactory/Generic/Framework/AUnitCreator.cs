@@ -281,49 +281,45 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private IList<WeaponStat> __CreateAvailableWeaponsStats(int quantity) {
         IList<WeaponStat> statsList = new List<WeaponStat>(quantity);
         for (int i = 0; i < quantity; i++) {
-            DistanceRange range;
+            RangeDistanceCategory rangeCat;
             float accuracy;
             float reloadPeriod;
             string name;
             float strengthValue;
-            CombatStrength strength;
-            WeaponStat weapStat;
+            float duration = 0F;
             ArmamentCategory armament = Enums<ArmamentCategory>.GetRandomExcept(ArmamentCategory.None);
             //ArmamentCategory armament = ArmamentCategory.Beam;
             //ArmamentCategory armament = ArmamentCategory.Projectile;
             //ArmamentCategory armament = ArmamentCategory.Missile;
             switch (armament) {
                 case ArmamentCategory.Beam:
-                    range = DistanceRange.Short;
+                    rangeCat = RangeDistanceCategory.Short;
                     accuracy = UnityEngine.Random.Range(0.90F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(3F, 5F);
-                    name = "BeamPlatform";
-                    float duration = 2F;
+                    name = "Phaser";
+                    duration = 2F;
                     strengthValue = UnityEngine.Random.Range(6F, 8F);
-                    strength = new CombatStrength(armament, strengthValue);
-                    weapStat = new BeamWeaponStat(armament, strength, range, accuracy, reloadPeriod, 0F, 0F, duration, name);
                     break;
                 case ArmamentCategory.Missile:
-                    range = DistanceRange.Long;
+                    rangeCat = RangeDistanceCategory.Long;
                     accuracy = UnityEngine.Random.Range(0.95F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(4F, 6F);
-                    name = "MissileLauncher";
+                    name = "PhotonTorpedo";
                     strengthValue = UnityEngine.Random.Range(5F, 6F);
-                    strength = new CombatStrength(armament, strengthValue);
-                    weapStat = new WeaponStat(armament, strength, range, accuracy, reloadPeriod, 0F, 0F, name);
                     break;
                 case ArmamentCategory.Projectile:
-                    range = DistanceRange.Medium;
-                    accuracy = UnityEngine.Random.Range(0.90F, Constants.OneF);
+                    rangeCat = RangeDistanceCategory.Medium;
+                    accuracy = UnityEngine.Random.Range(0.80F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(2F, 4F);
-                    name = "ProjectileLauncher";
+                    name = "KineticKiller";
                     strengthValue = UnityEngine.Random.Range(4F, 5F);
-                    strength = new CombatStrength(armament, strengthValue);
-                    weapStat = new WeaponStat(armament, strength, range, accuracy, reloadPeriod, 0F, 0F, name);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }
+            float baseRangeDistance = rangeCat.GetBaseWeaponRange();
+            var strength = new CombatStrength(armament, strengthValue);
+            var weapStat = new WeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, rangeCat, baseRangeDistance, armament, strength, accuracy, reloadPeriod, duration);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -334,24 +330,29 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
             float strengthValue;
+            float accuracy;
             ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
             switch (armament) {
                 case ArmamentCategory.Beam:
-                    name = "Shields";
+                    name = "Shield";
                     strengthValue = UnityEngine.Random.Range(1F, 5F);
+                    accuracy = Constants.OneHundredPercent;
                     break;
                 case ArmamentCategory.Missile:
+                    name = "Chaff";
                     strengthValue = UnityEngine.Random.Range(3F, 8F);
+                    accuracy = UnityEngine.Random.Range(0.40F, 0.80F);
                     break;
                 case ArmamentCategory.Projectile:
                     name = "Armor";
                     strengthValue = UnityEngine.Random.Range(2F, 3F);
+                    accuracy = UnityEngine.Random.Range(0.95F, Constants.OneHundredPercent);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }
             CombatStrength strength = new CombatStrength(armament, strengthValue);
-            CountermeasureStat countermeasuresStat = new CountermeasureStat(strength, 0F, 0F, name);
+            CountermeasureStat countermeasuresStat = new CountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, strength, accuracy);
             statsList.Add(countermeasuresStat);
         }
         return statsList;
@@ -361,23 +362,25 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         IList<SensorStat> statsList = new List<SensorStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
-            DistanceRange range = Enums<DistanceRange>.GetRandom(excludeDefault: true);
-            //DistanceRange range = DistanceRange.Long;
-            switch (range) {
-                case DistanceRange.Short:
+            RangeDistanceCategory rangeCat = Enums<RangeDistanceCategory>.GetRandom(excludeDefault: true);
+            //DistanceRange rangeCat = DistanceRange.Long;
+            switch (rangeCat) {
+                case RangeDistanceCategory.Short:
                     name = "ProximityDetector";
                     break;
-                case DistanceRange.Medium:
-                    name = "RegularSensors";
+                case RangeDistanceCategory.Medium:
+                    name = "PulseSensor";
                     break;
-                case DistanceRange.Long:
+                case RangeDistanceCategory.Long:
                     name = "DeepScanArray";
                     break;
-                case DistanceRange.None:
+                case RangeDistanceCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(range));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
             }
-            var sensorStat = new SensorStat(range, 0F, 0F, name);
+            var baseRangeSpread = rangeCat.__GetBaseSensorRangeSpread();
+            float baseRangeDistance = UnityEngine.Random.Range(baseRangeSpread.Minimum, baseRangeSpread.Maximum);
+            var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, rangeCat, baseRangeDistance);
             statsList.Add(sensorStat);
         }
         return statsList;
@@ -584,12 +587,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         IEnumerable<Player> aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(userPlayer) == desiredRelationship);
 
         if (!aiOwnerCandidates.Any()) {
-            D.Log("{0}.{1} couldn't find an AIPlayer with desired user relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetName());
+            D.Log("{0}.{1} couldn't find an AIPlayer with desired user relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetValueName());
             desiredRelationship = DiplomaticRelationship.None;
             aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(userPlayer) == desiredRelationship);
         }
         Player aiOwner = aiOwnerCandidates.Shuffle().First();
-        D.Log("{0}.{1} picked AI Owner {2}. User relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetName());
+        D.Log("{0}.{1} picked AI Owner {2}. User relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetValueName());
         return aiOwner;
     }
 

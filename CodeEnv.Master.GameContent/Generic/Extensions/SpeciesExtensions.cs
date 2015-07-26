@@ -22,7 +22,6 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Extension methods for Species and SpeciesGuiSelection values.
-    /// TODO Externalize values in XML.
     /// </summary>
     public static class SpeciesExtensions {
 
@@ -56,91 +55,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public static float GetWeaponRangeModifier(this Species species) {
-            switch (species) {
-                case Species.Human:
-                    return 1.0F;
-                case Species.Borg:
-                    return 1.0F;
-                case Species.Dominion:
-                    return 1.0F;
-                case Species.Ferengi:
-                    return 1.0F;
-                case Species.GodLike:
-                    return 1.0F;
-                case Species.Klingon:
-                    return 1.0F;
-                case Species.Romulan:
-                    return 1.0F;
-                case Species.None:
-                    return 1.0F;    // allows proper return for items with no owner
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
-            }
-        }
-
-        public static float GetSensorRangeModifier(this Species species) {
-            switch (species) {
-                case Species.Human:
-                    return 1.0F;
-                case Species.Borg:
-                    return 1.0F;
-                case Species.Dominion:
-                    return 1.0F;
-                case Species.Ferengi:
-                    return 1.0F;
-                case Species.GodLike:
-                    return 1.0F;
-                case Species.Klingon:
-                    return 1.0F;
-                case Species.Romulan:
-                    return 1.0F;
-                case Species.None:
-                    return 1.0F;    // allows proper return for items with no owner
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
-            }
-        }
-
-        public static float GetWeaponReloadTimeModifier(this Species species) {
-            switch (species) {
-                case Species.Human:
-                    return 1.0F;
-                case Species.Borg:
-                    return 1.07F;
-                case Species.Dominion:
-                    return 1.05F;
-                case Species.Ferengi:
-                    return 0.9F;
-                case Species.GodLike:
-                    return 1.1F;
-                case Species.Klingon:
-                    return 1.02F;
-                case Species.Romulan:
-                    return 0.99F;
-                case Species.None:
-                    return 1.0F;    // allows proper return for items with no owner
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
-            }
-        }
-
-        public static string GetImageFilename(this Species species) {
-            switch (species) {
-                case Species.Human:
-                case Species.Borg:
-                case Species.Dominion:
-                case Species.Ferengi:
-                case Species.GodLike:
-                case Species.Klingon:
-                case Species.Romulan:
-                    return TempGameValues.AnImageFilename;
-                case Species.None:
-                    return "None";
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
-            }
-        }
     }
 }
 

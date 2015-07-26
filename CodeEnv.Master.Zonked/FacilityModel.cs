@@ -67,7 +67,7 @@ public class FacilityModel : AUnitElementModel {
 
     protected override void InitializeRadiiComponents() {
         base.InitializeRadiiComponents();
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
         // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
         // D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
@@ -136,7 +136,7 @@ public class FacilityModel : AUnitElementModel {
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetName());
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
@@ -144,7 +144,7 @@ public class FacilityModel : AUnitElementModel {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReady(Weapon weapon) {
+    void Idling_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -174,12 +174,12 @@ public class FacilityModel : AUnitElementModel {
         CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         if (_primaryTarget != null) {
             _attackTarget = _primaryTarget;
             _attackStrength = weapon.Strength;
-            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetValueName());
             Call(FacilityState.Attacking);
         }
         else {
@@ -228,7 +228,7 @@ public class FacilityModel : AUnitElementModel {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -254,7 +254,7 @@ public class FacilityModel : AUnitElementModel {
         Return();
     }
 
-    void Repairing_OnWeaponReady(Weapon weapon) {
+    void Repairing_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -321,15 +321,15 @@ public class FacilityModel : AUnitElementModel {
     /// Attempts to fire the provided weapon at a target within range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void TryFireOnAnyTarget(Weapon weapon) {
+    private void TryFireOnAnyTarget(AWeapon weapon) {
         if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetValueName());
             //_attackDamage = weapon.Damage;
             _attackStrength = weapon.Strength;
             Call(FacilityState.Attacking);
         }
         else {
-            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
+            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetValueName());
         }
     }
 
@@ -454,7 +454,7 @@ public class FacilityModel : AUnitElementModel {
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FacilityDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FacilityDirective.Attack:

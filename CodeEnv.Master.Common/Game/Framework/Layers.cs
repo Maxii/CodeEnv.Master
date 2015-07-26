@@ -53,7 +53,7 @@ namespace CodeEnv.Master.Common {
         /// to be masked off which keeps it from responding to Ngui events.
         /// Includes partial screen menus, fullScreen menus, dialogs and ContextMenus.
         /// </summary>
-        UIPopup = 12,
+        //UIPopup = 12, // No longer used 6.7.15
 
         /************************************************************************************************
                     * These 4 layers exist to allow the MainCamera to automatically cull the meshes present 

@@ -318,7 +318,7 @@ namespace CodeEnv.Master.GameContent {
             if (_ship.IsBearingConfirmed) {
                 if (_ship.ChangeSpeed(Speed, isAutoPilot: true)) {
                     D.Log("{0} heading confirmed. Adjusting speed to {1}. Heading deviation is {2:0.00} degrees.",
-                        _ship.FullName, Speed.GetName(), Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
+                        _ship.FullName, Speed.GetValueName(), Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
                     //D.Log("CurrentHeading = {0}, RequestedHeading = {1}.", Data.CurrentHeading, Data.RequestedHeading);
                 }
                 return true;

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -89,23 +89,45 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// to call to initiate death. Donot use OnDeath or set IsOperational or set a state of Dead.
     /// Note: the primary reason is to make sure IsOperational immediately reflects the death
     /// and can be used right away to check for it. Use of a state of Dead for the filter 
-    /// can also work as it is changed immediately too. However, the previous implementation
-    /// had IsOperational being set when the Dead EnterState ran, which can be a whole frame later,
-    /// given the way the state machine works. This approach keeps IsOperational and Dead in sync.
+    /// can also work as it is changed immediately too. 
+    /// <remarks>The previous implementation had IsOperational being set when the Dead 
+    /// EnterState ran, which could be a whole frame later, given the way the state machine works. 
+    /// This approach keeps IsOperational and Dead in sync.
+    /// </remarks>
     /// </summary>
-    protected virtual void InitiateDeath() {
-        D.Log("{0}.InitiateDeath() called.", FullName);
+    protected void InitiateDeath() {
+        D.Log("{0} is initiating death sequence.", FullName);
         IsOperational = false;
+        SetDeadState();
+        PrepareForOnDeathNotification();
         OnDeath();
+        CleanupAfterOnDeathNotification();
     }
 
-    protected virtual void OnDeath() {
+    /// <summary>
+    ///Derived classes should set a state of Dead in their state machines.
+    /// </summary>
+    protected abstract void SetDeadState();
+
+    /// <summary>
+    /// Executes any preparation work prior to broadcasting the OnDeath event.
+    /// </summary>
+    protected virtual void PrepareForOnDeathNotification() {
+        if (IsFocus) { References.MainCameraControl.CurrentFocus = null; }
+        Data.Countermeasures.ForAll(cm => cm.IsOperational = false);
+    }
+
+    private void OnDeath() {
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
         }
-        if (IsFocus) { References.MainCameraControl.CurrentFocus = null; }
     }
+
+    /// <summary>
+    /// Executes any cleanup work required after the OnDeath event has been broadcast.
+    /// </summary>
+    protected virtual void CleanupAfterOnDeathNotification() { }
 
     #endregion
 

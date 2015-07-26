@@ -107,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
             DefensiveStrength = Countermeasures.Where(cm => cm.IsOperational).Select(cm => cm.Strength).Aggregate(defaultValueIfEmpty, (accum, cmStrength) => accum + cmStrength);
         }
 
-        private void OnCountermeasureIsOperationalChanged(Countermeasure cm) {
+        private void OnCountermeasureIsOperationalChanged(AEquipment cm) {
             D.Log("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
             RecalcDefensiveStrength();
         }

@@ -49,7 +49,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     protected override void Awake() {
         base.Awake();
         Target = _transform;
-        _orbitalPlane = gameObject.GetSafeMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>();
+        _orbitalPlane = gameObject.GetSafeFirstMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>();
         _systemManager = gameObject.GetSafeMonoBehaviour<SystemCreator>();
         _trackingLabelFactory = TrackingWidgetFactory.Instance;
         maxAnimateDistance = GraphicsSettings.Instance.MaxSystemAnimateDistance;
@@ -66,7 +66,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     protected override void RegisterComponentsToDisable() {
         disableGameObjectOnNotDiscernible = new GameObject[1] { _systemHighlightRenderer.gameObject };
 
-        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>().collider };
+        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeFirstMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>().collider };
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
             .Where<Renderer>(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray<Renderer>();
         if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
@@ -137,7 +137,7 @@ public class SystemGraphics : AGraphics, IDisposable {
 
     private GuiTrackingLabel InitializeTrackingLabel() {
         __SetTrackingLabelShowDistance();
-        Star star = gameObject.GetSafeMonoBehaviourInChildren<Star>();
+        Star star = gameObject.GetSafeFirstMonoBehaviourInChildren<Star>();
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, star.transform.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = _trackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;

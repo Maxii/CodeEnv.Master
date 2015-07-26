@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract base class for Gui elements that are part of a menu with an Accept button.
 /// </summary>
-public abstract class AGuiMenuElement : AGuiTooltip {
+public abstract class AGuiMenuElement : ATextTooltip {
 
     /// <summary>
     /// Unique ID for this Gui Element.

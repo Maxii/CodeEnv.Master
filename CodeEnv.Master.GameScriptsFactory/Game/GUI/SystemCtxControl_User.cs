@@ -151,7 +151,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _systemMenuOperator.FullName, directive.GetName(), msg);
+        D.Log("{0} selected directive {1} and target {2} from context menu.", _systemMenuOperator.FullName, directive.GetValueName(), msg);
         _settlement.CurrentOrder = new BaseOrder(directive, target);
     }
 

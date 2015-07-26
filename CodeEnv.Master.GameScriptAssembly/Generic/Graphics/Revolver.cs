@@ -48,6 +48,7 @@ public class Revolver : AMonoBase, IRevolver {
     /// </summary>
     private float _rotationSpeed;
     private GameTime _gameTime;
+    private IList<IDisposable> _subscriptions;
 
     protected override void Awake() {
         base.Awake();
@@ -57,10 +58,16 @@ public class Revolver : AMonoBase, IRevolver {
         var rotationSpeedInDegreesPerHour = relativeRotationSpeed * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;
         _rotationSpeed = rotationSpeedInDegreesPerHour * GameTime.HoursPerSecond;
         UpdateRate = FrameUpdateFrequency.Frequent;
+        Subscribe();
         enabled = false;
     }
 
-    // Note: Revolvers no longer control their own enabled state based on visibility as I also need to control it based on IntelCoverage
+    private void Subscribe() {
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(References.GameManager.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, OnIsRunningChanged));
+    }
+
+    // Note: Revolvers no longer control their own enabled state based on visibility as DisplayManagers also need to control it based on IntelCoverage
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -80,7 +87,20 @@ public class Revolver : AMonoBase, IRevolver {
         _transform.Rotate(axisOfRotation, degreesToRotate, relativeTo: Space.Self);
     }
 
-    protected override void Cleanup() { }
+    private void OnIsRunningChanged() {
+        if (!References.GameManager.IsRunning) {
+            enabled = false;    // stop accessing GameTime once GameInstance is no longer running
+        }
+    }
+
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

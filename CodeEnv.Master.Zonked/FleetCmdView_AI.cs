@@ -62,7 +62,7 @@ public class FleetCmdView_AI : FleetCmdView {
             var desiredfleetMenuItems = new CtxMenu.Item[_aiFleetMenuOrders.Length];
             for (int i = 0; i < _aiFleetMenuOrders.Length; i++) {
                 var item = new CtxMenu.Item();
-                item.text = _aiFleetMenuOrders[i].GetName();    // IMPROVE GetDescription would be better for the context menu display
+                item.text = _aiFleetMenuOrders[i].GetValueName();    // IMPROVE GetDescription would be better for the context menu display
                 item.id = i;
                 desiredfleetMenuItems[i] = item;
             }

@@ -168,7 +168,7 @@ public class FleetItem : AItemModel {
     public void AddShip(ShipModel ship) {
         Ships.Add(ship);
         Data.AddShip(ship.Data);
-        Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>().transform;
+        Transform parentFleetTransform = gameObject.GetSafeFirstMonoBehaviourInParents<FleetUnitCreator>().transform;
         if (ship.transform.parent != parentFleetTransform) {
             ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }

@@ -25,6 +25,11 @@ using UnityEditor;
 [CustomEditor(typeof(GuiWindow))]
 public class GuiWindowEditor : AGuiWindowEditor<GuiWindow> {
 
+    protected override void DrawDerivedClassProperties() {
+        base.DrawDerivedClassProperties();
+        NGUIEditorTools.DrawProperty("Content Holder", serializedObject, "contentHolder");
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

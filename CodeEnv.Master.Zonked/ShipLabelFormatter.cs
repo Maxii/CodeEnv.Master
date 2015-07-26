@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
             IColoredTextList content = IncludeUnknown ? _unknownValue : _emptyValue;
             switch (lineID) {
                 case LabelLineID.IntelCoverage:
-                    content = new ColoredTextList_String(Report.IntelCoverage.GetName());
+                    content = new ColoredTextList_String(Report.IntelCoverage.GetValueName());
                     break;
                 case LabelLineID.Name:
                     content = Report.Name != null ? new ColoredTextList_String(Report.Name) : content;
@@ -102,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
                     content = Report.Target != null ? new ColoredTextList_String(Report.Target.DisplayName) : content;
                     break;
                 case LabelLineID.CombatStance:
-                    content = Report.CombatStance != ShipCombatStance.None ? new ColoredTextList<ShipCombatStance>(Report.CombatStance.GetName()) : content;
+                    content = Report.CombatStance != ShipCombatStance.None ? new ColoredTextList<ShipCombatStance>(Report.CombatStance.GetValueName()) : content;
                     break;
                 case LabelLineID.CurrentSpeed:
                     content = Report.CurrentSpeed.HasValue ? new ColoredTextList<float>(Report.CurrentSpeed.Value) : content;

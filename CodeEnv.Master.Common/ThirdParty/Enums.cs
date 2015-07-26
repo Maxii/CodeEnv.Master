@@ -92,6 +92,15 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Gets all the values of the Enum Type E except those provided.
+        /// </summary>
+        /// <param name="exceptions">The exceptions.</param>
+        /// <returns></returns>
+        public static IEnumerable<E> GetValuesExcept(params E[] exceptions) {
+            return All.Except(exceptions);
+        }
+
+        /// <summary>
         /// Gets the names of all Type E constants.
         /// </summary>
         /// <param name="excludeDefault">if set to <c>true</c> [exclude default].</param>
@@ -247,13 +256,23 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Gets a random Enum constant of Type Efrom the array of Type E enums provided.
+        /// Gets a random Enum constant of Type E from the array of Type E enums provided.
         /// </summary>
         /// <param name="values">The enum values to select from.</param>
         /// <returns></returns>
         public static E GetRandomFrom(E[] values) {
             return values[_rng.Next(values.Length)];
         }
+
+        /// <summary>
+        /// Gets a random Enum constant of Type E from the list of Type E enums provided.
+        /// </summary>
+        /// <param name="values">The enum values to select from.</param>
+        /// <returns></returns>
+        public static E GetRandomFrom(IList<E> values) {
+            return values[_rng.Next(values.Count)];
+        }
+
     }
 }
 

@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
                     content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != StarCategory.None ? new ColoredTextList_String(report.Category.GetName()) : content;
+                    content = report.Category != StarCategory.None ? new ColoredTextList_String(report.Category.GetValueName()) : content;
                     break;
                 case LabelContentID.Capacity:
                     content = report.Capacity.HasValue ? new ColoredTextList<int>(GetFormat(contentID), report.Capacity.Value) : content;

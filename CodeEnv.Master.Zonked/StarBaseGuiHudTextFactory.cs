@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.CombatStrengthDetails:
                     return new ColoredTextList_Combat(data.UnitOffensiveStrength, data.UnitDefensiveStrength);
                 case GuiHudLineKeys.Category:
-                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetEnumAttributeText());
+                    return new ColoredTextList_String(data.Category.GetValueName(), data.Category.GetEnumAttributeText());
 
                 case GuiHudLineKeys.Composition:
                 //return new ColoredTextList_Composition(data.Composition); // FIXME ColoredTextList_Composition is Fleet-specific

@@ -53,6 +53,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\ATableWindowEditor.cs" />
+    <Compile Include="Game\FleetsTableWindowEditor.cs" />
+    <Compile Include="Game\AnimateOnHoverEditor.cs" />
     <Compile Include="Generic\AGuiWindowEditor.cs" />
     <Compile Include="Game\DestroyEffectOnCompletionEditor.cs" />
     <Compile Include="Game\FleetCreatorEditor.cs" />
@@ -60,10 +63,14 @@
     <Compile Include="Game\SettlementCreatorEditor.cs" />
     <Compile Include="Game\StarbaseCreatorEditor.cs" />
     <Compile Include="Game\SystemCreatorEditor.cs" />
-    <Compile Include="Game\GuiVisibilityModeControlButtonEditor.cs" />
     <Compile Include="Game\GuiWindowEditor.cs" />
-    <Compile Include="Game\ItemHudEditor.cs" />
-    <Compile Include="Game\SelectionHudEditor.cs" />
+    <Compile Include="Game\HoveredItemHudEditor.cs" />
+    <Compile Include="Game\SelectedItemHudEditor.cs" />
+    <Compile Include="Game\SettlementsTableWindowEditor.cs" />
+    <Compile Include="Game\StarbasesTableWindowEditor.cs" />
+    <Compile Include="Game\SystemsTableWindowEditor.cs" />
+    <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
+    <Compile Include="Game\StrengthGuiElementEditor.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />
     <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />
     <Compile Include="Generic\DebugSettingsWindow.cs" />

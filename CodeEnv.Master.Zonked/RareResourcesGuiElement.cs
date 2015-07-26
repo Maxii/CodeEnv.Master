@@ -88,7 +88,7 @@ public class RareResourcesGuiElement : GuiElement, IComparable<RareResourcesGuiE
             NGUITools.SetActive(s.gameObject, false);
         });
 
-        _unknownLabel = gameObject.GetSafeMonoBehaviourInImmediateChildren<UILabel>();
+        _unknownLabel = gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<UILabel>();
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
 

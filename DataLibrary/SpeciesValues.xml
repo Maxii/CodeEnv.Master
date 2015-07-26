@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+
+<Values>
+  <Species SpeciesName="Human">
+      <PluralName>Humans</PluralName>
+      <Description>Human Description...</Description>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+      <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+      <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+  <Species SpeciesName="Klingon">
+    <PluralName>Klingons</PluralName>
+    <Description>Klingon Description...</Description>
+    <ImageAtlasID>MyGui</ImageAtlasID>
+    <ImageFilename>image</ImageFilename>
+    <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+  <Species SpeciesName="Ferengi">
+    <PluralName>Ferengii</PluralName>
+    <Description>Ferengi Description...</Description>
+    <ImageAtlasID>MyGui</ImageAtlasID>
+    <ImageFilename>image</ImageFilename>
+    <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+  <Species SpeciesName="Romulan">
+    <PluralName>Romulans</PluralName>
+    <Description>Romulan Description...</Description>
+    <ImageAtlasID>MyGui</ImageAtlasID>
+    <ImageFilename>image</ImageFilename>
+    <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+  <Species SpeciesName="Borg">
+    <PluralName>Borg</PluralName>
+    <Description>Borg Description...</Description>
+    <ImageAtlasID>MyGui</ImageAtlasID>
+    <ImageFilename>image</ImageFilename>
+    <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+  <Species SpeciesName="Dominion">
+    <PluralName>Dominions</PluralName>
+    <Description>Dominion Description...</Description>
+    <ImageAtlasID>MyGui</ImageAtlasID>
+    <ImageFilename>image</ImageFilename>
+    <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+  <Species SpeciesName="GodLike">
+    <PluralName>GodLikes</PluralName>
+    <Description>GodLike Description...</Description>
+    <ImageAtlasID>MyGui</ImageAtlasID>
+    <ImageFilename>image</ImageFilename>
+    <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
+    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+  </Species>
+</Values>

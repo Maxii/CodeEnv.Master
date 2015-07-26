@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Parses GraphicsSettings.xml providing externalized values to the Properties.
     /// </summary>
-    public sealed class GraphicsSettings : AValuesHelper<GraphicsSettings> {
+    public sealed class GraphicsSettings : AXmlPropertyReader<GraphicsSettings> {
 
         private int _shipLayerCullingDistanceFactor;
         /// <summary>

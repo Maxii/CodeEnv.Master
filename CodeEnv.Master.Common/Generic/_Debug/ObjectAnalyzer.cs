@@ -121,7 +121,7 @@ namespace CodeEnv.Master.Common {
                             object fieldValue = field.GetValue(obj);
                             if (fieldType.IsEnum) {
                                 Enum enumValue = (Enum)fieldValue;
-                                objContentMsg.Append(enumValue.GetName());
+                                objContentMsg.Append(enumValue.GetValueName());
                             }
                             else if (fieldType.IsPrimitive) {
                                 objContentMsg.Append(fieldValue);

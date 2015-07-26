@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for DebugHuds so non-scripts can refer to it.
     /// </summary>
     [System.Obsolete]
-    public interface IDebugHud : IHud {
+    public interface IDebugHud : IHudWindow {
 
         /// <summary>
         /// Simplist way to publishes text for the specified key.

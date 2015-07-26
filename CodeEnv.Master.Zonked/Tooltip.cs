@@ -26,7 +26,7 @@ using UnityEngine;
 /// Singleton. My version of UITooltip with naming changes for better understanding.
 /// </summary>
 [Obsolete]
-public class Tooltip : AMonoSingleton<Tooltip> {
+public class Tooltip : AMonoSingleton<TooltipHudWindow> {
 
     public static bool IsVisible { get { return (_instance != null && _instance._targetVisibility == 1F); } }
 

@@ -39,8 +39,8 @@ public class MoonItem : APlanetoidItem {
 
     #region Model Methods
 
-    protected override void OnDeath() {
-        base.OnDeath();
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
         // TODO consider destroying the orbiter object and separating it from the OrbitSlot
     }
 

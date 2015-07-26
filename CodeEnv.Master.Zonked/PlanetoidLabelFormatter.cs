@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
             IColoredTextList content = IncludeUnknown ? _unknownValue : _emptyValue;
             switch (lineID) {
                 case LabelLineID.IntelCoverage:
-                    content = new ColoredTextList_String(Report.IntelCoverage.GetName());
+                    content = new ColoredTextList_String(Report.IntelCoverage.GetValueName());
                     break;
                 case LabelLineID.Name:
                     content = Report.Name != null ? new ColoredTextList_String(Report.Name) : content;

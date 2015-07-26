@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stat">The stat.</param>
         /// <param name="owner">The owner.</param>
         public StarData(Transform starTransform, StarStat stat, Player owner)
-            : base(starTransform, stat.Category.GetName(), owner) {
+            : base(starTransform, stat.Category.GetValueName(), owner) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.Resources;

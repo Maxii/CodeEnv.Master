@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipPublisher : AIntelItemPublisher<ShipReport, ShipData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return ShipDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

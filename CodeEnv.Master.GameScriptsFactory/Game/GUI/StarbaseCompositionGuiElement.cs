@@ -41,12 +41,14 @@ public class StarbaseCompositionGuiElement : ACompositionGuiElement {
         }
     }
 
-    protected override string GetCategoryName() { return Category.GetName(); }
+    protected override string GetCategoryName() { return Category.GetValueName(); }
 
     public override void Reset() {
         base.Reset();
         _category = default(StarbaseCategory);
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

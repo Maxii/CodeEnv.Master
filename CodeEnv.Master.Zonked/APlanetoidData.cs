@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         public APlanetoidData(PlanetoidStat stat)
-            : base(stat.Category.GetName(), stat.Mass, stat.MaxHitPoints) {
+            : base(stat.Category.GetValueName(), stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.OpeResources;

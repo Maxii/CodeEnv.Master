@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Parses GeneralSettings.xml providing externalized values to the Properties.
     /// </summary>
-    public sealed class GeneralSettings : AValuesHelper<GeneralSettings> {
+    public sealed class GeneralSettings : AXmlPropertyReader<GeneralSettings> {
 
         #region Boolean
 
@@ -143,7 +143,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
         private GeneralSettings() {
             Initialize();

@@ -25,20 +25,20 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameSpeedExtensions {
 
-        private static GameClockSpeedHelper _values = GameClockSpeedHelper.Instance;
+        private static XmlGameSpeedPropertyReader _xmlReader = XmlGameSpeedPropertyReader.Instance;
 
         public static float SpeedMultiplier(this GameSpeed gameSpeed) {
             switch (gameSpeed) {
                 case GameSpeed.Slowest:
-                    return _values.SlowestMultiplier;
+                    return _xmlReader.SlowestMultiplier;
                 case GameSpeed.Slow:
-                    return _values.SlowMultiplier;
+                    return _xmlReader.SlowMultiplier;
                 case GameSpeed.Normal:
-                    return _values.NormalMultiplier;
+                    return _xmlReader.NormalMultiplier;
                 case GameSpeed.Fast:
-                    return _values.FastMultiplier;
+                    return _xmlReader.FastMultiplier;
                 case GameSpeed.Fastest:
-                    return _values.FastestMultiplier;
+                    return _xmlReader.FastestMultiplier;
                 case GameSpeed.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameSpeed));
@@ -46,9 +46,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Parses GameClockSpeed.xml used to provide externalized values for the GameClockSpeed enum.
+        /// Parses GameSpeed.xml used to provide externalized values for the GameSpeed enum.
         /// </summary>
-        public sealed class GameClockSpeedHelper : AEnumValuesHelper<GameClockSpeedHelper> {
+        public sealed class XmlGameSpeedPropertyReader : AXmlEnumPropertyReader<XmlGameSpeedPropertyReader> {
 
             private float _slowestMultiplier;
             public float SlowestMultiplier {
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             protected override Type EnumType { get { return typeof(GameSpeed); } }
 
-            private GameClockSpeedHelper() {
+            private XmlGameSpeedPropertyReader() {
                 Initialize();
             }
 

@@ -26,7 +26,7 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// Base class for Gui Checkboxes built with NGUI.
 /// </summary>
-public abstract class GuiCheckboxBase : GuiTooltip, IDisposable {
+public abstract class GuiCheckboxBase : TextTooltip, IDisposable {
 
     protected GameEventManager eventMgr;
     protected PlayerPrefsManager playerPrefsMgr;

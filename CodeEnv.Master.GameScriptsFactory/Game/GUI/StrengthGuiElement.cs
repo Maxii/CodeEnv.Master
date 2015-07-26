@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StrengthGuiElement.cs
-// GuiElement handling the display and tooltip content for OffensiveStrength, DefensiveStrength and Total Strength. 
+// GuiElement handling the display and tooltip content for OffensiveStrength, DefensiveStrength and Total Strength.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,20 +17,27 @@
 // default namespace
 
 using System;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for OffensiveStrength, DefensiveStrength and Total Strength.  
+/// GuiElement handling the display and tooltip content for OffensiveStrength, DefensiveStrength and Total Strength.   
 /// </summary>
-public class StrengthGuiElement : GuiElement, IComparable<StrengthGuiElement> {
+public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
-    private static string _unknown = Constants.QuestionMark;
-    private static string _labelFormat = Constants.FormatFloat_1DpMax;
     private static string _totalStrengthTooltipFormat = "Offense:" + Constants.NewLine + "{0}"
                                                             + Constants.NewLine +
                                                         "Defense:" + Constants.NewLine + "{1}";
+
+    [Tooltip("The widgets that are present to display the content of this GuiElement.")]
+    public WidgetsPresent widgetsPresent = WidgetsPresent.SumLabel;
+
+    public GuiElementID elementID;
+
+    public override GuiElementID ElementID { get { return elementID; } }
 
     private bool _isOffensiveStrengthSet = false;
     private CombatStrength? _offensiveStrength;
@@ -57,25 +64,43 @@ public class StrengthGuiElement : GuiElement, IComparable<StrengthGuiElement> {
 
     private bool AreAllValuesSet { get { return _isOffensiveStrengthSet && _isDefensiveStrengthSet; } }
 
-    private UILabel _label;
+    private UILabel _combinedValueLabel;
+    private UILabel _detailValuesLabel;
 
-    protected override void Awake() {
+    protected sealed override void Awake() {
         base.Awake();
-        Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        InitializeValuesAndReferences();
+    }
+
+    private void InitializeValuesAndReferences() {
+        var labels = gameObject.GetSafeMonoBehavioursInChildren<UILabel>();
+        switch (widgetsPresent) {
+            case WidgetsPresent.SumLabel:
+                _combinedValueLabel = labels.Single();
+                NGUITools.AddWidgetCollider(gameObject);
+                break;
+            case WidgetsPresent.DetailsLabel:
+                _detailValuesLabel = labels.Single();
+                break;
+            case WidgetsPresent.Both:
+                _detailValuesLabel = labels.Single(l => l.maxLineCount == 3);
+                _combinedValueLabel = labels.Single(l => l != _detailValuesLabel);
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+        }
     }
 
     private void OnOffensiveStrengthSet() {
-        D.Assert(elementID != GuiElementID.DefensiveStrength, "Do not use {0}.OffensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetName()));
+        D.Assert(elementID != GuiElementID.DefensiveStrength, "Do not use {0}.OffensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetValueName()));
         _isOffensiveStrengthSet = true;
-
         if (elementID == GuiElementID.OffensiveStrength || AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
     private void OnDefensiveStrengthSet() {
-        D.Assert(elementID != GuiElementID.OffensiveStrength, "Do not use {0}.DefensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetName()));
+        D.Assert(elementID != GuiElementID.OffensiveStrength, "Do not use {0}.DefensiveStrength when using {1}.{2}.".Inject(GetType().Name, typeof(GuiElementID).Name, elementID.GetValueName()));
         _isDefensiveStrengthSet = true;
         if (elementID == GuiElementID.DefensiveStrength || AreAllValuesSet) {
             PopulateElementWidgets();
@@ -83,45 +108,68 @@ public class StrengthGuiElement : GuiElement, IComparable<StrengthGuiElement> {
     }
 
     private void PopulateElementWidgets() {
-        string labelText = string.Empty;
-        string tooltip = string.Empty;
+        string combinedValueLabelText = _unknown;
+        string detailValuesLabelText = _unknown;
+        string tooltipText = _unknown;
         switch (elementID) {
             case GuiElementID.OffensiveStrength:
-                labelText = OffensiveStrength.HasValue ? _labelFormat.Inject(OffensiveStrength.Value.Combined) : _unknown;
-                tooltip = OffensiveStrength.HasValue ? OffensiveStrength.Value.ToLabel() : _unknown;
+                if (OffensiveStrength.HasValue) {
+                    combinedValueLabelText = OffensiveStrength.Value.Combined.FormatValue(showZero: true);
+                    detailValuesLabelText = OffensiveStrength.Value.ToLabel();
+                    tooltipText = OffensiveStrength.Value.ToLabel();
+                }
                 break;
             case GuiElementID.DefensiveStrength:
-                labelText = DefensiveStrength.HasValue ? _labelFormat.Inject(DefensiveStrength.Value.Combined) : _unknown;
-                tooltip = DefensiveStrength.HasValue ? DefensiveStrength.Value.ToLabel() : _unknown;
+                if (DefensiveStrength.HasValue) {
+                    combinedValueLabelText = DefensiveStrength.Value.Combined.FormatValue(showZero: true);
+                    detailValuesLabelText = DefensiveStrength.Value.ToLabel();
+                    tooltipText = DefensiveStrength.Value.ToLabel();
+                }
                 break;
             case GuiElementID.TotalStrength:
-                CombatStrength? totalStrength = OffensiveStrength + DefensiveStrength;
-                labelText = totalStrength.HasValue ? _labelFormat.Inject(totalStrength.Value.Combined) : _unknown;
-                tooltip = GetTotalStrengthTooltip();
+                var totalStrength = OffensiveStrength + DefensiveStrength;
+                if (totalStrength.HasValue) {
+                    combinedValueLabelText = totalStrength.Value.Combined.FormatValue(showZero: true);
+                }
+                tooltipText = ConstructTotalStrengthTooltip();
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(elementID));
         }
-        _label.text = labelText;
-        _tooltipContent = tooltip;
+
+        if (widgetsPresent != WidgetsPresent.DetailsLabel) {
+            _combinedValueLabel.text = combinedValueLabelText;
+        }
+        if (widgetsPresent != WidgetsPresent.SumLabel) {
+            _detailValuesLabel.text = detailValuesLabelText;
+        }
+        if (widgetsPresent == WidgetsPresent.SumLabel) {
+            _tooltipContent = tooltipText;
+        }
     }
 
-    private string GetTotalStrengthTooltip() {
+    private string ConstructTotalStrengthTooltip() {
         string offensiveText = OffensiveStrength.HasValue ? OffensiveStrength.Value.ToLabel() : _unknown;
         string defensiveText = DefensiveStrength.HasValue ? DefensiveStrength.Value.ToLabel() : _unknown;
         return _totalStrengthTooltipFormat.Inject(offensiveText, defensiveText);
     }
 
     public override void Reset() {
-        base.Reset();
         _isDefensiveStrengthSet = false;
         _isOffensiveStrengthSet = false;
     }
 
-    private void Validate() {
-        D.Assert(elementID == GuiElementID.OffensiveStrength || elementID == GuiElementID.DefensiveStrength
-            || elementID == GuiElementID.TotalStrength, "{0} has illegal ElementID: {1}.".Inject(GetType().Name, elementID.GetName()));
+    protected override void Validate() {
+        base.Validate();
+        D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength
+        || ElementID == GuiElementID.TotalStrength, "{0} has illegal ElementID: {1}.".Inject(GetType().Name, ElementID.GetValueName()));
+
+        if (ElementID == GuiElementID.TotalStrength) {
+            D.Assert(widgetsPresent == WidgetsPresent.SumLabel);
+        }
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -159,6 +207,31 @@ public class StrengthGuiElement : GuiElement, IComparable<StrengthGuiElement> {
             result = !otherStrengthToCompare.HasValue ? Constants.One : strengthToCompare.Value.CompareTo(otherStrengthToCompare.Value);
         }
         return result;
+    }
+
+    #endregion
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum that identifies the Widgets that are present in this GuiElement.
+    /// </summary>
+    public enum WidgetsPresent {
+
+        /// <summary>
+        /// A label  for showing a single value to represent this GuiElement.
+        /// </summary>
+        SumLabel,
+
+        /// <summary>
+        /// A label for showing multiple detailed values to represent this GuiElement.
+        /// </summary>
+        DetailsLabel,
+
+        /// <summary>
+        /// Both widgets are present.
+        /// </summary>
+        Both
     }
 
     #endregion

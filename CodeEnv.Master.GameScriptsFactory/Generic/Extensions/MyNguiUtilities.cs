@@ -37,25 +37,5 @@ public static class MyNguiUtilities {
         return orderedSliderStepValues;
     }
 
-    /// <summary>
-    /// Gets the Ngui UIAtlas ID'd by atlasID from RequiredPrefabs.
-    /// </summary>
-    /// <param name="atlasID">The atlas ID.</param>
-    /// <returns></returns>
-    /// <exception cref="System.NotImplementedException"></exception>
-    public static UIAtlas GetAtlas(AtlasID atlasID) {
-        switch (atlasID) {
-            case AtlasID.Fleet:
-                return RequiredPrefabs.Instance.fleetIconAtlas;
-            case AtlasID.Contextual:
-                return RequiredPrefabs.Instance.contextualAtlas;
-            case AtlasID.MyGui:
-                return RequiredPrefabs.Instance.myGuiAtlas;
-            case AtlasID.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(atlasID));
-        }
-    }
-
 }
 

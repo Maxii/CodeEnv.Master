@@ -154,7 +154,7 @@ namespace CodeEnv.Master.GameContent {
         protected string GetFormat(LabelContentID contentID) {
             string valueFormat;
             if (!_defaultNumberFormatLookup.TryGetValue(contentID, out valueFormat)) {
-                D.Warn("{0} reports no default numerical format for {1} found.", GetType().Name, contentID.GetName());
+                D.Warn("{0} reports no default numerical format for {1} found.", GetType().Name, contentID.GetValueName());
                 valueFormat = "{0}";
             }
             return valueFormat;
@@ -179,7 +179,7 @@ namespace CodeEnv.Master.GameContent {
         protected string GetDefaultPhrase(LabelContentID contentID) {
             string defaultPhrase;
             if (!_defaultPhraseLookup.TryGetValue(contentID, out defaultPhrase)) {
-                D.Warn("{0} reports no defaultPhrase for {1} found.", GetType().Name, contentID.GetName());
+                D.Warn("{0} reports no defaultPhrase for {1} found.", GetType().Name, contentID.GetValueName());
                 defaultPhrase = "DefaultPhrase {0}";
             }
             return defaultPhrase;
@@ -195,7 +195,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             private string ConstructIntelText(AIntel intel) {
-                string intelMsg = intel.CurrentCoverage.GetName();
+                string intelMsg = intel.CurrentCoverage.GetValueName();
                 string addendum = ". Intel is current.";
                 var intelWithDatedCoverage = intel as Intel;
                 if (intelWithDatedCoverage != null && intelWithDatedCoverage.IsDatedCoverageValid) {

@@ -39,7 +39,7 @@ public class Billboard : AMonoBase, IBillboard {
     }
 
     private void CheckForUIPanelPresenceInParents() {
-        if (gameObject.GetComponentInParents<UIPanel>() != null) {
+        if (gameObject.GetFirstComponentInParents<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
             D.WarnContext("{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.".Inject(GetType().Name), this);
         }

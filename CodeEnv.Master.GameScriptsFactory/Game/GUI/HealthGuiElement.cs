@@ -18,22 +18,19 @@
 
 using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Health of an Item.      
 /// </summary>
-public class HealthGuiElement : GuiElement, IComparable<HealthGuiElement> {
-
-    private static string _unknown = Constants.QuestionMark;
+public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiElement> {
 
     /// <summary>
-    /// Tooltip format. Health percentage followed by CurrentHitPts / MaxHitPts, aka 100% 240/240.
+    /// Format for the alternative display of values. Health percentage followed by CurrentHitPts / MaxHitPts, aka 100% 240/240.
     /// </summary>
-    private static string _tooltipFormat = "{0} {1}/{2}";
-
-    private string _tooltipContent;
-    protected override string TooltipContent { get { return _tooltipContent; } }
+    private static string _detailValuesFormat = "{0} {1}/{2}";
 
     private bool _isCurrentHitPtsSet;
     private float? _currentHitPts;
@@ -65,17 +62,9 @@ public class HealthGuiElement : GuiElement, IComparable<HealthGuiElement> {
         }
     }
 
-    private bool AreAllValuesSet { get { return _isCurrentHitPtsSet && _isMaxHitPtsSet && _isHealthSet; } }
+    public override GuiElementID ElementID { get { return GuiElementID.Health; } }
 
-    private UISlider _slider;
-    private UISprite _barForeground;
-
-    protected override void Awake() {
-        base.Awake();
-        Validate();
-        _slider = gameObject.GetSafeMonoBehaviourInChildren<UISlider>();
-        _barForeground = _slider.gameObject.GetSafeMonoBehaviourInImmediateChildren<UISprite>();
-    }
+    protected override bool AreAllValuesSet { get { return _isCurrentHitPtsSet && _isMaxHitPtsSet && _isHealthSet; } }
 
     private void OnCurrentHitPtsSet() {
         _isCurrentHitPtsSet = true;
@@ -101,53 +90,64 @@ public class HealthGuiElement : GuiElement, IComparable<HealthGuiElement> {
         }
     }
 
-    private void PopulateElementWidgets() {
-        GameColor barColor = GameColor.Clear;   // appears disabled
-        string healthTooltip = _unknown;
-        if (Health.HasValue) {
-            _slider.value = Health.Value;
-            healthTooltip = Constants.FormatPercent_0Dp.Inject(Health.Value);
-            D.Log("{0} setting slider value to {1:0.#}.", GetType().Name, Health.Value);
-            if (Health.Value > GeneralSettings.Instance.InjuredHealthThreshold) {
-                barColor = GameColor.Green;
-            }
-            else if (Health.Value > GeneralSettings.Instance.CriticalHealthThreshold) {
-                barColor = GameColor.Yellow;
-            }
-            else {
-                barColor = GameColor.Red;
-            }
+    protected override void PopulateElementWidgets() {
+        if (!Health.HasValue) {
+            OnValuesUnknown();
+            return;
         }
-        D.Log("{0} setting barColor to {1}.", GetType().Name, barColor.GetName());
-        _barForeground.color = barColor.ToUnityColor();
 
-        string currentHitPtsTooltip = _unknown;
+        GameColor healthColor;
+        float healthValue = Health.Value;
+        if (healthValue > GeneralSettings.Instance.InjuredHealthThreshold) {
+            healthColor = GameColor.Green;  // Healthy
+        }
+        else if (healthValue > GeneralSettings.Instance.CriticalHealthThreshold) {
+            healthColor = GameColor.Yellow; // Injured
+        }
+        else {
+            healthColor = GameColor.Red;    // Critical
+        }
+
+        string currentHitPtsValueText = _unknown;
         if (CurrentHitPts.HasValue) {
-            currentHitPtsTooltip = Constants.FormatFloat_0Dp.Inject(CurrentHitPts.Value);
+            currentHitPtsValueText = Constants.FormatFloat_0Dp.Inject(CurrentHitPts.Value);
         }
 
-        string maxHitPtsTooltip = _unknown;
+        string maxHitPtsValueText = _unknown;
         if (MaxHitPts.HasValue) {
-            maxHitPtsTooltip = Constants.FormatFloat_0Dp.Inject(MaxHitPts.Value);
+            maxHitPtsValueText = Constants.FormatFloat_0Dp.Inject(MaxHitPts.Value);
         }
-        _tooltipContent = _tooltipFormat.Inject(healthTooltip, currentHitPtsTooltip, maxHitPtsTooltip);
+
+        string healthValuePercentText = Constants.FormatPercent_0Dp.Inject(healthValue);
+        _detailValuesContent = _detailValuesFormat.Inject(healthValuePercentText, currentHitPtsValueText, maxHitPtsValueText);
+
+        var detailValuesContent_Colored = _detailValuesFormat.Inject(healthValuePercentText.SurroundWith(healthColor),
+            currentHitPtsValueText.SurroundWith(healthColor), maxHitPtsValueText.SurroundWith(GameColor.Green));
+
+        switch (widgetsPresent) {
+            case WidgetsPresent.ProgressBar:
+                PopulateProgressBarValues(healthValue, healthColor);
+                _tooltipContent = detailValuesContent_Colored;
+                break;
+            case WidgetsPresent.Label:
+                _detailValuesLabel.text = detailValuesContent_Colored;
+                break;
+            case WidgetsPresent.Both:
+                PopulateProgressBarValues(healthValue, healthColor);
+                _detailValuesLabel.text = detailValuesContent_Colored;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+        }
     }
 
     public override void Reset() {
-        base.Reset();
         _isCurrentHitPtsSet = false;
         _isHealthSet = false;
         _isMaxHitPtsSet = false;
     }
 
-    private void Validate() {
-        if (elementID != GuiElementID.Health) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.Health;
-        }
-    }
-
-    public override string ToString() { return GetType().Name + Constants.Space + TooltipContent; }
+    protected override void Cleanup() { }
 
     #region IComparable<HealthGuiElement> Members
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AGuiMenuAcceptButton.cs
-// Abstract base class for Gui Menu Accept buttons. 
+// Abstract base class for Accept or Launch buttons used by AGuiWindow menus and screens. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,36 +23,38 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for Gui Menu Accept buttons. Accumulates changes from its sibling
-/// menu items before firing an event with a Settings object attached.
+/// Abstract base class for Accept or Launch buttons used by AGuiWindow menus and screens. 
+/// Accummulates values from GuiElements that are components of the menu or screen and when clicked, 
+/// communicates those values to the appropriate target.
 /// </summary>
 public abstract class AGuiMenuAcceptButton : AGuiButton {
 
-    // Can be empty
     protected UIToggle[] _checkboxes;
     protected UIPopupList[] _popupLists;
     protected UISlider[] _sliders;
+    protected UIPanel _panel;
 
-    protected override void Start() {
-        base.Start();
+    protected override void Awake() {
+        base.Awake();
         InitializeValuesAndReferences();
-        CaptureInitializedState();
-        AddMenuElementListeners();
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        UIPanel panel = gameObject.GetSafeMonoBehaviourInParents<UIPanel>();
-        _checkboxes = panel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
-        //D.Log("Checkboxes found: {0}.", _checkboxes.Select(c => c.name).Concatenate());
-        _popupLists = panel.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
-        _sliders = panel.gameObject.GetComponentsInChildren<UISlider>(includeInactive: true);
+        _panel = gameObject.GetSafeFirstMonoBehaviourInParents<UIPanel>();
+        _checkboxes = _panel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
+        _popupLists = _panel.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
+        _sliders = _panel.gameObject.GetComponentsInChildren<UISlider>(includeInactive: true);
+    }
+
+    protected override void OnLeftClick() {
+        CaptureState();
     }
 
     /// <summary>
-    /// Captures the initialized state of all menu elements via the 
+    /// Captures the state of all GuiElements via the 
     /// derived classes implementation of the abstract RecordXXXState methods.
     /// </summary>
-    protected virtual void CaptureInitializedState() {
+    private void CaptureState() {
         foreach (UIToggle checkbox in _checkboxes) {
             var checkboxID = checkbox.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
             bool checkedState = checkbox.value;
@@ -68,75 +70,34 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
             float sliderValue = slider.value;
             RecordSliderState(sliderID, sliderValue);
         }
-    }
-
-    private void AddMenuElementListeners() {
-        if (Utility.CheckForContent<UIToggle>(_checkboxes)) {
-            _checkboxes.ForAll<UIToggle>(checkbox => EventDelegate.Add(checkbox.onChange, OnCheckboxStateChange));
-        }
-        if (Utility.CheckForContent<UIPopupList>(_popupLists)) {
-            _popupLists.ForAll<UIPopupList>(popupList => EventDelegate.Add(popupList.onChange, OnPopupListSelectionChange));
-        }
-        if (Utility.CheckForContent<UISlider>(_sliders)) {   // this won't work for sliders built for enums
-            _sliders.ForAll<UISlider>(slider => EventDelegate.Add(slider.onChange, OnSliderValueChange));
-        }
+        ValidateStateOnCapture();
     }
 
     /// <summary>
-    /// Called on a checkbox state change, this base class implementation records
-    /// the change via the RecordXXXState methods implemented by the derived class.
-    /// </summary>
-    protected virtual void OnCheckboxStateChange() {
-        var checkboxID = UIToggle.current.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
-        bool isChecked = UIToggle.current.value;
-        //D.Log("Checkbox {0} had a state change to {1}.", checkboxID.GetName(), isChecked);
-        RecordCheckboxState(checkboxID, isChecked);
-    }
-
-    /// <summary>
-    /// Called on a popupList state change, this base class implementation records
-    /// the change via the RecordXXXState methods implemented by the derived class.
-    /// </summary>
-    protected virtual void OnPopupListSelectionChange() {
-        var popupListID = UIPopupList.current.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
-        string selectionName = UIPopupList.current.value;
-        RecordPopupListState(popupListID, selectionName);
-    }
-
-    /// <summary>
-    /// Called on a slider state change, this base class implementation records
-    /// the change via the RecordXXXState methods implemented by the derived class.
-    /// </summary>
-    protected virtual void OnSliderValueChange() {
-        var sliderID = UISlider.current.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
-        float value = UISlider.current.value;
-        RecordSliderState(sliderID, value);
-    }
-
-    /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the checkbox that has <c>checkboxID</c>.
+    /// Records the state of the checkbox that has <c>checkboxID</c>.
     /// </summary>
     /// <param name="checkboxID">The checkbox identifier.</param>
-    /// <param name="checkedState">if set to <c>true</c> [checked state].</param>
-    protected virtual void RecordCheckboxState(GuiElementID checkboxID, bool checkedState) { }
+    /// <param name="isChecked">if set to <c>true</c> [checked state].</param>
+    protected virtual void RecordCheckboxState(GuiElementID checkboxID, bool isChecked) { }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the popup list that has <c>popupListID</c>.
+    ///Records the selection of the popup list that has <c>popupListID</c>.
     /// </summary>
     /// <param name="popupListID">The popup list identifier.</param>
-    /// <param name="selectionName">Name of the selection.</param>
-    protected virtual void RecordPopupListState(GuiElementID popupListID, string selectionName) { }
+    /// <param name="selection">The selection.</param>
+    protected virtual void RecordPopupListState(GuiElementID popupListID, string selection) { }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the slider that has <c>sliderID</c>.
+    /// Records the value of the slider that has <c>sliderID</c>.
     /// </summary>
     /// <param name="sliderID">The slider identifier.</param>
-    /// <param name="sliderValue">The slider value.</param>
-    protected virtual void RecordSliderState(GuiElementID sliderID, float sliderValue) { }
+    /// <param name="value">The slider value.</param>
+    protected virtual void RecordSliderState(GuiElementID sliderID, float value) { }
 
-    // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
-    // Delegate to be removed is attached to a GameObject that is also being destroyed. In addition,
-    // execution is problematic as the gameObject may have already been destroyed.
+    /// <summary>
+    /// Validates the state of the GuiElements of this window when captured.
+    /// </summary>
+    protected virtual void ValidateStateOnCapture() { }
 
 }
 

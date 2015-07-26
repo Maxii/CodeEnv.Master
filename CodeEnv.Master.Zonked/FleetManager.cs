@@ -75,7 +75,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
     protected override void Awake() {
         base.Awake();
         enabled = false;    // disabled behaviours aren't updated
-        _fleetCmd = gameObject.GetSafeMonoBehaviourInChildren<FleetCommand>();
+        _fleetCmd = gameObject.GetSafeFirstMonoBehaviourInChildren<FleetCommand>();
         _fleetCmdTransform = _fleetCmd.transform;
         _fleetGraphics = gameObject.GetSafeMonoBehaviour<FleetGraphics>();
         ShipCaptains = gameObject.GetSafeMonoBehavioursInChildren<ShipCaptain>().ToList();
@@ -87,7 +87,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
     }
 
     private void InitializeFleetIcon() {
-        _fleetIconSprite = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
+        _fleetIconSprite = gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
         _fleetIconTransform = _fleetIconSprite.transform;
         _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviour<ScaleRelativeToCamera>();
         _fleetCmdCollider = _fleetCmd.collider as BoxCollider;
@@ -201,7 +201,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PlayerIntelLevel));
         }
         _fleetIconSprite.spriteName = _fleetIcon.Filename;
-        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIconIdentity).Name, _fleetIcon.Filename, PlayerIntelLevel.GetName());
+        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIconIdentity).Name, _fleetIcon.Filename, PlayerIntelLevel.GetValueName());
     }
 
     private void OnIsSelectedChanged() {

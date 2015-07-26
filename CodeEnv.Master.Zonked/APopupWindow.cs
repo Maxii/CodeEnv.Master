@@ -29,7 +29,7 @@ using UnityEngine;
 /// Singleton. COMMENT 
 /// </summary>
 [Obsolete]
-public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopupWindow<T> {
+public abstract class APopupWindow<T> : AMonoSingleton<T>, IHudWindow where T : APopupWindow<T> {
 
     public bool IsShowing { get { return _targetAlpha == Constants.OneF; } }
 
@@ -55,7 +55,7 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     private float _currentAlpha = 0F;
     //private GameObject _hoveredObject;
     private Camera _uiCamera;
-    private IDictionary<HudElementID, AHudElement> _tooltipElementLookup;
+    private IDictionary<HudFormID, AHudForm> _tooltipElementLookup;
     private GameTime _gameTime;
     private MyEnvelopContent _backgroundEnvelopContent;
     private UIPanel _panel;
@@ -88,15 +88,15 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     private void AcquireReferences() {
         _gameTime = GameTime.Instance;
         _panel = gameObject.GetSafeMonoBehaviour<UIPanel>();
-        _backgroundEnvelopContent = gameObject.GetSafeMonoBehaviourInImmediateChildren<MyEnvelopContent>();
+        _backgroundEnvelopContent = gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<MyEnvelopContent>();
         // TODO set envelopContent padding programmatically once background is permanently picked?
         _backgroundWidget = _backgroundEnvelopContent.gameObject.GetSafeMonoBehaviour<UIWidget>();
         _uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
     }
 
     private void InitializeElementLookup() {
-        var tooltipElements = gameObject.GetSafeMonoBehavioursInImmediateChildren<AHudElement>();
-        _tooltipElementLookup = tooltipElements.ToDictionary(e => e.ElementID);
+        var tooltipElements = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<AHudForm>();
+        _tooltipElementLookup = tooltipElements.ToDictionary(e => e.FormID);
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     /// If tooltipElement is null, all element gameObjects are deactivated.
     /// </summary>
     /// <param name="tooltipElement">The tooltip element.</param>
-    private void ActivateElement(AHudElement tooltipElement) {
+    private void ActivateElement(AHudForm tooltipElement) {
         _tooltipElementLookup.Values.ForAll(element => {
             if (element == tooltipElement) {
                 NGUITools.SetActive(element.gameObject, true);
@@ -138,18 +138,18 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
         });
     }
 
-    private void EncompassElementWithBackground(AHudElement element) {
+    private void EncompassElementWithBackground(AHudForm element) {
         _backgroundEnvelopContent.targetRoot = element.transform;
         _backgroundEnvelopContent.Execute();
     }
 
-    private void SetContent(AHudElementContent content) {
+    private void SetContent(AHudFormContent content) {
         _targetAlpha = 1F;
         //_hoveredObject = UICamera.hoveredObject;
 
-        var tooltipElement = _tooltipElementLookup[content.ElementID];
+        var tooltipElement = _tooltipElementLookup[content.FormID];
         ActivateElement(tooltipElement);
-        tooltipElement.HudContent = content;
+        tooltipElement.FormContent = content;
         EncompassElementWithBackground(tooltipElement);
 
         PositionPopup();
@@ -186,7 +186,7 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     /// Shows the tooltip at the mouse screen position using the provided content.
     /// </summary>
     /// <param name="content">The content.</param>
-    public void Show(AHudElementContent content) {
+    public void Show(AHudFormContent content) {
         SetContent(content);
     }
 
@@ -196,7 +196,7 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     /// <param name="text">The text.</param>
     public void Show(string text) {
         if (!text.IsNullOrEmpty()) {
-            Show(new TextHudContent(text));
+            Show(new TextHudFormContent(text));
         }
     }
 
@@ -205,7 +205,7 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     /// </summary>
     /// <param name="coloredStringBuilder">The StringBuilder containing text.</param>
     public void Show(StringBuilder stringBuilder) {
-        Show(new TextHudContent(stringBuilder.ToString()));
+        Show(new TextHudFormContent(stringBuilder.ToString()));
     }
 
     /// <summary>
@@ -213,7 +213,7 @@ public abstract class APopupWindow<T> : AMonoSingleton<T>, IHud where T : APopup
     /// </summary>
     /// <param name="coloredStringBuilder">The ColoredStringBuilder containing colorized text.</param>
     public void Show(ColoredStringBuilder coloredStringBuilder) {
-        Show(new TextHudContent(coloredStringBuilder.ToString()));
+        Show(new TextHudFormContent(coloredStringBuilder.ToString()));
     }
 
     /// <summary>

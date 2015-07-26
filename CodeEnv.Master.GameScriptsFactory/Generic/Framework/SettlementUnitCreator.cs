@@ -75,7 +75,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
 
         SettlementCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourInChildren<SettlementCmdItem>();
+            cmd = gameObject.GetSafeFirstMonoBehaviourInChildren<SettlementCmdItem>();
             _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {

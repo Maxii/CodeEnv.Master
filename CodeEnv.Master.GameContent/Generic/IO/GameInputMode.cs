@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GameInputMode.cs
-// Enum delineating different combinations of input events supported in the game
-// covering the 3D world, main camera movement, UI  and PlayerViewMode events.
+// Input modes available in the Game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,7 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum delineating different combinations of input events supported in the game
+    ///  Input modes available in the Game.
+    /// Modes delineate different combinations of input events supported in the game
     /// covering the 3D world, main camera movement, UI  and PlayerViewMode events.
     /// </summary>
     public enum GameInputMode {
@@ -29,26 +29,34 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
-        /// No 3D world, camera movement, UI or PlayerViewMode input events are supported.
+        /// No input events are supported.
         /// </summary>
         NoInput,
 
         /// <summary>
-        /// Only input events aiding an open Popup that doesn't cover the screen are supported. In addition to interaction
-        /// with the popup, this support includes key and screen edge main camera movement when in the GameScene so the 
-        /// player can move the camera to see world objects that might otherwise be obscured by the popup.
+        /// Valid only while in the LobbyScene. Only input events on the UI layer are supported as there is no main camera in the Lobby.
         /// </summary>
-        PartialScreenPopup,
+        Lobby,
+
+        /// <summary>        
+        /// Valid only while in the GameScene. 
+        /// InputMode active when a UI window pops up that only fills part of the screen.
+        /// UI element interaction is allowed along with screen edge and arrow key panning
+        /// of the 3D game world for better viewing. All other 3D world interaction is disabled.
+        /// </summary>
+        PartialPopup,
+
+        /// <summary>        
+        /// Valid only while in the GameScene.
+        /// InputMode active when a window pops up that fills the whole screen.
+        /// UI element interaction is allowed but all 3D world interaction is disabled.
+        /// </summary>
+        FullPopup,
 
         /// <summary>
-        /// Only input events allowing interaction with an open Popup that covers the screen are supported. As there
-        /// is nothing visible around the popup, key and screen edge main camera movement is not supported.
-        /// </summary>
-        FullScreenPopup,
-
-        /// <summary>
-        /// All 3D world, camera movement, UI and PlayerViewMode input events aiding normal game play are supported.
-        /// These include all events except PopupMenu interaction.
+        /// Valid only while in the GameScene. 
+        /// Input mode active when no UI popup windows are present. 
+        /// UI element interaction is allowed along with all 3D world interaction.
         /// </summary>
         Normal
 

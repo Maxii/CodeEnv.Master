@@ -21,7 +21,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Parses GameClockSpeed.xml used to provide externalized values for the GameClockSpeed enum.
     /// </summary>
-    public sealed class GameClockSpeed_Values : AEnumValuesHelper<GameClockSpeed_Values> {
+    public sealed class GameClockSpeed_Values : AXmlEnumPropertyReader<GameClockSpeed_Values> {
 
         /// <summary>
         /// The type of the enum being supported by this class.

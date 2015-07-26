@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         public MoonDisplayManager(GameObject itemGO) : base(itemGO) { }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetComponentInImmediateChildren<MeshRenderer>();
+            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
             primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing

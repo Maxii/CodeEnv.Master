@@ -53,8 +53,8 @@ namespace CodeEnv.Master.GameContent {
             Category = fData.Category;
             MaxHitPoints = fData.MaxHitPoints;  // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
             Mass = fData.Mass;
-            MaxSensorRange = fData.MaxSensorRange;
-            MaxWeaponsRange = fData.MaxWeaponsRange;
+            SensorRange = fData.SensorRange;
+            WeaponsRange = fData.WeaponsRange;
             Expense = fData.Expense;
         }
 

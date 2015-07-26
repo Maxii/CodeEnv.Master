@@ -63,7 +63,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
+        var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         collider.enabled = false;
         collider.isTrigger = false;
@@ -74,7 +74,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildrenOnly<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -99,11 +99,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         InitializeContextMenu(Owner);
 
         float orbitalRadius = _transform.localPosition.magnitude;
-        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
+        Data.OrbitalSpeed = gameObject.GetSafeFirstMonoBehaviourInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -125,14 +125,14 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void InitiateDeath() {
-        base.InitiateDeath();
+    protected override void SetDeadState() {
         CurrentState = PlanetoidState.Dead;
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
-        collider.enabled = false;
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
+        // _collider.enabled = false;   // keep the collider on until destroyed or returned to the pool
+        // this allows in-route ordnance to show its impact effect while the item is showing its death
         PlaceParentOrbiterInMotion(false);
     }
 
@@ -294,11 +294,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

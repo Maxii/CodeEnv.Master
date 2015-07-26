@@ -70,7 +70,7 @@ public class TableRowOrganizer : AMonoBase {
     }
 
     private void PositionRowElements() {
-        var rowElements = gameObject.GetSafeMonoBehavioursInImmediateChildren<RowElementIndexer>();
+        var rowElements = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<RowElementIndexer>();
         var orderedElements = rowElements.OrderBy(re => re.index);
         var lastElement = orderedElements.Last();
 

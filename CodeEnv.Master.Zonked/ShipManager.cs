@@ -114,7 +114,7 @@ public class ShipManager : AGameObjectManager<ShipData>, ICameraFollowable, IZoo
 
     protected override void UpdateGuiCursorHudText(params GuiHudLineKeys[] keys) {
         if (HumanPlayerIntelLevel != _guiCursorHudText.IntelLevel) {
-            D.Error("{0} {1} and {2} must be the same.".Inject(typeof(IntelLevel), HumanPlayerIntelLevel.GetName(), _guiCursorHudText.IntelLevel.GetName()));
+            D.Error("{0} {1} and {2} must be the same.".Inject(typeof(IntelLevel), HumanPlayerIntelLevel.GetValueName(), _guiCursorHudText.IntelLevel.GetName()));
             return;
         }
         IColoredTextList coloredTextList;

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -52,7 +52,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
 
-    private IList<Weapon> _readyWeaponsInventory = new List<Weapon>();
+    private IList<AWeapon> _readyWeaponsInventory = new List<AWeapon>();
     private DetectionHandler _detectionHandler;
     private Collider _collider;
 
@@ -107,8 +107,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collider.enabled = true;
-        Data.Weapons.ForAll(w => w.CommenceOperations());
-        Data.Sensors.ForAll(s => s.CommenceOperations());
+        Data.Weapons.ForAll(w => w.IsOperational = true);
+        Data.Sensors.ForAll(s => s.IsOperational = true);
     }
 
     /// <summary>
@@ -123,6 +123,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
         AssessIcon();
+        // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
     private void OnIsHQChanged() {
@@ -131,13 +132,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
-        _collider.enabled = false;
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
+        // _collider.enabled = false;   // keep the collider on until destroyed or returned to the pool
+        // this allows in-route ordnance to show its impact effect while the item is showing its death
         Data.Weapons.ForAll(w => {
-            w.onReadinessChanged -= OnWeaponReadinessChanged;
+            w.onIsReadyToFireChanged -= OnWeaponReadinessChanged;
             w.onEnemyTargetEnteringRange -= OnNewEnemyTargetInRange;
+            w.IsOperational = false;
         });
+        Data.Sensors.ForAll(s => s.IsOperational = false);
+    }
+
+    protected override void CleanupAfterOnDeathNotification() {
+        base.CleanupAfterOnDeathNotification();
+        Command.OnSubordinateElementDeath(this);
     }
 
     #region Weapons
@@ -148,17 +157,20 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// <param name="weaponStat">The weapon stat.</param>
     public void AddWeapon(WeaponStat weaponStat) {
         //D.Log("{0}.AddWeapon() called. WeaponStat = {1}, Range = {2}.", FullName, weaponStat, weaponStat.Range.GetWeaponRange(Owner));
-        Weapon weapon;
-        switch (weaponStat.Category) {
+        AWeapon weapon;
+        switch (weaponStat.ArmamentCategory) {
             case ArmamentCategory.Beam:
-                weapon = new BeamWeapon(weaponStat as BeamWeaponStat);
+                weapon = new BeamProjector(weaponStat);
+                break;
+            case ArmamentCategory.Projectile:
+                weapon = new ProjectileLauncher(weaponStat);
                 break;
             case ArmamentCategory.Missile:
-            case ArmamentCategory.Projectile:
-                weapon = new Weapon(weaponStat);
+                weapon = new MissileLauncher(weaponStat);
                 break;
+            case ArmamentCategory.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponStat.Category));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponStat.ArmamentCategory));
         }
 
         var monitor = UnitFactory.Instance.MakeMonitorInstance(weapon, this);
@@ -167,7 +179,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             _weaponRangeMonitors.Add(monitor);
         }
         Data.AddWeapon(weapon);
-        weapon.onReadinessChanged += OnWeaponReadinessChanged;
+        weapon.onIsReadyToFireChanged += OnWeaponReadinessChanged;
         weapon.onEnemyTargetEnteringRange += OnNewEnemyTargetInRange;
         if (IsOperational) {
             // we have already commenced operations so start the new weapon
@@ -181,19 +193,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// range monitor no longer in use.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    public void RemoveWeapon(Weapon weapon) {
-        D.Assert(IsOperational);
+    public void RemoveWeapon(AWeapon weapon) {
+        weapon.IsOperational = false;
         var monitor = weapon.RangeMonitor;
         bool isRangeMonitorStillInUse = monitor.Remove(weapon);
 
         if (!isRangeMonitorStillInUse) {
+            monitor.Reset();
             _weaponRangeMonitors.Remove(monitor);
-            D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+            //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
             UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
         }
-        weapon.IsOperational = false;
         Data.RemoveWeapon(weapon);
-        weapon.onReadinessChanged -= OnWeaponReadinessChanged;
+        weapon.onIsReadyToFireChanged -= OnWeaponReadinessChanged;
         weapon.onEnemyTargetEnteringRange -= OnNewEnemyTargetInRange;
     }
 
@@ -202,58 +214,36 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="tgtHint">Optional hint indicating a highly desirable target.</param>
-    protected void FindTargetAndFire(Weapon weapon, IElementAttackableTarget tgtHint = null) {
-        D.Assert(weapon.IsReady);
+    protected void FindTargetAndFire(AWeapon weapon, IElementAttackableTarget tgtHint = null) {
+        D.Assert(weapon.IsReadyToFire);
         IElementAttackableTarget enemyTarget;
         if (weapon.TryPickBestTarget(tgtHint, out enemyTarget)) {
             Fire(weapon, enemyTarget);
         }
+        else {
+            D.Log("{0} did not fire weapon {1}.", FullName, weapon.Name);
+        }
     }
 
     /// <summary>
-    /// Fires the provided weapon at the provided enemy target and
-    /// lets the weapon know it has been fired.
+    /// Fires the provided weapon at the provided enemy target and lets the weapon know it has been fired.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="target">The target.</param>
-    private void Fire(Weapon weapon, IElementAttackableTarget target) {
+    private void Fire(AWeapon weapon, IElementAttackableTarget target) {
         StartEffect(EffectID.Attacking);
-        IOrdnance ordnance = null;
-        if (weapon.Category == ArmamentCategory.Beam) {
-            var beamWeapon = weapon as BeamWeapon;
-            ordnance = FireBeam(beamWeapon, target);
-        }
-        else if (weapon.Category == ArmamentCategory.Projectile) {
-            ordnance = FireProjectile(weapon, target);
-        }
-        else if (weapon.Category == ArmamentCategory.Missile) {
-            ordnance = FireMissile(weapon, target);
-        }
-        D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.DisplayName, GameTime.Instance.CurrentDate);
-    }
-
-    private IOrdnance FireProjectile(Weapon weapon, IElementAttackableTarget target) {
         var targetBearing = (target.Position - Position).normalized;
         var muzzleLocation = Position + targetBearing * Radius; // IMPROVE
-        var projectile = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.Category, gameObject, muzzleLocation);
-        projectile.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
-        return projectile;
-    }
-
-    private IOrdnance FireMissile(Weapon weapon, IElementAttackableTarget target) {
-        var targetBearing = (target.Position - Position).normalized;
-        var muzzleLocation = Position + targetBearing * Radius; // IMPROVE
-        var missile = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.Category, gameObject, muzzleLocation);
-        missile.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
-        return missile;
-    }
-
-    private IOrdnance FireBeam(BeamWeapon weapon, IElementAttackableTarget target) {
-        var targetBearing = (target.Position - Position).normalized;
-        var muzzleLocation = Position + targetBearing * Radius;   // IMPROVE
-        var beam = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.Category, gameObject, muzzleLocation);
-        beam.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
-        return beam;
+        var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.ArmamentCategory, gameObject, muzzleLocation);
+        ordnance.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
+        //D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
+        /***********************************************************************************************************************************************
+               * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
+               * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
+               * death cinematic plays out. Once the target is destroyed, its collider becomes disabled, allowing ordnance to pass through and potentially
+               * collide with other items until it runs out of range and self terminates. This behaviour holds for both projectile and beam ordnance. In the
+               * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
+               **************************************************************************************************************************************************/
     }
 
     /// <summary>
@@ -262,8 +252,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// mean there is an enemy in range to fire at.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void OnWeaponReadinessChanged(Weapon weapon) {
-        if (weapon.IsReady && weapon.IsEnemyInRange) {
+    private void OnWeaponReadinessChanged(AWeapon weapon) {
+        if (weapon.IsReadyToFire && weapon.IsEnemyInRange) {
             OnWeaponReadyAndEnemyInRange(weapon);
         }
         UpdateReadyWeaponsInventory(weapon);
@@ -275,7 +265,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// weapon is ready to fire. However, it does mean the weapon is operational.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void OnNewEnemyTargetInRange(Weapon weapon) {
+    private void OnNewEnemyTargetInRange(AWeapon weapon) {
         if (_readyWeaponsInventory.Contains(weapon)) {
             OnWeaponReadyAndEnemyInRange(weapon);
             UpdateReadyWeaponsInventory(weapon);
@@ -286,7 +276,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// Called when [weapon ready and enemy in range].
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    private void OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         // the weapon is ready and the enemy is in range
         RelayToCurrentState(weapon);
     }
@@ -295,15 +285,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// Updates the ready weapons inventory.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void UpdateReadyWeaponsInventory(Weapon weapon) {
-        if (weapon.IsReady) {
+    private void UpdateReadyWeaponsInventory(AWeapon weapon) {
+        if (weapon.IsReadyToFire) {
             if (!_readyWeaponsInventory.Contains(weapon)) {
                 _readyWeaponsInventory.Add(weapon);
                 //D.Log("{0} added Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
             }
             else {
-                //D.Assert(!_readyWeaponsInventory.Contains(weapon));   // adding a ready weapon
-                D.Warn("{0} attempted to add duplicate Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
+                //D.Log("{0} properly avoided adding duplicate Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
+                // this occurs when a weapon attempts to fire but doesn't (usually due to LOS interference) and therefore remains
+                // IsReadyToFire. If it had fired, it wouldn't be ready and therefore would have been removed below
             }
         }
         else {
@@ -334,9 +325,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     public void RemoveSensor(Sensor sensor) {
         D.Assert(Command != null);
-        D.Assert(IsOperational);
-        Command.DetachSensorsFromMonitors(sensor);
         sensor.IsOperational = false;
+        Command.DetachSensorsFromMonitors(sensor);
         Data.RemoveSensor(sensor);
     }
 
@@ -348,7 +338,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void OnIsVisualDetailDiscernibleToUserChanged() {
         base.OnIsVisualDetailDiscernibleToUserChanged();
-        Data.Weapons.ForAll(w => w.OnVisualDetailDiscernibleToUserChanged(IsVisualDetailDiscernibleToUser));
+        Data.Weapons.ForAll(w => w.ToShowEffects = IsVisualDetailDiscernibleToUser);
     }
 
     private void OnElementIconsEnabledOptionChanged() {
@@ -392,7 +382,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
-        D.Log("{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
+        //D.Log("{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
     }
 
     #endregion
@@ -415,9 +405,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
         var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
-        operationalWeapons.ForAll(w => w.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
+        operationalWeapons.ForAll(w => {
+            var isDamaged = !RandomExtended<bool>.Chance(damageSeverity);
+            if (isDamaged) {
+                w.IsOperational = false;
+                D.Log("{0}'s weapon {1} has been damaged.", FullName, w.Name);
+            }
+        });
         var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
-        operationalSensors.ForAll(s => s.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
+        operationalSensors.ForAll(s => {
+            var isDamaged = !RandomExtended<bool>.Chance(damageSeverity);
+            if (isDamaged) {
+                s.IsOperational = false;
+                D.Log("{0}'s sensor {1} has been damaged.", FullName, s.Name);
+            }
+        });
     }
 
     #endregion
@@ -462,10 +464,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         D.Assert(IsOperational);
         CombatStrength damageSustained = attackerWeaponStrength - Data.DefensiveStrength;
         if (damageSustained.Combined == Constants.ZeroF) {
-            D.Log("{0} has been hit but incurred no damage.", FullName);
+            //D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damageSustained.Combined);
+        //D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damageSustained.Combined);
         bool isCmdHit = false;
         float damageSeverity;
         bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
@@ -519,11 +521,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetComponentInImmediateChildren<MeshRenderer>();
+            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
             primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.StarCull);    // layer automatically handles showing

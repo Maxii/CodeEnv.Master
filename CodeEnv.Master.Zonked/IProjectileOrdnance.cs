@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IProjectileOrdnance : IOrdnance {
 
-        void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects);
+        void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects);
 
     }
 }

@@ -17,12 +17,19 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Sprite resident in world space that tracks world objects.  The user perceives the widget changing size as the camera and/or tracked gameObject moves.
 /// </summary>
 public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
+
+    private AtlasID _atlasID;
+    public AtlasID AtlasID {
+        get { return _atlasID; }
+        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", OnAtlasIDChanged); }
+    }
 
     /// <summary>
     /// Temporary. The desired dimensions in pixels of this sprite. 
@@ -36,7 +43,6 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
         D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, "Sprite size not set.", this);
         __AdjustSpriteSize();
     }
@@ -46,7 +52,7 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
     /// </summary>
     /// <param name="spriteName">Name of the sprite.</param>
     public override void Set(string spriteName) {
-        if (Widget.spriteName == spriteName) { return; }
+        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
         Widget.spriteName = spriteName;
     }
 
@@ -58,6 +64,10 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
         int spriteWidth = Mathf.RoundToInt(desiredSpriteDimensions.x);
         int spriteHeight = Mathf.RoundToInt(desiredSpriteDimensions.y);
         Widget.SetDimensions(spriteWidth, spriteHeight);
+    }
+
+    private void OnAtlasIDChanged() {
+        Widget.atlas = AtlasID.GetAtlas();
     }
 
     protected override void Cleanup() { }

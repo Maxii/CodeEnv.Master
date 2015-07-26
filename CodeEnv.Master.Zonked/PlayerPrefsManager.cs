@@ -125,19 +125,19 @@ namespace CodeEnv.Master.GameContent {
             // if variable not null/empty or None, convert the value to a string, encrypt it, and using the key, set it 
             string encryptedStringValue = string.Empty;
             if (UniverseSizeSelection != UniverseSizeGuiSelection.None) {
-                encryptedStringValue = Encrypt(UniverseSizeSelection.GetName());
+                encryptedStringValue = Encrypt(UniverseSizeSelection.GetValueName());
                 PlayerPrefs.SetString(_universeSizeKey, encryptedStringValue);
             }
             if (GameSpeedOnLoad != GameSpeed.None) {
-                encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
+                encryptedStringValue = Encrypt(GameSpeedOnLoad.GetValueName());
                 PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
             }
             if (UserPlayerSpeciesSelection != SpeciesGuiSelection.None) {
-                encryptedStringValue = Encrypt(UserPlayerSpeciesSelection.GetName());
+                encryptedStringValue = Encrypt(UserPlayerSpeciesSelection.GetValueName());
                 PlayerPrefs.SetString(_userPlayerSpeciesKey, encryptedStringValue);
             }
             if (UserPlayerColor != GameColor.None) {
-                encryptedStringValue = Encrypt(UserPlayerColor.GetName());
+                encryptedStringValue = Encrypt(UserPlayerColor.GetValueName());
                 PlayerPrefs.SetString(_userPlayerColorKey, encryptedStringValue);
             }
             PlayerPrefs.SetString(_isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));

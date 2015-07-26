@@ -215,7 +215,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalTarge
 
     void OnOrdersChanged() {
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetValueName());
             RelayToCurrentState();
         }
     }

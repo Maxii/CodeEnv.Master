@@ -27,7 +27,7 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl> {
 
     public Camera GuiCamera { get; private set; }
 
-    private static LayerMask _guiCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UI, Layers.UIPopup);
+    private static LayerMask _guiCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UI);
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();

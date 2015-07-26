@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiElement.cs
-// Simple instantiable class that holds the ID for a Gui Element.
+// Instantiable version of AGuiElement that is uniquely identifiable by its GuiElementID. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,27 +20,17 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Simple instantiable class that holds the ID for a Gui Element.
+/// Instantiable version of AGuiElement that is uniquely identifiable by its GuiElementID. Also has
+/// embedded text tooltip support. GuiElements typically have one or more UIWidget siblings
+/// and/or children associated with them that they help identify and/or find.
 /// </summary>
-public class GuiElement : AGuiTooltip {
+public sealed class GuiElement : AGuiElement {
 
     public GuiElementID elementID;
 
-    protected override void Awake() {
-        base.Awake();
-        Validate();
-    }
+    public override GuiElementID ElementID { get { return elementID; } }
 
-    /// <summary>
-    /// Resets this GuiElement instance so it can be reused. 
-    /// Default implementation does nothing.
-    /// </summary>
-    public virtual void Reset() { }
-
-    private void Validate() {
-        UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
-        D.LogContext(elementID == default(GuiElementID), "{0}.GuiElementID not set.".Inject(gameObject.name), gameObject);
-    }
+    public override void Reset() { }
 
     protected override void Cleanup() { }
 

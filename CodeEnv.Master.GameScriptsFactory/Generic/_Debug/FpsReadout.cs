@@ -43,13 +43,20 @@ public class FpsReadout : AGuiLabelReadout {
     protected override void Awake() {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
-        enabled = false;
+        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
+            enabled = false;
+            Subscribe();
+        }
+        // if LobbyScene enabled = true from beginning
+    }
+
+    private void Subscribe() {
         GameManager.Instance.onIsRunningOneShot += OnIsRunning;
     }
 
     protected override void Update() {
         base.Update();
-        // this is a tool, so I'll simply use Unity RealTime_Unity
+        // this is a tool, so simply use Unity's time
         float timeSinceLastUpdate = Time.deltaTime;
         _timeRemainingInInterval -= timeSinceLastUpdate;
         _accumulatedFpsOverInterval += Time.timeScale / timeSinceLastUpdate;

@@ -21,7 +21,6 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Instantiable base class for a player.
-    /// TODO Need a PlayerFactory to make players so there is only one instance of each player allowing == comparisons
     /// </summary>
     public class Player : APropertyChangeTracking {
 
@@ -38,38 +37,51 @@ namespace CodeEnv.Master.GameContent {
 
         public IQ IQ { get; private set; }
 
-        public string LeaderName { get { return _race.LeaderName; } }
+        public GameColor Color { get; private set; }
 
-        public string ImageFilename { get { return _race.ImageFilename; } }
+        public string LeaderName { get { return IsUser ? PlayerPrefsManager.Instance.Username : _leaderStat.Name; } }
 
-        private Race _race;
-        /// <summary>
-        /// A copy of this player's race.
-        /// </summary>
-        public Race Race {
-            get { return new Race(_race); } // race instance cannot be modified as I only return a copy
-            private set { _race = value; }
-        }
+        public AtlasID LeaderImageAtlasID { get { return _leaderStat.ImageAtlasID; } }
 
-        public GameColor Color { get { return _race.Color; } }
+        public string LeaderImageFilename { get { return _leaderStat.ImageFilename; } }
+
+
+        public Species Species { get { return _speciesStat.Species; } }
+
+        public string SpeciesName { get { return Species.GetValueName(); } }
+
+        public string SpeciesName_Plural { get { return _speciesStat.Name_Plural; } }
+
+        public string SpeciesDescription { get { return _speciesStat.Description; } }
+
+        public AtlasID SpeciesImageAtlasID { get { return _speciesStat.ImageAtlasID; } }
+
+        public string SpeciesImageFilename { get { return _speciesStat.ImageFilename; } }
+
+
+        public float SensorRangeMultiplier { get { return _speciesStat.SensorRangeMultiplier; } }
+
+        public float WeaponRangeMultiplier { get { return _speciesStat.WeaponRangeMultiplier; } }
+
+        public float WeaponReloadPeriodMultiplier { get { return _speciesStat.WeaponReloadPeriodMultiplier; } }
 
         private IDictionary<Player, DiplomaticRelationship> _diplomaticRelationship = new Dictionary<Player, DiplomaticRelationship>();
+        private LeaderStat _leaderStat;
+        private SpeciesStat _speciesStat;
 
         /// <summary>
-        /// Copy Constructor.
+        /// Initializes a new instance of the <see cref="Player"/> class.
         /// </summary>
-        /// <param name="player">The player to copy.</param>
-        public Player(Player player) : this(player.Race, player.IQ, player.IsUser) { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Player" /> class.
-        /// </summary>
-        /// <param name="race">The race.</param>
+        /// <param name="speciesStat">The species stat.</param>
+        /// <param name="leaderStat">The leader stat.</param>
         /// <param name="iq">The iq.</param>
-        /// <param name="isUser">if set to <c>true</c> this player is the human user.</param>
-        public Player(Race race, IQ iq, bool isUser = false) {
-            Race = race;
+        /// <param name="color">The color.</param>
+        /// <param name="isUser">if set to <c>true</c> [is user].</param>
+        public Player(SpeciesStat speciesStat, LeaderStat leaderStat, IQ iq, GameColor color, bool isUser = false) {
+            _speciesStat = speciesStat;
+            _leaderStat = leaderStat;
             IQ = iq;
+            Color = color;
             IsUser = isUser;
             _diplomaticRelationship[this] = DiplomaticRelationship.Self;    // assigning relations this way allows NoPlayer to make SetRelations illegal
         }

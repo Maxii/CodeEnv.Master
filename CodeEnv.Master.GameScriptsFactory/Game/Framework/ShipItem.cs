@@ -88,7 +88,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         _gameTime = GameTime.Instance;
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
         (collider as BoxCollider).size = meshRenderer.bounds.size;
     }
@@ -105,8 +105,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitializeContextMenu(Owner);
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     protected override AIconDisplayManager MakeDisplayManager() {
@@ -174,8 +174,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentOrder = newOrder;
     }
 
-    protected override void InitiateDeath() {
-        base.InitiateDeath();
+    protected override void SetDeadState() {
         CurrentState = ShipState.Dead;
     }
 
@@ -194,11 +193,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetName());
+            D.Log("{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
             if (Data.Target == null || !Data.Target.Equals(CurrentOrder.Target)) {   // OPTIMIZE     avoids Property equal warning
                 Data.Target = CurrentOrder.Target;  // can be null
                 if (CurrentOrder.Target != null) {
-                    D.Log("{0}'s new target for order {1} is {2}.", FullName, CurrentOrder.Directive.GetName(), CurrentOrder.Target.FullName);
+                    D.Log("{0}'s new target for order {1} is {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentOrder.Target.FullName);
                 }
             }
 
@@ -231,13 +230,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                     break;
                 case ShipDirective.Disband:
                 case ShipDirective.Refit:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, order.GetName());
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, order.GetValueName());
                     break;
                 case ShipDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-            D.Log("{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder.Directive.GetName(), CurrentState.GetName());
+            D.Log("{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentState.GetValueName());
         }
     }
 
@@ -252,8 +251,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         }
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
+    //protected override void OnDeath() {
+    //    base.OnDeath();
+    //    //_helm.DisengageAutoPilot();   // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
+    //    TryBreakOrbit();
+    //    if (IsSelected) { SelectionManager.Instance.CurrentSelection = null; }
+    //}
+
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
         //_helm.DisengageAutoPilot();   // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
         TryBreakOrbit();
         if (IsSelected) { SelectionManager.Instance.CurrentSelection = null; }
@@ -421,7 +427,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
-            ShowSelectionHud();
+            ShowSelectedItemHud();
             SelectionManager.Instance.CurrentSelection = this;
         }
         AssessHighlighting();
@@ -429,15 +435,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     /// <summary>
-    /// Shows the selection popup.
+    /// Shows the SelectedItemHudWindow for this ship.
     /// </summary>
     /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HudPopup subscribes to the change and needs the SelectionPopup to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectionPopup is 
+    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
+    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
     /// handled by the SelectionMgr when there is no longer an item selected.
     /// </remarks>
-    private void ShowSelectionHud() {
-        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.Ship, GetUserReport()));
+    private void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedShip, GetUserReport());
     }
 
     /// <summary>
@@ -546,7 +552,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetName());
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
@@ -568,7 +574,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         yield return null;
     }
 
-    void Idling_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void Idling_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -702,7 +708,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteMoveOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void ExecuteMoveOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -770,7 +776,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Return();
     }
 
-    void Moving_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void Moving_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -854,7 +860,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon, _primaryTarget);
     }
@@ -977,7 +983,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -1014,7 +1020,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Return();
     }
 
-    void Repairing_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
+    void Repairing_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
     }
@@ -1163,7 +1169,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         D.Assert(_ordersTarget != null && _ordersTarget.IsOperational, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         var uniqueEnemyTargetsInSensorRange = Enumerable.Empty<IElementAttackableTarget>();
         Command.SensorRangeMonitors.ForAll(srm => {
-            uniqueEnemyTargetsInSensorRange = uniqueEnemyTargetsInSensorRange.Union(srm.EnemyTargetsDetected);
+            uniqueEnemyTargetsInSensorRange = uniqueEnemyTargetsInSensorRange.Union(srm.AttackableEnemyTargetsDetected);
         });
 
         var cmdTarget = _ordersTarget as AUnitCmdItem;
@@ -2207,8 +2213,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 Target = targetCmd;
                 _fstOffset = fstOffset;
                 if (isEnemy) {  // HACK
-                    _closeEnoughDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitMaxWeaponsRange);
-                    _progressCheckDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitMaxWeaponsRange / 2F);
+                    _closeEnoughDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitWeaponsRange.Max);
+                    _progressCheckDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitWeaponsRange.Max / 2F);
                 }
                 else {
                     _closeEnoughDistanceRef = new Reference<float>(() => targetCmd.UnitRadius);
@@ -2221,10 +2227,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _fstOffset = fstOffset;
                 var shipOrbitSlot = targetCmd.ShipOrbitSlot;
                 if (isEnemy) {  // HACK
-                    float enemyMaxWeapRange = targetCmd.Data.UnitMaxWeaponsRange;
+                    float enemyMaxWeapRange = targetCmd.Data.UnitWeaponsRange.Max;
                     if (enemyMaxWeapRange > Constants.ZeroF) {
-                        _closeEnoughDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitMaxWeaponsRange);
-                        _progressCheckDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitMaxWeaponsRange / 2F);
+                        _closeEnoughDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitWeaponsRange.Max);
+                        _progressCheckDistanceRef = new Reference<float>(() => targetCmd.UnitRadius + targetCmd.Data.UnitWeaponsRange.Max / 2F);
                     }
                     else {
                         _closeEnoughDistance = shipOrbitSlot.OuterRadius;
@@ -2244,23 +2250,23 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 var baseShipOrbitSlot = (targetFacility.Command as IShipOrbitable).ShipOrbitSlot;
                 var baseOrbitSlotDistanceFromFacility = baseShipOrbitSlot.OuterRadius - targetFacility.Command.UnitRadius;
                 if (isEnemy) {  // HACK
-                    if (myShipData.MaxWeaponsRange > Constants.ZeroF) {
+                    if (myShipData.WeaponsRange.Max > Constants.ZeroF) {
                         // got weapons so get close enough and attack
                         _closeEnoughDistanceRef = new Reference<float>(() => {
-                            return Mathf.Max(myShipData.MaxWeaponsRange / 2F, baseOrbitSlotDistanceFromFacility);
+                            return Mathf.Max(myShipData.WeaponsRange.Max / 2F, baseOrbitSlotDistanceFromFacility);
                         });
 
                         _progressCheckDistanceRef = new Reference<float>(() => {
-                            return Mathf.Max(myShipData.MaxWeaponsRange / 2F, baseOrbitSlotDistanceFromFacility / 2F);
+                            return Mathf.Max(myShipData.WeaponsRange.Max / 2F, baseOrbitSlotDistanceFromFacility / 2F);
                         });
                     }
                     else {
                         // no weapons so stay just out of range
                         _closeEnoughDistanceRef = new Reference<float>(() => {
-                            return Mathf.Max(targetFacility.Command.Data.UnitMaxWeaponsRange + 1F, baseOrbitSlotDistanceFromFacility);
+                            return Mathf.Max(targetFacility.Command.Data.UnitWeaponsRange.Max + 1F, baseOrbitSlotDistanceFromFacility);
                         });
                         _progressCheckDistanceRef = new Reference<float>(() => {
-                            return Mathf.Max(targetFacility.Command.Data.UnitMaxWeaponsRange / 2F, baseOrbitSlotDistanceFromFacility / 2F);
+                            return Mathf.Max(targetFacility.Command.Data.UnitWeaponsRange.Max / 2F, baseOrbitSlotDistanceFromFacility / 2F);
                         });
                     }
                 }
@@ -2275,15 +2281,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 Target = targetShip;
                 _fstOffset = Vector3.zero;
                 if (isEnemy) {  // HACK
-                    if (myShipData.MaxWeaponsRange > Constants.ZeroF) {
+                    if (myShipData.WeaponsRange.Max > Constants.ZeroF) {
                         // got weapons so get close enough and attack
-                        _closeEnoughDistanceRef = new Reference<float>(() => myShipData.MaxWeaponsRange / 2F);
-                        _progressCheckDistanceRef = new Reference<float>(() => myShipData.MaxWeaponsRange / 4F);
+                        _closeEnoughDistanceRef = new Reference<float>(() => myShipData.WeaponsRange.Max / 2F);
+                        _progressCheckDistanceRef = new Reference<float>(() => myShipData.WeaponsRange.Max / 4F);
                     }
                     else {
                         // no weapons so stay just out of range
-                        _closeEnoughDistanceRef = new Reference<float>(() => targetShip.Command.Data.UnitMaxWeaponsRange + 1F);
-                        _progressCheckDistanceRef = new Reference<float>(() => targetShip.Command.Data.UnitMaxWeaponsRange / 2F);
+                        _closeEnoughDistanceRef = new Reference<float>(() => targetShip.Command.Data.UnitWeaponsRange.Max + 1F);
+                        _progressCheckDistanceRef = new Reference<float>(() => targetShip.Command.Data.UnitWeaponsRange.Max / 2F);
                     }
                 }
                 else {
@@ -4248,7 +4254,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         float distanceTraveled = Vector3.Distance(currentPosition, __lastPosition);
         __lastPosition = currentPosition;
 
-        float currentTime = GameTime.Instance.RealTime_Game;
+        float currentTime = GameTime.Instance.GameInstanceTime;
         float elapsedTime = currentTime - __lastTime;
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;
@@ -4260,7 +4266,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         SphereCollider sphereCollider = collision.collider as SphereCollider;
         string colliderSizeMsg = sphereCollider != null ? "radius = " + sphereCollider.radius : "size = " + collision.collider.bounds.size;
         D.Warn("While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
-            CurrentState.GetName(), FullName, collision.collider.name, rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
+            CurrentState.GetValueName(), FullName, collision.collider.name, rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
 
         //foreach (ContactPoint contact in collision.contacts) {
         //    Debug.DrawRay(contact.point, contact.normal, Color.white);

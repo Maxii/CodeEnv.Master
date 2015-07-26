@@ -42,7 +42,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     }
 
     protected override void InitializeRadiiComponents() {
-        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
+        var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         (collider as SphereCollider).radius = Radius;
     }
@@ -88,7 +88,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     }
 
     private void SetKeepoutZoneRadius() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
     }
@@ -259,7 +259,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.OuterRadius; } }
 
     public void AssumeOrbit(IShipModel ship) {
-        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
+        var shipOrbit = gameObject.GetFirstComponentInImmediateChildrenOnly<ShipOrbit>();
         if (shipOrbit == null) {
             UnitFactory.Instance.MakeShipOrbitInstance(gameObject, ship);
         }
@@ -269,7 +269,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     }
 
     public void LeaveOrbit(IShipModel orbitingShip) {
-        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
+        var shipOrbit = gameObject.GetFirstComponentInImmediateChildrenOnly<ShipOrbit>();
         D.Assert(shipOrbit != null, "{0}.{1} is not present.".Inject(FullName, typeof(ShipOrbit).Name));
         var ship = shipOrbit.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
         var parentFleetTransform = ship.UnitCommand.Transform.parent;

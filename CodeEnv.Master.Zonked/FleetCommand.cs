@@ -31,8 +31,8 @@ public class FleetCommand : FollowableItem, IFleetCommand {
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
-        _fleetGraphics = gameObject.GetSafeMonoBehaviourInParents<FleetGraphics>();
+        _fleetMgr = gameObject.GetSafeFirstMonoBehaviourInParents<FleetUnitCreator>();
+        _fleetGraphics = gameObject.GetSafeFirstMonoBehaviourInParents<FleetGraphics>();
     }
 
     protected override void Start() {

@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             //D.Log("{0}.InitializePrimaryMesh({1}) called.", GetType().Name, itemGo.name);
-            var primaryMeshRenderer = itemGo.GetComponentInImmediateChildren<MeshRenderer>();
+            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
             primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             return primaryMeshRenderer;

@@ -92,8 +92,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         _orbitalPlaneCollider.enabled = true;
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -232,22 +232,22 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
-            ShowSelectionHud();
+            ShowSelectedItemHud();
             SelectionManager.Instance.CurrentSelection = this;
         }
         AssessHighlighting();
     }
 
     /// <summary>
-    /// Shows the selection popup.
+    /// Shows the SelectedItemHudWindow for this system.
     /// </summary>
     /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HudPopup subscribes to the change and needs the SelectionPopup to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectionPopup is 
+    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
+    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
     /// handled by the SelectionMgr when there is no longer an item selected.
     /// </remarks>
-    private void ShowSelectionHud() {
-        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.System, GetUserReport()));
+    private void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, GetUserReport());
     }
 
     /// <summary>

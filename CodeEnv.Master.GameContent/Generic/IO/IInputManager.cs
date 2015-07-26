@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         event Action<NguiMouseButton> onUnconsumedPressDown;
 
         /// <summary>
-        /// The current GameInputMode of the game.
+        /// The current InputMode of the game.
         /// </summary>
         GameInputMode InputMode { get; }
 

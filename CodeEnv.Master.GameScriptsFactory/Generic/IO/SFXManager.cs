@@ -58,7 +58,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <returns></returns>
     public AudioSource PlaySFX(SfxClipID clipID) {
         // TODO verify clip is coded as 2D - need AudioImporter???
-        return SoundManager.PlaySFX(clipID.GetName());
+        return SoundManager.PlaySFX(clipID.GetValueName());
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <returns></returns>
     public AudioSource PlaySFX(GameObject go, SfxClipID clipID, bool toLoop = false) {
         // TODO verify clip is coded as 3D - need AudioImporter???
-        return SoundManager.PlaySFX(go, clipID.GetName(), toLoop);
+        return SoundManager.PlaySFX(go, clipID.GetValueName(), toLoop);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <returns></returns>
     public AudioSource PlaySFX(GameObject go, SfxGroupID groupID, bool toLoop = false) {
         // TODO verify clip is coded as 3D - need AudioImporter???
-        var clip = SoundManager.LoadFromGroup(groupID.GetName());
+        var clip = SoundManager.LoadFromGroup(groupID.GetValueName());
         return SoundManager.PlaySFX(go, clip, toLoop);
     }
 
@@ -98,7 +98,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     public AudioSource PlayCappedSFX(GameObject go, SfxClipID clipID, SfxCapID capID) {
         // TODO verify clip is coded as 3D - need AudioImporter???
         var aS = go.AddMissingComponent<AudioSource>();
-        return SoundManager.PlayCappedSFX(aS, clipID.GetName(), capID.GetName());
+        return SoundManager.PlayCappedSFX(aS, clipID.GetValueName(), capID.GetValueName());
     }
 
     protected override void ExecutePriorToDestroy() {

@@ -29,8 +29,8 @@ using UnityEngine;
 public class BasesScreenManager : AMonoBase {
 
     public static int CompareName(Transform rowA, Transform rowB) {
-        var rowANameLabel = GetLabel(rowA, GuiElementID.NameLabel);
-        var rowBNameLabel = GetLabel(rowB, GuiElementID.NameLabel);
+        var rowANameLabel = GetLabel(rowA, GuiElementID.ItemNameLabel);
+        var rowBNameLabel = GetLabel(rowB, GuiElementID.ItemNameLabel);
         return rowANameLabel.text.CompareTo(rowBNameLabel.text);
     }
 
@@ -54,10 +54,10 @@ public class BasesScreenManager : AMonoBase {
     protected override void Awake() {
         base.Awake();
         Arguments.ValidateNotNull(rowPrefab);
-        _table = gameObject.GetSafeMonoBehaviourInChildren<UITable>();
+        _table = gameObject.GetSafeFirstMonoBehaviourInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
         _cmdLookup = new Dictionary<GameObject, IBaseCmdItem>();
-        _doneButtonGo = gameObject.GetComponentInChildren<GuiInputModeControlButton>().gameObject;
+        _doneButtonGo = gameObject.GetComponentInChildren<InputModeControlButton>().gameObject;
     }
 
     public void PopulateTable() {
@@ -110,7 +110,7 @@ public class BasesScreenManager : AMonoBase {
 
     private void PopulateRowLabelsWithInfo(GameObject row, IBaseCmdItem cmd) {
         var rowSubLabels = row.GetSafeMonoBehavioursInChildren<UILabel>();
-        var nameSubLabel = rowSubLabels.Single(sl => sl.GetComponent<GuiElement>().elementID == GuiElementID.NameLabel);
+        var nameSubLabel = rowSubLabels.Single(sl => sl.GetComponent<GuiElement>().elementID == GuiElementID.ItemNameLabel);
         var compositionSubLabel = rowSubLabels.Single(sl => sl.GetComponent<GuiElement>().elementID == GuiElementID.CompositionLabel);
 
         var labelText = cmd.GetLabelText(DisplayTargetID.BasesScreen);

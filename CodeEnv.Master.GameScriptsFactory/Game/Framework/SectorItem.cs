@@ -51,8 +51,8 @@ public class SectorItem : AItem, ISectorItem {
 
     protected override void InitializeModelMembers() { }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     #endregion

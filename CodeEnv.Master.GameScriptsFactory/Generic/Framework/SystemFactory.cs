@@ -83,7 +83,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="starLayer">The layer you want the star to assume. Default is Layers.Default.</param>
     /// <returns></returns>
     public StarItem MakeInstance(StarStat starStat, SystemItem systemParent, Layers starLayer = Layers.Default) {
-        GameObject starPrefab = _starPrefabs.First(sGo => sGo.name == starStat.Category.GetName());
+        GameObject starPrefab = _starPrefabs.First(sGo => sGo.name == starStat.Category.GetValueName());
         GameObject starGo = UnityUtility.AddChild(systemParent.gameObject, starPrefab);
         starGo.layer = (int)starLayer;
         StarItem item = starGo.GetSafeMonoBehaviour<StarItem>();
@@ -100,7 +100,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     public void MakeInstance(StarStat starStat, string systemName, ref StarItem star) {
         D.Assert(!star.enabled, "{0} should not be enabled.".Inject(star.FullName));
         D.Assert(star.transform.parent != null, "{0} should already have a parent.".Inject(star.FullName));
-        D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetName(), star.category.GetName()));
+        D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetValueName(), star.category.GetValueName()));
 
         string starName = systemName + Constants.Space + CommonTerms.Star;
         star.Data = new StarData(star.Transform, starStat) {
@@ -139,7 +139,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(!planet.enabled, "{0} should not be enabled.".Inject(planet.FullName));
         D.Assert(planet.transform.parent != null, "{0} should already have a parent.".Inject(planet.FullName));
         D.Assert(planetStat.Category == planet.category,
-            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetName(), planet.category.GetName()));
+            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName()));
 
         planet.Data = new PlanetoidData(planet.Transform, planetStat) {   // new PlanetData(planetStat) {
             ParentName = parentSystemName
@@ -178,7 +178,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(!moon.enabled, "{0} should not be enabled.".Inject(moon.FullName));
         D.Assert(moon.transform.parent != null, "{0} should already have a parent.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
-            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, moonStat.Category.GetName(), moon.category.GetName()));
+            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName()));
 
         moon.Data = new PlanetoidData(moon.Transform, moonStat) {   // new MoonData(moonStat) {
             ParentName = parentPlanetName

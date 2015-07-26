@@ -36,7 +36,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     }
 
     protected override void InitializeRadiiComponents() {
-        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
+        var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         (collider as SphereCollider).radius = Radius;
         collider.isTrigger = false;
@@ -52,7 +52,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildrenOnly<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;

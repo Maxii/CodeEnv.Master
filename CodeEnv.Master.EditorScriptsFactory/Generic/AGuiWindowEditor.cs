@@ -27,7 +27,7 @@ public abstract class AGuiWindowEditor<T> : Editor where T : AGuiWindow {
         var window = target as T;
 
         serializedObject.Update();
-        NGUIEditorTools.DrawProperty("A Content Holder", serializedObject, "currentContentHolder");
+        DrawDerivedClassProperties();
         NGUIEditorTools.DrawProperty("Start Hidden", serializedObject, "startHidden");
         NGUIEditorTools.DrawProperty("Use Fading", serializedObject, "useFading");
         NGUIEditorTools.DrawProperty("Fading Duration", serializedObject, "fadeDuration");
@@ -35,6 +35,8 @@ public abstract class AGuiWindowEditor<T> : Editor where T : AGuiWindow {
 
         DrawEvents(window);
     }
+
+    protected virtual void DrawDerivedClassProperties() { }
 
     private void DrawEvents(T window) {
         NGUIEditorTools.DrawEvents("On Show Begin", window, window.onShowBegin);

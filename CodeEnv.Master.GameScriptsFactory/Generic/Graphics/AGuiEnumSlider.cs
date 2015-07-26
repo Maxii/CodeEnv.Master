@@ -26,7 +26,7 @@ using CodeEnv.Master.GameContent;
 /// Abstract generic base class that uses Enums to populate sliders in the Gui. 
 /// </summary>
 /// <typeparam name="E">The enum type.</typeparam>
-public abstract class AGuiEnumSlider<E> : AGuiTooltip where E : struct {
+public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
 
     private UISlider _slider;
     private float[] _orderedSliderStepValues;

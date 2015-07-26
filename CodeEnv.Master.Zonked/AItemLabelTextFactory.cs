@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
                         //D.Log("{0} using default phrase [{1}] for {2}.", GetType().Name, phrase, contentID.GetName());
                     }
                     else {
-                        D.Log("{0} using override phrase [{1}] for {2}.", GetType().Name, phrase, contentID.GetName());
+                        D.Log("{0} using override phrase [{1}] for {2}.", GetType().Name, phrase, contentID.GetValueName());
                     }
                     labelText.Add(contentID, content, phrase);
                 }

@@ -52,7 +52,7 @@ public class HealthGuiElement : GuiElement, IComparable<HealthGuiElement> {
     protected override void Awake() {
         base.Awake();
         Validate();
-        _slider = gameObject.GetSafeMonoBehaviourInChildren<UISlider>();
+        _slider = gameObject.GetSafeFirstMonoBehaviourInChildren<UISlider>();
         _barForeground = _slider.gameObject.GetSafeMonoBehaviourInImmediateChildren<UISprite>();
     }
 
@@ -92,14 +92,14 @@ public class HealthGuiElement : GuiElement, IComparable<HealthGuiElement> {
             barColor = GameColor.Clear;
             tooltip = _unknownTooltipFormat;
         }
-        D.Log("{0} setting barColor to {1}.", GetType().Name, barColor.GetName());
+        D.Log("{0} setting barColor to {1}.", GetType().Name, barColor.GetValueName());
         _barForeground.color = barColor.ToUnityColor();
         _tooltipContent = tooltip;
     }
 
     private void Validate() {
         if (elementID != GuiElementID.Health) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
+            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetValueName());
             elementID = GuiElementID.Health;
         }
     }

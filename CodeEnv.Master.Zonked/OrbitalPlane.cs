@@ -35,8 +35,8 @@ public class OrbitalPlane : StationaryItem, IZoomToFurthest {
 
     protected override void Awake() {
         base.Awake();
-        _systemManager = gameObject.GetSafeMonoBehaviourInParents<SystemCreator>();
-        _systemGraphics = gameObject.GetSafeMonoBehaviourInParents<SystemGraphics>();
+        _systemManager = gameObject.GetSafeFirstMonoBehaviourInParents<SystemCreator>();
+        _systemGraphics = gameObject.GetSafeFirstMonoBehaviourInParents<SystemGraphics>();
         __ValidateCtxObjectSettings();
     }
 

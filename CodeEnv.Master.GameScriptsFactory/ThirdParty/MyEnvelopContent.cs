@@ -62,7 +62,7 @@ public class MyEnvelopContent : AMonoBase {
             D.ErrorContext("Target Root object should not be a parent of Envelop Content. Make it a sibling instead.", this);
         }
         else {
-            Bounds b = NGUIMath.CalculateRelativeWidgetBounds(transform.parent, targetRoot, false);
+            Bounds b = NGUIMath.CalculateRelativeWidgetBounds(transform.parent, targetRoot, false, considerChildren: false);
             float x0 = b.min.x + padLeft;
             float y0 = b.min.y + padBottom;
             float x1 = b.max.x + padRight;

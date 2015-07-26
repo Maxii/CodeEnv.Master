@@ -117,8 +117,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="content">The content.</param>
         /// <param name="phraseFormat">The phrase as a string.Format for insertion of content.</param>
         public void Add(LabelContentID contentID, IColoredTextList content, string phraseFormat) {
-            D.Assert(!_contentLookup.ContainsKey(contentID), "ContentID {0} already present.".Inject(contentID.GetName()));
-            D.Assert(!_phraseFormatLookup.ContainsKey(contentID), "ContentID {0} already present.".Inject(contentID.GetName()));
+            D.Assert(!_contentLookup.ContainsKey(contentID), "ContentID {0} already present.".Inject(contentID.GetValueName()));
+            D.Assert(!_phraseFormatLookup.ContainsKey(contentID), "ContentID {0} already present.".Inject(contentID.GetValueName()));
 
             _contentLookup.Add(contentID, content);
             _phraseFormatLookup.Add(contentID, phraseFormat);
@@ -133,8 +133,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="content">The content.</param>
         /// <returns></returns>
         public bool TryUpdate(LabelContentID contentID, IColoredTextList content) {
-            D.Assert(_contentLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
-            D.Assert(_phraseFormatLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
+            D.Assert(_contentLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetValueName()));
+            D.Assert(_phraseFormatLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetValueName()));
 
             IColoredTextList existingContent = _contentLookup[contentID];
             if (IsEqual(existingContent, content)) {
@@ -167,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
         public string GetText(LabelContentID contentID) {
             string textPhrase = string.Empty;
             if (!TryGetTextPhrase(contentID, out textPhrase)) {
-                D.Warn("{0} found no content for ID {1}.", GetType().Name, contentID.GetName());
+                D.Warn("{0} found no content for ID {1}.", GetType().Name, contentID.GetValueName());
             }
             return textPhrase;
         }
@@ -199,7 +199,7 @@ namespace CodeEnv.Master.GameContent {
             IColoredTextList content;
             if (_contentLookup.TryGetValue(contentID, out content)) {
                 if (content.List.Count == Constants.Zero) {
-                    D.Warn("{0} content for ID {1} is empty.", GetType().Name, contentID.GetName());
+                    D.Warn("{0} content for ID {1} is empty.", GetType().Name, contentID.GetValueName());
                 }
                 textPhrase = ConstructTextPhrase(contentID, content);
                 return true;
@@ -223,7 +223,7 @@ namespace CodeEnv.Master.GameContent {
                 return textPhrase;
             }
 
-            string warn = "No format found for {0}.".Inject(contentID.GetName());
+            string warn = "No format found for {0}.".Inject(contentID.GetValueName());
             D.Warn(warn);
             return warn;
         }

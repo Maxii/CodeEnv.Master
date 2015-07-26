@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -24,6 +25,12 @@ using UnityEngine;
 /// independant of the distance from the tracked world object to the main camera.
 /// </summary>
 public class UITrackingSprite : AUITrackingWidget {
+
+    private AtlasID _atlasID;
+    public AtlasID AtlasID {
+        get { return _atlasID; }
+        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", OnAtlasIDChanged); }
+    }
 
     /// <summary>
     /// Temporary. The desired dimensions in pixels of this sprite. 
@@ -47,7 +54,6 @@ public class UITrackingSprite : AUITrackingWidget {
     /// <param name="spriteName">Name of the sprite.</param>
     public override void Set(string spriteName) {
         D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
-        if (Widget.spriteName == spriteName) { return; }
         Widget.spriteName = spriteName;
     }
 
@@ -55,6 +61,10 @@ public class UITrackingSprite : AUITrackingWidget {
         int spriteWidth = Mathf.RoundToInt(desiredSpriteDimensions.x);
         int spriteHeight = Mathf.RoundToInt(desiredSpriteDimensions.y);
         Widget.SetDimensions(spriteWidth, spriteHeight);
+    }
+
+    private void OnAtlasIDChanged() {
+        Widget.atlas = AtlasID.GetAtlas();
     }
 
     protected override void Cleanup() { }

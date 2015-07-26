@@ -18,22 +18,18 @@
 
 using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Approval in a Command.       
 /// </summary>
-public class ApprovalGuiElement : GuiElement, IComparable<ApprovalGuiElement> {
-
-    private static string _unknown = Constants.QuestionMark;
+public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGuiElement> {
 
     /// <summary>
-    /// Tooltip format. Approval percentage aka 100%.
+    /// Format for the alternative display of values. Approval percentage aka 100%.
     /// </summary>
-    private static string _tooltipFormat = "{0}";
-
-    private string _tooltipContent;
-    protected override string TooltipContent { get { return _tooltipContent; } }
+    private static string _detailValuesFormat = "{0}";
 
     private bool _isApprovalSet;
     private float? _approval;
@@ -45,17 +41,9 @@ public class ApprovalGuiElement : GuiElement, IComparable<ApprovalGuiElement> {
         }
     }
 
-    private bool AreAllValuesSet { get { return _isApprovalSet; } }
+    public override GuiElementID ElementID { get { return GuiElementID.Approval; } }
 
-    private UISlider _slider;
-    private UISprite _barForeground;
-
-    protected override void Awake() {
-        base.Awake();
-        Validate();
-        _slider = gameObject.GetSafeMonoBehaviourInChildren<UISlider>();
-        _barForeground = _slider.gameObject.GetSafeMonoBehaviourInImmediateChildren<UISprite>();
-    }
+    protected override bool AreAllValuesSet { get { return _isApprovalSet; } }
 
     private void OnApprovalSet() {
         if (Approval.HasValue) {
@@ -67,44 +55,54 @@ public class ApprovalGuiElement : GuiElement, IComparable<ApprovalGuiElement> {
         }
     }
 
-    private void PopulateElementWidgets() {
-        GameColor barColor = GameColor.Clear;   // appears disabled
-        string approvalTooltip = _unknown;
-        if (Approval.HasValue) {
-            _slider.value = Approval.Value;
-            approvalTooltip = Constants.FormatPercent_0Dp.Inject(Approval.Value);
-            D.Log("{0} setting slider value to {1:0.#}.", GetType().Name, Approval.Value);
-            if (Approval.Value > GeneralSettings.Instance.ContentApprovalThreshold) {
-                barColor = GameColor.Green;
-            }
-            else if (Approval.Value > GeneralSettings.Instance.UnhappyApprovalThreshold) {
-                barColor = GameColor.White;
-            }
-            else if (Approval.Value > GeneralSettings.Instance.RevoltApprovalThreshold) {
-                barColor = GameColor.Yellow;
-            }
-            else {
-                barColor = GameColor.Red;
-            }
+    protected override void PopulateElementWidgets() {
+        if (!Approval.HasValue) {
+            OnValuesUnknown();
+            return;
         }
-        D.Log("{0} setting barColor to {1}.", GetType().Name, barColor.GetName());
-        _barForeground.color = barColor.ToUnityColor();
-        _tooltipContent = _tooltipFormat.Inject(approvalTooltip);
+
+        float approvalValue = Approval.Value;
+        GameColor approvalColor;
+        //D.Log("{0} setting slider value to {1:0.#}.", GetType().Name, Approval.Value);
+        if (approvalValue > GeneralSettings.Instance.ContentApprovalThreshold) {
+            approvalColor = GameColor.Green;    // Happy
+        }
+        else if (approvalValue > GeneralSettings.Instance.UnhappyApprovalThreshold) {
+            approvalColor = GameColor.White;    // Content
+        }
+        else if (approvalValue > GeneralSettings.Instance.RevoltApprovalThreshold) {
+            approvalColor = GameColor.Yellow;   // Unhappy
+        }
+        else {
+            approvalColor = GameColor.Red;  // Revolt
+        }
+
+        string approvalValuePercentText = Constants.FormatPercent_0Dp.Inject(approvalValue);
+        _detailValuesContent = _detailValuesFormat.Inject(approvalValuePercentText);
+        var detailValuesContent_Colored = _detailValuesFormat.Inject(approvalValuePercentText.SurroundWith(approvalColor));
+
+        switch (widgetsPresent) {
+            case WidgetsPresent.ProgressBar:
+                PopulateProgressBarValues(approvalValue, approvalColor);
+                _tooltipContent = detailValuesContent_Colored;
+                break;
+            case WidgetsPresent.Label:
+                _detailValuesLabel.text = detailValuesContent_Colored;
+                break;
+            case WidgetsPresent.Both:
+                PopulateProgressBarValues(approvalValue, approvalColor);
+                _detailValuesLabel.text = detailValuesContent_Colored;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+        }
     }
 
     public override void Reset() {
-        base.Reset();
         _isApprovalSet = false;
     }
 
-    private void Validate() {
-        if (elementID != GuiElementID.Approval) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.Approval;
-        }
-    }
-
-    public override string ToString() { return GetType().Name + Constants.Space + TooltipContent; }
+    protected override void Cleanup() { }
 
     #region IComparable<ApprovalGuiElement> Members
 

@@ -100,7 +100,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetName(), msg);
+        D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
         _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
     }
 

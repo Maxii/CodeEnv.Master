@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: GuiPlayerColorPopupList.cs
-// Player Color selection popup list in the Gui.
+// A PopupList that handles the selection of player colors in the NewGameMenu. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,47 +16,72 @@
 
 // default namespace
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Player Color selection popup list in the Gui.
+/// A PopupList that handles the selection of player colors in the NewGameMenu.
 /// </summary>
-public class GuiPlayerColorPopupList : AGuiPopupList<GameColor> {
+public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
+
+    /// <summary>
+    /// Occurs when the USER makes a selection from the ColorPopupList.
+    /// Disabled when the selection change is initiated by the PlayerColorManager.
+    /// </summary>
+    public event Action<GuiPlayerColorPopupList> onSelection;
 
     public GuiElementID elementID;
 
-    private GameColor _defaultSelection;
-    public GameColor DefaultSelection {
-        get { return _defaultSelection; }
-        set { SetProperty<GameColor>(ref _defaultSelection, value, "DefaultSelection", OnDefaultSelectionChanged); }
-    }
-
     public override GuiElementID ElementID { get { return elementID; } }
 
-    protected override string[] NameValues {
-        get {
-            return Enums<GameColor>.GetNamesExcept(default(GameColor),
-                GameColor.Clear, GameColor.Gray, GameColor.Black, GameColor.White);
-        }
+    protected override bool SelfInitializeSelection { get { return false; } }
+
+    /// <summary>
+    /// The GameColor currently selected.
+    /// </summary>
+    public GameColor SelectedColor { get { return Enums<GameColor>.Parse(_popupList.value); } }
+
+    private string[] _choices;
+    protected override string[] Choices { get { return _choices; } }
+
+    private bool _isSelectionEventsEnabled;
+
+    /// <summary>
+    ///Assigns the color choices available to this PlayerColorPopupList.
+    /// </summary>
+    /// <param name="selectionChoices">The color choices.</param>
+    public void AssignColorSelectionChoices(IEnumerable<GameColor> selectionChoices) {
+        _choices = selectionChoices.Select(color => color.GetValueName()).ToArray();
+        AssignSelectionChoices();
     }
 
     /// <summary>
-    /// Removes the provided color from the available choices within the popup list.
+    /// Refreshes the selection of this PlayerColorPopupList from its stored preference.
+    /// onSelection events are disabled during this refresh.
     /// </summary>
-    /// <param name="color">The color.</param>
-    public void RemoveColor(GameColor color) {
-        RemoveNameValue(color.GetName());
+    /// <param name="defaultSelection">The optional default selection.</param>
+    public void RefreshSelectionFromPreference(GameColor defaultSelection = default(GameColor)) {
+        Arguments.ValidateNotNullOrEmpty<string>(Choices);
+        DefaultSelection = defaultSelection != default(GameColor) ? defaultSelection.GetValueName() : null;
+        _isSelectionEventsEnabled = false;
+        TryMakePreferenceSelection();
+        _isSelectionEventsEnabled = true;
     }
 
-    private void OnDefaultSelectionChanged() {
-        DefaultSelectionValue = DefaultSelection.GetName();
+    private void RefreshLabelColor() {
+        _label.color = SelectedColor.ToUnityColor();
     }
 
-    // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
-    // from this popup list until the Menu Accept Button is pushed
-
-    protected override void Cleanup() { }
+    protected override void OnPopupListSelection() {
+        base.OnPopupListSelection();
+        RefreshLabelColor();
+        if (_isSelectionEventsEnabled && onSelection != null) {
+            onSelection(this);
+        }
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

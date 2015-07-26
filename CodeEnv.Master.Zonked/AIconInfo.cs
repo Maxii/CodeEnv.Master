@@ -100,16 +100,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private string AcquireFilename() {
-            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(_section.GetName())).Single();
+            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(_section.GetValueName())).Single();
             var selectionNodes = sectionNode.Elements(_selectionTagName);
             foreach (var selectionNode in selectionNodes) {
                 var criteriaValues = selectionNode.Elements(_criteriaTagName).Select(node => node.Value);
-                if (criteriaValues.OrderBy(v => v).SequenceEqual(_criteria.Select(c => c.GetName()).OrderBy(n => n))) {
+                if (criteriaValues.OrderBy(v => v).SequenceEqual(_criteria.Select(c => c.GetValueName()).OrderBy(n => n))) {
                     // found the criteria values we were looking for in this node
                     return selectionNode.Element(_iconFilenameTagName).Value;
                 }
             }
-            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, _section.GetName(), _criteria.Concatenate());
+            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, _section.GetValueName(), _criteria.Concatenate());
             return string.Empty;
         }
 

@@ -155,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return string.Format("Intel Metadata [Scope: {0}, Source: {1}, DateStamp: {2} ].", CurrentCoverage.GetName(), Source.GetName(), DateStamp.ToString());
+            return string.Format("Intel Metadata [Scope: {0}, Source: {1}, DateStamp: {2} ].", CurrentCoverage.GetName(), Source.GetValueName(), DateStamp.ToString());
         }
 
         #region IEquatable<Intel> Members

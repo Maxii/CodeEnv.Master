@@ -22,15 +22,11 @@ namespace CodeEnv.Master.GameContent {
     /// Interface allowing access to the associated Unity-compiled script. 
     /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
-    public interface ISensorRangeMonitor {
+    public interface ISensorRangeMonitor : IRangedEquipmentMonitor {
 
-        string FullName { get; }
+        IUnitCmdItem ParentItem { set; }
 
-        DistanceRange Range { get; }
-
-        IUnitCmdItem ParentCommand { set; }
-
-        Player Owner { get; }
+        IList<IElementAttackableTarget> AttackableEnemyTargetsDetected { get; }
 
         void Add(Sensor sensor);
 
@@ -41,9 +37,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
         bool Remove(Sensor sensor);
-
-        IList<IElementAttackableTarget> EnemyTargetsDetected { get; }
-
 
     }
 }

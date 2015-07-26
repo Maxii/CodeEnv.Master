@@ -47,10 +47,17 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        GameManager.Instance.onIsRunningOneShot += delegate {
+        if (GameManager.Instance.CurrentScene == SceneLevel.LobbyScene) {
             Subscribe();
             BuildContent();
-        };
+        }
+        else {
+            // GameScene not ready to BuildContent on Awake
+            GameManager.Instance.onIsRunningOneShot += delegate {
+                Subscribe();
+                BuildContent();
+            };
+        }
     }
 
     #endregion
@@ -70,13 +77,13 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     private void BuildContent() {
         _debugInfoContent = _debugInfoContent ?? new StringBuilder();
         _debugInfoContent.Clear();
-        _debugInfoContent.AppendLine("PauseState: " + GameManager.Instance.PauseState.GetName());
+        _debugInfoContent.AppendLine("PauseState: " + GameManager.Instance.PauseState.GetValueName());
         _debugInfoContent.AppendLine(ConstructQualityText());
         if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
-            _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetName());
-            _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetName());
+            _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetValueName());
+            _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetValueName());
             _debugInfoContent.AppendLine(ConstructCameraSectorText());
-            _debugInfoContent.AppendLine("InputMode: " + InputManager.Instance.InputMode.GetName());
+            _debugInfoContent.AppendLine("InputMode: " + InputManager.Instance.InputMode.GetValueName());
         }
     }
 
@@ -94,10 +101,10 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     void OnTooltip(bool show) {
         if (show) {
-            Tooltip.Instance.Show(_debugInfoContent);
+            TooltipHudWindow.Instance.Show(_debugInfoContent);
         }
         else {
-            Tooltip.Instance.Hide();
+            TooltipHudWindow.Instance.Hide();
         }
     }
 

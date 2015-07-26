@@ -45,7 +45,7 @@ public class FleetsScreenManager : AMonoBase {
     protected override void Awake() {
         base.Awake();
         Arguments.ValidateNotNull(rowPrefab);
-        _table = gameObject.GetSafeMonoBehaviourInChildren<UITable>();
+        _table = gameObject.GetSafeFirstMonoBehaviourInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
         _cmdLookup = new Dictionary<GameObject, IFleetCmdItem>();
     }
@@ -103,14 +103,14 @@ public class FleetsScreenManager : AMonoBase {
         FleetReport fleetReport = cmd.GetUserReport();
         IIconInfo fleetIconInfo = cmd.IconInfo;
         D.Assert(fleetIconInfo != null);    // a fleet we are aware of should never have a null iconInfo
-        var rowElements = row.GetSafeMonoBehavioursInImmediateChildren<GuiElement>();
+        var rowElements = row.GetSafeMonoBehavioursInImmediateChildrenOnly<GuiElement>();
 
         rowElements.ForAll(e => {
             switch (e.elementID) {
                 case GuiElementID.None:
                     // do nothing as element will warn and correct
                     break;
-                case GuiElementID.NameLabel:
+                case GuiElementID.ItemNameLabel:
                     ConfigureNameElement(e, fleetReport);
                     break;
                 case GuiElementID.Owner:
@@ -144,7 +144,7 @@ public class FleetsScreenManager : AMonoBase {
     }
 
     private void ConfigureNameElement(GuiElement element, FleetReport report) {
-        var nameLabel = element.gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        var nameLabel = element.gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
         nameLabel.text = report.ParentName != null ? report.ParentName : _unknown;
         UIEventListener.Get(element.gameObject).onDoubleClick += CloseScreenAndFocusOnItem; // OPTIMIZE Cleanup?
     }
@@ -175,7 +175,7 @@ public class FleetsScreenManager : AMonoBase {
     }
 
     private void ConfigureMaxSpeedElement(GuiElement element, FleetReport report) {
-        var speedLabel = element.gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        var speedLabel = element.gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
         speedLabel.text = report.UnitFullSpeed.HasValue ? _speedFormat.Inject(report.UnitFullSpeed.Value) : _unknown;
     }
 
@@ -263,8 +263,8 @@ public class FleetsScreenManager : AMonoBase {
     protected int CompareName(Transform rowA, Transform rowB) {
         //D.Log("{0}.CompareName() called.", GetType().Name);
         _lastSortTopic = SortTopic.Name;
-        var rowANameLabel = GetLabel(rowA, GuiElementID.NameLabel);
-        var rowBNameLabel = GetLabel(rowB, GuiElementID.NameLabel);
+        var rowANameLabel = GetLabel(rowA, GuiElementID.ItemNameLabel);
+        var rowBNameLabel = GetLabel(rowB, GuiElementID.ItemNameLabel);
         return (int)_sortDirection * rowANameLabel.text.CompareTo(rowBNameLabel.text);
     }
 
@@ -343,11 +343,11 @@ public class FleetsScreenManager : AMonoBase {
     }
 
     private UILabel GetLabel(Transform row, GuiElementID elementID) {
-        return GetGuiElement(row, elementID).gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        return GetGuiElement(row, elementID).gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
     }
 
     private GuiElement GetGuiElement(Transform row, GuiElementID elementID) {
-        var rowElements = row.gameObject.GetSafeMonoBehavioursInImmediateChildren<GuiElement>();
+        var rowElements = row.gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<GuiElement>();
         return rowElements.Single(e => e.gameObject.GetSafeMonoBehaviour<GuiElement>().elementID == elementID);
     }
 

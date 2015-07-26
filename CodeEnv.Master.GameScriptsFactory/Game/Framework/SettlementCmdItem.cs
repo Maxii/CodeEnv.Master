@@ -52,8 +52,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     #region Initialization
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     #endregion
@@ -76,8 +76,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         Data.SystemData = System.Data;
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
         RemoveSettlementFromSystem();
     }
 
@@ -96,8 +96,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         return SettlementIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
 
-    protected override void ShowSelectionHud() {
-        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.Settlement, GetUserReport()));
+    protected override void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, GetUserReport());
     }
 
     #endregion
@@ -133,12 +133,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
     //public virtual float CameraFollowRotationDampener {
     //    get { return cameraFollowRotationDampener; }
     //}
-
-    #endregion
-
-    #region ISelectable Members
-
-    //public override ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
 
     #endregion
 

@@ -37,7 +37,7 @@ public class GuiSizeElement : GuiElement, IComparable<GuiSizeElement> {
     protected override void Awake() {
         base.Awake();
         Validate();
-        _sprite = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
+        _sprite = gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
         _label = _sprite.gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
     }
 
@@ -50,12 +50,12 @@ public class GuiSizeElement : GuiElement, IComparable<GuiSizeElement> {
         _sprite.color = iconInfo.Color.ToUnityColor();
         // sprite size and placement will be preset for screen
 
-        _label.text = category.GetName();
+        _label.text = category.GetValueName();
     }
 
     private void Validate() {
         if (elementID != GuiElementID.Size) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
+            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetValueName());
             elementID = GuiElementID.Size;
         }
     }

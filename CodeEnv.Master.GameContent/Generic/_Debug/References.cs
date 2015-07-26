@@ -68,9 +68,9 @@ namespace CodeEnv.Master.GameContent {
         public static ISectorGrid SectorGrid { get; set; }
         public static ISphericalHighlight SphericalHighlight { get; set; }
         public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }
-        public static IHud Tooltip { get; set; }
-        public static IHud SelectionHud { get; set; }
-        public static IHud ItemHud { get; set; }
+        public static ITooltipHudWindow TooltipHudWindow { get; set; }
+        public static ISelectedItemHudWindow SelectedItemHudWindow { get; set; }
+        public static IHoveredHudWindow HoveredItemHudWindow { get; set; }
 
         #endregion
 

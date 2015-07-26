@@ -60,7 +60,7 @@ public class ShipGraphics : AGraphics, IDisposable {
         _shipCaptain = gameObject.GetSafeMonoBehaviour<ShipCaptain>();
         maxAnimateDistance = Mathf.RoundToInt(GraphicsSettings.Instance.MaxShipAnimateDistanceFactor * _shipCaptain.Size);
         maxShowDistance = Mathf.RoundToInt(GraphicsSettings.Instance.MaxShipShowDistanceFactor * _shipCaptain.Size);
-        _fleetMgr = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
+        _fleetMgr = gameObject.GetSafeFirstMonoBehaviourInParents<FleetUnitCreator>();
         InitializeHighlighting();
     }
 
@@ -200,7 +200,7 @@ public class ShipGraphics : AGraphics, IDisposable {
             _circles.Widths = new float[3] { 2F, 2F, 1F };
         }
         if (toShow) {
-            D.Log("Ship {1} attempting to show circle {0}.", highlight.GetName(), _shipCaptain.Data.Name);
+            D.Log("Ship {1} attempting to show circle {0}.", highlight.GetValueName(), _shipCaptain.Data.Name);
             if (!_circles.IsShowing) {
                 StartCoroutine(_circles.ShowCircles((int)highlight));
             }

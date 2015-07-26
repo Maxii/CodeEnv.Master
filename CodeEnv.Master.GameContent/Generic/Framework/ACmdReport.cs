@@ -37,9 +37,9 @@ namespace CodeEnv.Master.GameContent {
 
         public Formation UnitFormation { get; private set; }
 
-        public float? UnitMaxWeaponsRange { get; private set; }
+        public RangeDistance? UnitWeaponsRange { get; private set; }
 
-        public float? UnitMaxSensorRange { get; private set; }
+        public RangeDistance? UnitSensorRange { get; private set; }
 
         public CombatStrength? UnitOffensiveStrength { get; private set; }
 
@@ -76,6 +76,8 @@ namespace CodeEnv.Master.GameContent {
             AUnitCmdItemData cmdData = data as AUnitCmdItemData;
             Owner = cmdData.Owner;
             UnitIncome = cmdData.UnitIncome;
+            UnitSensorRange = cmdData.UnitSensorRange;
+            UnitWeaponsRange = cmdData.UnitWeaponsRange;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
@@ -105,8 +107,8 @@ namespace CodeEnv.Master.GameContent {
 
             UnitHealth = CalcUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
 
-            UnitMaxSensorRange = elementReports.Select(er => er.MaxSensorRange).Max();
-            UnitMaxWeaponsRange = elementReports.Select(er => er.MaxWeaponsRange).Max();
+            //UnitMaxSensorRange = elementReports.Select(er => er.MaxSensorRange).Max();    // UnitSensorRange moved to Broad
+            //UnitMaxWeaponsRange = elementReports.Select(er => er.MaxWeaponsRange).Max();    // UnitWeaponsRange moved to Broad
             UnitScience = elementReports.Select(er => er.Science).NullableSum();
             UnitExpense = elementReports.Select(er => er.Expense).NullableSum();
         }

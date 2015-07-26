@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementData : AMortalItemData {
 
-        public IList<Weapon> Weapons { get; private set; }
+        public IList<AWeapon> Weapons { get; private set; }
         public IList<Sensor> Sensors { get; private set; }
 
         private CombatStrength _offensiveStrength;
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPoints">The maximum hit points.</param>
         public AUnitElementData(string name, float mass, float maxHitPoints)
             : base(name, mass, maxHitPoints) {
-            Weapons = new List<Weapon>();
+            Weapons = new List<AWeapon>();
             Sensors = new List<Sensor>();
         }
 

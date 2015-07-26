@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         public UniverseCenterDisplayManager(GameObject itemGO) : base(itemGO) { }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetComponentInImmediateChildren<MeshRenderer>();
+            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
             primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             return primaryMeshRenderer;

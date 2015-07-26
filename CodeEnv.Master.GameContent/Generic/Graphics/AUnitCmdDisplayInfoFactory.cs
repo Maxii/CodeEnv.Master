@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ContentID.Formation:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitFormation != Formation.None ? report.UnitFormation.GetName() : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitFormation != Formation.None ? report.UnitFormation.GetValueName() : _unknown);
                         break;
                     case ContentID.UnitOffense:
                         isSuccess = true;
@@ -61,13 +61,13 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = GetColorizedHealthText(report.UnitHealth, report.MaxHitPoints);
                         break;
-                    case ContentID.UnitMaxWeaponsRange:
+                    case ContentID.UnitWeaponsRange:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitMaxWeaponsRange.HasValue ? GetFormat(contentID).Inject(report.UnitMaxWeaponsRange.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitWeaponsRange.HasValue ? report.UnitWeaponsRange.Value.ToString() : _unknown);
                         break;
-                    case ContentID.UnitMaxSensorRange:
+                    case ContentID.UnitSensorRange:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitMaxSensorRange.HasValue ? GetFormat(contentID).Inject(report.UnitMaxSensorRange.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitSensorRange.HasValue ? report.UnitSensorRange.Value.ToString() : _unknown);
                         break;
                     case ContentID.UnitScience:
                         isSuccess = true;

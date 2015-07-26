@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, AtlasID.GetName(), Size, Filename, Color.GetName(), Placement.GetName());
+            return _toStringFormat.Inject(GetType().Name, AtlasID.GetValueName(), Size, Filename, Color.GetValueName(), Placement.GetValueName());
         }
 
     }

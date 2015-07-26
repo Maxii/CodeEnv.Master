@@ -19,54 +19,72 @@
 using System;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Hero assigned to an item. 
 /// UNDONE once Hero is introduced, pattern this element after the OwnerGuiElement.
 /// </summary>
-public class HeroGuiElement : GuiElement, IComparable<HeroGuiElement> {
+public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
 
-    protected override string TooltipContent { get { return "Hero custom tooltip placeholder"; } }
+    public override GuiElementID ElementID { get { return GuiElementID.Hero; } }
 
+    private bool _isHeroSet;
     private string __heroName;
     public string __HeroName {
         get { return __heroName; }
-        set { SetProperty<string>(ref __heroName, value, "__HeroName", OnHeroChanged); }
+        set { SetProperty<string>(ref __heroName, value, "__HeroName", __OnHeroChanged); }
     }
 
-    private UILabel _label;
-    private UISprite _imageSprite;
-
-    protected override void Awake() {
-        base.Awake();
-        Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
-        _imageSprite = gameObject.GetSafeMonoBehavioursInChildren<UISprite>().Single(s => s.type == UIBasicSprite.Type.Simple);
-    }
+    protected override bool AreAllValuesSet { get { return _isHeroSet; } }
 
     void OnClick() {
         D.Warn("{0}.OnClick() not yet implemented. TODO: Redirect to Hero management screen.", GetType().Name);
     }
 
-    private void OnHeroChanged() {
-        _label.text = __HeroName;
-        _imageSprite.spriteName = __HeroName;   // should result in a null (no image) sprite
-        //_imageSprite.spriteName = Hero.ImageFilename;
+    private void __OnHeroChanged() {
+        _isHeroSet = true;
+        if (AreAllValuesSet) {
+            PopulateElementWidgets();
+        }
+    }
+
+    protected override void PopulateElementWidgets() {
+        if (__HeroName == null) {
+            OnValuesUnknown();
+            return;
+        }
+
+        AtlasID imageAtlasID = AtlasID.MyGui;
+        string imageFilename = __HeroName;   // should result in a null (no image) sprite
+        string heroName_Colored = __HeroName;
+
+        switch (widgetsPresent) {
+            case WidgetsPresent.Image:
+                PopulateImageValues(imageFilename, imageAtlasID);
+                _tooltipContent = "Hero custom tooltip placeholder";
+                break;
+            case WidgetsPresent.Label:
+                _imageNameLabel.text = heroName_Colored;
+                break;
+            case WidgetsPresent.Both:
+                PopulateImageValues(imageFilename, imageAtlasID);
+                _imageNameLabel.text = heroName_Colored;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+        }
     }
 
     public override void Reset() {
-        base.Reset();
         // UNDONE
         __heroName = null;
+        _isHeroSet = false;
     }
 
-    private void Validate() {
-        if (elementID != GuiElementID.Hero) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.Hero;
-        }
-    }
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

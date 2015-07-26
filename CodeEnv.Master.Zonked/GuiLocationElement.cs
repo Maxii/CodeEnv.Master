@@ -43,7 +43,7 @@ public class GuiLocationElement : GuiElement, IComparable<GuiLocationElement> {
     protected override void Awake() {
         base.Awake();
         Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
     }
 
     public void SetValues(Index3D sectorIndex, Vector3? worldPosition) {
@@ -76,7 +76,7 @@ public class GuiLocationElement : GuiElement, IComparable<GuiLocationElement> {
 
     private void Validate() {
         if (elementID != GuiElementID.Location) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
+            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetValueName());
             elementID = GuiElementID.Location;
         }
     }

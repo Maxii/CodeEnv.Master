@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CountermeasureStat.cs
-// Immutable struct containing externally acquirable values for Countermeasures.
+// Immutable class containing externally acquirable values for Countermeasures.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,40 +19,42 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable struct containing externally acquirable values for Countermeasures.
+    /// Immutable class containing externally acquirable values for Countermeasures.
     /// </summary>
-    public struct CountermeasureStat {
+    public class CountermeasureStat : AEquipmentStat {
 
-        static private string _toStringFormat = "{0}: Name[{1}], Strength[{2}], Size[{3}], Power[{4}].";
-
-        private string _rootName;   // = string.Empty cannot use initializers in a struct
-        public string RootName {
-            get { return _rootName.IsNullOrEmpty() ? "Countermeasure {0}".Inject(Strength) : _rootName; }
-        }
+        private static string _toStringFormat = "{0}: Name[{1}], Strength[{2:0.}].";
 
         public CombatStrength Strength { get; private set; }
 
-        public float PhysicalSize { get; private set; }
-
-        public float PowerRequirement { get; private set; }
+        public float Accuracy { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CountermeasureStat"/> struct.
+        /// Initializes a new instance of the <see cref="CountermeasureStat" /> class.
         /// </summary>
-        /// <param name="strength">The combat strength of the countermeasure.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
+        /// <param name="description">The description.</param>
         /// <param name="size">The physical size of the countermeasure.</param>
         /// <param name="pwrRqmt">The power required to operate the countermeasure.</param>
-        /// <param name="rootName">The root name to use for this countermeasure before adding supplemental attributes.</param>
-        public CountermeasureStat(CombatStrength strength, float size, float pwrRqmt, string rootName = Constants.Empty)
-            : this() {
+        /// <param name="strength">The combat strength of the countermeasure.</param>
+        /// <param name="accuracy">The accuracy of the countermeasure.</param>
+        public CountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, CombatStrength strength, float accuracy)
+            : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt) {
             Strength = strength;
-            PhysicalSize = size;
-            PowerRequirement = pwrRqmt;
-            _rootName = rootName;
+            Accuracy = accuracy;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the most basic <see cref="CountermeasureStat"/> class.
+        /// </summary>
+        public CountermeasureStat()
+            : this("BasicCM", AtlasID.MyGui, "None", "None", 0F, 0F, new CombatStrength(1F, 1F, 1F), Constants.OneHundredPercent) {
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, RootName, Strength.Combined, PhysicalSize, PowerRequirement);
+            return _toStringFormat.Inject(typeof(Countermeasure).Name, Name, Strength.Combined);
         }
 
     }

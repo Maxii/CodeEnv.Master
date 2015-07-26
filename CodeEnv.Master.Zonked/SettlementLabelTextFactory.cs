@@ -102,13 +102,13 @@ namespace CodeEnv.Master.GameContent {
                     content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != SettlementCategory.None ? new ColoredTextList_String(report.Category.GetName()) : content;
+                    content = report.Category != SettlementCategory.None ? new ColoredTextList_String(report.Category.GetValueName()) : content;
                     break;
                 case LabelContentID.Composition:
                     content = report.UnitComposition != null ? new ColoredTextList_String(report.UnitComposition.ToString()) : content;
                     break;
                 case LabelContentID.Formation:
-                    content = report.UnitFormation != Formation.None ? new ColoredTextList_String(report.UnitFormation.GetName()) : content;
+                    content = report.UnitFormation != Formation.None ? new ColoredTextList_String(report.UnitFormation.GetValueName()) : content;
                     break;
                 case LabelContentID.CurrentCmdEffectiveness:
                     content = report.CurrentCmdEffectiveness.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.CurrentCmdEffectiveness.Value) : content;

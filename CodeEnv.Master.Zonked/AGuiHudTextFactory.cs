@@ -249,7 +249,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             private string ConstructIntelText(AIntel intel) {
-                string intelMsg = intel.CurrentCoverage.GetName();
+                string intelMsg = intel.CurrentCoverage.GetValueName();
                 string addendum = ". Intel is current.";
                 var intelWithDatedCoverage = intel as Intel;
                 if (intelWithDatedCoverage != null && intelWithDatedCoverage.IsDatedCoverageValid) {
@@ -285,7 +285,7 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Settlement : ColoredTextList {
 
             public ColoredTextList_Settlement(SettlementCmdData settlement) {
-                _list.Add(new ColoredText(settlement.Category.GetName()));
+                _list.Add(new ColoredText(settlement.Category.GetValueName()));
                 _list.Add(new ColoredText(settlement.Population.ToString()));
                 _list.Add(new ColoredText(settlement.CapacityUsed.ToString()));
                 _list.Add(new ColoredText("TBD"));  // OPE Used need format
@@ -296,7 +296,7 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Ship : ColoredTextList {
 
             public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
-                _list.Add(new ColoredText(ship.Category.GetName()));
+                _list.Add(new ColoredText(ship.Category.GetValueName()));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.Mass)));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.MaxTurnRate)));
             }

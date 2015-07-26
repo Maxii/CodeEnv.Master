@@ -30,7 +30,7 @@ public class LobbyInputManager : AInputManager<LobbyInputManager> {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        InputMode = GameInputMode.PartialScreenPopup;
+        InputMode = GameInputMode.PartialPopup;
     }
 
     /// <summary>
@@ -40,12 +40,12 @@ public class LobbyInputManager : AInputManager<LobbyInputManager> {
     /// <exception cref="System.NotImplementedException"></exception>
     protected override void OnInputModeChanged() {
         switch (InputMode) {
-            case GameInputMode.PartialScreenPopup:
-                D.Log("{0} is now {1}.", typeof(GameInputMode).Name, InputMode.GetName());
+            case GameInputMode.PartialPopup:
+                D.Log("{0} is now {1}.", typeof(GameInputMode).Name, InputMode.GetValueName());
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_PopupInputOnly;
                 break;
             case GameInputMode.NoInput:
-            case GameInputMode.FullScreenPopup:
+            case GameInputMode.FullPopup:
             case GameInputMode.Normal:
             case GameInputMode.None:
             default:

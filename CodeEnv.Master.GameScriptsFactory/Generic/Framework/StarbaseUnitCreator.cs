@@ -73,7 +73,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
 
         StarbaseCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourInChildren<StarbaseCmdItem>();
+            cmd = gameObject.GetSafeFirstMonoBehaviourInChildren<StarbaseCmdItem>();
             _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {

@@ -157,6 +157,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// <param name="bounds">The bounds.</param>
     /// <returns></returns>
     private static Mesh MakeBoundsMesh(Bounds bounds) {
+
         var mesh = new Mesh();
         mesh.vertices = new[] {bounds.center + new Vector3(-bounds.extents.x,  bounds.extents.y,  bounds.extents.z),
                                bounds.center + new Vector3( bounds.extents.x,  bounds.extents.y,  bounds.extents.z),

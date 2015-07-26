@@ -182,7 +182,7 @@ public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandle
         if (LogEvents) {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
             NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
-            string touchID = (button ?? NguiMouseButton.None).GetName();
+            string touchID = (button ?? NguiMouseButton.None).GetValueName();
             string hoveredObject = UICamera.hoveredObject.name;
             string camera = UICamera.currentCamera.name;
             string screenPosition = UICamera.lastTouchPosition.ToString();

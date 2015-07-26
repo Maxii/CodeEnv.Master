@@ -196,7 +196,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest {
     /// <returns><c>true</c> if an occluded object was found, else <c>false</c>.</returns>
     private bool CheckForOccludedObject(out GameObject occludedObject) {
         Layers orbitalPlaneLayer = (Layers)_orbitalPlaneCollider.gameObject.layer;
-        D.Assert(orbitalPlaneLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, orbitalPlaneLayer.GetName(), Layers.SystemOrbitalPlane.GetName()));
+        D.Assert(orbitalPlaneLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, orbitalPlaneLayer.GetValueName(), Layers.SystemOrbitalPlane.GetValueName()));
 
         UICamera eventDispatcher = MainCameraControl.Instance.MainCameraEventDispatcher;
         var savedMask = eventDispatcher.eventReceiverMask;

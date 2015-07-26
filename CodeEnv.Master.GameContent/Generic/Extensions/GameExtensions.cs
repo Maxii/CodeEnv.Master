@@ -178,6 +178,47 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Calculates the combined sensor range (distance) from the provided sensors that are operational. 
+        /// The algorithm used takes the sensor with the longest range and adds the Sqrt of the range of each of the remaining sensors.
+        /// The provided sensors must have the same DistanceRange value.
+        /// </summary>
+        /// <param name="sensors">The sensors.</param>
+        /// <returns></returns>
+        public static float CalcSensorRangeDistance(this IEnumerable<Sensor> sensors) {
+            D.Assert(sensors.Select(s => s.RangeCategory).Distinct().Count() <= Constants.One); // validate all the same DistanceRange
+            if (!sensors.Any()) {
+                return Constants.ZeroF;
+            }
+            var operationalSensors = sensors.Where(s => s.IsOperational);
+            if (!operationalSensors.Any()) {
+                return Constants.ZeroF;
+            }
+            Sensor longestRangeSensor = operationalSensors.MaxBy(s => s.RangeDistance);
+            var remainingSensors = operationalSensors.Except(longestRangeSensor);
+            return longestRangeSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
+        }
+
+        /// <summary>
+        /// My brown color, more commonly known as Peru (205, 133, 63) in RGB.
+        /// </summary>
+        private static Color _brown = new Color(0.80F, 0.52F, 0.25F, 1F);
+
+        /// <summary>
+        /// Purple color (128, 0, 128) in RGB.
+        /// </summary>
+        private static Color _purple = new Color(0.5F, 0F, 0.5F, 1F);
+
+        /// <summary>
+        /// Dark green (0, 128, 0) in RGB.
+        /// </summary>
+        private static Color _darkGreen = new Color(0F, 0.5F, 0F, 1F);
+
+        /// <summary>
+        /// Teal, aka Blue/Green (0, 128, 128) in RGB.
+        /// </summary>
+        private static Color _teal = new Color(0F, 0.5F, 0.5F, 1F);
+
         public static Color ToUnityColor(this GameColor color) {
             switch (color) {
                 case GameColor.Black:
@@ -200,8 +241,15 @@ namespace CodeEnv.Master.GameContent {
                     return Color.white;
                 case GameColor.Yellow:
                     return Color.yellow;
+                case GameColor.Brown:
+                    return _brown;
+                case GameColor.Purple:
+                    return _purple;
+                case GameColor.DarkGreen:
+                    return _darkGreen;
+                case GameColor.Teal:
+                    return _teal;
                 case GameColor.None:
-                    return Color.white;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(color));
             }
@@ -213,7 +261,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="text">The text.</param>
         /// <param name="color">The color.</param>
         /// <returns></returns>
-        public static string EmbedColor(this string text, GameColor color) {
+        public static string SurroundWith(this string text, GameColor color) {
             string colorHex = GameUtility.ColorToHex(color);
             string colorNgui = UnityConstants.NguiEmbeddedColorFormat.Inject(colorHex);
             return colorNgui + text + UnityConstants.NguiEmbeddedColorTerminator;

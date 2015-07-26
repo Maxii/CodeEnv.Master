@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class UniverseSizeExtensions {
 
-        private static UniverseSizeHelper _values = UniverseSizeHelper.Instance;
+        private static XmlUniverseSizePropertyReader _xmlReader = XmlUniverseSizePropertyReader.Instance;
 
         /// <summary>
         /// Converts this UniverseSizeGuiSelection value to a UniverseSize value.
@@ -58,56 +58,55 @@ namespace CodeEnv.Master.GameContent {
         public static float Radius(this UniverseSize universeSize) {
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return _values.TinyRadius;
+                    return _xmlReader.TinyRadius;
                 case UniverseSize.Small:
-                    return _values.SmallRadius;
+                    return _xmlReader.SmallRadius;
                 case UniverseSize.Normal:
-                    return _values.NormalRadius;
+                    return _xmlReader.NormalRadius;
                 case UniverseSize.Large:
-                    return _values.LargeRadius;
+                    return _xmlReader.LargeRadius;
                 case UniverseSize.Enormous:
-                    return _values.EnormousRadius;
+                    return _xmlReader.EnormousRadius;
                 case UniverseSize.Gigantic:
-                    return _values.GiganticRadius;
+                    return _xmlReader.GiganticRadius;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
         }
 
-        public static int DefaultAIPlayerCount(this UniverseSize universeSize) {
-            int defaultAIPlayerCount;
+        public static int DefaultPlayerCount(this UniverseSize universeSize) {
+            int defaultPlayerCount;
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    defaultAIPlayerCount = _values.TinyDefaultAIPlayerCount;
+                    defaultPlayerCount = _xmlReader.TinyDefaultPlayerCount;
                     break;
                 case UniverseSize.Small:
-                    defaultAIPlayerCount = _values.SmallDefaultAIPlayerCount;
+                    defaultPlayerCount = _xmlReader.SmallDefaultPlayerCount;
                     break;
                 case UniverseSize.Normal:
-                    defaultAIPlayerCount = _values.NormalDefaultAIPlayerCount;
+                    defaultPlayerCount = _xmlReader.NormalDefaultPlayerCount;
                     break;
                 case UniverseSize.Large:
-                    defaultAIPlayerCount = _values.LargeDefaultAIPlayerCount;
+                    defaultPlayerCount = _xmlReader.LargeDefaultPlayerCount;
                     break;
                 case UniverseSize.Enormous:
-                    defaultAIPlayerCount = _values.EnormousDefaultAIPlayerCount;
+                    defaultPlayerCount = _xmlReader.EnormousDefaultPlayerCount;
                     break;
                 case UniverseSize.Gigantic:
-                    defaultAIPlayerCount = _values.GiganticDefaultAIPlayerCount;
+                    defaultPlayerCount = _xmlReader.GiganticDefaultPlayerCount;
                     break;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
-            D.Assert(defaultAIPlayerCount <= TempGameValues.MaxAIPlayers);
-            return defaultAIPlayerCount;
+            return defaultPlayerCount;
         }
 
         /// <summary>
         /// Parses UniverseSize.xml used to provide externalized values for the UniverseSize enum.
         /// </summary>
-        public sealed class UniverseSizeHelper : AEnumValuesHelper<UniverseSizeHelper> {
+        public sealed class XmlUniverseSizePropertyReader : AXmlEnumPropertyReader<XmlUniverseSizePropertyReader> {
 
             #region Universe Radius
 
@@ -167,60 +166,60 @@ namespace CodeEnv.Master.GameContent {
 
             #endregion
 
-            #region Universe Default AI Player Count
+            #region Universe Default Player Count
 
-            private int _tinyDefaultAIPlayerCount;
-            public int TinyDefaultAIPlayerCount {
+            private int _tinyDefaultPlayerCount;
+            public int TinyDefaultPlayerCount {
                 get {
                     CheckValuesInitialized();
-                    return _tinyDefaultAIPlayerCount;
+                    return _tinyDefaultPlayerCount;
                 }
-                private set { _tinyDefaultAIPlayerCount = value; }
+                private set { _tinyDefaultPlayerCount = value; }
             }
 
-            private int _smallDefaultAIPlayerCount;
-            public int SmallDefaultAIPlayerCount {
+            private int _smallDefaultPlayerCount;
+            public int SmallDefaultPlayerCount {
                 get {
                     CheckValuesInitialized();
-                    return _smallDefaultAIPlayerCount;
+                    return _smallDefaultPlayerCount;
                 }
-                private set { _smallDefaultAIPlayerCount = value; }
+                private set { _smallDefaultPlayerCount = value; }
             }
 
-            private int _normalDefaultAIPlayerCount;
-            public int NormalDefaultAIPlayerCount {
+            private int _normalDefaultPlayerCount;
+            public int NormalDefaultPlayerCount {
                 get {
                     CheckValuesInitialized();
-                    return _normalDefaultAIPlayerCount;
+                    return _normalDefaultPlayerCount;
                 }
-                private set { _normalDefaultAIPlayerCount = value; }
+                private set { _normalDefaultPlayerCount = value; }
             }
 
-            private int _largeDefaultAIPlayerCount;
-            public int LargeDefaultAIPlayerCount {
+            private int _largeDefaultPlayerCount;
+            public int LargeDefaultPlayerCount {
                 get {
                     CheckValuesInitialized();
-                    return _largeDefaultAIPlayerCount;
+                    return _largeDefaultPlayerCount;
                 }
-                private set { _largeDefaultAIPlayerCount = value; }
+                private set { _largeDefaultPlayerCount = value; }
             }
 
-            private int _enormousDefaultAIPlayerCount;
-            public int EnormousDefaultAIPlayerCount {
+            private int _enormousDefaultPlayerCount;
+            public int EnormousDefaultPlayerCount {
                 get {
                     CheckValuesInitialized();
-                    return _enormousDefaultAIPlayerCount;
+                    return _enormousDefaultPlayerCount;
                 }
-                private set { _enormousDefaultAIPlayerCount = value; }
+                private set { _enormousDefaultPlayerCount = value; }
             }
 
-            private int _giganticDefaultAIPlayerCount;
-            public int GiganticDefaultAIPlayerCount {
+            private int _giganticDefaultPlayerCount;
+            public int GiganticDefaultPlayerCount {
                 get {
                     CheckValuesInitialized();
-                    return _giganticDefaultAIPlayerCount;
+                    return _giganticDefaultPlayerCount;
                 }
-                private set { _giganticDefaultAIPlayerCount = value; }
+                private set { _giganticDefaultPlayerCount = value; }
             }
 
             #endregion
@@ -230,7 +229,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             protected override Type EnumType { get { return typeof(UniverseSize); } }
 
-            private UniverseSizeHelper() {
+            private XmlUniverseSizePropertyReader() {
                 Initialize();
             }
 

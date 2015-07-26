@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         private IconInfo _iconInfo;
         public IconInfo IconInfo {
             get { return _iconInfo; }
-            set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged, OnIconInfoChanging); }
+            set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
         }
 
         public IResponsiveTrackingSprite Icon { get; private set; }
@@ -56,16 +56,20 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnIconInfoChanging(IconInfo newIconInfo) {    // OPTIMIZE if only the filename changes, avoid destroying and reinstantiating
-            string iconInfoText = IconInfo != default(IconInfo) ? IconInfo.ToString() : "default";
-            D.Log("{0}.{1} IconInfo changing from {2} to {3}.", _trackedItem.DisplayName, GetType().Name, iconInfoText, newIconInfo.ToString());
-            if (Icon != null) {
-                DestroyIcon();
-            }
-        }
-
         private void OnIconInfoChanged() {
-            if (IconInfo != default(IconInfo)) { // Element Icons have an option that allows them to be turned off, aka IconInfo changed to null
+            if (Icon != null) {
+                // icon already present
+                if (IconInfo != null) {
+                    // something about the existing icon needs to change
+                    Icon.IconInfo = IconInfo;
+                }
+                else {
+                    // Element Icons have an option that allows them to be turned off, aka IconInfo changed to default(IconInfo)
+                    DestroyIcon();
+                }
+            }
+            else {
+                // initial or subsequent generation of the Icon
                 Icon = MakeIcon();
             }
         }
@@ -106,13 +110,18 @@ namespace CodeEnv.Master.GameContent {
             return IsDisplayEnabled && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
         }
 
-        private void DestroyIcon() {
+        /// <summary>
+        /// Destroys the icon.
+        /// WARNING: Destroying an Icon that is used for other purposes by the Item can result in difficult to diagnose errors.
+        /// eg. CmdIcon transforms are used by the Highlighter to position highlights.
+        /// </summary>
+        protected virtual void DestroyIcon() {
+            D.Log("{0}.Icon about to be destroyed.", _trackedItem.DisplayName);
             D.Assert(Icon != null);
             ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
             var iconCameraLosChgdListener = Icon.CameraLosChangedListener;
             iconCameraLosChgdListener.onCameraLosChanged -= (iconGo, isIconInCameraLOS) => OnIconInMainCameraLosChanged(isIconInCameraLOS);
             // event subscriptions already removed by Item before Icon changed
-
             UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IResponsiveTrackingSprite>(Icon);
         }
     }

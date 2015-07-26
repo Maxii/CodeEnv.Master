@@ -206,7 +206,7 @@ public class SystemCreator : AMonoBase {
 
     private StarStat CreateStarStatFromChildren() {
         D.Assert(isCompositionPreset);
-        StarCategory category = gameObject.GetSafeMonoBehaviourInChildren<StarItem>().category;
+        StarCategory category = gameObject.GetSafeFirstMonoBehaviourInChildren<StarItem>().category;
         return new StarStat(category, 100, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
     }
 
@@ -275,21 +275,22 @@ public class SystemCreator : AMonoBase {
             ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
             switch (armament) {
                 case ArmamentCategory.Beam:
-                    name = "Shields";
-                    strengthValue = UnityEngine.Random.Range(1F, 5F);
+                    name = "Atmosphere";
+                    strengthValue = UnityEngine.Random.Range(4F, 8F);
                     break;
                 case ArmamentCategory.Missile:
-                    strengthValue = UnityEngine.Random.Range(3F, 8F);
+                    name = "Nothing";
+                    strengthValue = Constants.ZeroF;
                     break;
                 case ArmamentCategory.Projectile:
-                    name = "Armor";
-                    strengthValue = UnityEngine.Random.Range(2F, 3F);
+                    name = "Atmosphere";
+                    strengthValue = UnityEngine.Random.Range(2F, 4F);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }
             CombatStrength strength = new CombatStrength(armament, strengthValue);
-            CountermeasureStat countermeasuresStat = new CountermeasureStat(strength, 0F, 0F, name);
+            CountermeasureStat countermeasuresStat = new CountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Planetoid Atmosphere", 0F, 0F, strength, Constants.OneHundredPercent);
             statsList.Add(countermeasuresStat);
         }
         return statsList;
@@ -314,7 +315,7 @@ public class SystemCreator : AMonoBase {
     private void MakeSystem() {
         LogEvent();
         if (isCompositionPreset) {
-            _system = gameObject.GetSafeMonoBehaviourInChildren<SystemItem>();
+            _system = gameObject.GetSafeFirstMonoBehaviourInChildren<SystemItem>();
             _factory.MakeSystemInstance(SystemName, ref _system);
         }
         else {
@@ -326,7 +327,7 @@ public class SystemCreator : AMonoBase {
     private void MakeStar() {
         LogEvent();
         if (isCompositionPreset) {
-            _star = gameObject.GetSafeMonoBehaviourInChildren<StarItem>();
+            _star = gameObject.GetSafeFirstMonoBehaviourInChildren<StarItem>();
             _factory.MakeInstance(_starStat, SystemName, ref _star);
         }
         else {
@@ -551,7 +552,7 @@ public class SystemCreator : AMonoBase {
     }
 
     private void InitializeTopographyMonitor() {
-        var monitor = gameObject.GetSafeMonoBehaviourInChildren<TopographyMonitor>();
+        var monitor = gameObject.GetSafeFirstMonoBehaviourInChildren<TopographyMonitor>();
         monitor.SurroundingTopography = Topography.OpenSpace;   // TODO Items monitored should know about their surrounding space
         monitor.ItemMonitored = _system;
     }

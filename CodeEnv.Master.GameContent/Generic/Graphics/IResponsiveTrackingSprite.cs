@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IResponsiveTrackingSprite : ITrackingWidget, IChangeTracking, INotifyPropertyChanging, INotifyPropertyChanged {
 
+        IconInfo IconInfo { get; set; }
+
         ICameraLosChangedListener CameraLosChangedListener { get; }
 
         IMyNguiEventListener EventListener { get; }

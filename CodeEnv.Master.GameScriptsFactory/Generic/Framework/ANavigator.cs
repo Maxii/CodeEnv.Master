@@ -78,7 +78,7 @@ internal abstract class ANavigator : IDisposable {
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed to travel at.</param>
     internal virtual void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-        D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(Name, speed.GetName()));
+        D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(Name, speed.GetValueName()));
         Target = target;
         _travelSpeed = speed;
         _orderSource = orderSource;

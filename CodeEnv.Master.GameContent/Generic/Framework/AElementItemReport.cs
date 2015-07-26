@@ -28,9 +28,9 @@ namespace CodeEnv.Master.GameContent {
 
         public CombatStrength? OffensiveStrength { get; protected set; }
 
-        public float? MaxWeaponsRange { get; protected set; }
+        public RangeDistance? WeaponsRange { get; protected set; }
 
-        public float? MaxSensorRange { get; protected set; }
+        public RangeDistance? SensorRange { get; protected set; }
 
         public float? Science { get; protected set; }
         public float? Culture { get; protected set; }

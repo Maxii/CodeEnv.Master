@@ -25,7 +25,7 @@ using UnityEngine;
 /// Note: There is no Button that inherits from AGuiMenuElement as buttons
 /// aren't used to set state within a Menu.
 /// </summary>
-public abstract class AGuiButton : AGuiTooltip {
+public abstract class AGuiButton : ATextTooltip {
 
     protected PlayerPrefsManager _playerPrefsMgr;
     protected GameManager _gameMgr;

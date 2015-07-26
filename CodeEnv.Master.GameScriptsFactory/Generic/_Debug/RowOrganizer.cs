@@ -54,7 +54,7 @@ public class RowOrganizer : AMonoBase {
     private void PositionRowElements() {
         DestroyExistingSeparators();
 
-        var rowElements = gameObject.GetSafeMonoBehavioursInImmediateChildren<RowElementIndexer>();
+        var rowElements = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<RowElementIndexer>();
         _elementHeight = ValidateElements(rowElements);
 
         var orderedElements = rowElements.OrderBy(re => re.index);
@@ -105,6 +105,7 @@ public class RowOrganizer : AMonoBase {
     private int PositionElement(RowElementIndexer element, int localPositionX, bool addSeparator) {
         //D.Log("{0} setting {1} to localPosition.x = {2}.", GetType().Name, element.GetType().Name, localPositionX);
         element.transform.localPosition = new Vector3(localPositionX, _rowMemberLocalPositionY);
+        element.transform.SetSiblingIndex(element.index);
         var elementWidth = element.gameObject.GetSafeMonoBehaviour<UIWidget>().width;
         var nextLocalPositionX = localPositionX + elementWidth;
         if (addSeparator) {
@@ -119,10 +120,11 @@ public class RowOrganizer : AMonoBase {
         var separatorGo = NGUITools.AddChild(gameObject, separatorPrefab.gameObject);
         separatorGo.GetComponent<UIWidget>().height = _elementHeight;
         separatorGo.transform.localPosition = new Vector3(localPositionX, _rowMemberLocalPositionY);
+        separatorGo.transform.SetAsLastSibling();
     }
 
     private void DestroyExistingSeparators() {
-        var rowWidgets = gameObject.GetSafeMonoBehavioursInImmediateChildren<UIWidget>();
+        var rowWidgets = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UIWidget>();
         var separatorWidgets = rowWidgets.Where(w => w.gameObject.GetComponent<RowElementIndexer>() == null);
         if (separatorWidgets.Any()) {
             separatorWidgets.ForAll(sep => DestroyImmediate(sep.gameObject));

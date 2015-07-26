@@ -39,8 +39,8 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
         base.Awake();
         UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _shipGraphics = gameObject.GetSafeMonoBehaviour<ShipGraphics>();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
-        _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourInChildren<FleetCommand>();
+        _fleetMgr = gameObject.GetSafeFirstMonoBehaviourInParents<FleetUnitCreator>();
+        _fleetCmd = _fleetMgr.gameObject.GetSafeFirstMonoBehaviourInChildren<FleetCommand>();
         _selectionMgr = SelectionManager.Instance;
     }
 

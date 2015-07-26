@@ -190,7 +190,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         GameState = GameState.Loading;
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
         _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
-        D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
+        D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetValueName());
         Application.LoadLevel((int)SceneLevel.GameScene);
     }
 
@@ -258,10 +258,10 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         if (enabled) {
             // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
             // is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceCount, ((SceneLevel)level).GetName()));
+            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceCount, ((SceneLevel)level).GetValueName()));
             SceneLevel newScene = (SceneLevel)level;
             if (newScene != SceneLevel.GameScene) {
-                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
+                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetValueName());
                 return;
             }
             _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
@@ -460,7 +460,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
         }
-        D.Log("GameState changed to {0}.", Instance.GameState.GetName());
+        D.Log("GameState changed to {0}.", Instance.GameState.GetValueName());
     }
 
     #endregion

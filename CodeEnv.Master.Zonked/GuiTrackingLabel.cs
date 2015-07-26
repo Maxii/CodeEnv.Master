@@ -103,9 +103,9 @@ public class GuiTrackingLabel : AMonoBase {
     protected override void Awake() {
         base.Awake();
         Layers guiTrackingLabelLayer = (Layers)gameObject.layer;
-        D.Assert(guiTrackingLabelLayer == Layers.UI, "{0} Layer is {1}, should be {2}.".Inject(GetType().Name, guiTrackingLabelLayer.GetName(), Layers.UI.GetName()));
+        D.Assert(guiTrackingLabelLayer == Layers.UI, "{0} Layer is {1}, should be {2}.".Inject(GetType().Name, guiTrackingLabelLayer.GetValueName(), Layers.UI.GetValueName()));
         _uiCamera = NGUITools.FindCameraForLayer((int)guiTrackingLabelLayer);
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
         _label.depth = -100; // draw below other Gui Elements in the same Panel
         _label.color = Color.ToUnityColor();
         _widgets = gameObject.GetSafeMonoBehavioursInChildren<UIWidget>();

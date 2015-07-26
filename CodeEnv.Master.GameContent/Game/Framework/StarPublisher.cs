@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarPublisher : AIntelItemPublisher<StarReport, StarData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return StarDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

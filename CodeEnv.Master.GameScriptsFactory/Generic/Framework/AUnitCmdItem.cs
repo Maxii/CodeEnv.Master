@@ -201,8 +201,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
 
             if (!isRangeMonitorStillInUse) {
+                monitor.Reset();
                 SensorRangeMonitors.Remove(monitor);
-                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
+                //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
                 UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
             }
         });
@@ -229,17 +230,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     private void Subscribe(AUnitElementItem element) {
         element.Data.onUserIntelCoverageChanged += OnElementUserIntelCoverageChanged;
-        element.onDeathOneShot += OnSubordinateElementDeath;
+        //element.onDeathOneShot += OnSubordinateElementDeath;  // element now informs command AFTER it broadcasts its onDeathEvent
+        // previously, sequencing issues surfaced, depending on the order in which subscribers signed up for the event
     }
 
     private void Unsubscribe(AUnitElementItem element) {
         element.Data.onUserIntelCoverageChanged -= OnElementUserIntelCoverageChanged;
-        element.onDeathOneShot -= OnSubordinateElementDeath;
     }
 
-    private void OnSubordinateElementDeath(IMortalItem deadElement) {
-        D.Log("{0} acknowledging {1} has been lost.", FullName, deadElement.FullName);
-        RemoveElement(deadElement as AUnitElementItem);
+    public void OnSubordinateElementDeath(IUnitElementItem deadSubordinateElement) {
+        D.Log("{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
+        RemoveElement(deadSubordinateElement as AUnitElementItem);
     }
 
     protected virtual void OnHQElementChanging(AUnitElementItem newHQElement) {
@@ -281,8 +282,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         _formationGenerator.RegenerateFormation();
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
+    protected override void PrepareForOnDeathNotification() {
+        base.PrepareForOnDeathNotification();
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
         }
@@ -311,7 +312,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     protected virtual void OnIsSelectedChanged() {
         if (IsSelected) {
-            ShowSelectionHud();
+            ShowSelectedItemHud();
             SelectionManager.Instance.CurrentSelection = this;
         }
         AssessHighlighting();
@@ -319,14 +320,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     /// <summary>
-    /// Shows the selection popup.
+    /// Shows the SelectedItemHudWindow for this item.
     /// </summary>
     /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HudPopup subscribes to the change and needs the SelectionPopup to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectionPopup is 
+    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
+    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
     /// handled by the SelectionMgr when there is no longer an item selected.
     /// </remarks>
-    protected abstract void ShowSelectionHud();
+    protected abstract void ShowSelectedItemHud();
 
     protected override void OnUserIntelCoverageChanged() {
         base.OnUserIntelCoverageChanged();
@@ -415,14 +416,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     /// <param name="elementDamageSeverity">The severity of the damage sustained by the HQ Element.</param>
     /// <returns></returns>
     public bool __CheckForDamage(bool isHQElementAlive, CombatStrength elementDamageSustained, float elementDamageSeverity) {
-        D.Log("{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
-            FullName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
+        //D.Log("{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
+        //FullName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
         bool isHit = (isHQElementAlive) ? RandomExtended<bool>.Chance(elementDamageSeverity) : true;
         if (isHit) {
             TakeHit(elementDamageSustained);
         }
         else {
-            D.Log("{0} avoided a hit.", FullName);
+            //D.Log("{0} avoided a hit.", FullName);
         }
         return isHit;
     }
@@ -531,8 +532,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
-
-    //public abstract ColoredStringBuilder HudContent { get; }
 
     #endregion
 

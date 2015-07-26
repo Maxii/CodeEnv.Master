@@ -78,7 +78,7 @@ public abstract class AFocusableView : AItemView, ICameraFocusable {
 
     protected override void RegisterComponentsToDisable() {
         // disable the Animation in the item's mesh, but no other animations
-        disableComponentOnCameraDistance = disableComponentOnCameraDistance.Union(gameObject.GetComponentsInImmediateChildren<Animation>());
+        disableComponentOnCameraDistance = disableComponentOnCameraDistance.Union(gameObject.GetComponentsInImmediateChildrenOnly<Animation>());
     }
 
     protected virtual void OnHover(bool isOver) {

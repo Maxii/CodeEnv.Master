@@ -64,7 +64,7 @@ public class StrategicResourcesGuiElement : GuiElement, IComparable<StrategicRes
 
     private void InitializeReferences() {
         // excludes the unknown widget label
-        var resourceContainers = gameObject.GetSafeMonoBehavioursInImmediateChildren<UIWidget>().Where(w => w.GetComponent<UILabel>() == null);
+        var resourceContainers = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UIWidget>().Where(w => w.GetComponent<UILabel>() == null);
         float avgLocalX = resourceContainers.Average(s => s.transform.localPosition.x);
         float avgLocalY = resourceContainers.Average(s => s.transform.localPosition.y);    // ~ 0F
 
@@ -99,7 +99,7 @@ public class StrategicResourcesGuiElement : GuiElement, IComparable<StrategicRes
             InitializeResourceContainer(slot, container);
         });
 
-        _unknownLabel = gameObject.GetSafeMonoBehaviourInImmediateChildren<UILabel>();
+        _unknownLabel = gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<UILabel>();
         MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip += (go, show) => OnUnknownTooltip(show);
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
@@ -116,19 +116,19 @@ public class StrategicResourcesGuiElement : GuiElement, IComparable<StrategicRes
     private void OnResourceContainerTooltip(GameObject containerGo, bool show) {
         if (show) {
             var resourceID = _resourceIDLookup[containerGo];
-            Tooltip.Show(new ResourceHudContent(resourceID));
+            TooltipHudWindow.Show(new ResourceHudFormContent(resourceID));
         }
         else {
-            Tooltip.Hide();
+            TooltipHudWindow.Hide();
         }
     }
 
     private void OnUnknownTooltip(bool show) {
         if (show) {
-            Tooltip.Show(new TextHudContent("Resource presence unknown"));
+            TooltipHudWindow.Show(new TextHudFormContent("Resource presence unknown"));
         }
         else {
-            Tooltip.Hide();
+            TooltipHudWindow.Hide();
         }
     }
 

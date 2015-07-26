@@ -555,7 +555,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         /// <param name="speed">The speed.</param>
         /// <param name="orderSource">The source of this move order.</param>
         public void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-            D.Assert(speed != default(Speed) && speed != Speed.Stop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
+            D.Assert(speed != default(Speed) && speed != Speed.Stop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetValueName()));
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
             // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone
@@ -939,10 +939,10 @@ public class ShipModel : AUnitElementModel, IShipModel {
             if (_ship.IsBearingConfirmed) {
                 D.Log("{0} heading {1} is confirmed. Deviation is {2:0.#} degrees.", _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
                 if (ChangeSpeed(AutoPilotSpeed)) {
-                    D.Log("{0} adjusting speed to {1}. \n{2} to target {3}.", _ship.FullName, AutoPilotSpeed.GetName(), DistanceToDestination, DestinationInfo.Target.FullName);
+                    D.Log("{0} adjusting speed to {1}. \n{2} to target {3}.", _ship.FullName, AutoPilotSpeed.GetValueName(), DistanceToDestination, DestinationInfo.Target.FullName);
                 }
                 else {
-                    D.Log("{0} continuing at speed {1}. \n{2} to target {3}.", _ship.FullName, AutoPilotSpeed.GetName(), DistanceToDestination, DestinationInfo.Target.FullName);
+                    D.Log("{0} continuing at speed {1}. \n{2} to target {3}.", _ship.FullName, AutoPilotSpeed.GetValueName(), DistanceToDestination, DestinationInfo.Target.FullName);
                 }
                 return true;
             }
@@ -1276,7 +1276,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
     protected override void InitializeRadiiComponents() {
         base.InitializeRadiiComponents();
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
         (collider as BoxCollider).size = meshRenderer.bounds.size;
     }
@@ -1348,7 +1348,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             Data.Target = CurrentOrder.Target;  // can be null
 
             ShipDirective order = CurrentOrder.Directive;
@@ -1411,7 +1411,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         float distanceTraveled = Vector3.Distance(currentPosition, __lastPosition);
         __lastPosition = currentPosition;
 
-        float currentTime = GameTime.RealTime_Game;
+        float currentTime = GameTime.GameInstanceTime;
         float elapsedTime = currentTime - __lastTime;
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;
@@ -1449,7 +1449,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetName());
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
@@ -1471,14 +1471,14 @@ public class ShipModel : AUnitElementModel, IShipModel {
         yield return null;
     }
 
-    void Idling_OnWeaponReady(Weapon weapon) {
+    void Idling_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
 
     void Idling_OnCollisionEnter(Collision collision) {
         D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. \nResulting velocity = {4} units/sec, angular velocity = {5} radians/sec.",
-            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, _rigidbody.velocity, _rigidbody.angularVelocity);
+            CurrentState.GetValueName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, _rigidbody.velocity, _rigidbody.angularVelocity);
         D.Log("Distance between objects = {0}, {1} collider size = {2}.", (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
 
         D.Assert(!_rigidbody.isKinematic && !collision.rigidbody.isKinematic, "{0}.isKinematic = {1}, {2}.isKinematic = {3}."
@@ -1664,7 +1664,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         Return();
     }
 
-    void Moving_OnWeaponReady(Weapon weapon) {
+    void Moving_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -1676,7 +1676,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
     void Moving_OnCollisionEnter(Collision collision) {
         D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. \nResulting velocity = {4} units/sec, angular velocity = {5} radians/sec.",
-            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, _rigidbody.velocity, _rigidbody.angularVelocity);
+            CurrentState.GetValueName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, _rigidbody.velocity, _rigidbody.angularVelocity);
         D.Log("Distance between objects = {0}, {1} collider size = {2}.", (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
         //foreach (ContactPoint contact in collision.contacts) {
         //    Debug.DrawRay(contact.point, contact.normal, Color.white);
@@ -1742,12 +1742,12 @@ public class ShipModel : AUnitElementModel, IShipModel {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
             _attackTarget = _primaryTarget;
             _attackStrength = weapon.Strength;
-            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetValueName());
             Call(ShipState.Attacking);
         }
         // No potshots at random enemies as the ship is either Moving or the primary target is in range
@@ -1888,7 +1888,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -1916,7 +1916,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         Return();
     }
 
-    void Repairing_OnWeaponReady(Weapon weapon) {
+    void Repairing_OnWeaponReady(AWeapon weapon) {
         LogEvent();
         TryFireOnAnyTarget(weapon);
     }
@@ -2057,14 +2057,14 @@ public class ShipModel : AUnitElementModel, IShipModel {
     /// Attempts to fire the provided weapon at a target within range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void TryFireOnAnyTarget(Weapon weapon) {
+    private void TryFireOnAnyTarget(AWeapon weapon) {
         if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetValueName());
             _attackStrength = weapon.Strength;
             Call(ShipState.Attacking);
         }
         else {
-            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
+            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetValueName());
         }
     }
 

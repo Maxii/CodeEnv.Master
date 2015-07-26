@@ -59,7 +59,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var primaryMeshRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
+        var primaryMeshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
         //D.Log("Star renderer name = {0}, bounds size = {1}.", primaryMeshRenderer.name, primaryMeshRenderer.bounds.size);
         Radius = primaryMeshRenderer.bounds.size.x / 2F;    // half of the length, width or height, all the same surrounding a sphere
         collider.enabled = false;
@@ -71,7 +71,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -86,7 +86,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
 
     protected override void InitializeModelMembers() {
         D.Assert(category == Data.Category);
-        System = gameObject.GetSafeMonoBehaviourInParents<SystemItem>();
+        System = gameObject.GetSafeFirstMonoBehaviourInParents<SystemItem>();
         _detectionHandler = new DetectionHandler(this);
     }
 
@@ -95,8 +95,8 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
         InitializeContextMenu(Owner);
     }
 
-    protected override HudManager InitializeHudManager() {
-        return new HudManager(Publisher);
+    protected override ItemHudManager InitializeHudManager() {
+        return new ItemHudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -248,12 +248,12 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
-        _detectionHandler.OnDetection(cmdItem, sensorRange);
+    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRangeCat) {
+        _detectionHandler.OnDetection(cmdItem, sensorRangeCat);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
-        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRangeCat) {
+        _detectionHandler.OnDetectionLost(cmdItem, sensorRangeCat);
     }
 
     #endregion
@@ -263,32 +263,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
     public override float HighlightRadius { get { return Radius * Screen.height * 1.5F; } }
 
     #endregion
-
-    //#region Nested Classes
-
-    ///// <summary>
-    ///// Temporary class holding IIconInfo for stars. 
-    ///// TODO replace when star icons can vary.
-    ///// </summary>
-    //public class _StarIconInfo : IIconInfo {
-
-    //    public IconAtlasID AtlasID { get { return IconAtlasID.Contextual; } }
-
-    //    public WidgetPlacement Placement { get { return WidgetPlacement.Over; } }
-
-    //    public Vector2 Size { get { return new Vector2(16, 16); } }
-
-    //    public string Filename { get { return "Icon01"; } }
-
-    //    public GameColor Color { get; private set; }
-
-    //    public _StarIconInfo(GameColor color) {
-    //        Color = color;
-    //    }
-
-    //}
-
-    //#endregion
 
 }
 

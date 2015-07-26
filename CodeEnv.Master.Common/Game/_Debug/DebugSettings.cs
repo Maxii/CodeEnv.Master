@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Parses DebugSettings.xml used to provide externalized values to DebugSettings.cs Properties.
     /// </summary>
-    public sealed class DebugSettings : AValuesHelper<DebugSettings> {
+    public sealed class DebugSettings : AXmlPropertyReader<DebugSettings> {
 
         private bool _enableFpsReadout;
         /// <summary>

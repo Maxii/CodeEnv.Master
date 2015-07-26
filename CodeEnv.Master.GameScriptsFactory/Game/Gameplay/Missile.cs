@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Missile.cs
-// Missile ordnance on the way to a target containing effects for muzzle flash, inFlightOperation and impact. 
+// Guided projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,14 +21,13 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Missile ordnance on the way to a target containing effects for muzzle flash, inFlightOperation and impact. 
+/// Guided projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 /// </summary>
-public class Missile : AProjectile {
+public class Missile : AProjectile, ITerminatableOrdnance {
 
     public GameObject muzzleEffect;
     /// <summary>
-    /// The effect this Projectile will show while operating
-    /// including when the game is paused.
+    /// The effect this Projectile will show while operating including when the game is paused.
     /// </summary>
     public ParticleSystem operatingEffect;
     public ParticleSystem impactEffect;
@@ -42,7 +41,7 @@ public class Missile : AProjectile {
         UpdateRate = FrameUpdateFrequency.VeryRare;
     }
 
-    public override void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects) {
+    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         base.Initiate(target, weapon, toShowEffects);
         _weaponAccuracy = weapon.Accuracy;
         _positionLastRangeCheck = _transform.position;
@@ -100,7 +99,12 @@ public class Missile : AProjectile {
     /// IMPROVE Should be checked infrequently enough to allow a miss.
     /// </summary>
     private void Steer() {
-        //D.Log("{0}.Steer() called.", Name);
+        if (!Target.IsOperational) {
+            // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
+            //D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+            TerminateNow();
+            return;
+        }
         Vector3 tgtBearing;
         var estimatedTargetBearing = GetTargetFiringSolution(_weaponAccuracy, out tgtBearing);
         _transform.rotation = Quaternion.LookRotation(estimatedTargetBearing);
@@ -110,6 +114,10 @@ public class Missile : AProjectile {
         _cumDistanceTraveled += Vector3.Distance(_transform.position, _positionLastRangeCheck);
         _positionLastRangeCheck = _transform.position;
         return _cumDistanceTraveled;
+    }
+
+    public void Terminate() {
+        TerminateNow();
     }
 
     public override string ToString() {

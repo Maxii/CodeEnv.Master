@@ -26,12 +26,16 @@ namespace CodeEnv.Master.GameContent {
 
         private StringBuilder _sb;
 
-        public ColoredStringBuilder(string text = null) {
-            _sb = !text.IsNullOrEmpty() ? new StringBuilder(text) : new StringBuilder();
+        public ColoredStringBuilder(string text = null, GameColor color = GameColor.White) {
+            _sb = new StringBuilder();
+            if (!text.IsNullOrEmpty()) {
+                Append(text, color);
+            }
+            //_sb = !text.IsNullOrEmpty() ? new StringBuilder(text) : new StringBuilder();
         }
 
         public void Append(string text, GameColor color = GameColor.White) {
-            string textResult = color != GameColor.White ? text.EmbedColor(color) : text;
+            string textResult = color != GameColor.White ? text.SurroundWith(color) : text;
             _sb.Append(textResult);
         }
 

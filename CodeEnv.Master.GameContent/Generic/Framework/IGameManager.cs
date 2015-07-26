@@ -70,6 +70,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsPaused { get; }
 
+        bool IsRunning { get; }
+
         IList<Player> AllPlayers { get; }
 
         Player UserPlayer { get; }

@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for GuiCursorHuds so non-scripts can refer to it.
     /// </summary>
     [System.Obsolete]
-    public interface IGuiHud : IHud {
+    public interface IGuiHud : IHudWindow {
 
         /// <summary>
         /// Populate the HUD with text pulled from LabelText.

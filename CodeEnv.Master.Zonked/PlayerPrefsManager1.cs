@@ -102,13 +102,13 @@ namespace CodeEnv.Master.GameContent {
                 case PlayerPrefsElementID.QualitySetting:
                     return _qualitySetting;
                 case PlayerPrefsElementID.UniverseSize:
-                    return UniverseSizeSelection.GetName();
+                    return UniverseSizeSelection.GetValueName();
                 case PlayerPrefsElementID.UserPlayerSpecies:
-                    return GetSpeciesValue(id).GetName();
+                    return GetSpeciesValue(id).GetValueName();
                 case PlayerPrefsElementID.UserPlayerColor:
-                    return GetColorValue(id).GetName();
+                    return GetColorValue(id).GetValueName();
                 case PlayerPrefsElementID.GameSpeedOnLoad:
-                    return GameSpeedOnLoad.GetName();
+                    return GameSpeedOnLoad.GetValueName();
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
@@ -323,7 +323,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(_valueTypeLookup[id] == typeof(T));
         }
 
-        private string GetKey(PlayerPrefsElementID id) { return id.GetName(); }
+        private string GetKey(PlayerPrefsElementID id) { return id.GetValueName(); }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

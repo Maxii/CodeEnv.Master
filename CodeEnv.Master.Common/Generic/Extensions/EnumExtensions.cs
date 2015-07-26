@@ -29,9 +29,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="sourceEnumConstant">The enum constant.</param>
         /// <returns>The string name of this sourceEnumConstant. </returns>
         /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>
-        public static string GetName(this Enum sourceEnumConstant) {
+        public static string GetValueName(this Enum sourceEnumConstant) {
             Type enumType = sourceEnumConstant.GetType();
-            return Enum.GetName(enumType, sourceEnumConstant);    // OPTIMIZE better performance than sourceEnumConstant.ToString()?
+            return Enum.GetName(enumType, sourceEnumConstant);    
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.Common {
         public static string GetEnumAttributeText(this Enum sourceEnumConstant) {
             EnumAttribute attribute = GetAttribute(sourceEnumConstant);
             if (attribute == null) {
-                return GetName(sourceEnumConstant);
+                return GetValueName(sourceEnumConstant);
             }
             return attribute.AttributeText;
         }
@@ -68,7 +68,7 @@ namespace CodeEnv.Master.Common {
         private static EnumAttribute GetAttribute(Enum enumConstant) {
             EnumAttribute attribute = Attribute.GetCustomAttribute(ForValue(enumConstant), typeof(EnumAttribute)) as EnumAttribute;
             if (attribute == null) {
-                D.Warn(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetName(), typeof(EnumAttribute).Name));
+                D.Warn(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetValueName(), typeof(EnumAttribute).Name));
             }
             return attribute;
         }

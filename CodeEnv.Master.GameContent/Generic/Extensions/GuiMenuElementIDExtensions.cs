@@ -37,22 +37,70 @@ namespace CodeEnv.Master.GameContent {
                     return "IsCameraRollEnabled";
                 case GuiElementID.ElementIconsCheckbox:
                     return "IsElementIconsEnabled";
-                case GuiElementID.GameSpeedOnLoadPopupList:
-                    return "GameSpeedOnLoad";
-                case GuiElementID.UserPlayerSpeciesPopupList:
-                    return "UserPlayerSpeciesSelection";
-                case GuiElementID.UserPlayerColorPopupList:
-                    return "UserPlayerColor";
                 case GuiElementID.PauseOnLoadCheckbox:
                     return "IsPauseOnLoadEnabled";
-                case GuiElementID.QualitySettingPopupList:
-                    return "QualitySetting";
                 case GuiElementID.ResetOnFocusCheckbox:
                     return "IsResetOnFocusEnabled";
-                case GuiElementID.UniverseSizePopupList:
-                    return "UniverseSizeSelection";
                 case GuiElementID.ZoomOutOnCursorCheckbox:
                     return "IsZoomOutOnCursorEnabled";
+                case GuiElementID.GameSpeedOnLoadPopupList:
+                    return "GameSpeedOnLoad";
+                case GuiElementID.QualitySettingPopupList:
+                    return "QualitySetting";
+                case GuiElementID.UniverseSizePopupList:
+                    return "UniverseSizeSelection";
+                case GuiElementID.PlayerCountPopupList:
+                    return "PlayerCount";
+
+                case GuiElementID.UserPlayerSpeciesPopupList:
+                    return "UserPlayerSpeciesSelection";
+                case GuiElementID.AIPlayer1SpeciesPopupList:
+                    return "AIPlayer1SpeciesSelection";
+                case GuiElementID.AIPlayer2SpeciesPopupList:
+                    return "AIPlayer2SpeciesSelection";
+                case GuiElementID.AIPlayer3SpeciesPopupList:
+                    return "AIPlayer3SpeciesSelection";
+                case GuiElementID.AIPlayer4SpeciesPopupList:
+                    return "AIPlayer4SpeciesSelection";
+                case GuiElementID.AIPlayer5SpeciesPopupList:
+                    return "AIPlayer5SpeciesSelection";
+                case GuiElementID.AIPlayer6SpeciesPopupList:
+                    return "AIPlayer6SpeciesSelection";
+                case GuiElementID.AIPlayer7SpeciesPopupList:
+                    return "AIPlayer7SpeciesSelection";
+
+                case GuiElementID.UserPlayerColorPopupList:
+                    return "UserPlayerColor";
+                case GuiElementID.AIPlayer1ColorPopupList:
+                    return "AIPlayer1Color";
+                case GuiElementID.AIPlayer2ColorPopupList:
+                    return "AIPlayer2Color";
+                case GuiElementID.AIPlayer3ColorPopupList:
+                    return "AIPlayer3Color";
+                case GuiElementID.AIPlayer4ColorPopupList:
+                    return "AIPlayer4Color";
+                case GuiElementID.AIPlayer5ColorPopupList:
+                    return "AIPlayer5Color";
+                case GuiElementID.AIPlayer6ColorPopupList:
+                    return "AIPlayer6Color";
+                case GuiElementID.AIPlayer7ColorPopupList:
+                    return "AIPlayer7Color";
+
+                case GuiElementID.AIPlayer1IQPopupList:
+                    return "AIPlayer1IQ";
+                case GuiElementID.AIPlayer2IQPopupList:
+                    return "AIPlayer2IQ";
+                case GuiElementID.AIPlayer3IQPopupList:
+                    return "AIPlayer3IQ";
+                case GuiElementID.AIPlayer4IQPopupList:
+                    return "AIPlayer4IQ";
+                case GuiElementID.AIPlayer5IQPopupList:
+                    return "AIPlayer5IQ";
+                case GuiElementID.AIPlayer6IQPopupList:
+                    return "AIPlayer6IQ";
+                case GuiElementID.AIPlayer7IQPopupList:
+                    return "AIPlayer7IQ";
+
                 default:
                     return null;
             }

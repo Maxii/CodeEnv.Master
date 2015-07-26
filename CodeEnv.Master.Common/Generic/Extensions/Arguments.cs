@@ -85,6 +85,33 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Validates the provided number is within the designated range, inclusive.
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="range">The range.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        public static void ValidateForRange(int number, ValueRange<int> range) {
+            if (!range.ContainsValue(number)) {
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, range.Minimum, range.Maximum, callingMethodName));
+            }
+        }
+
+        /// <summary>
+        /// Validates the provided number is within the designated range, inclusive.
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="range">The range.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        public static void ValidateForRange(float number, ValueRange<float> range) {
+            if (!range.ContainsValue(number)) {
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, range.Minimum, range.Maximum, callingMethodName));
+            }
+        }
+
+
+        /// <summary>
         /// Validates the provided number(s) are not negative.
         /// </summary>
         /// <param name="numbers">The numbers to validate.</param>

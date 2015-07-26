@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetPublisher : ACmdPublisher<FleetReport, FleetCmdData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return FleetDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

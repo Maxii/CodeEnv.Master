@@ -17,11 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Abstract base class for Report and HudContent Publishers.
+    /// Abstract base class for Item Publishers that create reports and text.
     /// </summary>
     public abstract class APublisher {
 
-        public abstract ColoredStringBuilder HudContent { get; }
+        public abstract ColoredStringBuilder ItemHudText { get; }
 
         protected IGameManager _gameMgr;
 

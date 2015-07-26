@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Category:
-                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetEnumAttributeText());
+                    return new ColoredTextList_String(data.Category.GetValueName(), data.Category.GetEnumAttributeText());
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
                 case GuiHudLineKeys.Capacity:

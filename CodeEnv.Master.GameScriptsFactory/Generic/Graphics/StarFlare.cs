@@ -57,7 +57,7 @@ public class StarFlare : AMonoBase {
             // avoid getting the flareLight prefab with Resources.Load("Lights/FlareLight")
             _flareLight = Instantiate<Light>(UsefulTools.Instance.flareLight);
             UnityUtility.AttachChildToParent(_flareLight.gameObject, _transform.gameObject);
-            float starRadius = gameObject.GetSafeMonoBehaviourInParents<StarItem>().Radius;
+            float starRadius = gameObject.GetSafeFirstMonoBehaviourInParents<StarItem>().Radius;
             Vector3 flareLightLocationBehindStar = Vector3.forward * (starRadius + 2F);
             _flareLight.transform.localPosition = flareLightLocationBehindStar;
         }

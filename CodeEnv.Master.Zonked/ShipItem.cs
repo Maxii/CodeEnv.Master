@@ -39,8 +39,8 @@ public class ShipItem : AItemModel {
 
     protected override void Start() {
         base.Start();
-        var fleetParent = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
-        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourInChildren<FleetCmdModel>();
+        var fleetParent = gameObject.GetSafeFirstMonoBehaviourInParents<FleetUnitCreator>();
+        _fleet = fleetParent.gameObject.GetSafeFirstMonoBehaviourInChildren<FleetCmdModel>();
         __InitializeNavigator();
         //InitializeAutoPilot();
     }
@@ -122,7 +122,7 @@ public class ShipItem : AItemModel {
         float distanceTraveled = Vector3.Distance(currentPosition, __lastPosition);
         __lastPosition = currentPosition;
 
-        float currentTime = GameTime.RealTime_Game;
+        float currentTime = GameTime.GameInstanceTime;
         float elapsedTime = currentTime - __lastTime;
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;

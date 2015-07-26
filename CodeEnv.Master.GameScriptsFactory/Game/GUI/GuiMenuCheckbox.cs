@@ -20,34 +20,61 @@ using System;
 using System.Reflection;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// Standalone but extensible class for Gui Checkboxes that are elements of a menu with an Accept button.
+/// Standalone but extensible class for Checkboxes that are elements of a menu with an Accept button.
 /// </summary>
 public class GuiMenuCheckbox : AGuiMenuElement {
 
     public string tooltip = string.Empty;
+
     public GuiElementID elementID;
 
     public override GuiElementID ElementID { get { return elementID; } }
 
-    protected override string TooltipContent { get { return tooltip; } }
+    /// <summary>
+    /// The default value to use if there is no stored preference for this Checkbox.
+    /// Default setting is <c>false</c>. 
+    /// </summary>
+    protected bool DefaultValue { get; set; }
+
+    protected sealed override string TooltipContent { get { return tooltip; } }
+
+    /// <summary>
+    /// Flag indicates whether this checkbox should initialize its selection itself.
+    /// The default setting is <c>true</c>. If false, the Checkbox does nothing 
+    /// and relies on a derived class to initialize its selection.
+    /// </summary>
+    protected virtual bool SelfInitializeSelection { get { return true; } }
 
     protected UIToggle _checkbox;
 
     protected override void Awake() {
         base.Awake();
-        InitializeCheckbox();
+        InitializeValuesAndReferences();
+        if (SelfInitializeSelection) {
+            InitializeSelection();
+        }
+    }
+
+    protected virtual void InitializeValuesAndReferences() {
+        _checkbox = gameObject.GetSafeMonoBehaviour<UIToggle>();
+        EventDelegate.Add(_checkbox.onChange, OnCheckboxStateSet);
+    }
+
+    private void InitializeSelection() {
+        TryMakePreferenceSelection();
     }
 
     /// <summary>
-    /// Initializes the checkbox. If the checkbox has a preference saved in PlayerPrefsManager that value is used. 
-    /// If not the checkbox value is set to false.
+    /// Tries to set the state of the checkbox based on a stored preference (held by PlayerPrefsManager).
+    /// If there is a preference value stored, that value is used and the method returns <c>true</c>. 
+    /// If there is no preference then the DefaultValue is used and the method returns <c>false</c>.
     /// </summary>
-    private void InitializeCheckbox() {
-        _checkbox = gameObject.GetSafeMonoBehaviour<UIToggle>();
-
+    /// <returns></returns>
+    protected bool TryMakePreferenceSelection() {
+        bool isPreferenceUsed = false;
+        bool isChecked;
         string prefsPropertyName = ElementID.PreferencePropertyName();
         if (prefsPropertyName != null) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
@@ -55,29 +82,34 @@ public class GuiMenuCheckbox : AGuiMenuElement {
                 D.ErrorContext("No {0} property named {1} found!".Inject(typeof(PlayerPrefsManager).Name, prefsPropertyName), gameObject);
             }
             Func<bool> propertyGet = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            _checkbox.startsActive = propertyGet(); // startsActive (aka checked) used as UIToggle Start() uses it to initialize the checkbox
+            isChecked = propertyGet();
+            isPreferenceUsed = true;
         }
         else {
             // no pref stored for this ElementID
-            D.WarnContext("Checkbox {0} does not use a {1} preference. Initializing to false.".Inject(gameObject.name, typeof(PlayerPrefsManager).Name), gameObject);
-            _checkbox.startsActive = false;
+            D.WarnContext("{0} does not have a preference. Using default {1}.".Inject(ElementID.GetValueName(), DefaultValue), gameObject);
+            isChecked = DefaultValue;
         }
-
-        // don't receive events until initializing is complete
-        EventDelegate.Add(_checkbox.onChange, OnCheckboxStateChange);
+        _checkbox.value = isChecked;
+        return isPreferenceUsed;
     }
 
-    protected virtual void OnCheckboxStateChange() { }
+    /// <summary>
+    /// Called when the state of the UIToggle is set. Default does nothing.
+    /// </summary>
+    protected virtual void OnCheckboxStateSet() { }
 
-    protected override void Cleanup() { }
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    protected virtual void Unsubscribe() {
+        EventDelegate.Remove(_checkbox.onChange, OnCheckboxStateSet);
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
-    // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
-    // execution is problematic as the gameObject may have already been destroyed.
 
     #region PlayerPrefs Reflection-based Property Acquisition Archive
 

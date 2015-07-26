@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var meshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>();
+            var meshRenderers = itemGo.GetComponentsInImmediateChildrenOnly<MeshRenderer>();
             var primaryMeshRenderer = meshRenderers.Single(mr => mr.gameObject.GetInterface<IRevolver>() != null);
             primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeSecondaryMeshes(GameObject itemGo) {
             base.InitializeSecondaryMeshes(itemGo);
 
-            _secondaryMeshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>().Except(_primaryMeshRenderer);
+            _secondaryMeshRenderers = itemGo.GetComponentsInImmediateChildrenOnly<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {  // some planets may not have atmosphere or rings
                 _secondaryMeshRenderers.ForAll(r => {
                     r.gameObject.layer = (int)Layers.PlanetoidCull;  // layer automatically handles showing

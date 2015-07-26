@@ -19,17 +19,16 @@
 using System;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Owner of an item.
 /// </summary>
-public class OwnerGuiElement : GuiElement, IComparable<OwnerGuiElement> {
+public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
 
-    private static string _unknown = Constants.QuestionMark;
-
-    protected override string TooltipContent { get { return "Owner custom tooltip placeholder"; } }
-
+    private bool _isOwnerSet;
     private Player _owner;
     public Player Owner {
         get { return _owner; }
@@ -39,48 +38,54 @@ public class OwnerGuiElement : GuiElement, IComparable<OwnerGuiElement> {
         }
     }
 
-    private UILabel _label;
-    private UISprite _imageSprite;
+    public override GuiElementID ElementID { get { return GuiElementID.Owner; } }
 
-    protected override void Awake() {
-        base.Awake();
-        Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
-        _imageSprite = gameObject.GetSafeMonoBehavioursInChildren<UISprite>().Single(s => s.type == UIBasicSprite.Type.Simple);
-    }
+    protected override bool AreAllValuesSet { get { return _isOwnerSet; } }
 
     void OnClick() {
         D.Warn("{0}.OnClick() not yet implemented. TODO: redirect to Owner diplomacy screen.", GetType().Name);
     }
 
     private void OnOwnerSet() {
-        PopulateElementWidgets();
+        _isOwnerSet = true;
+        if (AreAllValuesSet) {
+            PopulateElementWidgets();
+        }
     }
 
-    private void PopulateElementWidgets() {
-        if (Owner != null) {
-            _label.text = Owner.LeaderName;
-            _label.color = Owner.Color.ToUnityColor();
-            _imageSprite.spriteName = Owner.ImageFilename;
+    protected override void PopulateElementWidgets() {
+        if (Owner == null) {
+            OnValuesUnknown();
+            return;
         }
-        else {
-            _label.text = _unknown;
-            _label.color = TempGameValues.DisabledColor.ToUnityColor();
-            _imageSprite.spriteName = "None";   // should show no sprite
+
+        AtlasID imageAtlasID = Owner.LeaderImageAtlasID;
+        string imageFilename = Owner.LeaderImageFilename;
+        string leaderName_Colored = Owner.LeaderName.SurroundWith(Owner.Color);
+
+        switch (widgetsPresent) {
+            case WidgetsPresent.Image:
+                PopulateImageValues(imageFilename, imageAtlasID);
+                _tooltipContent = "Owner custom tooltip placeholder";
+                break;
+            case WidgetsPresent.Label:
+                _imageNameLabel.text = leaderName_Colored;
+                break;
+            case WidgetsPresent.Both:
+                PopulateImageValues(imageFilename, imageAtlasID);
+                _imageNameLabel.text = leaderName_Colored;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
         }
     }
 
     public override void Reset() {
-        base.Reset();
         // not necessary as already ready for reuse when Owner next assigned
+        _isOwnerSet = false;
     }
 
-    private void Validate() {
-        if (elementID != GuiElementID.Owner) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.Owner;
-        }
-    }
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

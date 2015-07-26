@@ -31,14 +31,14 @@ public abstract class APlanetoidView : AMortalItemView, ICameraFollowable {
 
     protected override void InitializeVisualMembers() {
         // Once the player initially discerns the planet, he will always be able to discern it
-        var meshRenderers = gameObject.GetComponentsInImmediateChildren<MeshRenderer>();
+        var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<MeshRenderer>();
         meshRenderers.ForAll(mr => {
             mr.castShadows = true;
             mr.receiveShadows = true;
             mr.enabled = true;
         });
 
-        var animations = gameObject.GetComponentsInImmediateChildren<Animation>();
+        var animations = gameObject.GetComponentsInImmediateChildrenOnly<Animation>();
         animations.ForAll(a => {
             a.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
             a.enabled = true;

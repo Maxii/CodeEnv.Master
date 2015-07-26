@@ -89,6 +89,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Provides for the application of a work action to all the elements in an IEnumerable sourceSequence.
+        /// If sourceSequence is null or empty, simply returns.
         /// Syntax: <code>sequenceOfTypeT.ForAll((T n) => Console.WriteLine(n.ToString()));</code> read as
         /// "For each element in the T sourceSequence, write the string version to the console."
         /// </summary>
@@ -96,6 +97,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="sourceSequence">The Sequence of Type T calling the extension.</param>
         /// <param name="actionToExecute">The work to perform on the sequence, usually expressed in lambda form.</param>
         public static void ForAll<T>(this IEnumerable<T> sourceSequence, Action<T> actionToExecute) {
+            if (sourceSequence.IsNullOrEmpty()) { return; }
             foreach (T item in sourceSequence.ToList<T>()) {   // ToList avoids exceptions when the sequence is modified by the action
                 actionToExecute(item);
             }
@@ -112,6 +114,27 @@ namespace CodeEnv.Master.Common {
             float allowedLow = (100F - allowedPercentageVariation) / 100 * target;
             float allowedHigh = (100F + allowedPercentageVariation) / 100 * target;
             return Utility.IsInRange(number, allowedLow, allowedHigh);
+        }
+
+        /// <summary>
+        /// Returns value formatted for display. If value is greater than threshold then no decimal point is included.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="showZero">if value is Zero and set to <c>true</c> then "0" is returned. If <c>false</c> then string.Empty is returned.</param>
+        /// <param name="threshold">The value above which no decimal point is included.</param>
+        /// <returns></returns>
+        public static string FormatValue(this float value, bool showZero = false, float threshold = 10F) {
+            Arguments.ValidateNotNegative(value);
+            Arguments.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
+
+            string formattedValue = string.Empty;
+            if (showZero && value == Constants.ZeroF) {
+                formattedValue = Constants.FormatFloat_0Dp.Inject(value);
+            }
+            else {
+                formattedValue = value < threshold ? Constants.FormatFloat_1DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
+            }
+            return formattedValue;
         }
 
         ///<summary>Finds the index of the first item matching an expression in an enumerable.</summary>

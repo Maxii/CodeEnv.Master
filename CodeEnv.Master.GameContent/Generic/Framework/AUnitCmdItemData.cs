@@ -71,19 +71,22 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _maxCmdEffectiveness, value, "MaxCmdEffectiveness", OnMaxCmdEffectivenessChanged); }
         }
 
-        private float _unitMaxWeaponsRange;
+        private RangeDistance _unitWeaponsRange;
         /// <summary>
-        /// The maximum range of all the element's weapons that are part of this unit.
+        /// The RangeDistance profile of the weapons of this unit.
         /// </summary>
-        public float UnitMaxWeaponsRange {
-            get { return _unitMaxWeaponsRange; }
-            private set { SetProperty<float>(ref _unitMaxWeaponsRange, value, "UnitMaxWeaponsRange"); }
+        public RangeDistance UnitWeaponsRange {
+            get { return _unitWeaponsRange; }
+            set { SetProperty<RangeDistance>(ref _unitWeaponsRange, value, "UnitWeaponsRange"); }
         }
 
-        private float _unitMaxSensorRange;
-        public float UnitMaxSensorRange {
-            get { return _unitMaxSensorRange; }
-            set { SetProperty<float>(ref _unitMaxSensorRange, value, "UnitMaxSensorRange"); }
+        private RangeDistance _unitSensorRange;
+        /// <summary>
+        /// The RangeDistance profile of the sensors of this unit.
+        /// </summary>
+        public RangeDistance UnitSensorRange {
+            get { return _unitSensorRange; }
+            set { SetProperty<RangeDistance>(ref _unitSensorRange, value, "UnitSensorRange"); }
         }
 
         private CombatStrength _unitOffensiveStrength;
@@ -187,7 +190,7 @@ namespace CodeEnv.Master.GameContent {
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
             var isIntelCoverageSet = SetIntelCoverage(player, playerIntelCoverageOfHQElement);
             D.Assert(isIntelCoverageSet);
-            D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetName());
+            D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
         }
 
         private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {
@@ -292,8 +295,8 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitOffensiveStrength();
             RecalcUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
             RecalcUnitCurrentHitPoints();
-            RecalcUnitMaxWeaponsRange();
-            RecalcUnitMaxSensorRange();
+            RecalcUnitWeaponsRange();
+            RecalcUnitSensorRange();
             RecalcUnitScience();
             RecalcUnitCulture();
             RecalcUnitIncome();
@@ -318,12 +321,27 @@ namespace CodeEnv.Master.GameContent {
             UnitCurrentHitPoints = ElementsData.Sum(ed => ed.CurrentHitPoints);
         }
 
-        private void RecalcUnitMaxWeaponsRange() {
-            UnitMaxWeaponsRange = ElementsData.Count == Constants.Zero ? Constants.ZeroF : ElementsData.Max(ed => ed.MaxWeaponsRange);
+        private void RecalcUnitWeaponsRange() {
+            var allUnitWeapons = ElementsData.SelectMany(ed => ed.Weapons);
+            var operationalUnitWeapons = allUnitWeapons.Where(w => w.IsOperational);
+            var shortRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Short);
+            var mediumRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Medium);
+            var longRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Long);
+            float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            UnitWeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
-        private void RecalcUnitMaxSensorRange() {
-            UnitMaxSensorRange = ElementsData.Count == Constants.Zero ? Constants.ZeroF : ElementsData.Max(ed => ed.MaxSensorRange);
+        private void RecalcUnitSensorRange() {
+            var allUnitSensors = ElementsData.SelectMany(ed => ed.Sensors);
+            var shortRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeDistanceCategory.Short);
+            var mediumRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeDistanceCategory.Medium);
+            var longRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeDistanceCategory.Long);
+            float shortRangeDistance = shortRangeSensors.CalcSensorRangeDistance();
+            float mediumRangeDistance = mediumRangeSensors.CalcSensorRangeDistance();
+            float longRangeDistance = longRangeSensors.CalcSensorRangeDistance();
+            UnitSensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
         private void RecalcUnitScience() {
@@ -351,8 +369,8 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxWeaponsRange, OnElementMaxWeaponsRangeChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxSensorRange, OnElementMaxSensorRangeChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.WeaponsRange, OnElementWeaponsRangeChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.SensorRange, OnElementSensorRangeChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Science, OnElementScienceChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Culture, OnElementCultureChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Income, OnElementIncomeChanged));
@@ -375,12 +393,12 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitMaxHitPoints();
         }
 
-        private void OnElementMaxWeaponsRangeChanged() {
-            RecalcUnitMaxWeaponsRange();
+        private void OnElementWeaponsRangeChanged() {
+            RecalcUnitWeaponsRange();
         }
 
-        private void OnElementMaxSensorRangeChanged() {
-            RecalcUnitMaxSensorRange();
+        private void OnElementSensorRangeChanged() {
+            RecalcUnitSensorRange();
         }
 
         private void OnElementScienceChanged() {

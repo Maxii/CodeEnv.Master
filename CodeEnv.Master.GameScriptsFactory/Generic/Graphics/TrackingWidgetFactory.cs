@@ -49,7 +49,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layerForTrackingWidget = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
 
-        //var trackingWidget = clone.GetSafeInterface<ITrackingWidget>();
         var trackingWidget = clone.GetSafeMonoBehaviour<UITrackingLabel>();
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
@@ -60,6 +59,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
     /// <summary>
     /// Creates a sprite on the UI layer that tracks the <c>target</c>.
+    /// IMPROVE If there is an AtlasID, then their should also be a SpriteName and Color. Use IconInfo?
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
@@ -74,11 +74,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layerForTrackingWidget = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>();
-        sprite.atlas = MyNguiUtilities.GetAtlas(atlasID);
-
-        //var trackingWidget = clone.GetSafeInterface<ITrackingWidget>();
         var trackingWidget = clone.GetSafeMonoBehaviour<UITrackingSprite>();
+        trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -104,15 +101,10 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>(); // IMPROVE get rid of the need to set atlas this way
-        sprite.atlas = MyNguiUtilities.GetAtlas(iconInfo.AtlasID);
-        // Note: Donot use sprite.spriteName and sprite.color here. Change them using the ResponsiveTrackingSprite
-
         var trackingSprite = clone.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
         trackingSprite.__SetDimensions(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
         trackingSprite.Target = target;
-        trackingSprite.Set(iconInfo.Filename);
-        trackingSprite.Color = iconInfo.Color;
+        trackingSprite.IconInfo = iconInfo;
         trackingSprite.Placement = placement;
         trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
@@ -143,6 +135,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
     /// <summary>
     /// Creates a sprite whose size scales with the size of the target, parented to and tracking the <c>target</c>.
+    /// IMPROVE If there is an AtlasID, then their should also be a SpriteName and Color. Use IconInfo?
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
@@ -156,10 +149,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>();
-        sprite.atlas = MyNguiUtilities.GetAtlas(atlasID);
-
         var trackingWidget = clone.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
@@ -169,6 +160,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
     /// <summary>
     /// Creates a sprite whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
+    /// IMPROVE If there is an AtlasID, then their should also be a SpriteName and Color. Use IconInfo?
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
@@ -184,11 +176,9 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>();
-        sprite.atlas = MyNguiUtilities.GetAtlas(atlasID);
-
         var trackingWidget = clone.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingWidget.__SetDimensions(Mathf.RoundToInt(__dimensions.x), Mathf.RoundToInt(__dimensions.y));
+        trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -223,7 +213,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers targetLayer = (Layers)target.Transform.gameObject.layer;
         Layers prefabLayer = (Layers)trackingWidgetPrefab.layer;
         if (prefabLayer != Layers.UI && prefabLayer != Layers.TransparentFX && prefabLayer != targetLayer) {
-            D.Warn("Target {0} of Layer {1} being assigned TrackingWidget of Layer {2}.", target.Transform.name, targetLayer.GetName(), prefabLayer.GetName());
+            D.Warn("Target {0} of Layer {1} being assigned TrackingWidget of Layer {2}.", target.Transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
         }
         return prefabLayer;
     }

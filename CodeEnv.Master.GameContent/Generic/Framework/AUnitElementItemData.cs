@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static string _hqNameAddendum = "[HQ]";
 
-        public IList<Weapon> Weapons { get; private set; }
+        public IList<AWeapon> Weapons { get; private set; }
         public IList<Sensor> Sensors { get; private set; }
 
         private bool _isHQ;
@@ -53,16 +53,22 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<CombatStrength>(ref _offensiveStrength, value, "OffensiveStrength"); }
         }
 
-        private float _maxWeaponsRange;
-        public float MaxWeaponsRange {
-            get { return _maxWeaponsRange; }
-            private set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
+        private RangeDistance _weaponsRange;
+        /// <summary>
+        /// The RangeDistance profile of the weapons of this element.
+        /// </summary>
+        public RangeDistance WeaponsRange {
+            get { return _weaponsRange; }
+            set { SetProperty<RangeDistance>(ref _weaponsRange, value, "WeaponsRange"); }
         }
 
-        private float _maxSensorRange;
-        public float MaxSensorRange {
-            get { return _maxSensorRange; }
-            set { SetProperty<float>(ref _maxSensorRange, value, "MaxSensorRange"); }
+        private RangeDistance _sensorRange;
+        /// <summary>
+        /// The RangeDistance profile of the sensors of this element.
+        /// </summary>
+        public RangeDistance SensorRange {
+            get { return _sensorRange; }
+            set { SetProperty<RangeDistance>(ref _sensorRange, value, "SensorRange"); }
         }
 
         private float _science;
@@ -103,67 +109,80 @@ namespace CodeEnv.Master.GameContent {
             : base(elementTransform, name, maxHitPoints, owner) {
             Mass = mass;
             elementTransform.rigidbody.mass = mass;
-            Weapons = new List<Weapon>();
+            Weapons = new List<AWeapon>();
             Sensors = new List<Sensor>();
         }
 
-        public void AddWeapon(Weapon weapon) {
+        public void AddWeapon(AWeapon weapon) {
             D.Assert(weapon.RangeMonitor != null);
-            D.Assert(!weapon.IsOperational);
+            D.Assert(!weapon.IsOperational);    // Items make weapons operational after completing the adding process
             D.Assert(!Weapons.Contains(weapon));
             Weapons.Add(weapon);
             weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-            // no need to Recalc max weapon-related values as this occurs when IsOperational changes
+            // no need to recalc weapons values as this occurs when IsOperational changes
         }
 
         public void AddSensor(Sensor sensor) {
             D.Assert(sensor.RangeMonitor == null);
-            D.Assert(!sensor.IsOperational);
+            D.Assert(!sensor.IsOperational);    // Items make sensors operational after completing the adding process
             D.Assert(!Sensors.Contains(sensor));
             Sensors.Add(sensor);
             sensor.onIsOperationalChanged += OnSensorIsOperationalChanged;
+            // no need to recalc sensor values as this occurs when IsOperational changes
         }
 
         /// <summary>
         /// Removes the weapon from the Element's collection of weapons.
         /// </summary>
         /// <param name="weapon">The weapon.</param>
-        public void RemoveWeapon(Weapon weapon) {
+        public void RemoveWeapon(AWeapon weapon) {
             D.Assert(Weapons.Contains(weapon));
-            D.Assert(!weapon.IsOperational);
+            D.Assert(!weapon.IsOperational);    // Items make weapons non-operational when beginning the removal process
             Weapons.Remove(weapon);
             weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
-            // no need to Recalc max weapon-related values as this occurs when IsOperational changes
+            // no need to recalc weapon values as this occurs when IsOperational changes
         }
 
         public void RemoveSensor(Sensor sensor) {
             D.Assert(Sensors.Contains(sensor));
-            D.Assert(!sensor.IsOperational);
+            D.Assert(!sensor.IsOperational);    // Items make sensors non-operational when beginning the removal process
             Sensors.Remove(sensor);
             sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
+            // no need to recalc sensor values as this occurs when IsOperational changes
         }
 
         private void OnIsHQChanged() {
             Name = IsHQ ? Name + _hqNameAddendum : Name.Remove(_hqNameAddendum);
         }
 
-        private void OnSensorIsOperationalChanged(Sensor sensor) {
-            RecalcMaxSensorRange();
+        private void OnSensorIsOperationalChanged(AEquipment sensor) {
+            RecalcSensorRange();
         }
 
-        private void OnWeaponIsOperationalChanged(Weapon weapon) {
-            RecalcMaxWeaponsRange();
+        private void OnWeaponIsOperationalChanged(AEquipment weapon) {
+            RecalcWeaponsRange();
             RecalcOffensiveStrength();
         }
 
-        private void RecalcMaxSensorRange() {
-            var operationalSensors = Sensors.Where(s => s.IsOperational);
-            MaxSensorRange = operationalSensors.Any() ? operationalSensors.Max(s => s.Range.GetSensorRange(Owner)) : Constants.ZeroF;
+        private void RecalcSensorRange() {
+            var shortRangeSensors = Sensors.Where(s => s.RangeCategory == RangeDistanceCategory.Short);
+            var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeDistanceCategory.Medium);
+            var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeDistanceCategory.Long);
+            float shortRangeDistance = shortRangeSensors.CalcSensorRangeDistance();
+            float mediumRangeDistance = mediumRangeSensors.CalcSensorRangeDistance();
+            float longRangeDistance = longRangeSensors.CalcSensorRangeDistance();
+            SensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
-        private void RecalcMaxWeaponsRange() {
+        private void RecalcWeaponsRange() {
             var operationalWeapons = Weapons.Where(w => w.IsOperational);
-            MaxWeaponsRange = operationalWeapons.Any() ? operationalWeapons.Max(w => w.Range.GetWeaponRange(Owner)) : Constants.ZeroF;
+            var shortRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Short);
+            var mediumRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Medium);
+            var longRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Long);
+            float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
         private void RecalcOffensiveStrength() {

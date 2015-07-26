@@ -24,14 +24,13 @@ using UnityEngine;
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Location of a Command.  
 /// </summary>
-public class LocationGuiElement : GuiElement, IComparable<LocationGuiElement> {
+public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     private static string _labelFormat = "{0} " + GameConstants.IconMarker_Distance + Constants.NewLine + Constants.NewLine + "{1}";
     private static string _tooltipFormat = "Distance in sectors to closest owned base {0} = {1}.";
-    private static string _unknown = Constants.QuestionMark;
 
-    private string _tooltipContent;
-    protected override string TooltipContent { get { return _tooltipContent; } }
+    public override GuiElementID ElementID { get { return GuiElementID.Location; } }
+
 
     private Index3D _sectorIndex;
     public Index3D SectorIndex {
@@ -49,6 +48,9 @@ public class LocationGuiElement : GuiElement, IComparable<LocationGuiElement> {
         }
     }
 
+    private string _tooltipContent;
+    protected override string TooltipContent { get { return _tooltipContent; } }
+
     protected virtual bool AreAllValuesSet { get { return _isPositionSet && SectorIndex != default(Index3D); } }
 
     private float? _closestBaseDistanceInSectors;
@@ -56,8 +58,7 @@ public class LocationGuiElement : GuiElement, IComparable<LocationGuiElement> {
 
     protected override void Awake() {
         base.Awake();
-        Validate();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
     }
 
     private void OnSectorIndexChanged() {
@@ -102,17 +103,11 @@ public class LocationGuiElement : GuiElement, IComparable<LocationGuiElement> {
     }
 
     public override void Reset() {
-        base.Reset();
         _isPositionSet = false;
         _sectorIndex = default(Index3D);
     }
 
-    private void Validate() {
-        if (elementID != GuiElementID.Location) {
-            D.Warn("{0}.ID = {1}. Fixing...", GetType().Name, elementID.GetName());
-            elementID = GuiElementID.Location;
-        }
-    }
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

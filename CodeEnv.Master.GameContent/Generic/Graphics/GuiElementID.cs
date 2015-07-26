@@ -14,6 +14,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
@@ -78,6 +79,23 @@ namespace CodeEnv.Master.GameContent {
         AIPlayer7ColorPopupList = 21,
 
 
+        AIPlayer1IQPopupList = 46,
+
+        AIPlayer2IQPopupList = 47,
+
+        AIPlayer3IQPopupList = 48,
+
+        AIPlayer4IQPopupList = 49,
+
+        AIPlayer5IQPopupList = 50,
+
+        AIPlayer6IQPopupList = 51,
+
+        AIPlayer7IQPopupList = 52,
+
+
+        PlayerCountPopupList = 53,  // last
+
         UniverseSizePopupList = 22,
 
         GameSpeedOnLoadPopupList = 23,
@@ -96,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Labels
 
-        NameLabel = 26,
+        ItemNameLabel = 26,
 
         OrganicsLabel = 27,
 
@@ -116,10 +134,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Complex Elements
 
+        [EnumAttribute("Defensive\nStrength")]  // Warning: Attributes must be a compile time constant
         DefensiveStrength = 33,
 
+        [EnumAttribute("Offensive\nStrength")]
         OffensiveStrength = 34,
 
+        [EnumAttribute("Total\nStrength")]
         TotalStrength = 35,
 
         Health = 36,
@@ -130,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
 
         Location = 39,
 
-        StrategicResources = 40,
+        Resources = 40,
 
         Composition = 41,
 
@@ -138,7 +159,7 @@ namespace CodeEnv.Master.GameContent {
 
         Approval = 44,
 
-        NetIncome = 45  // last
+        NetIncome = 45,
 
         #endregion
 

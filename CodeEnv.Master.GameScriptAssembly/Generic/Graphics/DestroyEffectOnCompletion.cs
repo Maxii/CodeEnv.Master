@@ -53,13 +53,13 @@ public class DestroyEffectOnCompletion : AMonoBase {
         }
         if (effectType == EffectType.Mesh) {
             _gameTime = GameTime.Instance;
-            D.Assert(meshEffectDuration > Constants.ZeroF, "{0}'s {1}.{2} duration not set.".Inject(gameObject.name, typeof(EffectType).Name, effectType.GetName()));
+            D.Assert(meshEffectDuration > Constants.ZeroF, "{0}'s {1}.{2} duration not set.".Inject(gameObject.name, typeof(EffectType).Name, effectType.GetValueName()));
         }
         if (effectType == EffectType.AudioSFX) {
             _audioSource = gameObject.GetComponent<AudioSource>();
             D.Assert(!_audioSource.loop);
         }
-        D.Log("{0} Effect: {1} begun.", effectType.GetName(), gameObject.name);
+        D.Log("{0} Effect: {1} begun.", effectType.GetValueName(), gameObject.name);
     }
 
     protected override void Update() {
@@ -83,7 +83,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
         }
 
         if (toDestroy) {
-            D.Log("{0} Effect: {1} being destroyed.", effectType.GetName(), gameObject.name);
+            D.Log("{0} Effect: {1} being destroyed.", effectType.GetValueName(), gameObject.name);
             Destroy(gameObject);
         }
     }

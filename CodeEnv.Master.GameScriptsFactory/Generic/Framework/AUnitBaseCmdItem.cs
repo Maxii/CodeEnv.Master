@@ -50,7 +50,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildrenOnly<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = UnitRadius * TempGameValues.KeepoutRadiusMultiplier;
@@ -105,7 +105,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
             Return();
         }
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             BaseDirective order = CurrentOrder.Directive;
             switch (order) {
                 case BaseDirective.Attack:
@@ -120,7 +120,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
                 case BaseDirective.Repair:
                 case BaseDirective.Refit:
                 case BaseDirective.Disband:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, order.GetName());
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, order.GetValueName());
                     break;
                 case BaseDirective.None:
                 default:
@@ -144,8 +144,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         // does nothing as BaseCmds and HQElements don't change or move
     }
 
-    protected override void InitiateDeath() {
-        base.InitiateDeath();
+    protected override void SetDeadState() {
         CurrentState = BaseState.Dead;
     }
 

@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbasePublisher : ACmdPublisher<StarbaseReport, StarbaseCmdData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return StarbaseDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

@@ -32,7 +32,7 @@ public class OrbitalPlaneManager : AMonoBase, ISelectable, ICameraTargetable, IZ
         _transform = transform;
         _renderer = gameObject.GetComponentInChildren<MeshRenderer>();
         _eventMgr = GameEventManager.Instance;
-        _systemMgr = gameObject.GetSafeMonoBehaviourInParents<SystemCreator>();
+        _systemMgr = gameObject.GetSafeFirstMonoBehaviourInParents<SystemCreator>();
     }
 
     void OnHover(bool isOver) {

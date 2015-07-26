@@ -29,13 +29,11 @@ namespace CodeEnv.Master.GameContent {
 
         string Name { get; }
 
-        ArmamentCategory Category { get; }
+        ArmamentCategory ArmamentCategory { get; }
 
         IElementAttackableTarget Target { get; }
 
-        void Initiate(IElementAttackableTarget target, Weapon weapon, bool toShowEffects);
-
-        void Terminate();
+        void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects);
 
     }
 }

@@ -118,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         public float GetYield(ResourceID resourceID) {
             float result = Constants.ZeroF;
             if (!TryGetYield(resourceID, out result)) {
-                D.Warn("{0} {1} is not present in {2}.", typeof(ResourceID).Name, resourceID.GetName(), GetType().Name);
+                D.Warn("{0} {1} is not present in {2}.", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
             }
             return result;
         }
@@ -160,7 +160,7 @@ namespace CodeEnv.Master.GameContent {
         private string _toString;
         public override string ToString() {
             if (_toString.IsNullOrEmpty()) {
-                _toString = "{0}.{1}".Inject(GetType().Name, ResourceID.None.GetName());
+                _toString = "{0}.{1}".Inject(GetType().Name, ResourceID.None.GetValueName());
             }
             return _toString;
         }
@@ -239,7 +239,7 @@ namespace CodeEnv.Master.GameContent {
             #endregion
 
             public override string ToString() {
-                return "{0}[{1:0.#}]".Inject(ResourceID.GetName(), Value);
+                return "{0}[{1:0.#}]".Inject(ResourceID.GetValueName(), Value);
             }
 
             #region IEquatable<ResourceValuePair> Members

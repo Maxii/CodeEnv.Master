@@ -78,9 +78,9 @@ namespace CodeEnv.Master.GameContent {
             Position = sData.Position;
             Owner = sData.Owner;
             Category = sData.Category;
-            MaxSensorRange = sData.MaxSensorRange;
+            WeaponsRange = sData.WeaponsRange;
+            SensorRange = sData.SensorRange;
             MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
-            MaxWeaponsRange = sData.MaxWeaponsRange;
             Mass = sData.Mass;
             MaxTurnRate = sData.MaxTurnRate;
             FullSpeed = sData.FullSpeed;

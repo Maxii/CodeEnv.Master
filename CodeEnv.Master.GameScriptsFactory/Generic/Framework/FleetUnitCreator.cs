@@ -61,7 +61,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
         FleetCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourInChildren<FleetCmdItem>();
+            cmd = gameObject.GetSafeFirstMonoBehaviourInChildren<FleetCmdItem>();
             _factory.MakeInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {

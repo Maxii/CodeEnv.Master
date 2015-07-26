@@ -120,9 +120,9 @@ namespace CodeEnv.Master.GameContent {
                     return;
                 }
                 _textLineLookup.Remove(lineKey);
-                D.Log("Removing {0} HUD line [{1}].", lineKey.GetName(), existingList.List.Concatenate());
+                D.Log("Removing {0} HUD line [{1}].", lineKey.GetValueName(), existingList.List.Concatenate());
             }
-            D.Log("Adding {0} HUD line [{1}].", lineKey.GetName(), textList.List.Concatenate());
+            D.Log("Adding {0} HUD line [{1}].", lineKey.GetValueName(), textList.List.Concatenate());
             _textLineLookup.Add(lineKey, textList);
             //_data[lineKey] = textList;
             IsDirty = true;
@@ -191,7 +191,7 @@ namespace CodeEnv.Master.GameContent {
                 return colorEmbeddedLineText;
             }
 
-            string warn = "No LineKey {0} found.".Inject(lineKey.GetName());
+            string warn = "No LineKey {0} found.".Inject(lineKey.GetValueName());
             D.Warn(warn);
             return warn;
         }

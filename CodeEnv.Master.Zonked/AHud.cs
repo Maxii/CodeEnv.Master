@@ -25,7 +25,7 @@ using UnityEngine;
 /// Abstract Singleton Base class for HUDs drawn by the Gui Camera.
 /// </summary>
 [System.Obsolete]
-public abstract class AHud<T> : AMonoSingleton<T>, IHud where T : AHud<T> {
+public abstract class AHud<T> : AMonoSingleton<T>, IHudWindow where T : AHudWindow<T> {
 
     /// <summary>
     /// Camera used to draw this HUD on the UI layer.
@@ -40,7 +40,7 @@ public abstract class AHud<T> : AMonoSingleton<T>, IHud where T : AHud<T> {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
         _labelTransform = _label.transform;
         _label.depth = 100; // draw on top of other Gui Elements in the same Panel
         _labelBackground = gameObject.GetComponentInChildren<UISprite>();

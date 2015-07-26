@@ -55,7 +55,7 @@ public abstract class AGuiEnumPopupList<E> : AGuiPopupList where E : struct {
         else {
             _popupList.value = IncludesRandom ? _popupList.items.Single(item => item.Equals("Random")) : _popupList.items[Constants.Zero];
         }
-        D.Log("GuiElement [{0}] selection initialized to {1}.", ElementID.GetName(), _popupList.value);
+        D.Log("GuiElement [{0}] selection initialized to {1}.", ElementID.GetValueName(), _popupList.value);
     }
 
     private void Validate() {

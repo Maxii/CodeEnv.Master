@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidPublisher : AIntelItemPublisher<PlanetoidReport, PlanetoidData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return PlanetoidDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

@@ -95,7 +95,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     protected IList<IDisposable> _subscriptions;
     protected IInputManager _inputMgr;
-    protected HudManager _hudManager;
+    protected ItemHudManager _hudManager;
     protected IGameManager _gameMgr;
 
     #region Initialization
@@ -140,7 +140,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         _hudManager = InitializeHudManager();
     }
 
-    protected abstract HudManager InitializeHudManager();
+    protected abstract ItemHudManager InitializeHudManager();
 
     /// <summary>
     ///  Subscribes to changes to values contained in Data. Called when Data first set.
@@ -198,9 +198,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         if (IsHudShowing) {
             switch (inputMode) {
                 case GameInputMode.NoInput:
-                case GameInputMode.PartialScreenPopup:
-                case GameInputMode.FullScreenPopup:
-                    D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetName(), FullName);
+                case GameInputMode.PartialPopup:
+                case GameInputMode.FullPopup:
+                    D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), FullName);
                     ShowHud(false);
                     break;
                 case GameInputMode.Normal:

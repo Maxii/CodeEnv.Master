@@ -47,6 +47,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         void DetachSensorsFromMonitors(params Sensor[] sensors);
 
+        void OnSubordinateElementDeath(IUnitElementItem deadSubordinateElement);
+
     }
 }
 

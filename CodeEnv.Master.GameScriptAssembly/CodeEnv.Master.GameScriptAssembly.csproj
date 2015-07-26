@@ -53,7 +53,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\AHudElement.cs" />
+    <Compile Include="Generic\Framework\AMonitor.cs" />
+    <Compile Include="Generic\Framework\ARangedEquipmentMonitor.cs" />
     <Compile Include="Generic\Graphics\DestroyEffectOnCompletion.cs" />
     <Compile Include="Game\Framework\AIntelItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />

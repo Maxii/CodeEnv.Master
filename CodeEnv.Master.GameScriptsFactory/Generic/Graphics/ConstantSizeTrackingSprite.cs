@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -24,11 +25,16 @@ using UnityEngine;
 /// </summary>
 public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
 
+    private AtlasID _atlasID;
+    public AtlasID AtlasID {
+        get { return _atlasID; }
+        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", OnAtlasIDChanged); }
+    }
+
     protected new UISprite Widget { get { return base.Widget as UISprite; } }
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
         D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, "Sprite size not set.", this);
     }
 
@@ -37,6 +43,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     /// </summary>
     /// <param name="spriteFilename">The Filename of the sprite in the atlas.</param>
     public override void Set(string spriteFilename) {
+        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
         Widget.spriteName = spriteFilename;
     }
 
@@ -52,6 +59,10 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     /// <param name="height">The height.</param>
     public virtual void __SetDimensions(int width, int height) {
         Widget.SetDimensions(width, height);
+    }
+
+    private void OnAtlasIDChanged() {
+        Widget.atlas = AtlasID.GetAtlas();
     }
 
     protected override void Cleanup() { }

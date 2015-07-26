@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SectorPublisher : AItemPublisher<SectorReport, SectorData> {
 
-        public override ColoredStringBuilder HudContent {
+        public override ColoredStringBuilder ItemHudText {
             get { return SectorDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 

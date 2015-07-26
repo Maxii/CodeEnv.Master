@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SensorStat.cs
-// Immutable struct containing externally acquirable values for Sensors.
+// Immutable class containing externally acquirable values for Sensors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,40 +19,34 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable struct containing externally acquirable values for Sensors.
+    /// Immutable class containing externally acquirable values for Sensors.
     /// </summary>
-    public struct SensorStat {
+    public class SensorStat : ARangedEquipmentStat {
 
-        static private string _toStringFormat = "{0}: Name[{1}], Range[{2}], Size[{3}], Power[{4}].";
-
-        private string _rootName;   // = string.Empty cannot use initializers in a struct
-        public string RootName {
-            get { return _rootName.IsNullOrEmpty() ? "{0}RangeSensor".Inject(Range.GetName()) : _rootName; }
-        }
-
-        public DistanceRange Range { get; private set; }
-
-        public float PhysicalSize { get; private set; }
-
-        public float PowerRequirement { get; private set; }
+        private static string _toStringFormat = "{0}: Name[{1}], Range[{2}({3:0.})].";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SensorStat"/> struct.
+        /// Initializes a new instance of the <see cref="SensorStat" /> struct.
         /// </summary>
-        /// <param name="range">The range of the sensor.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
+        /// <param name="description">The description.</param>
         /// <param name="size">The physical size of the sensor.</param>
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
-        /// <param name="rootName">The root name to use for this sensor before adding supplemental attributes.</param>
-        public SensorStat(DistanceRange range, float size, float pwrRqmt, string rootName = Constants.Empty)
-            : this() {
-            Range = range;
-            PhysicalSize = size;
-            PowerRequirement = pwrRqmt;
-            _rootName = rootName;
+        /// <param name="rangeCat">The range category of the sensor.</param>
+        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
+        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeDistanceCategory rangeCat, float baseRangeDistance)
+            : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt, rangeCat, baseRangeDistance) {
+            Validate();
+        }
+
+        private void Validate() {
+            Arguments.ValidateForRange(BaseRangeDistance, RangeCategory.__GetBaseSensorRangeSpread());
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, RootName, Range.GetName(), PhysicalSize, PowerRequirement);
+            return _toStringFormat.Inject(typeof(Sensor).Name, Name, RangeCategory.GetEnumAttributeText(), BaseRangeDistance);
         }
 
     }

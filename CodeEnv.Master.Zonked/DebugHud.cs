@@ -27,7 +27,7 @@ using UnityEngine;
 /// Usage: <code>Publish(debugHudLineKey, text);</code>
 /// </summary>
 [Obsolete]
-public class DebugHud : AHud<DebugHud>, IDebugHud {
+public class DebugHud : AHudWindow<DebugHud>, IDebugHud {
 
     private DebugHudText _debugHudText;
     private IList<IDisposable> _subscriptions;
@@ -67,15 +67,15 @@ public class DebugHud : AHud<DebugHud>, IDebugHud {
     // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
 
     private void OnPauseStateChanged() {
-        Publish(DebugHudLineKeys.PauseState, GameManager.Instance.PauseState.GetName());
+        Publish(DebugHudLineKeys.PauseState, GameManager.Instance.PauseState.GetValueName());
     }
 
     private void OnPlayerViewModeChanged() {
-        Publish(DebugHudLineKeys.PlayerViewMode, PlayerViews.Instance.ViewMode.GetName());
+        Publish(DebugHudLineKeys.PlayerViewMode, PlayerViews.Instance.ViewMode.GetValueName());
     }
 
     private void OnCameraStateChanged() {
-        Publish(DebugHudLineKeys.CameraMode, MainCameraControl.Instance.CurrentState.GetName());
+        Publish(DebugHudLineKeys.CameraMode, MainCameraControl.Instance.CurrentState.GetValueName());
     }
 
     private void OnQualitySettingChanged() {
@@ -91,7 +91,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud {
     }
 
     private void OnGameInputModeChanged() {
-        Publish(DebugHudLineKeys.InputMode, InputManager.Instance.InputMode.GetName());
+        Publish(DebugHudLineKeys.InputMode, InputManager.Instance.InputMode.GetValueName());
     }
 
     #endregion

@@ -25,7 +25,7 @@ using UnityEngine;
 /// next to the cursor.
 /// </summary>
 [System.Obsolete]
-public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
+public class GuiCursorHud : AHudWindow<GuiCursorHud>, IGuiHud {
 
     /// <summary>
     /// The location in ViewPort space (0-1.0, 0-1.0) of the transform of this Hud.

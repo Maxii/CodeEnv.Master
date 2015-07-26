@@ -43,8 +43,8 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.Composition, CommonTerms.Composition + ": {0}"},
                 {ContentID.Formation, "Formation: {0}"},
                 {ContentID.CurrentCmdEffectiveness, "Cmd Eff: {0}"},
-                {ContentID.UnitMaxWeaponsRange, "UnitMaxWeaponsRange: {0}"},
-                {ContentID.UnitMaxSensorRange, "UnitMaxSensorRange: {0}"},
+                {ContentID.UnitWeaponsRange, "UnitWeaponsRange: {0}"},
+                {ContentID.UnitSensorRange, "UnitSensorRange: {0}"},
                 {ContentID.UnitOffense, "UnitOffense: {0}"},
                 {ContentID.UnitDefense, "UnitDefense: {0}"},
                 {ContentID.UnitCurrentHitPts, "UnitCurrentHitPts: {0}"},
@@ -68,8 +68,8 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.Defense, "Defense: {0}"},
                 {ContentID.Offense, "Offense: {0}"},
                 {ContentID.Mass, "Mass: {0}"},
-                {ContentID.MaxWeaponsRange, "MaxWeaponsRange: {0}"},
-                {ContentID.MaxSensorRange, "MaxSensorRange: {0}"},
+                {ContentID.WeaponsRange, "WeaponsRange: {0}"},
+                {ContentID.SensorRange, "SensorRange: {0}"},
 
                 {ContentID.Science, "Science: {0}"},
                 {ContentID.Culture, "Culture: {0}"},
@@ -92,8 +92,6 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.Density, Constants.FormatFloat_1DpMax},
 
                 {ContentID.CurrentCmdEffectiveness, Constants.FormatInt_1DMin},
-                {ContentID.UnitMaxWeaponsRange, Constants.FormatFloat_0Dp},
-                {ContentID.UnitMaxSensorRange, Constants.FormatFloat_0Dp},
                 {ContentID.UnitCurrentHitPts, Constants.FormatFloat_0Dp},
                 {ContentID.UnitMaxHitPts, Constants.FormatFloat_0Dp},
                 {ContentID.UnitFullSpeed, Constants.FormatFloat_0Dp},
@@ -117,8 +115,6 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.CurrentHitPoints, Constants.FormatFloat_0Dp},
                 {ContentID.MaxHitPoints, Constants.FormatFloat_0Dp},
                 {ContentID.Mass, Constants.FormatInt_1DMin},
-                {ContentID.MaxWeaponsRange, Constants.FormatFloat_0Dp},
-                {ContentID.MaxSensorRange, Constants.FormatFloat_0Dp},
 
                 {ContentID.OrbitalSpeed, Constants.FormatFloat_2DpMax},
                 {ContentID.CameraDistance, Constants.FormatFloat_1DpMax}
@@ -132,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
         protected static string GetFormat(ContentID contentID) {
             string valueFormat;
             if (!_defaultNumberFormatLookup.TryGetValue(contentID, out valueFormat)) {
-                D.Warn("{0} reports no default numerical format for {1} found.", Instance.GetType().Name, contentID.GetName());
+                D.Warn("{0} reports no default numerical format for {1} found.", Instance.GetType().Name, contentID.GetValueName());
                 valueFormat = "{0}";
             }
             return valueFormat;
@@ -141,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
         protected static string GetPhrase(ContentID contentID) {
             string phrase;
             if (!_defaultPhraseLookup.TryGetValue(contentID, out phrase)) {
-                D.Warn("{0} reports no phrase for {1} found.", Instance.GetType().Name, contentID.GetName());
+                D.Warn("{0} reports no phrase for {1} found.", Instance.GetType().Name, contentID.GetValueName());
                 phrase = "DefaultPhrase {0}";
             }
             return phrase;
@@ -174,7 +170,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
                 else {
-                    D.Warn("{0} reports missing {1}: {2}.", GetType().Name, typeof(ContentID).Name, contentID.GetName());
+                    D.Warn("{0} reports missing {1}: {2}.", GetType().Name, typeof(ContentID).Name, contentID.GetValueName());
                 }
             }
             return csb;
@@ -190,7 +186,7 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case ContentID.Owner:
                     isSuccess = true;
-                    colorizedText = _phrase.Inject(report.Owner != null ? report.Owner.LeaderName.EmbedColor(report.Owner.Color) : _unknown);
+                    colorizedText = _phrase.Inject(report.Owner != null ? report.Owner.LeaderName.SurroundWith(report.Owner.Color) : _unknown);
                     break;
                 case ContentID.Position:
                     isSuccess = true;
@@ -208,6 +204,75 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Nested Classes
+
+        /// <summary>
+        /// Unique identifier for each line item of content present in a text tooltip.
+        /// </summary>
+        public enum ContentID {
+
+            None,
+
+            Name,
+            ParentName,
+            Owner,
+
+            IntelState,
+
+            Category,
+
+            Capacity,
+            Resources,
+
+            MaxHitPoints,
+            CurrentHitPoints,
+            Health,
+            Defense,
+            Mass,
+
+            Science,
+            Culture,
+            NetIncome,
+
+            Approval,
+            Position,
+
+            SectorIndex,
+
+            WeaponsRange,
+            SensorRange,
+            Offense,
+
+            Target,
+            CombatStance,
+            CurrentSpeed,
+            FullSpeed,
+            MaxTurnRate,
+
+            Composition,
+            Formation,
+            CurrentCmdEffectiveness,
+
+            UnitWeaponsRange,
+            UnitSensorRange,
+            UnitOffense,
+            UnitDefense,
+            UnitMaxHitPts,
+            UnitCurrentHitPts,
+            UnitHealth,
+
+            Population,
+            UnitScience,
+            UnitCulture,
+            UnitNetIncome,
+
+            UnitFullSpeed,
+            UnitMaxTurnRate,
+            Density,
+
+            CameraDistance,
+            TargetDistance,
+            OrbitalSpeed
+        }
 
         //public class ColoredTextList_Intel : ColoredTextList {
 
@@ -345,76 +410,6 @@ namespace CodeEnv.Master.GameContent {
         //        return TextElements.Concatenate();
         //    }
         //}
-
-
-        /// <summary>
-        /// Unique identifier for each line item of content present in a text tooltip.
-        /// </summary>
-        public enum ContentID {
-
-            None,
-
-            Name,
-            ParentName,
-            Owner,
-
-            IntelState,
-
-            Category,
-
-            Capacity,
-            Resources,
-
-            MaxHitPoints,
-            CurrentHitPoints,
-            Health,
-            Defense,
-            Mass,
-
-            Science,
-            Culture,
-            NetIncome,
-
-            Approval,
-            Position,
-
-            SectorIndex,
-
-            MaxWeaponsRange,
-            MaxSensorRange,
-            Offense,
-
-            Target,
-            CombatStance,
-            CurrentSpeed,
-            FullSpeed,
-            MaxTurnRate,
-
-            Composition,
-            Formation,
-            CurrentCmdEffectiveness,
-
-            UnitMaxWeaponsRange,
-            UnitMaxSensorRange,
-            UnitOffense,
-            UnitDefense,
-            UnitMaxHitPts,
-            UnitCurrentHitPts,
-            UnitHealth,
-
-            Population,
-            UnitScience,
-            UnitCulture,
-            UnitNetIncome,
-
-            UnitFullSpeed,
-            UnitMaxTurnRate,
-            Density,
-
-            CameraDistance,
-            TargetDistance,
-            OrbitalSpeed
-        }
 
         #endregion
 

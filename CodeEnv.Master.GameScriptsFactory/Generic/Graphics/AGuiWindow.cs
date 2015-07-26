@@ -23,7 +23,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for Gui Windows with fading ability.
+/// Abstract base class for Gui Windows with fading ability. 
+/// GuiWIndows have the ability to appear and disappear, aka 'popup'.
 /// </summary>
 /// <remarks>A replacement for SpaceD UIWindow without all the automatic panel depth changes.</remarks>
 public abstract class AGuiWindow : AMonoBase {
@@ -50,25 +51,27 @@ public abstract class AGuiWindow : AMonoBase {
 
     public bool IsShowing { get; private set; }
 
-    [Tooltip("The initial content to be shown.")]
-    public Transform currentContentHolder;
     public bool startHidden = true;
     public bool useFading = true;
     public float fadeDuration = 0.2f;
 
+    protected abstract Transform ContentHolder { get; }
+
     private UIPanel _panel;
     private FadeMode _currentFadeMode = FadeMode.None;
     private Job _fadeJob;
+    private GameTime _gameTime;
 
     /// <summary>
-    /// Note: InitializeOnAwake() must be called from Awake() from a derived class
+    /// Note: InitializeOnAwake() must be called from Awake() from a derived class.
     /// </summary>
+    /// <remarks> This is because derived class AHudWindow is a singleton, using InitializeOnAwake(), not Awake().</remarks>
     protected virtual void InitializeOnAwake() {
-        D.Assert(currentContentHolder != null, "{0}.ContentHolder has not been set.".Inject(GetType().Name), gameObject);
         AcquireReferences();
     }
 
     protected virtual void AcquireReferences() {
+        _gameTime = GameTime.Instance;
         _panel = UnityUtility.ValidateMonoBehaviourPresence<UIPanel>(gameObject);
     }
 
@@ -80,12 +83,12 @@ public abstract class AGuiWindow : AMonoBase {
     private void ExecuteStartingState() {
         if (startHidden) {
             _panel.alpha = Constants.ZeroF;
-            currentContentHolder.gameObject.SetActive(false);
+            ContentHolder.gameObject.SetActive(false);
             IsShowing = false;
         }
         else {
             _panel.alpha = Constants.OneF;
-            currentContentHolder.gameObject.SetActive(true);
+            ContentHolder.gameObject.SetActive(true);
             IsShowing = true;
         }
     }
@@ -101,7 +104,7 @@ public abstract class AGuiWindow : AMonoBase {
 
         if (!useFading) {
             _panel.alpha = 1F;
-            currentContentHolder.gameObject.SetActive(true);
+            ContentHolder.gameObject.SetActive(true);
             EventDelegate.Execute(onShowBegin);
             EventDelegate.Execute(onShowComplete);
         }
@@ -122,7 +125,7 @@ public abstract class AGuiWindow : AMonoBase {
 
         if (!useFading) {
             _panel.alpha = 0F;
-            currentContentHolder.gameObject.SetActive(false);
+            ContentHolder.gameObject.SetActive(false);
             EventDelegate.Execute(onHideBegin);
             EventDelegate.Execute(onHideComplete);
         }
@@ -137,8 +140,8 @@ public abstract class AGuiWindow : AMonoBase {
     /// </summary>
     /// <param name="duration">Fade In duration.</param>
     private void FadeIn(float duration) {
-        if (!currentContentHolder.gameObject.activeSelf) {
-            currentContentHolder.gameObject.SetActive(true);
+        if (!ContentHolder.gameObject.activeSelf) {
+            ContentHolder.gameObject.SetActive(true);
         }
 
         if (_currentFadeMode == FadeMode.In) {
@@ -159,7 +162,7 @@ public abstract class AGuiWindow : AMonoBase {
     /// </summary>
     /// <param name="duration">Fade Out duration.</param>
     private void FadeOut(float duration) {
-        if (!currentContentHolder.gameObject.activeSelf) {
+        if (!ContentHolder.gameObject.activeSelf) {
             return;
         }
 
@@ -178,16 +181,15 @@ public abstract class AGuiWindow : AMonoBase {
 
     private IEnumerator FadeAnimation(FadeMode mode, float duration) {
         _currentFadeMode = mode;
-        var gameTimeRef = GameTime.Instance;
-        float startTime = gameTimeRef.RealTime_Game;
+        float startTime = _gameTime.CurrentUnitySessionTime;
 
         if (mode == FadeMode.In) {
             // Calculate the time we need to fade in from the current alpha as may have started from a partial alpha
             float internalDuration = duration - (duration * _panel.alpha);
             float endTime = startTime + internalDuration;
 
-            while (gameTimeRef.RealTime_Game < endTime) {
-                float remainingTime = endTime - gameTimeRef.RealTime_Game;
+            while (_gameTime.CurrentUnitySessionTime < endTime) {
+                float remainingTime = endTime - _gameTime.CurrentUnitySessionTime;
                 float elapsedTime = internalDuration - remainingTime;
                 _panel.alpha = elapsedTime / internalDuration;
                 yield return null;
@@ -202,8 +204,8 @@ public abstract class AGuiWindow : AMonoBase {
             float internalDuration = duration * _panel.alpha;
             float endTime = startTime + internalDuration;
 
-            while (gameTimeRef.RealTime_Game < endTime) {
-                float remainingTime = endTime - gameTimeRef.RealTime_Game;
+            while (_gameTime.CurrentUnitySessionTime < endTime) {
+                float remainingTime = endTime - _gameTime.CurrentUnitySessionTime;
                 _panel.alpha = remainingTime / internalDuration;
                 yield return null;
             }
@@ -211,7 +213,7 @@ public abstract class AGuiWindow : AMonoBase {
             // Make sure it's 0
             _panel.alpha = Constants.ZeroF;
             EventDelegate.Execute(onHideComplete);
-            currentContentHolder.gameObject.SetActive(false);
+            ContentHolder.gameObject.SetActive(false);
         }
         _currentFadeMode = FadeMode.None;
     }

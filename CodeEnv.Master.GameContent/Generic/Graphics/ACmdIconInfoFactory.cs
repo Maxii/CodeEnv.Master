@@ -29,48 +29,25 @@ namespace CodeEnv.Master.GameContent {
     /// IconInfo instances, even though they are structures. 
     /// </summary>
     /// <typeparam name="ReportType">The type of the Report.</typeparam>
-    /// <typeparam name="FactoryType">The type of the Factory.</typeparam>
-    public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AGenericSingleton<FactoryType>
+    /// <typeparam name="FactoryType">The type of the derived factory.</typeparam>
+    public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AXmlReader<FactoryType>
         where ReportType : ACmdReport
-        where FactoryType : class {
+        where FactoryType : ACmdIconInfoFactory<ReportType, FactoryType> {
 
-        private static string _sectionTagName = "Section";
-        private static string _sectionAttributeTagName = "SectionName";
-        private static string _selectionTagName = "Selection";
-        private static string _criteriaTagName = "Criteria";
-        private static string _iconFilenameTagName = "Filename";
+        private string _sectionTagName = "Section";
+        private string _sectionAttributeTagName = "SectionName";
+        private string _selectionTagName = "Selection";
+        private string _criteriaTagName = "Criteria";
+        private string _iconFilenameTagName = "Filename";
 
-        /// <summary>
-        /// The tag name of the root of the Xml DOM.
-        /// </summary>
-        protected virtual string RootTagName { get { return "Icon"; } }
-
-        /// <summary>
-        /// The name of the Xml file without extension. 
-        /// </summary>
-        protected abstract string XmlFilename { get; }
-
+        protected override string RootTagName { get { return "Icon"; } }
         protected abstract AtlasID AtlasID { get; }
 
-        private XElement _xElement;
         private IDictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>> _infoCache;
 
-        protected sealed override void Initialize() {
+        protected override void InitializeValuesAndReferences() {
+            base.InitializeValuesAndReferences();
             _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>();
-            _xElement = LoadAndValidateXElement();
-        }
-
-        private XElement LoadAndValidateXElement() {
-            string xmlFilePath = UnityConstants.DataLibraryDir + XmlFilename + ".xml";
-            //D.Log("The path to the Xml file is {0}.", xmlFilePath);
-            XElement xElement = XElement.Load(xmlFilePath);
-            D.Assert(ValidateElement(xElement), "Invalid XDocument found at {0}.".Inject(xmlFilePath), pauseOnFail: true);
-            return xElement;
-        }
-
-        protected virtual bool ValidateElement(XElement xElement) {
-            //D.Log("{0}.ValidateElement: RootTagName = {1}, xElementName = {2}.", GetType().Name, RootTagName, xElement.Name.ToString());
-            return RootTagName.Equals(xElement.Name.ToString());
         }
 
         /// <summary>
@@ -191,16 +168,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private string AcquireFilename(IconSection section, IconSelectionCriteria[] criteria) {
-            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(section.GetName())).Single();
+            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(section.GetValueName())).Single();
             var selectionNodes = sectionNode.Elements(_selectionTagName);
             foreach (var selectionNode in selectionNodes) {
                 var criteriaValues = selectionNode.Elements(_criteriaTagName).Select(node => node.Value);
-                if (criteriaValues.OrderBy(v => v).SequenceEqual(criteria.Select(c => c.GetName()).OrderBy(n => n))) {
+                if (criteriaValues.OrderBy(v => v).SequenceEqual(criteria.Select(c => c.GetValueName()).OrderBy(n => n))) {
                     // found the criteria values we were looking for in this node
                     return selectionNode.Element(_iconFilenameTagName).Value;
                 }
             }
-            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, section.GetName(), criteria.Concatenate());
+            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, section.GetValueName(), criteria.Concatenate());
             return string.Empty;
         }
 

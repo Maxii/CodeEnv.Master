@@ -199,7 +199,7 @@ namespace CodeEnv.Master.GameContent {
             GameState = GameState.Loading;
             // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
             _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
-            D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
+            D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetValueName());
             Application.LoadLevel((int)SceneLevel.GameScene);
         }
 
@@ -247,7 +247,7 @@ namespace CodeEnv.Master.GameContent {
         //MonoGameManager relays the scene value that was loaded when it receives OnLevelWasLoaded
         public void OnLevelHasCompletedLoading(SceneLevel newScene) {
             if (newScene != SceneLevel.GameScene) {
-                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
+                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetValueName());
                 return;
             }
             _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
@@ -422,7 +422,7 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
             }
-            D.Log("GameState changed to {0}.", Instance.GameState.GetName());
+            D.Log("GameState changed to {0}.", Instance.GameState.GetValueName());
         }
 
         /// <summary>

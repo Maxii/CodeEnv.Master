@@ -66,7 +66,7 @@ public class StarbaseCmdModel : AUnitBaseCmdModel {
             Return();
         }
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             StarbaseDirective order = CurrentOrder.Directive;
             switch (order) {
                 case StarbaseDirective.Attack:
