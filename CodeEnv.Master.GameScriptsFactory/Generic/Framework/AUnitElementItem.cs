@@ -109,6 +109,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         _collider.enabled = true;
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
+        Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
     }
 
     /// <summary>
@@ -199,7 +200,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         bool isRangeMonitorStillInUse = monitor.Remove(weapon);
 
         if (!isRangeMonitorStillInUse) {
-            monitor.Reset();
+            monitor.ResetForReuse();
             _weaponRangeMonitors.Remove(monitor);
             //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
             UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
@@ -307,6 +308,134 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
+    #region Active Countermeasures
+
+    protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
+
+    private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
+
+
+    public void AddCountermeasure(ActiveCountermeasureStat cmStat) {
+        D.Log("{0}.AddCountermeasure() called. Stat = {1}.", FullName, cmStat);
+        ActiveCountermeasure countermeasure = new ActiveCountermeasure(cmStat);
+
+        var monitor = UnitFactory.Instance.MakeMonitorInstance(countermeasure, this);
+        if (!_countermeasureRangeMonitors.Contains(monitor)) {
+            // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
+            _countermeasureRangeMonitors.Add(monitor);
+        }
+        Data.AddCountermeasure(countermeasure);
+        countermeasure.onIsReadyToInterceptAThreatChanged += OnCountermeasureReadyToInterceptAThreatChanged;
+        countermeasure.onThreatEnteringRange += OnNewThreatInRange;
+        if (IsOperational) {
+            // we have already commenced operations so start the new countermeasure
+            // countermeasures added before operations have commenced are started when operations commence
+            countermeasure.IsOperational = true;
+        }
+    }
+
+
+    /// <summary>
+    /// Removes the active countermeasure from this element, destroying any associated
+    /// range monitor no longer in use.
+    /// </summary>
+    /// <param name="countermeasure">The countermeasure.</param>
+    public void RemoveCountermeasure(ActiveCountermeasure countermeasure) {
+        countermeasure.IsOperational = false;
+        var monitor = countermeasure.RangeMonitor;
+        bool isRangeMonitorStillInUse = monitor.Remove(countermeasure);
+
+        if (!isRangeMonitorStillInUse) {
+            monitor.ResetForReuse();
+            _countermeasureRangeMonitors.Remove(monitor);
+            D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
+            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
+        }
+        Data.RemoveCountermeasure(countermeasure);
+        countermeasure.onIsReadyToInterceptAThreatChanged -= OnCountermeasureReadyToInterceptAThreatChanged;
+        countermeasure.onThreatEnteringRange -= OnNewThreatInRange;
+    }
+
+
+    /// <summary>
+    /// Attempts to find an incoming ordnance threat in range and intercept it.
+    /// </summary>
+    /// <param name="countermeasure">The weapon.</param>
+    protected void FindIncomingThreatAndIntercept(ActiveCountermeasure countermeasure) {
+        D.Assert(countermeasure.IsReadyToInterceptAThreat);
+        IInterceptableOrdnance ordnanceThreat;
+        if (countermeasure.TryPickMostDangerousThreat(out ordnanceThreat)) {
+            bool hitThreat = countermeasure.Fire(ordnanceThreat);
+            D.Log(!hitThreat, "{0}'s {1} missed intercept on {2}.", FullName, countermeasure.Name, ordnanceThreat.Name);
+        }
+        else {
+            D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, countermeasure.Name);
+        }
+    }
+
+    /// <summary>
+    /// Called when there is a change in the readiness to intercept a threat status of the provided countermeasure. 
+    /// Readiness to intercept does not mean there is a threat in range to intercept.
+    /// </summary>
+    /// <param name="countermeasure">The countermeasure.</param>
+    private void OnCountermeasureReadyToInterceptAThreatChanged(ActiveCountermeasure countermeasure) {
+        D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, countermeasure.Name, countermeasure.IsReadyToInterceptAThreat, countermeasure.IsThreatInRange);
+        if (countermeasure.IsReadyToInterceptAThreat && countermeasure.IsThreatInRange) {
+            OnCountermeasureReadyAndThreatInRange(countermeasure);
+        }
+        UpdateReadyCountermeasuresInventory(countermeasure);
+    }
+
+    /// <summary>
+    /// Called when a new, qualified incoming ordnance threat has come within range 
+    /// of the provided countermeasure. This event is independent of whether the
+    /// countermeasure is ready to intercept. However, it does mean the countermeasure is operational.
+    /// </summary>
+    /// <param name="countermeasure">The countermeasure.</param>
+    private void OnNewThreatInRange(ActiveCountermeasure countermeasure) {
+        D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, countermeasure.Name);
+        if (_readyCountermeasuresInventory.Contains(countermeasure)) {
+            OnCountermeasureReadyAndThreatInRange(countermeasure);
+            UpdateReadyCountermeasuresInventory(countermeasure);
+        }
+    }
+
+    /// <summary>
+    /// Called when the provided countermeasure is ready to intercept and there
+    /// is a threat in range.
+    /// </summary>
+    /// <param name="countermeasure">The countermeasure.</param>
+    private void OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, countermeasure.Name);
+        RelayToCurrentState(countermeasure);
+    }
+
+    /// <summary>
+    /// Updates the ready countermeasures inventory.
+    /// </summary>
+    /// <param name="countermeasure">The countermeasure.</param>
+    private void UpdateReadyCountermeasuresInventory(ActiveCountermeasure countermeasure) {
+        if (countermeasure.IsReadyToInterceptAThreat) {
+            if (!_readyCountermeasuresInventory.Contains(countermeasure)) {
+                _readyCountermeasuresInventory.Add(countermeasure);
+                D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+            }
+            else {
+                D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+                // this occurs when a countermeasure attempts to intercept but doesn't (doesn't currently occur) and therefore remains
+                // IsReadyToInterceptAThreat. If it had intercepted, it would no longer be ready and therefore would have been removed below
+            }
+        }
+        else {
+            if (_readyCountermeasuresInventory.Contains(countermeasure)) {
+                _readyCountermeasuresInventory.Remove(countermeasure);
+                D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+            }
+        }
+    }
+
+    #endregion
+
     #region Sensors
 
     public void AddSensor(SensorStat sensorStat) {
@@ -314,6 +443,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         if (Command != null) {
             // Command exists so the new sensor can be attached to the Command's SensorRangeMonitor now
             Command.AttachSensorsToMonitors(sensor);
+        }
+        else {
+            // Note: During startup and ingame building, sensors are added to Elements by Creators before the element has been assigned to a Command.
+            // As a result, the sensors are initially present without an attached RangeMonitor as SensorRangeMonitors go with Commands not elements.
+            // When the element is added to a command, unattached sensors are then attached to a RangeMonitor. Weapons and Countermeasures don't
+            // have this problem as their RangeMonitors can be attached when they are added since the RangeMonitor goes with the element, not the Cmd.
+            // D.Warn("{0}.Command not yet set. Sensor {1} not attached to monitor.", FullName, sensor.Name);
         }
         Data.AddSensor(sensor);
         if (IsOperational) {
@@ -404,21 +540,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
+        var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
         var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
         operationalWeapons.ForAll(w => {
-            var isDamaged = !RandomExtended<bool>.Chance(damageSeverity);
-            if (isDamaged) {
-                w.IsOperational = false;
-                D.Log("{0}'s weapon {1} has been damaged.", FullName, w.Name);
-            }
+            w.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+            D.Log(!w.IsOperational, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
         });
         var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
         operationalSensors.ForAll(s => {
-            var isDamaged = !RandomExtended<bool>.Chance(damageSeverity);
-            if (isDamaged) {
-                s.IsOperational = false;
-                D.Log("{0}'s sensor {1} has been damaged.", FullName, s.Name);
-            }
+            s.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+            D.Log(!s.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
         });
     }
 
@@ -458,24 +589,27 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region IElementAttackableTarget Members
 
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (DebugSettings.Instance.AllPlayersInvulnerable) { return; }
-
-        D.Assert(IsOperational);
-        CombatStrength damageSustained = attackerWeaponStrength - Data.DefensiveStrength;
-        if (damageSustained.Combined == Constants.ZeroF) {
-            //D.Log("{0} has been hit but incurred no damage.", FullName);
+    public override void TakeHit(DamageStrength damagePotential) {
+        if (DebugSettings.Instance.AllPlayersInvulnerable) {
             return;
         }
-        //D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damageSustained.Combined);
+        D.Assert(IsOperational);
+        LogEvent();
+        DamageStrength damage = damagePotential - Data.DamageMitigation;
+        if (damage.Total == Constants.ZeroF) {
+            D.Log("{0} has been hit but incurred no damage.", FullName);
+            return;
+        }
+        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+
         bool isCmdHit = false;
         float damageSeverity;
-        bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
+        bool isElementAlive = ApplyDamage(damage, out damageSeverity);
         if (!isElementAlive) {
             InitiateDeath();    // should immediately propogate thru to Cmd's alive status
         }
         if (IsHQ && Command.IsOperational) {
-            isCmdHit = Command.__CheckForDamage(isElementAlive, damageSustained, damageSeverity);
+            isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
         }
 
         if (isElementAlive) {
@@ -484,6 +618,61 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             AssessNeedForRepair();
         }
     }
+    //public void TakeHit(DamageStrength attackerStrength) {
+    //    if (DebugSettings.Instance.AllPlayersInvulnerable) {
+    //        return;
+    //    }
+    //    D.Assert(IsOperational);
+    //    LogEvent();
+    //    DamageStrength damage = attackerStrength - Data.DefensiveStrength;
+    //    if (damage.Total == Constants.ZeroF) {
+    //        D.Log("{0} has been hit but incurred no damage.", FullName);
+    //        return;
+    //    }
+    //    D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+
+    //    bool isCmdHit = false;
+    //    float damageSeverity;
+    //    bool isElementAlive = ApplyDamage(damage, out damageSeverity);
+    //    if (!isElementAlive) {
+    //        InitiateDeath();    // should immediately propogate thru to Cmd's alive status
+    //    }
+    //    if (IsHQ && Command.IsOperational) {
+    //        isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
+    //    }
+
+    //    if (isElementAlive) {
+    //        var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
+    //        StartEffect(hitAnimation);
+    //        AssessNeedForRepair();
+    //    }
+    //}
+    //public override void TakeHit(CombatStrength attackerWeaponStrength) {
+    //    if (DebugSettings.Instance.AllPlayersInvulnerable) { return; }
+
+    //    D.Assert(IsOperational);
+    //    CombatStrength damageSustained = attackerWeaponStrength - Data.DefensiveStrength;
+    //    if (damageSustained.Combined == Constants.ZeroF) {
+    //        //D.Log("{0} has been hit but incurred no damage.", FullName);
+    //        return;
+    //    }
+    //    //D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damageSustained.Combined);
+    //    bool isCmdHit = false;
+    //    float damageSeverity;
+    //    bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
+    //    if (!isElementAlive) {
+    //        InitiateDeath();    // should immediately propogate thru to Cmd's alive status
+    //    }
+    //    if (IsHQ && Command.IsOperational) {
+    //        isCmdHit = Command.__CheckForDamage(isElementAlive, damageSustained, damageSeverity);
+    //    }
+
+    //    if (isElementAlive) {
+    //        var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
+    //        StartEffect(hitAnimation);
+    //        AssessNeedForRepair();
+    //    }
+    //}
 
     #endregion
 
@@ -521,11 +710,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

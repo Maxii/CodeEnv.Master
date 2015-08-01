@@ -39,12 +39,14 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
         return new FacilityStat(elementName, 10000F, 50F, category, science, culture, income, expense);
     }
 
-    protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats) {
-        return _factory.MakeInstance(stat, Topography.OpenSpace, wStats, cmStats, sensorStats, _owner);
+    protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats) {
+        return _factory.MakeInstance(stat, Topography.OpenSpace, wStats, passiveCmStats, activeCmStats, sensorStats, _owner);
     }
 
-    protected override void PopulateElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, ref FacilityItem element) {
-        _factory.PopulateInstance(stat, Topography.OpenSpace, wStats, cmStats, sensorStats, _owner, ref element);
+    protected override void PopulateElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, ref FacilityItem element) {
+        _factory.PopulateInstance(stat, Topography.OpenSpace, wStats, passiveCmStats, activeCmStats, sensorStats, _owner, ref element);
     }
 
     protected override FacilityCategory GetCategory(FacilityStat stat) {
@@ -68,7 +70,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
 
     protected override StarbaseCmdItem MakeCommand(Player owner) {
         LogEvent();
-        var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
+        var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle);
 
         StarbaseCmdItem cmd;
@@ -95,7 +97,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
         LogEvent();
         var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
-        _command.HQElement = RandomExtended<AUnitElementItem>.Choice(candidateHQElements) as FacilityItem;
+        _command.HQElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
     }
 
     protected override void __IssueFirstUnitCommand() {

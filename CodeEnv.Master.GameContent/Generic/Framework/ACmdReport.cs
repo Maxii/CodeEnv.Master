@@ -107,8 +107,6 @@ namespace CodeEnv.Master.GameContent {
 
             UnitHealth = CalcUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
 
-            //UnitMaxSensorRange = elementReports.Select(er => er.MaxSensorRange).Max();    // UnitSensorRange moved to Broad
-            //UnitMaxWeaponsRange = elementReports.Select(er => er.MaxWeaponsRange).Max();    // UnitWeaponsRange moved to Broad
             UnitScience = elementReports.Select(er => er.Science).NullableSum();
             UnitExpense = elementReports.Select(er => er.Expense).NullableSum();
         }

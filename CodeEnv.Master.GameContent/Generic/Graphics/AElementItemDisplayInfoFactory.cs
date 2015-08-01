@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ContentID.Offense:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.OffensiveStrength.HasValue ? report.OffensiveStrength.Value.ToString() : _unknown);
+                        colorizedText = _phrase.Inject(report.OffensiveStrength.HasValue ? report.OffensiveStrength.Value.ToTextHud() : _unknown);
                         break;
                     case ContentID.WeaponsRange:
                         isSuccess = true;

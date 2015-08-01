@@ -9,7 +9,9 @@
       <ImageFilename>image</ImageFilename>
       <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
       <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+      <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
       <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+      <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
   <Species SpeciesName="Klingon">
     <PluralName>Klingons</PluralName>
@@ -18,7 +20,9 @@
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
     <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+    <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
   <Species SpeciesName="Ferengi">
     <PluralName>Ferengii</PluralName>
@@ -27,7 +31,9 @@
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
     <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+    <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
   <Species SpeciesName="Romulan">
     <PluralName>Romulans</PluralName>
@@ -36,7 +42,9 @@
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
     <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+    <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
   <Species SpeciesName="Borg">
     <PluralName>Borg</PluralName>
@@ -45,7 +53,9 @@
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
     <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+    <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
   <Species SpeciesName="Dominion">
     <PluralName>Dominions</PluralName>
@@ -54,7 +64,9 @@
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
     <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+    <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
   <Species SpeciesName="GodLike">
     <PluralName>GodLikes</PluralName>
@@ -63,6 +75,8 @@
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
     <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
+    <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
   </Species>
 </Values>

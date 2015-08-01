@@ -1,73 +1,66 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Weapon.cs
-// Abstract base class for an Element's offensive weapon.
+// File: ActiveCountermeasure.cs
+// Countermeasure with an ability to intercept a weapon delivery vehicle.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Linq;
-    using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
+    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// Abstract base class for an Element's offensive weapon.
+    /// Countermeasure with an ability to intercept a weapon delivery vehicle.
     /// </summary>
-    public abstract class AWeapon : ARangedEquipment, IDisposable {
+    public class ActiveCountermeasure : ARangedEquipment, ICountermeasure {
 
         private static string _editorNameFormat = "{0}[{1}({2:0.})]";
 
         /// <summary>
-        /// Occurs when IsReadyToFire changes.
+        /// Occurs when IsReadyToInterceptAThreat changes.
         /// </summary>
-        public event Action<AWeapon> onIsReadyToFireChanged;
+        public event Action<ActiveCountermeasure> onIsReadyToInterceptAThreatChanged;
 
         /// <summary>
-        /// Occurs when a qualified enemy target enters this operational 
-        /// weapon's range. Only raised when the weapon IsOperational.
+        /// Occurs when a qualified incoming ordnance threat enters this operational 
+        /// countermeasure's range. Only raised when the countermeasure IsOperational.
         /// </summary>
-        public event Action<AWeapon> onEnemyTargetEnteringRange;
+        public event Action<ActiveCountermeasure> onThreatEnteringRange;
 
-        private bool _isReadyToFire;
+
+        private bool _isReadyToInterceptAThreat;
         /// <summary>
-        /// Indicates whether this weapon is ready to fire. A weapon is ready to fire when 
+        /// Indicates whether this countermeasure is ready to intercept a threat. A countermeasure is ready when 
         /// it is both operational and loaded. This property is not affected by whether 
-        /// there are any enemy targets within range.
+        /// there are any threats within range.
         /// </summary>
-        public bool IsReadyToFire {
-            get { return _isReadyToFire; }
-            private set { SetProperty<bool>(ref _isReadyToFire, value, "IsReadyToFire", OnIsReadyToFireChanged); }
+        public bool IsReadyToInterceptAThreat {
+            get { return _isReadyToInterceptAThreat; }
+            private set { SetProperty<bool>(ref _isReadyToInterceptAThreat, value, "IsReadyToInterceptAThreat", OnIsReadyToInterceptAThreatChanged); }
         }
 
         /// <summary>
         /// Indicates whether there are one or more qualified enemy targets within range.
         /// </summary>
-        public bool IsEnemyInRange { get { return _qualifiedEnemyTargets.Any(); } }
-
-        private bool _toShowEffects;
-        /// <summary>
-        /// Indicates whether this weapon and its fired ordnance should show their audio and visual effects.
-        /// </summary>
-        public bool ToShowEffects {
-            get { return _toShowEffects; }
-            set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
-        }
+        public bool IsThreatInRange { get { return _qualifiedThreats.Any(); } }
 
 
-        public IWeaponRangeMonitor RangeMonitor { get; set; }
+        public IActiveCountermeasureRangeMonitor RangeMonitor { get; set; }
 
         public override string Name {
             get {
@@ -79,44 +72,43 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ArmamentCategory ArmamentCategory { get { return DeliveryStrength.Vehicle; } }
-
-        public DeliveryStrength DeliveryStrength { get { return Stat.DeliveryStrength; } }
-
-        public DamageStrength DamagePotential { get { return Stat.DamagePotential; } }
-
-        public float Accuracy { get { return Stat.Accuracy; } }
+        //public abstract ArmamentCategory ArmamentCategory { get; }
 
         public float ReloadPeriod {
             get {
-                float reloadPeriodMultiplier = RangeMonitor != null ? Owner.WeaponReloadPeriodMultiplier : Constants.OneF;
+                float reloadPeriodMultiplier = RangeMonitor != null ? RangeMonitor.Owner.CountermeasureReloadPeriodMultiplier : Constants.OneF;
                 return Stat.ReloadPeriod * reloadPeriodMultiplier;
             }
         }
 
-        public Player Owner { get { return RangeMonitor.Owner; } }
+        public DeliveryStrength InterceptStrength { get { return Stat.InterceptStrength; } }
+
+        public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
+
+        public float InterceptAccuracy { get { return Stat.InterceptAccuracy; } }
+
 
         protected override float RangeMultiplier {
-            get { return RangeMonitor != null ? Owner.WeaponRangeMultiplier : Constants.OneF; }
+            get { return RangeMonitor != null ? RangeMonitor.Owner.CountermeasureRangeMultiplier : Constants.OneF; }
         }
-
-        protected new WeaponStat Stat { get { return base.Stat as WeaponStat; } }
 
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
-        private IList<IElementAttackableTarget> _qualifiedEnemyTargets;
+        private IList<IInterceptableOrdnance> _qualifiedThreats;
         private bool _isLoaded;
         private WaitJob _reloadJob;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AWeapon" /> class.
-        /// </summary>
-        /// <param name="stat">The stat.</param>
-        public AWeapon(WeaponStat stat)
+
+
+        protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
+
+        public ActiveCountermeasure(ActiveCountermeasureStat stat)
             : base(stat) {
-            _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
+            _qualifiedThreats = new List<IInterceptableOrdnance>();
+            //Validate();
         }
+
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
@@ -135,12 +127,6 @@ namespace CodeEnv.Master.GameContent {
                      **********************************************************************************************************/
 
         /// <summary>
-        /// Called when an ownership change of either the ParentElement or a tracked target requires 
-        /// a check to see if any active ordnance is currently targeted on a non-enemy.
-        /// </summary>
-        public abstract void CheckActiveOrdnanceTargeting();
-
-        /// <summary>
         /// Tries to pick the best (most advantageous) qualified target in range.
         /// Returns <c>true</c> if a target was picked, <c>false</c> otherwise.
         /// The hint provided is the initial choice for primary target as determined
@@ -149,60 +135,75 @@ namespace CodeEnv.Master.GameContent {
         /// Element is to attack.
         /// </summary>
         /// <param name="hint">The hint.</param>
-        /// <param name="enemyTgt">The enemy target picked.</param>
+        /// <param name="threatPicked">The enemy target picked.</param>
         /// <returns></returns>
-        public bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
-            if (hint != null && _qualifiedEnemyTargets.Contains(hint)) {
-                IElementAttackableTarget interferingEnemyTgt;
-                if (RangeMonitor.CheckLineOfSightTo(hint, out interferingEnemyTgt)) {
-                    enemyTgt = hint;
-                    return true;
-                }
-                if (interferingEnemyTgt != null) {
-                    enemyTgt = interferingEnemyTgt;
-                    return true;
-                }
+        public bool TryPickMostDangerousThreat(out IInterceptableOrdnance threatPicked) {
+            if (_qualifiedThreats.Count == Constants.ZeroF) {
+                threatPicked = null;
+                return false;
             }
-            var possibleTargets = new List<IElementAttackableTarget>(_qualifiedEnemyTargets);
-            return TryPickBestTarget(possibleTargets, out enemyTgt);
+            threatPicked = _qualifiedThreats.First();   // IMPROVE closest? biggest payload?, most vulnerable?
+            return true;
+        }
+
+        /// <summary>
+        /// Fires this active countermeasure against the provided WDV threat.
+        /// Returns <c>true</c> if the threat was hit, <c>false</c> if not.
+        /// </summary>
+        /// <param name="threat">The threat.</param>
+        /// <returns></returns>
+        public bool Fire(IInterceptableOrdnance threat) {
+            OnFiringInitiated(threat);
+
+            D.Log("{0} is attempting to fire on {1}.", Name, threat.Name);
+            bool threatHit = false;
+            float hitChance = InterceptAccuracy;
+            if (RandomExtended.Chance(hitChance)) {
+                threatHit = true;
+                threat.TakeHit(InterceptStrength);
+            }
+            OnFiringComplete();
+            return threatHit;
         }
 
         /// <summary>
         /// Called by this weapon's RangeMonitor when an enemy target enters or exits the weapon's range.
         /// </summary>
-        /// <param name="enemyTarget">The enemy target.</param>
+        /// <param name="threat">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
-        public void OnEnemyTargetInRangeChanged(IElementAttackableTarget enemyTarget, bool isInRange) {
-            D.Log("{0} received OnEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+        public void OnThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
+            D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
             if (isInRange) {
-                if (CheckIfQualified(enemyTarget)) {
-                    D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget));
-                    _qualifiedEnemyTargets.Add(enemyTarget);
-                    if (IsOperational && onEnemyTargetEnteringRange != null) {
-                        onEnemyTargetEnteringRange(this);
+                if (CheckIfQualified(threat)) {
+                    D.Assert(!_qualifiedThreats.Contains(threat));
+                    _qualifiedThreats.Add(threat);
+                    if (IsOperational) {
+                        OnThreatEnteringRange(threat);
                     }
                 }
             }
             else {
-                if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
-                    _qualifiedEnemyTargets.Remove(enemyTarget);
+                if (_qualifiedThreats.Contains(threat)) {
+                    _qualifiedThreats.Remove(threat);
                 }
+            }
+        }
+
+        private void OnThreatEnteringRange(IInterceptableOrdnance threat) {
+            D.Assert(_qualifiedThreats.Contains(threat));
+            if (onThreatEnteringRange != null) {
+                D.Log("{0} is raising onThreatEnteringRange event.", Name);
+                onThreatEnteringRange(this);
             }
         }
 
         /// <summary>
         /// Called when this weapon's firing process against <c>targetFiredOn</c> has begun.
         /// </summary>
-        /// <param name="targetFiredOn">The target fired on.</param>
-        /// <param name="ordnanceFired">The ordnance fired.</param>
-        public void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
-            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
-            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn));
-            //D.Assert(ordnanceFired.ArmamentCategory == ArmamentCategory);
-
-            D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
-            RecordFiredOrdnance(ordnanceFired);
-            ordnanceFired.onDeathOneShot += OnOrdnanceDeath;
+        /// <param name="threatFiredOn">The target fired on.</param>
+        private void OnFiringInitiated(IInterceptableOrdnance threatFiredOn) {
+            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.Name));
+            D.Assert(_qualifiedThreats.Contains(threatFiredOn));
 
             _isLoaded = false;
             AssessReadiness();
@@ -213,21 +214,13 @@ namespace CodeEnv.Master.GameContent {
         /// and Missile Weapons initiate and complete the firing process at the same time. Beam Weapons
         /// don't complete the firing process until their Beam is terminated.
         /// </summary>
-        /// <param name="ordnanceFired">The ordnance fired.</param>
-        public void OnFiringComplete(IOrdnance ordnanceFired) {
-            //D.Assert(ordnanceFired.ArmamentCategory == ArmamentCategory);
+        private void OnFiringComplete() {
             D.Assert(!_isLoaded);
-            D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
 
             UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
                 InitiateReloadCycle();
             });
-        }
-
-        private void OnOrdnanceDeath(IOrdnance terminatedOrdnance) {
-            D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, terminatedOrdnance.Name);
-            RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
         }
 
         protected override void OnIsOperationalChanged() {
@@ -248,9 +241,9 @@ namespace CodeEnv.Master.GameContent {
             NotifyIsOperationalChanged();
         }
 
-        private void OnIsReadyToFireChanged() {
-            if (onIsReadyToFireChanged != null) {
-                onIsReadyToFireChanged(this);
+        private void OnIsReadyToInterceptAThreatChanged() {
+            if (onIsReadyToInterceptAThreatChanged != null) {
+                onIsReadyToInterceptAThreatChanged(this);
             }
         }
 
@@ -260,48 +253,10 @@ namespace CodeEnv.Master.GameContent {
             AssessReadiness();
         }
 
-        protected abstract void OnToShowEffectsChanged();
-
-        /// <summary>
-        /// Records the provided ordnance as having been fired.
-        /// </summary>
-        /// <param name="ordnanceFired">The ordnance fired.</param>
-        protected abstract void RecordFiredOrdnance(IOrdnance ordnanceFired);
-
-        /// <summary>
-        /// Removes the fired ordnance from the record as having been fired.
-        /// </summary>
-        /// <param name="terminatedOrdnance">The dead ordnance.</param>
-        protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
-
-        /// <summary>
-        /// Recursive method that tries to pick a target from a list of possibleTargets. Returns <c>true</c>
-        /// if a target was picked, <c>false</c> is not.
-        /// </summary>
-        /// <param name="possibleTargets">The possible targets.</param>
-        /// <param name="enemyTgt">The enemy target returned.</param>
-        /// <returns></returns>
-        private bool TryPickBestTarget(IList<IElementAttackableTarget> possibleTargets, out IElementAttackableTarget enemyTgt) {
-            enemyTgt = null;
-            if (possibleTargets.Count == Constants.Zero) {
-                return false;
-            }
-            IElementAttackableTarget interferingEnemyTgt;
-            var candidateTgt = possibleTargets.First();
-            if (RangeMonitor.CheckLineOfSightTo(candidateTgt, out interferingEnemyTgt)) {
-                enemyTgt = candidateTgt;
-                return true;
-            }
-            if (interferingEnemyTgt != null) {
-                enemyTgt = interferingEnemyTgt;
-                return true;
-            }
-            possibleTargets.Remove(candidateTgt);
-            return TryPickBestTarget(possibleTargets, out enemyTgt);
-        }
-
-        private bool CheckIfQualified(IElementAttackableTarget enemyTarget) {
-            return true;    // UNDONE
+        private bool CheckIfQualified(IInterceptableOrdnance enemyTarget) {
+            bool isQualified = InterceptStrength.Vehicle == enemyTarget.VehicleStrength.Vehicle;
+            D.Log("{0} isQualified = {1}, Vehicles: {2}, {3}.", Name, isQualified, InterceptStrength.Vehicle.GetValueName(), enemyTarget.VehicleStrength.Vehicle.GetValueName());
+            return isQualified;
         }
 
         private void InitiateReloadCycle() {
@@ -316,8 +271,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessReadiness() {
-            IsReadyToFire = IsOperational && _isLoaded;
+            IsReadyToInterceptAThreat = IsOperational && _isLoaded;
         }
+
+        //private void Validate() {
+        //    D.Assert(ArmamentCategory == Stat.InterceptStrength.Vehicle);
+        //}
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running

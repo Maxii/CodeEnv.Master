@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
         /// of the sensor used and the owner of the Cmd.
         /// </summary>
-        private IDictionary<Player, IDictionary<RangeDistanceCategory, IList<IUnitCmdItem>>> _detectionLookup = new Dictionary<Player, IDictionary<RangeDistanceCategory, IList<IUnitCmdItem>>>();
+        private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>> _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>>();
         private IIntelItem _item;
         private IGameManager _gameMgr;
 
@@ -44,13 +44,13 @@ namespace CodeEnv.Master.GameContent {
             _item.onOwnerChanged += OnOwnerChanged;
         }
 
-        public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+        public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
             D.Log("{0}.{1}.OnDetection called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
             Player detectingPlayer = cmdItem.Owner;
 
-            IDictionary<RangeDistanceCategory, IList<IUnitCmdItem>> rangeLookup;
+            IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                rangeLookup = new Dictionary<RangeDistanceCategory, IList<IUnitCmdItem>>();
+                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmdItem>>();
                 _detectionLookup.Add(detectingPlayer, rangeLookup);
             }
 
@@ -66,12 +66,12 @@ namespace CodeEnv.Master.GameContent {
             UpdatePlayerKnowledge(detectingPlayer);
         }
 
-        public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
-            D.Assert(sensorRange != RangeDistanceCategory.None);
+        public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+            D.Assert(sensorRange != RangeCategory.None);
             D.Log("{0}.{1}.OnDetectionLost called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
             Player detectingPlayer = cmdItem.Owner;
 
-            IDictionary<RangeDistanceCategory, IList<IUnitCmdItem>> rangeLookup;
+            IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
                 D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", _item.FullName, cmdItem.FullName);
                 return;
@@ -119,18 +119,18 @@ namespace CodeEnv.Master.GameContent {
                 newCoverage = IntelCoverage.Comprehensive;
             }
             else {
-                IDictionary<RangeDistanceCategory, IList<IUnitCmdItem>> rangeLookup;
+                IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
                 if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
                     D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
                     return;
                 }
-                if (rangeLookup.ContainsKey(RangeDistanceCategory.Short)) {
+                if (rangeLookup.ContainsKey(RangeCategory.Short)) {
                     newCoverage = IntelCoverage.Broad;
                 }
-                else if (rangeLookup.ContainsKey(RangeDistanceCategory.Medium)) {
+                else if (rangeLookup.ContainsKey(RangeCategory.Medium)) {
                     newCoverage = IntelCoverage.Essential;
                 }
-                else if (rangeLookup.ContainsKey(RangeDistanceCategory.Long)) {
+                else if (rangeLookup.ContainsKey(RangeCategory.Long)) {
                     newCoverage = IntelCoverage.Basic;
                 }
                 else {
@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdatePlayerKnowledge(Player player) {
-            IDictionary<RangeDistanceCategory, IList<IUnitCmdItem>> rangeLookup;
+            IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
             if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
                 D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
                 return;

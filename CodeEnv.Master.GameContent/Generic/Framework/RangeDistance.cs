@@ -60,20 +60,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="rangeCat">The DistanceRangeCategory.</param>
         /// <param name="distance">The distance in units.</param>
-        public RangeDistance(RangeDistanceCategory rangeCat, float distance)
+        public RangeDistance(RangeCategory rangeCat, float distance)
             : this() {
             Arguments.ValidateNotNegative(distance);
             switch (rangeCat) {
-                case RangeDistanceCategory.Short:
+                case RangeCategory.Short:
                     Short = distance;
                     break;
-                case RangeDistanceCategory.Medium:
+                case RangeCategory.Medium:
                     Medium = distance;
                     break;
-                case RangeDistanceCategory.Long:
+                case RangeCategory.Long:
                     Long = distance;
                     break;
-                case RangeDistanceCategory.None:
+                case RangeCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
             }
@@ -93,15 +93,15 @@ namespace CodeEnv.Master.GameContent {
             Long = longDistance;
         }
 
-        public float GetValue(RangeDistanceCategory rangeCat) {
+        public float GetValue(RangeCategory rangeCat) {
             switch (rangeCat) {
-                case RangeDistanceCategory.Short:
+                case RangeCategory.Short:
                     return Short;
-                case RangeDistanceCategory.Medium:
+                case RangeCategory.Medium:
                     return Medium;
-                case RangeDistanceCategory.Long:
+                case RangeCategory.Long:
                     return Long;
-                case RangeDistanceCategory.None:
+                case RangeCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
             }
@@ -131,7 +131,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public string ToLabel() { return _labelFormat.Inject(Short.FormatValue(), Medium.FormatValue(), Long.FormatValue()); }
+        public string ToLabel() { return _labelFormat.Inject(Short.FormatValue(false), Medium.FormatValue(false), Long.FormatValue(false)); }
 
         public override string ToString() { return _toStringFormat.Inject(Short, Medium, Long); }
 

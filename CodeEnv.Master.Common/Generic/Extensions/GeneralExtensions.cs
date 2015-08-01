@@ -123,13 +123,15 @@ namespace CodeEnv.Master.Common {
         /// <param name="showZero">if value is Zero and set to <c>true</c> then "0" is returned. If <c>false</c> then string.Empty is returned.</param>
         /// <param name="threshold">The value above which no decimal point is included.</param>
         /// <returns></returns>
-        public static string FormatValue(this float value, bool showZero = false, float threshold = 10F) {
+        public static string FormatValue(this float value, bool showZero = true, float threshold = 10F) {
             Arguments.ValidateNotNegative(value);
             Arguments.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
 
             string formattedValue = string.Empty;
-            if (showZero && value == Constants.ZeroF) {
-                formattedValue = Constants.FormatFloat_0Dp.Inject(value);
+            if (value == Constants.ZeroF) {
+                if (showZero) {
+                    formattedValue = Constants.FormatFloat_0Dp.Inject(value);
+                }
             }
             else {
                 formattedValue = value < threshold ? Constants.FormatFloat_1DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
@@ -228,7 +230,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="source">The source.</param>
         /// <returns></returns>
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
-            return RandomExtended<T>.Shuffle(source.ToArray());
+            return RandomExtended.Shuffle<T>(source.ToArray());
         }
 
         /// <summary>

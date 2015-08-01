@@ -30,6 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         public IList<AWeapon> Weapons { get; private set; }
         public IList<Sensor> Sensors { get; private set; }
+        public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
 
         private bool _isHQ;
         public virtual bool IsHQ {
@@ -111,11 +112,12 @@ namespace CodeEnv.Master.GameContent {
             elementTransform.rigidbody.mass = mass;
             Weapons = new List<AWeapon>();
             Sensors = new List<Sensor>();
+            ActiveCountermeasures = new List<ActiveCountermeasure>();
         }
 
         public void AddWeapon(AWeapon weapon) {
             D.Assert(weapon.RangeMonitor != null);
-            D.Assert(!weapon.IsOperational);    // Items make weapons operational after completing the adding process
+            D.Assert(!weapon.IsOperational);    // Items make equipment operational after completing the adding process
             D.Assert(!Weapons.Contains(weapon));
             Weapons.Add(weapon);
             weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
@@ -123,12 +125,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddSensor(Sensor sensor) {
-            D.Assert(sensor.RangeMonitor == null);
-            D.Assert(!sensor.IsOperational);    // Items make sensors operational after completing the adding process
+            // D.Assert(sensor.RangeMonitor != null);  Note: Unlike Weapons and ActiveCountermeasures, Sensors can be added to elements 
+            // without a RangeMonitor attached. This is because the element adding the sensor may not yet have a Command attached 
+            // and SensorRangeMonitors get attached to Cmds, not elements.
+            D.Assert(!sensor.IsOperational);    // Items make equipment operational after completing the adding process
             D.Assert(!Sensors.Contains(sensor));
             Sensors.Add(sensor);
             sensor.onIsOperationalChanged += OnSensorIsOperationalChanged;
             // no need to recalc sensor values as this occurs when IsOperational changes
+        }
+
+        public void AddCountermeasure(ActiveCountermeasure cm) {
+            D.Assert(cm.RangeMonitor != null);
+            D.Assert(!cm.IsOperational);    // Items make equipment operational after completing the adding process
+            D.Assert(!ActiveCountermeasures.Contains(cm));
+            ActiveCountermeasures.Add(cm);
+            cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
         }
 
         /// <summary>
@@ -137,7 +149,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="weapon">The weapon.</param>
         public void RemoveWeapon(AWeapon weapon) {
             D.Assert(Weapons.Contains(weapon));
-            D.Assert(!weapon.IsOperational);    // Items make weapons non-operational when beginning the removal process
+            D.Assert(!weapon.IsOperational);    // Items make equipment non-operational when beginning the removal process
             Weapons.Remove(weapon);
             weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
             // no need to recalc weapon values as this occurs when IsOperational changes
@@ -145,10 +157,17 @@ namespace CodeEnv.Master.GameContent {
 
         public void RemoveSensor(Sensor sensor) {
             D.Assert(Sensors.Contains(sensor));
-            D.Assert(!sensor.IsOperational);    // Items make sensors non-operational when beginning the removal process
+            D.Assert(!sensor.IsOperational);    // Items make equipment non-operational when beginning the removal process
             Sensors.Remove(sensor);
             sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
             // no need to recalc sensor values as this occurs when IsOperational changes
+        }
+
+        public void RemoveCountermeasure(ActiveCountermeasure cm) {
+            D.Assert(ActiveCountermeasures.Contains(cm));
+            D.Assert(!cm.IsOperational);    // Items make equipment non-operational when beginning the removal process
+            ActiveCountermeasures.Remove(cm);
+            cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged;
         }
 
         private void OnIsHQChanged() {
@@ -165,9 +184,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcSensorRange() {
-            var shortRangeSensors = Sensors.Where(s => s.RangeCategory == RangeDistanceCategory.Short);
-            var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeDistanceCategory.Medium);
-            var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeDistanceCategory.Long);
+            var shortRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Short);
+            var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Medium);
+            var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Long);
             float shortRangeDistance = shortRangeSensors.CalcSensorRangeDistance();
             float mediumRangeDistance = mediumRangeSensors.CalcSensorRangeDistance();
             float longRangeDistance = longRangeSensors.CalcSensorRangeDistance();
@@ -176,23 +195,32 @@ namespace CodeEnv.Master.GameContent {
 
         private void RecalcWeaponsRange() {
             var operationalWeapons = Weapons.Where(w => w.IsOperational);
-            var shortRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Short);
-            var mediumRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Medium);
-            var longRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Long);
+            var shortRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
+            var mediumRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
+            var longRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
             float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
             float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
             WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
+        protected override void RecalcDefensiveValues() {
+            var defaultValueIfEmpty = default(DamageStrength);
+            List<ICountermeasure> activeAndPassiveCountermeasures = new List<ICountermeasure>(PassiveCountermeasures.Cast<ICountermeasure>());
+            activeAndPassiveCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
+            DamageMitigation = activeAndPassiveCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
+            DefensiveStrength = new CombatStrength(activeAndPassiveCountermeasures);
+        }
+
         private void RecalcOffensiveStrength() {
-            var defaultValueIfEmpty = default(CombatStrength);
-            OffensiveStrength = Weapons.Where(weap => weap.IsOperational).Select(weap => weap.Strength).Aggregate(defaultValueIfEmpty, (accum, wStrength) => accum + wStrength);
+            OffensiveStrength = new CombatStrength(Weapons.Where(w => w.IsOperational));
         }
 
         protected override void Unsubscribe() {
             base.Unsubscribe();
             Weapons.ForAll(w => w.onIsOperationalChanged -= OnWeaponIsOperationalChanged);
+            Sensors.ForAll(s => s.onIsOperationalChanged -= OnSensorIsOperationalChanged);
+            ActiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
         }
 
     }

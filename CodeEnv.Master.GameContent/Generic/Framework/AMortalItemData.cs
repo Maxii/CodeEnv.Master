@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AMortalItemData : AIntelItemData, IDisposable {
 
-        public IList<Countermeasure> Countermeasures { get; private set; }
+        public IList<PassiveCountermeasure> PassiveCountermeasures { get; private set; }
 
         private float _maxHitPoints;
         public float MaxHitPoints {
@@ -59,7 +59,13 @@ namespace CodeEnv.Master.GameContent {
         private CombatStrength _defensiveStrength;
         public CombatStrength DefensiveStrength {
             get { return _defensiveStrength; }
-            private set { SetProperty<CombatStrength>(ref _defensiveStrength, value, "DefensiveStrength"); }
+            protected set { SetProperty<CombatStrength>(ref _defensiveStrength, value, "DefensiveStrength"); }
+        }
+
+        private DamageStrength _damageMitigation;
+        public DamageStrength DamageMitigation {
+            get { return _damageMitigation; }
+            protected set { SetProperty<DamageStrength>(ref _damageMitigation, value, "DamageMitigation"); }
         }
 
         public abstract Index3D SectorIndex { get; }
@@ -73,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public AMortalItemData(Transform itemTransform, string name, float maxHitPts, Player owner)
             : base(itemTransform, name, owner) {
-            Countermeasures = new List<Countermeasure>();
+            PassiveCountermeasures = new List<PassiveCountermeasure>();
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;
         }
@@ -82,10 +88,10 @@ namespace CodeEnv.Master.GameContent {
         /// Adds the Countermeasure to this item's data.
         /// </summary>
         /// <param name="cm">The Countermeasure.</param>
-        public void AddCountermeasure(Countermeasure cm) {
-            D.Assert(!Countermeasures.Contains(cm));
+        public void AddCountermeasure(PassiveCountermeasure cm) {
+            D.Assert(!PassiveCountermeasures.Contains(cm));
             D.Assert(!cm.IsOperational);
-            Countermeasures.Add(cm);
+            PassiveCountermeasures.Add(cm);
             cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
             // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
         }
@@ -94,22 +100,22 @@ namespace CodeEnv.Master.GameContent {
         /// Removes the Countermeasure from the item's data.
         /// </summary>
         /// <param name="cm">The Countermeasure.</param>
-        public void RemoveCountermeasure(Countermeasure cm) {
-            D.Assert(Countermeasures.Contains(cm));
+        public void RemoveCountermeasure(PassiveCountermeasure cm) {
+            D.Assert(PassiveCountermeasures.Contains(cm));
             D.Assert(!cm.IsOperational);
-            Countermeasures.Remove(cm);
+            PassiveCountermeasures.Remove(cm);
             cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged;
             // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
         }
-
-        private void RecalcDefensiveStrength() {
-            var defaultValueIfEmpty = default(CombatStrength);
-            DefensiveStrength = Countermeasures.Where(cm => cm.IsOperational).Select(cm => cm.Strength).Aggregate(defaultValueIfEmpty, (accum, cmStrength) => accum + cmStrength);
+        protected virtual void RecalcDefensiveValues() {
+            var defaultValueIfEmpty = default(DamageStrength);
+            DamageMitigation = PassiveCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
+            DefensiveStrength = new CombatStrength(PassiveCountermeasures.Cast<ICountermeasure>());
         }
 
-        private void OnCountermeasureIsOperationalChanged(AEquipment cm) {
+        protected void OnCountermeasureIsOperationalChanged(AEquipment cm) {
             D.Log("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
-            RecalcDefensiveStrength();
+            RecalcDefensiveValues();
         }
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {
@@ -140,7 +146,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void Unsubscribe() {
-            Countermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+            //Countermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+            PassiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
         }
 
         #endregion

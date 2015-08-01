@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: RangeDistanceCategoryExtensions.cs
-// Extension methods for RangeDistanceCategory values.
+// File: RangeCategoryExtensions.cs
+// Extension methods for RangeCategory values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,25 +21,25 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    ///  Extension methods for RangeDistanceCategory values.
+    ///  Extension methods for RangeCategory values.
     /// </summary>
-    public static class RangeDistanceCategoryExtensions {
+    public static class RangeCategoryExtensions {
 
         /// <summary>
-        /// Gets the base weapon range distance (prior to any owner modifiers being applied) for this RangeDistanceCategory.
+        /// Gets the base weapon range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The weapon range category.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static float GetBaseWeaponRange(this RangeDistanceCategory rangeCategory) {
+        public static float GetBaseWeaponRange(this RangeCategory rangeCategory) {
             switch (rangeCategory) {
-                case RangeDistanceCategory.Short:
+                case RangeCategory.Short:
                     return 4F;
-                case RangeDistanceCategory.Medium:
+                case RangeCategory.Medium:
                     return 7F;
-                case RangeDistanceCategory.Long:
+                case RangeCategory.Long:
                     return 10F;
-                case RangeDistanceCategory.None:
+                case RangeCategory.None:
                     return Constants.ZeroF;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCategory));
@@ -47,24 +47,33 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the base sensor range distance spread (prior to any player modifiers being applied) for this RangeDistanceCategory.
-        /// Allows me to create different distance values for a specific RangeDistanceCategory.
+        /// Gets the base sensor range distance spread (prior to any player modifiers being applied) for this RangeCategory.
+        /// Allows me to create different distance values for a specific RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The sensor range category.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static ValueRange<float> __GetBaseSensorRangeSpread(this RangeDistanceCategory rangeCategory) {
+        public static ValueRange<float> __GetBaseSensorRangeSpread(this RangeCategory rangeCategory) {
             switch (rangeCategory) {
-                case RangeDistanceCategory.Short:
+                case RangeCategory.Short:
                     return new ValueRange<float>(100F, 200F);
-                case RangeDistanceCategory.Medium:
+                case RangeCategory.Medium:
                     return new ValueRange<float>(500F, 1000F);
-                case RangeDistanceCategory.Long:
+                case RangeCategory.Long:
                     return new ValueRange<float>(2000F, 3000F);
-                case RangeDistanceCategory.None:
+                case RangeCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCategory));
             }
+        }
+
+        /// <summary>
+        /// Gets the base active countermeasure range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// </summary>
+        /// <param name="rangeCategory">The countermeasure range category.</param>
+        /// <returns></returns>
+        public static float GetBaseActiveCountermeasureRange(this RangeCategory rangeCategory) {
+            return rangeCategory.GetBaseWeaponRange() / 2F;
         }
 
     }

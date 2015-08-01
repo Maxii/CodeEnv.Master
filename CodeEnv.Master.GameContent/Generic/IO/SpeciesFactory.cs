@@ -32,7 +32,9 @@ namespace CodeEnv.Master.GameContent {
         private string _speciesImageFilenameTagName = "ImageFilename";
         private string _speciesSensorRangeMultiplierTagName = "SensorRangeMultiplier";
         private string _speciesWeaponRangeMultiplierTagName = "WeaponRangeMultiplier";
+        private string _speciesActiveCountermeasureRangeMultiplierTagName = "ActiveCountermeasureRangeMultiplier";
         private string _speciesWeaponReloadPeriodMultiplierTagName = "WeaponReloadPeriodMultiplier";
+        private string _speciesActiveCountermeasureReloadPeriodMultiplierTagName = "ActiveCountermeasureReloadPeriodMultiplier";
 
         protected override string XmlFilename { get { return "SpeciesValues"; } }
 
@@ -71,8 +73,10 @@ namespace CodeEnv.Master.GameContent {
                     string filename = speciesNode.Element(_speciesImageFilenameTagName).Value;
                     float sensorRangeMultiplier = float.Parse(speciesNode.Element(_speciesSensorRangeMultiplierTagName).Value);
                     float weaponRangeMultiplier = float.Parse(speciesNode.Element(_speciesWeaponRangeMultiplierTagName).Value);
+                    float activeCountermeasureRangeMultiplier = float.Parse(speciesNode.Element(_speciesActiveCountermeasureRangeMultiplierTagName).Value);
                     float weaponReloadPeriodMultiplier = float.Parse(speciesNode.Element(_speciesWeaponReloadPeriodMultiplierTagName).Value);
-                    stat = new SpeciesStat(species, pluralName, description, atlasID, filename, sensorRangeMultiplier, weaponRangeMultiplier, weaponReloadPeriodMultiplier);
+                    float activeCountermeasureReloadPeriodMultiplier = float.Parse(speciesNode.Element(_speciesActiveCountermeasureReloadPeriodMultiplierTagName).Value);
+                    stat = new SpeciesStat(species, pluralName, description, atlasID, filename, sensorRangeMultiplier, weaponRangeMultiplier, activeCountermeasureRangeMultiplier, weaponReloadPeriodMultiplier, activeCountermeasureReloadPeriodMultiplier);
                     break;
                 }
             }

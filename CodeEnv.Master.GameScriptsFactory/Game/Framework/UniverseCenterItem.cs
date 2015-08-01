@@ -169,11 +169,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

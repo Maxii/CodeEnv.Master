@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: WeaponCategory.cs
-// Enum delineating the different types of Armaments available.
+// File: RangeCategory.cs
+//Enum delineating different categories of range distance.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,26 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// Enum delineating the different types of Armaments available.
+    /// Enum delineating different categories of range distance.
     /// </summary>
-    public enum ArmamentCategory {
+    public enum RangeCategory {
 
+        /// <summary>
+        /// Distance of zero.
+        /// </summary>
         None,
 
-        [EnumAttribute("B")]
-        Beam,
+        Short,
 
-        [EnumAttribute("P")]
-        Projectile,
+        Medium,
 
-        [EnumAttribute("M")]
-        Missile
-
-
-        // Particle
+        Long
 
     }
 }

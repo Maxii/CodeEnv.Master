@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float Duration { get { return Stat.Duration; } }
 
-        public override ArmamentCategory ArmamentCategory { get { return ArmamentCategory.Beam; } }
-
         private ITerminatableOrdnance _activeOrdnance;
 
         public BeamProjector(WeaponStat stat)
@@ -40,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() {
             if (_activeOrdnance != null) {
-                if (_activeOrdnance.Target.Owner.IsEnemyOf(RangeMonitor.Owner)) {
+                if (_activeOrdnance.Target.Owner.IsEnemyOf(Owner)) {
                     _activeOrdnance.Terminate();
                 }
             }

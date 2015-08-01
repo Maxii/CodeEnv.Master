@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DeliveryStrength.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Immutable data container for survivability and interceptability strength values of weapon delivery vehicles.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,19 +17,18 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Immutable data container for survivability and interceptability strength values
+    /// of weapon delivery vehicles. Weapons hold the survivability value and Countermeasures 
+    /// the interceptability value.
     /// </summary>
-    public struct DeliveryStrength : IEquatable<DeliveryStrength> {
+    public struct DeliveryStrength : IEquatable<DeliveryStrength>, IComparable<DeliveryStrength> {
 
-        public static float MaxValue = 10F;
+        public static float MaxValue = 100F;
 
         #region Operators Override
 
@@ -43,6 +42,21 @@ namespace CodeEnv.Master.GameContent {
             return !left.Equals(right);
         }
 
+        public static DeliveryStrength operator +(DeliveryStrength left, DeliveryStrength right) {
+            D.Assert(left.Vehicle == right.Vehicle || left.Vehicle == ArmamentCategory.None || right.Vehicle == ArmamentCategory.None);
+            if (left.Vehicle == ArmamentCategory.None) {
+                return right;
+            }
+            if (right.Vehicle == ArmamentCategory.None) {
+                return left;
+            }
+            return new DeliveryStrength(left.Vehicle, left.Value + right.Value);
+        }
+        //public static DeliveryStrength operator +(DeliveryStrength left, DeliveryStrength right) {
+        //    D.Assert(left.Vehicle != ArmamentCategory.None && left.Vehicle == right.Vehicle);
+        //    return new DeliveryStrength(left.Vehicle, left.Value + right.Value);
+        //}
+
         /// <summary>
         /// Returns the DeliveryStrength remaining (a positive DeliveryStrength) of the attacker (left operand) after interception 
         /// by the defender (right operand). If the defender's DeliveryVehicle does not match the attacker's DeliveryVehicle then 
@@ -54,10 +68,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="attacker">The attacker.</param>
         /// <param name="defender">The defender.</param>
         /// <returns>
-        /// The remaining DeliveryStrength of the attacker after interception.
+        /// The remaining DeliveryStrength of the attacker after interception by the defender.
         /// </returns>
         public static DeliveryStrength operator -(DeliveryStrength attacker, DeliveryStrength defender) {
-            D.Assert(attacker.Vehicle != ArmamentCategory.None && defender.Vehicle != ArmamentCategory.None);
+            D.Assert(attacker.Vehicle != ArmamentCategory.None);
             if (defender.Vehicle != attacker.Vehicle) {
                 return attacker;
             }
@@ -67,17 +81,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return new DeliveryStrength(attacker.Vehicle, v);
         }
-        //public static DeliveryStrength operator -(DeliveryStrength attacker, DeliveryStrength defender) {
-        //    D.Assert(attacker.Vehicle != DeliveryVehicle.None && defender.Vehicle != DeliveryVehicle.None);
-        //    if (defender.Vehicle != attacker.Vehicle) {
-        //        return attacker;
-        //    }
-        //    var v = attacker.Value - defender.Value;
-        //    if (v <= Constants.ZeroF) {
-        //        return new DeliveryStrength(attacker.Vehicle, Constants.ZeroF);
-        //    }
-        //    return new DeliveryStrength(attacker.Vehicle, v);
-        //}
 
         /// <summary>
         /// Scales this <c>strength</c> by <c>scaler</c>.
@@ -109,7 +112,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float Value { get; private set; }
 
-        //public DeliveryVehicle Vehicle { get; private set; }
         public ArmamentCategory Vehicle { get; private set; }
 
         /// <summary>
@@ -125,18 +127,27 @@ namespace CodeEnv.Master.GameContent {
             Vehicle = deliveryVehicle;
             Value = value <= MaxValue ? value : MaxValue;
         }
-        //public DeliveryStrength(DeliveryVehicle deliveryVehicle, float value)
-        //    : this() {
-        //        D.Assert(deliveryVehicle != DeliveryVehicle.None);
-        //    Arguments.ValidateNotNegative(value);
-        //    Vehicle = deliveryVehicle;
-        //    Value = value <= MaxValue ? value : MaxValue;
-        //}
 
-        //private float GetValue(out DeliveryVehicle vehicle) {
-        //    vehicle = Vehicle;
-        //    return Value;
-        //}
+        private string ConstructToLabelText() {
+            string vehicleIcon = string.Empty;
+            switch (Vehicle) {
+                case ArmamentCategory.Beam:
+                    vehicleIcon = GameConstants.IconMarker_Beam;
+                    break;
+                case ArmamentCategory.Projectile:
+                    vehicleIcon = GameConstants.IconMarker_Projectile;
+                    break;
+                case ArmamentCategory.Missile:
+                    vehicleIcon = GameConstants.IconMarker_Missile;
+                    break;
+                case ArmamentCategory.None:
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Vehicle));
+            }
+            return vehicleIcon + " {0}".Inject(Value.FormatValue());
+
+        }
 
         #region Object.Equals and GetHashCode Override
 
@@ -161,7 +172,16 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override string ToString() { return "{0}: {1:0.#}".Inject(Vehicle.GetEnumAttributeText(), Value); }
+        public string ToLabel() { return ConstructToLabelText(); }
+
+        public string ToTextHud() {
+            if (Value == Constants.ZeroF) {
+                return string.Empty;
+            }
+            return "{0}({1})".Inject(Vehicle.GetEnumAttributeText(), Value.FormatValue());
+        }
+
+        public override string ToString() { return "{0}: {1}({2})".Inject(GetType().Name, Vehicle.GetValueName(), Value.FormatValue()); }
 
         #region IEquatable<DeliveryStrength> Members
 
@@ -171,17 +191,13 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        //#region Nested Classes
+        #region IComparable<DeliveryStrength> Members
 
-        //public enum DeliveryVehicle {
+        public int CompareTo(DeliveryStrength other) {
+            return Value.CompareTo(other.Value);
+        }
 
-        //    None,
-        //    Beam,
-        //    Projectile,
-        //    Missile
-
-        //}
-        //#endregion
+        #endregion
 
     }
 }

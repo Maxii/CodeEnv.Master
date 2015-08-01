@@ -53,7 +53,12 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="CombatStrength2.cs" />
+    <Compile Include="ActiveCountermeasure.cs" />
+    <Compile Include="ActiveCountermeasureStat.cs" />
+    <Compile Include="DamageCategory.cs" />
+    <Compile Include="PassiveCountermeasure.cs" />
+    <Compile Include="PassiveCountermeasureStat.cs" />
+    <Compile Include="CombatStrength.cs" />
     <Compile Include="DamageStrength.cs" />
     <Compile Include="DeliveryStrength.cs" />
     <Compile Include="Generic\Framework\AEquipment.cs" />
@@ -107,8 +112,6 @@
     <Compile Include="Game\Framework\FleetReport.cs" />
     <Compile Include="Game\Framework\FleetPublisher.cs" />
     <Compile Include="Generic\Extensions\GameExtensions.cs" />
-    <Compile Include="Generic\Framework\Countermeasure.cs" />
-    <Compile Include="Generic\IO\CountermeasureStat.cs" />
     <Compile Include="Generic\Framework\AIntel.cs" />
     <Compile Include="Game\Gameplay\BaseDirective.cs" />
     <Compile Include="Game\Graphics\PlayerViews.cs" />
@@ -117,7 +120,6 @@
     <Compile Include="Generic\Graphics\ITrackingWidget.cs" />
     <Compile Include="Generic\IO\FacilityStat.cs" />
     <Compile Include="Generic\IO\FleetCmdStat.cs" />
-    <Compile Include="Generic\Framework\CombatStrength.cs" />
     <Compile Include="Game\Framework\GameTimeDuration.cs" />
     <Compile Include="Generic\Framework\FacilityOrder.cs" />
     <Compile Include="Generic\Framework\FleetOrder.cs" />
@@ -252,6 +254,9 @@
     <Compile Include="Generic\Framework\MissileLauncher.cs" />
     <Compile Include="Generic\Framework\ProjectileLauncher.cs" />
     <Compile Include="Generic\Framework\IRangedEquipmentMonitor.cs" />
+    <Compile Include="IActiveCountermeasureRangeMonitor.cs" />
+    <Compile Include="ICountermeasure.cs" />
+    <Compile Include="IInterceptableOrdnance.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
@@ -271,8 +276,8 @@
     <Compile Include="Generic\IO\StarStat.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
     <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />
-    <Compile Include="Generic\Framework\RangeDistanceCategory.cs" />
-    <Compile Include="Generic\Extensions\RangeDistanceCategoryExtensions.cs" />
+    <Compile Include="Generic\Framework\RangeCategory.cs" />
+    <Compile Include="Generic\Extensions\RangeCategoryExtensions.cs" />
     <Compile Include="Generic\IO\SensorStat.cs" />
     <Compile Include="Generic\Framework\Sensor.cs" />
     <Compile Include="Game\GUI\UniverseSizeGuiSelection.cs" />

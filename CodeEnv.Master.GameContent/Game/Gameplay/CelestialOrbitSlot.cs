@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private Vector3 GenerateRandomLocalPositionWithinSlot() {
-            Vector2 pointOnCircle = RandomExtended<Vector2>.OnCircle(MeanRadius);
+            Vector2 pointOnCircle = RandomExtended.OnCircle(MeanRadius);
             return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
         }
 

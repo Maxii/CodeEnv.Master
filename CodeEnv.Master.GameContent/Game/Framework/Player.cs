@@ -63,7 +63,11 @@ namespace CodeEnv.Master.GameContent {
 
         public float WeaponRangeMultiplier { get { return _speciesStat.WeaponRangeMultiplier; } }
 
+        public float CountermeasureRangeMultiplier { get { return _speciesStat.ActiveCountermeasureRangeMultiplier; } }
+
         public float WeaponReloadPeriodMultiplier { get { return _speciesStat.WeaponReloadPeriodMultiplier; } }
+
+        public float CountermeasureReloadPeriodMultiplier { get { return _speciesStat.CountermeasureReloadPeriodMultiplier; } }
 
         private IDictionary<Player, DiplomaticRelationship> _diplomaticRelationship = new Dictionary<Player, DiplomaticRelationship>();
         private LeaderStat _leaderStat;

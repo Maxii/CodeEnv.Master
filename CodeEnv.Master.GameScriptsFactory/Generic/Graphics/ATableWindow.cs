@@ -248,13 +248,6 @@ public abstract class ATableWindow : AGuiWindow {
         return (int)_sortDirection * rowAStrengthElement.CompareTo(rowBStrengthElement);
     }
 
-    protected int CompareTotalStrength(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.TotalStrength;
-        var rowAStrengthElement = GetGuiElement(rowA, GuiElementID.TotalStrength) as StrengthGuiElement;
-        var rowBStrengthElement = GetGuiElement(rowB, GuiElementID.TotalStrength) as StrengthGuiElement;
-        return (int)_sortDirection * rowAStrengthElement.CompareTo(rowBStrengthElement);
-    }
-
     protected int CompareScience(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.ScienceLabel;
         var rowAScienceLabel = GetLabel(rowA, GuiElementID.ScienceLabel);

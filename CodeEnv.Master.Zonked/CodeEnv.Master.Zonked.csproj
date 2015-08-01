@@ -143,9 +143,12 @@
     <Compile Include="ColoredTextList.cs" />
     <Compile Include="ColoredTextList_String.cs" />
     <Compile Include="ColoredTextList`1.cs" />
+    <Compile Include="CombatStrength.cs" />
     <Compile Include="CoroutineManager.cs" />
     <Compile Include="CoroutineNode.cs" />
     <Compile Include="CoroutineScheduler.cs" />
+    <Compile Include="Countermeasure.cs" />
+    <Compile Include="CountermeasureStat.cs" />
     <Compile Include="DebugHud.cs" />
     <Compile Include="DebugHudLineKeys.cs" />
     <Compile Include="DebugHudText.cs" />

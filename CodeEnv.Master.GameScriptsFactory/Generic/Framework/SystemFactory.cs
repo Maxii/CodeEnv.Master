@@ -118,7 +118,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentSystem">The parent system.</param>
     /// <returns></returns>
-    public PlanetItem MakeInstance(PlanetoidStat planetStat, IEnumerable<CountermeasureStat> cmStats, SystemItem parentSystem) {
+    public PlanetItem MakeInstance(PlanetoidStat planetStat, IEnumerable<PassiveCountermeasureStat> cmStats, SystemItem parentSystem) {
         GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
 
@@ -135,7 +135,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentSystemName">Name of the parent system.</param>
     /// <param name="planet">The planet item.</param>
-    public void MakeInstance(PlanetoidStat planetStat, IEnumerable<CountermeasureStat> cmStats, string parentSystemName, ref PlanetItem planet) {
+    public void MakeInstance(PlanetoidStat planetStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentSystemName, ref PlanetItem planet) {
         D.Assert(!planet.enabled, "{0} should not be enabled.".Inject(planet.FullName));
         D.Assert(planet.transform.parent != null, "{0} should already have a parent.".Inject(planet.FullName));
         D.Assert(planetStat.Category == planet.category,
@@ -144,7 +144,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         planet.Data = new PlanetoidData(planet.Transform, planetStat) {   // new PlanetData(planetStat) {
             ParentName = parentSystemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
-            // CombatStrength is default(CombatStrength), aka all values zero'd out
         };
         AttachCountermeasures(cmStats, planet);
     }
@@ -157,7 +156,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanet">The parent planet.</param>
     /// <returns></returns>
-    public MoonItem MakeInstance(PlanetoidStat moonStat, IEnumerable<CountermeasureStat> cmStats, PlanetItem parentPlanet) {
+    public MoonItem MakeInstance(PlanetoidStat moonStat, IEnumerable<PassiveCountermeasureStat> cmStats, PlanetItem parentPlanet) {
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
@@ -174,7 +173,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanetName">Name of the parent planet.</param>
     /// <param name="moon">The item.</param>
-    public void MakeInstance(PlanetoidStat moonStat, IEnumerable<CountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
+    public void MakeInstance(PlanetoidStat moonStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
         D.Assert(!moon.enabled, "{0} should not be enabled.".Inject(moon.FullName));
         D.Assert(moon.transform.parent != null, "{0} should already have a parent.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
@@ -183,7 +182,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         moon.Data = new PlanetoidData(moon.Transform, moonStat) {   // new MoonData(moonStat) {
             ParentName = parentPlanetName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
-            // CombatStrength is default(CombatStrength), aka all values zero'd out
         };
         AttachCountermeasures(cmStats, moon);
     }
@@ -219,7 +217,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         system.Data = data;
     }
 
-    private void AttachCountermeasures(IEnumerable<CountermeasureStat> cmStats, AMortalItem mortalItem) {
+    private void AttachCountermeasures(IEnumerable<PassiveCountermeasureStat> cmStats, AMortalItem mortalItem) {
         cmStats.ForAll(cmStat => mortalItem.AddCountermeasure(cmStat));
     }
 

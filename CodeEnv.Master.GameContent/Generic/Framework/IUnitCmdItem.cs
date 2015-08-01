@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         IconInfo IconInfo { get; }
 
-        bool __CheckForDamage(bool isHQElementAlive, CombatStrength elementDamageSustained, float elementDamageSeverity);
+        bool __CheckForDamage(bool isHQElementAlive, DamageStrength elementDamageSustained, float elementDamageSeverity);
 
         /// <summary>
         /// Attaches one or more sensors to this command's SensorRangeMonitors.

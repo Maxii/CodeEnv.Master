@@ -25,6 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// Immutable data container holding the offense and defensive damage 
     /// infliction and prevention capabilities of weapons and countermeasures respectively.
     /// </summary>
+    [Obsolete]
     public struct CombatStrength : IEquatable<CombatStrength>, IComparable<CombatStrength> {
 
         private static string _toStringFormat = "B({0:0.#}), M({1:0.#}), P({2:0.#})";

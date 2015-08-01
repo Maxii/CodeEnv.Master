@@ -39,10 +39,14 @@ namespace CodeEnv.Master.GameContent {
 
         public float WeaponRangeMultiplier { get; private set; }
 
+        public float ActiveCountermeasureRangeMultiplier { get; private set; }
+
         public float WeaponReloadPeriodMultiplier { get; private set; }
 
+        public float CountermeasureReloadPeriodMultiplier { get; private set; }
+
         public SpeciesStat(Species species, string pluralName, string description, AtlasID imageAtlasID, string imageFilename,
-            float sensorRangeMultiplier, float weaponRangeMultiplier, float weaponReloadPeriodMuliplier)
+            float sensorRangeMultiplier, float weaponRangeMultiplier, float activeCountermeasureRangeMultiplier, float weaponReloadPeriodMultiplier, float countermeasureReloadPeriodMultiplier)
             : this() {
             Species = species;
             Name_Plural = pluralName;
@@ -51,7 +55,9 @@ namespace CodeEnv.Master.GameContent {
             ImageFilename = imageFilename;
             SensorRangeMultiplier = sensorRangeMultiplier;
             WeaponRangeMultiplier = weaponRangeMultiplier;
-            WeaponReloadPeriodMultiplier = weaponReloadPeriodMuliplier;
+            ActiveCountermeasureRangeMultiplier = activeCountermeasureRangeMultiplier;
+            WeaponReloadPeriodMultiplier = weaponReloadPeriodMultiplier;
+            CountermeasureReloadPeriodMultiplier = countermeasureReloadPeriodMultiplier;
         }
 
         public override string ToString() {

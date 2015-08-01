@@ -248,11 +248,11 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRangeCat) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.OnDetection(cmdItem, sensorRangeCat);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRangeCat) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRangeCat);
     }
 

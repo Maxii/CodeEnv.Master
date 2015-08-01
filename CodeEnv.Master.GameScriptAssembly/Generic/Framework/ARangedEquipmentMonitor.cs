@@ -49,7 +49,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     [Tooltip("For Editor display only")]
     private string _rangeInfo;
 
-    public RangeDistanceCategory RangeCategory { get; private set; }
+    public RangeCategory RangeCategory { get; private set; }
 
     private float _rangeDistance;
     public float RangeDistance {
@@ -95,7 +95,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     public virtual void Add(EquipmentType pieceOfEquipment) {
         D.Assert(!pieceOfEquipment.IsOperational);
         D.Assert(!_equipmentList.Contains(pieceOfEquipment));
-        if (RangeCategory == RangeDistanceCategory.None) {
+        if (RangeCategory == RangeCategory.None) {
             RangeCategory = pieceOfEquipment.RangeCategory;
         }
         D.Assert(RangeCategory == pieceOfEquipment.RangeCategory);
@@ -131,17 +131,17 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
     /// </summary>
-    public void Reset() {
-        //D.Log("{0} is being reset.", Name);
+    public void ResetForReuse() {
+        D.Log("{0} is being reset for potential reuse.", Name);
         IsOperational = false;
-        RangeCategory = RangeDistanceCategory.None;
+        RangeCategory = RangeCategory.None;
         D.Assert(_itemsDetected.Count == Constants.Zero);
         D.Assert(_attackableEnemyTargetsDetected.Count == Constants.Zero);
         D.Assert(_equipmentList.Count == Constants.Zero);
         __itemsDetectedViaWorkaround.Clear();
     }
 
-    protected override void OnTriggerEnter(Collider other) {
+    protected sealed override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
         //D.Log("{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
@@ -173,7 +173,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
         AddDetectedItem(detectedItem);
     }
 
-    protected override void OnTriggerExit(Collider other) {
+    protected sealed override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
         //D.Log("{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {

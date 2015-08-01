@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ProjectileLauncher : AWeapon {
 
-        public override ArmamentCategory ArmamentCategory { get { return ArmamentCategory.Projectile; } }
-
         private IList<IOrdnance> _activeFiredOrdnance;
 
         public ProjectileLauncher(WeaponStat stat)

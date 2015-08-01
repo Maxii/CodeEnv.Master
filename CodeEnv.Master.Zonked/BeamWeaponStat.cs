@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
         /// <param name="duration">The firing duration in hours.</param>
         /// <param name="rootName">The root name to use for this weapon before adding supplemental attributes.</param>
-        public BeamWeaponStat(ArmamentCategory category, CombatStrength strength, RangeDistanceCategory range, float accuracy, float reloadPeriod, float size, float pwrRqmt, float duration = Constants.ZeroF, string rootName = Constants.Empty)
+        public BeamWeaponStat(ArmamentCategory category, CombatStrength strength, RangeCategory range, float accuracy, float reloadPeriod, float size, float pwrRqmt, float duration = Constants.ZeroF, string rootName = Constants.Empty)
             : base(category, strength, range, accuracy, reloadPeriod, size, pwrRqmt, rootName) {
             Duration = duration;
         }

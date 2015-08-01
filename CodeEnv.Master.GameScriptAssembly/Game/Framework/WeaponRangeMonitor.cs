@@ -75,7 +75,7 @@ public class WeaponRangeMonitor : ARangedEquipmentMonitor<AWeapon, IUnitElementI
             D.Warn("{0}.CheckLineOfSightTo() didn't find target {1} but found {2}.", Name, enemyTarget.FullName, hitInfo.transform.name);
             return false;
         }
-        D.Error("{0}.CheckLineOfSightTo({1}) didn't find anything.", Name, enemyTarget.FullName);
+        D.Warn("{0}.CheckLineOfSightTo({1}) didn't find anything.", Name, enemyTarget.FullName);    // shouldn't happen?
         return false;
     }
 

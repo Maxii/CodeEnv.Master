@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using UnityEngine;
 
     /// <summary>
     /// Interface for Ordnance of all types.
@@ -29,7 +30,9 @@ namespace CodeEnv.Master.GameContent {
 
         string Name { get; }
 
-        ArmamentCategory ArmamentCategory { get; }
+        Vector3 Heading { get; }
+
+        Player Owner { get; }
 
         IElementAttackableTarget Target { get; }
 

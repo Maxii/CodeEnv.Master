@@ -218,18 +218,18 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IElementAttackableTarget Members
 
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
+    public override void TakeHit(DamageStrength damagePotential) {
         if (DebugSettings.Instance.AllPlayersInvulnerable) {
             return;
         }
         D.Assert(IsOperational);
         LogEvent();
-        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
-        if (damage.Combined == Constants.ZeroF) {
+        DamageStrength damage = damagePotential - Data.DamageMitigation;
+        if (damage.Total == Constants.ZeroF) {
             D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Combined);
+        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
@@ -294,11 +294,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeDistanceCategory sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

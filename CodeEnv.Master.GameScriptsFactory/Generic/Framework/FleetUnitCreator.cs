@@ -57,7 +57,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
 
     protected override FleetCmdItem MakeCommand(Player owner) {
         LogEvent();
-        var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
+        var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
         FleetCmdItem cmd;
         if (isCompositionPreset) {
@@ -74,12 +74,14 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         return cmd;
     }
 
-    protected override ShipItem MakeElement(ShipStat shipStat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats) {
-        return _factory.MakeInstance(shipStat, wStats, cmStats, sensorStats, _owner);
+    protected override ShipItem MakeElement(ShipStat shipStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats) {
+        return _factory.MakeInstance(shipStat, wStats, passiveCmStats, activeCmStats, sensorStats, _owner);
     }
 
-    protected override void PopulateElement(ShipStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, ref ShipItem element) { // OPTIMIZE
-        _factory.PopulateInstance(stat, wStats, cmStats, sensorStats, _owner, ref element);
+    protected override void PopulateElement(ShipStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, ref ShipItem element) { // OPTIMIZE
+        _factory.PopulateInstance(stat, wStats, passiveCmStats, activeCmStats, sensorStats, _owner, ref element);
     }
 
     protected override ShipCategory GetCategory(ShipStat stat) {
@@ -109,7 +111,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
             D.Warn("No valid HQElements for {0} found.", UnitName);
             candidateHQElements = _command.Elements;
         }
-        _command.HQElement = RandomExtended<AUnitElementItem>.Choice(candidateHQElements) as ShipItem;
+        _command.HQElement = RandomExtended.Choice(candidateHQElements) as ShipItem;
     }
 
 

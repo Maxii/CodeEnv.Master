@@ -62,7 +62,9 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// <summary>
     /// The hit strength being accumulated for application to the _impactedTarget.
     /// </summary>
-    private CombatStrength _unappliedCumHitStrength;
+    private DamageStrength _unappliedCumHitStrength;
+    //private CombatStrength _unappliedCumHitStrength;
+
 
     /// <summary>
     /// The current attackable target being hit. Can be null as a result
@@ -77,7 +79,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private bool _isImpact;
     private float _initialBeamAnimationOffset;
     private Job _animateOperatingEffectJob;
-    private BeamProjector _weapon;
     private Vector3 _impactLocation;
     private AudioSource _operatingAudioSource;
 
@@ -100,9 +101,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         base.Initiate(target, weapon, toShowEffects);
-        _weapon = weapon as BeamProjector;
         weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-        _beamDuration = _weapon.Duration / GameTime.HoursPerSecond;
+        _beamDuration = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
         enabled = true; // enables Update() and FixedUpdate()
     }
@@ -148,6 +148,40 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         AssessShowImpactEffects();
     }
 
+    //private void OnImpact(RaycastHit impactInfo, float deltaTime) {
+    //    //D.Log("{0} has hit {1}.", Name, impactInfo.collider.name);
+    //    var impactedGo = impactInfo.collider.gameObject;
+    //    var impactedTarget = impactedGo.GetInterface<IElementAttackableTarget>();
+    //    if (impactedTarget != null) {
+    //        // hit an attackableTarget
+    //        //D.Log("{0} hit Target {1}.", Name, impactedTarget.DisplayName);
+    //        if (impactedTarget != _impactedTarget) {
+    //            // hit a new target that can take damage, so apply cumDamage to previous impactedTarget, if any
+    //            AssessApplyDamage();
+    //        }
+    //        _impactedTarget = impactedTarget;
+
+    //        float percentOfBeamDuration = deltaTime / _beamDuration;    // the percentage of the beam's duration that deltaTime represents
+    //        Vector3 impactPoint = impactInfo.point;
+    //        var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
+    //        if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
+    //            // target has a normal rigidbody so apply impact force
+    //            float forceMagnitude = Strength.Combined * percentOfBeamDuration;
+    //            Vector3 force = _transform.forward * forceMagnitude;
+    //            //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
+    //            impactedTargetRigidbody.AddForceAtPosition(force, impactPoint, ForceMode.Impulse);
+    //        }
+
+    //        _impactLocation = impactPoint + impactInfo.normal * 0.05F;    // HACK
+
+    //        // accumulate hit strength to be applied to the target proportional to the amount of time hit
+    //        _unappliedCumHitStrength += Strength * percentOfBeamDuration;
+    //    }
+    //    else {
+    //        // hit something else that can't take damage so apply cumDamage to previous valid target, if any
+    //        AssessApplyDamage();
+    //    }
+    //}
     private void OnImpact(RaycastHit impactInfo, float deltaTime) {
         //D.Log("{0} has hit {1}.", Name, impactInfo.collider.name);
         var impactedGo = impactInfo.collider.gameObject;
@@ -166,7 +200,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
                 // target has a normal rigidbody so apply impact force
-                float forceMagnitude = Strength.Combined * percentOfBeamDuration;
+                float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
                 Vector3 force = _transform.forward * forceMagnitude;
                 //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
                 impactedTargetRigidbody.AddForceAtPosition(force, impactPoint, ForceMode.Impulse);
@@ -175,7 +209,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _impactLocation = impactPoint + impactInfo.normal * 0.05F;    // HACK
 
             // accumulate hit strength to be applied to the target proportional to the amount of time hit
-            _unappliedCumHitStrength += Strength * percentOfBeamDuration;
+            _unappliedCumHitStrength += DamagePotential * percentOfBeamDuration;
         }
         else {
             // hit something else that can't take damage so apply cumDamage to previous valid target, if any
@@ -190,21 +224,40 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         //D.Log("{0}.AssessApplyDamage() called.", Name);
         if (_impactedTarget == null) {
             // no target that can take damage has been hit, so cumHitStrength should be zero
-            D.Assert(_unappliedCumHitStrength == default(CombatStrength));
+            D.Assert(_unappliedCumHitStrength == default(DamageStrength));
             return;
         }
         if (!_impactedTarget.IsOperational) {
             // target is dead so don't apply more damage
-            _unappliedCumHitStrength = default(CombatStrength);
+            _unappliedCumHitStrength = default(DamageStrength);
             _impactedTarget = null;
             return;
         }
 
         //D.Log("{0} is applying hitStrength of {1} to {2}.", Name, _unappliedCumHitStrength, _impactedTarget.DisplayName);
         _impactedTarget.TakeHit(_unappliedCumHitStrength);
-        _unappliedCumHitStrength = default(CombatStrength);
+        _unappliedCumHitStrength = default(DamageStrength);
         _impactedTarget = null;
     }
+    //private void AssessApplyDamage() {
+    //    //D.Log("{0}.AssessApplyDamage() called.", Name);
+    //    if (_impactedTarget == null) {
+    //        // no target that can take damage has been hit, so cumHitStrength should be zero
+    //        D.Assert(_unappliedCumHitStrength == default(CombatStrength));
+    //        return;
+    //    }
+    //    if (!_impactedTarget.IsOperational) {
+    //        // target is dead so don't apply more damage
+    //        _unappliedCumHitStrength = default(CombatStrength);
+    //        _impactedTarget = null;
+    //        return;
+    //    }
+
+    //    //D.Log("{0} is applying hitStrength of {1} to {2}.", Name, _unappliedCumHitStrength, _impactedTarget.DisplayName);
+    //    _impactedTarget.TakeHit(_unappliedCumHitStrength);
+    //    _unappliedCumHitStrength = default(CombatStrength);
+    //    _impactedTarget = null;
+    //}
 
     protected override void OnToShowEffectsChanged() {
         base.OnToShowEffectsChanged();

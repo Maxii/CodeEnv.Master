@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MissileLauncher : AWeapon {
 
-        public override ArmamentCategory ArmamentCategory { get { return ArmamentCategory.Missile; } }
-
         private IList<ITerminatableOrdnance> _activeFiredOrdnance;
 
         public MissileLauncher(WeaponStat stat)
@@ -40,8 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// a check to see if any active ordnance is currently targeted on a non-enemy.
         /// </summary>
         public override void CheckActiveOrdnanceTargeting() {
-            Player owner = RangeMonitor.Owner;
-            var ordnanceTargetingNonEnemies = _activeFiredOrdnance.Where(ord => !ord.Target.Owner.IsEnemyOf(owner));
+            var ordnanceTargetingNonEnemies = _activeFiredOrdnance.Where(ord => !ord.Target.Owner.IsEnemyOf(Owner));
             if (ordnanceTargetingNonEnemies.Any()) {
                 ordnanceTargetingNonEnemies.ForAll(ord => ord.Terminate());
             }

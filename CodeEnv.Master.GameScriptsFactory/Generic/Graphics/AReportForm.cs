@@ -52,7 +52,6 @@ public abstract class AReportForm : AForm {
     protected UILabel _energyLabel;
     protected UILabel _populationLabel;
     protected ApprovalGuiElement _approvalElement;
-    protected StrengthGuiElement _totalStrengthElement;
     protected ProductionGuiElement _productionElement;
 
     private OwnerGuiElement _ownerElement;
@@ -87,9 +86,6 @@ public abstract class AReportForm : AForm {
                 break;
             case GuiElementID.DefensiveStrength:
                 InitializeDefensiveStrengthGuiElement(e);
-                break;
-            case GuiElementID.TotalStrength:
-                InitializeTotalStrengthGuiElement(e);
                 break;
             case GuiElementID.Resources:
                 InitializeStrategicResourcesGuiElement(e);
@@ -176,10 +172,6 @@ public abstract class AReportForm : AForm {
 
     private void InitializeStrategicResourcesGuiElement(AGuiElement e) {
         _resourcesElement = e as ResourcesGuiElement;
-    }
-
-    private void InitializeTotalStrengthGuiElement(AGuiElement e) {
-        _totalStrengthElement = e as StrengthGuiElement;
     }
 
     private void InitializeDefensiveStrengthGuiElement(AGuiElement e) {
@@ -280,15 +272,11 @@ public abstract class AReportForm : AForm {
             case GuiElementID.Resources:
                 AssignValueToStrategicResourcesGuiElement();
                 break;
-            case GuiElementID.TotalStrength:
-                AssignValueToTotalStrengthGuiElement();
-                break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
         }
     }
 
-    protected virtual void AssignValueToTotalStrengthGuiElement() { }
     protected virtual void AssignValueToStrategicResourcesGuiElement() { }
     protected virtual void AssignValueToSpeedGuiElement() { }
     protected virtual void AssignValueToScienceGuiElement() { }
@@ -309,7 +297,7 @@ public abstract class AReportForm : AForm {
 
     private void AssignValueToOwnerGuiElement() { _ownerElement.Owner = Report.Owner; }
 
-    private void AssignValueToNameGuiElement() { _nameLabel.text = Report.Name != null ? Report.Name : _unknown; }
+    protected virtual void AssignValueToNameGuiElement() { _nameLabel.text = Report.Name != null ? Report.Name : _unknown; }
 
     protected virtual void AssignValuesToNonGuiElementMembers() { }
 

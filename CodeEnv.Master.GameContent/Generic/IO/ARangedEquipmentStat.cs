@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ARangedEquipmentStat : AEquipmentStat {
 
-        public RangeDistanceCategory RangeCategory { get; private set; }
+        public RangeCategory RangeCategory { get; private set; }
 
         public float BaseRangeDistance { get; private set; }
 
@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power needed to operate this equipment.</param>
         /// <param name="rangeCat">The range category.</param>
         /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
-        public ARangedEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeDistanceCategory rangeCat, float baseRangeDistance)
+        public ARangedEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeCategory rangeCat, float baseRangeDistance)
             : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt) {
             RangeCategory = rangeCat;
             BaseRangeDistance = baseRangeDistance;

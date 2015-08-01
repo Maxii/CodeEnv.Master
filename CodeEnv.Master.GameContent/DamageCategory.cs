@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: RangeDistanceCategory.cs
-//Enum delineating different categories of range distance.
+// File: DamageCategory.cs
+// The category of damage either inflicted by a weapon or mitigated by a countermeasure.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,21 +16,23 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Enum delineating different categories of range distance.
-    /// </summary>
-    public enum RangeDistanceCategory {
+    using CodeEnv.Master.Common;
 
-        /// <summary>
-        /// Distance of zero.
-        /// </summary>
+    /// <summary>
+    /// The category of damage either inflicted by a weapon or mitigated by a countermeasure.
+    /// </summary>
+    public enum DamageCategory {
+
         None,
 
-        Short,
+        [EnumAttribute("T")]
+        Thermal,
 
-        Medium,
+        [EnumAttribute("A")]
+        Atomic,
 
-        Long
+        [EnumAttribute("K")]
+        Kinetic
 
     }
 }

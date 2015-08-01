@@ -304,12 +304,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitOffensiveStrength() {
-            var defaultValueIfEmpty = default(CombatStrength);
+            var defaultValueIfEmpty = default(CombatStrength);//new CombatStrength2(Enumerable.Empty<AWeapon>()); // CombatStrength.Mode needs to be Offensive as this is also the initial seed
             UnitOffensiveStrength = ElementsData.Select(ed => ed.OffensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
         private void RecalcUnitDefensiveStrength() {
-            var defaultValueIfEmpty = default(CombatStrength);
+            var defaultValueIfEmpty = default(CombatStrength);//new CombatStrength2(Enumerable.Empty<ICountermeasure>()); // CombatStrength.Mode needs to be Defensive as this is also the initial seed
             UnitDefensiveStrength = ElementsData.Select(ed => ed.DefensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
@@ -324,9 +324,9 @@ namespace CodeEnv.Master.GameContent {
         private void RecalcUnitWeaponsRange() {
             var allUnitWeapons = ElementsData.SelectMany(ed => ed.Weapons);
             var operationalUnitWeapons = allUnitWeapons.Where(w => w.IsOperational);
-            var shortRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Short);
-            var mediumRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Medium);
-            var longRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeDistanceCategory.Long);
+            var shortRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
+            var mediumRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
+            var longRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
             float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
             float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
@@ -335,9 +335,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void RecalcUnitSensorRange() {
             var allUnitSensors = ElementsData.SelectMany(ed => ed.Sensors);
-            var shortRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeDistanceCategory.Short);
-            var mediumRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeDistanceCategory.Medium);
-            var longRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeDistanceCategory.Long);
+            var shortRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeCategory.Short);
+            var mediumRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeCategory.Medium);
+            var longRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeCategory.Long);
             float shortRangeDistance = shortRangeSensors.CalcSensorRangeDistance();
             float mediumRangeDistance = mediumRangeSensors.CalcSensorRangeDistance();
             float longRangeDistance = longRangeSensors.CalcSensorRangeDistance();
@@ -368,7 +368,9 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
+            //anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
+            //anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.WeaponsRange, OnElementWeaponsRangeChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.SensorRange, OnElementSensorRangeChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Science, OnElementScienceChanged));

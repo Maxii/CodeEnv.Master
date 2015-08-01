@@ -102,7 +102,8 @@ public class SystemCreator : AMonoBase {
     private StarStat _starStat;
     private IList<PlanetoidStat> _planetStats;
     private IList<PlanetoidStat> _moonStats;
-    private IList<CountermeasureStat> _availableCountermeasureStats;
+    //private IList<CountermeasureStat> _availableCountermeasureStats;
+    private IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
 
     private SystemItem _system;
     private StarItem _star;
@@ -201,7 +202,7 @@ public class SystemCreator : AMonoBase {
             _planetStats = CreateRandomPlanetStats();
             _moonStats = CreateRandomMoonStats();
         }
-        _availableCountermeasureStats = __CreateAvailableCountermeasureStats(9);
+        _availablePassiveCountermeasureStats = __CreateAvailablePassiveCountermeasureStats(9);
     }
 
     private StarStat CreateStarStatFromChildren() {
@@ -234,9 +235,8 @@ public class SystemCreator : AMonoBase {
         int planetCount = maxPlanetsInRandomSystem;
         //D.Log("{0} random planet count = {1}.", SystemName, planetCount);
         for (int i = 0; i < planetCount; i++) {
-            PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
+            PlanetoidCategory pCategory = RandomExtended.Choice(_acceptablePlanetCategories);
             PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
-            //PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
             planetStats.Add(stat);
         }
         return planetStats;
@@ -260,38 +260,45 @@ public class SystemCreator : AMonoBase {
         int moonCount = maxMoonsInRandomSystem;
         //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
         for (int i = 0; i < moonCount; i++) {
-            PlanetoidCategory mCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptableMoonCategories);
+            PlanetoidCategory mCategory = RandomExtended.Choice(_acceptableMoonCategories);
             PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
             moonStats.Add(stat);
         }
         return moonStats;
     }
 
-    private IList<CountermeasureStat> __CreateAvailableCountermeasureStats(int quantity) {
-        IList<CountermeasureStat> statsList = new List<CountermeasureStat>(quantity);
+    private IList<PassiveCountermeasureStat> __CreateAvailablePassiveCountermeasureStats(int quantity) {
+        IList<PassiveCountermeasureStat> statsList = new List<PassiveCountermeasureStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
-            float strengthValue;
-            ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
-            switch (armament) {
-                case ArmamentCategory.Beam:
-                    name = "Atmosphere";
-                    strengthValue = UnityEngine.Random.Range(4F, 8F);
+            DamageStrength damageMitigation;
+            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: false);
+            float damageMitigationValue;
+            switch (damageMitigationCategory) {
+                case DamageCategory.Thermal:
+                    name = "HighVaporAtmosphere";
+                    damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
+                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
-                case ArmamentCategory.Missile:
-                    name = "Nothing";
-                    strengthValue = Constants.ZeroF;
+                case DamageCategory.Atomic:
+                    name = "HighAcidAtmosphere";
+                    damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
+                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
-                case ArmamentCategory.Projectile:
-                    name = "Atmosphere";
-                    strengthValue = UnityEngine.Random.Range(2F, 4F);
+                case DamageCategory.Kinetic:
+                    name = "HighParticulateAtmosphere";
+                    damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
+                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
+                    break;
+                case DamageCategory.None:
+                    name = "NoAtmosphere";
+                    damageMitigation = new DamageStrength(1F, 1F, 1F);
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
             }
-            CombatStrength strength = new CombatStrength(armament, strengthValue);
-            CountermeasureStat countermeasuresStat = new CountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Planetoid Atmosphere", 0F, 0F, strength, Constants.OneHundredPercent);
-            statsList.Add(countermeasuresStat);
+            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, "None", "Description...", 0F, 0F, damageMitigation);
+            statsList.Add(countermeasureStat);
         }
         return statsList;
     }
@@ -350,7 +357,8 @@ public class SystemCreator : AMonoBase {
                     var planetsOfStatCategoryStillAvailable = planetsOfStatCategory.Except(planetsAlreadyUsed);
                     if (planetsOfStatCategoryStillAvailable.Any()) {    // IEnumerable.First() does not like empty IEnumerables
                         var planet = planetsOfStatCategoryStillAvailable.First();
-                        var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                        //var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                        var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
                         planetsAlreadyUsed.Add(planet);
                         _factory.MakeInstance(planetStat, countermeasureStats, SystemName, ref planet);
                     }
@@ -360,7 +368,8 @@ public class SystemCreator : AMonoBase {
         else {
             _planets = new List<PlanetItem>(maxPlanetsInRandomSystem);
             foreach (var planetStat in _planetStats) {
-                var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                //var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
                 var planet = _factory.MakeInstance(planetStat, countermeasureStats, _system);
                 _planets.Add(planet);
             }
@@ -474,7 +483,8 @@ public class SystemCreator : AMonoBase {
                             if (moonsOfStatCategoryStillAvailable.Any()) {  // IEnumerable.First doesn't like empty IEnumerables
                                 var moon = moonsOfStatCategoryStillAvailable.First();
                                 moonsAlreadyUsed.Add(moon);
-                                var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                                //var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                                var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
                                 _factory.MakeInstance(moonStat, countermeasureStats, planet.Data.Name, ref moon);
                             }
                         }
@@ -485,8 +495,9 @@ public class SystemCreator : AMonoBase {
         else {
             _moons = new List<MoonItem>(maxMoonsInRandomSystem);
             foreach (var moonStat in _moonStats) {
-                var chosenPlanet = RandomExtended<PlanetItem>.Choice(_planets);
-                var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                var chosenPlanet = RandomExtended.Choice(_planets);
+                //var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
                 var moon = _factory.MakeInstance(moonStat, countermeasureStats, chosenPlanet);
                 _moons.Add(moon);
             }
@@ -689,7 +700,7 @@ public class SystemCreator : AMonoBase {
 
         var categoryResources = Enums<ResourceID>.GetValues(excludeDefault: true).Where(res => res.GetResourceCategory() == resCategory);
         int categoryResourceCount = categoryResources.Count();
-        int numberOfResourcesToCreate = RandomExtended<int>.Range(minNumberOfResources, categoryResourceCount);
+        int numberOfResourcesToCreate = RandomExtended.Range(minNumberOfResources, categoryResourceCount);
 
         IList<ResourceYield.ResourceValuePair> resValuePairs = new List<ResourceYield.ResourceValuePair>(numberOfResourcesToCreate);
         var resourcesChosen = categoryResources.Shuffle().Take(numberOfResourcesToCreate);

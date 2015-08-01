@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
         /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
-        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeDistanceCategory rangeCat, float baseRangeDistance)
+        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeCategory rangeCat, float baseRangeDistance)
             : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt, rangeCat, baseRangeDistance) {
             Validate();
         }

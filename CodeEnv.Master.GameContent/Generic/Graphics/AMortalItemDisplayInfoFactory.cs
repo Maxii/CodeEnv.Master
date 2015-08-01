@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ContentID.Defense:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.DefensiveStrength.HasValue ? report.DefensiveStrength.Value.ToString() : _unknown);
+                        colorizedText = _phrase.Inject(report.DefensiveStrength.HasValue ? report.DefensiveStrength.Value.ToTextHud() : _unknown);
                         break;
                     case ContentID.Mass:
                         isSuccess = true;

@@ -147,6 +147,17 @@ namespace CodeEnv.Master.GameContent {
             }
             return isAnyValueFound ? sum : null;
         }
+        //public static CombatStrength? NullableSum(this IEnumerable<CombatStrength?> sequence) {
+        //    bool isAnyValueFound = false;
+        //    CombatStrength? sum = default(CombatStrength);
+        //    foreach (var a in sequence) {
+        //        if (a.HasValue) {
+        //            isAnyValueFound = true;
+        //            sum += a.Value;
+        //        }
+        //    }
+        //    return isAnyValueFound ? sum : null;
+        //}
 
         /// <summary>
         /// Returns the tag value used by the AStar Pathfinding system. AStar uses

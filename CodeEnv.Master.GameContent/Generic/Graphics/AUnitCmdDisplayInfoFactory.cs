@@ -43,11 +43,11 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ContentID.UnitOffense:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitOffensiveStrength.HasValue ? report.UnitOffensiveStrength.Value.ToString() : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitOffensiveStrength.HasValue ? report.UnitOffensiveStrength.Value.ToTextHud() : _unknown);
                         break;
                     case ContentID.UnitDefense:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitDefensiveStrength.HasValue ? report.UnitDefensiveStrength.Value.ToString() : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitDefensiveStrength.HasValue ? report.UnitDefensiveStrength.Value.ToTextHud() : _unknown);
                         break;
                     case ContentID.UnitMaxHitPts:
                         isSuccess = true;

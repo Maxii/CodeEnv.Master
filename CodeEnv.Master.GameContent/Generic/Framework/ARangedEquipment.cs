@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ARangedEquipment : AEquipment {
 
-        public RangeDistanceCategory RangeCategory { get { return Stat.RangeCategory; } }
+        public RangeCategory RangeCategory { get { return Stat.RangeCategory; } }
 
         public float RangeDistance { get { return Stat.BaseRangeDistance * RangeMultiplier; } }
 

@@ -28,7 +28,7 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem, IFacilityItem {
 
-    [Tooltip("The type of Facility")]
+    [Tooltip("The hull of the Facility")]
     public FacilityCategory category;
 
     public new FacilityData Data {
@@ -196,19 +196,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #region Events
 
-    //protected override void OnHover(bool isOver) {
-    //    //base.OnHover(isOver);
-    //}
-
-    //void OnTooltip(bool toShow) {
-    //    if (toShow) {
-    //        Tooltip.Show(FacilityDisplayInfoFactory.Instance.MakeInstance(GetUserReport()));
-    //    }
-    //    else {
-    //        Tooltip.Hide();
-    //    }
-    //}
-
     #endregion
 
     #region StateMachine
@@ -251,6 +238,13 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         FindTargetAndFire(weapon);
     }
 
+    void Idling_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        //D.Log("{0}.Idling_OnCountermeasureReadyAndThreatInRange() called. Ready countermeasure = {1}.", FullName, countermeasure.Name);
+        FindIncomingThreatAndIntercept(countermeasure);
+    }
+
+
     void Idling_ExitState() {
         //LogEvent();
         // TODO register as unavailable
@@ -281,6 +275,12 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         FindTargetAndFire(weapon, _primaryTarget);
     }
 
+    void ExecuteAttackOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
+    }
+
+
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
         _primaryTarget = null;
@@ -300,6 +300,11 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
+    }
+
+    void ExecuteRepairOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -322,7 +327,9 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
             yield return new WaitForSeconds(10F);
         }
 
-        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
         D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
@@ -334,6 +341,11 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     void Repairing_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
+    }
+
+    void Repairing_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void Repairing_ExitState() {

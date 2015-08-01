@@ -33,9 +33,11 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string Name { get; private set; }
 
-    public ArmamentCategory ArmamentCategory { get; private set; }
-
     public IElementAttackableTarget Target { get; private set; }
+
+    public Vector3 Heading { get { return transform.forward; } }
+
+    public Player Owner { get { return _weapon.Owner; } }
 
     private bool _toShowEffects;
     public bool ToShowEffects {
@@ -43,8 +45,11 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
     }
 
-    protected CombatStrength Strength { get; private set; }
+    public DeliveryStrength VehicleStrength { get; protected set; }
 
+    public DamageStrength DamagePotential { get; private set; }
+
+    protected AWeapon _weapon;
     protected float _range;
     protected GameManager _gameMgr;
     protected GameTime _gameTime;
@@ -57,8 +62,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         __instanceCount++;
         _gameMgr = GameManager.Instance;
         _gameTime = GameTime.Instance;
-        Name = _transform.name + __instanceID;
-        _transform.name = Name;
         Subscribe();
         enabled = false;
     }
@@ -71,23 +74,21 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     public virtual void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         D.Assert((Layers)gameObject.layer == Layers.Ordnance, "{0} is not on Layer {1}.".Inject(Name, Layers.Ordnance.GetValueName()));
         Target = target;
-        Strength = weapon.Strength;
-        ArmamentCategory = weapon.ArmamentCategory;
+        _weapon = weapon;
+
+        VehicleStrength = weapon.DeliveryStrength;
+        DamagePotential = weapon.DamagePotential;
+
+        SyncName();
         weapon.OnFiringInitiated(target, this);
 
-        Vector3 tgtBearing;
-        var heading = GetTargetFiringSolution(weapon.Accuracy, out tgtBearing);
+        Vector3 unusedAccurateTgtBearing;
+        var heading = GetTargetFiringSolution(weapon.Accuracy, out unusedAccurateTgtBearing);
         _transform.rotation = Quaternion.LookRotation(heading); // point ordnance in direction of target
-        //D.Log("{0} heading: {1}, targetBearing: {2}.", Name, _transform.forward, tgtBearing);
+        D.Log("{0} fired on {1}. DistanceToTarget {2:0.#}, Targeting deviation: {3:0.#} degrees.", Name, target.FullName, Vector3.Distance(target.Position, transform.position), Vector3.Angle(heading, unusedAccurateTgtBearing));
 
         _range = weapon.RangeDistance;
         ToShowEffects = toShowEffects;
-    }
-
-    protected virtual void OnToShowEffectsChanged() {
-        //D.Log("{0}.ToShowEffects is now {1}.", Name, ToShowEffects);
-        AssessShowMuzzleEffects();
-        AssessShowOperatingEffects();
     }
 
     protected abstract void AssessShowMuzzleEffects();
@@ -99,6 +100,12 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected abstract void ShowImpactEffects(Vector3 position, Quaternion rotation);
+
+    protected virtual void OnToShowEffectsChanged() {
+        //D.Log("{0}.ToShowEffects is now {1}.", Name, ToShowEffects);
+        AssessShowMuzzleEffects();
+        AssessShowOperatingEffects();
+    }
 
     protected virtual void OnIsPausedChanged() {
         enabled = !_gameMgr.IsPaused;
@@ -113,20 +120,30 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// <returns></returns>
     protected Vector3 GetTargetFiringSolution(float accuracy, out Vector3 tgtBearing) {
         tgtBearing = (Target.Position - _transform.position).normalized;
-        var spread = Constants.OneF - accuracy;
-        var xSpread = UnityEngine.Random.Range(-spread, spread);
-        var ySpread = UnityEngine.Random.Range(-spread, spread);
-        var zSpread = UnityEngine.Random.Range(-spread, spread);
+        var inaccuracy = Constants.OneF - accuracy;
+        var xSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+        var ySpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+        var zSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
         return new Vector3(tgtBearing.x + xSpread, tgtBearing.y + ySpread, tgtBearing.z + zSpread).normalized;
     }
 
+    /// <summary>
+    /// Synchronizes Name and transform's name and adds instanceID.
+    /// Must be called after Awake() as UnityUtility.AddChild can't get rid of "Clone" until after Awake runs.
+    /// </summary>
+    private void SyncName() {
+        Name = transform.name + __instanceID;
+        transform.name = Name;
+    }
+
     protected void TerminateNow() {
-        //D.Log("{0} is terminating.", Name);
+        D.Log("{0} is terminating.", Name);
         PrepareForTermination();
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
         }
+        D.Assert(gameObject != null, "{0} is about to be destroyed, but it already is.".Inject(Name));
         Destroy(gameObject);
     }
 

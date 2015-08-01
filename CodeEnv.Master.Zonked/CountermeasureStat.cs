@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable class containing externally acquirable values for Countermeasures.
     /// </summary>
+    [System.Obsolete]
     public class CountermeasureStat : AEquipmentStat {
 
         private static string _toStringFormat = "{0}: Name[{1}], Strength[{2:0.}].";

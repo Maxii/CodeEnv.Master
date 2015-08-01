@@ -134,14 +134,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Complex Elements
 
-        [EnumAttribute("Defensive\nStrength")]  // Warning: Attributes must be a compile time constant
+        [EnumAttribute("Defensive\nStrength")]  // Attributes must be a compile time constant
         DefensiveStrength = 33,
 
         [EnumAttribute("Offensive\nStrength")]
         OffensiveStrength = 34,
 
-        [EnumAttribute("Total\nStrength")]
-        TotalStrength = 35,
+        //TotalStrength = 35,                                           // available
 
         Health = 36,
 

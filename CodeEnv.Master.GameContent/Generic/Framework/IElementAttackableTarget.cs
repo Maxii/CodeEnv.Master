@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsOperational { get; }
 
-        void TakeHit(CombatStrength attackerWeaponStrength);
+        void TakeHit(DamageStrength attackerStrength);
 
         bool IsVisualDetailDiscernibleToUser { get; }
 

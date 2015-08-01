@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: DamageStrength.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Immutable data container holding the offense and defensive damage 
+// infliction and mitigation capabilities of weapons and countermeasures respectively.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,29 +18,25 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
     /// Immutable data container holding the offense and defensive damage 
-    /// infliction and prevention capabilities of weapons and countermeasures respectively.
+    /// infliction and mitigation capabilities of weapons and countermeasures respectively.
     /// </summary>
     public struct DamageStrength : IEquatable<DamageStrength>, IComparable<DamageStrength> {
 
-        private static string _toStringFormat = "T({0:0.#}), A({1:0.#}), K({2:0.#})";
+        private static string _toStringFormat = "{0}({1},{2},{3})";
 
         private static string _labelFormatWithTotal = "{0}" + Constants.NewLine
-                                             + GameConstants.IconMarker_Beam + " {1}" + Constants.NewLine
-                                             + GameConstants.IconMarker_Missile + " {2}" + Constants.NewLine
-                                             + GameConstants.IconMarker_Projectile + " {3}";
+                                             + "T: {1}" + Constants.NewLine
+                                             + "A: {2}" + Constants.NewLine
+                                             + "K: {3}";
 
-        private static string _labelFormatNoTotal = GameConstants.IconMarker_Beam + " {0}" + Constants.NewLine
-                                             + GameConstants.IconMarker_Missile + " {1}" + Constants.NewLine
-                                             + GameConstants.IconMarker_Projectile + " {2}";
+        private static string _labelFormatNoTotal = "T: {0}" + Constants.NewLine
+                                             + "A: {1}" + Constants.NewLine
+                                             + "K: {2}";
 
         #region Operators Override
 
@@ -70,13 +67,13 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         public static DamageStrength operator -(DamageStrength attacker, DamageStrength defender) {
             var t = attacker.Thermal - defender.Thermal;
-            D.Log("Termal result: " + t);
+            //D.Log("Termal result: " + t);
             if (t < Constants.ZeroF) { t = Constants.ZeroF; }
             var a = attacker.Atomic - defender.Atomic;
-            D.Log("Atomic result: " + a);
+            //D.Log("Atomic result: " + a);
             if (a < Constants.ZeroF) { a = Constants.ZeroF; }
             var k = attacker.Kinetic - defender.Kinetic;
-            D.Log("Kinetic result: " + k);
+            //D.Log("Kinetic result: " + k);
             if (k < Constants.ZeroF) { k = Constants.ZeroF; }
             return new DamageStrength(t, a, k);
         }
@@ -108,7 +105,6 @@ namespace CodeEnv.Master.GameContent {
         public static DamageStrength operator *(float scaler, DamageStrength strength) {
             return strength * scaler;
         }
-
 
         #endregion
 
@@ -173,16 +169,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private string ConstructLabelOutput(bool includeCombined) {
-            string beamText = Thermal.FormatValue();
-            string missileText = Atomic.FormatValue();
-            string projectileText = Kinetic.FormatValue();
+        private string ConstructLabelOutput(bool includeTotalValue) {
+            string thermal = Thermal.FormatValue();
+            string atomic = Atomic.FormatValue();
+            string kinetic = Kinetic.FormatValue();
 
-            if (includeCombined) {
-                string combinedText = Constants.FormatFloat_0Dp.Inject(Total);
-                return _labelFormatWithTotal.Inject(combinedText, beamText, missileText, projectileText);
+            if (includeTotalValue) {
+                string total = Total.FormatValue();
+                return _labelFormatWithTotal.Inject(total, thermal, atomic, kinetic);
             }
-            return _labelFormatNoTotal.Inject(beamText, missileText, projectileText);
+            return _labelFormatNoTotal.Inject(thermal, atomic, kinetic);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -209,9 +205,19 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public string ToLabel(bool includeCombined = false) { return ConstructLabelOutput(includeCombined); }
+        public string ToLabel(bool includeTotal = false) { return ConstructLabelOutput(includeTotal); }
 
-        public override string ToString() { return _toStringFormat.Inject(Thermal, Atomic, Kinetic); }
+        public string ToTextHud(bool includeTotal = false) {
+            if (Total == Constants.ZeroF) {
+                return string.Empty;
+            }
+            string totalText = includeTotal ? Total.FormatValue() : string.Empty;
+            return _toStringFormat.Inject(totalText, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+        }
+
+        public override string ToString() {
+            return _toStringFormat.Inject(GetType().Name, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+        }
 
         #region IEquatable<DamageStrength> Members
 
@@ -229,20 +235,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        #region Nested Classes
-
-        public enum DamageCategory {
-
-            None,
-            Thermal,
-            Atomic,
-            Kinetic
-
-        }
-
-        #endregion
-
 
     }
 }

@@ -59,12 +59,6 @@ public abstract class ACommandsTableWindow : ATableWindow {
         _table.repositionNow = true;
     }
 
-    public void SortOnTotalStrength() {
-        _table.onCustomSort = CompareTotalStrength;
-        _sortDirection = DetermineSortDirection(GuiElementID.TotalStrength);
-        _table.repositionNow = true;
-    }
-
     public void SortOnScience() {
         _table.onCustomSort = CompareScience;
         _sortDirection = DetermineSortDirection(GuiElementID.ScienceLabel);

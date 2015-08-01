@@ -23,8 +23,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// RandomExtended adds more functionality to the Unity class Random.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public static class RandomExtended<T> {
+    public static class RandomExtended {
 
         /// <summary>
         /// This method sets a random seed for the RNG using 2 convoluted formulas. Using this method at any time other than during downtime is not recommended. 
@@ -65,32 +64,34 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns either true or false with the chance of a false return provided.
+        /// Returns either true or false with the chance of a true return provided.
         /// </summary>
-        /// <param name="falsePercentage">The false percentage.</param>
+        /// <param name="truePercentage">The probability of true being returned.</param>
         /// <returns></returns>
-        public static bool Chance(float falsePercentage) {
-            Arguments.ValidateForRange(falsePercentage, Constants.ZeroF, Constants.OneF);
-            return falsePercentage < UnityEngine.Random.Range(Constants.ZeroF, Constants.OneF);
+        public static bool Chance(float truePercentage) {
+            Arguments.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
+            return truePercentage >= UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
         /// <summary>
         /// This method returns a random element chosen from an IEnumerable of elements.
         /// Cannot be empty.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="collection">The collection.</param>
         /// <returns></returns>
-        public static T Choice(IEnumerable<T> collection) {
+        public static T Choice<T>(IEnumerable<T> collection) {
             return collection.ToArray<T>()[Random.Range(0, collection.Count())];
         }
 
         /// <summary>
         /// This method returns a random element chosen from an array of elements based on the respective weights of the elements.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="array">The array.</param>
         /// <param name="weights">The weights.</param>
         /// <returns></returns>
-        public static T WeightedChoice(T[] array, int[] weights) {
+        public static T WeightedChoice<T>(T[] array, int[] weights) {
             int totalWeight = 0;
             for (int i = 0; i < array.Length; i++) {
                 totalWeight += weights[i];
@@ -110,10 +111,11 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// This method returns a random element chosen from a list of elements based on the respective weights of the elements.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <param name="weights">The weights.</param>
         /// <returns></returns>
-        public static T WeightedChoice(IList<T> list, int[] weights) {
+        public static T WeightedChoice<T>(IList<T> list, int[] weights) {
             int totalWeight = 0;
             for (int i = 0; i < list.Count; i++) {
                 totalWeight += weights[i];
@@ -133,9 +135,10 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// This method rearranges the elements of an array randomly and returns the rearranged array.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="array">The array.</param>
         /// <returns></returns>
-        public static T[] Shuffle(T[] array) {
+        public static T[] Shuffle<T>(T[] array) {
             T[] shuffledArray = new T[array.Length];
             List<int> elementIndices = new List<int>(0);
             for (int i = 0; i < array.Length; i++) {
@@ -154,9 +157,10 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// This method rearranges the elements of a list randomly and returns the rearranged list.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static List<T> Shuffle(IList<T> list) {
+        public static List<T> Shuffle<T>(IList<T> list) {
             List<T> shuffledList = new List<T>(0);
             int listCount = list.Count;
             int elementIndex;

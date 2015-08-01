@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IRangedEquipmentMonitor.cs
-// Interface allowing access to RangedEquipmentMonitors.
+// File: ICountermeasure.cs
+// Interface for Countermeasures, both passive and active.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
+    using System;
 
     /// <summary>
-    ///  Interface allowing access to RangedEquipmentMonitors.
+    /// Interface for Countermeasures, both passive and active.
+    /// <remarks>Needed to tie together ActiveCountermeasure and PassiveCountermeasure 
+    /// which don't derive from a common Countermeasure base class.</remarks>
     /// </summary>
-    public interface IRangedEquipmentMonitor {
+    public interface ICountermeasure {
 
-        string Name { get; }
+        event Action<AEquipment> onIsOperationalChanged;
 
-        RangeCategory RangeCategory { get; }
+        bool IsOperational { get; set; }
 
-        Player Owner { get; }
-
-        void ResetForReuse();
+        DamageStrength DamageMitigation { get; }
 
     }
 }

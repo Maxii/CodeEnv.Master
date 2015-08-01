@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDetectableItem.cs
-// Interface indicating an Item is detectable by sensors and weapon targeting systems.
+// File: IInterceptableOrdnance.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,26 +17,24 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
+    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// Interface indicating an Item is detectable by sensors and weapon targeting systems.
+    /// 
     /// </summary>
-    public interface IDetectable {
-
-        event Action<IItem> onOwnerChanged;
-
-        Player Owner { get; }
-
-        bool IsOperational { get; }
-
-        string FullName { get; }
+    public interface IInterceptableOrdnance : IOrdnance {
 
         Vector3 Position { get; }
 
-        void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        DeliveryStrength VehicleStrength { get; }
 
-        void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        void TakeHit(DeliveryStrength interceptStrength);
+
     }
 }
 

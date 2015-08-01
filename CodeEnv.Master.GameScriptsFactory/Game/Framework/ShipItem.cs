@@ -251,13 +251,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         }
     }
 
-    //protected override void OnDeath() {
-    //    base.OnDeath();
-    //    //_helm.DisengageAutoPilot();   // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
-    //    TryBreakOrbit();
-    //    if (IsSelected) { SelectionManager.Instance.CurrentSelection = null; }
-    //}
-
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
         //_helm.DisengageAutoPilot();   // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
@@ -579,6 +572,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         FindTargetAndFire(weapon);
     }
 
+    void Idling_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
+    }
+
     void Idling_OnCollisionEnter(Collision collision) {
         __ReportCollision(collision);
     }
@@ -713,6 +711,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         FindTargetAndFire(weapon);
     }
 
+    void ExecuteMoveOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
+    }
+
     void ExecuteMoveOrder_ExitState() {
         LogEvent();
         _isDestinationUnreachable = false;
@@ -779,6 +782,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     void Moving_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
+    }
+
+    void Moving_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void Moving_OnDestinationReached() {
@@ -863,6 +871,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon, _primaryTarget);
+    }
+
+    void ExecuteAttackOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void ExecuteAttackOrder_OnTargetDeath(IMortalItem deadTarget) {
@@ -988,6 +1001,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         FindTargetAndFire(weapon);
     }
 
+    void ExecuteRepairOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
+    }
+
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
         _isDestinationUnreachable = false;
@@ -1010,7 +1028,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             yield return new WaitForSeconds(10F);
         }
 
-        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
+        //Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
         Data.IsFtlOperational = true;
@@ -1023,6 +1044,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     void Repairing_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
         LogEvent();
         FindTargetAndFire(weapon);
+    }
+
+    void Repairing_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
+        LogEvent();
+        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void Repairing_ExitState() {
@@ -1204,7 +1230,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        Data.IsFtlOperational = RandomExtended<bool>.Chance(damageSeverity);
+        var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        Data.IsFtlOperational = RandomExtended.Chance(equipmentSurvivalChance);
     }
 
     #endregion

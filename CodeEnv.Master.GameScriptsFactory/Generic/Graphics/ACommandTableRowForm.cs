@@ -24,6 +24,11 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class ACommandTableRowForm : ATableRowForm {
 
+    protected override void AssignValueToNameGuiElement() {
+        var report = Report as ACmdReport;
+        _nameLabel.text = report.ParentName != null ? report.ParentName : _unknown;
+    }
+
     protected sealed override void AssignValueToCultureGuiElement() {
         base.AssignValueToCultureGuiElement();
         var report = Report as ACmdReport;
@@ -33,7 +38,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
     protected sealed override void AssignValueToDefensiveStrengthGuiElement() {
         base.AssignValueToDefensiveStrengthGuiElement();
         var report = Report as ACmdReport;
-        _defensiveStrengthElement.DefensiveStrength = report.UnitDefensiveStrength;
+        _defensiveStrengthElement.Strength = report.UnitDefensiveStrength;
     }
 
     protected sealed override void AssignValueToHealthGuiElement() {
@@ -71,7 +76,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
     protected sealed override void AssignValueToOffensiveStrengthGuiElement() {
         base.AssignValueToOffensiveStrengthGuiElement();
         var report = Report as ACmdReport;
-        _offensiveStrengthElement.OffensiveStrength = report.UnitOffensiveStrength;
+        _offensiveStrengthElement.Strength = report.UnitOffensiveStrength;
     }
 
     protected sealed override void AssignValueToScienceGuiElement() {
@@ -79,14 +84,6 @@ public abstract class ACommandTableRowForm : ATableRowForm {
         var report = Report as ACmdReport;
         _scienceLabel.text = report.UnitScience.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitScience) : _unknown;
     }
-
-    protected sealed override void AssignValueToTotalStrengthGuiElement() {
-        base.AssignValueToTotalStrengthGuiElement();
-        var report = Report as ACmdReport;
-        _totalStrengthElement.OffensiveStrength = report.UnitOffensiveStrength;
-        _totalStrengthElement.DefensiveStrength = report.UnitDefensiveStrength;
-    }
-
 
 }
 

@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// A MortalItem's defensive Countermeasure.
     /// </summary>
+    [Obsolete]
     public class Countermeasure : AEquipment {
 
         private static string _editorNameFormat = "{0}_{1:0.#}";
@@ -35,6 +36,11 @@ namespace CodeEnv.Master.GameContent {
 #endif
             }
         }
+
+        public DeliveryStrength __DeliveryInterceptability { get { return new DeliveryStrength(ArmamentCategory.Beam, 2.5F); } }
+
+        public DamageStrength __DamageMitigation { get { return new DamageStrength(thermal: 1F, atomic: 0F, kinetic: 2F); } }
+
 
         public CombatStrength Strength { get { return Stat.Strength; } }
 
