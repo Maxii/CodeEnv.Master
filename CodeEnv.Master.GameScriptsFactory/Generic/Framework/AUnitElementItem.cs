@@ -316,7 +316,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
 
     public void AddCountermeasure(ActiveCountermeasureStat cmStat) {
-        D.Log("{0}.AddCountermeasure() called. Stat = {1}.", FullName, cmStat);
+        //D.Log("{0}.AddCountermeasure() called. Stat = {1}.", FullName, cmStat);
         ActiveCountermeasure countermeasure = new ActiveCountermeasure(cmStat);
 
         var monitor = UnitFactory.Instance.MakeMonitorInstance(countermeasure, this);
@@ -379,7 +379,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     /// <param name="countermeasure">The countermeasure.</param>
     private void OnCountermeasureReadyToInterceptAThreatChanged(ActiveCountermeasure countermeasure) {
-        D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, countermeasure.Name, countermeasure.IsReadyToInterceptAThreat, countermeasure.IsThreatInRange);
+        //D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, countermeasure.Name, countermeasure.IsReadyToInterceptAThreat, countermeasure.IsThreatInRange);
         if (countermeasure.IsReadyToInterceptAThreat && countermeasure.IsThreatInRange) {
             OnCountermeasureReadyAndThreatInRange(countermeasure);
         }
@@ -393,7 +393,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     /// <param name="countermeasure">The countermeasure.</param>
     private void OnNewThreatInRange(ActiveCountermeasure countermeasure) {
-        D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, countermeasure.Name);
+        //D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, countermeasure.Name);
         if (_readyCountermeasuresInventory.Contains(countermeasure)) {
             OnCountermeasureReadyAndThreatInRange(countermeasure);
             UpdateReadyCountermeasuresInventory(countermeasure);
@@ -406,7 +406,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     /// <param name="countermeasure">The countermeasure.</param>
     private void OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, countermeasure.Name);
+        //D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, countermeasure.Name);
         RelayToCurrentState(countermeasure);
     }
 
@@ -418,7 +418,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         if (countermeasure.IsReadyToInterceptAThreat) {
             if (!_readyCountermeasuresInventory.Contains(countermeasure)) {
                 _readyCountermeasuresInventory.Add(countermeasure);
-                D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+                //D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
             }
             else {
                 D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
@@ -429,7 +429,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         else {
             if (_readyCountermeasuresInventory.Contains(countermeasure)) {
                 _readyCountermeasuresInventory.Remove(countermeasure);
-                D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+                //D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
             }
         }
     }
@@ -618,61 +618,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             AssessNeedForRepair();
         }
     }
-    //public void TakeHit(DamageStrength attackerStrength) {
-    //    if (DebugSettings.Instance.AllPlayersInvulnerable) {
-    //        return;
-    //    }
-    //    D.Assert(IsOperational);
-    //    LogEvent();
-    //    DamageStrength damage = attackerStrength - Data.DefensiveStrength;
-    //    if (damage.Total == Constants.ZeroF) {
-    //        D.Log("{0} has been hit but incurred no damage.", FullName);
-    //        return;
-    //    }
-    //    D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
-
-    //    bool isCmdHit = false;
-    //    float damageSeverity;
-    //    bool isElementAlive = ApplyDamage(damage, out damageSeverity);
-    //    if (!isElementAlive) {
-    //        InitiateDeath();    // should immediately propogate thru to Cmd's alive status
-    //    }
-    //    if (IsHQ && Command.IsOperational) {
-    //        isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
-    //    }
-
-    //    if (isElementAlive) {
-    //        var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
-    //        StartEffect(hitAnimation);
-    //        AssessNeedForRepair();
-    //    }
-    //}
-    //public override void TakeHit(CombatStrength attackerWeaponStrength) {
-    //    if (DebugSettings.Instance.AllPlayersInvulnerable) { return; }
-
-    //    D.Assert(IsOperational);
-    //    CombatStrength damageSustained = attackerWeaponStrength - Data.DefensiveStrength;
-    //    if (damageSustained.Combined == Constants.ZeroF) {
-    //        //D.Log("{0} has been hit but incurred no damage.", FullName);
-    //        return;
-    //    }
-    //    //D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damageSustained.Combined);
-    //    bool isCmdHit = false;
-    //    float damageSeverity;
-    //    bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
-    //    if (!isElementAlive) {
-    //        InitiateDeath();    // should immediately propogate thru to Cmd's alive status
-    //    }
-    //    if (IsHQ && Command.IsOperational) {
-    //        isCmdHit = Command.__CheckForDamage(isElementAlive, damageSustained, damageSeverity);
-    //    }
-
-    //    if (isElementAlive) {
-    //        var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
-    //        StartEffect(hitAnimation);
-    //        AssessNeedForRepair();
-    //    }
-    //}
 
     #endregion
 

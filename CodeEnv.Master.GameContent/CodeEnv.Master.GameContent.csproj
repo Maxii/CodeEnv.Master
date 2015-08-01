@@ -53,14 +53,16 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="ActiveCountermeasure.cs" />
-    <Compile Include="ActiveCountermeasureStat.cs" />
-    <Compile Include="DamageCategory.cs" />
-    <Compile Include="PassiveCountermeasure.cs" />
-    <Compile Include="PassiveCountermeasureStat.cs" />
-    <Compile Include="CombatStrength.cs" />
-    <Compile Include="DamageStrength.cs" />
-    <Compile Include="DeliveryStrength.cs" />
+    <Compile Include="Generic\Framework\ActiveCountermeasure.cs" />
+    <Compile Include="Generic\IO\ActiveCountermeasureStat.cs" />
+    <Compile Include="Generic\Framework\DamageCategory.cs" />
+    <Compile Include="FacilityHullStat.cs" />
+    <Compile Include="FacilityStat2.cs" />
+    <Compile Include="Generic\Framework\PassiveCountermeasure.cs" />
+    <Compile Include="Generic\IO\PassiveCountermeasureStat.cs" />
+    <Compile Include="Generic\Framework\CombatStrength.cs" />
+    <Compile Include="Generic\Framework\DamageStrength.cs" />
+    <Compile Include="Generic\Framework\DeliveryStrength.cs" />
     <Compile Include="Generic\Framework\AEquipment.cs" />
     <Compile Include="Generic\IO\AEquipmentStat.cs" />
     <Compile Include="Generic\Framework\ARangedEquipment.cs" />
@@ -254,9 +256,9 @@
     <Compile Include="Generic\Framework\MissileLauncher.cs" />
     <Compile Include="Generic\Framework\ProjectileLauncher.cs" />
     <Compile Include="Generic\Framework\IRangedEquipmentMonitor.cs" />
-    <Compile Include="IActiveCountermeasureRangeMonitor.cs" />
-    <Compile Include="ICountermeasure.cs" />
-    <Compile Include="IInterceptableOrdnance.cs" />
+    <Compile Include="Generic\Framework\IActiveCountermeasureRangeMonitor.cs" />
+    <Compile Include="Generic\Framework\ICountermeasure.cs" />
+    <Compile Include="Generic\Framework\IInterceptableOrdnance.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />

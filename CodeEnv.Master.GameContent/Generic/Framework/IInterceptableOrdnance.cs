@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IInterceptableOrdnance.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Interface for Weapon ordnance that can be intercepted by Active Countermeasures.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Interface for Weapon ordnance that can be intercepted by Active Countermeasures.
     /// </summary>
     public interface IInterceptableOrdnance : IOrdnance {
 

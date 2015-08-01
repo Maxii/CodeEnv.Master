@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PassiveCountermeasure.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// A countermeasure that only has DamageMitigation capabilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// A countermeasure that only has DamageMitigation capabilities.
     /// </summary>
     public class PassiveCountermeasure : AEquipment, ICountermeasure {
 
@@ -40,7 +34,6 @@ namespace CodeEnv.Master.GameContent {
 #endif
             }
         }
-
 
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
 

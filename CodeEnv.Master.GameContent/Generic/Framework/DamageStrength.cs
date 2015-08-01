@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DamageStrength.cs
-// Immutable data container holding the offense and defensive damage 
+// Immutable data container holding the offensive and defensive damage 
 // infliction and mitigation capabilities of weapons and countermeasures respectively.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Immutable data container holding the offense and defensive damage 
+    /// Immutable data container holding the offensive and defensive damage 
     /// infliction and mitigation capabilities of weapons and countermeasures respectively.
     /// </summary>
     public struct DamageStrength : IEquatable<DamageStrength>, IComparable<DamageStrength> {

@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: ActiveCountermeasure.cs
-// Countermeasure with an ability to intercept a weapon delivery vehicle.
+// Countermeasure that has a PassiveCountermeasure's DamageMitigation capability 
+// combined with the ability to intercept a weapon delivery vehicle.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,12 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// Countermeasure with an ability to intercept a weapon delivery vehicle.
+    /// Countermeasure that has a PassiveCountermeasure's DamageMitigation capability combined with the ability to intercept a weapon delivery vehicle.
     /// </summary>
     public class ActiveCountermeasure : ARangedEquipment, ICountermeasure {
 
@@ -72,8 +70,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        //public abstract ArmamentCategory ArmamentCategory { get; }
-
         public float ReloadPeriod {
             get {
                 float reloadPeriodMultiplier = RangeMonitor != null ? RangeMonitor.Owner.CountermeasureReloadPeriodMultiplier : Constants.OneF;
@@ -106,7 +102,6 @@ namespace CodeEnv.Master.GameContent {
         public ActiveCountermeasure(ActiveCountermeasureStat stat)
             : base(stat) {
             _qualifiedThreats = new List<IInterceptableOrdnance>();
-            //Validate();
         }
 
 
@@ -273,10 +268,6 @@ namespace CodeEnv.Master.GameContent {
         private void AssessReadiness() {
             IsReadyToInterceptAThreat = IsOperational && _isLoaded;
         }
-
-        //private void Validate() {
-        //    D.Assert(ArmamentCategory == Stat.InterceptStrength.Vehicle);
-        //}
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running

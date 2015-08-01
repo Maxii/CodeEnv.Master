@@ -57,7 +57,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        //Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
         Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
     }
 
@@ -70,26 +69,11 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
             countermeasure.IsOperational = true;
         }
     }
-    //public void AddCountermeasure(CountermeasureStat cmStat) {
-    //    Countermeasure countermeasure = new Countermeasure(cmStat);
-    //    Data.AddCountermeasure(countermeasure);
-    //    if (IsOperational) {
-    //        // we have already commenced operations so start the new countermeasure
-    //        // countermeasures added before operations have commenced are started when operations commence
-    //        countermeasure.IsOperational = true;
-    //    }
-    //}
 
     public void RemoveCountermeasure(PassiveCountermeasure countermeasure) {
-        //D.Assert(IsOperational);
         countermeasure.IsOperational = false;
         Data.RemoveCountermeasure(countermeasure);
     }
-    //public void RemoveCountermeasure(Countermeasure countermeasure) {
-    //    D.Assert(IsOperational);
-    //    countermeasure.IsOperational = false;
-    //    Data.RemoveCountermeasure(countermeasure);
-    //}
 
     /// <summary>
     /// Called when the item's health has changed. 
@@ -127,10 +111,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// <summary>
     /// Executes any preparation work prior to broadcasting the OnDeath event.
     /// </summary>
-    //protected virtual void PrepareForOnDeathNotification() {
-    //    if (IsFocus) { References.MainCameraControl.CurrentFocus = null; }
-    //    Data.Countermeasures.ForAll(cm => cm.IsOperational = false);
-    //}
     protected virtual void PrepareForOnDeathNotification() {
         if (IsFocus) { References.MainCameraControl.CurrentFocus = null; }
         Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = false);
@@ -168,17 +148,12 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         float damageValue = UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints / 2F);
         TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
     }
-    //public virtual void __SimulateAttacked() {
-    //    TakeHit(new CombatStrength(Enums<ArmamentCategory>.GetRandom(excludeDefault: true),
-    //        UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F)));
-    //}
 
     #endregion
 
     #region Combat Support Methods
 
     public abstract void TakeHit(DamageStrength attackerWeaponStrength);
-    //public abstract void TakeHit(CombatStrength attackerWeaponStrength);
 
     /// <summary>
     /// Applies the damage to the Item and returns true if the Item survived the hit.
@@ -188,17 +163,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// <returns>
     ///   <c>true</c> if the Item survived.
     /// </returns>
-    //protected virtual bool ApplyDamage(CombatStrength damageSustained, out float damageSeverity) {
-    //    var __combinedDamage = damageSustained.Combined;
-    //    damageSeverity = Mathf.Clamp01(__combinedDamage / Data.CurrentHitPoints);
-    //    Data.CurrentHitPoints -= __combinedDamage;
-    //    if (Data.Health > Constants.ZeroPercent) {
-    //        AssessCripplingDamageToEquipment(damageSeverity);
-    //        return true;
-    //    }
-    //    return false;
-    //}
-
     protected virtual bool ApplyDamage(DamageStrength damageSustained, out float damageSeverity) {
         var __damageTotal = damageSustained.Total;
         damageSeverity = Mathf.Clamp01(__damageTotal / Data.CurrentHitPoints);
@@ -210,7 +174,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         return false;
     }
 
-
     /// <summary>
     /// Assesses and applies any crippling damage to the item's equipment as a result of the hit.
     /// </summary>
@@ -221,11 +184,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         var operationalCountermeasures = Data.PassiveCountermeasures.Where(cm => cm.IsOperational); // UNCLEAR passive CM gets damaged?
         operationalCountermeasures.ForAll(cm => cm.IsOperational = RandomExtended.Chance(countermeasureSurvivalChance));
     }
-    //protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
-    //    Arguments.ValidateForRange(damageSeverity, Constants.ZeroF, Constants.OneF);
-    //    var operationalCountermeasures = Data.Countermeasures.Where(cm => cm.IsOperational);
-    //    operationalCountermeasures.ForAll(cm => cm.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
-    //}
 
     #endregion
 

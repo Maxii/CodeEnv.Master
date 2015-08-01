@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ActiveCountermeasureStat.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Stat for an active countermeasure.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Stat for an active countermeasure.
     /// </summary>
     public class ActiveCountermeasureStat : ARangedEquipmentStat {
 
