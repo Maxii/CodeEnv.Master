@@ -132,7 +132,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// Resets this Monitor in preparation for reuse by the same Parent.
     /// </summary>
     public void ResetForReuse() {
-        D.Log("{0} is being reset for potential reuse.", Name);
+        //D.Log("{0} is being reset for potential reuse.", Name);
         IsOperational = false;
         RangeCategory = RangeCategory.None;
         D.Assert(_itemsDetected.Count == Constants.Zero);

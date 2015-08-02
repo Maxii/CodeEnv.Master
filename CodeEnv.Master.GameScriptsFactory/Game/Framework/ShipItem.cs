@@ -1028,10 +1028,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             yield return new WaitForSeconds(10F);
         }
 
-        //Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
         Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
         Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
         Data.IsFtlOperational = true;
@@ -1402,6 +1400,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
             _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
             _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, Topography>(d => d.Topography, OnTopographyChanged));
+            _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
         }
 
         /// <summary>
@@ -1871,6 +1870,33 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
         private void OnGameSpeedChanged() {
             RefreshNavigationalValues();
+        }
+
+        private void OnIsPausedChanged() {
+            PauseJobs(GameManager.Instance.IsPaused);
+        }
+
+        private void PauseJobs(bool toPause) {
+            if (_pilotJob != null && _pilotJob.IsRunning) {
+                if (toPause) {
+                    //D.Log("{0} is pausing PilotJob.", _ship.FullName);
+                    _pilotJob.Pause();
+                }
+                else {
+                    //D.Log("{0} is unpausing PilotJob.", _ship.FullName);
+                    _pilotJob.Unpause();
+                }
+            }
+            if (_headingJob != null && _headingJob.IsRunning) {
+                if (toPause) {
+                    //D.Log("{0} is pausing HeadingJob.", _ship.FullName);
+                    _headingJob.Pause();
+                }
+                else {
+                    //D.Log("{0} is unpausing HeadingJob.", _ship.FullName);
+                    _headingJob.Unpause();
+                }
+            }
         }
 
         /// <summary>

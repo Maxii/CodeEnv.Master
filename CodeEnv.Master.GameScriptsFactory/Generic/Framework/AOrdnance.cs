@@ -85,7 +85,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Vector3 unusedAccurateTgtBearing;
         var heading = GetTargetFiringSolution(weapon.Accuracy, out unusedAccurateTgtBearing);
         _transform.rotation = Quaternion.LookRotation(heading); // point ordnance in direction of target
-        D.Log("{0} fired on {1}. DistanceToTarget {2:0.#}, Targeting deviation: {3:0.#} degrees.", Name, target.FullName, Vector3.Distance(target.Position, transform.position), Vector3.Angle(heading, unusedAccurateTgtBearing));
+        //D.Log("{0} fired on {1}. DistanceToTarget {2:0.#}, Targeting deviation: {3:0.#} degrees.", Name, target.FullName, Vector3.Distance(target.Position, transform.position), Vector3.Angle(heading, unusedAccurateTgtBearing));
 
         _range = weapon.RangeDistance;
         ToShowEffects = toShowEffects;
@@ -137,13 +137,12 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected void TerminateNow() {
-        D.Log("{0} is terminating.", Name);
+        D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
         PrepareForTermination();
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
         }
-        D.Assert(gameObject != null, "{0} is about to be destroyed, but it already is.".Inject(Name));
         Destroy(gameObject);
     }
 

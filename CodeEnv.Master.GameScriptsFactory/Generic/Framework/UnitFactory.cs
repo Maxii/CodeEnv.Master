@@ -362,7 +362,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = monitorGo.GetSafeFirstMonoBehaviourInChildren<ActiveCountermeasureRangeMonitor>();
             }
             monitor.ParentItem = element;
-            D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
+            //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
         }
         monitor.Add(countermeasure);
         return monitor;

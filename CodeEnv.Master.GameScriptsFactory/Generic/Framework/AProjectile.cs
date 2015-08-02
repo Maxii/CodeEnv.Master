@@ -89,9 +89,9 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
 
     protected override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
-        D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
-            Name, ((Layers)(gameObject.layer)).GetValueName(), collision.collider.name, ((Layers)collision.collider.gameObject.layer).GetValueName());
-        D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(_transform.position, Target.Position));
+        //D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
+        //Name, ((Layers)(gameObject.layer)).GetValueName(), collision.collider.name, ((Layers)collision.collider.gameObject.layer).GetValueName());
+        //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(_transform.position, Target.Position));
         var impactedGo = collision.collider.gameObject;
         var impactedTarget = impactedGo.GetInterface<IElementAttackableTarget>();
         if (impactedTarget != null) {
@@ -138,7 +138,7 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
             if (ToShowEffects) {
                 ShowImpactEffects(_transform.position); // self destruction effect
             }
-            D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
             TerminateNow();
         }
     }
@@ -188,6 +188,8 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
             D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", Name, VehicleStrength.Vehicle.GetValueName(), interceptStrength.Vehicle.GetValueName());
             return;
         }
+        D.Warn(VehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0.", Name);
+
         D.Log("{0} intercepted. InterceptStrength: {1}, WDV Strength: {2}.", Name, interceptStrength, VehicleStrength);
         VehicleStrength = interceptStrength - VehicleStrength;
         if (VehicleStrength.Value == Constants.ZeroF) {

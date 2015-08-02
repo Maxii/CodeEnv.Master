@@ -900,12 +900,16 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _gameTime.Dispose();
         _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
 
-        PlayerViews.Instance.Dispose();
-        SelectionManager.Instance.Dispose();
-        GeneralFactory.Instance.Dispose();
-        TrackingWidgetFactory.Instance.Dispose();
         GameInputHelper.Instance.Dispose();
-        LeaderFactory.Instance.Dispose();
+
+        if (CurrentScene == SceneLevel.GameScene) {
+            // not used in LobbyScene
+            GeneralFactory.Instance.Dispose();
+            TrackingWidgetFactory.Instance.Dispose();
+            PlayerViews.Instance.Dispose();
+            SelectionManager.Instance.Dispose();
+            LeaderFactory.Instance.Dispose();
+        }
     }
 
     public override string ToString() {
@@ -913,4 +917,3 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
 }
-

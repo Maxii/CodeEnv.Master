@@ -52,34 +52,35 @@ namespace CodeEnv.Master.GameContent {
             }
             return new DeliveryStrength(left.Vehicle, left.Value + right.Value);
         }
-        //public static DeliveryStrength operator +(DeliveryStrength left, DeliveryStrength right) {
-        //    D.Assert(left.Vehicle != ArmamentCategory.None && left.Vehicle == right.Vehicle);
-        //    return new DeliveryStrength(left.Vehicle, left.Value + right.Value);
-        //}
 
         /// <summary>
-        /// Returns the DeliveryStrength remaining (a positive DeliveryStrength) of the attacker (left operand) after interception 
-        /// by the defender (right operand). If the defender's DeliveryVehicle does not match the attacker's DeliveryVehicle then 
-        /// the interception was a failure and the attackers DeliveryStrength is returned. If the DeliveryVehicles match, then the
-        /// interception is successful and the value returned represents the remaining DeliveryStrength of the attacker, if any.
-        /// The value returned will never be negative but can be Zero if the defender's value was equal to or exceeded the attacker's
-        /// value.
+        /// Returns the DeliveryStrength remaining (a positive DeliveryStrength) of the interceptedOrdnance (right operand) after interception 
+        /// by the countermeasure (left operand). If the interceptingCM's DeliveryVehicle does not match the interceptedOrdnance's DeliveryVehicle then 
+        /// the interception is a failure and the interceptedOrdnance's DeliveryStrength is returned. If the DeliveryVehicles match, then the
+        /// interception is successful and the value returned represents the remaining DeliveryStrength of the interceptedOrdnance, if any.
+        /// The value returned will never be negative but can be Zero if the interceptingCM's strength was equal to or exceeded the interceptedOrdnance's
+        /// strength.
         /// </summary>
-        /// <param name="attacker">The attacker.</param>
-        /// <param name="defender">The defender.</param>
+        /// <param name="interceptingCM">The countermeasure that is intercepting the ordnance.</param>
+        /// <param name="interceptedOrdnance">The ordnance that is being intercepted.</param>
         /// <returns>
-        /// The remaining DeliveryStrength of the attacker after interception by the defender.
+        /// The remaining DeliveryStrength (if any) of the interceptedOrdnance after interception by the interceptingCountermeasure.
         /// </returns>
-        public static DeliveryStrength operator -(DeliveryStrength attacker, DeliveryStrength defender) {
-            D.Assert(attacker.Vehicle != ArmamentCategory.None);
-            if (defender.Vehicle != attacker.Vehicle) {
-                return attacker;
+        public static DeliveryStrength operator -(DeliveryStrength interceptingCM, DeliveryStrength interceptedOrdnance) {
+            D.Assert(interceptingCM.Vehicle != ArmamentCategory.None && interceptedOrdnance.Vehicle != ArmamentCategory.None);
+            if (interceptedOrdnance.Vehicle != interceptingCM.Vehicle) {
+                // intercepting countermeasure vehicle is not the right tech reqd to intercept this ordnance delivery vehicle so it has no effect
+                return interceptedOrdnance;
             }
-            var v = attacker.Value - defender.Value;
-            if (v <= Constants.ZeroF) {
-                return new DeliveryStrength(attacker.Vehicle, Constants.ZeroF);
+
+            if (interceptingCM.Value >= interceptedOrdnance.Value) {
+                // the interceptedOrdnance should be destroyed so return its values as Zero
+                return new DeliveryStrength(interceptedOrdnance.Vehicle, Constants.ZeroF);
             }
-            return new DeliveryStrength(attacker.Vehicle, v);
+
+            var remainingInterceptedOrdnanceValue = interceptedOrdnance.Value - interceptingCM.Value;
+            D.Assert(remainingInterceptedOrdnanceValue > Constants.ZeroF);
+            return new DeliveryStrength(interceptedOrdnance.Vehicle, remainingInterceptedOrdnanceValue);
         }
 
         /// <summary>
@@ -108,7 +109,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
         public float Value { get; private set; }
 

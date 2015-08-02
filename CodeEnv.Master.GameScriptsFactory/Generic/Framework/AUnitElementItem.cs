@@ -51,7 +51,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
 
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
+    protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
 
+    private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
     private IList<AWeapon> _readyWeaponsInventory = new List<AWeapon>();
     private DetectionHandler _detectionHandler;
     private Collider _collider;
@@ -310,11 +312,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region Active Countermeasures
 
-    protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
-
-    private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
-
-
     public void AddCountermeasure(ActiveCountermeasureStat cmStat) {
         //D.Log("{0}.AddCountermeasure() called. Stat = {1}.", FullName, cmStat);
         ActiveCountermeasure countermeasure = new ActiveCountermeasure(cmStat);
@@ -348,7 +345,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         if (!isRangeMonitorStillInUse) {
             monitor.ResetForReuse();
             _countermeasureRangeMonitors.Remove(monitor);
-            D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
+            //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
             UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
         }
         Data.RemoveCountermeasure(countermeasure);
@@ -366,10 +363,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         IInterceptableOrdnance ordnanceThreat;
         if (countermeasure.TryPickMostDangerousThreat(out ordnanceThreat)) {
             bool hitThreat = countermeasure.Fire(ordnanceThreat);
-            D.Log(!hitThreat, "{0}'s {1} missed intercept on {2}.", FullName, countermeasure.Name, ordnanceThreat.Name);
+            //D.Log(!hitThreat, "{0}'s {1} missed intercept on {2}.", FullName, countermeasure.Name, ordnanceThreat.Name);
         }
         else {
-            D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, countermeasure.Name);
+            //D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, countermeasure.Name);
         }
     }
 
@@ -421,7 +418,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
                 //D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
             }
             else {
-                D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+                //D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
                 // this occurs when a countermeasure attempts to intercept but doesn't (doesn't currently occur) and therefore remains
                 // IsReadyToInterceptAThreat. If it had intercepted, it would no longer be ready and therefore would have been removed below
             }
@@ -597,7 +594,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            D.Log("{0} has been hit but incurred no damage.", FullName);
+            //D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
         D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);

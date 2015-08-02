@@ -428,30 +428,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         }
         return !missed;
     }
-    //public bool __CheckForDamage(bool isHQElementAlive, CombatStrength elementDamageSustained, float elementDamageSeverity) {
-    //    //D.Log("{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
-    //    //FullName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
-    //    bool isHit = (isHQElementAlive) ? RandomExtended<bool>.Chance(elementDamageSeverity) : true;
-    //    if (isHit) {
-    //        TakeHit(elementDamageSustained);
-    //    }
-    //    else {
-    //        //D.Log("{0} avoided a hit.", FullName);
-    //    }
-    //    return isHit;
-    //}
 
-
-
-    //public override void TakeHit(CombatStrength elementDamageSustained) {
-    //    if (DebugSettings.Instance.AllPlayersInvulnerable) {
-    //        return;
-    //    }
-    //    CombatStrength damageToCmd = elementDamageSustained - Data.DefensiveStrength;
-    //    float unusedDamageSeverity;
-    //    bool isCmdAlive = ApplyDamage(damageToCmd, out unusedDamageSeverity);
-    //    D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
-    //}
     public override void TakeHit(DamageStrength elementDamageSustained) {
         if (DebugSettings.Instance.AllPlayersInvulnerable) {
             return;
@@ -462,7 +439,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
 
-
     /// <summary>
     /// Applies the damage to the command and returns true if the command survived the hit.
     /// </summary>
@@ -471,24 +447,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     /// <returns>
     ///   <c>true</c> if the command survived.
     /// </returns>
-    //protected override bool ApplyDamage(CombatStrength damageToCmd, out float damageSeverity) {
-    //    var __combinedDmgToCmd = damageToCmd.Combined;
-    //    var minAllowedCurrentHitPoints = 0.5F * Data.MaxHitPoints;
-    //    var proposedCurrentHitPts = Data.CurrentHitPoints - __combinedDmgToCmd;
-    //    if (proposedCurrentHitPts < minAllowedCurrentHitPoints) {
-    //        Data.CurrentHitPoints = minAllowedCurrentHitPoints;
-    //    }
-    //    else {
-    //        Data.CurrentHitPoints -= __combinedDmgToCmd;
-    //    }
-    //    damageSeverity = Mathf.Clamp01(__combinedDmgToCmd / Data.CurrentHitPoints);
-    //    if (Data.Health > Constants.ZeroPercent) {
-    //        AssessCripplingDamageToEquipment(damageSeverity);
-    //        return true;
-    //    }
-    //    D.Assert(false);    // should never happen as Commands can't die directly from a hit on the command
-    //    return false;
-    //}
     protected override bool ApplyDamage(DamageStrength damageToCmd, out float damageSeverity) {
         var __combinedDmgToCmd = damageToCmd.Total;
         var minAllowedCurrentHitPoints = 0.5F * Data.MaxHitPoints;
@@ -507,7 +465,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         D.Assert(false);    // should never happen as Commands can't die directly from a hit on the command
         return false;
     }
-
 
     protected void DestroyUnitContainer(float delayInSeconds = 0F) {
         UnityUtility.Destroy(UnitContainer.gameObject, delayInSeconds);
