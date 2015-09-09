@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelectable, ITopographyMonitorable {
+public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelectable {
 
     [Range(1.0F, 5.0F)]
     [Tooltip("Minimum Camera View Distance in Units")]
@@ -198,7 +198,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     #region View Methods
 
-    protected override void AssessDiscernibleToUser() {
+    protected override void AssessIsDiscernibleToUser() {
         // a System is not discernible to the User unless it is visible to the camera AND the User has discovered it
         var isDiscoveredByUser = _gameMgr.GetPlayerKnowledge(_gameMgr.UserPlayer).Systems.Contains(this);
         var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
@@ -257,7 +257,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     /// </summary>
     public void OnUserDiscoveredSystem() {
         D.Assert(!_isViewMembersInitialized);
-        AssessDiscernibleToUser();
+        AssessIsDiscernibleToUser();
         D.Assert(_isViewMembersInitialized);
     }
 

@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipOrbitable, IDetectable {
+public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable {
 
     public StarCategory category;
 

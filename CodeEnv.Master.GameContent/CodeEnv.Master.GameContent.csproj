@@ -53,6 +53,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\AHullStat.cs" />
+    <Compile Include="Generic\IO\EngineStat.cs" />
+    <Compile Include="Generic\IO\FacilityHullStat.cs" />
     <Compile Include="Generic\Framework\ActiveCountermeasure.cs" />
     <Compile Include="Generic\IO\ActiveCountermeasureStat.cs" />
     <Compile Include="Generic\Framework\DamageCategory.cs" />
@@ -60,7 +63,7 @@
     <Compile Include="Generic\IO\PassiveCountermeasureStat.cs" />
     <Compile Include="Generic\Framework\CombatStrength.cs" />
     <Compile Include="Generic\Framework\DamageStrength.cs" />
-    <Compile Include="Generic\Framework\DeliveryStrength.cs" />
+    <Compile Include="Generic\Framework\WDVStrength.cs" />
     <Compile Include="Generic\Framework\AEquipment.cs" />
     <Compile Include="Generic\IO\AEquipmentStat.cs" />
     <Compile Include="Generic\Framework\ARangedEquipment.cs" />
@@ -96,7 +99,7 @@
     <Compile Include="Generic\Framework\AMortalItemData.cs" />
     <Compile Include="Game\Framework\FacilityData.cs" />
     <Compile Include="Game\Framework\FleetCmdData.cs" />
-    <Compile Include="Generic\Framework\IDetectable.cs" />
+    <Compile Include="Generic\Framework\ISensorDetectable.cs" />
     <Compile Include="Game\Framework\PlanetoidData.cs" />
     <Compile Include="Game\GUI\BaseComposition.cs" />
     <Compile Include="Game\GUI\FleetComposition.cs" />
@@ -118,7 +121,6 @@
     <Compile Include="Generic\Framework\BaseOrder.cs" />
     <Compile Include="Generic\Framework\AOrbitSlot.cs" />
     <Compile Include="Generic\Graphics\ITrackingWidget.cs" />
-    <Compile Include="Generic\IO\FacilityStat.cs" />
     <Compile Include="Generic\IO\FleetCmdStat.cs" />
     <Compile Include="Game\Framework\GameTimeDuration.cs" />
     <Compile Include="Generic\Framework\FacilityOrder.cs" />
@@ -193,7 +195,6 @@
     <Compile Include="Generic\Graphics\ICtxControl.cs" />
     <Compile Include="Generic\IO\GameInputMode.cs" />
     <Compile Include="Generic\Framework\ISectorGrid.cs" />
-    <Compile Include="Generic\Framework\ITopographyMonitorable.cs" />
     <Compile Include="Generic\Framework\IWeaponRangeMonitor.cs" />
     <Compile Include="Generic\Framework\IUnitCmdItem.cs" />
     <Compile Include="Generic\Framework\ISensorRangeMonitor.cs" />
@@ -257,6 +258,11 @@
     <Compile Include="Generic\Framework\IActiveCountermeasureRangeMonitor.cs" />
     <Compile Include="Generic\Framework\ICountermeasure.cs" />
     <Compile Include="Generic\Framework\IInterceptableOrdnance.cs" />
+    <Compile Include="Generic\IO\ShipHullStat.cs" />
+    <Compile Include="Generic\Framework\IDetectable.cs" />
+    <Compile Include="Generic\Framework\IShield.cs" />
+    <Compile Include="Generic\Framework\ShieldGenerator.cs" />
+    <Compile Include="Generic\Framework\ShieldGeneratorStat.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
@@ -267,10 +273,9 @@
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="Game\Graphics\EffectID.cs" />
     <Compile Include="Generic\Framework\AWeapon.cs" />
-    <Compile Include="Generic\Framework\ArmamentCategory.cs" />
+    <Compile Include="Generic\Framework\WDVCategory.cs" />
     <Compile Include="Generic\Framework\ShipOrder.cs" />
     <Compile Include="Generic\IO\SettlementCmdStat.cs" />
-    <Compile Include="Generic\IO\ShipStat.cs" />
     <Compile Include="Generic\IO\StarbaseCmdStat.cs" />
     <Compile Include="Generic\IO\WeaponStat.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />

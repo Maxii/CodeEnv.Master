@@ -329,6 +329,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
         Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
         Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
 
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);

@@ -36,7 +36,7 @@ namespace CodeEnv.Master.Common {
         /// Efficient way of comparing two vectors for equality.
         /// </summary>
         public static bool IsSameAs(this Vector3 source, Vector3 v) {
-            return Mathfx.Approx(source, v, .0001F);    // 1M times less precise than Unity's built in == comparison
+            return Mathfx.Approx(source, v, UnityConstants.FloatEqualityPrecision);
         }
 
         /// <summary>

@@ -31,28 +31,23 @@ using UnityEngine;
 /// it will be built and then initialized.
 /// </summary>
 [SerializeAll]
-public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, ShipStat, FleetCmdItem> {
+public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
     public bool move;
     public bool attack;
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override ShipStat CreateElementStat(ShipCategory category, string elementName) {
-        float mass = TempGameValues.__GetMass(category);
+    protected override ShipHullStat CreateElementHullStat(ShipCategory hullCat, string elementName) {
+        float hullMass = TempGameValues.__GetHullMass(hullCat);
         float drag = 0.1F;
-        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-        float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
+        float science = hullCat == ShipCategory.Science ? 10F : Constants.ZeroF;
+        float culture = hullCat == ShipCategory.Support || hullCat == ShipCategory.Colonizer ? 2F : Constants.ZeroF;
+        float income = __GetIncome(hullCat);
+        float expense = __GetExpense(hullCat);
 
-        float fullStlSpeed = UnityEngine.Random.Range(1.5F, 3.0F);  // planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hour
-        float fullStlThrust = mass * drag * fullStlSpeed;
-        float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
-        float science = category == ShipCategory.Science ? 10F : Constants.ZeroF;
-        float culture = category == ShipCategory.Support || category == ShipCategory.Colonizer ? 2F : Constants.ZeroF;
-        float income = __GetIncome(category);
-        float expense = __GetExpense(category);
-
-        return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust, science, culture, income, expense);
+        return new ShipHullStat(hullCat, elementName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
+            hullMass, drag, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
     }
 
     protected override FleetCmdItem MakeCommand(Player owner) {
@@ -74,18 +69,32 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         return cmd;
     }
 
-    protected override ShipItem MakeElement(ShipStat shipStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats) {
-        return _factory.MakeInstance(shipStat, wStats, passiveCmStats, activeCmStats, sensorStats, _owner);
+    protected override ShipItem MakeElement(ShipHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
+        var engineStat = MakeEngineStat(hullStat.Category);
+        return _factory.MakeInstance(hullStat, engineStat, combatStance, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
     }
 
-    protected override void PopulateElement(ShipStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, ref ShipItem element) { // OPTIMIZE
-        _factory.PopulateInstance(stat, wStats, passiveCmStats, activeCmStats, sensorStats, _owner, ref element);
+    protected override void PopulateElement(ShipHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref ShipItem element) { // OPTIMIZE
+        var engineStat = MakeEngineStat(hullStat.Category);
+        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
+        _factory.PopulateInstance(hullStat, engineStat, combatStance, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref element);
     }
 
-    protected override ShipCategory GetCategory(ShipStat stat) {
-        return stat.Category;
+    private EngineStat MakeEngineStat(ShipCategory hullCategory) {
+        float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
+        float engineMass = TempGameValues.__GetEngineMass(hullCategory);
+
+        float fullStlThrust = TempGameValues.__GetFullStlThrust(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
+        float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
+        return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlThrust, fullFtlThrust,
+            maxTurnRate, 0F, engineMass, 0F, 0F);
+    }
+
+    protected override ShipCategory GetCategory(ShipHullStat hullStat) {
+        return hullStat.Category;
     }
 
     protected override ShipCategory GetCategory(ShipItem element) {

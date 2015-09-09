@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 ///  Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IElementAttackableTarget, IDetectable {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IElementAttackableTarget, ISensorDetectable {
 
     public event Action<IUnitElementItem> onIsHQChanged;
 
@@ -52,6 +52,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
     protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
+    protected IList<IShield> _shields = new List<IShield>();
 
     private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
     private IList<AWeapon> _readyWeaponsInventory = new List<AWeapon>();
@@ -112,6 +113,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
         Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
     }
 
     /// <summary>
@@ -121,6 +123,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// <param name="unitContainer">The unit container.</param>
     protected internal virtual void AttachAsChildOf(Transform unitContainer) {
         _transform.parent = unitContainer;
+    }
+
+    protected override void OnDataSet() {
+        base.OnDataSet();
+        Data.ActiveCountermeasures.ForAll(cm => Attach(cm));
+        Data.Weapons.ForAll(w => Attach(w));
+        Data.ShieldGenerators.ForAll(gen => Attach(gen));
+        Data.Sensors.ForAll(s => Attach(s));
     }
 
     protected override void OnOwnerChanged() {
@@ -144,7 +154,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             w.onEnemyTargetEnteringRange -= OnNewEnemyTargetInRange;
             w.IsOperational = false;
         });
+        Data.ActiveCountermeasures.ForAll(cm => {
+            cm.onIsReadyToInterceptAThreatChanged -= OnCountermeasureReadyToInterceptAThreatChanged;
+            cm.onThreatEnteringRange -= OnNewThreatInRange;
+            cm.IsOperational = false;
+        });
         Data.Sensors.ForAll(s => s.IsOperational = false);
+        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = false);
     }
 
     protected override void CleanupAfterOnDeathNotification() {
@@ -154,63 +170,27 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region Weapons
 
-    /// <summary>
-    /// Adds a weapon based on the WeaponStat provided to this element.
-    /// </summary>
-    /// <param name="weaponStat">The weapon stat.</param>
-    public void AddWeapon(WeaponStat weaponStat) {
-        //D.Log("{0}.AddWeapon() called. WeaponStat = {1}, Range = {2}.", FullName, weaponStat, weaponStat.Range.GetWeaponRange(Owner));
-        AWeapon weapon;
-        switch (weaponStat.ArmamentCategory) {
-            case ArmamentCategory.Beam:
-                weapon = new BeamProjector(weaponStat);
-                break;
-            case ArmamentCategory.Projectile:
-                weapon = new ProjectileLauncher(weaponStat);
-                break;
-            case ArmamentCategory.Missile:
-                weapon = new MissileLauncher(weaponStat);
-                break;
-            case ArmamentCategory.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponStat.ArmamentCategory));
-        }
+    /********************************************************************************************************************************************
+           * Equipment (Weapons, Sensors and Countermeasures) no longer added or removed while the item is operating. 
+           * Changes in an item's equipment can only occur during a refit where a new item is created to replace the item being refitted.
+           ********************************************************************************************************************************************/
 
-        var monitor = UnitFactory.Instance.MakeMonitorInstance(weapon, this);
+    /// <summary>
+    /// Attaches the weapon and its monitor to this item.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    private void Attach(AWeapon weapon) {
+        D.Assert(weapon.RangeMonitor != null);
+        var monitor = weapon.RangeMonitor;
         if (!_weaponRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _weaponRangeMonitors.Add(monitor);
         }
-        Data.AddWeapon(weapon);
         weapon.onIsReadyToFireChanged += OnWeaponReadinessChanged;
         weapon.onEnemyTargetEnteringRange += OnNewEnemyTargetInRange;
-        if (IsOperational) {
-            // we have already commenced operations so start the new weapon
-            // weapons added before operations have commenced are started when operations commence
-            weapon.IsOperational = true;
-        }
+        // IsOperational = true is set when item operations commences
     }
 
-    /// <summary>
-    /// Removes the weapon from this element, destroying any associated 
-    /// range monitor no longer in use.
-    /// </summary>
-    /// <param name="weapon">The weapon.</param>
-    public void RemoveWeapon(AWeapon weapon) {
-        weapon.IsOperational = false;
-        var monitor = weapon.RangeMonitor;
-        bool isRangeMonitorStillInUse = monitor.Remove(weapon);
-
-        if (!isRangeMonitorStillInUse) {
-            monitor.ResetForReuse();
-            _weaponRangeMonitors.Remove(monitor);
-            //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
-        }
-        Data.RemoveWeapon(weapon);
-        weapon.onIsReadyToFireChanged -= OnWeaponReadinessChanged;
-        weapon.onEnemyTargetEnteringRange -= OnNewEnemyTargetInRange;
-    }
 
     /// <summary>
     /// Attempts to find a target in range and fire the weapon at it.
@@ -237,7 +217,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         StartEffect(EffectID.Attacking);
         var targetBearing = (target.Position - Position).normalized;
         var muzzleLocation = Position + targetBearing * Radius; // IMPROVE
-        var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.ArmamentCategory, gameObject, muzzleLocation);
+        var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.DeliveryVehicleCategory, gameObject, muzzleLocation);
         ordnance.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
         //D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
@@ -250,9 +230,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     /// <summary>
-    /// Called when there is a change in the readiness to fire 
-    /// status of the indicated weapon. Readiness to fire does not
-    /// mean there is an enemy in range to fire at.
+    /// Called when there is a change in the readiness to fire status of the indicated weapon. 
+    /// Readiness to fire does not mean there is an enemy in range to fire at.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void OnWeaponReadinessChanged(AWeapon weapon) {
@@ -312,61 +291,35 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region Active Countermeasures
 
-    public void AddCountermeasure(ActiveCountermeasureStat cmStat) {
-        //D.Log("{0}.AddCountermeasure() called. Stat = {1}.", FullName, cmStat);
-        ActiveCountermeasure countermeasure = new ActiveCountermeasure(cmStat);
-
-        var monitor = UnitFactory.Instance.MakeMonitorInstance(countermeasure, this);
+    /// <summary>
+    /// Attaches this active countermeasure and its monitor to this item.
+    /// </summary>
+    /// <param name="activeCM">The cm.</param>
+    private void Attach(ActiveCountermeasure activeCM) {
+        D.Assert(activeCM.RangeMonitor != null);
+        var monitor = activeCM.RangeMonitor;
         if (!_countermeasureRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _countermeasureRangeMonitors.Add(monitor);
         }
-        Data.AddCountermeasure(countermeasure);
-        countermeasure.onIsReadyToInterceptAThreatChanged += OnCountermeasureReadyToInterceptAThreatChanged;
-        countermeasure.onThreatEnteringRange += OnNewThreatInRange;
-        if (IsOperational) {
-            // we have already commenced operations so start the new countermeasure
-            // countermeasures added before operations have commenced are started when operations commence
-            countermeasure.IsOperational = true;
-        }
+        activeCM.onIsReadyToInterceptAThreatChanged += OnCountermeasureReadyToInterceptAThreatChanged;
+        activeCM.onThreatEnteringRange += OnNewThreatInRange;
+        // IsOperational = true is set when item operations commences
     }
-
-
-    /// <summary>
-    /// Removes the active countermeasure from this element, destroying any associated
-    /// range monitor no longer in use.
-    /// </summary>
-    /// <param name="countermeasure">The countermeasure.</param>
-    public void RemoveCountermeasure(ActiveCountermeasure countermeasure) {
-        countermeasure.IsOperational = false;
-        var monitor = countermeasure.RangeMonitor;
-        bool isRangeMonitorStillInUse = monitor.Remove(countermeasure);
-
-        if (!isRangeMonitorStillInUse) {
-            monitor.ResetForReuse();
-            _countermeasureRangeMonitors.Remove(monitor);
-            //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
-        }
-        Data.RemoveCountermeasure(countermeasure);
-        countermeasure.onIsReadyToInterceptAThreatChanged -= OnCountermeasureReadyToInterceptAThreatChanged;
-        countermeasure.onThreatEnteringRange -= OnNewThreatInRange;
-    }
-
 
     /// <summary>
     /// Attempts to find an incoming ordnance threat in range and intercept it.
     /// </summary>
-    /// <param name="countermeasure">The weapon.</param>
-    protected void FindIncomingThreatAndIntercept(ActiveCountermeasure countermeasure) {
-        D.Assert(countermeasure.IsReadyToInterceptAThreat);
+    /// <param name="activeCM">The active countermeasure.</param>
+    protected void FindIncomingThreatAndIntercept(ActiveCountermeasure activeCM) {
+        D.Assert(activeCM.IsReadyToInterceptAThreat);
         IInterceptableOrdnance ordnanceThreat;
-        if (countermeasure.TryPickMostDangerousThreat(out ordnanceThreat)) {
-            bool hitThreat = countermeasure.Fire(ordnanceThreat);
-            //D.Log(!hitThreat, "{0}'s {1} missed intercept on {2}.", FullName, countermeasure.Name, ordnanceThreat.Name);
+        if (activeCM.TryPickMostDangerousThreat(out ordnanceThreat)) {
+            bool isThreatHit = activeCM.Fire(ordnanceThreat);
+            //D.Log(!isThreatHit, "{0}'s {1} missed intercept on {2}.", FullName, activeCM.Name, ordnanceThreat.Name);
         }
         else {
-            //D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, countermeasure.Name);
+            //D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, activeCM.Name);
         }
     }
 
@@ -374,13 +327,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// Called when there is a change in the readiness to intercept a threat status of the provided countermeasure. 
     /// Readiness to intercept does not mean there is a threat in range to intercept.
     /// </summary>
-    /// <param name="countermeasure">The countermeasure.</param>
-    private void OnCountermeasureReadyToInterceptAThreatChanged(ActiveCountermeasure countermeasure) {
-        //D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, countermeasure.Name, countermeasure.IsReadyToInterceptAThreat, countermeasure.IsThreatInRange);
-        if (countermeasure.IsReadyToInterceptAThreat && countermeasure.IsThreatInRange) {
-            OnCountermeasureReadyAndThreatInRange(countermeasure);
+    /// <param name="activeCM">The active countermeasure.</param>
+    private void OnCountermeasureReadyToInterceptAThreatChanged(ActiveCountermeasure activeCM) {
+        //D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, activeCM.Name, activeCM.IsReadyToInterceptAThreat, activeCM.IsThreatInRange);
+        if (activeCM.IsReadyToInterceptAThreat && activeCM.IsThreatInRange) {
+            OnCountermeasureReadyAndThreatInRange(activeCM);
         }
-        UpdateReadyCountermeasuresInventory(countermeasure);
+        UpdateReadyCountermeasuresInventory(activeCM);
     }
 
     /// <summary>
@@ -388,12 +341,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// of the provided countermeasure. This event is independent of whether the
     /// countermeasure is ready to intercept. However, it does mean the countermeasure is operational.
     /// </summary>
-    /// <param name="countermeasure">The countermeasure.</param>
-    private void OnNewThreatInRange(ActiveCountermeasure countermeasure) {
-        //D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, countermeasure.Name);
-        if (_readyCountermeasuresInventory.Contains(countermeasure)) {
-            OnCountermeasureReadyAndThreatInRange(countermeasure);
-            UpdateReadyCountermeasuresInventory(countermeasure);
+    /// <param name="activeCM">The active countermeasure.</param>
+    private void OnNewThreatInRange(ActiveCountermeasure activeCM) {
+        //D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, activeCM.Name);
+        if (_readyCountermeasuresInventory.Contains(activeCM)) {
+            OnCountermeasureReadyAndThreatInRange(activeCM);
+            UpdateReadyCountermeasuresInventory(activeCM);
         }
     }
 
@@ -401,66 +354,72 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// Called when the provided countermeasure is ready to intercept and there
     /// is a threat in range.
     /// </summary>
-    /// <param name="countermeasure">The countermeasure.</param>
-    private void OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        //D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, countermeasure.Name);
-        RelayToCurrentState(countermeasure);
+    /// <param name="activeCM">The countermeasure.</param>
+    private void OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure activeCM) {
+        //D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, activeCM.Name);
+        RelayToCurrentState(activeCM);
     }
 
     /// <summary>
     /// Updates the ready countermeasures inventory.
     /// </summary>
-    /// <param name="countermeasure">The countermeasure.</param>
-    private void UpdateReadyCountermeasuresInventory(ActiveCountermeasure countermeasure) {
-        if (countermeasure.IsReadyToInterceptAThreat) {
-            if (!_readyCountermeasuresInventory.Contains(countermeasure)) {
-                _readyCountermeasuresInventory.Add(countermeasure);
-                //D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+    /// <param name="activeCM">The countermeasure.</param>
+    private void UpdateReadyCountermeasuresInventory(ActiveCountermeasure activeCM) {
+        if (activeCM.IsReadyToInterceptAThreat) {
+            if (!_readyCountermeasuresInventory.Contains(activeCM)) {
+                _readyCountermeasuresInventory.Add(activeCM);
+                //D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, activeCM.Name);
             }
             else {
-                //D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+                //D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, activeCM.Name);
                 // this occurs when a countermeasure attempts to intercept but doesn't (doesn't currently occur) and therefore remains
                 // IsReadyToInterceptAThreat. If it had intercepted, it would no longer be ready and therefore would have been removed below
             }
         }
         else {
-            if (_readyCountermeasuresInventory.Contains(countermeasure)) {
-                _readyCountermeasuresInventory.Remove(countermeasure);
-                //D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, countermeasure.Name);
+            if (_readyCountermeasuresInventory.Contains(activeCM)) {
+                _readyCountermeasuresInventory.Remove(activeCM);
+                //D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, activeCM.Name);
             }
         }
     }
 
     #endregion
 
-    #region Sensors
+    #region Shield Generators
 
-    public void AddSensor(SensorStat sensorStat) {
-        Sensor sensor = new Sensor(sensorStat);
-        if (Command != null) {
-            // Command exists so the new sensor can be attached to the Command's SensorRangeMonitor now
-            Command.AttachSensorsToMonitors(sensor);
+    /// <summary>
+    /// Attaches this shield generator and its shield to this item.
+    /// </summary>
+    /// <param name="generator">The shield generator.</param>
+    private void Attach(ShieldGenerator generator) {
+        D.Assert(generator.Shield != null);
+        var shield = generator.Shield;
+        if (!_shields.Contains(shield)) {
+            // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
+            _shields.Add(shield);
         }
-        else {
-            // Note: During startup and ingame building, sensors are added to Elements by Creators before the element has been assigned to a Command.
-            // As a result, the sensors are initially present without an attached RangeMonitor as SensorRangeMonitors go with Commands not elements.
-            // When the element is added to a command, unattached sensors are then attached to a RangeMonitor. Weapons and Countermeasures don't
-            // have this problem as their RangeMonitors can be attached when they are added since the RangeMonitor goes with the element, not the Cmd.
-            // D.Warn("{0}.Command not yet set. Sensor {1} not attached to monitor.", FullName, sensor.Name);
-        }
-        Data.AddSensor(sensor);
-        if (IsOperational) {
-            // we have already commenced operations so start the new sensor
-            // sensors added before operations have commenced are started when operations commence
-            sensor.IsOperational = true;
-        }
+        // IsOperational = true is set when item operations commences
     }
 
-    public void RemoveSensor(Sensor sensor) {
-        D.Assert(Command != null);
-        sensor.IsOperational = false;
-        Command.DetachSensorsFromMonitors(sensor);
-        Data.RemoveSensor(sensor);
+    #endregion
+
+    #region Sensors
+
+    private void Attach(Sensor sensor) {
+        D.Assert(Command == null);  // Sensors are only attached to elements when an element is being created so there is no Command yet
+        //if (Command != null) {
+        //    // Command exists so the new sensor can be attached to the Command's SensorRangeMonitor now
+        //    Command.AttachSensorsToMonitors(sensor);
+        //}
+        //else {
+        //    // Note: During startup and ingame building, sensors are added to Elements by Creators before the element has been assigned to a Command.
+        //    // As a result, the sensors are initially present without an attached RangeMonitor as SensorRangeMonitors go with Commands not elements.
+        //    // When the element is added to a command, unattached sensors are then attached to a RangeMonitor. Weapons and Countermeasures don't
+        //    // have this problem as their RangeMonitors can be attached when they are added since the RangeMonitor goes with the element, not the Cmd.
+        //    // D.Warn("{0}.Command not yet set. Sensor {1} not attached to monitor.", FullName, sensor.Name);
+        //}
+        // IsOperational = true is set when item operations commences
     }
 
     #endregion
@@ -538,15 +497,26 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
         var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+
         var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
         operationalWeapons.ForAll(w => {
             w.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-            D.Log(!w.IsOperational, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
+            //D.Log(!w.IsOperational, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
         });
         var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
         operationalSensors.ForAll(s => {
             s.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-            D.Log(!s.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
+            //D.Log(!s.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
+        });
+        var operationalActiveCMs = Data.ActiveCountermeasures.Where(cm => cm.IsOperational);
+        operationalActiveCMs.ForAll(cm => {
+            cm.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+            //D.Log(!cm.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, cm.Name);
+        });
+        var operationalGenerators = Data.ShieldGenerators.Where(gen => gen.IsOperational);
+        operationalGenerators.ForAll(gen => {
+            gen.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+            D.Log(!gen.IsOperational, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
         });
     }
 
@@ -594,7 +564,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            //D.Log("{0} has been hit but incurred no damage.", FullName);
+            D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
         D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);

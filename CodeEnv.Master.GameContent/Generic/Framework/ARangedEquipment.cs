@@ -23,6 +23,9 @@ namespace CodeEnv.Master.GameContent {
 
         public RangeCategory RangeCategory { get { return Stat.RangeCategory; } }
 
+        /// <summary>
+        /// The equipment's range in units adjusted for any range modifiers from owners, etc.
+        /// </summary>
         public float RangeDistance { get { return Stat.BaseRangeDistance * RangeMultiplier; } }
 
         protected abstract float RangeMultiplier { get; }

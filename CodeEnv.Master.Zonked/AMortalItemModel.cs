@@ -84,9 +84,9 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     #region Attack Simulation
 
-    public static ArmamentCategory[] offensiveArmamentCategories = new ArmamentCategory[3] {    ArmamentCategory.BeamOffense, 
-                                                                                                ArmamentCategory.MissileOffense, 
-                                                                                                ArmamentCategory.ParticleOffense };
+    public static WDVCategory[] offensiveArmamentCategories = new WDVCategory[3] {    WDVCategory.BeamOffense, 
+                                                                                                WDVCategory.MissileOffense, 
+                                                                                                WDVCategory.ParticleOffense };
     public virtual void __SimulateAttacked() {
         TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(offensiveArmamentCategories),
             UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F)));

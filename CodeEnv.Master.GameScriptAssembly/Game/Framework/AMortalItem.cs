@@ -60,19 +60,18 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
     }
 
-    public void AddCountermeasure(PassiveCountermeasureStat cmStat) {
-        var countermeasure = new PassiveCountermeasure(cmStat);
-        Data.AddCountermeasure(countermeasure);
-        if (IsOperational) {
-            // we have already commenced operations so start the new countermeasure
-            // countermeasures added before operations have commenced are started when operations commence
-            countermeasure.IsOperational = true;
-        }
+    protected override void OnDataSet() {
+        base.OnDataSet();
+        Data.PassiveCountermeasures.ForAll(cm => Attach(cm));
     }
 
-    public void RemoveCountermeasure(PassiveCountermeasure countermeasure) {
-        countermeasure.IsOperational = false;
-        Data.RemoveCountermeasure(countermeasure);
+    /// <summary>
+    /// Attaches this passive countermeasure to this item.
+    /// OPTIMIZE - currently does nothing.
+    /// </summary>
+    /// <param name="cm">The cm.</param>
+    private void Attach(PassiveCountermeasure cm) {
+        // IsOperational = true is set when item operations commences
     }
 
     /// <summary>
@@ -180,9 +179,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// <param name="damageSeverity">The severity of the damage as a percentage of the item's hit points when hit.</param>
     protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
         Arguments.ValidateForRange(damageSeverity, Constants.ZeroF, Constants.OneF);
-        var countermeasureSurvivalChance = Constants.OneHundredPercent - damageSeverity;
-        var operationalCountermeasures = Data.PassiveCountermeasures.Where(cm => cm.IsOperational); // UNCLEAR passive CM gets damaged?
-        operationalCountermeasures.ForAll(cm => cm.IsOperational = RandomExtended.Chance(countermeasureSurvivalChance));
+        var passiveCMSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        var operationalPassiveCMs = Data.PassiveCountermeasures.Where(cm => cm.IsOperational);
+        operationalPassiveCMs.ForAll(cm => cm.IsOperational = RandomExtended.Chance(passiveCMSurvivalChance));
     }
 
     #endregion

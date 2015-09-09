@@ -102,7 +102,6 @@ public class SystemCreator : AMonoBase {
     private StarStat _starStat;
     private IList<PlanetoidStat> _planetStats;
     private IList<PlanetoidStat> _moonStats;
-    //private IList<CountermeasureStat> _availableCountermeasureStats;
     private IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
 
     private SystemItem _system;
@@ -297,7 +296,7 @@ public class SystemCreator : AMonoBase {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
             }
-            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, "None", "Description...", 0F, 0F, damageMitigation);
+            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, damageMitigation);
             statsList.Add(countermeasureStat);
         }
         return statsList;
@@ -565,7 +564,7 @@ public class SystemCreator : AMonoBase {
     private void InitializeTopographyMonitor() {
         var monitor = gameObject.GetSafeFirstMonoBehaviourInChildren<TopographyMonitor>();
         monitor.SurroundingTopography = Topography.OpenSpace;   // TODO Items monitored should know about their surrounding space
-        monitor.ItemMonitored = _system;
+        monitor.ParentItem = _system;
     }
 
     /// <summary>

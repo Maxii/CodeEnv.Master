@@ -78,6 +78,11 @@ namespace CodeEnv.Master.Common {
         public const string NguiEmbeddedColorFormat = "[{0:000000}]";
         public const string NguiEmbeddedColorTerminator = "[-]";
 
+        /// <summary>
+        /// My default precision for Unity float equality comparisons.
+        /// 1M times less precise than Unity's built in == comparison
+        /// </summary>
+        public const float FloatEqualityPrecision = .0001F;
 
     }
 }

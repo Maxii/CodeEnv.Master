@@ -232,12 +232,12 @@ namespace CodeEnv.Master.GameContent {
 
             public ColoredTextList_Combat(CombatStrength offense, CombatStrength defense, string format = Constants.FormatFloat_0Dp) {
                 _list.Add(new ColoredText(format.Inject(offense.Combined + defense.Combined)));
-                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Beam))));
-                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Beam))));
-                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Missile))));
-                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Missile))));
-                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Projectile))));
-                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Projectile))));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(WDVCategory.Beam))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(WDVCategory.Beam))));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(WDVCategory.Missile))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(WDVCategory.Missile))));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(WDVCategory.Projectile))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(WDVCategory.Projectile))));
             }
         }
 

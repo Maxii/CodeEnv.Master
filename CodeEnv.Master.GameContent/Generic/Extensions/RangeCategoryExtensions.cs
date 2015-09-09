@@ -34,11 +34,11 @@ namespace CodeEnv.Master.GameContent {
         public static float GetBaseWeaponRange(this RangeCategory rangeCategory) {
             switch (rangeCategory) {
                 case RangeCategory.Short:
-                    return 4F;
-                case RangeCategory.Medium:
                     return 7F;
-                case RangeCategory.Long:
+                case RangeCategory.Medium:
                     return 10F;
+                case RangeCategory.Long:
+                    return 15F;
                 case RangeCategory.None:
                     return Constants.ZeroF;
                 default:
@@ -53,6 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="rangeCategory">The sensor range category.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
+        [Obsolete]
         public static ValueRange<float> __GetBaseSensorRangeSpread(this RangeCategory rangeCategory) {
             switch (rangeCategory) {
                 case RangeCategory.Short:
@@ -68,6 +69,25 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Gets the base sensor range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// </summary>
+        /// <param name="rangeCategory">The sensor range category.</param>
+        /// <returns></returns>
+        public static float GetBaseSensorRange(this RangeCategory rangeCategory) {
+            switch (rangeCategory) {
+                case RangeCategory.Short:
+                    return 150F;
+                case RangeCategory.Medium:
+                    return 750F;
+                case RangeCategory.Long:
+                    return 2500F;
+                case RangeCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCategory));
+            }
+        }
+
+        /// <summary>
         /// Gets the base active countermeasure range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The countermeasure range category.</param>
@@ -75,6 +95,16 @@ namespace CodeEnv.Master.GameContent {
         public static float GetBaseActiveCountermeasureRange(this RangeCategory rangeCategory) {
             return rangeCategory.GetBaseWeaponRange() / 2F;
         }
+
+        /// <summary>
+        /// Gets the base shield range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// </summary>
+        /// <param name="rangeCategory">The shield range category.</param>
+        /// <returns></returns>
+        public static float GetBaseShieldRange(this RangeCategory rangeCategory) {
+            return rangeCategory.GetBaseWeaponRange() / 4F;
+        }
+
 
     }
 }

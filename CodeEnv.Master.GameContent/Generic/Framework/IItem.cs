@@ -35,19 +35,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event Action<IItem> onOwnerChanged;
 
-
-        string DisplayName { get; }
+        Player Owner { get; }
+        bool IsOperational { get; }
+        float Radius { get; }
+        Vector3 Position { get; }
 
         /// <summary>
         /// The name to use for debugging. Includes parent name.
         /// </summary>
         string FullName { get; }
-
-        float Radius { get; }
-
-        Player Owner { get; }
-
-        Vector3 Position { get; }
+        string DisplayName { get; }
 
     }
 }

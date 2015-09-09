@@ -124,20 +124,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="armCategory">The armament category.</param>
         /// <param name="value">The value.</param>
-        public CombatStrength(ArmamentCategory armCategory, float value)
+        public CombatStrength(WDVCategory armCategory, float value)
             : this() {
             Arguments.ValidateNotNegative(value);
             switch (armCategory) {
-                case ArmamentCategory.Beam:
+                case WDVCategory.Beam:
                     Beam = value;
                     break;
-                case ArmamentCategory.Missile:
+                case WDVCategory.Missile:
                     Missile = value;
                     break;
-                case ArmamentCategory.Projectile:
+                case WDVCategory.Projectile:
                     Projectile = value;
                     break;
-                case ArmamentCategory.None:
+                case WDVCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armCategory));
             }
@@ -157,15 +157,15 @@ namespace CodeEnv.Master.GameContent {
             Projectile = projectile;
         }
 
-        public float GetValue(ArmamentCategory armament) {
+        public float GetValue(WDVCategory armament) {
             switch (armament) {
-                case ArmamentCategory.Beam:
+                case WDVCategory.Beam:
                     return Beam;
-                case ArmamentCategory.Missile:
+                case WDVCategory.Missile:
                     return Missile;
-                case ArmamentCategory.Projectile:
+                case WDVCategory.Projectile:
                     return Projectile;
-                case ArmamentCategory.None:
+                case WDVCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }

@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Countermeasure that has a PassiveCountermeasure's DamageMitigation capability combined with the ability to intercept a weapon delivery vehicle.
     /// </summary>
-    public class ActiveCountermeasure : ARangedEquipment, ICountermeasure {
+    public class ActiveCountermeasure : ARangedEquipment, ICountermeasure, IDisposable {
 
         private static string _editorNameFormat = "{0}[{1}({2:0.})]";
 
@@ -39,7 +39,6 @@ namespace CodeEnv.Master.GameContent {
         /// countermeasure's range. Only raised when the countermeasure IsOperational.
         /// </summary>
         public event Action<ActiveCountermeasure> onThreatEnteringRange;
-
 
         private bool _isReadyToInterceptAThreat;
         /// <summary>
@@ -56,7 +55,6 @@ namespace CodeEnv.Master.GameContent {
         /// Indicates whether there are one or more qualified enemy targets within range.
         /// </summary>
         public bool IsThreatInRange { get { return _qualifiedThreats.Any(); } }
-
 
         public IActiveCountermeasureRangeMonitor RangeMonitor { get; set; }
 
@@ -77,12 +75,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public DeliveryStrength InterceptStrength { get { return Stat.InterceptStrength; } }
+        public WDVStrength InterceptStrength { get { return Stat.InterceptStrength; } }
 
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
 
         public float InterceptAccuracy { get { return Stat.InterceptAccuracy; } }
-
 
         protected override float RangeMultiplier {
             get { return RangeMonitor != null ? RangeMonitor.Owner.CountermeasureRangeMultiplier : Constants.OneF; }
@@ -95,8 +92,6 @@ namespace CodeEnv.Master.GameContent {
         private bool _isLoaded;
         private WaitJob _reloadJob;
 
-
-
         protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
 
         public ActiveCountermeasure(ActiveCountermeasureStat stat)
@@ -104,22 +99,18 @@ namespace CodeEnv.Master.GameContent {
             _qualifiedThreats = new List<IInterceptableOrdnance>();
         }
 
-
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
-        /*****************************************************************************************************************************
-                    * This weapon does not need to track Owner changes. When the owner of the item with this weapon changes, the weapon's 
-                    * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. In addition,
-                    * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance via CheckActiveOrdnanceTargeting().
-                    * When the owner of an item detected by this weapon changes, the Monitor recategorizes the detectedItem into the right list - 
-                    * enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to CheckActiveOrdnanceTargeting(), 
-                    * calls OnEnemyTargetInRangeChanged(), niether or both.
-                    *******************************************************************************************************************************/
+        /*****************************************************************************************************************************************
+                    * This countermeasure does not need to track Owner changes. When the owner of the item with this countermeasure changes, the countermeasure's 
+                    * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. 
+                    * When the owner of an item detected by this countermeasure changes, the Monitor recategorizes the detectedItem into the right list 
+                    * taking appropriate action as a result.
+                    *****************************************************************************************************************************************/
 
-        /*********************************************************************************************************
-                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all 
-                     * weapons when it initiates dying.
-                     **********************************************************************************************************/
+        /**********************************************************************************************************************************************
+                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
+                     *********************************************************************************************************************************************/
 
         /// <summary>
         /// Tries to pick the best (most advantageous) qualified target in range.
@@ -164,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Called by this weapon's RangeMonitor when an enemy target enters or exits the weapon's range.
         /// </summary>
-        /// <param name="threat">The enemy target.</param>
+        /// <param name="threat">The enemy threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void OnThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
             D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
@@ -249,8 +240,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private bool CheckIfQualified(IInterceptableOrdnance enemyTarget) {
-            bool isQualified = InterceptStrength.Vehicle == enemyTarget.VehicleStrength.Vehicle;
-            D.Log("{0} isQualified = {1}, Vehicles: {2}, {3}.", Name, isQualified, InterceptStrength.Vehicle.GetValueName(), enemyTarget.VehicleStrength.Vehicle.GetValueName());
+            bool isQualified = InterceptStrength.Category == enemyTarget.DeliveryVehicleStrength.Category;
+            D.Log("{0} isQualified = {1}, Vehicles: {2}, {3}.", Name, isQualified, InterceptStrength.Category.GetValueName(), enemyTarget.DeliveryVehicleStrength.Category.GetValueName());
             return isQualified;
         }
 

@@ -155,14 +155,15 @@ namespace CodeEnv.Master.GameContent {
         protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscriptions;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AUnitCmdItemData" /> class.
+        /// Initializes a new instance of the <see cref="AUnitCmdItemData"/> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
         /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
         /// <param name="owner">The owner.</param>
-        public AUnitCmdItemData(Transform cmdTransform, string unitName, float cmdMaxHitPoints, Player owner)
-            : base(cmdTransform, CommonTerms.Command, cmdMaxHitPoints, owner) {
+        /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
+        public AUnitCmdItemData(Transform cmdTransform, string unitName, float cmdMaxHitPts, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, CommonTerms.Command, cmdMaxHitPts, owner, passiveCMs) {
             ParentName = unitName;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();

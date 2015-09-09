@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -183,20 +183,21 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
 
     public Vector3 Position { get { return transform.position; } }
 
-    public void TakeHit(DeliveryStrength interceptStrength) {
-        if (VehicleStrength.Vehicle != interceptStrength.Vehicle) {
-            D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", Name, VehicleStrength.Vehicle.GetValueName(), interceptStrength.Vehicle.GetValueName());
+    public void TakeHit(WDVStrength interceptStrength) {
+        if (DeliveryVehicleStrength.Category != interceptStrength.Category) {
+            D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", Name, DeliveryVehicleStrength.Category.GetValueName(), interceptStrength.Category.GetValueName());
             return;
         }
-        D.Warn(VehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0.", Name);
+        D.Warn(DeliveryVehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0.", Name);
 
-        D.Log("{0} intercepted. InterceptStrength: {1}, WDV Strength: {2}.", Name, interceptStrength, VehicleStrength);
-        VehicleStrength = interceptStrength - VehicleStrength;
-        if (VehicleStrength.Value == Constants.ZeroF) {
+        //D.Log("{0} intercepted. InterceptStrength: {1}, WDV Strength: {2}.", Name, interceptStrength, VehicleStrength);
+        DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
+        if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
             TerminateNow();
         }
     }
 
     #endregion
+
 }
 

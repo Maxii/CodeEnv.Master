@@ -240,7 +240,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="value">The value.</param>
         /// <returns></returns>
         public static bool ApproxEquals(this float source, float value) {
-            return Mathfx.Approx(source, value, .001F);
+            return Mathfx.Approx(source, value, UnityConstants.FloatEqualityPrecision);
         }
 
         /// <summary>

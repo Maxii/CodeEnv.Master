@@ -46,7 +46,7 @@ public class AllPlayersKnowledge : AGenericSingleton<AllPlayersKnowledge>, IAllP
         _gameMgr = GameManager.Instance;
     }
 
-    public void Add(Player player, IDetectable detectableItem) {
+    public void Add(Player player, ISensorDetectable detectableItem) {
         D.Log("{0} is adding {1} for Player {2}.", GetType().Name, detectableItem.FullName, player.LeaderName);
         if (!_isInitialized) { InitializeCollections(); }
 

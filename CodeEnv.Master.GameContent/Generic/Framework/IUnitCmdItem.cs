@@ -29,24 +29,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool __CheckForDamage(bool isHQElementAlive, DamageStrength elementDamageSustained, float elementDamageSeverity);
 
-        /// <summary>
-        /// Attaches one or more sensors to this command's SensorRangeMonitors.
-        /// Note: Sensors are part of a Unit's elements but the monitors they attach to
-        /// are children of the Command. Thus sensor range is always measured from
-        /// the Command, not from the element.
-        /// </summary>
-        /// <param name="sensors">The sensors.</param>
-        void AttachSensorsToMonitors(params Sensor[] sensors);
-
-        /// <summary>
-        /// Detaches one or more sensors from this command's SensorRangeMonitors.
-        /// Note: Sensors are part of a Unit's elements but the monitors they attach to
-        /// are children of the Command. Thus sensor range is always measured from
-        /// the Command, not from the element.
-        /// </summary>
-        /// <param name="sensors">The sensors.</param>
-        void DetachSensorsFromMonitors(params Sensor[] sensors);
-
         void OnSubordinateElementDeath(IUnitElementItem deadSubordinateElement);
 
     }

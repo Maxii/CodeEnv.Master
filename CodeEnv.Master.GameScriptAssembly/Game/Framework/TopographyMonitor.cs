@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: TopographyMonitor.cs
-// Monitor attached to regions of space that notifies ships of the SpaceTopography they are entering/exiting.
+// Detects ships entering/exiting a region of space and notifies them of the Topography change.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,53 +21,47 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Monitor attached to regions of space that notifies ships of the SpaceTopography they are entering/exiting.
+/// Detects ships entering/exiting a region of space and notifies them of the Topography change.
 /// </summary>
-public class TopographyMonitor : AMonitor {
+public class TopographyMonitor : AColliderMonitor {
 
-    private ITopographyMonitorable _itemMonitored;
-    public ITopographyMonitorable ItemMonitored {
-        get { return _itemMonitored; }
-        set {
-            D.Assert(_itemMonitored == null);   // should only occur 1 time
-            SetProperty<ITopographyMonitorable>(ref _itemMonitored, value, "ItemMonitored", OnItemMonitoredChanged);
-        }
-    }
-
-    public Topography SurroundingTopography { get; set; }   // IMPROVE ItemMonitored should know about their surrounding topology
+    public Topography SurroundingTopography { get; set; }   // IMPROVE ParentItem should know about their surrounding topology
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        if (other.isTrigger) { return; }
-        D.Log("{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3}.",
-        ItemMonitored.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
+        if (other.isTrigger) {
+            return;
+        }
+        //D.Log("{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3}.",
+        //    ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
         var enteringShip = other.gameObject.GetInterface<IShipItem>();
         if (enteringShip != null) {
-            enteringShip.OnTopographicBoundaryTransition(ItemMonitored.Topography);
+            enteringShip.OnTopographicBoundaryTransition(ParentItem.Topography);
         }
     }
 
     protected override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        if (other.isTrigger) { return; }
-        D.Log("{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3}.",
-        ItemMonitored.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
+        if (other.isTrigger) {
+            return;
+        }
+        //D.Log("{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3}.",
+        //  ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
         var exitingShip = other.gameObject.GetInterface<IShipItem>();
         if (exitingShip != null) {
             exitingShip.OnTopographicBoundaryTransition(SurroundingTopography);
         }
     }
 
-    private void OnItemMonitoredChanged() {
-        _collider.radius = ItemMonitored.Radius;
+    protected override void OnParentItemChanged() {
+        base.OnParentItemChanged();
+        RangeDistance = ParentItem.Radius;
         IsOperational = true;
     }
 
     protected override void OnIsOperationalChanged() { }
-
-    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

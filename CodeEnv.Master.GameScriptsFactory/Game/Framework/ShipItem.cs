@@ -1030,6 +1030,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
         Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
         Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
         Data.IsFtlOperational = true;
@@ -2237,8 +2238,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             public TargetInfo(FormationStationMonitor fst) {
                 Target = fst as INavigableTarget;
                 _fstOffset = Vector3.zero;
-                _closeEnoughDistance = fst.StationRadius;
-                _progressCheckDistance = fst.StationRadius;
+                _closeEnoughDistance = fst.RangeDistance;
+                _progressCheckDistance = fst.RangeDistance;
             }
 
             public TargetInfo(SectorItem targetSector, Vector3 fstOffset) {

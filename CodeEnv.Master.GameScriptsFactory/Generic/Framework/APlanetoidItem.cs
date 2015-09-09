@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, IDetectable {
+public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, ISensorDetectable {
 
     /// <summary>
     /// Gets the maximum possible orbital speed of a planetoid in Units per hour, aka the max speed of any planet plus the max speed of any moon.

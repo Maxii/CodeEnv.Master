@@ -54,7 +54,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     protected virtual void OnUserIntelCoverageChanged() {
         //D.Log("{0}.OnUserIntelCoverageChanged() called. IntelCoverage = {1}.", FullName, GetUserIntelCoverage().GetName());
-        AssessDiscernibleToUser();
+        AssessIsDiscernibleToUser();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
@@ -63,7 +63,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
         DisplayMgr.EnableDisplay(toEnableDisplayMgr);
     }
 
-    protected override void AssessDiscernibleToUser() {
+    protected override void AssessIsDiscernibleToUser() {
         var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
         IsDiscernibleToUser = isInMainCameraLOS && Data.GetUserIntelCoverage() != IntelCoverage.None;
     }

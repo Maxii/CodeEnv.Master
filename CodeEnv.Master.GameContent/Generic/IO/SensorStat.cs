@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SensorStat.cs
-// Immutable class containing externally acquirable values for Sensors.
+// Immutable stat containing externally acquirable values for Sensors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable class containing externally acquirable values for Sensors.
+    /// Immutable stat containing externally acquirable values for Sensors.
     /// </summary>
     public class SensorStat : ARangedEquipmentStat {
 
@@ -33,16 +33,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
         /// <param name="size">The physical size of the sensor.</param>
+        /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
+        /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
         /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
-        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeCategory rangeCat, float baseRangeDistance)
-            : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt, rangeCat, baseRangeDistance) {
-            Validate();
-        }
-
-        private void Validate() {
-            Arguments.ValidateForRange(BaseRangeDistance, RangeCategory.__GetBaseSensorRangeSpread());
+        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
+            float expense, RangeCategory rangeCat, float baseRangeDistance)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
         }
 
         public override string ToString() {

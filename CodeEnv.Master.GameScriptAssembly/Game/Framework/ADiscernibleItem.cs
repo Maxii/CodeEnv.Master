@@ -105,7 +105,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        AssessDiscernibleToUser();
+        AssessIsDiscernibleToUser();
     }
 
     #endregion
@@ -120,7 +120,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     protected virtual void OnIsInMainCameraLosChanged() {
-        AssessDiscernibleToUser();
+        AssessIsDiscernibleToUser();
     }
 
     protected virtual void OnIsDiscernibleToUserChanged() {
@@ -142,7 +142,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     /// <summary>
     /// Assesses the discernability of this item to the user.
     /// </summary>
-    protected abstract void AssessDiscernibleToUser();
+    protected abstract void AssessIsDiscernibleToUser();
 
     public virtual void AssessHighlighting() {
         if (IsDiscernibleToUser && IsFocus) {

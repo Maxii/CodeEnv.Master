@@ -1004,7 +1004,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
     /// <arg item="newPosition">The new position.</arg>
     /// <returns>if validated, returns newPosition. If not, return the current position.</returns>
     private Vector3 ValidatePosition(Vector3 newPosition) {
-        float magnitude = (newPosition - GameConstants.UniverseOrigin).magnitude;
+        float magnitude = (newPosition - MyGamingConstants.UniverseOrigin).magnitude;
         if (magnitude > universeRadius) {
             return _transform.position;
         }
@@ -1120,7 +1120,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
                 return false;
             }
 
-            float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin);
+            float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, MyGamingConstants.UniverseOrigin);
             //Logger.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
             if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 0.1F)) {
                 D.Error("Camera's Dummy Target is not located on UniverseEdge! Position = " + _dummyTarget.position);

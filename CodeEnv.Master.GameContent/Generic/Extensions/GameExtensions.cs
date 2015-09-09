@@ -147,17 +147,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return isAnyValueFound ? sum : null;
         }
-        //public static CombatStrength? NullableSum(this IEnumerable<CombatStrength?> sequence) {
-        //    bool isAnyValueFound = false;
-        //    CombatStrength? sum = default(CombatStrength);
-        //    foreach (var a in sequence) {
-        //        if (a.HasValue) {
-        //            isAnyValueFound = true;
-        //            sum += a.Value;
-        //        }
-        //    }
-        //    return isAnyValueFound ? sum : null;
-        //}
 
         /// <summary>
         /// Returns the tag value used by the AStar Pathfinding system. AStar uses
@@ -191,23 +180,34 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Calculates the combined sensor range (distance) from the provided sensors that are operational. 
-        /// The algorithm used takes the sensor with the longest range and adds the Sqrt of the range of each of the remaining sensors.
-        /// The provided sensors must have the same DistanceRange value.
+        /// The algorithm takes the range distance of the first operational sensor and adds the sqrt of the range distance of each of the 
+        /// remaining operational sensors.
+        /// The provided sensors must have the same RangeCategory and RangeDistance values. If there are no sensors, then 0 is returned. 
+        /// If there are no operational sensors, then the range of the first sensor is returned.
+        /// <remarks>The old algorithm took the sensor with the longest range and added the Sqrt of the range of each of the remaining sensors.
+        /// This was to allow for different range distances from sensors with the same RangeCategory, ostensibly to allow only partial
+        /// upgrading of sensors in an element.</remarks>
         /// </summary>
         /// <param name="sensors">The sensors.</param>
         /// <returns></returns>
         public static float CalcSensorRangeDistance(this IEnumerable<Sensor> sensors) {
-            D.Assert(sensors.Select(s => s.RangeCategory).Distinct().Count() <= Constants.One); // validate all the same DistanceRange
+            D.Assert(sensors.Select(s => s.RangeCategory).Distinct().Count() <= Constants.One); // validate all the same RangeCategory
+            D.Assert(sensors.Select(s => s.RangeDistance).Distinct(UnityUtility.FloatEqualityComparer).Count() <= Constants.One); // validate all the same RangeDistance -> no mixing of tech
+            //D.Log(sensors.Select(s => s.RangeDistance).Concatenate());
+
             if (!sensors.Any()) {
                 return Constants.ZeroF;
             }
             var operationalSensors = sensors.Where(s => s.IsOperational);
             if (!operationalSensors.Any()) {
-                return Constants.ZeroF;
+                return sensors.First().RangeDistance;   // little value in changing range to 0 when no operational sensors
             }
-            Sensor longestRangeSensor = operationalSensors.MaxBy(s => s.RangeDistance);
-            var remainingSensors = operationalSensors.Except(longestRangeSensor);
-            return longestRangeSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
+            var firstOperationalSensor = operationalSensors.First();
+            var remainingSensors = operationalSensors.Except(firstOperationalSensor);
+            return firstOperationalSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
+            //Sensor longestRangeSensor = operationalSensors.MaxBy(s => s.RangeDistance);
+            //var remainingSensors = operationalSensors.Except(longestRangeSensor);
+            //return longestRangeSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
         }
 
         /// <summary>

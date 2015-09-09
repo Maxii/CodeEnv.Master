@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, IDetectable {
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable {
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]

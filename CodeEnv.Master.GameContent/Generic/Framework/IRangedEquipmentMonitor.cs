@@ -29,8 +29,6 @@ namespace CodeEnv.Master.GameContent {
 
         Player Owner { get; }
 
-        void ResetForReuse();
-
     }
 }
 

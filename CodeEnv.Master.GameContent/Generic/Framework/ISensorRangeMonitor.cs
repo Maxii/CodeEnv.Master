@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ISensorRangeMonitor.cs
-// Interface allowing access to the associated Unity-compiled script. 
+//  Interface for access to SensorRangeMonitor.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,12 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Interface allowing access to the associated Unity-compiled script. 
-    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
+    /// Interface for access to SensorRangeMonitor.
     /// </summary>
     public interface ISensorRangeMonitor : IRangedEquipmentMonitor {
 
-        IUnitCmdItem ParentItem { set; }
+        IUnitCmdItem ParentItem { get; set; }
 
         IList<IElementAttackableTarget> AttackableEnemyTargetsDetected { get; }
 
@@ -37,6 +36,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
         bool Remove(Sensor sensor);
+
+        /// <summary>
+        /// Resets this Monitor for reuse by the parent item.
+        /// </summary>
+        void Reset();
 
     }
 }

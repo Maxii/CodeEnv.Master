@@ -27,7 +27,7 @@ using UnityEngine;
 [Obsolete]
 public class GuiLocationElement : GuiElement, IComparable<GuiLocationElement> {
 
-    private static string _labelFormat = "{0} " + GameConstants.IconMarker_Distance + Constants.NewLine + Constants.NewLine + "{1}";
+    private static string _labelFormat = "{0} " + MyGamingConstants.IconMarker_Distance + Constants.NewLine + Constants.NewLine + "{1}";
     private static string _tooltipFormat = "Distance in sectors to closest owned base {0} = {1}.";
     private static string _unknown = Constants.QuestionMark;
 

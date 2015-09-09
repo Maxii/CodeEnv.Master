@@ -57,15 +57,15 @@ namespace CodeEnv.Master.GameContent {
             var beamDeliveryStrength = left.BeamDeliveryStrength + right.BeamDeliveryStrength;
             var projDeliveryStrength = left.ProjectileDeliveryStrength + right.ProjectileDeliveryStrength;
             var missileDeliveryStrength = left.MissileDeliveryStrength + right.MissileDeliveryStrength;
-            var beamDamagePotential = left.BeamDamagePotential + right.BeamDamagePotential;
-            var projDamagePotential = left.ProjectileDamagePotential + right.ProjectileDamagePotential;
-            var missileDamagePotential = left.MissileDamagePotential + right.MissileDamagePotential;
-            var totalDamageMitigation = left.TotalDamageMitigation + right.TotalDamageMitigation;
 
             switch (left.Mode) {
                 case CombatMode.Defensive:
+                    var totalDamageMitigation = left.TotalDamageMitigation + right.TotalDamageMitigation;
                     return new CombatStrength(beamDeliveryStrength, projDeliveryStrength, missileDeliveryStrength, totalDamageMitigation);
                 case CombatMode.Offensive:
+                    var beamDamagePotential = left.BeamDamagePotential + right.BeamDamagePotential;
+                    var projDamagePotential = left.ProjectileDamagePotential + right.ProjectileDamagePotential;
+                    var missileDamagePotential = left.MissileDamagePotential + right.MissileDamagePotential;
                     return new CombatStrength(beamDeliveryStrength, projDeliveryStrength, missileDeliveryStrength, beamDamagePotential, projDamagePotential, missileDamagePotential);
                 case CombatMode.None:
                     return right;
@@ -90,22 +90,22 @@ namespace CodeEnv.Master.GameContent {
         public float TotalDeliveryStrength { get { return BeamDeliveryStrength.Value + ProjectileDeliveryStrength.Value + MissileDeliveryStrength.Value; } }
 
         /// <summary>
-        /// If Mode is Offensive, this value represents the ability of the attacker's beam delivery vehicle(s) to survive interception.
-        /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to intercept and destroy the attacker's beam delivery vehicle(s). 
+        /// If Mode is Offensive, this value represents the ability of the attacker's beam delivery vehicle(s) to survive interdiction.
+        /// If Defensive, this value represents the ability of the defender's shield to interdict and destroy the attacker's beam delivery vehicle(s). 
         /// </summary>
-        public DeliveryStrength BeamDeliveryStrength { get; private set; }
+        public WDVStrength BeamDeliveryStrength { get; private set; }
 
         /// <summary>
-        /// If Mode is Offensive, this value represents the ability of the attacker's projectile delivery vehicle(s) to survive interception.
-        /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to intercept and destroy the attacker's projectile delivery vehicle(s). 
+        /// If Mode is Offensive, this value represents the ability of the attacker's projectile delivery vehicle(s) to survive interdiction.
+        /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to interdict and destroy the attacker's projectile delivery vehicle(s). 
         /// </summary>
-        public DeliveryStrength ProjectileDeliveryStrength { get; private set; }
+        public WDVStrength ProjectileDeliveryStrength { get; private set; }
 
         /// <summary>
-        /// If Mode is Offensive, this value represents the ability of the attacker's missile delivery vehicle(s) to survive interception.
-        /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to intercept and destroy the attacker's missile delivery vehicle(s). 
+        /// If Mode is Offensive, this value represents the ability of the attacker's missile delivery vehicle(s) to survive interdiction.
+        /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to interdict and destroy the attacker's missile delivery vehicle(s). 
         /// </summary>
-        public DeliveryStrength MissileDeliveryStrength { get; private set; }
+        public WDVStrength MissileDeliveryStrength { get; private set; }
 
         /// <summary>
         /// Only valid if the Mode is Offensive, this value represents the potential damage delivered to the defender by the attacker's beam delivery vehicles.
@@ -141,36 +141,37 @@ namespace CodeEnv.Master.GameContent {
             Mode = CombatMode.Offensive;
             var operationalWeapons = weapons.Where(w => w.IsOperational);
 
-            var deliveryStrengths = operationalWeapons.Select(w => w.DeliveryStrength);
-            BeamDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, ArmamentCategory.Beam);
-            ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, ArmamentCategory.Projectile);
-            MissileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, ArmamentCategory.Missile);
+            var deliveryStrengths = operationalWeapons.Select(w => w.DeliveryVehicleStrength);
+            BeamDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Beam);
+            ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Projectile);
+            MissileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Missile);
 
-            BeamDamagePotential = CalcDamagePotential(operationalWeapons, ArmamentCategory.Beam);
-            ProjectileDamagePotential = CalcDamagePotential(operationalWeapons, ArmamentCategory.Projectile);
-            MissileDamagePotential = CalcDamagePotential(operationalWeapons, ArmamentCategory.Missile);
+            BeamDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Beam);
+            ProjectileDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Projectile);
+            MissileDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Missile);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CombatStrength" /> struct.
+        /// Initializes a new defensive instance of the <see cref="CombatStrength" /> struct.
         /// </summary>
         /// <param name="countermeasures">The countermeasures.</param>
-        public CombatStrength(IEnumerable<ICountermeasure> countermeasures)
+        /// <param name="hullDamageMitigation">The hull damage mitigation.</param>
+        public CombatStrength(IEnumerable<ICountermeasure> countermeasures, DamageStrength hullDamageMitigation = default(DamageStrength))
             : this() {
             Mode = CombatMode.Defensive;
             var operationalCountermeasures = countermeasures.Where(cm => cm.IsOperational);
 
             var activeOperationalCountermeasures = operationalCountermeasures.Where(cm => cm is ActiveCountermeasure).Cast<ActiveCountermeasure>();
             var deliveryInterceptStrengths = activeOperationalCountermeasures.Select(cm => cm.InterceptStrength);
-            BeamDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, ArmamentCategory.Beam);
-            ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, ArmamentCategory.Projectile);
-            MissileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, ArmamentCategory.Missile);
+            BeamDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Beam);
+            ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Projectile);
+            MissileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Missile);
 
-            TotalDamageMitigation = CalcTotalDamageMitigationStrength(operationalCountermeasures.Select(cm => cm.DamageMitigation));
+            TotalDamageMitigation = operationalCountermeasures.Select(cm => cm.DamageMitigation).Aggregate(hullDamageMitigation, (accum, strength) => accum + strength);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CombatStrength"/> struct on Offense.
+        /// Initializes a new offensive instance of the <see cref="CombatStrength"/> struct.
         /// </summary>
         /// <param name="beamDeliveryStrength">The beam delivery strength.</param>
         /// <param name="projDeliveryStrength">The proj delivery strength.</param>
@@ -178,12 +179,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="beamDamagePotential">The beam damage potential.</param>
         /// <param name="projDamagePotential">The proj damage potential.</param>
         /// <param name="missileDamagePotential">The missile damage potential.</param>
-        private CombatStrength(DeliveryStrength beamDeliveryStrength, DeliveryStrength projDeliveryStrength, DeliveryStrength missileDeliveryStrength,
+        private CombatStrength(WDVStrength beamDeliveryStrength, WDVStrength projDeliveryStrength, WDVStrength missileDeliveryStrength,
             DamageStrength beamDamagePotential, DamageStrength projDamagePotential, DamageStrength missileDamagePotential)
             : this() {
-            D.Assert(beamDeliveryStrength.Vehicle == ArmamentCategory.Beam);
-            D.Assert(projDeliveryStrength.Vehicle == ArmamentCategory.Projectile);
-            D.Assert(missileDeliveryStrength.Vehicle == ArmamentCategory.Missile);
+            D.Assert(beamDeliveryStrength.Category == WDVCategory.Beam);
+            D.Assert(projDeliveryStrength.Category == WDVCategory.Projectile);
+            D.Assert(missileDeliveryStrength.Category == WDVCategory.Missile);
 
             Mode = CombatMode.Offensive;
             BeamDeliveryStrength = beamDeliveryStrength;
@@ -195,18 +196,18 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CombatStrength"/> struct on defense.
+        /// Initializes a new defensive instance of the <see cref="CombatStrength"/> struct.
         /// </summary>
         /// <param name="beamInterceptStrength">The beam intercept strength.</param>
         /// <param name="projInterceptStrength">The proj intercept strength.</param>
         /// <param name="missileInterceptStrength">The missile intercept strength.</param>
         /// <param name="totalDamageMitigation">The total damage mitigation.</param>
-        private CombatStrength(DeliveryStrength beamInterceptStrength, DeliveryStrength projInterceptStrength, DeliveryStrength missileInterceptStrength,
+        private CombatStrength(WDVStrength beamInterceptStrength, WDVStrength projInterceptStrength, WDVStrength missileInterceptStrength,
             DamageStrength totalDamageMitigation)
             : this() {
-            D.Assert(beamInterceptStrength.Vehicle == ArmamentCategory.Beam);
-            D.Assert(projInterceptStrength.Vehicle == ArmamentCategory.Projectile);
-            D.Assert(missileInterceptStrength.Vehicle == ArmamentCategory.Missile);
+            D.Assert(beamInterceptStrength.Category == WDVCategory.Beam);
+            D.Assert(projInterceptStrength.Category == WDVCategory.Projectile);
+            D.Assert(missileInterceptStrength.Category == WDVCategory.Missile);
 
             Mode = CombatMode.Defensive;
             BeamDeliveryStrength = beamInterceptStrength;
@@ -215,20 +216,14 @@ namespace CodeEnv.Master.GameContent {
             TotalDamageMitigation = totalDamageMitigation;
         }
 
-        private DamageStrength CalcTotalDamageMitigationStrength(IEnumerable<DamageStrength> damageStrengths) {
-            var defaultValueIfEmpty = default(DamageStrength);
-            return damageStrengths.Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
-        }
-
-        private DeliveryStrength CalcDeliveryStrength(IEnumerable<DeliveryStrength> allDeliveryStrengths, ArmamentCategory vehicle) {
-            var vehicleStrengths = allDeliveryStrengths.Where(ds => ds.Vehicle == vehicle);
-            var defaultValueIfEmpty = new DeliveryStrength(vehicle, Constants.ZeroF);
+        private WDVStrength CalcDeliveryStrength(IEnumerable<WDVStrength> allDeliveryVehicleStrengths, WDVCategory deliveryVehicleCategory) {
+            var vehicleStrengths = allDeliveryVehicleStrengths.Where(ds => ds.Category == deliveryVehicleCategory);
+            var defaultValueIfEmpty = new WDVStrength(deliveryVehicleCategory, Constants.ZeroF);
             return vehicleStrengths.Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
-            //return new DeliveryStrength(vehicle, vehicleStrengths.Sum(vs => vs.Value));
         }
 
-        private DamageStrength CalcDamagePotential(IEnumerable<AWeapon> weapons, ArmamentCategory deliveryVehicle) {
-            var deliveryVehicleWeapons = weapons.Where(w => w.ArmamentCategory == deliveryVehicle);
+        private DamageStrength CalcDamagePotential(IEnumerable<AWeapon> weapons, WDVCategory deliveryVehicleCategory) {
+            var deliveryVehicleWeapons = weapons.Where(w => w.DeliveryVehicleCategory == deliveryVehicleCategory);
             var weaponsDamagePotential = deliveryVehicleWeapons.Select(w => w.DamagePotential);
             var defaultValueIfEmpty = default(DamageStrength);
             return weaponsDamagePotential.Aggregate(defaultValueIfEmpty, (accum, damagePotential) => accum + damagePotential);

@@ -16,6 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -60,21 +63,31 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class
-        /// with the owner initialized to NoPlayer.
+        /// with no countermeasures and no owner.
         /// </summary>
         /// <param name="planetoidTransform">The planetoid transform.</param>
         /// <param name="stat">The stat.</param>
         public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat)
-            : this(planetoidTransform, stat, TempGameValues.NoPlayer) { }
+            : this(planetoidTransform, stat, TempGameValues.NoPlayer, Enumerable.Empty<PassiveCountermeasure>()) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="APlanetoidData" /> class.
+        /// Initializes a new instance of the <see cref="PlanetoidData"/> class with no owner.
+        /// </summary>
+        /// <param name="planetoidTransform">The planetoid transform.</param>
+        /// <param name="stat">The stat.</param>
+        /// <param name="passiveCMs">The passive Countermeasures.</param>
+        public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : this(planetoidTransform, stat, TempGameValues.NoPlayer, passiveCMs) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
         /// </summary>
         /// <param name="planetoidTransform">The planetoid transform.</param>
         /// <param name="stat">The stat.</param>
         /// <param name="owner">The owner.</param>
-        public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat, Player owner)
-            : base(planetoidTransform, stat.Category.GetValueName(), stat.MaxHitPoints, owner) {
+        /// <param name="passiveCMs">The passive Countermeasures.</param>
+        public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(planetoidTransform, stat.Category.GetValueName(), stat.MaxHitPoints, owner, passiveCMs) {
             Mass = stat.Mass;
             planetoidTransform.rigidbody.mass = stat.Mass;
             Category = stat.Category;

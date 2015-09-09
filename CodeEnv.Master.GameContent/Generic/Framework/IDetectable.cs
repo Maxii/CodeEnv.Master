@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDetectableItem.cs
-// Interface indicating an Item is detectable by sensors and weapon targeting systems.
+// File: IDetectable.cs
+// Base Interface for objects that are detectable by Monitors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using UnityEngine;
 
     /// <summary>
-    /// Interface indicating an Item is detectable by sensors and weapon targeting systems.
+    /// Base Interface for objects that are detectable by Monitors.
     /// </summary>
     public interface IDetectable {
-
-        event Action<IItem> onOwnerChanged;
 
         Player Owner { get; }
 
@@ -34,9 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
-        void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
 
-        void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
     }
 }
 

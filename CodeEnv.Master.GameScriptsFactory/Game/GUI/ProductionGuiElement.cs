@@ -43,8 +43,8 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
 
     private UILabel _imageNameLabel;
     private UISprite _imageSprite;
-    private UILabel _remainingProductionTimeLabel;
-    private UILabel _buyoutCostLabel;
+    //private UILabel _remainingProductionTimeLabel;
+    //private UILabel _buyoutCostLabel;
 
     protected override void Awake() {
         base.Awake();

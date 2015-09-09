@@ -16,12 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
@@ -71,13 +68,25 @@ namespace CodeEnv.Master.GameContent {
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdData" /> class.
+        /// Initializes a new instance of the <see cref="SettlementCmdData"/> class
+        /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="stat">The stat.</param>
         /// <param name="owner">The owner.</param>
         public SettlementCmdData(Transform cmdTransform, SettlementCmdStat stat, Player owner)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
+            : this(cmdTransform, stat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SettlementCmdData"/> class.
+        /// </summary>
+        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="stat">The stat.</param>
+        /// <param name="owner">The owner.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner, passiveCMs) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             Population = stat.Population;
             UnitFormation = stat.UnitFormation;

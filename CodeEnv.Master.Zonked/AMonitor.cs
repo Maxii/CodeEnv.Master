@@ -22,6 +22,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for Monitors that keep track of entry and exit into/from a spherical volume of space. 
 /// </summary>
+[System.Obsolete]
 public abstract class AMonitor : AMonoBase {
 
     /// <summary>
@@ -59,6 +60,7 @@ public abstract class AMonitor : AMonoBase {
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
         _collider.radius = Constants.ZeroF;
+        _collider.enabled = false;
     }
 
     protected abstract void OnIsOperationalChanged();

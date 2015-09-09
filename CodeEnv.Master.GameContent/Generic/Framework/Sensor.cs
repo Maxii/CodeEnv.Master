@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
         /***************************************************************************************************************************************
-                    * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all sensors when it initiates dying.
+                    * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
                     ***************************************************************************************************************************************/
         /*****************************************************************************************************************************
                   * This sensor does not need to track Owner changes. When the owner of the item with this sensor changes, the sensor's 

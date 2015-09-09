@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public DeliveryStrength __DeliveryInterceptability { get { return new DeliveryStrength(ArmamentCategory.Beam, 2.5F); } }
+        public WDVStrength __DeliveryInterceptability { get { return new WDVStrength(WDVCategory.Beam, 2.5F); } }
 
         public DamageStrength __DamageMitigation { get { return new DamageStrength(thermal: 1F, atomic: 0F, kinetic: 2F); } }
 

@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<IMortalItem> onDeathOneShot;
 
-        bool IsOperational { get; }
-
         Index3D SectorIndex { get; }
 
     }

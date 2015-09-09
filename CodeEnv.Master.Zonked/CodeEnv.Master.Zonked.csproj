@@ -62,6 +62,7 @@
     <Compile Include="ActiveAIPlayersManager.cs" />
     <Compile Include="AElementData.cs" />
     <Compile Include="AElementStats.cs" />
+    <Compile Include="AEquipmentTriggerMonitor.cs" />
     <Compile Include="AFocusableItem.cs" />
     <Compile Include="AFocusableItemPresenter.cs" />
     <Compile Include="AFocusableItemView.cs" />
@@ -98,6 +99,7 @@
     <Compile Include="ALabelText.cs" />
     <Compile Include="ALabelTextFactory.cs" />
     <Compile Include="AllPlayersKnowledge.cs" />
+    <Compile Include="AMonitor.cs" />
     <Compile Include="AMonoBaseSingleton.cs" />
     <Compile Include="AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
     <Compile Include="AMonoStateMachineSingleton.cs" />
@@ -115,9 +117,11 @@
     <Compile Include="APlanetoidView.cs" />
     <Compile Include="APopupWindow.cs" />
     <Compile Include="APresenter.cs" />
+    <Compile Include="ARangedEquipmentMonitor.cs" />
     <Compile Include="AReport.cs" />
     <Compile Include="AReportGenerator.cs" />
     <Compile Include="AStateMachine.cs" />
+    <Compile Include="ATriggerMonitor.cs" />
     <Compile Include="AUnitBaseCmdModel.cs" />
     <Compile Include="AUnitCommandModel.cs" />
     <Compile Include="AUnitCommandPresenter.cs" />
@@ -164,6 +168,7 @@
     <Compile Include="FacilityModel.cs" />
     <Compile Include="FacilityPresenter.cs" />
     <Compile Include="FacilityReportGenerator.cs" />
+    <Compile Include="FacilityStat.cs" />
     <Compile Include="FacilityState.cs" />
     <Compile Include="FacilityStats.cs" />
     <Compile Include="FacilityView.cs" />
@@ -334,6 +339,7 @@
     <Compile Include="ITarget.cs" />
     <Compile Include="ItemData.cs" />
     <Compile Include="ItemGraphics.cs" />
+    <Compile Include="ITopographyMonitorable.cs" />
     <Compile Include="IUnitFactory.cs" />
     <Compile Include="IUnitTarget.cs" />
     <Compile Include="IUniverseCenterModel.cs" />
@@ -458,6 +464,7 @@
     <Compile Include="ShipPresenter.cs" />
     <Compile Include="ShipPresenter_Player.cs" />
     <Compile Include="ShipReportGenerator.cs" />
+    <Compile Include="ShipStat.cs" />
     <Compile Include="ShipState.cs" />
     <Compile Include="ShipStats.cs" />
     <Compile Include="ShipView.cs" />

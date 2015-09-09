@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -28,10 +28,13 @@ using UnityEngine;
 public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     private static int __instanceCount = 1;
+    private static string _fullNameFormat = "{0}_{1}";
 
     public event Action<IOrdnance> onDeathOneShot;
 
     public string Name { get; private set; }
+
+    public string FullName { get { return _fullNameFormat.Inject(_weapon.RangeMonitor.ParentItem.FullName, Name); } }
 
     public IElementAttackableTarget Target { get; private set; }
 
@@ -39,13 +42,15 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public Player Owner { get { return _weapon.Owner; } }
 
+    public bool IsOperational { get; private set; }
+
     private bool _toShowEffects;
     public bool ToShowEffects {
         get { return _toShowEffects; }
         set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
     }
 
-    public DeliveryStrength VehicleStrength { get; protected set; }
+    public WDVStrength DeliveryVehicleStrength { get; protected set; }
 
     public DamageStrength DamagePotential { get; private set; }
 
@@ -76,7 +81,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Target = target;
         _weapon = weapon;
 
-        VehicleStrength = weapon.DeliveryStrength;
+        DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
         DamagePotential = weapon.DamagePotential;
 
         SyncName();
@@ -89,6 +94,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
         _range = weapon.RangeDistance;
         ToShowEffects = toShowEffects;
+        IsOperational = true;
     }
 
     protected abstract void AssessShowMuzzleEffects();
@@ -137,7 +143,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected void TerminateNow() {
-        D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
+        //D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
+        IsOperational = false;
         PrepareForTermination();
         if (onDeathOneShot != null) {
             onDeathOneShot(this);

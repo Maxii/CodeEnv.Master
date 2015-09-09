@@ -110,32 +110,32 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     /// <summary>
     /// Makes an instance of Ordnance.
     /// </summary>
-    /// <param name="category">The category of ordnance.</param>
+    /// <param name="deliveryVehicleCategory">The category of WeaponDeliveryVehicle.</param>
     /// <param name="firingItem">The GameObject firing this ordnance.</param>
     /// <param name="muzzlePosition">The muzzle position in worldSpace.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    public IOrdnance MakeOrdnanceInstance(ArmamentCategory category, GameObject firingItem, Vector3 muzzlePosition) {
+    public IOrdnance MakeOrdnanceInstance(WDVCategory deliveryVehicleCategory, GameObject firingItem, Vector3 muzzlePosition) {
         AOrdnance prefab;
         GameObject ordnanceGo;
-        switch (category) {
-            case ArmamentCategory.Beam:
+        switch (deliveryVehicleCategory) {
+            case WDVCategory.Beam:
                 prefab = RequiredPrefabs.Instance.beam;
                 ordnanceGo = UnityUtility.AddChild(firingItem, prefab.gameObject);
                 break;
-            case ArmamentCategory.Missile:
+            case WDVCategory.Missile:
                 prefab = RequiredPrefabs.Instance.missile;
                 ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingItem.GetComponent<Collider>());
                 break;
-            case ArmamentCategory.Projectile:
+            case WDVCategory.Projectile:
                 prefab = RequiredPrefabs.Instance.projectile;
                 ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingItem.GetComponent<Collider>());
                 break;
-            case ArmamentCategory.None:
+            case WDVCategory.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));
         }
         ordnanceGo.layer = (int)Layers.Ordnance;
         ordnanceGo.transform.position = muzzlePosition;

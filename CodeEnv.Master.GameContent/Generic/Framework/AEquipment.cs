@@ -29,14 +29,14 @@ namespace CodeEnv.Master.GameContent {
         public virtual string Name { get { return Stat.Name; } }
 
         public AtlasID ImageAtlasID { get { return Stat.ImageAtlasID; } }
-
         public string ImageFilename { get { return Stat.ImageFilename; } }
-
         public string Description { get { return Stat.Description; } }
 
-        public float PhysicalSize { get { return Stat.PhysicalSize; } }
-
+        public float Size { get { return Stat.Size; } }
+        public float Mass { get { return Stat.Mass; } }
         public float PowerRequirement { get { return Stat.PowerRequirement; } }
+        public float Expense { get { return Stat.Expense; } }
+
 
         private bool _isOperational;
         /// <summary>

@@ -23,6 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BeamProjector : AWeapon {
 
+        /// <summary>
+        /// The firing duration in hours.
+        /// </summary>
         public float Duration { get { return Stat.Duration; } }
 
         private ITerminatableOrdnance _activeOrdnance;

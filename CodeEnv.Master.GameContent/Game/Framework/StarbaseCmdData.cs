@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -50,13 +51,25 @@ namespace CodeEnv.Master.GameContent {
         public override Index3D SectorIndex { get { return _sectorIndex; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
+        /// Initializes a new instance of the <see cref="StarbaseCmdData"/> class
+        /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="stat">The stat.</param>
         /// <param name="owner">The owner.</param>
         public StarbaseCmdData(Transform cmdTransform, StarbaseCmdStat stat, Player owner)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
+            : this(cmdTransform, stat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StarbaseCmdData"/> class.
+        /// </summary>
+        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="stat">The stat.</param>
+        /// <param name="owner">The owner.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        public StarbaseCmdData(Transform cmdTransform, StarbaseCmdStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner, passiveCMs) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
             _sectorIndex = References.SectorGrid.GetSectorIndex(Position);

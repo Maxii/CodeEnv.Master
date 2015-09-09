@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface for Countermeasures, both passive and active.
-    /// <remarks>Needed to tie together ActiveCountermeasure and PassiveCountermeasure 
-    /// which don't derive from a common Countermeasure base class.</remarks>
+    /// Interface for Countermeasures - passive, active and shields.
+    /// <remarks>Needed to tie together ActiveCountermeasure, PassiveCountermeasure and
+    /// ShieldGenerator which don't derive from a common Countermeasure base class.</remarks>
     /// </summary>
     public interface ICountermeasure {
 

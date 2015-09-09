@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Math\FloatEqualityComparer.cs" />
     <Compile Include="Generic\IO\AXmlReader.cs" />
     <Compile Include="Game\Gameplay\IntelCoverage.cs" />
     <Compile Include="Generic\IO\IGameInputHelper.cs" />

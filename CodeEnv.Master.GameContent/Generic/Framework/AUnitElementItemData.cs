@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public IList<AWeapon> Weapons { get; private set; }
         public IList<Sensor> Sensors { get; private set; }
         public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
+        public IList<ShieldGenerator> ShieldGenerators { get; private set; }
 
         private bool _isHQ;
         public virtual bool IsHQ {
@@ -72,6 +73,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<RangeDistance>(ref _sensorRange, value, "SensorRange"); }
         }
 
+        private RangeDistance _shieldRange;
+        /// <summary>
+        /// The RangeDistance profile of the shields of this element.
+        /// </summary>
+        public RangeDistance ShieldRange {
+            get { return _shieldRange; }
+            set { SetProperty<RangeDistance>(ref _shieldRange, value, "ShieldRange"); }
+        }
+
         private float _science;
         public float Science {
             get { return _science; }
@@ -98,76 +108,79 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
+        protected AHullStat HullStat { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitElementItemData" /> class.
         /// </summary>
         /// <param name="elementTransform">The element transform.</param>
-        /// <param name="name">The name of the Element.</param>
-        /// <param name="mass">The mass of the Element.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
+        /// <param name="hullStat">The hull stat.</param>
         /// <param name="owner">The owner.</param>
-        public AUnitElementItemData(Transform elementTransform, string name, float mass, float maxHitPoints, Player owner)
-            : base(elementTransform, name, maxHitPoints, owner) {
+        /// <param name="weapons">The weapons.</param>
+        /// <param name="activeCMs">The active countermeasures.</param>
+        /// <param name="sensors">The sensors.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="shieldGenerators">The shield generators.</param>
+        public AUnitElementItemData(Transform elementTransform, AHullStat hullStat, Player owner, IEnumerable<AWeapon> weapons,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
+            : base(elementTransform, hullStat.Name, hullStat.MaxHitPoints, owner, passiveCMs) {
+            HullStat = hullStat;
+            Initialize(hullStat, weapons, activeCMs, sensors, passiveCMs, shieldGenerators);
+        }
+
+        private void Initialize(AHullStat hullStat, IEnumerable<AWeapon> weapons, IEnumerable<ActiveCountermeasure> activeCMs,
+            IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators) {
+            float mass = hullStat.Mass + weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             Mass = mass;
-            elementTransform.rigidbody.mass = mass;
-            Weapons = new List<AWeapon>();
-            Sensors = new List<Sensor>();
-            ActiveCountermeasures = new List<ActiveCountermeasure>();
+            _itemTransform.rigidbody.mass = mass;
+
+            Expense = hullStat.Expense + weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
+
+            Initialize(weapons);
+            Initialize(sensors);
+            Initialize(activeCMs);
+            Initialize(shieldGenerators);
         }
 
-        public void AddWeapon(AWeapon weapon) {
-            D.Assert(weapon.RangeMonitor != null);
-            D.Assert(!weapon.IsOperational);    // Items make equipment operational after completing the adding process
-            D.Assert(!Weapons.Contains(weapon));
-            Weapons.Add(weapon);
-            weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-            // no need to recalc weapons values as this occurs when IsOperational changes
+        private void Initialize(IEnumerable<AWeapon> weapons) {
+            Weapons = weapons.ToList();
+            Weapons.ForAll(weap => {
+                D.Assert(weap.RangeMonitor != null);
+                D.Assert(!weap.IsOperational);    // Items make equipment operational when the item becomes operational
+                weap.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+                // no need to recalc weapons values as this occurs when IsOperational changes
+            });
         }
 
-        public void AddSensor(Sensor sensor) {
-            // D.Assert(sensor.RangeMonitor != null);  Note: Unlike Weapons and ActiveCountermeasures, Sensors can be added to elements 
-            // without a RangeMonitor attached. This is because the element adding the sensor may not yet have a Command attached 
-            // and SensorRangeMonitors get attached to Cmds, not elements.
-            D.Assert(!sensor.IsOperational);    // Items make equipment operational after completing the adding process
-            D.Assert(!Sensors.Contains(sensor));
-            Sensors.Add(sensor);
-            sensor.onIsOperationalChanged += OnSensorIsOperationalChanged;
-            // no need to recalc sensor values as this occurs when IsOperational changes
+        private void Initialize(IEnumerable<ActiveCountermeasure> activeCMs) {
+            ActiveCountermeasures = activeCMs.ToList();
+            ActiveCountermeasures.ForAll(cm => {
+                D.Assert(cm.RangeMonitor != null);
+                D.Assert(!cm.IsOperational);    // Items make equipment operational when the item becomes operational
+                cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
+            });
         }
 
-        public void AddCountermeasure(ActiveCountermeasure cm) {
-            D.Assert(cm.RangeMonitor != null);
-            D.Assert(!cm.IsOperational);    // Items make equipment operational after completing the adding process
-            D.Assert(!ActiveCountermeasures.Contains(cm));
-            ActiveCountermeasures.Add(cm);
-            cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
+        private void Initialize(IEnumerable<Sensor> sensors) {
+            Sensors = sensors.ToList();
+            Sensors.ForAll(s => {
+                D.Assert(s.RangeMonitor == null);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
+                // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
+                // and SensorRangeMonitors get attached to Cmds, not elements.
+                D.Assert(!s.IsOperational);    // Items make equipment operational when the item becomes operational
+                s.onIsOperationalChanged += OnSensorIsOperationalChanged;
+                // no need to recalc sensor values as this occurs when IsOperational changes
+            });
         }
 
-        /// <summary>
-        /// Removes the weapon from the Element's collection of weapons.
-        /// </summary>
-        /// <param name="weapon">The weapon.</param>
-        public void RemoveWeapon(AWeapon weapon) {
-            D.Assert(Weapons.Contains(weapon));
-            D.Assert(!weapon.IsOperational);    // Items make equipment non-operational when beginning the removal process
-            Weapons.Remove(weapon);
-            weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
-            // no need to recalc weapon values as this occurs when IsOperational changes
-        }
-
-        public void RemoveSensor(Sensor sensor) {
-            D.Assert(Sensors.Contains(sensor));
-            D.Assert(!sensor.IsOperational);    // Items make equipment non-operational when beginning the removal process
-            Sensors.Remove(sensor);
-            sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
-            // no need to recalc sensor values as this occurs when IsOperational changes
-        }
-
-        public void RemoveCountermeasure(ActiveCountermeasure cm) {
-            D.Assert(ActiveCountermeasures.Contains(cm));
-            D.Assert(!cm.IsOperational);    // Items make equipment non-operational when beginning the removal process
-            ActiveCountermeasures.Remove(cm);
-            cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged;
+        private void Initialize(IEnumerable<ShieldGenerator> generators) {
+            ShieldGenerators = generators.ToList();
+            ShieldGenerators.ForAll(gen => {
+                D.Assert(gen.Shield != null);
+                D.Assert(!gen.IsOperational);    // Items make equipment operational when the item becomes operational
+                gen.onIsOperationalChanged += OnShieldGeneratorIsOperationalChanged;
+                // no need to recalc generator values as this occurs when IsOperational changes
+            });
         }
 
         private void OnIsHQChanged() {
@@ -181,6 +194,11 @@ namespace CodeEnv.Master.GameContent {
         private void OnWeaponIsOperationalChanged(AEquipment weapon) {
             RecalcWeaponsRange();
             RecalcOffensiveStrength();
+        }
+
+        private void OnShieldGeneratorIsOperationalChanged(AEquipment generator) {
+            RecalcShieldRange();
+            RecalcDefensiveValues();
         }
 
         private void RecalcSensorRange() {
@@ -204,12 +222,24 @@ namespace CodeEnv.Master.GameContent {
             WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
+        private void RecalcShieldRange() {
+            var operationalGenerators = ShieldGenerators.Where(gen => gen.IsOperational);
+            var shortRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Short);
+            var mediumRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Medium);
+            var longRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Long);
+            float shortRangeDistance = shortRangeOpGenerators.Any() ? shortRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeOpGenerators.Any() ? mediumRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeOpGenerators.Any() ? longRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+            ShieldRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+        }
+
         protected override void RecalcDefensiveValues() {
-            var defaultValueIfEmpty = default(DamageStrength);
-            List<ICountermeasure> activeAndPassiveCountermeasures = new List<ICountermeasure>(PassiveCountermeasures.Cast<ICountermeasure>());
-            activeAndPassiveCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
-            DamageMitigation = activeAndPassiveCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
-            DefensiveStrength = new CombatStrength(activeAndPassiveCountermeasures);
+            List<ICountermeasure> allCountermeasures = new List<ICountermeasure>(PassiveCountermeasures.Cast<ICountermeasure>());
+            allCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
+            allCountermeasures.AddRange(ShieldGenerators.Cast<ICountermeasure>());
+            var cmDamageMitigation = allCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
+            DamageMitigation = HullStat.DamageMitigation + cmDamageMitigation;
+            DefensiveStrength = new CombatStrength(allCountermeasures, HullStat.DamageMitigation);
         }
 
         private void RecalcOffensiveStrength() {
@@ -221,6 +251,7 @@ namespace CodeEnv.Master.GameContent {
             Weapons.ForAll(w => w.onIsOperationalChanged -= OnWeaponIsOperationalChanged);
             Sensors.ForAll(s => s.onIsOperationalChanged -= OnSensorIsOperationalChanged);
             ActiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+            ShieldGenerators.ForAll(gen => gen.onIsOperationalChanged -= OnShieldGeneratorIsOperationalChanged);
         }
 
     }

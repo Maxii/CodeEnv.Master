@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable struct containing externally acquirable values for Facilities.
     /// </summary>
+    [System.Obsolete]
     public struct FacilityStat {
 
         public string Name { get; private set; }

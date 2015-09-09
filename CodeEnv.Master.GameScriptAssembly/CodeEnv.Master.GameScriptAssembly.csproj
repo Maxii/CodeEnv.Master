@@ -53,9 +53,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\ADetectableRangeMonitor.cs" />
+    <Compile Include="Generic\Framework\AEquipmentMonitor.cs" />
+    <Compile Include="Generic\Framework\AColliderMonitor.cs" />
     <Compile Include="Game\Framework\ActiveCountermeasureRangeMonitor.cs" />
-    <Compile Include="Generic\Framework\AMonitor.cs" />
-    <Compile Include="Generic\Framework\ARangedEquipmentMonitor.cs" />
+    <Compile Include="Game\Framework\Shield.cs" />
     <Compile Include="Generic\Graphics\DestroyEffectOnCompletion.cs" />
     <Compile Include="Game\Framework\AIntelItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />

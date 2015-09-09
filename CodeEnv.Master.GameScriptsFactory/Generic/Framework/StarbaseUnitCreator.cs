@@ -27,30 +27,32 @@ using UnityEngine;
 /// <summary>
 /// Initialization class that deploys a Starbase at the location of this StarbaseCreator. 
 /// </summary>
-public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, StarbaseCmdItem> {
+public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityHullStat, StarbaseCmdItem> {
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override FacilityStat CreateElementStat(FacilityCategory category, string elementName) {
-        float science = category == FacilityCategory.Laboratory ? 10F : Constants.ZeroF;
-        float culture = category == FacilityCategory.CentralHub || category == FacilityCategory.Colonizer ? 2.5F : Constants.ZeroF;
-        float income = __GetIncome(category);
-        float expense = __GetExpense(category);
-        return new FacilityStat(elementName, 10000F, 50F, category, science, culture, income, expense);
+    protected override FacilityHullStat CreateElementHullStat(FacilityCategory hullCat, string elementName) {
+        float science = hullCat == FacilityCategory.Laboratory ? 10F : Constants.ZeroF;
+        float culture = hullCat == FacilityCategory.CentralHub || hullCat == FacilityCategory.Colonizer ? 2.5F : Constants.ZeroF;
+        float income = __GetIncome(hullCat);
+        float expense = __GetExpense(hullCat);
+        float hullMass = TempGameValues.__GetHullMass(hullCat);
+        return new FacilityHullStat(hullCat, elementName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
+            hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
     }
 
-    protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats) {
-        return _factory.MakeInstance(stat, Topography.OpenSpace, wStats, passiveCmStats, activeCmStats, sensorStats, _owner);
+    protected override FacilityItem MakeElement(FacilityHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+        return _factory.MakeInstance(hullStat, Topography.OpenSpace, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
     }
 
-    protected override void PopulateElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, ref FacilityItem element) {
-        _factory.PopulateInstance(stat, Topography.OpenSpace, wStats, passiveCmStats, activeCmStats, sensorStats, _owner, ref element);
+    protected override void PopulateElement(FacilityHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref FacilityItem element) {
+        _factory.PopulateInstance(hullStat, Topography.OpenSpace, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref element);
     }
 
-    protected override FacilityCategory GetCategory(FacilityStat stat) {
-        return stat.Category;
+    protected override FacilityCategory GetCategory(FacilityHullStat hullStat) {
+        return hullStat.Category;
     }
 
     protected override FacilityCategory GetCategory(FacilityItem element) {

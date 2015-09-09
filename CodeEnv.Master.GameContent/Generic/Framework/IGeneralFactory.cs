@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="muzzlePosition">The muzzle position in worldSpace.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        IOrdnance MakeOrdnanceInstance(ArmamentCategory category, GameObject firingItem, Vector3 muzzlePosition);
+        IOrdnance MakeOrdnanceInstance(WDVCategory category, GameObject firingItem, Vector3 muzzlePosition);
 
 
     }

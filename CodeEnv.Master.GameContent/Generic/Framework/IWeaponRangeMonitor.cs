@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IWeaponRangeMonitor.cs
-// Interface allowing access to the associated Unity-compiled script. 
+// Interface for access to a WeaponRangeMonitor.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,22 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Interface allowing access to the associated Unity-compiled script. 
-    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
+    /// Interface for access to a WeaponRangeMonitor.
     /// </summary>
     public interface IWeaponRangeMonitor : IRangedEquipmentMonitor {
 
-        IUnitElementItem ParentItem { set; }
-
-        void Add(AWeapon weapon);
-
-        /// <summary>
-        /// Removes the specified weapon. Returns <c>true</c> if this monitor
-        /// is still in use (has weapons remaining even if not operational), <c>false</c> otherwise.
-        /// </summary>
-        /// <param name="weapon">The weapon.</param>
-        /// <returns></returns>
-        bool Remove(AWeapon weapon);
+        IUnitElementItem ParentItem { set; get; }
 
         /// <summary>
         /// Checks the line of sight from this monitor (element) to the provided enemy target, returning <c>true</c>

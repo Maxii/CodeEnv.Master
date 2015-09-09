@@ -53,7 +53,9 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         }
 
         creator.weaponsPerElement = EditorGUILayout.IntSlider("Weapons/Element", creator.weaponsPerElement, 0, 5);
-        creator.countermeasuresPerElement = EditorGUILayout.IntSlider("CMs/Element", creator.countermeasuresPerElement, 0, 5);
+        creator.activeCMsPerElement = EditorGUILayout.IntSlider("ActiveCMs/Element", creator.activeCMsPerElement, 0, 5);
+        creator.shieldGeneratorsPerElement = EditorGUILayout.IntSlider("ShieldGens/Element", creator.shieldGeneratorsPerElement, 0, 5);
+        creator.passiveCMsPerElement = EditorGUILayout.IntSlider("PassiveCMs/Element", creator.passiveCMsPerElement, 0, 5);
         creator.sensorsPerElement = EditorGUILayout.IntSlider("Sensors/Element", creator.sensorsPerElement, 0, 5);
         creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("CMs/Cmd", creator.countermeasuresPerCmd, 0, 3);
 

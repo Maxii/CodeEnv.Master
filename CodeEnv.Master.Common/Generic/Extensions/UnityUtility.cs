@@ -28,15 +28,9 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class UnityUtility {
 
-        private static Vector3EqualityComparer _vector3EqualityComparer;
-        public static Vector3EqualityComparer Vector3EqualityComparer {
-            get {
-                if (_vector3EqualityComparer == null) {
-                    _vector3EqualityComparer = new Vector3EqualityComparer();
-                }
-                return _vector3EqualityComparer;
-            }
-        }
+        public static readonly IEqualityComparer<float> FloatEqualityComparer = new FloatEqualityComparer();
+
+        public static readonly IEqualityComparer<Vector3> Vector3EqualityComparer = new Vector3EqualityComparer();
 
         /// <summary>
         /// Determines whether the world point provided is currently within the viewport of the main camera.
@@ -190,7 +184,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Instantiates an object and adds it to the specified parent with all local
-        /// values reset. Removes Clone from name. WARNING: Awake() can be called immediately after Instantiation, even before
+        /// values reset. Removes Clone from name. WARNING: Awake() is called immediately after Instantiation, even before
         /// being attached to a parent.
         /// </summary>
         /// <param name="parent">The object to parent too. If null, the object is instantiated without a parent.</param>

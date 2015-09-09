@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float GameSpeedAdjustedDeltaTimeOrPaused {
             get {
-                WarnIfGameInstanceNotRunning();
+                //WarnIfGameInstanceNotRunning();   // Jobs can call this even when IsRunning = false when launching new game within old game
                 if (_gameMgr.IsPaused) {
                     return Constants.ZeroF;
                 }

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FormationStationMonitor.cs
-// Monitors whether the assigned ship is within the radius of it's Station in the Formation.
+// Detects whether the assigned ship IsOnStation in the Fleet Formation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,17 +22,24 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Monitors whether the assigned ship is within the radius of it's Station in the Formation.
+/// Detects whether the assigned ship IsOnStation in the Fleet Formation.
 /// </summary>
-public class FormationStationMonitor : AMonitor, INavigableTarget {
+public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
+
+    private static string _nameFormat = "{0}[{1}]";
 
     public bool IsOnStation { get; private set; }   // OPTIMIZE Eliminate collider and just test for distance to ship < stationRadius?
 
-    public float StationRadius { get; private set; }
+    public override string Name {
+        get {
+            string shipName = AssignedShip == null ? "(unassigned)" : AssignedShip.FullName;
+            return _nameFormat.Inject(GetType().Name, shipName);
+        }
+    }
 
     private Vector3 _stationOffset;
     /// <summary>
-    /// The Vector3 offset of this formation station from the HQ Element.
+    /// The offset of this formation station from the HQ Element.
     /// </summary>
     public Vector3 StationOffset {
         get { return _stationOffset; }
@@ -40,6 +47,9 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
     }
 
     private IShipItem _assignedShip;
+    /// <summary>
+    /// The ship assigned to this Station in the Formation.
+    /// </summary>
     public IShipItem AssignedShip {
         get { return _assignedShip; }
         set { SetProperty<IShipItem>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged); }
@@ -50,10 +60,19 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
     /// </summary>
     public Vector3 VectorToStation { get { return Position - AssignedShip.Position; } }
 
+    /// <summary>
+    /// Manually detects whether the ship is on station by seeing whether the ship's position is inside the collider bounds.
+    /// </summary>
+    private bool IsShipAlreadyOnStation {
+        get { return _collider.bounds.Contains(AssignedShip.Position); }
+    }
+
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        if (other.isTrigger) { return; }
-        D.Log("{0}.{1} OnTriggerEnter() tripped by Collider {2}.", FullName, GetType().Name, other.name);
+        if (other.isTrigger) {
+            return;
+        }
+        //D.Log("{0}.{1} OnTriggerEnter() tripped by Collider {2}.", FullName, GetType().Name, other.name);
         var arrivingShip = other.gameObject.GetInterface<IShipItem>();
         if (arrivingShip != null) {
             if (arrivingShip == AssignedShip) {
@@ -64,8 +83,10 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
 
     protected override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        if (other.isTrigger) { return; }
-        D.Log("{0}.{1} OnTriggerExit() tripped by Collider {2}.", FullName, GetType().Name, other.name);
+        if (other.isTrigger) {
+            return;
+        }
+        //D.Log("{0}.{1} OnTriggerExit() tripped by Collider {2}.", FullName, GetType().Name, other.name);
         var departingShip = other.gameObject.GetInterface<IShipItem>();
         if (departingShip != null) {
             if (departingShip == AssignedShip) {
@@ -76,9 +97,8 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
 
     private void OnAssignedShipChanged() {
         if (AssignedShip != null) {
-            StationRadius = AssignedShip.Radius * 5F;
-            D.Log("Radius of {0} assigned to {1} set to {2:0.0000}.", GetType().Name, AssignedShip.FullName, StationRadius);
-            _collider.radius = StationRadius;
+            RangeDistance = AssignedShip.Radius * 5F;
+            //D.Log("Radius of {0} assigned to {1} set to {2:0.0000}.", GetType().Name, AssignedShip.FullName, RangeDistance);
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
             IsOnStation = IsShipAlreadyOnStation;
@@ -87,6 +107,7 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
         else {
             IsOperational = false;
             IsOnStation = false;
+            RangeDistance = Constants.ZeroF;
         }
     }
 
@@ -101,16 +122,6 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
 
     protected override void OnIsOperationalChanged() { }
 
-    /// <summary>
-    /// Manually detects whether the ship is on station by seeing whether the ship's
-    /// position is inside the collider bounds.
-    /// </summary>
-    private bool IsShipAlreadyOnStation {
-        get { return _collider.bounds.Contains(AssignedShip.Position); }
-    }
-
-    protected override void Cleanup() { }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
@@ -119,12 +130,7 @@ public class FormationStationMonitor : AMonitor, INavigableTarget {
 
     public string DisplayName { get { return FullName; } }
 
-    public string FullName {
-        get {
-            string msg = AssignedShip == null ? " (unassigned)" : string.Format(" ({0})", AssignedShip.FullName);
-            return GetType().Name + msg;
-        }
-    }
+    public string FullName { get { return Name; } }
 
     public Vector3 Position { get { return _transform.position; } }
 

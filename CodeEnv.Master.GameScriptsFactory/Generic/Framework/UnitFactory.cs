@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -38,6 +39,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _settlementCmdPrefab;
 
     private GameObject _countermeasureRangeMonitorPrefab;
+    private GameObject _shieldPrefab;
     private GameObject _weaponRangeMonitorPrefab;
     private GameObject _sensorRangeMonitorPrefab;
     private GameObject _formationStationPrefab;
@@ -56,6 +58,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _settlementCmdPrefab = reqdPrefabs.settlementCmd.gameObject;
 
         _countermeasureRangeMonitorPrefab = reqdPrefabs.countermeasureRangeMonitor.gameObject;
+        _shieldPrefab = reqdPrefabs.shield.gameObject;
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
         _sensorRangeMonitorPrefab = reqdPrefabs.sensorRangeMonitor.gameObject;
         _formationStationPrefab = reqdPrefabs.formationStation.gameObject;
@@ -65,13 +68,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Makes an unparented, unenabled FleetCommand instance for the owner.
     /// </summary>
     /// <param name="cmdStat">The stat for this Cmd.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, Player owner) {
+    public FleetCmdItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _fleetCmdPrefab);
         var cmd = cmdGo.GetSafeMonoBehaviour<FleetCmdItem>();
-        MakeInstance(cmdStat, cmStats, owner, ref cmd);
+        MakeInstance(cmdStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
 
@@ -79,13 +82,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided item instance with data from the stat object.  The Item  will not be enabled.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, Player owner, ref FleetCmdItem item) {
+    public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref FleetCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new FleetCmdData(item.Transform, cmdStat, owner) { };
-        AttachCountermeasures(cmStats, item);
+        var passiveCMs = MakeCountermeasures(passiveCmStats);
+        item.Data = new FleetCmdData(item.Transform, cmdStat, owner, passiveCMs);
     }
 
     /// <summary>
@@ -133,57 +136,72 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an instance of an element based on the shipStat provided. The Item  will not be enabled,
+    /// Makes an instance of an element based on the ShipHullStat provided. The Item  will not be enabled,
     /// nor will their gameObject have a parent. The element has yet to be assigned to a Command.
     /// </summary>
-    /// <param name="shipStat">The ship stat.</param>
-    /// <param name="weapStats">The weap stats.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="hullStat">The hull stat.</param>
+    /// <param name="engineStat">The engine stat.</param>
+    /// <param name="combatStance">The combat stance.</param>
     /// <param name="owner">The owner.</param>
+    /// <param name="weapStats">The weap stats.</param>
+    /// <param name="passiveCmStats">The passive cm stats.</param>
+    /// <param name="activeCmStats">The active cm stats.</param>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="shieldGenStats">The shield generator stats.</param>
     /// <returns></returns>
-    public ShipItem MakeInstance(ShipStat shipStat, IEnumerable<WeaponStat> weapStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, Player owner) {
-        GameObject shipPrefabGo = _shipPrefabs.Single(s => s.category == shipStat.Category).gameObject;
+    public ShipItem MakeInstance(ShipHullStat hullStat, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
+        IEnumerable<WeaponStat> weapStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+        GameObject shipPrefabGo = _shipPrefabs.Single(s => s.category == hullStat.Category).gameObject;
         GameObject shipGoClone = UnityUtility.AddChild(null, shipPrefabGo);
 
         ShipItem item = shipGoClone.GetSafeMonoBehaviour<ShipItem>();
-        PopulateInstance(shipStat, weapStats, passiveCmStats, activeCmStats, sensorStats, owner, ref item);
+        PopulateInstance(hullStat, engineStat, combatStance, owner, weapStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref item);
         return item;
     }
 
     /// <summary>
-    /// Populates the provided item instance with data from the shipStat object. The item will not be enabled.
+    /// Populates the provided item instance with data from the ShipHullStat object. The item will not be enabled.
     /// The element has yet to be assigned to a Command.
     /// </summary>
-    /// <param name="shipStat">The ship stat.</param>
-    /// <param name="weapStats">The weap stats.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="hullStat">The hull stat.</param>
+    /// <param name="engineStat">The engine stat.</param>
+    /// <param name="combatStance">The combat stance.</param>
     /// <param name="owner">The owner.</param>
+    /// <param name="weapStats">The weap stats.</param>
+    /// <param name="passiveCmStats">The passive cm stats.</param>
+    /// <param name="activeCmStats">The active cm stats.</param>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="shieldGenStats">The shield generator stats.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(ShipStat shipStat, IEnumerable<WeaponStat> weapStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, Player owner, ref ShipItem item) {
+    public void PopulateInstance(ShipHullStat hullStat, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
+        IEnumerable<WeaponStat> weapStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref ShipItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var categoryFromItem = item.category;
-        D.Assert(shipStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(shipStat.Category.GetValueName(), categoryFromItem.GetValueName()));
-        item.Data = new ShipData(item.Transform, shipStat, owner) { };
-        AttachCountermeasures(passiveCmStats, activeCmStats, item);
-        AttachWeapons(weapStats, item);
-        AttachSensors(sensorStats, item);
+        D.Assert(hullStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(hullStat.Category.GetValueName(), categoryFromItem.GetValueName()));
+
+        var weapons = MakeWeapons(weapStats, item);
+        var passiveCMs = MakeCountermeasures(passiveCmStats);
+        var activeCMs = MakeCountermeasures(activeCmStats, item);
+        var sensors = MakeSensors(sensorStats);
+        var shieldGenerators = MakeShieldGenerators(shieldGenStats, item);
+
+        ShipData data = new ShipData(item.Transform, hullStat, engineStat, combatStance, owner, weapons, activeCMs, sensors, passiveCMs, shieldGenerators);
+        item.Data = data;
     }
 
     /// <summary>
     /// Makes an unparented, unenabled StarbaseCmd instance for the owner.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, Player owner) {
+    public StarbaseCmdItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeMonoBehaviour<StarbaseCmdItem>();
-        PopulateInstance(cmdStat, cmStats, owner, ref cmd);
+        PopulateInstance(cmdStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
 
@@ -191,26 +209,26 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided StarbaseCmd instance with data from the stat object. The item will not be enabled.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, Player owner, ref StarbaseCmdItem item) {
+    public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new StarbaseCmdData(item.Transform, cmdStat, owner) { };
-        AttachCountermeasures(cmStats, item);
+        var passiveCMs = MakeCountermeasures(passiveCmStats);
+        item.Data = new StarbaseCmdData(item.Transform, cmdStat, owner, passiveCMs);
     }
 
     /// <summary>
     /// Makes an unparented, unenabled SettlementCmd instance for the owner.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, Player owner) {
+    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _settlementCmdPrefab);
         SettlementCmdItem cmd = cmdGo.GetSafeMonoBehaviour<SettlementCmdItem>();
-        PopulateInstance(cmdStat, cmStats, owner, ref cmd);
+        PopulateInstance(cmdStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
 
@@ -218,35 +236,37 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided SettlementCmd instance with data from the stat object. The item will not be enabled.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, Player owner, ref SettlementCmdItem item) {
+    public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new SettlementCmdData(item.Transform, cmdStat, owner) {
+        var passiveCMs = MakeCountermeasures(passiveCmStats);
+        item.Data = new SettlementCmdData(item.Transform, cmdStat, owner, passiveCMs) {
             Approval = UnityEngine.Random.Range(.01F, 1.0F)
         };
-        AttachCountermeasures(cmStats, item);
     }
 
     /// <summary>
     /// Makes an instance of a facility based on the stats provided. The facility will not be enabled.
-    /// As the Facility is not yet attached to a Command, the GameObject will have no parent and will not yet have
-    /// a formation position assigned.
+    /// As the Facility is not yet attached to a Command, the GameObject will have no parent and will not yet have a formation position assigned.
     /// </summary>
-    /// <param name="facStat">The facility stat.</param>
+    /// <param name="hullStat">The hull stat.</param>
     /// <param name="topography">The topography.</param>
-    /// <param name="wStats">The weapon stats.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
     /// <param name="owner">The owner.</param>
+    /// <param name="weapStats">The weapon stats.</param>
+    /// <param name="passiveCmStats">The passive cm stats.</param>
+    /// <param name="activeCmStats">The active cm stats.</param>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="shieldGenStats">The shield generator stats.</param>
     /// <returns></returns>
-    public FacilityItem MakeInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, Player owner) {
-        GameObject facilityPrefabGo = _facilityPrefabs.Single(f => f.category == facStat.Category).gameObject;
+    public FacilityItem MakeInstance(FacilityHullStat hullStat, Topography topography, Player owner, IEnumerable<WeaponStat> weapStats,
+        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
+        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+        GameObject facilityPrefabGo = _facilityPrefabs.Single(f => f.category == hullStat.Category).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
         FacilityItem item = facilityGoClone.GetSafeMonoBehaviour<FacilityItem>();
-        PopulateInstance(facStat, topography, wStats, passiveCmStats, activeCmStats, sensorStats, owner, ref item);
+        PopulateInstance(hullStat, topography, owner, weapStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref item);
         return item;
     }
 
@@ -254,22 +274,29 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided facility instance with data from the stat objects. The facility will not be enabled.
     /// The element has yet to be assigned to a Command.
     /// </summary>
-    /// <param name="facStat">The fac stat.</param>
+    /// <param name="hullStat">The hull stat.</param>
     /// <param name="topography">The topography.</param>
-    /// <param name="wStats">The weapon stats.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
     /// <param name="owner">The owner.</param>
+    /// <param name="weapStats">The weapon stats.</param>
+    /// <param name="passiveCmStats">The passive cm stats.</param>
+    /// <param name="activeCmStats">The active cm stats.</param>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="shieldGenStats">The shield generator stats.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, Player owner, ref FacilityItem item) {
+    public void PopulateInstance(FacilityHullStat hullStat, Topography topography, Player owner, IEnumerable<WeaponStat> weapStats,
+        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
+        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref FacilityItem item) {
         var categoryFromItem = item.category;
-        D.Assert(facStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(facStat.Category.GetValueName(), categoryFromItem.GetValueName()));
-        FacilityData data = new FacilityData(item.Transform, facStat, topography, owner) { };
+        D.Assert(hullStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(hullStat.Category.GetValueName(), categoryFromItem.GetValueName()));
+
+        var weapons = MakeWeapons(weapStats, item);
+        var passiveCMs = MakeCountermeasures(passiveCmStats);
+        var activeCMs = MakeCountermeasures(activeCmStats, item);
+        var sensors = MakeSensors(sensorStats);
+        var shieldGenerators = MakeShieldGenerators(shieldGenStats, item);
+
+        FacilityData data = new FacilityData(item.Transform, hullStat, topography, owner, weapons, activeCMs, sensors, passiveCMs, shieldGenerators);
         item.Data = data;
-        AttachCountermeasures(passiveCmStats, activeCmStats, item);
-        AttachWeapons(wStats, item);
-        AttachSensors(sensorStats, item);
     }
 
     public FormationStationMonitor MakeFormationStationInstance(Vector3 stationOffset, FleetCmdItem fleetCmd) {
@@ -277,7 +304,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject formationStationsFolder = null;
         var stations = fleetCmd.gameObject.GetComponentsInChildren<FormationStationMonitor>();
         if (stations.IsNullOrEmpty()) {
-            formationStationsFolder = new GameObject("FormationStations");
+            formationStationsFolder = new GameObject("Formation Stations");
             UnityUtility.AttachChildToParent(formationStationsFolder, fleetCmd.gameObject);
             formationStationsFolder.layer = (int)Layers.IgnoreRaycast;
         }
@@ -287,36 +314,126 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, _formationStationPrefab);
         FormationStationMonitor station = stationGo.GetSafeMonoBehaviour<FormationStationMonitor>();
+        station.ParentItem = fleetCmd;
         station.StationOffset = stationOffset;
         //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
         return station;
     }
 
-    private void AttachWeapons(IEnumerable<WeaponStat> weapStats, AUnitElementItem elementItem) {
-        weapStats.ForAll(wStat => elementItem.AddWeapon(wStat)); // separate method as can't use a ref variable in a lambda expression
-    }
-
-    private void AttachCountermeasures(IEnumerable<PassiveCountermeasureStat> passiveCmStats, AUnitCmdItem cmdItem) {
-        passiveCmStats.ForAll(cmStat => cmdItem.AddCountermeasure(cmStat));
-    }
-
-    private void AttachCountermeasures(IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, AUnitElementItem elementItem) {
-        passiveCmStats.ForAll(cmStat => elementItem.AddCountermeasure(cmStat));
-        activeCmStats.ForAll(cmStat => elementItem.AddCountermeasure(cmStat));
-    }
-
-    private void AttachSensors(IEnumerable<SensorStat> sensorStats, AUnitElementItem elementItem) {
-        sensorStats.ForAll(sensorStat => elementItem.AddSensor(sensorStat));
+    /// <summary>
+    /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures donot use RangeMonitors.
+    /// </summary>
+    /// <param name="passiveCmStats">The cm stats.</param>
+    /// <returns></returns>
+    private IEnumerable<PassiveCountermeasure> MakeCountermeasures(IEnumerable<PassiveCountermeasureStat> passiveCmStats) {
+        var passiveCMs = new List<PassiveCountermeasure>(passiveCmStats.Count());
+        passiveCmStats.ForAll(stat => passiveCMs.Add(new PassiveCountermeasure(stat)));
+        return passiveCMs;
     }
 
     /// <summary>
-    /// Makes or acquires an existing WeaponRangeMonitor and pairs it with this weapon.
+    /// Makes and returns active countermeasures made from the provided stats including attaching them to a RangeMonitor of the element.
+    /// </summary>
+    /// <param name="activeCmStats">The cm stats.</param>
+    /// <param name="element">The element.</param>
+    /// <returns></returns>
+    private IEnumerable<ActiveCountermeasure> MakeCountermeasures(IEnumerable<ActiveCountermeasureStat> activeCmStats, AUnitElementItem element) {
+        var activeCMs = new List<ActiveCountermeasure>(activeCmStats.Count());
+        activeCmStats.ForAll(stat => {
+            var activeCM = new ActiveCountermeasure(stat);
+            activeCMs.Add(activeCM);
+            AttachMonitor(activeCM, element);
+        });
+        return activeCMs;
+    }
+
+    /// <summary>
+    /// Makes and returns sensors made from the provided stats including attaching them to a RangeMonitor of the element.
+    /// </summary>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <returns></returns>
+    private IEnumerable<Sensor> MakeSensors(IEnumerable<SensorStat> sensorStats) {
+        var sensors = new List<Sensor>(sensorStats.Count());
+        sensorStats.ForAll(stat => sensors.Add(new Sensor(stat)));
+        return sensors;
+    }
+
+    /// <summary>
+    /// Makes and returns weapons made from the provided stats including attaching them to a RangeMonitor of the element.
+    /// </summary>
+    /// <param name="weapStats">The weapon stats.</param>
+    /// <param name="element">The element.</param>
+    /// <returns></returns>
+    private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponStat> weapStats, AUnitElementItem element) {
+        var weapons = new List<AWeapon>(weapStats.Count());
+        weapStats.ForAll(stat => {
+            AWeapon weapon;
+            switch (stat.DeliveryVehicleCategory) {
+                case WDVCategory.Beam:
+                    weapon = new BeamProjector(stat);
+                    break;
+                case WDVCategory.Projectile:
+                    weapon = new ProjectileLauncher(stat);
+                    break;
+                case WDVCategory.Missile:
+                    weapon = new MissileLauncher(stat);
+                    break;
+                case WDVCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(stat.DeliveryVehicleCategory));
+            }
+            weapons.Add(weapon);
+            AttachMonitor(weapon, element);
+        });
+        return weapons;
+    }
+
+    private IEnumerable<ShieldGenerator> MakeShieldGenerators(IEnumerable<ShieldGeneratorStat> genStats, AUnitElementItem element) {
+        var generators = new List<ShieldGenerator>(genStats.Count());
+        genStats.ForAll(gStat => {
+            var generator = new ShieldGenerator(gStat);
+            generators.Add(generator);
+            AttachShield(generator, element);
+        });
+        return generators;
+    }
+
+    /// <summary>
+    /// Makes or acquires an existing Shield and attaches it to this generator.
+    /// Note: The monitor will be added and its events hooked up to the element when the element's data is attached.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    /// <param name="element">The element that owns the weapon and has weapon monitors as children.</param>
-    /// <returns></returns>
-    public IWeaponRangeMonitor MakeMonitorInstance(AWeapon weapon, AUnitElementItem element) {
+    /// <param name="element">The element.</param>
+    private void AttachShield(ShieldGenerator generator, AUnitElementItem element) {
+        var allShields = element.gameObject.GetComponentsInChildren<Shield>();
+        var shieldsInUse = allShields.Where(s => s.RangeCategory != RangeCategory.None);
+
+        // check shields for range fit, if find it, assign shield, if not assign unused or create a new shield and assign it
+        var shield = shieldsInUse.FirstOrDefault(s => s.RangeCategory == generator.RangeCategory);
+        if (shield == null) {
+            var unusedShields = allShields.Except(shieldsInUse);
+            if (unusedShields.Any()) {
+                shield = unusedShields.First();
+            }
+            else {
+                GameObject shieldGo = UnityUtility.AddChild(element.gameObject, _shieldPrefab);
+                shieldGo.layer = (int)Layers.Shields;  // AddChild resets prefab layer to elementGo's layer
+                shield = shieldGo.GetSafeFirstMonoBehaviourInChildren<Shield>();
+            }
+            shield.ParentItem = element;
+            D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(Shield).Name, generator.Name);
+        }
+        shield.Add(generator);
+    }
+
+    /// <summary>
+    /// Makes or acquires an existing WeaponRangeMonitor and attaches it to this weapon.
+    /// Note: The monitor will be added and its events hooked up to the element when the element's data is attached.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="element">The element.</param>
+    private void AttachMonitor(AWeapon weapon, AUnitElementItem element) {
+        D.Assert(weapon.RangeMonitor == null);
         var allMonitors = element.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
         var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 
@@ -336,16 +453,16 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
         monitor.Add(weapon);
-        return monitor;
     }
 
     /// <summary>
-    /// Makes or acquires an existing CountermeasureRangeMonitor and pairs it with this countermeasure.
+    /// Makes or acquires an existing ActiveCountermeasureRangeMonitor and attaches it to this active countermeasure.
+    /// Note: The monitor will be added and its events hooked up to the element when the element's data is attached.
     /// </summary>
     /// <param name="countermeasure">The countermeasure.</param>
-    /// <param name="element">The element that owns the countermeasure and has countermeasure monitors as children.</param>
-    /// <returns></returns>
-    public IActiveCountermeasureRangeMonitor MakeMonitorInstance(ActiveCountermeasure countermeasure, AUnitElementItem element) {
+    /// <param name="element">The element.</param>
+    private void AttachMonitor(ActiveCountermeasure countermeasure, AUnitElementItem element) {
+        D.Assert(countermeasure.RangeMonitor == null);
         var allMonitors = element.gameObject.GetComponentsInChildren<ActiveCountermeasureRangeMonitor>();
         var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 
@@ -365,11 +482,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
         }
         monitor.Add(countermeasure);
-        return monitor;
     }
 
     /// <summary>
     /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.
+    /// <remarks>This method is public as it is used by the command when an element is attached to it.</remarks>
     /// </summary>
     /// <param name="sensor">The sensor from one of the command's elements.</param>
     /// <param name="command">The command that has sensor monitors as children.</param>

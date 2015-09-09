@@ -46,7 +46,9 @@ public abstract class ACreator : AMonoBase {
     public int yearDelay = 0;
 
     public int weaponsPerElement = 2;
-    public int countermeasuresPerElement = 2;
+    public int activeCMsPerElement = 2;
+    public int shieldGeneratorsPerElement = 2;
+    public int passiveCMsPerElement = 2;
     public int sensorsPerElement = 2;
     public int countermeasuresPerCmd = 2;
 

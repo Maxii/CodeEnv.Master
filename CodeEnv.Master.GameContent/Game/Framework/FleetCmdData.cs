@@ -109,13 +109,25 @@ namespace CodeEnv.Master.GameContent {
         public override Index3D SectorIndex { get { return HQElementData.SectorIndex; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetCmdData" /> class.
+        /// Initializes a new instance of the <see cref="FleetCmdData"/> class
+        /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="stat">The stat.</param>
         /// <param name="owner">The owner.</param>
         public FleetCmdData(Transform cmdTransform, FleetCmdStat stat, Player owner)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
+            : this(cmdTransform, stat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
+        /// </summary>
+        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="stat">The stat.</param>
+        /// <param name="owner">The owner.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        public FleetCmdData(Transform cmdTransform, FleetCmdStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner, passiveCMs) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
         }

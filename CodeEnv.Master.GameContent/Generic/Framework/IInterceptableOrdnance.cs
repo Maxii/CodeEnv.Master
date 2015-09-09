@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Weapon ordnance that can be intercepted by Active Countermeasures.
     /// </summary>
-    public interface IInterceptableOrdnance : IOrdnance {
+    public interface IInterceptableOrdnance : IOrdnance, IDetectable {
 
-        Vector3 Position { get; }
+        new Player Owner { get; }
 
-        DeliveryStrength VehicleStrength { get; }
+        WDVStrength DeliveryVehicleStrength { get; }
 
-        void TakeHit(DeliveryStrength interceptStrength);
+        void TakeHit(WDVStrength interceptStrength);
 
     }
 }

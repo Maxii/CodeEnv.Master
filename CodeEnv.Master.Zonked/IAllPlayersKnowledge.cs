@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IAllPlayersKnowledge {
 
-        void Add(Player player, IDetectable detectableItem);
+        void Add(Player player, ISensorDetectable detectableItem);
 
         //void Add(Player player, APlanetoidItem planetoid);
 

@@ -6,18 +6,18 @@
 // </copyright> 
 // <summary> 
 // File: AEquipmentStat.cs
-// Abstract base class for Equipment stats.
+// Immutable abstract base class for Equipment stats.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Abstract base class for Equipment stats.
+    /// Immutable abstract base class for Equipment stats.
     /// </summary>
     public abstract class AEquipmentStat {
 
@@ -29,9 +29,17 @@ namespace CodeEnv.Master.GameContent {
 
         public string Description { get; private set; }
 
-        public float PhysicalSize { get; private set; }
+        /// <summary>
+        /// The physical space this equipment requires or, in the case of a hull,
+        /// the physical space provided.
+        /// </summary>
+        public float Size { get; private set; }
+
+        public float Mass { get; private set; }
 
         public float PowerRequirement { get; private set; }
+
+        public float Expense { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipmentStat" /> class.
@@ -40,15 +48,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="size">The physical size of the device.</param>
-        /// <param name="pwrRqmt">The power required to operate the device.</param>
-        public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt) {
+        /// <param name="size">The physical size of the equipment.</param>
+        /// <param name="mass">The mass of the equipment.</param>
+        /// <param name="pwrRqmt">The power required to operate the equipment.</param>
+        /// <param name="expense">The expense required to operate this equipment.</param>
+        public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt, float expense) {
             Name = name;
             ImageAtlasID = imageAtlasID;
             ImageFilename = imageFilename;
             Description = description;
-            PhysicalSize = size;
+            Size = size;
+            Mass = mass;
             PowerRequirement = pwrRqmt;
+            Expense = expense;
         }
 
     }

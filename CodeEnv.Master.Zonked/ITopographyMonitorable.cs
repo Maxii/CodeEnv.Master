@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: WeaponCategory.cs
-// Enum delineating the different types of Armaments available.
+// File: ITopographyMonitorable.cs
+// Interface associated with Items that monitor their Topography boundaries.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,23 +19,16 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Enum delineating the different types of Armaments available.
+    /// Interface associated with Items that monitor their Topography boundries.
     /// </summary>
-    public enum ArmamentCategory {
+    [System.Obsolete]
+    public interface ITopographyMonitorable {
 
-        None,
+        Topography Topography { get; }
 
-        [EnumAttribute("B")]
-        Beam,
+        string FullName { get; }
 
-        [EnumAttribute("P")]
-        Projectile,
-
-        [EnumAttribute("M")]
-        Missile
-
-
-        // Particle
+        float Radius { get; }
 
     }
 }

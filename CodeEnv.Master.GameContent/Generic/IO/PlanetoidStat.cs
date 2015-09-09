@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetoidStat.cs
-// Immutable struct containing externally acquirable values for Planetoids, aka Planets and Moons.
+// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable struct containing externally acquirable values for Planetoids, aka Planets and Moons.
+    /// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
     /// </summary>
     public struct PlanetoidStat {
 

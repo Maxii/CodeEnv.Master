@@ -201,7 +201,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
 
             if (!isRangeMonitorStillInUse) {
-                monitor.ResetForReuse();
+                //monitor.ResetForReuse();
+                monitor.Reset();
                 SensorRangeMonitors.Remove(monitor);
                 //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
                 UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);

@@ -137,8 +137,26 @@ namespace CodeEnv.Master.GameContent {
             GameColor.DarkGreen
         };
 
-        public static float __GetMass(ShipCategory hull) {
-            switch (hull) {
+        public static float __GetHullMass(FacilityCategory hullCat) {
+            switch (hullCat) {
+                case FacilityCategory.CentralHub:
+                    return 10000F;
+                case FacilityCategory.Defense:
+                case FacilityCategory.Factory:
+                    return 5000F;
+                case FacilityCategory.Colonizer:
+                case FacilityCategory.Economic:
+                case FacilityCategory.Barracks:
+                case FacilityCategory.Laboratory:
+                    return 2000F;
+                case FacilityCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        public static float __GetHullMass(ShipCategory hullCat) {
+            switch (hullCat) {
                 case ShipCategory.Frigate:
                     return 50F;
                 case ShipCategory.Destroyer:
@@ -157,9 +175,39 @@ namespace CodeEnv.Master.GameContent {
                 case ShipCategory.Fighter:
                 case ShipCategory.None:
                 default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        public static float __GetEngineMass(ShipCategory hull) {
+            return __GetHullMass(hull) * 0.10F;
+        }
+
+        public static float __GetFullStlThrust(ShipCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
+            switch (hull) {
+                case ShipCategory.Frigate:
+                    return UnityEngine.Random.Range(5F, 15F);
+                case ShipCategory.Destroyer:
+                case ShipCategory.Support:
+                    return UnityEngine.Random.Range(10F, 30F);
+                case ShipCategory.Cruiser:
+                case ShipCategory.Colonizer:
+                case ShipCategory.Science:
+                    return UnityEngine.Random.Range(20F, 60F);
+                case ShipCategory.Dreadnaught:
+                case ShipCategory.Troop:
+                    return UnityEngine.Random.Range(40F, 120F);
+                case ShipCategory.Carrier:
+                    return UnityEngine.Random.Range(50F, 150F);
+                case ShipCategory.Scout:
+                case ShipCategory.Fighter:
+                case ShipCategory.None:
+                default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
             }
         }
+
+
 
         public static readonly Player NoPlayer = new NoPlayer();
 

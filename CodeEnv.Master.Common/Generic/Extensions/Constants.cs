@@ -184,6 +184,8 @@ namespace CodeEnv.Master.Common {
                 return _normalizedBoxVertices;
             }
         }
+
+
     }
 }
 

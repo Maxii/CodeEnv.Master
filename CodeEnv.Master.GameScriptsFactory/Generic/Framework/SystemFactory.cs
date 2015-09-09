@@ -141,12 +141,12 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(planetStat.Category == planet.category,
             "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName()));
 
-        planet.Data = new PlanetoidData(planet.Transform, planetStat) {   // new PlanetData(planetStat) {
+        var passiveCMs = MakeCountermeasures(cmStats);
+        planet.Data = new PlanetoidData(planet.Transform, planetStat, passiveCMs) {
             ParentName = parentSystemName
-            // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
-        AttachCountermeasures(cmStats, planet);
     }
+
 
     /// <summary>
     /// Makes an instance of a Moon based on the stat provided. The returned
@@ -179,11 +179,10 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(moonStat.Category == moon.category,
             "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName()));
 
-        moon.Data = new PlanetoidData(moon.Transform, moonStat) {   // new MoonData(moonStat) {
+        var passiveCMs = MakeCountermeasures(cmStats);
+        moon.Data = new PlanetoidData(moon.Transform, moonStat, passiveCMs) {
             ParentName = parentPlanetName
-            // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
-        AttachCountermeasures(cmStats, moon);
     }
 
     /// <summary>
@@ -217,8 +216,15 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         system.Data = data;
     }
 
-    private void AttachCountermeasures(IEnumerable<PassiveCountermeasureStat> cmStats, AMortalItem mortalItem) {
-        cmStats.ForAll(cmStat => mortalItem.AddCountermeasure(cmStat));
+    /// <summary>
+    /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures donot use RangeMonitors.
+    /// </summary>
+    /// <param name="cmStats">The cm stats.</param>
+    /// <returns></returns>
+    private IEnumerable<PassiveCountermeasure> MakeCountermeasures(IEnumerable<PassiveCountermeasureStat> cmStats) {
+        var passiveCMs = new List<PassiveCountermeasure>(cmStats.Count());
+        cmStats.ForAll(stat => passiveCMs.Add(new PassiveCountermeasure(stat)));
+        return passiveCMs;
     }
 
     public override string ToString() {

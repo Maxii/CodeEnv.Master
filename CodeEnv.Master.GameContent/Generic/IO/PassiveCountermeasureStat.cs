@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PassiveCountermeasureStat.cs
-// Stat for passive countermeasures.
+// Immutable Stat for passive countermeasures.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,15 +19,27 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Stat for passive countermeasures.
+    /// Immutable Stat for passive countermeasures.
     /// </summary>
     public class PassiveCountermeasureStat : AEquipmentStat {
 
         public DamageStrength DamageMitigation { get; private set; }
 
 
-        public PassiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PassiveCountermeasureStat"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
+        /// <param name="description">The description.</param>
+        /// <param name="size">The size.</param>
+        /// <param name="mass">The mass.</param>
+        /// <param name="pwrRqmt">The PWR RQMT.</param>
+        /// <param name="expense">The expense.</param>
+        /// <param name="damageMitigation">The damage mitigation.</param>
+        public PassiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt, float expense, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense) {
             DamageMitigation = damageMitigation;
         }
 
@@ -35,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the most basic <see cref="PassiveCountermeasureStat"/> class.
         /// </summary>
         public PassiveCountermeasureStat()
-            : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, new DamageStrength(1F, 1F, 1F)) {
+            : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, new DamageStrength(1F, 1F, 1F)) {
         }
 
         public override string ToString() {

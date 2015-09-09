@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable struct containing externally acquirable values for Ships.
     /// </summary>
+    [System.Obsolete]
     public struct ShipStat {
 
         public string Name { get; private set; }

@@ -32,7 +32,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string Name { get; protected set; }
 
-    public ArmamentCategory ArmamentCategory { get { return _weapon.ArmamentCategory; } }
+    public WDVCategory ArmamentCategory { get { return _weapon.ArmamDeliveryVehicleCategory
 
     public IElementAttackableTarget Target { get; private set; }
 

@@ -21,14 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IActiveCountermeasureRangeMonitor : IRangedEquipmentMonitor {
 
-        /// <summary>
-        /// Removes the specified countermeasure. Returns <c>true</c> if this monitor
-        /// is still in use (has countermeasures remaining even if not operational), <c>false</c> otherwise.
-        /// </summary>
-        /// <param name="weapon">The weapon.</param>
-        /// <returns></returns>
-        bool Remove(ActiveCountermeasure countermeasure);
-
 
     }
 }

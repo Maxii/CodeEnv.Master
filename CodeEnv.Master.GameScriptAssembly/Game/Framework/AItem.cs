@@ -45,6 +45,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         set {
             D.Assert(_data == null, "{0}.{1}.Data can only be set once.".Inject(FullName, GetType().Name));
             _data = value;
+            OnDataSet();
             SubscribeToDataValueChanges();
         }
     }
@@ -161,6 +162,13 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// </summary>
     public virtual void CommenceOperations() {
         IsOperational = true;
+    }
+
+    /// <summary>
+    /// Called once and only once when Data has been assigned to this item.
+    /// </summary>
+    protected virtual void OnDataSet() {
+        D.Assert(!IsOperational);
     }
 
     protected virtual void OnOwnerChanging(Player newOwner) {

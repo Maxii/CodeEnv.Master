@@ -17,19 +17,20 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using UnityEngine;
 
     /// <summary>
     /// Interface for targets that can be attacked by unit elements.
     /// </summary>
-    public interface IElementAttackableTarget : INavigableTarget {
-
-        event Action<IItem> onOwnerChanged;
+    public interface IElementAttackableTarget : INavigableTarget, ISensorDetectable {
 
         event Action<IMortalItem> onDeathOneShot;
 
-        Player Owner { get; }
+        new string FullName { get; }
 
-        bool IsOperational { get; }
+        new string DisplayName { get; }
+
+        new Vector3 Position { get; }
 
         void TakeHit(DamageStrength attackerStrength);
 

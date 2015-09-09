@@ -29,7 +29,8 @@ using UnityEngine;
 /// </summary>
 /// <typeparam name="EquipmentType">The type of Equipment.</typeparam>
 /// <typeparam name="ParentItemType">The type of the parent item.</typeparam>
-public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : AMonitor, IRangedEquipmentMonitor
+[Obsolete]
+public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : AColliderMonitor, IRangedEquipmentMonitor
     where EquipmentType : ARangedEquipment
     where ParentItemType : IMortalItem {
 
@@ -81,15 +82,15 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// <summary>
     /// All the detectable Items in range of this Monitor.
     /// </summary>
-    private IList<IDetectable> _itemsDetected;
-    private IList<IDetectable> __itemsDetectedViaWorkaround;
+    private IList<ISensorDetectable> _itemsDetected;
+    private IList<ISensorDetectable> __itemsDetectedViaWorkaround;
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        _itemsDetected = new List<IDetectable>();
+        _itemsDetected = new List<ISensorDetectable>();
         _attackableEnemyTargetsDetected = new List<IElementAttackableTarget>();
         _equipmentList = new List<EquipmentType>();
-        __itemsDetectedViaWorkaround = new List<IDetectable>();
+        __itemsDetectedViaWorkaround = new List<ISensorDetectable>();
     }
 
     public virtual void Add(EquipmentType pieceOfEquipment) {
@@ -112,21 +113,21 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// </summary>
     /// <param name="pieceOfEquipment">The piece of equipment.</param>
     /// <returns></returns>
-    public virtual bool Remove(EquipmentType pieceOfEquipment) {
-        D.Assert(!pieceOfEquipment.IsOperational);
-        D.Assert(_equipmentList.Contains(pieceOfEquipment));
+    //public virtual bool Remove(EquipmentType pieceOfEquipment) {
+    //    D.Assert(!pieceOfEquipment.IsOperational);
+    //    D.Assert(_equipmentList.Contains(pieceOfEquipment));
 
-        RemoveMonitorFrom(pieceOfEquipment);
-        pieceOfEquipment.onIsOperationalChanged -= OnEquipmentIsOperationalChanged;
-        _equipmentList.Remove(pieceOfEquipment);
-        if (_equipmentList.Count == Constants.Zero) {
-            return false;
-        }
-        // Note: no need to RefreshRangeDistance(); as it occurs when the equipment is made non-operational just before removal
-        return true;
-    }
+    //    RemoveMonitorFrom(pieceOfEquipment);
+    //    pieceOfEquipment.onIsOperationalChanged -= OnEquipmentIsOperationalChanged;
+    //    _equipmentList.Remove(pieceOfEquipment);
+    //    if (_equipmentList.Count == Constants.Zero) {
+    //        return false;
+    //    }
+    //    // Note: no need to RefreshRangeDistance(); as it occurs when the equipment is made non-operational just before removal
+    //    return true;
+    //}
 
-    protected abstract void RemoveMonitorFrom(EquipmentType pieceOfEquipment);
+    //protected abstract void RemoveMonitorFrom(EquipmentType pieceOfEquipment);
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
@@ -153,7 +154,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
             return;
         }
 
-        var detectedItem = other.gameObject.GetInterface<IDetectable>();
+        var detectedItem = other.gameObject.GetInterface<ISensorDetectable>();
         if (detectedItem == null) {
             var ordnance = other.gameObject.GetInterface<IOrdnance>();
             if (ordnance != null) {
@@ -167,7 +168,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
         }
         //D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
         if (!detectedItem.IsOperational) {
-            D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectable).Name, detectedItem.FullName);
+            D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(ISensorDetectable).Name, detectedItem.FullName);
             return;
         }
         AddDetectedItem(detectedItem);
@@ -185,14 +186,14 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
             return;
         }
 
-        var lostDetectionItem = other.gameObject.GetInterface<IDetectable>();
+        var lostDetectionItem = other.gameObject.GetInterface<ISensorDetectable>();
         if (lostDetectionItem != null) {
             //D.Log("{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionItem.FullName, Vector3.Distance(_transform.position, lostDetectionItem.Position));
             RemoveDetectedItem(lostDetectionItem);
         }
     }
 
-    private void OnEquipmentIsOperationalChanged(AEquipment pieceOfEquipment) {
+    protected void OnEquipmentIsOperationalChanged(AEquipment pieceOfEquipment) {
         RangeDistance = RefreshRangeDistance();
         /******************************************************************************************************
                     * OPTIMIZE A Sensor's operational status change affects RangeDistance as more sensors increase
@@ -208,14 +209,14 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// monitor. Default does nothing.
     /// </summary>
     /// <param name="newlyDetectedItem">The item just detected and now tracked.</param>
-    protected virtual void OnDetectedItemAdded(IDetectable newlyDetectedItem) { }
+    protected virtual void OnDetectedItemAdded(ISensorDetectable newlyDetectedItem) { }
 
     /// <summary>
     /// Called immediately after an item has been removed from the list of items detected by this
     /// monitor. Default does nothing.
     /// </summary>
     /// <param name="lostDetectionItem">The item whose detection was just lost and is no longer tracked .</param>
-    protected virtual void OnDetectedItemRemoved(IDetectable lostDetectionItem) { }
+    protected virtual void OnDetectedItemRemoved(ISensorDetectable lostDetectionItem) { }
 
     protected sealed override void OnIsOperationalChanged() {
         //D.Log("{0}.OnIsOperationalChanged() called. IsOperational: {1}.", Name, IsOperational);
@@ -228,10 +229,10 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     }
 
     /************************************************************************************************************************************
-      * Note: No reason to take a direct action in the monitor when the parentItem dies as the parentItem sets each equipment's
-      * IsOperational state to false when death occurs. The equipment will terminate ongoing operations, if any.
-      * The monitor's IsOperational state subsequently follows the change in all its equipment to false.
-      *************************************************************************************************************************************/
+           * Note: No reason to take a direct action in the monitor when the parentItem dies as the parentItem sets each equipment's
+           * IsOperational state to false when death occurs. The equipment will terminate ongoing operations, if any.
+           * The monitor's IsOperational state subsequently follows the change in all its equipment to false.
+           *************************************************************************************************************************************/
 
     private void OnRangeDistanceChanged() {
         //D.Log("{0} had its RangeDistance changed to {1:0.}.", Name, RangeDistance);
@@ -283,7 +284,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// </summary>
     /// <param name="item">The item.</param>
     private void OnDetectedItemOwnerChanged(IItem item) {
-        var alreadyTrackedDetectableItem = item as IDetectable;
+        var alreadyTrackedDetectableItem = item as ISensorDetectable;
         var target = alreadyTrackedDetectableItem as IElementAttackableTarget;
         if (target != null) {
             // an attackable target with an owner
@@ -345,7 +346,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// <param name="deadDetectedItem">The detected item that has died.</param>
     private void OnDetectedItemDeath(IMortalItem deadDetectedItem) {
         D.Assert(!deadDetectedItem.IsOperational);
-        RemoveDetectedItem(deadDetectedItem as IDetectable);
+        RemoveDetectedItem(deadDetectedItem as ISensorDetectable);
     }
 
     /// <summary>
@@ -353,7 +354,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// list of enemy targets being tracked.
     /// </summary>
     /// <param name="detectedItem">The detected item.</param>
-    private void AddDetectedItem(IDetectable detectedItem) {
+    private void AddDetectedItem(ISensorDetectable detectedItem) {
         D.Assert(detectedItem.IsOperational);
         if (!_itemsDetected.Contains(detectedItem)) {
             detectedItem.onOwnerChanged += OnDetectedItemOwnerChanged;
@@ -372,7 +373,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
         }
         else {
             if (!__itemsDetectedViaWorkaround.Contains(detectedItem)) {
-                D.Warn("{0} improperly attempted to add duplicate {1} {2}.", Name, typeof(IDetectable).Name, detectedItem.FullName);
+                D.Warn("{0} improperly attempted to add duplicate {1} {2}.", Name, typeof(ISensorDetectable).Name, detectedItem.FullName);
             }
             else {
                 //D.Log("{0} properly avoided adding duplicate {1} {2}.", Name, typeof(IDetectable).Name, detectedItem.FullName);
@@ -390,7 +391,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
     /// list of enemy targets being tracked. 
     /// </summary>
     /// <param name="previouslyDetectedItem">The detected item.</param>
-    private void RemoveDetectedItem(IDetectable previouslyDetectedItem) {
+    private void RemoveDetectedItem(ISensorDetectable previouslyDetectedItem) {
         bool isRemoved = _itemsDetected.Remove(previouslyDetectedItem);
         if (isRemoved) {
             previouslyDetectedItem.onOwnerChanged -= OnDetectedItemOwnerChanged;
@@ -399,7 +400,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
                 //D.Log("{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(IDetectable).Name, previouslyDetectedItem.FullName, Vector3.Distance(previouslyDetectedItem.Position, _transform.position));
             }
             else {
-                D.Log("{0} no longer tracking dead {1} {2}.", Name, typeof(IDetectable).Name, previouslyDetectedItem.FullName);
+                D.Log("{0} no longer tracking dead {1} {2}.", Name, typeof(ISensorDetectable).Name, previouslyDetectedItem.FullName);
             }
             var mortalItem = previouslyDetectedItem as IMortalItem;
             if (mortalItem != null) {
@@ -415,7 +416,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
         else {
             // Note: Sometimes OnTriggerExit fires when an Item is destroyed within the collider's radius. However, it is not reliable
             // so I remove it manually when I detect the item's death (prior to its destruction). When this happens, the item will no longer be present to be removed.
-            D.Log("{0} reports {1} {2} not present to be removed.", Name, typeof(IDetectable).Name, previouslyDetectedItem.FullName);
+            D.Log("{0} reports {1} {2} not present to be removed.", Name, typeof(ISensorDetectable).Name, previouslyDetectedItem.FullName);
         }
     }
 
@@ -480,7 +481,7 @@ public abstract class ARangedEquipmentMonitor<EquipmentType, ParentItemType> : A
         UnityUtility.WaitOneFixedUpdateToExecute(() => {
             // delay to allow monitor 1 fixed update to record items that it detects
             var allCollidersInRange = Physics.OverlapSphere(_transform.position, _collider.radius);
-            var allDetectableItemsInRange = allCollidersInRange.Where(c => c.gameObject.GetInterface<IDetectable>() != null).Select(c => c.gameObject.GetInterface<IDetectable>());
+            var allDetectableItemsInRange = allCollidersInRange.Where(c => c.gameObject.GetInterface<ISensorDetectable>() != null).Select(c => c.gameObject.GetInterface<ISensorDetectable>());
             //D.Log("{0} has detected the following items prior to attempting workaround: {1}.", Name, _itemsDetected.Select(i => i.FullName).Concatenate());
             var undetectedDetectableItems = allDetectableItemsInRange.Except(_itemsDetected);
             if (undetectedDetectableItems.Any()) {

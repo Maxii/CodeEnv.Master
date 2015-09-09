@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ITopographyMonitorable.cs
-// Interface associated with Items that monitor their Topography boundaries.
+// File: IShield.cs
+// Interface for access to a Shield[Monitor].
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,18 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// Interface associated with Items that monitor their Topography boundries.
+    /// Interface for access to a Shield[Monitor].
     /// </summary>
-    public interface ITopographyMonitorable {
-
-        Topography Topography { get; }
-
-        string FullName { get; }
-
-        float Radius { get; }
+    public interface IShield : IRangedEquipmentMonitor {
 
     }
 }

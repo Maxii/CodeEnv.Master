@@ -6,11 +6,11 @@
 // </copyright> 
 // <summary> 
 // File: ActiveCountermeasureStat.cs
-// Stat for an active countermeasure.
+// Immutable Stat for an active countermeasure.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -19,13 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Stat for an active countermeasure.
+    /// Immutable Stat for an active countermeasure.
     /// </summary>
     public class ActiveCountermeasureStat : ARangedEquipmentStat {
 
         private static string _toStringFormat = "{0}({1}, {2})";
 
-        public DeliveryStrength InterceptStrength { get; private set; }
+        public WDVStrength InterceptStrength { get; private set; }
 
         public float InterceptAccuracy { get; private set; }
 
@@ -33,8 +33,27 @@ namespace CodeEnv.Master.GameContent {
 
         public DamageStrength DamageMitigation { get; private set; }
 
-        public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float pwrRqmt, RangeCategory rangeCat, float baseRangeDistance, DeliveryStrength interceptStrength, float accuracy, float reloadPeriod, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, pwrRqmt, rangeCat, baseRangeDistance) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ActiveCountermeasureStat"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
+        /// <param name="description">The description.</param>
+        /// <param name="size">The size.</param>
+        /// <param name="mass">The mass.</param>
+        /// <param name="pwrRqmt">The PWR RQMT.</param>
+        /// <param name="expense">The expense.</param>
+        /// <param name="rangeCat">The range cat.</param>
+        /// <param name="baseRangeDistance">The base range distance.</param>
+        /// <param name="interceptStrength">The intercept strength.</param>
+        /// <param name="accuracy">The accuracy.</param>
+        /// <param name="reloadPeriod">The reload period.</param>
+        /// <param name="damageMitigation">The damage mitigation.</param>
+        public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
+            float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength interceptStrength,
+            float accuracy, float reloadPeriod, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
             InterceptStrength = interceptStrength;
             InterceptAccuracy = accuracy;
             ReloadPeriod = reloadPeriod;

@@ -66,7 +66,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
         }
 
-
         public IWeaponRangeMonitor RangeMonitor { get; set; }
 
         public override string Name {
@@ -79,9 +78,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ArmamentCategory ArmamentCategory { get { return DeliveryStrength.Vehicle; } }
+        public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
 
-        public DeliveryStrength DeliveryStrength { get { return Stat.DeliveryStrength; } }
+        public WDVStrength DeliveryVehicleStrength { get { return Stat.DeliveryVehicleStrength; } }
 
         public DamageStrength DamagePotential { get { return Stat.DamagePotential; } }
 
@@ -129,10 +128,9 @@ namespace CodeEnv.Master.GameContent {
                     * calls OnEnemyTargetInRangeChanged(), niether or both.
                     *******************************************************************************************************************************/
 
-        /*********************************************************************************************************
-                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all 
-                     * weapons when it initiates dying.
-                     **********************************************************************************************************/
+        /***********************************************************************************************************************************************
+                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all  equipment when it initiates dying.
+                     **********************************************************************************************************************************************/
 
         /// <summary>
         /// Called when an ownership change of either the ParentElement or a tracked target requires 
@@ -198,7 +196,6 @@ namespace CodeEnv.Master.GameContent {
         public void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
             D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn));
-            //D.Assert(ordnanceFired.ArmamentCategory == ArmamentCategory);
 
             D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
@@ -215,7 +212,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public void OnFiringComplete(IOrdnance ordnanceFired) {
-            //D.Assert(ordnanceFired.ArmamentCategory == ArmamentCategory);
             D.Assert(!_isLoaded);
             D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
 
@@ -276,7 +272,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Recursive method that tries to pick a target from a list of possibleTargets. Returns <c>true</c>
-        /// if a target was picked, <c>false</c> is not.
+        /// if a target was picked, <c>false</c> if not.
         /// </summary>
         /// <param name="possibleTargets">The possible targets.</param>
         /// <param name="enemyTgt">The enemy target returned.</param>
