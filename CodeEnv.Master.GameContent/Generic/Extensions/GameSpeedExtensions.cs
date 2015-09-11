@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameSpeedExtensions {
 
-        private static XmlGameSpeedPropertyReader _xmlReader = XmlGameSpeedPropertyReader.Instance;
+        private static GameSpeedXmlPropertyReader _xmlReader = GameSpeedXmlPropertyReader.Instance;
 
         public static float SpeedMultiplier(this GameSpeed gameSpeed) {
             switch (gameSpeed) {
@@ -45,10 +45,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #region Nested Classes
+
         /// <summary>
         /// Parses GameSpeed.xml used to provide externalized values for the GameSpeed enum.
         /// </summary>
-        public sealed class XmlGameSpeedPropertyReader : AXmlEnumPropertyReader<XmlGameSpeedPropertyReader> {
+        private sealed class GameSpeedXmlPropertyReader : AEnumXmlPropertyReader<GameSpeedXmlPropertyReader> {
 
             private float _slowestMultiplier;
             public float SlowestMultiplier {
@@ -100,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             protected override Type EnumType { get { return typeof(GameSpeed); } }
 
-            private XmlGameSpeedPropertyReader() {
+            private GameSpeedXmlPropertyReader() {
                 Initialize();
             }
 
@@ -109,6 +111,9 @@ namespace CodeEnv.Master.GameContent {
             }
 
         }
+
+        #endregion
+
     }
 }
 

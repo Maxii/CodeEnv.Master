@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -25,33 +25,24 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Singleton. Abstract, generic base Factory that makes instances of IconInfo for Commands.
-    /// As searching XML docs to find the filename is expensive, this implementation caches and reuses the 
-    /// IconInfo instances, even though they are structures. 
     /// </summary>
     /// <typeparam name="ReportType">The type of the Report.</typeparam>
     /// <typeparam name="FactoryType">The type of the derived factory.</typeparam>
-    public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AXmlReader<FactoryType>
+    public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AGenericSingleton<FactoryType>
         where ReportType : ACmdReport
         where FactoryType : ACmdIconInfoFactory<ReportType, FactoryType> {
 
-        private string _sectionTagName = "Section";
-        private string _sectionAttributeTagName = "SectionName";
-        private string _selectionTagName = "Selection";
-        private string _criteriaTagName = "Criteria";
-        private string _iconFilenameTagName = "Filename";
-
-        protected override string RootTagName { get { return "Icon"; } }
         protected abstract AtlasID AtlasID { get; }
 
         private IDictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>> _infoCache;
 
-        protected override void InitializeValuesAndReferences() {
-            base.InitializeValuesAndReferences();
+        protected override void Initialize() {
             _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>();
+            // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
         }
 
         /// <summary>
-        /// Makes an instance of IIconInfo. Clients should only use this method to make IIconInfo 
+        /// Makes an instance of IconInfo. Clients should only use this method to make IonInfo 
         /// as they are compared against each other to determine equality.
         /// </summary>
         /// <param name="cmdReport">The Command's Report.</param>
@@ -128,6 +119,8 @@ namespace CodeEnv.Master.GameContent {
             return new IconInfo(filename, AtlasID, color);
         }
 
+        protected abstract string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria);
+
         private bool TryCheckCache(IconSection section, GameColor color, out IconInfo info, params IconSelectionCriteria[] criteria) {
             IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>> colorCache;
             if (_infoCache.TryGetValue(section, out colorCache)) {
@@ -167,7 +160,22 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private string AcquireFilename(IconSection section, IconSelectionCriteria[] criteria) {
+    }
+
+    #region Nested Classes
+
+    public abstract class ACmdIconInfoXmlReader<ReaderType> : AXmlReader<ReaderType>
+        where ReaderType : ACmdIconInfoXmlReader<ReaderType> {
+
+        private string _sectionTagName = "Section";
+        private string _sectionAttributeTagName = "SectionName";
+        private string _selectionTagName = "Selection";
+        private string _criteriaTagName = "Criteria";
+        private string _iconFilenameTagName = "Filename";
+
+        protected sealed override string RootTagName { get { return "Icon"; } }
+
+        public string AcquireFilename(IconSection section, IconSelectionCriteria[] criteria) {
             XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(section.GetValueName())).Single();
             var selectionNodes = sectionNode.Elements(_selectionTagName);
             foreach (var selectionNode in selectionNodes) {
@@ -182,6 +190,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
     }
+
+    #endregion
 }
 
 

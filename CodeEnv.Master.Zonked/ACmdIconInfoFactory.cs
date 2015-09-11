@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACmdIconInfoFactory.cs
-// Singleton. Abstract, generic base Factory that makes instances of IIconInfo for Commands, caches and reuses them.
+// Singleton. Abstract, generic base Factory that makes instances of IconInfo for Commands.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,29 +19,36 @@ namespace CodeEnv.Master.GameContent {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Xml.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
 
     /// <summary>
-    /// Singleton. Abstract, generic base Factory that makes instances of IIconInfo for Commands, caches and reuses them. The reuse is critical as
-    /// the object's equality comparer (same instance in memory) is used by the client of the factory to determine which icon is currently showing.
+    /// Singleton. Abstract, generic base Factory that makes instances of IconInfo for Commands.
+    /// As searching XML docs to find the filename is expensive, this implementation caches and reuses the 
+    /// IconInfo instances, even though they are structures. 
     /// </summary>
-    /// <typeparam name="IconInfoType">The type of the IconInfo.</typeparam>
     /// <typeparam name="ReportType">The type of the Report.</typeparam>
-    /// <typeparam name="FactoryType">The type of the Factory.</typeparam>
-    [System.Obsolete]
-    public abstract class ACmdIconInfoFactory<IconInfoType, ReportType, FactoryType> : AGenericSingleton<FactoryType>
-        where IconInfoType : AIconInfo
+    /// <typeparam name="FactoryType">The type of the derived factory.</typeparam>
+    [Obsolete]
+    public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AXmlReader<FactoryType>
         where ReportType : ACmdReport
-        where FactoryType : class {
+        where FactoryType : ACmdIconInfoFactory<ReportType, FactoryType> {
 
+        private string _sectionTagName = "Section";
+        private string _sectionAttributeTagName = "SectionName";
+        private string _selectionTagName = "Selection";
+        private string _criteriaTagName = "Criteria";
+        private string _iconFilenameTagName = "Filename";
+
+        protected override string RootTagName { get { return "Icon"; } }
         protected abstract AtlasID AtlasID { get; }
 
-        private IDictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, AIconInfo>> _infoCache;
+        private IDictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>> _infoCache;
 
-        protected override void Initialize() {
-            _infoCache = new Dictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, AIconInfo>>();
+        protected override void InitializeValuesAndReferences() {
+            base.InitializeValuesAndReferences();
+            _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>();
         }
 
         /// <summary>
@@ -49,17 +56,12 @@ namespace CodeEnv.Master.GameContent {
         /// as they are compared against each other to determine equality.
         /// </summary>
         /// <param name="cmdReport">The Command's Report.</param>
-        /// <param name="size">The size of the icon in pixels.</param>
-        /// <param name="placement">The placement of the icon wrt the Command.</param>
         /// <returns></returns>
-        public IIconInfo MakeInstance(ReportType cmdReport, Vector2 size, WidgetPlacement placement) {
+        public IconInfo MakeInstance(ReportType cmdReport) {
             IconSection section = GetIconSection();
             IconSelectionCriteria[] criteria = GetSelectionCriteria(cmdReport);
-            var iconInfo = MakeInstance(section, criteria);
-            iconInfo.AtlasID = AtlasID;
-            iconInfo.Size = size;
-            iconInfo.Placement = placement;
-            iconInfo.Color = cmdReport.Owner != null ? cmdReport.Owner.Color : GameColor.White;
+            GameColor color = cmdReport.Owner != null ? cmdReport.Owner.Color : GameColor.White;
+            var iconInfo = GetInstance(section, color, criteria);
             return iconInfo;
         }
 
@@ -106,49 +108,78 @@ namespace CodeEnv.Master.GameContent {
         protected virtual IconSection GetIconSection() { return IconSection.Base; }
 
         /// <summary>
-        /// Makes or retrieves an already made instance of AIconInfo based on the provided section and criteria. 
-        /// These instances hold the filename and color of the icon. The AtlasID, placement and size of the icon will be added later. 
-        /// Clients should only use this method to make IIconInfo as they are compared against each other to determine equality.
+        /// Makes or retrieves an already made instance of IconInfo based on the provided section, color and criteria.
+        /// These instances hold the filename, atlas and color of the icon. 
         /// </summary>
         /// <param name="section">The section.</param>
+        /// <param name="color">The color.</param>
         /// <param name="criteria">The criteria.</param>
         /// <returns></returns>
-        private AIconInfo MakeInstance(IconSection section, params IconSelectionCriteria[] criteria) {
-            AIconInfo info;
-            if (!TryCheckCache(section, out info, criteria)) {
-                info = (IconInfoType)Activator.CreateInstance(typeof(IconInfoType), section, criteria);
-                RecordToCache(info, section, criteria);
+        private IconInfo GetInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
+            IconInfo info;
+            if (!TryCheckCache(section, color, out info, criteria)) {
+                info = MakeInstance(section, color, criteria);
+                RecordToCache(info, section, color, criteria);
             }
             return info;
         }
 
-        private bool TryCheckCache(IconSection section, out AIconInfo info, params IconSelectionCriteria[] criteria) {
-            IDictionary<IEnumerable<IconSelectionCriteria>, AIconInfo> criteriaCache;
-            if (_infoCache.TryGetValue(section, out criteriaCache)) {
-                IList<IEnumerable<IconSelectionCriteria>> cacheCritieraList = criteriaCache.Keys.ToList();
-                foreach (var criteriaSequenceInCache in cacheCritieraList) {
-                    // Note: cannot use SequenceEquals as enums don't implement IComparable<T>, just IComparable
-                    bool criteriaIsEqual = criteriaSequenceInCache.OrderBy(c => c).SequenceEqual(criteria.OrderBy(c => c));
-                    if (criteriaIsEqual) {
-                        IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
-                        info = criteriaCache[criteriaKey];
-                        D.Log("A {0} has been reused from cache.", typeof(IconInfoType).Name);
-                        return true;
+        private IconInfo MakeInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
+            string filename = AcquireFilename(section, criteria);
+            return new IconInfo(filename, AtlasID, color);
+        }
+
+        private bool TryCheckCache(IconSection section, GameColor color, out IconInfo info, params IconSelectionCriteria[] criteria) {
+            IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>> colorCache;
+            if (_infoCache.TryGetValue(section, out colorCache)) {
+                IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo> criteriaCache;
+                if (colorCache.TryGetValue(color, out criteriaCache)) {
+                    IList<IEnumerable<IconSelectionCriteria>> cacheCritieraList = criteriaCache.Keys.ToList();
+                    foreach (var criteriaSequenceInCache in cacheCritieraList) {
+                        // Note: cannot use SequenceEquals as enums don't implement IComparable<T>, just IComparable
+                        bool criteriaIsEqual = criteriaSequenceInCache.OrderBy(c => c).SequenceEqual(criteria.OrderBy(c => c));
+                        if (criteriaIsEqual) {
+                            IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
+                            info = criteriaCache[criteriaKey];
+                            D.Log("{0} has been reused from cache.", info);
+                            return true;
+                        }
                     }
                 }
             }
-            info = null;
+            info = default(IconInfo);
             return false;
         }
 
-        private void RecordToCache(AIconInfo info, IconSection section, params IconSelectionCriteria[] criteria) {
+        private void RecordToCache(IconInfo info, IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
             if (!_infoCache.ContainsKey(section)) {
-                _infoCache.Add(section, new Dictionary<IEnumerable<IconSelectionCriteria>, AIconInfo>());
+                _infoCache.Add(section, new Dictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>());
             }
-            IDictionary<IEnumerable<IconSelectionCriteria>, AIconInfo> criteriaCache = _infoCache[section];
+
+            var colorCache = _infoCache[section];
+            if (!colorCache.ContainsKey(color)) {
+                colorCache.Add(color, new Dictionary<IEnumerable<IconSelectionCriteria>, IconInfo>());
+            }
+
+            var criteriaCache = colorCache[color];
             if (!criteriaCache.ContainsKey(criteria)) {
                 criteriaCache.Add(criteria, info);
+                D.Log("{0} has been added to cache.", info);
             }
+        }
+
+        private string AcquireFilename(IconSection section, IconSelectionCriteria[] criteria) {
+            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(section.GetValueName())).Single();
+            var selectionNodes = sectionNode.Elements(_selectionTagName);
+            foreach (var selectionNode in selectionNodes) {
+                var criteriaValues = selectionNode.Elements(_criteriaTagName).Select(node => node.Value);
+                if (criteriaValues.OrderBy(v => v).SequenceEqual(criteria.Select(c => c.GetValueName()).OrderBy(n => n))) {
+                    // found the criteria values we were looking for in this node
+                    return selectionNode.Element(_iconFilenameTagName).Value;
+                }
+            }
+            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, section.GetValueName(), criteria.Concatenate());
+            return string.Empty;
         }
 
     }

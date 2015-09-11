@@ -53,6 +53,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\ACmdIconInfoFactory.cs" />
+    <Compile Include="Game\Graphics\FleetIconInfoFactory.cs" />
     <Compile Include="Generic\IO\AHullStat.cs" />
     <Compile Include="Generic\IO\EngineStat.cs" />
     <Compile Include="Generic\IO\FacilityHullStat.cs" />
@@ -78,8 +80,6 @@
     <Compile Include="Game\GUI\PlanetoidDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\ColoredStringBuilder.cs" />
     <Compile Include="Game\GUI\FacilityDisplayInfoFactory.cs" />
-    <Compile Include="Generic\Graphics\ACmdIconInfoFactory.cs" />
-    <Compile Include="Game\Graphics\FleetIconInfoFactory.cs" />
     <Compile Include="Generic\Graphics\ADisplayManager.cs" />
     <Compile Include="Generic\Graphics\AElementDisplayManager.cs" />
     <Compile Include="Generic\Graphics\AIconDisplayManager.cs" />
@@ -227,8 +227,6 @@
     <Compile Include="Generic\Graphics\AtlasID.cs" />
     <Compile Include="Generic\Graphics\ITrackingWidgetFactory.cs" />
     <Compile Include="Generic\Graphics\IconInfo.cs" />
-    <Compile Include="Game\Graphics\SettlementIconInfoFactory.cs" />
-    <Compile Include="Game\Graphics\StarbaseIconInfoFactory.cs" />
     <Compile Include="Generic\Extensions\ResourceIDExtensions.cs" />
     <Compile Include="Game\Gameplay\ResourceID.cs" />
     <Compile Include="Game\Gameplay\ResourceCategory.cs" />
@@ -246,9 +244,7 @@
     <Compile Include="Generic\Graphics\ISelectedItemHudWindow.cs" />
     <Compile Include="Generic\Graphics\ITooltipHudWindow.cs" />
     <Compile Include="Generic\IO\NewGamePreferenceSettings.cs" />
-    <Compile Include="Generic\IO\LeaderFactory.cs" />
     <Compile Include="Generic\IO\LeaderStat.cs" />
-    <Compile Include="Generic\IO\SpeciesFactory.cs" />
     <Compile Include="Generic\IO\SpeciesStat.cs" />
     <Compile Include="Generic\Framework\RangeDistance.cs" />
     <Compile Include="Generic\Framework\ITerminatableOrdnance.cs" />
@@ -263,6 +259,10 @@
     <Compile Include="Generic\Framework\IShield.cs" />
     <Compile Include="Generic\Framework\ShieldGenerator.cs" />
     <Compile Include="Generic\Framework\ShieldGeneratorStat.cs" />
+    <Compile Include="Generic\IO\LeaderFactory.cs" />
+    <Compile Include="Game\Graphics\SettlementIconInfoFactory.cs" />
+    <Compile Include="Generic\IO\SpeciesFactory.cs" />
+    <Compile Include="Game\Graphics\StarbaseIconInfoFactory.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />

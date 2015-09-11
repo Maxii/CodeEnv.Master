@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class ResourceIDExtensions {
 
-        private static XmlResourceIDPropertyReader _xmlReader = XmlResourceIDPropertyReader.Instance;
+        private static ResourceIDXmlPropertyReader _xmlReader = ResourceIDXmlPropertyReader.Instance;
 
         public static string GetImageFilename(this ResourceID resourceID) {
             switch (resourceID) {
@@ -138,10 +138,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #region Nested Classes
+
         /// <summary>
         /// Parses ResourceID.xml used to provide externalized values for the ResourceID enum.
         /// </summary>
-        public sealed class XmlResourceIDPropertyReader : AXmlEnumPropertyReader<XmlResourceIDPropertyReader> {
+        private sealed class ResourceIDXmlPropertyReader : AEnumXmlPropertyReader<ResourceIDXmlPropertyReader> {
 
             #region Organics
 
@@ -442,7 +444,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             protected override Type EnumType { get { return typeof(ResourceID); } }
 
-            private XmlResourceIDPropertyReader() {
+            private ResourceIDXmlPropertyReader() {
                 Initialize();
             }
 
@@ -451,6 +453,8 @@ namespace CodeEnv.Master.GameContent {
             }
 
         }
+
+        #endregion
     }
 }
 

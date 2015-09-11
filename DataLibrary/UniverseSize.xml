@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Be careful where comments are placed! -->
+<!-- Client is UniverseSizeXmlPropertyReader : AEnumXmlPropertyReader : AXmlPropertyReader : AXmlReader -->
+
 <EnumValues EnumTypeName="UniverseSize">
   <Boolean>
     <Setting>

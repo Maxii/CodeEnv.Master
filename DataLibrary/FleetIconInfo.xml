@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Be careful where comments are placed! -->
+
+<!-- Clients are FleetIconInfoXmlReader, StarbaseIconInfoXmlReader, SettlementIconInfoXmlReader : AXmlReader -->
+
 <!-- IMPROVE IconTypeName not used in validation. -->
 <Icon IconTypeName="FleetIconInfo">
   <Section SectionName="Base">

@@ -86,7 +86,7 @@
     <Compile Include="Generic\Framework\APropertyChangeTracking.cs" />
     <Compile Include="Generic\Framework\AEnumValueChangeEvent.cs" />
     <Compile Include="Generic\Framework\GameEventManager.cs" />
-    <Compile Include="Generic\IO\AXmlEnumPropertyReader.cs" />
+    <Compile Include="Generic\IO\AEnumXmlPropertyReader.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />
     <Compile Include="Generic\Math\Mathfx.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />

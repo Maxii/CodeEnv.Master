@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class UniverseSizeExtensions {
 
-        private static XmlUniverseSizePropertyReader _xmlReader = XmlUniverseSizePropertyReader.Instance;
+        private static UniverseSizeXmlPropertyReader _xmlReader = UniverseSizeXmlPropertyReader.Instance;
 
         /// <summary>
         /// Converts this UniverseSizeGuiSelection value to a UniverseSize value.
@@ -103,10 +103,13 @@ namespace CodeEnv.Master.GameContent {
             return defaultPlayerCount;
         }
 
+
+        #region Nested Classes
+
         /// <summary>
         /// Parses UniverseSize.xml used to provide externalized values for the UniverseSize enum.
         /// </summary>
-        public sealed class XmlUniverseSizePropertyReader : AXmlEnumPropertyReader<XmlUniverseSizePropertyReader> {
+        private sealed class UniverseSizeXmlPropertyReader : AEnumXmlPropertyReader<UniverseSizeXmlPropertyReader> {
 
             #region Universe Radius
 
@@ -229,7 +232,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             protected override Type EnumType { get { return typeof(UniverseSize); } }
 
-            private XmlUniverseSizePropertyReader() {
+            private UniverseSizeXmlPropertyReader() {
                 Initialize();
             }
 
@@ -237,6 +240,8 @@ namespace CodeEnv.Master.GameContent {
                 return new ObjectAnalyzer().ToString(this);
             }
         }
+
+        #endregion
 
     }
 }

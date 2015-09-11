@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Be careful where comments are placed! -->
+<!-- Client is GameSpeedXmlPropertyReader : AEnumXmlPropertyReader : AXmlPropertyReader : AXmlReader -->
+
 <EnumValues EnumTypeName="GameSpeed">
   <Boolean>
     <Setting>

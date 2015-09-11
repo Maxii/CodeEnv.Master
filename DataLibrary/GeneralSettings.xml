@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Be careful where comments are placed! -->
+
+<!-- Client is GeneralSettings : AXmlPropertyReader : AXmlReader -->
+
 <Values>
   <Boolean>
     <Setting>

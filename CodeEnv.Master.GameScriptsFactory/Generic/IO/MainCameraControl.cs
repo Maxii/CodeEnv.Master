@@ -35,14 +35,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
     //This means that their constructors will be called before ANYTHING else is called. Script execution order is irrelevant.
 
-    // Focused Zooming: When focused, top and bottom Edge zooming and arrow key zooming cause camera movement in and out from the focused object that is centered on the screen. 
-    // ScrollWheel zooming normally does the same if the cursor is pointed at the focused object. If the cursor is pointed somewhere else, scrolling IN moves toward the cursor resulting 
-    // in a change to Freeform scrolling. By default, Freeform scrolling OUT is directly opposite the camera's facing. However, there is an option to scroll OUT from the cursor instead. 
-    // If this is selected, then scrolling OUT while the cursor is not pointed at the focused object will also result in Freeform scrolling.
+    // Focused and Follow Zooming: When focused or following, top and bottom Edge zooming, arrow key zooming and scrollWheel zooming cause camera movement in and out 
+    // from the focused/followed object that is centered on the screen. 
     public ScreenEdgeConfiguration edgeFocusZoom = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.TopBottom, sensitivity = 2F, activate = false };
     public MouseScrollWheelConfiguration scrollFocusZoom = new MouseScrollWheelConfiguration { sensitivity = 1F, activate = true };
     public ArrowKeyboardConfiguration keyFocusZoom = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, sensitivity = 1F, activate = true };
     public SimultaneousMouseButtonDragConfiguration dragFocusZoom = new SimultaneousMouseButtonDragConfiguration { firstMouseButton = NguiMouseButton.Left, secondMouseButton = NguiMouseButton.Right, sensitivity = 1F, activate = true };
+
+    public ScreenEdgeConfiguration edgeFollowZoom = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.TopBottom, sensitivity = 2F, activate = false };
+    public MouseScrollWheelConfiguration scrollFollowZoom = new MouseScrollWheelConfiguration { sensitivity = 1F, activate = true };
+    public ArrowKeyboardConfiguration keyFollowZoom = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, sensitivity = 1F, activate = true };
+    public SimultaneousMouseButtonDragConfiguration dragFollowZoom = new SimultaneousMouseButtonDragConfiguration { firstMouseButton = NguiMouseButton.Left, secondMouseButton = NguiMouseButton.Right, sensitivity = 1F, activate = true };
 
     // Freeform Zooming: When not focused, top and bottom Edge zooming and arrow key zooming cause camera movement forward or backward along the camera's facing.
     // ScrollWheel zooming on the other hand always moves toward the cursor when scrolling IN. By default, scrolling OUT is directly opposite
@@ -52,31 +55,40 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     public MouseScrollWheelConfiguration scrollFreeZoom = new MouseScrollWheelConfiguration { sensitivity = 1F, activate = true };
     public SimultaneousMouseButtonDragConfiguration dragFreeZoom = new SimultaneousMouseButtonDragConfiguration { firstMouseButton = NguiMouseButton.Left, secondMouseButton = NguiMouseButton.Right, sensitivity = 1F, activate = true };
 
-    // Panning, Tilting and Orbiting: When focused, edge actuation, arrow key pan and tilting and mouse button/movement results in orbiting of the focused object that is centered on the screen. 
-    // When not focused the same arrow keys, edge actuation and mouse button/movement results in the camera panning (looking left or right) and tilting (looking up or down) in place.
+    // Panning, Tilting and Orbiting: When focused or following, edge actuation, arrow key pan and tilting and mouse button/movement results in orbiting of the focused/followed object
+    // that is centered on the screen. When not focused or following the same arrow keys, edge actuation and mouse button/movement results in the camera panning (looking left or right)
+    // and tilting (looking up or down) in place.
     public ScreenEdgeConfiguration edgeFreePan = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.LeftRight, sensitivity = 10F, activate = true };
     public ScreenEdgeConfiguration edgeFreeTilt = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.TopBottom, sensitivity = 10F, activate = true };
-    public ScreenEdgeConfiguration edgeFocusOrbitPan = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.LeftRight, sensitivity = 10F, activate = true };
-    public ScreenEdgeConfiguration edgeFocusOrbitTilt = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.TopBottom, sensitivity = 10F, activate = true };
+    public ScreenEdgeConfiguration edgeFocusPan = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.LeftRight, sensitivity = 10F, activate = true };
+    public ScreenEdgeConfiguration edgeFocusTilt = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.TopBottom, sensitivity = 10F, activate = true };
+    public ScreenEdgeConfiguration edgeFollowPan = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.LeftRight, sensitivity = 10F, activate = true };
+    public ScreenEdgeConfiguration edgeFollowTilt = new ScreenEdgeConfiguration { screenEdgeAxis = ScreenEdgeAxis.TopBottom, sensitivity = 10F, activate = true };
     public ArrowKeyboardConfiguration keyFreePan = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, sensitivity = 1F, activate = true };
     public ArrowKeyboardConfiguration keyFreeTilt = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, modifiers = new KeyModifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, sensitivity = 1F, activate = true };
     public ArrowKeyboardConfiguration keyFocusPan = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, sensitivity = 1F, activate = true };
     public ArrowKeyboardConfiguration keyFocusTilt = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, modifiers = new KeyModifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, sensitivity = 1F, activate = true };
+    public ArrowKeyboardConfiguration keyFollowPan = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, sensitivity = 1F, activate = true };
+    public ArrowKeyboardConfiguration keyFollowTilt = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, modifiers = new KeyModifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, sensitivity = 1F, activate = true };
 
     public MouseButtonDragConfiguration dragFocusOrbit = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, sensitivity = 5F, activate = true };
+    public MouseButtonDragConfiguration dragFollowOrbit = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, sensitivity = 5F, activate = true };
     public MouseButtonDragConfiguration dragFreePanTilt = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, sensitivity = 3F, activate = true };
 
     // Truck and Pedestal: Trucking (moving left and right) and Pedestalling (moving up and down) occurs only in Freeform space, repositioning the camera along it's current horizontal and vertical axis'.
+    // Attempting to Truck or Pedestal while focused or following is not allowed (as it makes no sense) and will immediately cause a change to the Freeform state.
     public MouseButtonDragConfiguration dragFreeTruck = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Middle, modifiers = new KeyModifiers { altKeyReqd = true }, sensitivity = 1F, activate = true };
     public MouseButtonDragConfiguration dragFreePedestal = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Middle, modifiers = new KeyModifiers { shiftKeyReqd = true }, sensitivity = 1F, activate = true };
     public ArrowKeyboardConfiguration keyFreePedestal = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, modifiers = new KeyModifiers { ctrlKeyReqd = true }, activate = true };
     public ArrowKeyboardConfiguration keyFreeTruck = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new KeyModifiers { ctrlKeyReqd = true }, activate = true };
 
-    // Rolling: Focused and freeform rolling results in the same behaviour, rolling around the camera's current forward axis.
+    // Rolling: Focused, following and freeform rolling results in the same behaviour, rolling around the camera's current forward axis.
     public MouseButtonDragConfiguration dragFocusRoll = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, modifiers = new KeyModifiers { altKeyReqd = true }, sensitivity = 5F, activate = true };
+    public MouseButtonDragConfiguration dragFollowRoll = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, modifiers = new KeyModifiers { altKeyReqd = true }, sensitivity = 5F, activate = true };
     public MouseButtonDragConfiguration dragFreeRoll = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, modifiers = new KeyModifiers { altKeyReqd = true }, sensitivity = 5F, activate = true };
     public ArrowKeyboardConfiguration keyFreeRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new KeyModifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
     public ArrowKeyboardConfiguration keyFocusRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new KeyModifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
+    public ArrowKeyboardConfiguration keyFollowRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new KeyModifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
 
     #endregion
 
@@ -95,6 +107,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // Implement Camera controls such as clip planes, FieldOfView, RenderSettings.[flareStrength, haloStrength, ambientLight]
 
     #region Fields
+
+    /// <summary>
+    /// 360 degrees in one rotation.
+    /// </summary>
+    private static int _degreesPerRotation = Constants.DegreesPerRotation;
 
     private Index3D _sectorIndex;
     /// <summary>
@@ -189,15 +206,19 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // Temporary workaround that keeps the edge movement controls
     // from operating when I'm in the Editor but outside the game screen
 
-    private bool __debugEdgeFocusOrbitPanEnabled;
-    private bool __debugEdgeFocusOrbitTiltEnabled;
+    private bool __debugEdgeFocusPanEnabled;
+    private bool __debugEdgeFocusTiltEnabled;
+    private bool __debugEdgeFollowPanEnabled;
+    private bool __debugEdgeFollowTiltEnabled;
     private bool __debugEdgeFreePanEnabled;
     private bool __debugEdgeFreeTiltEnabled;
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void __InitializeDebugEdgeMovementSettings() {
-        __debugEdgeFocusOrbitPanEnabled = edgeFocusOrbitPan.activate;
-        __debugEdgeFocusOrbitTiltEnabled = edgeFocusOrbitTilt.activate;
+        __debugEdgeFocusPanEnabled = edgeFocusPan.activate;
+        __debugEdgeFocusTiltEnabled = edgeFocusTilt.activate;
+        __debugEdgeFollowPanEnabled = edgeFollowPan.activate;
+        __debugEdgeFollowTiltEnabled = edgeFollowTilt.activate;
         __debugEdgeFreePanEnabled = edgeFreePan.activate;
         __debugEdgeFreeTiltEnabled = edgeFreeTilt.activate;
     }
@@ -205,11 +226,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // called by OnApplicationFocus()
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void __EnableEdgePanTiltInEditor(bool toEnable) {
-        edgeFocusOrbitPan.activate = __debugEdgeFocusOrbitPanEnabled && toEnable;
-        edgeFocusOrbitTilt.activate = __debugEdgeFocusOrbitTiltEnabled && toEnable;
+        edgeFocusPan.activate = __debugEdgeFocusPanEnabled && toEnable;
+        edgeFocusTilt.activate = __debugEdgeFocusTiltEnabled && toEnable;
+        edgeFollowPan.activate = __debugEdgeFollowPanEnabled && toEnable;
+        edgeFollowTilt.activate = __debugEdgeFollowTiltEnabled && toEnable;
         edgeFreePan.activate = __debugEdgeFreePanEnabled && toEnable;
         edgeFreeTilt.activate = __debugEdgeFreeTiltEnabled && toEnable;
-        //D.Log("Edge Pan.active = {0}.", edgeFreePan.activate);
     }
 
     private void __AssessEnabled() {
@@ -250,11 +272,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, OnIsRunningChanged));
         _gameMgr.onGameStateChanged += OnGameStateChanged;
+        _inputMgr.onUnconsumedPressDown += OnUnconsumedPressDown;
     }
 
     private void ValidateActiveConfigurations() {
         bool isValid = true;
-        if ((edgeFocusOrbitTilt.activate && edgeFocusZoom.activate) || (edgeFreeTilt.activate && edgeFreeZoom.activate)) {
+        if ((edgeFocusTilt.activate && edgeFocusZoom.activate) || (edgeFreeTilt.activate && edgeFreeZoom.activate) || (edgeFollowTilt.activate && edgeFollowZoom.activate)) {
             isValid = false;
         }
         D.Assert(isValid, "Incompatable Camera Configuration.", pauseOnFail: true);
@@ -300,9 +323,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void EnableCameraRoll(bool toEnable) {
         dragFocusRoll.activate = toEnable;
+        dragFollowRoll.activate = toEnable;
         dragFreeRoll.activate = toEnable;
         keyFreeRoll.activate = toEnable;
         keyFocusRoll.activate = toEnable;
+        keyFollowRoll.activate = toEnable;
     }
 
     private void PositionCameraForGame() {
@@ -454,31 +479,50 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
 
         // edgeFocusZoom already false
+        // edgeFollowZoom already false
         // scrollFocusZoom keep true
+        // scrollFollowZoom keep true
         // keyFocusZoom keep true
+        // keyFollowZoom keep true
         dragFocusZoom.activate = toActivateDragging;
+        dragFollowZoom.activate = toActivateDragging;
         // edgeFreeZoom already false
         // keyFreeZoom keep true
         // scrollFreeZoom keep true
         dragFreeZoom.activate = toActivateDragging;
+
         // edgeFreePan keep true
         // edgeFreeTilt keep true
-        // edgeFocusOrbitPan keep true
-        // edgeFocusOrbitTilt keep true
+        // edgeFocusPan keep true
+        // edgeFocusTilt keep true
+        // edgeFollowPan keep true
+        // edgeFollowTilt keep true
         // keyFreePan keep true
         // keyFreeTilt keep true
         // keyFocusPan keep true
         // keyFocusTilt keep true
+        // keyFollowPan keep true
+        // keyFollowTilt keep true
         dragFocusOrbit.activate = toActivateDragging;
+        dragFollowOrbit.activate = toActivateDragging;
         dragFreePanTilt.activate = toActivateDragging;
         dragFreeTruck.activate = toActivateDragging;
         dragFreePedestal.activate = toActivateDragging;
         // keyFreePedestal keep true
         // keyFreeTruck keep true
         dragFocusRoll.activate = toActivateDragging;
+        dragFollowRoll.activate = toActivateDragging;
         dragFreeRoll.activate = toActivateDragging;
         // keyFreeRoll keep true
         // keyFocusRoll keep true
+        // keyFollowRoll keep true
+    }
+
+    private void OnUnconsumedPressDown(NguiMouseButton button) {
+        if (button == NguiMouseButton.Middle) {
+            // pressing the middle mouse button over nothing is the primary way of exiting focused or follow mode
+            CurrentFocus = null;
+        }
     }
 
     private void OnCurrentFocusChanging(ICameraFocusable newFocus) {
@@ -539,8 +583,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _targetDirection = (_targetPoint - Position).normalized;
 
         // face the selected Target
-        Quaternion lookAt = Quaternion.LookRotation(_targetDirection);
-        Vector3 lookAtVector = lookAt.eulerAngles;
+        Vector3 lookAtVector = Quaternion.LookRotation(_targetDirection).eulerAngles;
         _yAxisRotation = lookAtVector.y;
         _xAxisRotation = lookAtVector.x;
         _zAxisRotation = lookAtVector.z;
@@ -613,7 +656,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void UpdateCamera_Focused() {
         if (dragFreeTruck.IsActivated() || dragFreePedestal.IsActivated()) {
-            // can also exit on Scroll In on dummy Target
+            // Can also exit Focused/Follow on MiddleButton Press. No longer can exit on Scroll In on dummy Target
             CurrentState = CameraState.Freeform;
             return;
         }
@@ -635,22 +678,22 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             inputValue = dragDelta.y;
             _xAxisRotation -= inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
         }
-        if (edgeFocusOrbitPan.IsActivated()) {
-            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFocusOrbitPan.screenEdgeAxis);
+        if (edgeFocusPan.IsActivated()) {
+            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFocusPan.screenEdgeAxis);
             if (activeEdge == InputManager.ActiveScreenEdge.Left) {
-                _yAxisRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _yAxisRotation += edgeFocusPan.sensitivity * timeSinceLastUpdate;
             }
             else if (activeEdge == InputManager.ActiveScreenEdge.Right) {
-                _yAxisRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _yAxisRotation -= edgeFocusPan.sensitivity * timeSinceLastUpdate;
             }
         }
-        if (edgeFocusOrbitTilt.IsActivated()) {
-            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFocusOrbitTilt.screenEdgeAxis);
+        if (edgeFocusTilt.IsActivated()) {
+            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFocusTilt.screenEdgeAxis);
             if (activeEdge == InputManager.ActiveScreenEdge.Bottom) {
-                _xAxisRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _xAxisRotation -= edgeFocusTilt.sensitivity * timeSinceLastUpdate;
             }
             else if (activeEdge == InputManager.ActiveScreenEdge.Top) {
-                _xAxisRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _xAxisRotation += edgeFocusTilt.sensitivity * timeSinceLastUpdate;
             }
         }
         if (dragFocusRoll.IsActivated()) {
@@ -660,27 +703,25 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (scrollFocusZoom.IsActivated()) {
             var scrollEvent = _inputMgr.GetScrollEvent();
             inputValue = scrollEvent.delta;
-            if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) {
-                if (TrySetScrollZoomTarget(scrollEvent, Input.mousePosition)) {
-                    // there is a new Target so it can't be the old focus Target
-                    CurrentState = CameraState.Freeform;
-                    return;
-                }
-            }
+            /**************************************************************************************************************************
+                             * Note: Scrolling on something besides the focused object no longer exits Focused state.
+                             * Instead, it simply scrolls in/out on the current focus no matter where the cursor is
+                             *************************************************************************************************************************/
             distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
         }
 
         #region Archived ScrollFocusZoom
         //if (scrollFocusZoom.IsActivated()) {
-        //    inputValue = _gameInput.GetScrollWheelMovement();
-        //    if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) {
-        //        if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-        //            // there is a new Target so it can't be the old focus Target
-        //            CurrentState = CameraState.Freeform;
-        //            return;
-        //        }
-        //    }
+        //    var scrollEvent = _inputMgr.GetScrollEvent();
+        //    inputValue = scrollEvent.delta;
+        //      if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) { 
+        //           if (TrySetScrollZoomTarget(scrollEvent, Input.mousePosition)) { 
+        //              // there is a new Target so it can't be the old focus Target
+        //              CurrentState = CameraState.Freeform;
+        //              return;
+        //           }
+        //      }
         //    distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
         //    _requestedDistanceFromTarget -= distanceChange;
         //}
@@ -739,13 +780,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
 
         if (keyFocusPan.IsActivated()) {
-            _yAxisRotation += _inputMgr.GetArrowKeyEventValue(keyFocusPan.keyboardAxis) * keyFreePan.sensitivity;
+            _yAxisRotation += _inputMgr.GetArrowKeyEventValue(keyFocusPan.keyboardAxis) * keyFocusPan.sensitivity;
         }
         if (keyFocusTilt.IsActivated()) {
-            _xAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFocusTilt.keyboardAxis) * keyFreeTilt.sensitivity;
+            _xAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFocusTilt.keyboardAxis) * keyFocusTilt.sensitivity;
         }
         if (keyFocusRoll.IsActivated()) {
-            _zAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFocusRoll.keyboardAxis) * keyFreeRoll.sensitivity;
+            _zAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFocusRoll.keyboardAxis) * keyFocusRoll.sensitivity;
         }
 
         #region Archived KeyFocusPan
@@ -762,7 +803,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         #endregion
 
-        // this is the key that keeps the camera pointed at the Target when focused
+        // this is the key to re-positioning the already rotated camera so that it is looking at the target
         _targetDirection = _transform.forward;
 
         // OPTIMIZE lets me change the values on the fly in the inspector
@@ -1005,11 +1046,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         LogEvent();
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
-        //D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName);
         D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviour<ADiscernibleItem>().FullName);
         ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraPositionDampener = icfTarget.FollowDistanceDampener;
+
+        // initial camera view angle determined by direction of target relative to camera when Follow initiated, aka where camera is approaching from
+        var initialTargetDirection = (_target.position - Position).normalized;
+        Vector3 lookAt = Quaternion.LookRotation(initialTargetDirection).eulerAngles;
+        _yAxisRotation = lookAt.y;
+        _xAxisRotation = lookAt.x;
+        _zAxisRotation = lookAt.z;
     }
 
     //void Follow_Update() {
@@ -1025,42 +1072,155 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void UpdateCamera_Follow() {
-        if (dragFreePanTilt.IsActivated() || scrollFreeZoom.IsActivated()) {
+        if (dragFreeTruck.IsActivated() || dragFreePedestal.IsActivated()) {
+            // Can also exit Focused/Follow on MiddleButton Press. No longer can exit on Scroll In on dummy Target
             CurrentState = CameraState.Freeform;
             return;
         }
 
-        // Smooth lookAt interpolation rotates the camera to continue to lookAt the moving Target. These
-        // values must be continuously updated as the Target and camera are moving
-        _targetPoint = _target.position;
-        _targetDirection = (_targetPoint - Position).normalized;
-        // This places camera directly above target. I want it above and behind...
-        //_targetDirection = ((_targetPoint - Position) - _target.up * 0.5F).normalized; 
+        float timeSinceLastUpdate = GetTimeSinceLastUpdate();
+        // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
+        float inputValue = 0F;
+        // the clamping value used to constrain distanceChgAllowedPerUnitInput
+        float distanceChgClamp = Mathf.Min(_requestedDistanceFromTarget * 0.5F, settings.MaxDistanceChgAllowedPerUnitInput);
+        // distanceChgAllowedPerUnitInput defines the distanceChange value associated with a normalized unit of input
+        float distanceChgAllowedPerUnitInput = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, distanceChgClamp);
+        // the distance change value used to modify _optimalDistanceToTarget as determined by inputValue and distanceChgAllowedPerUnitInput
+        float distanceChange = 0F;
 
-        Vector3 lookAt = Quaternion.LookRotation(_targetDirection).eulerAngles;
-        _yAxisRotation = lookAt.y;
-        _xAxisRotation = lookAt.x;
-        _zAxisRotation = lookAt.z;
-
-        // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal 
-        // follow distance. When the Target turns and breaks inside the optimal follow distance, stop the camera 
-        // from adjusting its position by making the requested distance the same as the actual distance. 
-        // As soon as the Target moves outside of the optimal distance, start following again.
-        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
-        if (_distanceFromTarget > _optimalDistanceFromTarget) {
-            _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+        if (dragFollowOrbit.IsActivated()) {
+            Vector2 dragDelta = _inputMgr.GetDragDelta();
+            inputValue = dragDelta.x;
+            _yAxisRotation += inputValue * dragFollowOrbit.sensitivity * timeSinceLastUpdate;
+            inputValue = dragDelta.y;
+            _xAxisRotation -= inputValue * dragFollowOrbit.sensitivity * timeSinceLastUpdate;
         }
-        else {
+        if (edgeFollowPan.IsActivated()) {
+            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFollowPan.screenEdgeAxis);
+            if (activeEdge == InputManager.ActiveScreenEdge.Left) {
+                _yAxisRotation += edgeFollowPan.sensitivity * timeSinceLastUpdate;
+            }
+            else if (activeEdge == InputManager.ActiveScreenEdge.Right) {
+                _yAxisRotation -= edgeFollowPan.sensitivity * timeSinceLastUpdate;
+            }
+        }
+        if (edgeFollowTilt.IsActivated()) {
+            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFollowTilt.screenEdgeAxis);
+            if (activeEdge == InputManager.ActiveScreenEdge.Bottom) {
+                _xAxisRotation -= edgeFollowTilt.sensitivity * timeSinceLastUpdate;
+            }
+            else if (activeEdge == InputManager.ActiveScreenEdge.Top) {
+                _xAxisRotation += edgeFollowTilt.sensitivity * timeSinceLastUpdate;
+            }
+        }
+        if (dragFollowRoll.IsActivated()) {
+            inputValue = _inputMgr.GetDragDelta().x;
+            _zAxisRotation += inputValue * dragFollowRoll.sensitivity * timeSinceLastUpdate;
+        }
+
+        // All Zooms must adjust optimalDistance rather than requestedDistance as requestedDistance gets adjusted below to allow spectator-like viewing
+        if (scrollFollowZoom.IsActivated()) {
+            var scrollEvent = _inputMgr.GetScrollEvent();
+            inputValue = scrollEvent.delta;
+            distanceChange = inputValue * scrollFollowZoom.InputTypeNormalizer * scrollFollowZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _optimalDistanceFromTarget -= distanceChange;
+        }
+        if (edgeFollowZoom.IsActivated()) {
+            inputValue = 1F;
+            var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFollowZoom.screenEdgeAxis);
+            if (activeEdge == InputManager.ActiveScreenEdge.Bottom) {
+                distanceChange = inputValue * edgeFollowZoom.sensitivity * edgeFollowZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
+                _optimalDistanceFromTarget += distanceChange;
+            }
+            else if (activeEdge == InputManager.ActiveScreenEdge.Top) {
+                distanceChange = inputValue * edgeFollowZoom.sensitivity * edgeFollowZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
+                _optimalDistanceFromTarget -= distanceChange;
+            }
+        }
+        if (keyFollowZoom.IsActivated()) {
+            inputValue = _inputMgr.GetArrowKeyEventValue(keyFollowZoom.keyboardAxis);
+            distanceChange = inputValue * keyFollowZoom.InputTypeNormalizer * keyFollowZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _optimalDistanceFromTarget -= distanceChange;
+        }
+        if (dragFollowZoom.IsActivated()) {
+            inputValue = _inputMgr.GetDragDelta().y;
+            distanceChange = inputValue * dragFollowZoom.InputTypeNormalizer * dragFollowZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _optimalDistanceFromTarget -= distanceChange;
+        }
+
+        if (keyFollowPan.IsActivated()) {
+            _yAxisRotation += _inputMgr.GetArrowKeyEventValue(keyFollowPan.keyboardAxis) * keyFollowPan.sensitivity;
+        }
+        if (keyFollowTilt.IsActivated()) {
+            _xAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFollowTilt.keyboardAxis) * keyFollowTilt.sensitivity;
+        }
+        if (keyFollowRoll.IsActivated()) {
+            _zAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFollowRoll.keyboardAxis) * keyFollowRoll.sensitivity;
+        }
+
+        // These values must be continuously updated as the Target and camera are moving
+        _targetPoint = _target.position;
+        _targetDirection = transform.forward;   // this is the key to re-positioning the rotated camera so that it is looking at the target
+
+        // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal follow distance. 
+        // When the Target turns and breaks inside the optimal follow distance, stop the camera from adjusting its position by making 
+        // the requested distance the same as the actual distance. As soon as the Target moves outside of the optimal distance, start following again.
+        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
+        if (_distanceFromTarget < _optimalDistanceFromTarget) {
             _requestedDistanceFromTarget = _distanceFromTarget;
         }
+        else {
+            _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+        }
 
-        // OPTIMIZE lets me change the values on the fly in the inspector
+        // OPTIMIZE This continuous refresh process below lets me change the values on the fly in the inspector
         ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraPositionDampener = icfTarget.FollowDistanceDampener;
 
         ProcessChanges(GetTimeSinceLastUpdate());
     }
+
+    #region UpdateCamera_Follow Archive
+    //private void UpdateCamera_Follow() {
+    //    if (dragFreePanTilt.IsActivated() || scrollFreeZoom.IsActivated()) {
+    //        CurrentState = CameraState.Freeform;
+    //        return;
+    //    }
+
+    //    // Smooth lookAt interpolation rotates the camera to continue to lookAt the moving Target. These
+    //    // values must be continuously updated as the Target and camera are moving
+    //    _targetPoint = _target.position;
+    //    _targetDirection = (_targetPoint - Position).normalized;
+    //    // This places camera directly above target. I want it above and behind...
+    //    //_targetDirection = ((_targetPoint - Position) - _target.up * 0.5F).normalized; 
+
+    //    Vector3 lookAt = Quaternion.LookRotation(_targetDirection).eulerAngles;
+    //    _yAxisRotation = lookAt.y;
+    //    _xAxisRotation = lookAt.x;
+    //    _zAxisRotation = lookAt.z;
+
+    //    // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal 
+    //    // follow distance. When the Target turns and breaks inside the optimal follow distance, stop the camera 
+    //    // from adjusting its position by making the requested distance the same as the actual distance. 
+    //    // As soon as the Target moves outside of the optimal distance, start following again.
+    //    _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
+    //    if (_distanceFromTarget < _optimalDistanceFromTarget) {
+    //        _requestedDistanceFromTarget = _distanceFromTarget;
+    //    }
+    //    else {
+    //        _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+    //    }
+
+    //    // OPTIMIZE lets me change the values on the fly in the inspector
+    //    ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
+    //    _cameraRotationDampener = icfTarget.FollowRotationDampener;
+    //    _cameraPositionDampener = icfTarget.FollowDistanceDampener;
+
+    //    ProcessChanges(GetTimeSinceLastUpdate());
+    //}
+
+    #endregion
 
     void Follow_ExitState() {
         LogEvent();
@@ -1247,17 +1407,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private bool TrySetScrollZoomTarget(InputManager.ScrollEvent scrollEvent, Vector3 screenPoint) {
         if (scrollEvent.target != null) {
             var proposedZoomTarget = scrollEvent.target.Transform;
-            var proposedZoomPoint = scrollEvent.hitPoint;
             if (proposedZoomTarget == _dummyTarget) {
                 // the stationary, existing DummyTarget
                 return false;
             }
 
             if (scrollEvent.target is IZoomToFurthest) {
-                // this is a IZoomToFurthest, aka SystemView so we have to select the target based on what is behind it
+                // this is a IZoomToFurthest, aka SystemOrbitalPlane so we have to select the target based on what is behind it
                 return TrySetZoomTargetAt(screenPoint);
             }
             // scrollEvent.target is not IZoomToFurthest so it is the zoom target
+            var proposedZoomPoint = scrollEvent.hitPoint;
             return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
         }
 
@@ -1450,9 +1610,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <returns></returns>
     private Quaternion CalculateCameraRotation(float dampenedTimeSinceLastUpdate) {
         // keep rotation values exact as a substitute for the unreliable? accuracy that comes from reading EulerAngles from the Quaternion
-        _xAxisRotation %= 360;
-        _yAxisRotation %= 360;
-        _zAxisRotation %= 360;
+        _xAxisRotation %= _degreesPerRotation;
+        _yAxisRotation %= _degreesPerRotation;
+        _zAxisRotation %= _degreesPerRotation;
 
         Vector3 desiredFacingDirection = new Vector3(_xAxisRotation, _yAxisRotation, _zAxisRotation);
         //desiredFacingDirection = Quaternion.LookRotation(desiredFacingDirection, _transform.up).eulerAngles;
@@ -1518,6 +1678,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _subscriptions.ForAll<IDisposable>(s => s.Dispose());
         _subscriptions.Clear();
         _gameMgr.onGameStateChanged -= OnGameStateChanged;
+        _inputMgr.onUnconsumedPressDown -= OnUnconsumedPressDown;
     }
 
     public override string ToString() {

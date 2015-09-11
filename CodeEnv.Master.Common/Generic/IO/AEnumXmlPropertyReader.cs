@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AXmlEnumPropertyReader.cs
+// File: AEnumXmlPropertyReader.cs
 // Generic abstract Singleton that parses Xml documents used to provide externalized 
 // values to the properties of the derived class in support of Enums.
 // </summary> 
@@ -26,7 +26,7 @@ namespace CodeEnv.Master.Common {
     /// values to the properties of the derived class in support of Enums.
     /// </summary>
     /// <typeparam name="T">The derived class type.</typeparam>
-    public abstract class AXmlEnumPropertyReader<T> : AXmlPropertyReader<T> where T : AXmlEnumPropertyReader<T> {
+    public abstract class AEnumXmlPropertyReader<T> : AXmlPropertyReader<T> where T : AEnumXmlPropertyReader<T> {
 
         private string _enumTypeAttributeName = "EnumTypeName";
 

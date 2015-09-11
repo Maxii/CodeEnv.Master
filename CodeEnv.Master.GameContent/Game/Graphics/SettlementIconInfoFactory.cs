@@ -24,17 +24,20 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Singleton. Factory that makes instances of IconInfo for Settlements.
-    /// As searching XML docs to find the filename is expensive, this implementation caches and reuses the 
-    /// IconInfo instances, even though they are structures. 
     /// </summary>
     public class SettlementIconInfoFactory : ACmdIconInfoFactory<SettlementReport, SettlementIconInfoFactory> {
 
         protected override AtlasID AtlasID { get { return AtlasID.Fleet; } }
 
-        protected override string XmlFilename { get { return "FleetIconInfo"; } }
+        private SettlementIconInfoXmlReader _xmlReader;
 
         private SettlementIconInfoFactory() {
             Initialize();
+        }
+
+        protected override void Initialize() {
+            base.Initialize();
+            _xmlReader = SettlementIconInfoXmlReader.Instance;
         }
 
         protected override IconSelectionCriteria GetCriteriaFromCategory(SettlementReport settlementReport) {
@@ -70,9 +73,31 @@ namespace CodeEnv.Master.GameContent {
             return criteria;
         }
 
+        protected override string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria) {
+            return _xmlReader.AcquireFilename(section, criteria);
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Nested Classes
+
+        public class SettlementIconInfoXmlReader : ACmdIconInfoXmlReader<SettlementIconInfoXmlReader> {
+
+            protected override string XmlFilename { get { return "FleetIconInfo"; } }   // TODO
+
+            private SettlementIconInfoXmlReader() {
+                Initialize();
+            }
+
+            public override string ToString() {
+                return new ObjectAnalyzer().ToString(this);
+            }
+
+        }
+
+        #endregion
 
     }
 }

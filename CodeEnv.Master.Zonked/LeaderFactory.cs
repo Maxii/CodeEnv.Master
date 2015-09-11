@@ -24,35 +24,59 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Singleton. Factory that makes unique LeaderStat instances from values externally acquired via Xml.
     /// </summary>
-    public class LeaderFactory : AGenericSingleton<LeaderFactory>, IDisposable {
+    [Obsolete]
+    public class LeaderFactory : AXmlReader<LeaderFactory>, IDisposable {
 
-        private IDictionary<Species, IList<LeaderStat>> _leaderStatsCache;
+        private string _speciesTagName = "Species";
+        private string _speciesAttributeTagName = "SpeciesName";
+        private string _leaderTagName = "Leader";
+        private string _leaderNameTagName = "LeaderName";
+        private string _leaderImageAtlasIDTagName = "LeaderImageAtlasID";
+        private string _leaderImageFilenameTagName = "LeaderImageFilename";
+
+        protected override string XmlFilename { get { return "LeaderValues"; } }
+
+        private IDictionary<Species, IList<LeaderStat>> _leaderLookupBySpecies;
         private IList<LeaderStat> _leadersInUse;
-        private LeaderStatXmlReader _xmlReader;
 
         private LeaderFactory() {
             Initialize();
         }
 
-        protected override void Initialize() {
-            _xmlReader = LeaderStatXmlReader.Instance;
-            _leaderStatsCache = new Dictionary<Species, IList<LeaderStat>>();
+        protected override void InitializeValuesAndReferences() {
+            base.InitializeValuesAndReferences();
+            _leaderLookupBySpecies = new Dictionary<Species, IList<LeaderStat>>();
             _leadersInUse = new List<LeaderStat>();
+            PopulateLookup();
             Subscribe();
-            // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
         }
 
         private void Subscribe() {
             References.GameManager.onNewGameBuilding += OnNewGameBuilding;
         }
 
-        public LeaderStat MakeInstance(Species species) {
-            IList<LeaderStat> stats;
-            if (!_leaderStatsCache.TryGetValue(species, out stats)) {
-                stats = _xmlReader.CreateStats(species);
-                _leaderStatsCache.Add(species, stats);
+        private void PopulateLookup() {
+            var speciesNodes = _xElement.Elements(_speciesTagName);
+            foreach (var speciesNode in speciesNodes) {
+                var speciesAttribute = speciesNode.Attribute(_speciesAttributeTagName);
+                string speciesName = speciesAttribute.Value;
+                var species = Enums<Species>.Parse(speciesName);
+
+                var leaderNodes = speciesNode.Elements(_leaderTagName);
+                foreach (var leaderNode in leaderNodes) {
+                    string leaderName = leaderNode.Element(_leaderNameTagName).Value;
+                    AtlasID leaderImageAtlasID = Enums<AtlasID>.Parse(leaderNode.Element(_leaderImageAtlasIDTagName).Value);
+                    string leaderImageFilename = leaderNode.Element(_leaderImageFilenameTagName).Value;
+                    if (!_leaderLookupBySpecies.ContainsKey(species)) {
+                        _leaderLookupBySpecies.Add(species, new List<LeaderStat>());
+                    }
+                    _leaderLookupBySpecies[species].Add(new LeaderStat(leaderName, leaderImageAtlasID, leaderImageFilename));
+                }
             }
-            var randomSpeciesLeader = stats.Shuffle().First();
+        }
+
+        public LeaderStat MakeInstance(Species species) {
+            var randomSpeciesLeader = _leaderLookupBySpecies[species].Shuffle().First();
             if (_leadersInUse.Contains(randomSpeciesLeader)) {
                 return MakeInstance(species);
             }
@@ -123,61 +147,6 @@ namespace CodeEnv.Master.GameContent {
 
         //    // method content here
         //}
-        #endregion
-
-        #region Nested Classes
-
-        private class LeaderStatXmlReader : AXmlReader<LeaderStatXmlReader> {
-
-            private string _speciesTagName = "Species";
-            private string _speciesAttributeTagName = "SpeciesName";
-            private string _leaderTagName = "Leader";
-            private string _leaderNameTagName = "LeaderName";
-            private string _leaderImageAtlasIDTagName = "LeaderImageAtlasID";
-            private string _leaderImageFilenameTagName = "LeaderImageFilename";
-
-            protected override string XmlFilename { get { return "LeaderValues"; } }
-
-            private LeaderStatXmlReader() {
-                Initialize();
-            }
-
-            /// <summary>
-            /// Creates all the alternative LeaderStats for this species.
-            /// </summary>
-            /// <param name="species">The species.</param>
-            /// <returns></returns>
-            internal IList<LeaderStat> CreateStats(Species species) {
-                IList<LeaderStat> stats = new List<LeaderStat>();
-                var speciesNodes = _xElement.Elements(_speciesTagName);
-                foreach (var speciesNode in speciesNodes) {
-                    var speciesAttribute = speciesNode.Attribute(_speciesAttributeTagName);
-                    string speciesName = speciesAttribute.Value;
-                    var speciesFound = Enums<Species>.Parse(speciesName);
-
-                    if (speciesFound == species) {
-                        // found the right species node
-                        var leaderNodes = speciesNode.Elements(_leaderTagName);
-                        foreach (var leaderNode in leaderNodes) {
-                            string leaderName = leaderNode.Element(_leaderNameTagName).Value;
-                            AtlasID leaderImageAtlasID = Enums<AtlasID>.Parse(leaderNode.Element(_leaderImageAtlasIDTagName).Value);
-                            string leaderImageFilename = leaderNode.Element(_leaderImageFilenameTagName).Value;
-                            var stat = new LeaderStat(leaderName, leaderImageAtlasID, leaderImageFilename);
-                            stats.Add(stat);
-                        }
-                        break;
-                    }
-                }
-                D.Assert(!stats.IsNullOrEmpty());
-                return stats;
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
-            }
-
-        }
-
         #endregion
 
     }

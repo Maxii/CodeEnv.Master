@@ -1,12 +1,12 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2013 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: StarbaseIconInfoFactory.cs
-// Singleton. Factory that makes instances of IIconInfo for Starbases, caches and reuses them. 
+// Singleton. Factory that makes instances of IconInfo for Starbases.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,13 +23,16 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Singleton. Factory that makes instances of IIconInfo for Starbases, caches and reuses them. The reuse is critical as 
-    /// the object's equality comparer (same instance in memory) is used by the client of the factory to determine which icon is currently showing.
+    /// Singleton. Factory that makes instances of IconInfo for Starbases.
+    /// As searching XML docs to find the filename is expensive, this implementation caches and reuses the 
+    /// IconInfo instances, even though they are structures. 
     /// </summary>
-    [System.Obsolete]
-    public class StarbaseIconInfoFactory : ACmdIconInfoFactory<FleetIconInfo, StarbaseReport, StarbaseIconInfoFactory> {
+    [Obsolete]
+    public class StarbaseIconInfoFactory : ACmdIconInfoFactory<StarbaseReport, StarbaseIconInfoFactory> {
 
         protected override AtlasID AtlasID { get { return AtlasID.Fleet; } }
+
+        protected override string XmlFilename { get { return "FleetIconInfo"; } }
 
         private StarbaseIconInfoFactory() {
             Initialize();
@@ -74,4 +77,5 @@ namespace CodeEnv.Master.GameContent {
 
     }
 }
+
 

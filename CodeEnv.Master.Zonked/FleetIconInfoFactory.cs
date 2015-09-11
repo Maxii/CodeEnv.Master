@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetIconInfoFactory.cs
-// Singleton. Factory that makes instances of IIconInfo for Fleets, caches and reuses them. 
+// Singleton. Factory that makes instances of IconInfo for Fleets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,20 +23,23 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Singleton. Factory that makes instances of IIconInfo for Fleets, caches and reuses them. The reuse is critical as
-    /// the object's equality comparer (same instance in memory) is used by the client of the factory to determine which icon is currently showing.
+    /// Singleton. Factory that makes instances of IconInfo for Fleets.
+    /// As searching XML docs to find the filename is expensive, this implementation caches and reuses the 
+    /// IconInfo instances, even though they are structures. 
     /// </summary>
-    [System.Obsolete]
-    public class FleetIconInfoFactory : ACmdIconInfoFactory<FleetIconInfo, FleetReport, FleetIconInfoFactory> {
+    [Obsolete]
+    public class FleetIconInfoFactory : ACmdIconInfoFactory<FleetReport, FleetIconInfoFactory> {
 
         protected override AtlasID AtlasID { get { return AtlasID.Fleet; } }
+
+        protected override string XmlFilename { get { return "FleetIconInfo"; } }
 
         private FleetIconInfoFactory() {
             Initialize();
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(FleetReport fleetCmdReport) {
-            switch (fleetCmdReport.Category) {
+        protected override IconSelectionCriteria GetCriteriaFromCategory(FleetReport fleetReport) {
+            switch (fleetReport.Category) {
                 case FleetCategory.Flotilla:
                     return IconSelectionCriteria.Level1;
                 case FleetCategory.Squadron:
@@ -49,13 +52,13 @@ namespace CodeEnv.Master.GameContent {
                     return IconSelectionCriteria.Level5;
                 case FleetCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(fleetCmdReport.Category));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(fleetReport.Category));
             }
         }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetReport fleetCmdReport) {
+        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetReport fleetReport) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<ShipCategory> elementCategories = fleetCmdReport.UnitComposition.GetUniqueElementCategories();
+            IEnumerable<ShipCategory> elementCategories = fleetReport.UnitComposition.GetUniqueElementCategories();
             if (elementCategories.Contains(ShipCategory.Science)) {
                 criteria.Add(IconSelectionCriteria.Science);
             }

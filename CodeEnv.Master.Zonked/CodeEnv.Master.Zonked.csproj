@@ -352,6 +352,7 @@
     <Compile Include="LabelLineID.cs" />
     <Compile Include="LabelPublisher.cs" />
     <Compile Include="LabelText.cs" />
+    <Compile Include="LeaderFactory.cs" />
     <Compile Include="LoadSavedGameEvent.cs" />
     <Compile Include="LobbyInputManager.cs" />
     <Compile Include="MonoGameManager.cs" />
@@ -469,6 +470,7 @@
     <Compile Include="ShipStats.cs" />
     <Compile Include="ShipView.cs" />
     <Compile Include="ShipView_Player.cs" />
+    <Compile Include="SpeciesFactory.cs" />
     <Compile Include="Star.cs" />
     <Compile Include="StarAnimator.cs" />
     <Compile Include="StarbaseCmdData.cs" />
