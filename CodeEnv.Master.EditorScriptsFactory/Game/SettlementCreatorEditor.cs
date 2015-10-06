@@ -37,9 +37,7 @@ public class SettlementCreatorEditor : AUnitCreatorEditor<SettlementUnitCreator>
         }
     }
 
-    protected override int GetMaxElements() {
-        return TempGameValues.MaxFacilitiesPerBase;
-    }
+    protected override int GetMaxElements() { return TempGameValues.MaxFacilitiesPerBase; }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

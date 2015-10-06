@@ -28,9 +28,6 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem, IFacilityItem {
 
-    [Tooltip("The hull of the Facility")]
-    public FacilityCategory category;
-
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
@@ -63,15 +60,13 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
-        Radius = meshRenderer.bounds.extents.magnitude; // ~ 0.25
-        // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
-        //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
+        // Collider Size and Element Radius now set by UnitFactory using SetSize()
+        //var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
+        //Radius = meshRenderer.bounds.extents.magnitude; // ~ 0.25
     }
 
     protected override void InitializeModelMembers() {
         base.InitializeModelMembers();
-        D.Assert(category == Data.Category);
         CurrentState = FacilityState.None;
     }
 
@@ -95,6 +90,20 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     public FacilityReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+    /// <summary>
+    /// Sets the size of the element's collider and the element's Radius.
+    /// </summary>
+    /// <param name="capsuleSize">Size of the capsule. x holds the radius
+    /// of the capsule, y the height of the capsule.</param>
+    public void SetSize(Vector2 capsuleSize) {
+        CapsuleCollider elementCollider = UnityUtility.ValidateComponentPresence<CapsuleCollider>(gameObject);
+        elementCollider.radius = capsuleSize.x;
+        elementCollider.height = capsuleSize.y;
+        elementCollider.direction = Constants.One;  // Y    // IMPROVE
+        Radius = elementCollider.height;
+        //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
+    }
 
     void OnCurrentOrderChanged() {
         // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated

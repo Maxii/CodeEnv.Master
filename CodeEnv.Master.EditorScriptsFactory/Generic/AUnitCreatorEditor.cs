@@ -52,7 +52,9 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
             EditorGUI.indentLevel--;
         }
 
-        creator.weaponsPerElement = EditorGUILayout.IntSlider("Weapons/Element", creator.weaponsPerElement, 0, 5);
+        creator.losWeaponsPerElement = (ACreator.WeaponLoadout)EditorGUILayout.EnumPopup("LOSWeapons/Element", creator.losWeaponsPerElement);
+        creator.missileWeaponsPerElement = (ACreator.WeaponLoadout)EditorGUILayout.EnumPopup("Missiles/Element", creator.missileWeaponsPerElement);
+
         creator.activeCMsPerElement = EditorGUILayout.IntSlider("ActiveCMs/Element", creator.activeCMsPerElement, 0, 5);
         creator.shieldGeneratorsPerElement = EditorGUILayout.IntSlider("ShieldGens/Element", creator.shieldGeneratorsPerElement, 0, 5);
         creator.passiveCMsPerElement = EditorGUILayout.IntSlider("PassiveCMs/Element", creator.passiveCMsPerElement, 0, 5);

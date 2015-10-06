@@ -24,6 +24,12 @@ namespace CodeEnv.Master.GameContent {
 
     public static class TempGameValues {
 
+        public const float __ReqdMissileTravelDistanceBeforePushover = 1.0F;
+
+        public const int MaxLosWeaponsForAnyElement = 12;
+
+        public const int MaxMissileWeaponsForAnyElement = 6;
+
         public const float MinimumFramerate = 25F;
 
         public const int MinTrackingLabelShowDistance = 50;
@@ -137,71 +143,71 @@ namespace CodeEnv.Master.GameContent {
             GameColor.DarkGreen
         };
 
-        public static float __GetHullMass(FacilityCategory hullCat) {
+        public static float __GetHullMass(FacilityHullCategory hullCat) {
             switch (hullCat) {
-                case FacilityCategory.CentralHub:
+                case FacilityHullCategory.CentralHub:
                     return 10000F;
-                case FacilityCategory.Defense:
-                case FacilityCategory.Factory:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
                     return 5000F;
-                case FacilityCategory.Colonizer:
-                case FacilityCategory.Economic:
-                case FacilityCategory.Barracks:
-                case FacilityCategory.Laboratory:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Laboratory:
                     return 2000F;
-                case FacilityCategory.None:
+                case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
         }
 
-        public static float __GetHullMass(ShipCategory hullCat) {
+        public static float __GetHullMass(ShipHullCategory hullCat) {
             switch (hullCat) {
-                case ShipCategory.Frigate:
+                case ShipHullCategory.Frigate:
                     return 50F;
-                case ShipCategory.Destroyer:
-                case ShipCategory.Support:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
                     return 100F;
-                case ShipCategory.Cruiser:
-                case ShipCategory.Colonizer:
-                case ShipCategory.Science:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Science:
                     return 200F;
-                case ShipCategory.Dreadnaught:
-                case ShipCategory.Troop:
+                case ShipHullCategory.Dreadnaught:
+                case ShipHullCategory.Troop:
                     return 400F;
-                case ShipCategory.Carrier:
+                case ShipHullCategory.Carrier:
                     return 500F;
-                case ShipCategory.Scout:
-                case ShipCategory.Fighter:
-                case ShipCategory.None:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
         }
 
-        public static float __GetEngineMass(ShipCategory hull) {
+        public static float __GetEngineMass(ShipHullCategory hull) {
             return __GetHullMass(hull) * 0.10F;
         }
 
-        public static float __GetFullStlThrust(ShipCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
+        public static float __GetFullStlThrust(ShipHullCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
             switch (hull) {
-                case ShipCategory.Frigate:
+                case ShipHullCategory.Frigate:
                     return UnityEngine.Random.Range(5F, 15F);
-                case ShipCategory.Destroyer:
-                case ShipCategory.Support:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
                     return UnityEngine.Random.Range(10F, 30F);
-                case ShipCategory.Cruiser:
-                case ShipCategory.Colonizer:
-                case ShipCategory.Science:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Science:
                     return UnityEngine.Random.Range(20F, 60F);
-                case ShipCategory.Dreadnaught:
-                case ShipCategory.Troop:
+                case ShipHullCategory.Dreadnaught:
+                case ShipHullCategory.Troop:
                     return UnityEngine.Random.Range(40F, 120F);
-                case ShipCategory.Carrier:
+                case ShipHullCategory.Carrier:
                     return UnityEngine.Random.Range(50F, 150F);
-                case ShipCategory.Scout:
-                case ShipCategory.Fighter:
-                case ShipCategory.None:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
             }

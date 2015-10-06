@@ -31,8 +31,16 @@ using UnityEngine;
 public class UnitFactory : AGenericSingleton<UnitFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
+    private ShipItem _shipItemPrefab;
     private ShipItem[] _shipPrefabs;
+    private ShipHull[] _shipHullPrefabs;
+
+    private FacilityItem _facilityItemPrefab;
     private FacilityItem[] _facilityPrefabs;
+    private FacilityHull[] _facilityHullPrefabs;
+
+    private MissileTube[] _missileTubePrefabs;
+    private LOSTurret[] _losTurretPrefabs;
 
     private GameObject _fleetCmdPrefab;
     private GameObject _starbaseCmdPrefab;
@@ -62,6 +70,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
         _sensorRangeMonitorPrefab = reqdPrefabs.sensorRangeMonitor.gameObject;
         _formationStationPrefab = reqdPrefabs.formationStation.gameObject;
+
+        _shipItemPrefab = reqdPrefabs.shipItem;
+        _shipHullPrefabs = reqdPrefabs.shipHulls;
+        _facilityItemPrefab = reqdPrefabs.facilityItem;
+        _facilityHullPrefabs = reqdPrefabs.facilityHulls;
+
+        _missileTubePrefabs = reqdPrefabs.missileTubes;
+        _losTurretPrefabs = reqdPrefabs.losTurrets;
     }
 
     /// <summary>
@@ -135,60 +151,52 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // return cmd   // this non-delegate approach returned the cmd immediately after the Job started
     }
 
-    /// <summary>
-    /// Makes an instance of an element based on the ShipHullStat provided. The Item  will not be enabled,
-    /// nor will their gameObject have a parent. The element has yet to be assigned to a Command.
-    /// </summary>
-    /// <param name="hullStat">The hull stat.</param>
-    /// <param name="engineStat">The engine stat.</param>
-    /// <param name="combatStance">The combat stance.</param>
-    /// <param name="owner">The owner.</param>
-    /// <param name="weapStats">The weap stats.</param>
-    /// <param name="passiveCmStats">The passive cm stats.</param>
-    /// <param name="activeCmStats">The active cm stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
-    /// <param name="shieldGenStats">The shield generator stats.</param>
-    /// <returns></returns>
-    public ShipItem MakeInstance(ShipHullStat hullStat, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
-        IEnumerable<WeaponStat> weapStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
-        GameObject shipPrefabGo = _shipPrefabs.Single(s => s.category == hullStat.Category).gameObject;
-        GameObject shipGoClone = UnityUtility.AddChild(null, shipPrefabGo);
-
-        ShipItem item = shipGoClone.GetSafeMonoBehaviour<ShipItem>();
-        PopulateInstance(hullStat, engineStat, combatStance, owner, weapStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref item);
-        return item;
+    public ShipItem MakeShipInstance(Player owner, string designName) {
+        ShipDesign design = GameManager.Instance.PlayerDesigns.GetShipDesign(owner, designName);
+        return MakeInstance(owner, design);
     }
 
-    /// <summary>
-    /// Populates the provided item instance with data from the ShipHullStat object. The item will not be enabled.
-    /// The element has yet to be assigned to a Command.
-    /// </summary>
-    /// <param name="hullStat">The hull stat.</param>
-    /// <param name="engineStat">The engine stat.</param>
-    /// <param name="combatStance">The combat stance.</param>
-    /// <param name="owner">The owner.</param>
-    /// <param name="weapStats">The weap stats.</param>
-    /// <param name="passiveCmStats">The passive cm stats.</param>
-    /// <param name="activeCmStats">The active cm stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
-    /// <param name="shieldGenStats">The shield generator stats.</param>
-    /// <param name="item">The item.</param>
-    public void PopulateInstance(ShipHullStat hullStat, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
-        IEnumerable<WeaponStat> weapStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref ShipItem item) {
-        D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        var categoryFromItem = item.category;
-        D.Assert(hullStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(hullStat.Category.GetValueName(), categoryFromItem.GetValueName()));
+    public ShipItem MakeInstance(Player owner, ShipDesign design) {
+        ShipHullCategory hullCategory = design.HullCategory;
 
-        var weapons = MakeWeapons(weapStats, item);
-        var passiveCMs = MakeCountermeasures(passiveCmStats);
-        var activeCMs = MakeCountermeasures(activeCmStats, item);
-        var sensors = MakeSensors(sensorStats);
-        var shieldGenerators = MakeShieldGenerators(shieldGenStats, item);
+        GameObject hullPrefabGo = _shipHullPrefabs.Single(sHull => sHull.HullCategory == hullCategory).gameObject;
+        GameObject elementGoClone = UnityUtility.AddChild(null, _shipItemPrefab.gameObject);
+        GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
+        hullGoClone.layer = (int)Layers.ShipCull;   // hull layer gets set to item layer by AddChild
 
-        ShipData data = new ShipData(item.Transform, hullStat, engineStat, combatStance, owner, weapons, activeCMs, sensors, passiveCMs, shieldGenerators);
-        item.Data = data;
+        ShipItem element = elementGoClone.GetSafeMonoBehaviour<ShipItem>();
+        PopulateInstance(owner, design, ref element);
+        return element;
+    }
+
+    public void PopulateInstance(Player owner, string designName, ref ShipItem element) {
+        ShipDesign design = GameManager.Instance.PlayerDesigns.GetShipDesign(owner, designName);
+        PopulateInstance(owner, design, ref element);
+    }
+
+    public void PopulateInstance(Player owner, ShipDesign design, ref ShipItem element) {
+        // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
+        ShipHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<ShipHull>();
+        var hullCategory = design.HullCategory;
+        D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
+        ShipHullEquipment hullEquipment = new ShipHullEquipment(design.HullStat);
+        hullEquipment.Hull = hull;
+
+        element.SetSize(hullCategory.__HullDimensions());  // IMPROVE  size should eventually come with the hullStat
+
+        // Make the weapons along with their already selected mounts and add the weapon to the hullEquipment
+        var weapons = MakeWeapons(design.WeaponDesigns, element, hull);
+        weapons.ForAll(weapon => {
+            hullEquipment.AddWeapon(weapon);
+        });
+
+        var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
+        var activeCMs = MakeCountermeasures(design.ActiveCmStats, element);
+        var sensors = MakeSensors(design.SensorStats);
+        var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
+
+        ShipData data = new ShipData(element.Transform, hullEquipment, design.EngineStat, design.CombatStance, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
+        element.Data = data;
     }
 
     /// <summary>
@@ -247,56 +255,52 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         };
     }
 
-    /// <summary>
-    /// Makes an instance of a facility based on the stats provided. The facility will not be enabled.
-    /// As the Facility is not yet attached to a Command, the GameObject will have no parent and will not yet have a formation position assigned.
-    /// </summary>
-    /// <param name="hullStat">The hull stat.</param>
-    /// <param name="topography">The topography.</param>
-    /// <param name="owner">The owner.</param>
-    /// <param name="weapStats">The weapon stats.</param>
-    /// <param name="passiveCmStats">The passive cm stats.</param>
-    /// <param name="activeCmStats">The active cm stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
-    /// <param name="shieldGenStats">The shield generator stats.</param>
-    /// <returns></returns>
-    public FacilityItem MakeInstance(FacilityHullStat hullStat, Topography topography, Player owner, IEnumerable<WeaponStat> weapStats,
-        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
-        GameObject facilityPrefabGo = _facilityPrefabs.Single(f => f.category == hullStat.Category).gameObject;
-        GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
-        FacilityItem item = facilityGoClone.GetSafeMonoBehaviour<FacilityItem>();
-        PopulateInstance(hullStat, topography, owner, weapStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref item);
-        return item;
+    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, string designName) {
+        FacilityDesign design = GameManager.Instance.PlayerDesigns.GetFacilityDesign(owner, designName);
+        return MakeInstance(owner, topography, design);
     }
 
-    /// <summary>
-    /// Populates the provided facility instance with data from the stat objects. The facility will not be enabled.
-    /// The element has yet to be assigned to a Command.
-    /// </summary>
-    /// <param name="hullStat">The hull stat.</param>
-    /// <param name="topography">The topography.</param>
-    /// <param name="owner">The owner.</param>
-    /// <param name="weapStats">The weapon stats.</param>
-    /// <param name="passiveCmStats">The passive cm stats.</param>
-    /// <param name="activeCmStats">The active cm stats.</param>
-    /// <param name="sensorStats">The sensor stats.</param>
-    /// <param name="shieldGenStats">The shield generator stats.</param>
-    /// <param name="item">The item.</param>
-    public void PopulateInstance(FacilityHullStat hullStat, Topography topography, Player owner, IEnumerable<WeaponStat> weapStats,
-        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref FacilityItem item) {
-        var categoryFromItem = item.category;
-        D.Assert(hullStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(hullStat.Category.GetValueName(), categoryFromItem.GetValueName()));
+    public FacilityItem MakeInstance(Player owner, Topography topography, FacilityDesign design) {
+        FacilityHullCategory hullCategory = design.HullCategory;
 
-        var weapons = MakeWeapons(weapStats, item);
-        var passiveCMs = MakeCountermeasures(passiveCmStats);
-        var activeCMs = MakeCountermeasures(activeCmStats, item);
-        var sensors = MakeSensors(sensorStats);
-        var shieldGenerators = MakeShieldGenerators(shieldGenStats, item);
+        GameObject hullPrefabGo = _facilityHullPrefabs.Single(fHull => fHull.HullCategory == hullCategory).gameObject;
+        GameObject elementGoClone = UnityUtility.AddChild(null, _shipItemPrefab.gameObject);
+        GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
+        hullGoClone.layer = (int)Layers.ShipCull;   // hull layer gets set to item layer by AddChild
 
-        FacilityData data = new FacilityData(item.Transform, hullStat, topography, owner, weapons, activeCMs, sensors, passiveCMs, shieldGenerators);
-        item.Data = data;
+        FacilityItem element = elementGoClone.GetSafeMonoBehaviour<FacilityItem>();
+        PopulateInstance(owner, topography, design, ref element);
+        return element;
+    }
+
+    public void PopulateInstance(Player owner, Topography topography, string designName, ref FacilityItem element) {
+        FacilityDesign design = GameManager.Instance.PlayerDesigns.GetFacilityDesign(owner, designName);
+        PopulateInstance(owner, topography, design, ref element);
+    }
+
+    public void PopulateInstance(Player owner, Topography topography, FacilityDesign design, ref FacilityItem element) {
+        // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
+        FacilityHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<FacilityHull>();
+        var hullCategory = design.HullCategory;
+        D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
+        FacilityHullEquipment hullEquipment = new FacilityHullEquipment(design.HullStat);
+        hullEquipment.Hull = hull;
+
+        element.SetSize(hullCategory.__HullDimensions());   // IMPROVE  size should eventually come with the hullStat
+
+        // Make the weapons along with their already selected mounts and add the weapon to the hullEquipment
+        var weapons = MakeWeapons(design.WeaponDesigns, element, hull);
+        weapons.ForAll(weapon => {
+            hullEquipment.AddWeapon(weapon);
+        });
+
+        var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
+        var activeCMs = MakeCountermeasures(design.ActiveCmStats, element);
+        var sensors = MakeSensors(design.SensorStats);
+        var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
+
+        FacilityData data = new FacilityData(element.Transform, hullEquipment, topography, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
+        element.Data = data;
     }
 
     public FormationStationMonitor MakeFormationStationInstance(Vector3 stationOffset, FleetCmdItem fleetCmd) {
@@ -358,15 +362,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return sensors;
     }
 
-    /// <summary>
-    /// Makes and returns weapons made from the provided stats including attaching them to a RangeMonitor of the element.
-    /// </summary>
-    /// <param name="weapStats">The weapon stats.</param>
-    /// <param name="element">The element.</param>
-    /// <returns></returns>
-    private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponStat> weapStats, AUnitElementItem element) {
-        var weapons = new List<AWeapon>(weapStats.Count());
-        weapStats.ForAll(stat => {
+    private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponDesign> weaponDesigns, AUnitElementItem element, AHull hull) {
+        var weapons = new List<AWeapon>(weaponDesigns.Count());
+        foreach (var design in weaponDesigns) {
+            WeaponStat stat = design.WeaponStat;
+            MountSlotID mountSlotID = design.MountSlotID;
+            Facing mountFacing = design.MountFacing;
+
             AWeapon weapon;
             switch (stat.DeliveryVehicleCategory) {
                 case WDVCategory.Beam:
@@ -382,9 +384,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(stat.DeliveryVehicleCategory));
             }
-            weapons.Add(weapon);
             AttachMonitor(weapon, element);
-        });
+            AttachMount(weapon, mountFacing, mountSlotID, hull);
+            weapons.Add(weapon);
+        }
+        // destroy any remaining mount placeholders that didn't get weapons
+        var remainingMountPlaceholders = hull.gameObject.GetComponentsInChildren<AMountPlaceholder>();
+        if (remainingMountPlaceholders.Any()) {
+            remainingMountPlaceholders.ForAll(mp => UnityUtility.Destroy(mp.gameObject));
+        }
         return weapons;
     }
 
@@ -421,7 +429,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 shield = shieldGo.GetSafeFirstMonoBehaviourInChildren<Shield>();
             }
             shield.ParentItem = element;
-            D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(Shield).Name, generator.Name);
+            //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(Shield).Name, generator.Name);
         }
         shield.Add(generator);
     }
@@ -456,6 +464,45 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
+    /// Attaches a newly instantiated AWeaponMount of the proper type and facing to the weapon and the provided slot in the hull.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="mountFacing">The mount facing.</param>
+    /// <param name="mountSlotID">The mount slot identifier.</param>
+    /// <param name="hull">The hull.</param>
+    private void AttachMount(AWeapon weapon, Facing mountFacing, MountSlotID mountSlotID, AHull hull) {
+        var weaponDeliveryVehicle = weapon.DeliveryVehicleCategory;
+        AMount mountPlaceholder;
+        AWeaponMount weaponMountPrefab;
+        bool isLOSWeapon = weaponDeliveryVehicle != WDVCategory.Missile;
+        if (isLOSWeapon) {
+            mountPlaceholder = hull.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
+            weaponMountPrefab = _losTurretPrefabs.Single(mountPrefab => mountPrefab.facing == mountFacing);
+        }
+        else {
+            mountPlaceholder = hull.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
+            weaponMountPrefab = _missileTubePrefabs.Single(mountPrefab => mountPrefab.facing == mountFacing);
+        }
+        D.Assert(mountPlaceholder.facing == mountFacing);
+        D.Assert(weaponMountPrefab.SlotID == MountSlotID.None); // mount prefabs won't yet have a slotID
+
+        Quaternion prefabRotation = weaponMountPrefab.transform.rotation;
+        GameObject mountGo = UnityUtility.AddChild(hull.gameObject, weaponMountPrefab.gameObject);
+        // restore the mount's rotation from the prefab as AddChild sets it to Quaternion.Identity
+        mountGo.transform.rotation = prefabRotation;
+        mountGo.transform.position = mountPlaceholder.transform.position;
+        AWeaponMount weaponMount = mountGo.GetSafeMonoBehaviour<AWeaponMount>();
+        weaponMount.SlotID = mountSlotID;
+        if (isLOSWeapon) {
+            var losMountPlaceholder = mountPlaceholder as LOSMountPlaceholder;
+            var losWeaponMount = weaponMount as LOSTurret;
+            losWeaponMount.InitializeBarrelElevationSettings(losMountPlaceholder.minimumBarrelElevation);
+        }
+        UnityUtility.Destroy(mountPlaceholder.gameObject);
+        weapon.WeaponMount = weaponMount;
+    }
+
+    /// <summary>
     /// Makes or acquires an existing ActiveCountermeasureRangeMonitor and attaches it to this active countermeasure.
     /// Note: The monitor will be added and its events hooked up to the element when the element's data is attached.
     /// </summary>
@@ -483,6 +530,83 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         monitor.Add(countermeasure);
     }
+
+    /// <summary>
+    ///Temporary method for making WeaponDesigns. Randomly picks a mountPlaceholder from the hull and creates a WeaponDesign using the stat and
+    ///the mountPlaceholder's MountSlotID and Facing. In the future, this will be done in an ElementDesignScreen where the player picks the mountPlaceholder.
+    /// </summary>
+    /// <param name="hullCategory">The hull category.</param>
+    /// <param name="weapStats">The weap stats.</param>
+    /// <returns></returns>
+    public IEnumerable<WeaponDesign> __MakeWeaponDesigns(ShipHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
+        IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
+        ShipHull hullPrefab = _shipHullPrefabs.Single(h => h.HullCategory == hullCategory);
+        // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
+        GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
+        var missileMountPlaceholders = tempHullGo.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
+        var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
+
+        MountSlotID placeholderSlotID;
+        Facing placeholderFacing;
+        foreach (var stat in weapStats) {
+            if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
+                var placeholder = RandomExtended.Choice(missileMountPlaceholders);
+                placeholderFacing = placeholder.facing;
+                placeholderSlotID = placeholder.slotID;
+                missileMountPlaceholders.Remove(placeholder);
+            }
+            else {
+                // LOSWeapon
+                var placeholder = RandomExtended.Choice(losMountPlaceholders);
+                placeholderFacing = placeholder.facing;
+                placeholderSlotID = placeholder.slotID;
+                losMountPlaceholders.Remove(placeholder);
+            }
+            var weaponDesign = new WeaponDesign(stat, placeholderSlotID, placeholderFacing);
+            weapDesigns.Add(weaponDesign);
+        }
+        UnityUtility.Destroy(tempHullGo);
+        return weapDesigns;
+    }
+
+    /// <summary>
+    ///Temporary method for making WeaponDesigns. Randomly picks a mountPlaceholder from the hull and creates a PlayerWeaponDesign using the stat and
+    ///the mountPlaceholder's MountSlotID and Facing. In the future, this will be done in an ElementDesignScreen where the player picks the mountPlaceholder.
+    /// </summary>
+    /// <param name="hullCategory">The hull category.</param>
+    /// <param name="weapStats">The weap stats.</param>
+    /// <returns></returns>
+    public IEnumerable<WeaponDesign> __MakeWeaponDesigns(FacilityHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
+        IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
+        FacilityHull hullPrefab = _facilityHullPrefabs.Single(h => h.HullCategory == hullCategory);
+        // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
+        GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
+        var missileMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
+        var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
+
+        MountSlotID placeholderSlotID;
+        Facing placeholderFacing;
+        foreach (var stat in weapStats) {
+            if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
+                var placeholder = RandomExtended.Choice(missileMountPlaceholders);
+                placeholderFacing = placeholder.facing;
+                placeholderSlotID = placeholder.slotID;
+                missileMountPlaceholders.Remove(placeholder);
+            }
+            else {
+                // LOSWeapon
+                var placeholder = RandomExtended.Choice(losMountPlaceholders);
+                placeholderFacing = placeholder.facing;
+                placeholderSlotID = placeholder.slotID;
+                losMountPlaceholders.Remove(placeholder);
+            }
+            var weaponDesign = new WeaponDesign(stat, placeholderSlotID, placeholderFacing);
+            weapDesigns.Add(weaponDesign);
+        }
+        UnityUtility.Destroy(tempHullGo);
+        return weapDesigns;
+    }
+
 
     /// <summary>
     /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.

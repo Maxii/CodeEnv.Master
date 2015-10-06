@@ -58,14 +58,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetReport fleetReport) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<ShipCategory> elementCategories = fleetReport.UnitComposition.GetUniqueElementCategories();
-            if (elementCategories.Contains(ShipCategory.Science)) {
+            IEnumerable<ShipHullCategory> elementCategories = fleetReport.UnitComposition.GetUniqueElementCategories();
+            if (elementCategories.Contains(ShipHullCategory.Science)) {
                 criteria.Add(IconSelectionCriteria.Science);
             }
-            if (elementCategories.Contains(ShipCategory.Troop)) {
+            if (elementCategories.Contains(ShipHullCategory.Troop)) {
                 criteria.Add(IconSelectionCriteria.Troop);
             }
-            if (elementCategories.Contains(ShipCategory.Colonizer)) {
+            if (elementCategories.Contains(ShipHullCategory.Colonizer)) {
                 criteria.Add(IconSelectionCriteria.Colony);
             }
             return criteria;

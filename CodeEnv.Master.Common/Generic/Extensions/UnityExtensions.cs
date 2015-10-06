@@ -589,6 +589,17 @@ namespace CodeEnv.Master.Common {
             return c;
         }
 
+        /// <summary>
+        /// Determines whether the two rotations are the same within the allowedDeviation in degrees.
+        /// </summary>
+        /// <param name="sourceRotation">The source rotation.</param>
+        /// <param name="otherRotation">The other rotation.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees.</param>
+        /// <returns></returns>
+        public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, float allowedDeviation = UnityConstants.FloatEqualityPrecision) {
+            return Quaternion.Angle(sourceRotation, otherRotation) <= allowedDeviation;
+        }
+
     }
 }
 

@@ -27,15 +27,15 @@ using CodeEnv.Master.GameContent;
 ///  Initialization class that deploys a Settlement that is available for assignment to a System.
 ///  When assigned, the Settlement relocates to the orbital slot for Settlements held open by the System.
 /// </summary>
-public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityHullStat, SettlementCmdItem> {
+public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCategory, FacilityData, FacilityHullStat, SettlementCmdItem> {
 
     public bool orbitMoves;
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override FacilityHullStat CreateElementHullStat(FacilityCategory hullCat, string elementName) {
-        float science = hullCat == FacilityCategory.Laboratory ? 10F : Constants.ZeroF;
-        float culture = hullCat == FacilityCategory.CentralHub || hullCat == FacilityCategory.Colonizer ? 2.5F : Constants.ZeroF;
+    protected override FacilityHullStat CreateElementHullStat(FacilityHullCategory hullCat, string elementName) {
+        float science = hullCat == FacilityHullCategory.Laboratory ? 10F : Constants.ZeroF;
+        float culture = hullCat == FacilityHullCategory.CentralHub || hullCat == FacilityHullCategory.ColonyHab ? 2.5F : Constants.ZeroF;
         float income = __GetIncome(hullCat);
         float expense = __GetExpense(hullCat);
         float hullMass = TempGameValues.__GetHullMass(hullCat);
@@ -43,33 +43,34 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
             hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
     }
 
-    protected override FacilityItem MakeElement(FacilityHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
-        return _factory.MakeInstance(hullStat, Topography.System, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
+    protected override void MakeAndRecordDesign(string designName, FacilityHullStat hullStat, IEnumerable<WeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+        FacilityHullCategory hullCategory = hullStat.HullCategory;
+        var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
+        var design = new FacilityDesign(_owner, designName, hullStat, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
+        GameManager.Instance.PlayerDesigns.Add(design);
     }
 
-    protected override void PopulateElement(FacilityHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref FacilityItem element) {
-        _factory.PopulateInstance(hullStat, Topography.System, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref element);
+    protected override FacilityItem MakeElement(string designName) {
+        return _factory.MakeFacilityInstance(_owner, Topography.System, designName);
     }
 
-    protected override FacilityCategory GetCategory(FacilityHullStat hullStat) {
-        return hullStat.Category;
+    protected override void PopulateElement(string designName, ref FacilityItem element) {
+        _factory.PopulateInstance(_owner, Topography.System, designName, ref element);
     }
 
-    protected override FacilityCategory GetCategory(FacilityItem element) {
-        return element.category;
-    }
+    protected override FacilityHullCategory GetCategory(FacilityHullStat hullStat) { return hullStat.HullCategory; }
 
-    protected override FacilityCategory[] ElementCategories {
+    protected override FacilityHullCategory GetCategory(AHull hull) { return (hull as FacilityHull).HullCategory; }
+
+    protected override FacilityHullCategory[] ElementCategories {
         get {
-            return new FacilityCategory[] { FacilityCategory.Factory, FacilityCategory.Defense, 
-            FacilityCategory.Economic, FacilityCategory.Laboratory, FacilityCategory.Barracks, FacilityCategory.Colonizer };
+            return new FacilityHullCategory[] { FacilityHullCategory.Factory, FacilityHullCategory.Defense, 
+            FacilityHullCategory.Economic, FacilityHullCategory.Laboratory, FacilityHullCategory.Barracks, FacilityHullCategory.ColonyHab };
         }
     }
 
-    protected override FacilityCategory[] HQElementCategories {
-        get { return new FacilityCategory[] { FacilityCategory.CentralHub }; }
+    protected override FacilityHullCategory[] HQElementCategories {
+        get { return new FacilityHullCategory[] { FacilityHullCategory.CentralHub }; }
     }
 
     protected override SettlementCmdItem MakeCommand(Player owner) {
@@ -105,7 +106,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
 
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.HullCategory));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
         _command.HQElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
     }
@@ -114,34 +115,42 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         LogEvent();
     }
 
-    private float __GetIncome(FacilityCategory category) {
+    protected override int GetMaxLosWeaponsAllowed(FacilityHullCategory hullCategory) {
+        return hullCategory.__MaxLOSWeapons();
+    }
+
+    protected override int GetMaxMissileWeaponsAllowed(FacilityHullCategory hullCategory) {
+        return hullCategory.__MaxMissileWeapons();
+    }
+
+    private float __GetIncome(FacilityHullCategory category) {
         switch (category) {
-            case FacilityCategory.CentralHub:
+            case FacilityHullCategory.CentralHub:
                 return 20F;
-            case FacilityCategory.Economic:
+            case FacilityHullCategory.Economic:
                 return 100F;
-            case FacilityCategory.Barracks:
-            case FacilityCategory.Colonizer:
-            case FacilityCategory.Defense:
-            case FacilityCategory.Factory:
-            case FacilityCategory.Laboratory:
+            case FacilityHullCategory.Barracks:
+            case FacilityHullCategory.ColonyHab:
+            case FacilityHullCategory.Defense:
+            case FacilityHullCategory.Factory:
+            case FacilityHullCategory.Laboratory:
                 return Constants.ZeroF;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
         }
     }
 
-    private float __GetExpense(FacilityCategory category) {
+    private float __GetExpense(FacilityHullCategory category) {
         switch (category) {
-            case FacilityCategory.CentralHub:
-            case FacilityCategory.Economic:
+            case FacilityHullCategory.CentralHub:
+            case FacilityHullCategory.Economic:
                 return Constants.ZeroF;
-            case FacilityCategory.Barracks:
-            case FacilityCategory.Colonizer:
+            case FacilityHullCategory.Barracks:
+            case FacilityHullCategory.ColonyHab:
                 return 5F;
-            case FacilityCategory.Defense:
-            case FacilityCategory.Factory:
-            case FacilityCategory.Laboratory:
+            case FacilityHullCategory.Defense:
+            case FacilityHullCategory.Factory:
+            case FacilityHullCategory.Laboratory:
                 return 10F;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));

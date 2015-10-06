@@ -78,7 +78,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             }
         }
         else {
-            D.WarnContext("{0}.{1}.OnBecameVisible() called while not enabled.".Inject(_transform.name, GetType().Name), this);
+            D.WarnContext("{0}.{1}.OnBecameVisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector."
+                .Inject(_transform.name, GetType().Name), this);
         }
     }
 
@@ -95,7 +96,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             }
         }
         else {
-            D.WarnContext("{0}.{1}.OnBecameInvisible() called while not enabled.".Inject(_transform.name, GetType().Name), this);
+            D.WarnContext("{0}.{1}.OnBecameInvisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector."
+                .Inject(_transform.name, GetType().Name), this);
         }
     }
 

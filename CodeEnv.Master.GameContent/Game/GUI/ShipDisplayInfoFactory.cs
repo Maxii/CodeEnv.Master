@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 switch (contentID) {
                     case ContentID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != ShipCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _phrase.Inject(report.Category != ShipHullCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
                     case ContentID.Target:
                         isSuccess = true;

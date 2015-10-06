@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityData : AUnitElementItemData {
 
-        public FacilityCategory Category { get; private set; }
+        public FacilityHullCategory Category { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="topography">The topography.</param>
         public FacilityData(FacilityStat stat, Topography topography)
             : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
-            Category = stat.Category;
+            HullCategory = stat.Category;
             base.Topography = topography;
         }
 

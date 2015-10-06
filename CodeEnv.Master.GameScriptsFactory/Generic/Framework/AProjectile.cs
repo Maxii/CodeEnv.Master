@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -133,12 +133,12 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
 
     private void CheckRange() {
         var distanceTraveled = GetDistanceTraveled();
-        //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
+        D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
         if (distanceTraveled > _range) {
             if (ToShowEffects) {
                 ShowImpactEffects(_transform.position); // self destruction effect
             }
-            //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
             TerminateNow();
         }
     }
@@ -190,7 +190,7 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         }
         D.Warn(DeliveryVehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0.", Name);
 
-        //D.Log("{0} intercepted. InterceptStrength: {1}, WDV Strength: {2}.", Name, interceptStrength, VehicleStrength);
+        D.Log("{0} intercepted. InterceptStrength: {1}, WDV Strength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
         DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
         if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
             TerminateNow();

@@ -355,6 +355,8 @@
     <Compile Include="LeaderFactory.cs" />
     <Compile Include="LoadSavedGameEvent.cs" />
     <Compile Include="LobbyInputManager.cs" />
+    <Compile Include="LOSWeaponMount.cs" />
+    <Compile Include="MissileWeaponMount.cs" />
     <Compile Include="MonoGameManager.cs" />
     <Compile Include="MoonData.cs" />
     <Compile Include="MoonGuiHudTextFactory.cs" />

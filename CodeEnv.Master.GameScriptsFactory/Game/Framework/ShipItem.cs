@@ -32,9 +32,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     public event Action onDestinationReached;
 
-    [Tooltip("The hull of this ship")]
-    public ShipCategory category;
-
     private ShipOrder _currentOrder;
     /// <summary>
     /// The last order this ship was instructed to execute.
@@ -88,14 +85,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         _gameTime = GameTime.Instance;
-        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
-        Radius = meshRenderer.bounds.extents.magnitude;
-        (collider as BoxCollider).size = meshRenderer.bounds.size;
+        // Collider Size and Element Radius now set by UnitFactory using SetSize()
+        //var meshRenderer = gameObject.GetComponentInChildren<Renderer>();
+        //Radius = meshRenderer.bounds.extents.magnitude;
+        //(collider as BoxCollider).size = meshRenderer.bounds.size;    
     }
 
     protected override void InitializeModelMembers() {
         base.InitializeModelMembers();
-        D.Assert(category == Data.Category);
         _helm = new ShipHelm(this);
         CurrentState = ShipState.None;
     }
@@ -136,6 +133,16 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     public ShipReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+    /// <summary>
+    /// Sets the size of the element's collider and the element's Radius.
+    /// </summary>
+    /// <param name="boxSize">Size of the box.</param>
+    public void SetSize(Vector3 boxSize) {
+        BoxCollider shipCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        shipCollider.size = boxSize;
+        Radius = boxSize.magnitude;
+    }
 
     public void OnFleetFullSpeedChanged() { _helm.OnFleetFullSpeedChanged(); }
 
@@ -1928,11 +1935,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 // check the course
                 if (_ship.IsHeadingConfirmed) {
                     //D.Log("{0} is checking its course.", Name);
-                    Vector3 currentDestinationBearing = (destination.Position + offset - Position);
+                    Vector3 currentDestinationBearing = (destination.Position + offset - Position).normalized;
                     //D.Log("{0}'s angle between correct heading and requested heading is {1}.", ClientName, Vector3.Angle(currentDestinationBearing, _ship.Data.RequestedHeading));
                     if (!currentDestinationBearing.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
                         checkCount = checkCountThreshold;
-                        correctedHeading = currentDestinationBearing.normalized;
+                        correctedHeading = currentDestinationBearing;
                         return true;
                     }
                 }

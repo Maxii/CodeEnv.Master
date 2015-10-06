@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssignValuesFromElementReports(StarbaseCmdData cmdData) {
-            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(FacilityCategory));
+            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(FacilityHullCategory));
             if (knownElementCategories.Any()) { // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
                 UnitComposition = new BaseComposition(knownElementCategories);
             }

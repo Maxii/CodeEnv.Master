@@ -25,14 +25,6 @@ using CodeEnv.Master.Common;
 [SerializeAll]
 public abstract class ACreator : AMonoBase {
 
-    public enum __DiploStateWithUser {    // avoids offering None or Self
-        Ally,
-        Friend,
-        Neutral,
-        ColdWar,
-        War
-    }
-
     public bool isOwnerUser;
     public __DiploStateWithUser ownerRelationshipWithUser;
 
@@ -45,7 +37,9 @@ public abstract class ACreator : AMonoBase {
     public int dayDelay = 0;
     public int yearDelay = 0;
 
-    public int weaponsPerElement = 2;
+    public WeaponLoadout losWeaponsPerElement;
+    public WeaponLoadout missileWeaponsPerElement;
+
     public int activeCMsPerElement = 2;
     public int shieldGeneratorsPerElement = 2;
     public int passiveCMsPerElement = 2;
@@ -53,6 +47,43 @@ public abstract class ACreator : AMonoBase {
     public int countermeasuresPerCmd = 2;
 
     public bool enableTrackingLabel = false;
+
+    #region Nested Classes
+
+    public enum __DiploStateWithUser {    // avoids offering None or Self
+        Ally,
+        Friend,
+        Neutral,
+        ColdWar,
+        War
+    }
+
+    public enum WeaponLoadout {
+
+        /// <summary>
+        /// No weapons will be carried by the element.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// One weapon will be carried by the element.
+        /// </summary>
+        One,
+
+        /// <summary>
+        /// The number of weapons carried by the element will 
+        /// be a random value between 0 and the maximum allowed by the element category, inclusive.
+        /// </summary>
+        Random,
+
+        /// <summary>
+        /// The number of weapons carried by the element will 
+        /// be the maximum allowed by the element category.
+        /// </summary>
+        Max
+    }
+
+    #endregion
 
 }
 

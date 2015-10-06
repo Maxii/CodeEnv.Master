@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: BeamProjector.cs
-// An Element's offensive Beam-firing weapon.
+// Weapon that projects a LOS Beam.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,12 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///An Element's offensive Beam-firing weapon.
+    /// Weapon that projects a LOS Beam.
     /// </summary>
-    public class BeamProjector : AWeapon {
+    public class BeamProjector : ALOSWeapon {
 
         /// <summary>
         /// The firing duration in hours.
@@ -34,17 +36,17 @@ namespace CodeEnv.Master.GameContent {
             : base(stat) {
         }
 
-        protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) {
-            D.Assert(_activeOrdnance == null);
-            _activeOrdnance = ordnanceFired as ITerminatableOrdnance;
-        }
-
         public override void CheckActiveOrdnanceTargeting() {
             if (_activeOrdnance != null) {
                 if (_activeOrdnance.Target.Owner.IsEnemyOf(Owner)) {
                     _activeOrdnance.Terminate();
                 }
             }
+        }
+
+        protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) {
+            D.Assert(_activeOrdnance == null);
+            _activeOrdnance = ordnanceFired as ITerminatableOrdnance;
         }
 
         protected override void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance) {

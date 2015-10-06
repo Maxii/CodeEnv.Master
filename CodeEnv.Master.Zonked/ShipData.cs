@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ShipCategory Category { get; private set; }
+        public ShipHullCategory Category { get; private set; }
 
         // FormationStation moved to ShipItem as it had no apparent value residing in data
 

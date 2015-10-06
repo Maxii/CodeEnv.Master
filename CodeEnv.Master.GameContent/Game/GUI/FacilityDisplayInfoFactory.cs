@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
                 switch (contentID) {
                     case ContentID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != FacilityCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _phrase.Inject(report.Category != FacilityHullCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

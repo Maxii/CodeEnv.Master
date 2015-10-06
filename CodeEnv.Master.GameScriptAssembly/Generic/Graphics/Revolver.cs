@@ -52,7 +52,7 @@ public class Revolver : AMonoBase, IRevolver {
 
     protected override void Awake() {
         base.Awake();
-        UnityUtility.ValidateComponentPresence<MeshRenderer>(gameObject);
+        //UnityUtility.ValidateComponentPresence<MeshRenderer>(gameObject); // need to be able to revolve objects with multiple mesh children
         _gameTime = GameTime.Instance;
         _rotationPeriod = GameTimeDuration.OneDay;
         var rotationSpeedInDegreesPerHour = relativeRotationSpeed * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;

@@ -38,7 +38,7 @@ public class Missile : AProjectile, ITerminatableOrdnance {
 
     protected override void Awake() {
         base.Awake();
-        UpdateRate = FrameUpdateFrequency.VeryRare;
+        UpdateRate = FrameUpdateFrequency.Infrequent;
     }
 
     public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
@@ -91,6 +91,21 @@ public class Missile : AProjectile, ITerminatableOrdnance {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
+        CheckProgress();
+    }
+
+    private void CheckProgress() {
+        if (!Target.IsOperational) {
+            // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
+            D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+            TerminateNow();
+            return;
+        }
+
+        if (_cumDistanceTraveled < TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
+            // avoid steering until pushover
+            return;
+        }
         Steer();
     }
 
@@ -99,15 +114,8 @@ public class Missile : AProjectile, ITerminatableOrdnance {
     /// IMPROVE Should be checked infrequently enough to allow a miss.
     /// </summary>
     private void Steer() {
-        if (!Target.IsOperational) {
-            // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
-            //D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
-            TerminateNow();
-            return;
-        }
-        Vector3 tgtBearing;
-        var estimatedTargetBearing = GetTargetFiringSolution(_weaponAccuracy, out tgtBearing);
-        _transform.rotation = Quaternion.LookRotation(estimatedTargetBearing);
+        Vector3 tgtBearing = (Target.Position - Position).normalized;
+        _transform.rotation = Quaternion.LookRotation(tgtBearing);  // TODO needs inaccuracy    // Missile needs maxTurnRate, add deltaTime
     }
 
     protected override float GetDistanceTraveled() {

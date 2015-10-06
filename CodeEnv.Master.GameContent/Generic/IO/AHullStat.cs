@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AHullStat.cs
-// Immutable abstract base class for Hull stats.
+// Immutable abstract base stat containing externally acquirable hull values for Elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Immutable abstract base class for Hull stats.
+    /// Immutable abstract base stat containing externally acquirable hull values for Elements.
     /// </summary>
     public abstract class AHullStat : AEquipmentStat {
 
@@ -43,7 +43,6 @@ namespace CodeEnv.Master.GameContent {
             MaxHitPoints = maxHitPts;
             DamageMitigation = damageMitigation;
         }
-
 
     }
 }

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: MissileLauncher.cs
-//  An Element's offensive guided Missile-firing weapon.
+// Weapon that launches a Missile.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// An Element's offensive guided Missile-firing weapon.
+    /// Weapon that launches a Missile.
     /// </summary>
     public class MissileLauncher : AWeapon {
 

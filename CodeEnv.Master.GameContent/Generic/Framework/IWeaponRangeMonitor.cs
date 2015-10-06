@@ -25,17 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         IUnitElementItem ParentItem { set; get; }
 
-        /// <summary>
-        /// Checks the line of sight from this monitor (element) to the provided enemy target, returning <c>true</c>
-        /// if the LOS is clear to the target, otherwise <c>false</c>. If <c>false</c> and the interference is from 
-        /// another enemy target, then interferingEnemyTgt is assigned that target. Otherwise, interferingEnemyTgt
-        /// will always be null. In route ordnance does not interfere with this LOS.
-        /// </summary>
-        /// <param name="enemyTarget">The target.</param>
-        /// <param name="interferingEnemyTgt">The interfering enemy target.</param>
-        /// <returns></returns>
-        bool CheckLineOfSightTo(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt);
-
     }
 }
 

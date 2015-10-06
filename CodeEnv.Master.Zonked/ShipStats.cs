@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     [Obsolete]
     public class ShipStats : AElementStats {
 
-        public ShipCategory Category { get; set; }
+        public ShipHullCategory Category { get; set; }
         public ShipCombatStance CombatStance { get; set; }
         public float MaxTurnRate { get; set; }
         public float Drag { get; set; }

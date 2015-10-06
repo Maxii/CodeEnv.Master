@@ -143,7 +143,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void UpdateComposition() {
-            var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.Category);
+            var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.HullCategory);
             UnitComposition = new FleetComposition(elementCategories);
         }
 

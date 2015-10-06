@@ -44,12 +44,12 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="source">The source direction.</param>
         /// <param name="v">The direction to compare the source to.</param>
-        /// <param name="degreeTolerance">The tolerance of the comparison in degrees.</param>
+        /// <param name="degreeTolerance">The tolerance of the comparison in degrees.
+        /// Default if not specified is the FloatEqualityPrecision of the game, aka 0.0001F.</param>
         /// <returns></returns>
-        public static bool IsSameDirection(this Vector3 source, Vector3 v, float degreeTolerance) {
-            float angle = Vector3.Angle(source, v);
-            D.Log("Angle = {0} degrees.", angle);
-            return angle < degreeTolerance;
+        public static bool IsSameDirection(this Vector3 source, Vector3 v, float degreeTolerance = UnityConstants.FloatEqualityPrecision) {
+            float unused;
+            return UnityUtility.AreDirectionsWithinTolerance(source, v, degreeTolerance, out unused);
         }
 
         /// <summary>

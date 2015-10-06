@@ -70,6 +70,7 @@
     <Compile Include="Game\StarbasesTableWindowEditor.cs" />
     <Compile Include="Game\SystemsTableWindowEditor.cs" />
     <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
+    <Compile Include="ThirdParty\RotateMesh.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />
     <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />
     <Compile Include="Generic\DebugSettingsWindow.cs" />

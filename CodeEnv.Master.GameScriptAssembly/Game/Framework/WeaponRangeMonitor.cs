@@ -30,8 +30,6 @@ using UnityEngine;
 /// </summary>
 public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarget, AWeapon>, IWeaponRangeMonitor {
 
-    private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
-
     public new IUnitElementItem ParentItem {
         get { return base.ParentItem as IUnitElementItem; }
         set { base.ParentItem = value as AItem; }
@@ -126,48 +124,6 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         var isRemoved = _attackableEnemyTargetsDetected.Remove(enemyTarget);
         D.Assert(isRemoved);
         OnEnemyTargetOutOfRange(enemyTarget);
-    }
-
-
-    /// <summary>
-    /// Checks the line of sight from this monitor (element) to the provided enemy target, returning <c>true</c>
-    /// if the LOS is clear to the target, otherwise <c>false</c>. If <c>false</c> and the interference is from 
-    /// another enemy target, then interferingEnemyTgt is assigned that target. Otherwise, interferingEnemyTgt
-    /// will always be null. In route ordnance does not interfere with this LOS.
-    /// </summary>
-    /// <param name="enemyTarget">The target.</param>
-    /// <param name="interferingEnemyTgt">The interfering enemy target.</param>
-    /// <returns></returns>
-    public bool CheckLineOfSightTo(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt) {
-        D.Assert(enemyTarget.IsOperational);
-        D.Assert(enemyTarget.Owner.IsEnemyOf(Owner));
-        interferingEnemyTgt = null;
-
-        Vector3 targetPosition = enemyTarget.Position;
-        Vector3 vectorToTarget = targetPosition - transform.position;
-        float targetDistance = vectorToTarget.magnitude;
-        Vector3 targetDirection = vectorToTarget.normalized;
-        RaycastHit hitInfo;
-        if (Physics.Raycast(transform.position, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
-            var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackableTarget>();
-            if (targetHit != null) {
-                if (targetHit == enemyTarget) {
-                    D.Log("{0}.CheckLineOfSightTo({1}) found its target.", Name, enemyTarget.FullName);
-                    return true;
-                }
-                if (targetHit.Owner.IsEnemyOf(Owner)) {
-                    interferingEnemyTgt = targetHit;
-                    D.Log("{0}.CheckLineOfSightTo({1}) found interfering enemy target {2}.", Name, enemyTarget.FullName, interferingEnemyTgt.FullName);
-                    return false;
-                }
-                D.Log("{0}.CheckLineOfSightTo({1}) found interfering non-enemy target {2}.", Name, enemyTarget.FullName, targetHit.FullName);
-                return false;
-            }
-            D.Warn("{0}.CheckLineOfSightTo() didn't find target {1} but found {2}.", Name, enemyTarget.FullName, hitInfo.transform.name);
-            return false;
-        }
-        D.Warn("{0}.CheckLineOfSightTo({1}) didn't find anything.", Name, enemyTarget.FullName);    // shouldn't happen?
-        return false;
     }
 
     protected override void OnParentOwnerChanged(IItem parentItem) {

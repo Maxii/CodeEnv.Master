@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static string _hqNameAddendum = "[HQ]";
 
-        public IList<AWeapon> Weapons { get; private set; }
+        public IList<AWeapon> Weapons { get { return HullEquipment.Weapons; } }
         public IList<Sensor> Sensors { get; private set; }
         public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
         public IList<ShieldGenerator> ShieldGenerators { get; private set; }
@@ -108,45 +108,41 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
-        protected AHullStat HullStat { get; private set; }
+        protected AHullEquipment HullEquipment { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitElementItemData" /> class.
         /// </summary>
         /// <param name="elementTransform">The element transform.</param>
-        /// <param name="hullStat">The hull stat.</param>
+        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="weapons">The weapons.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public AUnitElementItemData(Transform elementTransform, AHullStat hullStat, Player owner, IEnumerable<AWeapon> weapons,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(elementTransform, hullStat.Name, hullStat.MaxHitPoints, owner, passiveCMs) {
-            HullStat = hullStat;
-            Initialize(hullStat, weapons, activeCMs, sensors, passiveCMs, shieldGenerators);
+        public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, Player owner, IEnumerable<ActiveCountermeasure> activeCMs,
+            IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
+            : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, passiveCMs) {
+            Initialize(hullEquipment, activeCMs, sensors, passiveCMs, shieldGenerators);
         }
 
-        private void Initialize(AHullStat hullStat, IEnumerable<AWeapon> weapons, IEnumerable<ActiveCountermeasure> activeCMs,
+        private void Initialize(AHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
             IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators) {
-            float mass = hullStat.Mass + weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
+            HullEquipment = hullEquipment;
+            float mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             Mass = mass;
             _itemTransform.rigidbody.mass = mass;
 
-            Expense = hullStat.Expense + weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
+            Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
 
-            Initialize(weapons);
+            InitializeWeapons();
             Initialize(sensors);
             Initialize(activeCMs);
             Initialize(shieldGenerators);
         }
 
-        private void Initialize(IEnumerable<AWeapon> weapons) {
-            Weapons = weapons.ToList();
+        private void InitializeWeapons() {
             Weapons.ForAll(weap => {
-                D.Assert(weap.RangeMonitor != null);
-                D.Assert(!weap.IsOperational);    // Items make equipment operational when the item becomes operational
                 weap.onIsOperationalChanged += OnWeaponIsOperationalChanged;
                 // no need to recalc weapons values as this occurs when IsOperational changes
             });
@@ -158,6 +154,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(cm.RangeMonitor != null);
                 D.Assert(!cm.IsOperational);    // Items make equipment operational when the item becomes operational
                 cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
+                // no need to recalc activeCM values as this occurs when IsOperational changes
             });
         }
 
@@ -238,8 +235,8 @@ namespace CodeEnv.Master.GameContent {
             allCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
             allCountermeasures.AddRange(ShieldGenerators.Cast<ICountermeasure>());
             var cmDamageMitigation = allCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
-            DamageMitigation = HullStat.DamageMitigation + cmDamageMitigation;
-            DefensiveStrength = new CombatStrength(allCountermeasures, HullStat.DamageMitigation);
+            DamageMitigation = HullEquipment.DamageMitigation + cmDamageMitigation;
+            DefensiveStrength = new CombatStrength(allCountermeasures, HullEquipment.DamageMitigation);
         }
 
         private void RecalcOffensiveStrength() {

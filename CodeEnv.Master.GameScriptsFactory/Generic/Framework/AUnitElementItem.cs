@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -201,7 +200,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         D.Assert(weapon.IsReadyToFire);
         IElementAttackableTarget enemyTarget;
         if (weapon.TryPickBestTarget(tgtHint, out enemyTarget)) {
-            Fire(weapon, enemyTarget);
+            InitiateFiringSequence(weapon, enemyTarget);
         }
         else {
             D.Log("{0} did not fire weapon {1}.", FullName, weapon.Name);
@@ -209,17 +208,39 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     /// <summary>
-    /// Fires the provided weapon at the provided enemy target and lets the weapon know it has been fired.
+    /// Initiates the process of firing the provided weapon at the provided enemy target.
+    /// If the conditions for firing the weapon at the target are satisfied (within range, can be beared upon,
+    /// no interfering obstacles, etc.), the weapon will be fired.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="target">The target.</param>
-    private void Fire(AWeapon weapon, IElementAttackableTarget target) {
+    private void InitiateFiringSequence(AWeapon weapon, IElementAttackableTarget target) {
         StartEffect(EffectID.Attacking);
-        var targetBearing = (target.Position - Position).normalized;
-        var muzzleLocation = Position + targetBearing * Radius; // IMPROVE
-        var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon.DeliveryVehicleCategory, gameObject, muzzleLocation);
+        var losWeapon = weapon as ALOSWeapon;
+        if (losWeapon != null) {
+            losWeapon.onWeaponAimed += OnLOSWeaponAimed;
+            losWeapon.AimAt(target);
+        }
+        else {
+            // no aiming reqd, just launch the ordnance
+            LaunchOrdnance(weapon, target);
+        }
+    }
+
+    /// <summary>
+    /// Called when a LOS Weapon has completed its aiming process at a target.
+    /// </summary>
+    /// <param name="losWeapon">The los weapon.</param>
+    /// <param name="aimedTarget">The aimed target.</param>
+    private void OnLOSWeaponAimed(ALOSWeapon losWeapon, IElementAttackableTarget aimedTarget) {
+        LaunchOrdnance(losWeapon, aimedTarget);
+        losWeapon.onWeaponAimed -= OnLOSWeaponAimed;
+    }
+
+    private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
+        var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
         ordnance.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
-        //D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
+        D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
                * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
                * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the

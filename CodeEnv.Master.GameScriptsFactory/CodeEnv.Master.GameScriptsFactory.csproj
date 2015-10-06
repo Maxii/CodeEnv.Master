@@ -58,6 +58,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
+    <Compile Include="Generic\Graphics\AMount.cs" />
+    <Compile Include="Generic\Framework\AHull.cs" />
+    <Compile Include="Game\Gameplay\FacilityHull.cs" />
+    <Compile Include="Generic\Framework\AWeaponMount.cs" />
     <Compile Include="Generic\Graphics\AImageGuiElement.cs" />
     <Compile Include="Generic\Graphics\AGuiElement.cs" />
     <Compile Include="Generic\Graphics\AProgressBarGuiElement.cs" />
@@ -209,6 +214,10 @@
     <Compile Include="Generic\Extensions\MyNguiExtensions.cs" />
     <Compile Include="Game\GUI\ProductionGuiElement.cs" />
     <Compile Include="Game\GUI\StrengthGuiElement.cs" />
+    <Compile Include="Game\Gameplay\ShipHull.cs" />
+    <Compile Include="Game\Gameplay\MissileTube.cs" />
+    <Compile Include="Generic\Graphics\LOSMountPlaceholder.cs" />
+    <Compile Include="Generic\Graphics\MissileMountPlaceholder.cs" />
     <Compile Include="ThirdParty\MyNguiEventListener.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
@@ -228,6 +237,7 @@
     <Compile Include="Game\Framework\UniverseCenterItem.cs" />
     <Compile Include="Game\GUI\UniverseCenterCtxControl.cs" />
     <Compile Include="Generic\_Debug\VisualEffectScale.cs" />
+    <Compile Include="Game\Gameplay\LOSTurret.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

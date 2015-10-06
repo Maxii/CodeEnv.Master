@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssignValuesFromElementReports(FleetCmdData cmdData) {
-            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(ShipCategory));
+            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(ShipHullCategory));
             if (knownElementCategories.Any()) { // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
                 UnitComposition = new FleetComposition(knownElementCategories);
             }

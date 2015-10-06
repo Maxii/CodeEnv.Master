@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Categories of the Elements present in this Composition.
         /// </summary>
-        public IList<FacilityCategory> Categories {
+        public IList<FacilityHullCategory> Categories {
             get {
                 return _composition.Keys.ToList();
             }
@@ -36,14 +36,14 @@ namespace CodeEnv.Master.GameContent {
 
         public int ElementCount { get { return GetAllData().Count(); } }
 
-        private IDictionary<FacilityCategory, IList<FacilityData>> _composition;
+        private IDictionary<FacilityHullCategory, IList<FacilityData>> _composition;
 
         public BaseComposition() {
-            _composition = new SortedDictionary<FacilityCategory, IList<FacilityData>>();
+            _composition = new SortedDictionary<FacilityHullCategory, IList<FacilityData>>();
         }
 
         public bool Add(FacilityData elementData) {
-            FacilityCategory category = elementData.Category;
+            FacilityHullCategory category = elementData.HullCategory;
             if (!_composition.ContainsKey(category)) {
                 _composition.Add(category, new List<FacilityData>());
             }
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool Remove(FacilityData elementData) {
-            FacilityCategory category = elementData.Category;
+            FacilityHullCategory category = elementData.HullCategory;
             bool isRemoved = _composition[category].Remove(elementData);
             if (_composition[category].Count == Constants.Zero) {
                 _composition.Remove(category);
@@ -64,11 +64,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool Contains(FacilityData elementData) {
-            FacilityCategory category = elementData.Category;
+            FacilityHullCategory category = elementData.HullCategory;
             return _composition[category].Contains(elementData);
         }
 
-        public IList<FacilityData> GetData(FacilityCategory category) {
+        public IList<FacilityData> GetData(FacilityHullCategory category) {
             return _composition[category];
         }
 

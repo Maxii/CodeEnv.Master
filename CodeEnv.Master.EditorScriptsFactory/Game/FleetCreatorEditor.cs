@@ -42,9 +42,7 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
         }
     }
 
-    protected override int GetMaxElements() {
-        return TempGameValues.MaxShipsPerFleet;
-    }
+    protected override int GetMaxElements() { return TempGameValues.MaxShipsPerFleet; }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

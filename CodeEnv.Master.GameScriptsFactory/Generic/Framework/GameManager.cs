@@ -136,9 +136,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         protected set { base.CurrentState = value; }
     }
 
+    public PlayerDesigns PlayerDesigns { get; private set; }
+
     protected override bool IsPersistentAcrossScenes { get { return true; } }
 
     private IDictionary<Player, PlayerKnowledge> _playerKnowledgeLookup;
+
     private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
     private GameTime _gameTime;
     private PlayerPrefsManager _playerPrefsMgr;
@@ -199,6 +202,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         UpdateRate = FrameUpdateFrequency.Infrequent;
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
         _playerKnowledgeLookup = new Dictionary<Player, PlayerKnowledge>();
+        PlayerDesigns = new PlayerDesigns();
     }
 
     #endregion
@@ -396,6 +400,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Assert(player.Color != GameColor.None && player.Color != GameColor.Clear);
         AllPlayers.Add(player);
         _playerKnowledgeLookup.Add(player, new PlayerKnowledge(player));
+        PlayerDesigns.Add(player);
     }
 
     public PlayerKnowledge GetPlayerKnowledge(Player player) {
@@ -544,6 +549,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
         _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
         _playerKnowledgeLookup.Clear();
+        PlayerDesigns.Clear();
     }
 
     #region Pausing System

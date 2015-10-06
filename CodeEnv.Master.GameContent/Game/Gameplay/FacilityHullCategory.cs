@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FacilityCategory.cs
-// Enum identifying the alternative kinds of Facility.
+// File: FacilityHullCategory.cs
+// Classification a FacilityHull belongs too.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Enum identifying the alternative kinds of Facility.
+    /// Classification a FacilityHull belongs too.
     /// </summary>
-    public enum FacilityCategory {
+    public enum FacilityHullCategory {
 
         None,
 
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         Barracks,
 
         [EnumAttribute("C")]
-        Colonizer
+        ColonyHab
 
     }
 }

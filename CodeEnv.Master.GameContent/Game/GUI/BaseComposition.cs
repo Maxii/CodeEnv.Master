@@ -22,11 +22,11 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable class holding the FacilityCategory composition of a BaseUnit (Starbase or Settlement).
     /// </summary>
-    public class BaseComposition : AUnitComposition<FacilityCategory> {
+    public class BaseComposition : AUnitComposition<FacilityHullCategory> {
 
-        public BaseComposition(IEnumerable<FacilityCategory> nonUniqueUnitCategories) : base(nonUniqueUnitCategories) { }
+        public BaseComposition(IEnumerable<FacilityHullCategory> nonUniqueUnitCategories) : base(nonUniqueUnitCategories) { }
 
-        protected override string GetCategoryDescription(FacilityCategory category) {
+        protected override string GetCategoryDescription(FacilityHullCategory category) {
             return category.GetEnumAttributeText();
         }
 

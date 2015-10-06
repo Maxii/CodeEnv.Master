@@ -26,9 +26,7 @@ using UnityEditor;
 [CustomEditor(typeof(StarbaseUnitCreator))]
 public class StarbaseCreatorEditor : AUnitCreatorEditor<StarbaseUnitCreator> {
 
-    protected override int GetMaxElements() {
-        return TempGameValues.MaxFacilitiesPerBase;
-    }
+    protected override int GetMaxElements() { return TempGameValues.MaxFacilitiesPerBase; }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

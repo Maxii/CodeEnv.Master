@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -339,6 +339,22 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Returns <c>true</c> if the two provided directions are within the allowed deviation in degrees.
+        /// </summary>
+        /// <param name="dirA">The first direction.</param>
+        /// <param name="dirB">The second direction.</param>
+        /// <param name="allowedDegreeDeviation">The allowed deviation in degrees.</param>
+        /// <param name="actualDegreeDeviation">The actual degree deviation.</param>
+        /// <returns></returns>
+        public static bool AreDirectionsWithinTolerance(Vector3 dirA, Vector3 dirB, float allowedDegreeDeviation, out float actualDegreeDeviation) {
+            dirA.ValidateNormalized();
+            dirB.ValidateNormalized();
+            actualDegreeDeviation = Vector3.Angle(dirA, dirB);
+            D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDegreeDeviation);
+            return actualDegreeDeviation <= allowedDegreeDeviation;
+        }
+
+        /// <summary>
         /// Checks whether the MonoBehaviour Interface provided is not null or already destroyed.
         /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
         /// Returns <c>true</c> if not null and not destroyed, otherwise returns false.
@@ -372,6 +388,10 @@ namespace CodeEnv.Master.Common {
             if (CheckNotNullOrAlreadyDestroyed<I>(i)) {
                 GameObject.Destroy((i as Component).gameObject);
             }
+        }
+
+        public static void Destroy(GameObject gameObject) {
+            Destroy(gameObject, Constants.ZeroF);
         }
 
         public static void Destroy(GameObject gameObject, float delayInSeconds, Action onCompletion = null) {

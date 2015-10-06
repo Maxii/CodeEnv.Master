@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Categories of the Elements present in this Composition.
         /// </summary>
-        public IList<ShipCategory> Categories {
+        public IList<ShipHullCategory> Categories {
             get {
                 return _composition.Keys.ToList();
             }
@@ -36,15 +36,15 @@ namespace CodeEnv.Master.GameContent {
 
         public int ElementCount { get { return GetAllData().Count(); } }
 
-        private IDictionary<ShipCategory, IList<ShipData>> _composition;
+        private IDictionary<ShipHullCategory, IList<ShipData>> _composition;
 
         public FleetComposition() {
-            _composition = new SortedDictionary<ShipCategory, IList<ShipData>>();
+            _composition = new SortedDictionary<ShipHullCategory, IList<ShipData>>();
         }
 
         public bool Add(ShipData elementData) {
-            ShipCategory category = elementData.Category;
-            D.Assert(category != default(ShipCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipCategory).GetValueName()));
+            ShipHullCategory category = elementData.HullCategory;
+            D.Assert(category != default(ShipHullCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipHullCategory).GetValueName()));
             if (!_composition.ContainsKey(category)) {
                 _composition.Add(category, new List<ShipData>());
             }
@@ -57,8 +57,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool Remove(ShipData elementData) {
-            ShipCategory category = elementData.Category;
-            D.Assert(category != default(ShipCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipCategory).GetValueName()));
+            ShipHullCategory category = elementData.HullCategory;
+            D.Assert(category != default(ShipHullCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipHullCategory).GetValueName()));
             bool isRemoved = _composition[category].Remove(elementData);
             if (_composition[category].Count == Constants.Zero) {
                 _composition.Remove(category);
@@ -67,11 +67,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool Contains(ShipData elementData) {
-            ShipCategory category = elementData.Category;
+            ShipHullCategory category = elementData.HullCategory;
             return _composition[category].Contains(elementData);
         }
 
-        public IList<ShipData> GetData(ShipCategory category) {
+        public IList<ShipData> GetData(ShipHullCategory category) {
             return _composition[category];
         }
 

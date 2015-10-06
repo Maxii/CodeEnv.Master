@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
                     content = Report.Owner != null ? new ColoredTextList_String(Report.Owner.LeaderName) : content;
                     break;
                 case LabelLineID.Category:
-                    content = Report.Category != FacilityCategory.None ? new ColoredTextList<FacilityCategory>(Report.Category) : content;
+                    content = Report.Category != FacilityHullCategory.None ? new ColoredTextList<FacilityHullCategory>(Report.Category) : content;
                     break;
                 case LabelLineID.MaxHitPoints:
                     content = Report.MaxHitPoints.HasValue ? new ColoredTextList<float>(Report.MaxHitPoints.Value) : content;

@@ -22,11 +22,11 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable class holding the ShipCategory composition of a Fleet.
     /// </summary>
-    public class FleetComposition : AUnitComposition<ShipCategory> {
+    public class FleetComposition : AUnitComposition<ShipHullCategory> {
 
-        public FleetComposition(IEnumerable<ShipCategory> nonUniqueUnitCategories) : base(nonUniqueUnitCategories) { }
+        public FleetComposition(IEnumerable<ShipHullCategory> nonUniqueUnitCategories) : base(nonUniqueUnitCategories) { }
 
-        protected override string GetCategoryDescription(ShipCategory category) {
+        protected override string GetCategoryDescription(ShipHullCategory category) {
             return category.GetEnumAttributeText();
         }
 

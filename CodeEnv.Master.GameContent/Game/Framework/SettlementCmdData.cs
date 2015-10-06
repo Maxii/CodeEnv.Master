@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void UpdateComposition() {
-            var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.Category);
+            var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
             UnitComposition = new BaseComposition(elementCategories);
         }
 

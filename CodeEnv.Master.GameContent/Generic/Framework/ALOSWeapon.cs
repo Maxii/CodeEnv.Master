@@ -1,0 +1,100 @@
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright>
+// Copyright © 2012 - 2015 Strategic Forge
+//
+// Email: jim@strategicforge.com
+// </copyright> 
+// <summary> 
+// File: ALOSWeapon.cs
+// Abstract base class for a weapon that requires a straight line of sight to use.
+// </summary> 
+// -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
+namespace CodeEnv.Master.GameContent {
+
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+
+    /// <summary>
+    /// Abstract base class for a weapon that requires a straight line of sight to use.
+    /// </summary>
+    public abstract class ALOSWeapon : AWeapon {
+
+        public event Action<ALOSWeapon, IElementAttackableTarget> onWeaponAimed;
+
+        public new ILOSWeaponMount WeaponMount {
+            get { return base.WeaponMount as ILOSWeaponMount; }
+            set { base.WeaponMount = value; }
+        }
+
+        public ALOSWeapon(WeaponStat stat) : base(stat) { }
+
+        public void OnTraverseCompleted() {
+            if (onWeaponAimed != null) {
+                onWeaponAimed(this, _aimedEnemyTarget);
+            }
+            _aimedEnemyTarget = null;
+        }
+
+        /// <summary>
+        /// The enemy target this weapon is currently traversing to aim at.
+        /// Valid only while the Weapon's Mount is in the process of aiming.
+        /// </summary>
+        private IElementAttackableTarget _aimedEnemyTarget;
+
+        // TODO what happens when the traverse fails aka job is killed? onTraverseFailed? why would it ever fail?
+
+        public void AimAt(IElementAttackableTarget enemyTarget) {
+            var accurateTgtPosition = enemyTarget.Position;
+            _aimedEnemyTarget = enemyTarget;
+            WeaponMount.TraverseTo(accurateTgtPosition);
+        }
+
+        public override bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
+            if (hint != null && _qualifiedEnemyTargets.Contains(hint)) {
+                if (WeaponMount.CheckFiringSolution(hint)) {
+                    IElementAttackableTarget interferingEnemyTgt;
+                    if (WeaponMount.CheckLineOfSight(hint, out interferingEnemyTgt)) {
+                        enemyTgt = hint;
+                        return true;
+                    }
+                    if (interferingEnemyTgt != null) {
+                        enemyTgt = interferingEnemyTgt;
+                        return true;
+                    }
+                }
+            }
+            var possibleTargets = new List<IElementAttackableTarget>(_qualifiedEnemyTargets);
+            return TryPickBestTarget(possibleTargets, out enemyTgt);
+        }
+
+        protected override bool TryPickBestTarget(IList<IElementAttackableTarget> possibleTargets, out IElementAttackableTarget enemyTgt) {
+            enemyTgt = null;
+            if (possibleTargets.Count == Constants.Zero) {
+                return false;
+            }
+            var candidateTgt = possibleTargets.First();
+            if (WeaponMount.CheckFiringSolution(candidateTgt)) {
+                IElementAttackableTarget interferingEnemyTgt;
+                if (WeaponMount.CheckLineOfSight(candidateTgt, out interferingEnemyTgt)) {
+                    enemyTgt = candidateTgt;
+                    return true;
+                }
+                if (interferingEnemyTgt != null) {
+                    enemyTgt = interferingEnemyTgt;
+                    return true;
+                }
+            }
+            possibleTargets.Remove(candidateTgt);
+            return TryPickBestTarget(possibleTargets, out enemyTgt);
+        }
+
+    }
+}
+

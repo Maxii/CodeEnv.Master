@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ProjectileLauncher.cs
-//  An Element's offensive unguided Projectile-firing weapon.
+// Weapon that launches a LOS projectile.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  An Element's offensive unguided Projectile-firing weapon.
+    /// Weapon that launches a LOS projectile.
     /// </summary>
-    public class ProjectileLauncher : AWeapon {
+    public class ProjectileLauncher : ALOSWeapon {
 
         private IList<IOrdnance> _activeFiredOrdnance;
 

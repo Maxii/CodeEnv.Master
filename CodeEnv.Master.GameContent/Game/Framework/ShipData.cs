@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ShipCategory Category { get { return HullStat.Category; } }
+        public ShipHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
         // FormationStation moved to ShipItem as it had no apparent value residing in data
 
@@ -203,7 +203,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
 
-        protected new ShipHullStat HullStat { get { return base.HullStat as ShipHullStat; } }
+        protected new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
         /// <summary>
         /// The speed of the ship in units per hour when it was paused.
@@ -218,26 +218,25 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ShipData" /> class.
         /// </summary>
         /// <param name="shipTransform">The ship transform.</param>
-        /// <param name="hullStat">The hull stat.</param>
+        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="engineStat">The engine stat.</param>
         /// <param name="combatStance">The combat stance.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="weapons">The weapons.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public ShipData(Transform shipTransform, ShipHullStat hullStat, EngineStat engineStat, ShipCombatStance combatStance, Player owner, IEnumerable<AWeapon> weapons,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(shipTransform, hullStat, owner, weapons, activeCMs, sensors, passiveCMs, shieldGenerators) {
+        public ShipData(Transform shipTransform, ShipHullEquipment hullEquipment, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
+    IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
+            : base(shipTransform, hullEquipment, owner, activeCMs, sensors, passiveCMs, shieldGenerators) {
 
             _rigidbody = shipTransform.rigidbody;
             // rigidbody mass assignment handled by AElementData
 
-            Drag = hullStat.Drag;
-            Science = hullStat.Science;
-            Culture = hullStat.Culture;
-            Income = hullStat.Income;
+            Drag = hullEquipment.Drag;
+            Science = hullEquipment.Science;
+            Culture = hullEquipment.Culture;
+            Income = hullEquipment.Income;
 
             FullStlThrust = engineStat.FullStlThrust;
             FullFtlThrust = engineStat.FullFtlThrust;

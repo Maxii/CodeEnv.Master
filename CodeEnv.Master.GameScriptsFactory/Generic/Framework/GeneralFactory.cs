@@ -110,35 +110,36 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     /// <summary>
     /// Makes an instance of Ordnance.
     /// </summary>
-    /// <param name="deliveryVehicleCategory">The category of WeaponDeliveryVehicle.</param>
-    /// <param name="firingItem">The GameObject firing this ordnance.</param>
-    /// <param name="muzzlePosition">The muzzle position in worldSpace.</param>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="firingElement">The GameObject firing this ordnance.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    public IOrdnance MakeOrdnanceInstance(WDVCategory deliveryVehicleCategory, GameObject firingItem, Vector3 muzzlePosition) {
+    public IOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement) {
         AOrdnance prefab;
         GameObject ordnanceGo;
-        switch (deliveryVehicleCategory) {
+        GameObject firedOrdnanceFolder = weapon.WeaponMount.FiredOrdnanceFolder;
+        switch (weapon.DeliveryVehicleCategory) {
             case WDVCategory.Beam:
                 prefab = RequiredPrefabs.Instance.beam;
-                ordnanceGo = UnityUtility.AddChild(firingItem, prefab.gameObject);
+                ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
                 break;
             case WDVCategory.Missile:
                 prefab = RequiredPrefabs.Instance.missile;
-                ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
-                Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingItem.GetComponent<Collider>());
+                ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
+                Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
                 break;
             case WDVCategory.Projectile:
                 prefab = RequiredPrefabs.Instance.projectile;
-                ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
-                Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingItem.GetComponent<Collider>());
+                ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
+                Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
                 break;
             case WDVCategory.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapon.DeliveryVehicleCategory));
         }
         ordnanceGo.layer = (int)Layers.Ordnance;
-        ordnanceGo.transform.position = muzzlePosition;
+        ordnanceGo.transform.position = weapon.WeaponMount.MuzzleLocation;
+        ordnanceGo.transform.rotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
         return ordnanceGo.GetSafeInterface<IOrdnance>();
     }
 

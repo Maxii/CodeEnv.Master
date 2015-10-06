@@ -296,7 +296,7 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Ship : ColoredTextList {
 
             public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
-                _list.Add(new ColoredText(ship.Category.GetValueName()));
+                _list.Add(new ColoredText(ship.HullCategory.GetValueName()));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.Mass)));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.MaxTurnRate)));
             }

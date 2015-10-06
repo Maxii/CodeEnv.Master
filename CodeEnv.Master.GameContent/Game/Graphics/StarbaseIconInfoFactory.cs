@@ -60,14 +60,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseReport starbaseReport) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<FacilityCategory> elementCategories = starbaseReport.UnitComposition.GetUniqueElementCategories();
-            if (elementCategories.Contains(FacilityCategory.Laboratory)) {
+            IEnumerable<FacilityHullCategory> elementCategories = starbaseReport.UnitComposition.GetUniqueElementCategories();
+            if (elementCategories.Contains(FacilityHullCategory.Laboratory)) {
                 criteria.Add(IconSelectionCriteria.Science);
             }
-            if (elementCategories.Contains(FacilityCategory.Barracks)) {
+            if (elementCategories.Contains(FacilityHullCategory.Barracks)) {
                 criteria.Add(IconSelectionCriteria.Troop);
             }
-            if (elementCategories.Contains(FacilityCategory.Colonizer)) {
+            if (elementCategories.Contains(FacilityHullCategory.ColonyHab)) {
                 criteria.Add(IconSelectionCriteria.Colony);
             }
             return criteria;

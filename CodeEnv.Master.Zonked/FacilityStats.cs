@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     [Obsolete]
     public class FacilityStats : AElementStats {
 
-        public FacilityCategory Category { get; set; }
+        public FacilityHullCategory Category { get; set; }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

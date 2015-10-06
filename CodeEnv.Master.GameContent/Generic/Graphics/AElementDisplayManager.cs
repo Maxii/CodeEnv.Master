@@ -17,7 +17,6 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
@@ -40,9 +39,10 @@ namespace CodeEnv.Master.GameContent {
             _originalMeshColor_Specular = _primaryMeshRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
         }
 
-        protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            //D.Log("{0}.InitializePrimaryMesh({1}) called.", GetType().Name, itemGo.name);
-            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
+        protected override MeshRenderer InitializePrimaryMesh(GameObject elementItemGo) {
+            //D.Log("{0}.InitializePrimaryMesh({1}) called.", GetType().Name, elementItemGo.name);
+            IHull hull = elementItemGo.GetSafeInterfaceInChildren<IHull>();
+            var primaryMeshRenderer = hull.HullMesh.gameObject.GetComponent<MeshRenderer>();
             primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             return primaryMeshRenderer;

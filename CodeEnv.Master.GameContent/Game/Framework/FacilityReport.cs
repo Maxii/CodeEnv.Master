@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityReport : AElementItemReport {
 
-        public FacilityCategory Category { get; private set; }
+        public FacilityHullCategory Category { get; private set; }
 
         public FacilityReport(FacilityData data, Player player, IFacilityItem item) : base(data, player, item) { }
 
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
             ParentName = fData.ParentName;
             Position = fData.Position;
             Owner = fData.Owner;
-            Category = fData.Category;
+            Category = fData.HullCategory;
             MaxHitPoints = fData.MaxHitPoints;  // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
             Mass = fData.Mass;
             SensorRange = fData.SensorRange;

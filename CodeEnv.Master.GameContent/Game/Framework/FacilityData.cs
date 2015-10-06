@@ -25,12 +25,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityData : AUnitElementItemData {
 
-        public FacilityCategory Category { get { return HullStat.Category; } }
+        public FacilityHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
         public override bool IsHQ {  // HACK temp override to add Assertion protection
             get { return base.IsHQ; }
             set {
-                D.Assert(value && Category == FacilityCategory.CentralHub);
+                D.Assert(value && HullCategory == FacilityHullCategory.CentralHub);
                 base.IsHQ = value;
             }
         }
@@ -39,27 +39,26 @@ namespace CodeEnv.Master.GameContent {
             get { return References.SectorGrid.GetSectorIndex(Position); } // Settlement Facilities get relocated
         }
 
-        protected new FacilityHullStat HullStat { get { return base.HullStat as FacilityHullStat; } }
+        protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
         /// <param name="facilityTransform">The facility transform.</param>
-        /// <param name="hullStat">The hull stat.</param>
+        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="topography">The topography.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="weapons">The weapons.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public FacilityData(Transform facilityTransform, FacilityHullStat hullStat, Topography topography, Player owner, IEnumerable<AWeapon> weapons,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(facilityTransform, hullStat, owner, weapons, activeCMs, sensors, passiveCMs, shieldGenerators) {
+        public FacilityData(Transform facilityTransform, FacilityHullEquipment hullEquipment, Topography topography, Player owner,
+    IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
+            : base(facilityTransform, hullEquipment, owner, activeCMs, sensors, passiveCMs, shieldGenerators) {
             Topography = topography;
-            Science = hullStat.Science;
-            Culture = hullStat.Culture;
-            Income = hullStat.Income;
+            Science = hullEquipment.Science;
+            Culture = hullEquipment.Culture;
+            Income = hullEquipment.Income;
         }
 
         public override string ToString() {

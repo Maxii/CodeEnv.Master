@@ -41,7 +41,7 @@ public class FacilityModel : AUnitElementModel {
         }
         set {
             if (value) {
-                D.Assert(Data.Category == FacilityCategory.CentralHub);
+                D.Assert(Data.HullCategory == FacilityHullCategory.CentralHub);
             }
             base.IsHQElement = value;
         }

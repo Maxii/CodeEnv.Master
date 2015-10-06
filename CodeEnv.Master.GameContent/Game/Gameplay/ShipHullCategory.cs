@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipCategory.cs
-// General classification type of ships.
+// File: ShipHullCategory.cs
+// Classification a ShipHull belongs too.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// General classification type of ships.
+    /// Classification a ShipHull belongs too.
     /// </summary>
-    public enum ShipCategory {
+    public enum ShipHullCategory {
 
         None,
 

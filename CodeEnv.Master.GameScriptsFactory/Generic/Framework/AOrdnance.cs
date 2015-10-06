@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -87,11 +87,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         SyncName();
         weapon.OnFiringInitiated(target, this);
 
-        Vector3 unusedAccurateTgtBearing;
-        var heading = GetTargetFiringSolution(weapon.Accuracy, out unusedAccurateTgtBearing);
-        _transform.rotation = Quaternion.LookRotation(heading); // point ordnance in direction of target
-        //D.Log("{0} fired on {1}. DistanceToTarget {2:0.#}, Targeting deviation: {3:0.#} degrees.", Name, target.FullName, Vector3.Distance(target.Position, transform.position), Vector3.Angle(heading, unusedAccurateTgtBearing));
-
         _range = weapon.RangeDistance;
         ToShowEffects = toShowEffects;
         IsOperational = true;
@@ -118,22 +113,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     /// <summary>
-    /// Gets the calculated firing solution on this target as determined by the accuracy of the weapon.
-    /// The value returned is the calculated target bearing with weapon inaccuracy built in.
-    /// </summary>
-    /// <param name="accuracy">The weapon's accuracy.</param>
-    /// <param name="tgtBearing">The actual target bearing.</param>
-    /// <returns></returns>
-    protected Vector3 GetTargetFiringSolution(float accuracy, out Vector3 tgtBearing) {
-        tgtBearing = (Target.Position - _transform.position).normalized;
-        var inaccuracy = Constants.OneF - accuracy;
-        var xSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
-        var ySpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
-        var zSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
-        return new Vector3(tgtBearing.x + xSpread, tgtBearing.y + ySpread, tgtBearing.z + zSpread).normalized;
-    }
-
-    /// <summary>
     /// Synchronizes Name and transform's name and adds instanceID.
     /// Must be called after Awake() as UnityUtility.AddChild can't get rid of "Clone" until after Awake runs.
     /// </summary>
@@ -143,7 +122,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected void TerminateNow() {
-        //D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
+        D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
         IsOperational = false;
         PrepareForTermination();
         if (onDeathOneShot != null) {
@@ -162,7 +141,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     #region Cleanup
 
     protected override void Cleanup() {
-        //D.Log("{0}.Cleanup() called.", Name);
         Unsubscribe();
     }
 

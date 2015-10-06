@@ -22,6 +22,7 @@ using UnityEngine;
 
 /// <summary>
 /// Persistent singleton container that holds prefab instances that can be used to instantiate a clone in a scene.
+/// WARNING: These prefab references must be instantiated in the scene to use them.
 /// </summary>
 public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
@@ -83,9 +84,17 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     [Header("Ships")]
     public ShipItem[] ships;
+    public ShipItem shipItem;
+    public ShipHull[] shipHulls;
 
     [Header("Facilities")]
     public FacilityItem[] facilities;
+    public FacilityItem facilityItem;
+    public FacilityHull[] facilityHulls;
+
+    [Header("WeaponMounts")]
+    public MissileTube[] missileTubes;
+    public LOSTurret[] losTurrets;
 
     [Header("System")]
     public SystemItem system;   // without the star and settlement

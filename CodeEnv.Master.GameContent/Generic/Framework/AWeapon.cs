@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Weapon.cs
+// File: AWeapon.cs
 // Abstract base class for an Element's offensive weapon.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -17,9 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Linq;
-    using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -68,6 +67,16 @@ namespace CodeEnv.Master.GameContent {
 
         public IWeaponRangeMonitor RangeMonitor { get; set; }
 
+        private IWeaponMount _weaponMount;
+        public IWeaponMount WeaponMount {
+            get { return _weaponMount; }
+            set {
+                D.Assert(_weaponMount == null); // should only happen once
+                _weaponMount = value;
+                OnWeaponMountChanged();
+            }
+        }
+
         public override string Name {
             get {
 #if UNITY_EDITOR
@@ -104,7 +113,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
-        private IList<IElementAttackableTarget> _qualifiedEnemyTargets;
+        protected IList<IElementAttackableTarget> _qualifiedEnemyTargets;
         private bool _isLoaded;
         private WaitJob _reloadJob;
 
@@ -139,6 +148,24 @@ namespace CodeEnv.Master.GameContent {
         public abstract void CheckActiveOrdnanceTargeting();
 
         /// <summary>
+        /// Gets an estimated firing solution for this weapon on the provided target. The estimate
+        /// takes into account the accuracy of the weapon.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        /// <param name="actualTgtBearing">The actual target bearing.</param>
+        /// <returns></returns>
+        [Obsolete]
+        public Vector3 GetFiringSolution(IElementAttackableTarget target, out Vector3 actualTgtBearing) {
+            actualTgtBearing = (target.Position - WeaponMount.MuzzleLocation).normalized;
+            var inaccuracy = Constants.OneF - Accuracy;
+            var xSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+            var ySpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+            var zSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+            return new Vector3(actualTgtBearing.x + xSpread, actualTgtBearing.y + ySpread, actualTgtBearing.z + zSpread).normalized;
+        }
+
+
+        /// <summary>
         /// Tries to pick the best (most advantageous) qualified target in range.
         /// Returns <c>true</c> if a target was picked, <c>false</c> otherwise.
         /// The hint provided is the initial choice for primary target as determined
@@ -149,20 +176,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hint">The hint.</param>
         /// <param name="enemyTgt">The enemy target picked.</param>
         /// <returns></returns>
-        public bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
+        public virtual bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
             if (hint != null && _qualifiedEnemyTargets.Contains(hint)) {
-                IElementAttackableTarget interferingEnemyTgt;
-                if (RangeMonitor.CheckLineOfSightTo(hint, out interferingEnemyTgt)) {
+                if (WeaponMount.CheckFiringSolution(hint)) {
                     enemyTgt = hint;
-                    return true;
-                }
-                if (interferingEnemyTgt != null) {
-                    enemyTgt = interferingEnemyTgt;
                     return true;
                 }
             }
             var possibleTargets = new List<IElementAttackableTarget>(_qualifiedEnemyTargets);
             return TryPickBestTarget(possibleTargets, out enemyTgt);
+        }
+
+        private void OnWeaponMountChanged() {
+            WeaponMount.Weapon = this;
         }
 
         /// <summary>
@@ -277,19 +303,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="possibleTargets">The possible targets.</param>
         /// <param name="enemyTgt">The enemy target returned.</param>
         /// <returns></returns>
-        private bool TryPickBestTarget(IList<IElementAttackableTarget> possibleTargets, out IElementAttackableTarget enemyTgt) {
+        protected virtual bool TryPickBestTarget(IList<IElementAttackableTarget> possibleTargets, out IElementAttackableTarget enemyTgt) {
             enemyTgt = null;
             if (possibleTargets.Count == Constants.Zero) {
                 return false;
             }
-            IElementAttackableTarget interferingEnemyTgt;
             var candidateTgt = possibleTargets.First();
-            if (RangeMonitor.CheckLineOfSightTo(candidateTgt, out interferingEnemyTgt)) {
+            if (WeaponMount.CheckFiringSolution(candidateTgt)) {
                 enemyTgt = candidateTgt;
-                return true;
-            }
-            if (interferingEnemyTgt != null) {
-                enemyTgt = interferingEnemyTgt;
                 return true;
             }
             possibleTargets.Remove(candidateTgt);
@@ -301,7 +322,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
-            D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
+            D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
             if (_reloadJob != null && _reloadJob.IsRunning) {
                 // UNCLEAR can this happen?
                 D.Warn("{0}.{1}.InitiateReloadCycle() called while already Running.", RangeMonitor.Name, Name);

@@ -56,12 +56,10 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Makes an instance of Ordnance.
         /// </summary>
-        /// <param name="category">The category of ordnance.</param>
-        /// <param name="firingItem">The GameObject firing this ordnance.</param>
-        /// <param name="muzzlePosition">The muzzle position in worldSpace.</param>
+        /// <param name="weapon">The weapon.</param>
+        /// <param name="firingElement">The GameObject firing this ordnance.</param>
         /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        IOrdnance MakeOrdnanceInstance(WDVCategory category, GameObject firingItem, Vector3 muzzlePosition);
+        IOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement);
 
 
     }

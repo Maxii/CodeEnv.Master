@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
                     content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != FacilityCategory.None ? new ColoredTextList_String(report.Category.GetValueName()) : content;
+                    content = report.Category != FacilityHullCategory.None ? new ColoredTextList_String(report.Category.GetValueName()) : content;
                     break;
                 //case LabelContentID.MaxHitPoints:
                 //    content = report.MaxHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.MaxHitPoints.Value) : content;

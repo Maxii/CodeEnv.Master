@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? MaxTurnRate { get; private set; }
 
-        public ShipCategory Category { get; private set; }
+        public ShipHullCategory Category { get; private set; }
 
         public ShipReport(ShipData data, Player player, IShipItem item) : base(data, player, item) { }
 
@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
             ParentName = sData.ParentName;
             Position = sData.Position;
             Owner = sData.Owner;
-            Category = sData.Category;
+            Category = sData.HullCategory;
             WeaponsRange = sData.WeaponsRange;
             SensorRange = sData.SensorRange;
             MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth

@@ -31,23 +31,33 @@ using UnityEngine;
 /// it will be built and then initialized.
 /// </summary>
 [SerializeAll]
-public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, ShipHullStat, FleetCmdItem> {
+public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
     public bool move;
     public bool attack;
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override ShipHullStat CreateElementHullStat(ShipCategory hullCat, string elementName) {
+    protected override ShipHullStat CreateElementHullStat(ShipHullCategory hullCat, string elementName) {
         float hullMass = TempGameValues.__GetHullMass(hullCat);
         float drag = 0.1F;
-        float science = hullCat == ShipCategory.Science ? 10F : Constants.ZeroF;
-        float culture = hullCat == ShipCategory.Support || hullCat == ShipCategory.Colonizer ? 2F : Constants.ZeroF;
+        float science = hullCat == ShipHullCategory.Science ? 10F : Constants.ZeroF;
+        float culture = hullCat == ShipHullCategory.Support || hullCat == ShipHullCategory.Colonizer ? 2F : Constants.ZeroF;
         float income = __GetIncome(hullCat);
         float expense = __GetExpense(hullCat);
 
         return new ShipHullStat(hullCat, elementName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
             hullMass, drag, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
+    }
+
+    protected override void MakeAndRecordDesign(string designName, ShipHullStat hullStat, IEnumerable<WeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+        ShipHullCategory hullCategory = hullStat.HullCategory;
+        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
+        var engineStat = MakeEngineStat(hullCategory);
+
+        var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
+        var design = new ShipDesign(_owner, designName, hullStat, engineStat, combatStance, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
+        GameManager.Instance.PlayerDesigns.Add(design);
     }
 
     protected override FleetCmdItem MakeCommand(Player owner) {
@@ -69,21 +79,15 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         return cmd;
     }
 
-    protected override ShipItem MakeElement(ShipHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
-        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-        var engineStat = MakeEngineStat(hullStat.Category);
-        return _factory.MakeInstance(hullStat, engineStat, combatStance, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
+    protected override ShipItem MakeElement(string designName) {
+        return _factory.MakeShipInstance(_owner, designName);
     }
 
-    protected override void PopulateElement(ShipHullStat hullStat, IEnumerable<WeaponStat> wStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-    IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ref ShipItem element) { // OPTIMIZE
-        var engineStat = MakeEngineStat(hullStat.Category);
-        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-        _factory.PopulateInstance(hullStat, engineStat, combatStance, _owner, wStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, ref element);
+    protected override void PopulateElement(string designName, ref ShipItem element) {
+        _factory.PopulateInstance(_owner, designName, ref element);
     }
 
-    private EngineStat MakeEngineStat(ShipCategory hullCategory) {
+    private EngineStat MakeEngineStat(ShipHullCategory hullCategory) {
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
         float engineMass = TempGameValues.__GetEngineMass(hullCategory);
 
@@ -93,28 +97,24 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
             maxTurnRate, 0F, engineMass, 0F, 0F);
     }
 
-    protected override ShipCategory GetCategory(ShipHullStat hullStat) {
-        return hullStat.Category;
-    }
+    protected override ShipHullCategory GetCategory(ShipHullStat hullStat) { return hullStat.HullCategory; }
 
-    protected override ShipCategory GetCategory(ShipItem element) {
-        return element.category;
-    }
+    protected override ShipHullCategory GetCategory(AHull hull) { return (hull as ShipHull).HullCategory; }
 
-    protected override ShipCategory[] ElementCategories {
+    protected override ShipHullCategory[] ElementCategories {
         get {
-            return new ShipCategory[] { ShipCategory.Frigate, ShipCategory.Destroyer, ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught,
-        ShipCategory.Colonizer, ShipCategory.Science, ShipCategory.Troop, ShipCategory.Support};
+            return new ShipHullCategory[] { ShipHullCategory.Frigate, ShipHullCategory.Destroyer, ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnaught,
+        ShipHullCategory.Colonizer, ShipHullCategory.Science, ShipHullCategory.Troop, ShipHullCategory.Support};
         }
     }
 
-    protected override ShipCategory[] HQElementCategories {
-        get { return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught }; }
+    protected override ShipHullCategory[] HQElementCategories {
+        get { return new ShipHullCategory[] { ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnaught }; }
     }
 
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as ShipItem).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as ShipItem).Data.HullCategory));
         if (candidateHQElements.IsNullOrEmpty()) {
             // _command might not hold a valid HQ Element if preset
             D.Warn("No valid HQElements for {0} found.", UnitName);
@@ -122,7 +122,6 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         }
         _command.HQElement = RandomExtended.Choice(candidateHQElements) as ShipItem;
     }
-
 
     protected override bool DeployUnit() {
         LogEvent();
@@ -207,42 +206,50 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);
     }
 
-    private float __GetIncome(ShipCategory category) {
+    protected override int GetMaxLosWeaponsAllowed(ShipHullCategory hullCategory) {
+        return hullCategory.__MaxLOSWeapons();
+    }
+
+    protected override int GetMaxMissileWeaponsAllowed(ShipHullCategory hullCategory) {
+        return hullCategory.__MaxMissileWeapons();
+    }
+
+    private float __GetIncome(ShipHullCategory category) {
         switch (category) {
-            case ShipCategory.Support:
+            case ShipHullCategory.Support:
                 return 3F;
-            case ShipCategory.Carrier:
-            case ShipCategory.Colonizer:
-            case ShipCategory.Cruiser:
-            case ShipCategory.Destroyer:
-            case ShipCategory.Dreadnaught:
-            case ShipCategory.Fighter:
-            case ShipCategory.Frigate:
-            case ShipCategory.Science:
-            case ShipCategory.Scout:
-            case ShipCategory.Troop:
+            case ShipHullCategory.Carrier:
+            case ShipHullCategory.Colonizer:
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Frigate:
+            case ShipHullCategory.Science:
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.Troop:
                 return Constants.ZeroF;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
         }
     }
 
-    private float __GetExpense(ShipCategory category) {
+    private float __GetExpense(ShipHullCategory category) {
         switch (category) {
-            case ShipCategory.Carrier:
-            case ShipCategory.Dreadnaught:
-            case ShipCategory.Troop:
-            case ShipCategory.Colonizer:
+            case ShipHullCategory.Carrier:
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Troop:
+            case ShipHullCategory.Colonizer:
                 return 5F;
-            case ShipCategory.Cruiser:
-            case ShipCategory.Support:  // TODO need Trader
-            case ShipCategory.Science:
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Support:  // TODO need Trader
+            case ShipHullCategory.Science:
                 return 3F;
-            case ShipCategory.Destroyer:
+            case ShipHullCategory.Destroyer:
                 return 2F;
-            case ShipCategory.Fighter:
-            case ShipCategory.Frigate:
-            case ShipCategory.Scout:
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Frigate:
+            case ShipHullCategory.Scout:
                 return 1F;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
