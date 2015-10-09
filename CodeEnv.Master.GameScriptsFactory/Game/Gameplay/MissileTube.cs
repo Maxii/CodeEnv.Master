@@ -40,13 +40,13 @@ public class MissileTube : AWeaponMount {
     }
 
     /// <summary>
-    /// Checks the firing solution of this weapon on the enemyTarget. Returns <c>true</c> if the target
-    /// fits within the weapon's firing solution, aka within range and can be acquired, if required.
+    /// Trys to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
+    /// firing solution, otherwise <c>false</c>.
     /// </summary>
-    /// <param name="weapon">The weapon.</param>
     /// <param name="enemyTarget">The enemy target.</param>
+    /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public override bool CheckFiringSolution(IElementAttackableTarget enemyTarget) {
+    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
@@ -60,8 +60,10 @@ public class MissileTube : AWeaponMount {
         float targetDistanceFromPushover = vectorToTargetFromPushover.magnitude;
         if (distanceToPushover + targetDistanceFromPushover > Weapon.RangeDistance) {
             D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);
+            firingSolution = null;
             return false;
         }
+        firingSolution = new FiringSolution(Weapon, enemyTarget);
         return true;
     }
 

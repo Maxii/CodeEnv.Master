@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -29,9 +31,16 @@ namespace CodeEnv.Master.GameContent {
         private Color _originalMeshColor_Main;
         private Color _originalMeshColor_Specular;
 
+        private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
+
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Below; } }
 
         protected override Vector2 IconSize { get { return _elementIconSize; } }
+
+        /// <summary>
+        /// The Layer used to cull this element's meshes.
+        /// </summary>
+        protected abstract Layers CullingLayer { get; }
 
         public AElementDisplayManager(IWidgetTrackable trackedElement)
             : base(trackedElement) {
@@ -48,6 +57,21 @@ namespace CodeEnv.Master.GameContent {
             return primaryMeshRenderer;
         }
 
+        protected override void InitializeSecondaryMeshes(GameObject elementItemGo) {
+            base.InitializeSecondaryMeshes(elementItemGo);
+            var hullGo = elementItemGo.GetSafeInterfaceInChildren<IHull>().Transform.gameObject;
+            _secondaryMeshRenderers = hullGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
+            if (_secondaryMeshRenderers.Any()) {
+                // Mounts
+                _secondaryMeshRenderers.ForAll(r => {
+                    D.Assert((Layers)r.gameObject.layer == CullingLayer);
+                    r.castShadows = true;
+                    r.receiveShadows = true;
+                    r.enabled = false;
+                });
+            }
+        }
+
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
             _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
@@ -58,6 +82,13 @@ namespace CodeEnv.Master.GameContent {
             base.HidePrimaryMesh();
             _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
             _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
+        }
+
+        protected override void AssessComponentsToShowOrOperate() {
+            base.AssessComponentsToShowOrOperate();
+            if (_secondaryMeshRenderers.Any()) {
+                _secondaryMeshRenderers.ForAll(r => r.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
+            }
         }
 
         public override string ToString() {

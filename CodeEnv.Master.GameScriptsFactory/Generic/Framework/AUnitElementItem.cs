@@ -54,9 +54,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected IList<IShield> _shields = new List<IShield>();
 
     private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
-    private IList<AWeapon> _readyWeaponsInventory = new List<AWeapon>();
     private DetectionHandler _detectionHandler;
-    private Collider _collider;
+    protected Collider _collider;
 
     #region Initialization
 
@@ -149,8 +148,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         // _collider.enabled = false;   // keep the collider on until destroyed or returned to the pool
         // this allows in-route ordnance to show its impact effect while the item is showing its death
         Data.Weapons.ForAll(w => {
-            w.onIsReadyToFireChanged -= OnWeaponReadinessChanged;
-            w.onEnemyTargetEnteringRange -= OnNewEnemyTargetInRange;
+            w.onReadyToFire -= OnWeaponReadyToFire;
             w.IsOperational = false;
         });
         Data.ActiveCountermeasures.ForAll(cm => {
@@ -185,44 +183,39 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _weaponRangeMonitors.Add(monitor);
         }
-        weapon.onIsReadyToFireChanged += OnWeaponReadinessChanged;
-        weapon.onEnemyTargetEnteringRange += OnNewEnemyTargetInRange;
+        weapon.onReadyToFire += OnWeaponReadyToFire;
         // IsOperational = true is set when item operations commences
     }
 
-
-    /// <summary>
-    /// Attempts to find a target in range and fire the weapon at it.
-    /// </summary>
-    /// <param name="weapon">The weapon.</param>
-    /// <param name="tgtHint">Optional hint indicating a highly desirable target.</param>
-    protected void FindTargetAndFire(AWeapon weapon, IElementAttackableTarget tgtHint = null) {
-        D.Assert(weapon.IsReadyToFire);
-        IElementAttackableTarget enemyTarget;
-        if (weapon.TryPickBestTarget(tgtHint, out enemyTarget)) {
-            InitiateFiringSequence(weapon, enemyTarget);
+    protected FiringSolution PickBestFiringSolution(IList<FiringSolution> firingSolutions, IElementAttackableTarget tgtHint = null) {
+        if (tgtHint == null) {
+            return firingSolutions.First();
         }
-        else {
-            D.Log("{0} did not fire weapon {1}.", FullName, weapon.Name);
+        var hintFiringSolution = firingSolutions.SingleOrDefault(fs => fs.EnemyTarget == tgtHint);
+        if (hintFiringSolution == null) {
+            return firingSolutions.First();
         }
+        return hintFiringSolution;
     }
 
     /// <summary>
-    /// Initiates the process of firing the provided weapon at the provided enemy target.
+    /// Initiates the process of firing the provided weapon at the enemy target defined by the provided firing solution.
     /// If the conditions for firing the weapon at the target are satisfied (within range, can be beared upon,
     /// no interfering obstacles, etc.), the weapon will be fired.
     /// </summary>
-    /// <param name="weapon">The weapon.</param>
-    /// <param name="target">The target.</param>
-    private void InitiateFiringSequence(AWeapon weapon, IElementAttackableTarget target) {
+    /// <param name="firingSolution">The firing solution.</param>
+    protected void InitiateFiringSequence(FiringSolution firingSolution) {
         StartEffect(EffectID.Attacking);
-        var losWeapon = weapon as ALOSWeapon;
-        if (losWeapon != null) {
-            losWeapon.onWeaponAimed += OnLOSWeaponAimed;
-            losWeapon.AimAt(target);
+        LosFiringSolution losFiringSolution = firingSolution as LosFiringSolution;
+        if (losFiringSolution != null) {
+            var losWeapon = losFiringSolution.Weapon;
+            losWeapon.onWeaponAimedAtTarget += OnLosWeaponAimedAtTarget;
+            losWeapon.AimAtTarget(losFiringSolution);
         }
         else {
             // no aiming reqd, just launch the ordnance
+            var weapon = firingSolution.Weapon;
+            var target = firingSolution.EnemyTarget;
             LaunchOrdnance(weapon, target);
         }
     }
@@ -230,11 +223,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// <summary>
     /// Called when a LOS Weapon has completed its aiming process at a target.
     /// </summary>
-    /// <param name="losWeapon">The los weapon.</param>
-    /// <param name="aimedTarget">The aimed target.</param>
-    private void OnLOSWeaponAimed(ALOSWeapon losWeapon, IElementAttackableTarget aimedTarget) {
-        LaunchOrdnance(losWeapon, aimedTarget);
-        losWeapon.onWeaponAimed -= OnLOSWeaponAimed;
+    /// <param name="firingSolution">The firing solution.</param>
+    private void OnLosWeaponAimedAtTarget(LosFiringSolution firingSolution) {
+        var target = firingSolution.EnemyTarget;
+        var losWeapon = firingSolution.Weapon;
+        if (target.IsOperational) {
+            LaunchOrdnance(losWeapon, target);
+        }
+        else {  // target died during aiming process
+            losWeapon.OnElementDeclinedToFire();
+        }
+        losWeapon.onWeaponAimedAtTarget -= OnLosWeaponAimedAtTarget;
     }
 
     private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
@@ -250,17 +249,55 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
                **************************************************************************************************************************************************/
     }
 
+    private void OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+        RelayToCurrentState(firingSolutions);
+    }
+
+    #region Weapons Firing Archive
+
+    //private IList<AWeapon> _readyWeaponsInventory = new List<AWeapon>();
+
+    //private void Attach(AWeapon weapon) {
+    //    D.Assert(weapon.RangeMonitor != null);
+    //    var monitor = weapon.RangeMonitor;
+    //    if (!_weaponRangeMonitors.Contains(monitor)) {
+    //        // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
+    //        _weaponRangeMonitors.Add(monitor);
+    //    }
+    //    weapon.onIsReadyToFireChanged += OnWeaponReadinessChanged;
+    //    weapon.onEnemyTargetEnteringRange += OnNewEnemyTargetInRange;
+    //    // IsOperational = true is set when item operations commences
+    //}
+
+
+    /// <summary>
+    /// Attempts to find a target in range and fire the weapon at it.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="tgtHint">Optional hint indicating a highly desirable target.</param>
+    //protected void FindTargetAndFire(AWeapon weapon, IElementAttackableTarget tgtHint = null) {
+    //    D.Assert(weapon.IsReadyToFire);
+    //    IElementAttackableTarget enemyTarget;
+    //    if (weapon.TryPickBestTarget(tgtHint, out enemyTarget)) {
+    //        InitiateFiringSequence(weapon, enemyTarget);
+    //    }
+    //    else {
+    //        D.Log("{0} did not fire weapon {1}.", FullName, weapon.Name);
+    //    }
+    //}
+
+
     /// <summary>
     /// Called when there is a change in the readiness to fire status of the indicated weapon. 
     /// Readiness to fire does not mean there is an enemy in range to fire at.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void OnWeaponReadinessChanged(AWeapon weapon) {
-        if (weapon.IsReadyToFire && weapon.IsEnemyInRange) {
-            OnWeaponReadyAndEnemyInRange(weapon);
-        }
-        UpdateReadyWeaponsInventory(weapon);
-    }
+    //private void OnWeaponReadinessChanged(AWeapon weapon) {
+    //    if (weapon.IsReadyToFire && weapon.IsEnemyInRange) {
+    //        OnWeaponReadyAndEnemyInRange(weapon);
+    //    }
+    //    UpdateReadyWeaponsInventory(weapon);
+    //}
 
     /// <summary>
     /// Called when a new, qualified enemy target has come within range 
@@ -268,45 +305,47 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// weapon is ready to fire. However, it does mean the weapon is operational.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void OnNewEnemyTargetInRange(AWeapon weapon) {
-        if (_readyWeaponsInventory.Contains(weapon)) {
-            OnWeaponReadyAndEnemyInRange(weapon);
-            UpdateReadyWeaponsInventory(weapon);
-        }
-    }
+    //private void OnNewEnemyTargetInRange(AWeapon weapon) {
+    //    if (_readyWeaponsInventory.Contains(weapon)) {
+    //        OnWeaponReadyAndEnemyInRange(weapon);
+    //        UpdateReadyWeaponsInventory(weapon);
+    //    }
+    //}
 
     /// <summary>
     /// Called when [weapon ready and enemy in range].
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
-        // the weapon is ready and the enemy is in range
-        RelayToCurrentState(weapon);
-    }
+    //private void OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    //    // the weapon is ready and the enemy is in range
+    //    RelayToCurrentState(weapon);
+    //}
 
     /// <summary>
     /// Updates the ready weapons inventory.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void UpdateReadyWeaponsInventory(AWeapon weapon) {
-        if (weapon.IsReadyToFire) {
-            if (!_readyWeaponsInventory.Contains(weapon)) {
-                _readyWeaponsInventory.Add(weapon);
-                //D.Log("{0} added Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
-            }
-            else {
-                //D.Log("{0} properly avoided adding duplicate Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
-                // this occurs when a weapon attempts to fire but doesn't (usually due to LOS interference) and therefore remains
-                // IsReadyToFire. If it had fired, it wouldn't be ready and therefore would have been removed below
-            }
-        }
-        else {
-            if (_readyWeaponsInventory.Contains(weapon)) {
-                _readyWeaponsInventory.Remove(weapon);
-                //D.Log("{0} removed Weapon {1} from ReadyWeaponsInventory.", FullName, weapon.Name);
-            }
-        }
-    }
+    //private void UpdateReadyWeaponsInventory(AWeapon weapon) {
+    //    if (weapon.IsReadyToFire) {
+    //        if (!_readyWeaponsInventory.Contains(weapon)) {
+    //            _readyWeaponsInventory.Add(weapon);
+    //            //D.Log("{0} added Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
+    //        }
+    //        else {
+    //            //D.Log("{0} properly avoided adding duplicate Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
+    //            // this occurs when a weapon attempts to fire but doesn't (usually due to LOS interference) and therefore remains
+    //            // IsReadyToFire. If it had fired, it wouldn't be ready and therefore would have been removed below
+    //        }
+    //    }
+    //    else {
+    //        if (_readyWeaponsInventory.Contains(weapon)) {
+    //            _readyWeaponsInventory.Remove(weapon);
+    //            //D.Log("{0} removed Weapon {1} from ReadyWeaponsInventory.", FullName, weapon.Name);
+    //        }
+    //    }
+    //}
+
+    #endregion
 
     #endregion
 

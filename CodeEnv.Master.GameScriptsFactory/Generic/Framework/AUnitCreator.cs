@@ -45,16 +45,15 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected static UnitFactory _factory;
     protected static string _designNameFormat = "{0}_{1}";
 
-    private static IDictionary<ElementCategoryType, int> _nextInstanceCounter = new Dictionary<ElementCategoryType, int>();
-
-    private static string GetNextDesignName(ElementCategoryType hullCategory) {
-        if (!_nextInstanceCounter.ContainsKey(hullCategory)) {
-            _nextInstanceCounter.Add(hullCategory, Constants.Zero);
-        }
-        var instanceNumber = _nextInstanceCounter[hullCategory];
-        string designName = _designNameFormat.Inject(hullCategory.ToString(), instanceNumber);
-        _nextInstanceCounter[hullCategory]++;
-        return designName;
+    /// <summary>
+    /// Gets a unique design name.
+    /// <remarks>Replaced static instance count approach with Random.Range() as Settlement and Starbase
+    /// Facility designs can have the same name since there isn't really only one static counter when using Generic classes.</remarks>
+    /// </summary>
+    /// <param name="hullCategory">The hull category.</param>
+    /// <returns></returns>
+    private static string GetUniqueDesignName(ElementCategoryType hullCategory) {
+        return _designNameFormat.Inject(hullCategory.ToString(), UnityEngine.Random.Range(Constants.Zero, int.MaxValue).ToString());
     }
 
     /// <summary>
@@ -561,7 +560,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             var sensorStats = _availableSensorStats.Shuffle().Take(sensorsPerElement);
             var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGeneratorsPerElement);
 
-            string designName = GetNextDesignName(hullCategory);
+            //string designName = GetNextDesignName(hullCategory);
+            string designName = GetUniqueDesignName(hullCategory);
             RecordDesignName(hullCategory, designName);
             MakeAndRecordDesign(designName, hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
         }
@@ -800,7 +800,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private static void CleanupStaticMembers() {
         _allUnitCommands.ForAll(cmd => cmd.onDeathOneShot -= OnUnitDeath);
         _allUnitCommands.Clear();
-        _nextInstanceCounter.Clear();
     }
 
     /// <summary>

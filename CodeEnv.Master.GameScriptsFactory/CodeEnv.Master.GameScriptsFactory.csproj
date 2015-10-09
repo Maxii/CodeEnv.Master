@@ -58,11 +58,20 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FacilityItem.cs" />
+    <Compile Include="Game\Framework\ShipItem.cs" />
+    <Compile Include="Game\Gameplay\LOSTurret.cs" />
+    <Compile Include="Game\Gameplay\MissileTube.cs" />
+    <Compile Include="Generic\Framework\AHull.cs" />
+    <Compile Include="Generic\Framework\AProjectile.cs" />
+    <Compile Include="Generic\Framework\AUnitCreator.cs" />
+    <Compile Include="Generic\Framework\AUnitElementItem.cs" />
+    <Compile Include="Generic\Framework\AWeaponMount.cs" />
+    <Compile Include="Generic\Framework\FleetUnitCreator.cs" />
+    <Compile Include="Generic\Framework\UnitFactory.cs" />
     <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
     <Compile Include="Generic\Graphics\AMount.cs" />
-    <Compile Include="Generic\Framework\AHull.cs" />
     <Compile Include="Game\Gameplay\FacilityHull.cs" />
-    <Compile Include="Generic\Framework\AWeaponMount.cs" />
     <Compile Include="Generic\Graphics\AImageGuiElement.cs" />
     <Compile Include="Generic\Graphics\AGuiElement.cs" />
     <Compile Include="Generic\Graphics\AProgressBarGuiElement.cs" />
@@ -89,12 +98,10 @@
     <Compile Include="Game\GUI\FleetsTableWindow.cs" />
     <Compile Include="Generic\Extensions\MyNguiUtilities.cs" />
     <Compile Include="Generic\Framework\AOrdnance.cs" />
-    <Compile Include="Generic\Framework\AProjectile.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />
     <Compile Include="Generic\Framework\ANavigator.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuElement.cs" />
     <Compile Include="Generic\Graphics\ATextTooltip.cs" />
-    <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Graphics\ACtxControl_User.cs" />
     <Compile Include="Game\GUI\BaseCtxControl_AI.cs" />
     <Compile Include="Generic\Graphics\ACtxControl.cs" />
@@ -102,12 +109,10 @@
     <Compile Include="Game\GUI\FleetCtxControl_User.cs" />
     <Compile Include="Game\GUI\FleetCtxControl_AI.cs" />
     <Compile Include="Game\Framework\FleetCmdItem.cs" />
-    <Compile Include="Game\Framework\FacilityItem.cs" />
     <Compile Include="Game\Framework\FormationGenerator.cs" />
     <Compile Include="Generic\Framework\APlanetoidItem.cs" />
     <Compile Include="Generic\Framework\AUnitBaseCmdItem.cs" />
     <Compile Include="Generic\Framework\AUnitCmdItem.cs" />
-    <Compile Include="Generic\Framework\AUnitElementItem.cs" />
     <Compile Include="Generic\Graphics\CameraLosChangedListener.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_ConstantSize.cs" />
@@ -118,10 +123,8 @@
     <Compile Include="Generic\IO\InputManager.cs" />
     <Compile Include="Generic\_Debug\FpsReadout.cs" />
     <Compile Include="Generic\Framework\GeneralFactory.cs" />
-    <Compile Include="Generic\Framework\UnitFactory.cs" />
     <Compile Include="Generic\Framework\PathfindingManager.cs" />
     <Compile Include="Generic\IO\GameInputHelper.cs" />
-    <Compile Include="Generic\Framework\FleetUnitCreator.cs" />
     <Compile Include="Generic\IO\MainCameraControl.cs" />
     <Compile Include="Generic\Framework\GameManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButton.cs" />
@@ -162,7 +165,6 @@
     <Compile Include="Game\Framework\SystemItem.cs" />
     <Compile Include="Game\Framework\SettlementCmdItem.cs" />
     <Compile Include="Game\Framework\StarbaseCmdItem.cs" />
-    <Compile Include="Game\Framework\ShipItem.cs" />
     <Compile Include="Game\GUI\PlanetoidCtxControl.cs" />
     <Compile Include="Game\GUI\SectorCtxControl.cs" />
     <Compile Include="Game\GUI\ShipCtxControl_User.cs" />
@@ -215,7 +217,6 @@
     <Compile Include="Game\GUI\ProductionGuiElement.cs" />
     <Compile Include="Game\GUI\StrengthGuiElement.cs" />
     <Compile Include="Game\Gameplay\ShipHull.cs" />
-    <Compile Include="Game\Gameplay\MissileTube.cs" />
     <Compile Include="Generic\Graphics\LOSMountPlaceholder.cs" />
     <Compile Include="Generic\Graphics\MissileMountPlaceholder.cs" />
     <Compile Include="ThirdParty\MyNguiEventListener.cs" />
@@ -237,7 +238,6 @@
     <Compile Include="Game\Framework\UniverseCenterItem.cs" />
     <Compile Include="Game\GUI\UniverseCenterCtxControl.cs" />
     <Compile Include="Generic\_Debug\VisualEffectScale.cs" />
-    <Compile Include="Game\Gameplay\LOSTurret.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

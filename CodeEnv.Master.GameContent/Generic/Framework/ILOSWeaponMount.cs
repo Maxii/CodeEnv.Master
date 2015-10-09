@@ -27,7 +27,8 @@ namespace CodeEnv.Master.GameContent {
         /// Traverses the mount to point at the target's world space position.
         /// </summary>
         /// <param name="targetPosition">The target position.</param>
-        void TraverseTo(Vector3 targetPosition);
+        void TraverseTo(LosFiringSolution firingSolution);
+        //void TraverseTo(Vector3 targetPosition);
 
         /// <summary>
         /// Checks the line of sight from this LOSWeaponMount to the provided enemy target, returning <c>true</c>
@@ -38,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="interferingEnemyTgt">The interfering enemy target, if any.</param>
         /// <returns></returns>
-        bool CheckLineOfSight(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt);
+        //bool CheckLineOfSight(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt);
 
     }
 }

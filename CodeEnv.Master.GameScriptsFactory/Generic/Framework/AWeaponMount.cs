@@ -59,12 +59,13 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     }
 
     /// <summary>
-    /// Checks the firing solution of the mount's weapon against the enemyTarget. Returns <c>true</c> if the target
-    /// fits within the weapon's firing solution, aka within range and can be acquired (beared upon).
+    /// Trys to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
+    /// firing solution, otherwise <c>false</c>.
     /// </summary>
     /// <param name="enemyTarget">The enemy target.</param>
+    /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public abstract bool CheckFiringSolution(IElementAttackableTarget enemyTarget);
+    public abstract bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution);
 
 }
 

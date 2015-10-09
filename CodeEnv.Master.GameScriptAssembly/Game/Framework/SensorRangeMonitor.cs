@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -78,6 +78,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
                 AddEnemy(attackableTarget);
             }
         }
+        newlyDetectedItem.OnDetection(ParentItem, RangeCategory);
     }
 
     protected override void OnDetectedItemRemoved(ISensorDetectable lostDetectionItem) {
@@ -91,6 +92,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
                 RemoveEnemy(enemyTarget);
             }
         }
+        lostDetectionItem.OnDetectionLost(ParentItem, RangeCategory);
     }
 
     /// <summary>

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityDisplayManager : AElementDisplayManager {
 
+        protected override Layers CullingLayer { get { return Layers.FacilityCull; } }
+
         private IRevolver _revolver;
 
         public FacilityDisplayManager(IWidgetTrackable trackedFacility) : base(trackedFacility) { }
@@ -37,6 +39,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSafeInterfaceInChildren<IRevolver>();
+            _revolver.enabled = false;
             // TODO Revolver settings
         }
 

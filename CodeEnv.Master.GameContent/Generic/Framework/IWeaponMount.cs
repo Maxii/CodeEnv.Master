@@ -43,7 +43,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="enemyTarget">The enemy target.</param>
         /// <returns></returns>
-        bool CheckFiringSolution(IElementAttackableTarget enemyTarget);
+        //bool CheckFiringSolution(IElementAttackableTarget enemyTarget);
+
+        bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution);
+
 
         GameObject FiredOrdnanceFolder { get; }
 

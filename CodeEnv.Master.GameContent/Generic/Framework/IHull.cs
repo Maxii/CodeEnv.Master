@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         Transform HullMesh { get; }
 
+        Transform Transform { get; }
+
     }
 }
 

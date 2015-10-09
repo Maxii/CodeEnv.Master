@@ -51,14 +51,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void InitializeSecondaryMeshes(GameObject itemGo) {
             base.InitializeSecondaryMeshes(itemGo);
-
             _secondaryMeshRenderers = itemGo.GetComponentsInImmediateChildrenOnly<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {  // some planets may not have atmosphere or rings
                 _secondaryMeshRenderers.ForAll(r => {
                     r.gameObject.layer = (int)Layers.PlanetoidCull;  // layer automatically handles showing
                     r.castShadows = true;
                     r.receiveShadows = true;
-                    r.enabled = true;
+                    r.enabled = false;
                 });
             }
         }
@@ -66,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSafeInterfaceInImmediateChildren<IRevolver>();
+            _revolver.enabled = false;
             // TODO Revolver settings
         }
 

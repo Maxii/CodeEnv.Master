@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -61,8 +62,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         // Collider Size and Element Radius now set by UnitFactory using SetSize()
-        //var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
-        //Radius = meshRenderer.bounds.extents.magnitude; // ~ 0.25
     }
 
     protected override void InitializeModelMembers() {
@@ -97,11 +96,11 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     /// <param name="capsuleSize">Size of the capsule. x holds the radius
     /// of the capsule, y the height of the capsule.</param>
     public void SetSize(Vector2 capsuleSize) {
-        CapsuleCollider elementCollider = UnityUtility.ValidateComponentPresence<CapsuleCollider>(gameObject);
-        elementCollider.radius = capsuleSize.x;
-        elementCollider.height = capsuleSize.y;
-        elementCollider.direction = Constants.One;  // Y    // IMPROVE
-        Radius = elementCollider.height;
+        CapsuleCollider capsuleCollider = _collider as CapsuleCollider;
+        capsuleCollider.radius = capsuleSize.x;
+        capsuleCollider.height = capsuleSize.y;
+        capsuleCollider.direction = Constants.One;  // Y    // IMPROVE
+        Radius = capsuleCollider.height / 2F;
         //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
     }
 
@@ -242,10 +241,12 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void Idling_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
+
 
     void Idling_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
         LogEvent();
@@ -279,16 +280,16 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon, _primaryTarget);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteAttackOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
         LogEvent();
         FindIncomingThreatAndIntercept(countermeasure);
     }
-
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
@@ -306,9 +307,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteRepairOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
@@ -348,9 +350,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         Return();
     }
 
-    void Repairing_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void Repairing_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void Repairing_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {

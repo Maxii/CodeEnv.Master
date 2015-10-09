@@ -201,6 +201,21 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Sets the layer of the parent and all its children, grandchildren, etc. to <c>layer</c>.
+        /// </summary>
+        /// <param name="parent">The parent.</param>
+        /// <param name="layer">The layer.</param>
+        public static void SetLayerRecursively(Transform parent, Layers layer) {
+            parent.gameObject.layer = (int)layer;
+            foreach (Transform child in parent) {
+                child.gameObject.layer = (int)layer;
+                if (child.childCount > Constants.Zero) {
+                    SetLayerRecursively(child, layer);
+                }
+            }
+        }
+
+        /// <summary>
         /// Calculates the location in world space of 8 vertices of a box surrounding a point.
         /// The minimum distance from this 'center' point to any side of the box is distance.
         /// </summary>

@@ -89,7 +89,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// Used to determine when the barrel is within its traversal range.
     /// </summary>
     private float _allowedBarrelElevationAngleDeviationFromMax;
-
     private GameTime _gameTime;
     private Job _traverseJob;
 
@@ -113,29 +112,102 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         D.Assert(barrel != null);
     }
 
+    /// <summary>
+    /// Initializes the barrel elevation settings based off of the provided minimum barrel elevation angle.
+    /// </summary>
+    /// <param name="minBarrelElevationAngle">The minimum barrel elevation angle.</param>
     public void InitializeBarrelElevationSettings(float minBarrelElevationAngle) {
         _allowedBarrelElevationAngleDeviationFromMax = _barrelMaxElevationAngle - minBarrelElevationAngle;
     }
 
     /// <summary>
-    /// Traverses the mount to point at the target's world space position.
+    /// Trys to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
+    /// firing solution, otherwise <c>false</c>.
     /// </summary>
-    /// <param name="targetPosition">The target position.</param>
-    public void TraverseTo(Vector3 targetPosition) {
-        Traverse(targetPosition, allowedTime: 5F);
+    /// <param name="enemyTarget">The enemy target.</param>
+    /// <param name="firingSolution"></param>
+    /// <returns></returns>
+    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution) {
+        D.Assert(enemyTarget.IsOperational);
+        D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
+
+        firingSolution = null;
+        Vector3 targetPosition = enemyTarget.Position;
+        Vector3 vectorToTarget = targetPosition - hub.position;
+        //D.Log("{0}: TargetBearing = {1}.", Name, vectorToTarget.normalized);
+        float targetDistance = vectorToTarget.magnitude;
+        if (targetDistance > Weapon.RangeDistance) {
+            D.Log("{0}: Target {1} is out of range.", Name, enemyTarget.FullName);
+            return false;
+        }
+
+        Quaternion reqdHubRotation, reqdBarrelElevation;
+        bool canTraverseToTarget = TryCalcTraverse(targetPosition, out reqdHubRotation, out reqdBarrelElevation);
+        if (!canTraverseToTarget) {
+            D.Log("{0}: Target {1} is beyond traverse range.", Name, enemyTarget.FullName);
+            return false;
+        }
+
+        bool isLosClear = CheckLineOfSight(enemyTarget);
+        if (!isLosClear) {
+            return false;
+        }
+        firingSolution = new LosFiringSolution(Weapon, enemyTarget, reqdHubRotation, reqdBarrelElevation);
+        return true;
     }
 
     /// <summary>
-    /// Traverses the mount to point at the target's world space position.
+    /// Checks the line of sight from this LOSWeaponMount to the provided enemy target, returning <c>true</c>
+    /// if there is a clear line of sight to the target, otherwise <c>false</c>.
     /// </summary>
-    /// <param name="targetPosition">The target position.</param>
-    /// <param name="allowedTime">The allowed time before an error is thrown.</param>
-    private void Traverse(Vector3 targetPosition, float allowedTime = Mathf.Infinity) {
-        D.Log("{0} received Traverse to aim at {1}.", Name, targetPosition);
+    /// <param name="enemyTarget">The enemy target.</param>
+    /// <returns></returns>
+    private bool CheckLineOfSight(IElementAttackableTarget enemyTarget) {
+        Vector3 vectorToTarget = enemyTarget.Position - hub.position;
+        Vector3 targetDirection = vectorToTarget.normalized;
+        float targetDistance = vectorToTarget.magnitude;
+        RaycastHit hitInfo;
+        if (Physics.Raycast(transform.position, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
+            var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackableTarget>();
+            if (targetHit != null) {
+                if (targetHit == enemyTarget) {
+                    //D.Log("{0}: CheckLineOfSight({1}) found its target.", Name, enemyTarget.FullName);
+                    return true;
+                }
+                if (targetHit.Owner.IsEnemyOf(Weapon.Owner)) {
+                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2}.", Name, enemyTarget.FullName, targetHit.FullName);
+                    return false;
+                }
+                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2}.", Name, enemyTarget.FullName, targetHit.FullName);
+                return false;
+            }
+            D.Warn("{0}: CheckLineOfSight() didn't find target {1} but found {2}.", Name, enemyTarget.FullName, hitInfo.transform.name);
+            return false;
+        }
+        D.Warn("{0}: CheckLineOfSight({1}) didn't find anything.", Name, enemyTarget.FullName);    // shouldn't happen?
+        return false;
+    }
 
-        Quaternion reqdHubRotation, reqdBarrelElevation;
-        bool canBearOnTargetPosition = TestTraverseTo(targetPosition, out reqdHubRotation, out reqdBarrelElevation);
-        D.Assert(canBearOnTargetPosition); // should always be able to bear on the target after verifying the firing solution
+    /// <summary>
+    /// Traverses the mount to point at the target defined by the provided firing solution.
+    /// </summary>
+    /// <param name="firingSolution"></param>
+    public void TraverseTo(LosFiringSolution firingSolution) {
+        Traverse(firingSolution, allowedTime: 5F);
+    }
+
+    /// <summary>
+    /// Traverses the mount to point at the target defined by the provided firing solution.
+    /// </summary>
+    /// <param name="firingSolution">The firing solution.</param>
+    /// <param name="allowedTime">The allowed time before an error is thrown.</param>
+    private void Traverse(LosFiringSolution firingSolution, float allowedTime = 20F) {
+        IElementAttackableTarget target = firingSolution.EnemyTarget;
+        string targetName = target.FullName;
+        D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
+
+        Quaternion reqdHubRotation = firingSolution.TurretRotation;
+        Quaternion reqdBarrelElevation = firingSolution.TurretElevation;
 
         if (_traverseJob != null && _traverseJob.IsRunning) {
             _traverseJob.Kill();
@@ -143,16 +215,16 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             D.Error("{0}'s previous Traverse Job has been cancelled.", Name);   // if this happens, no onTraverseCompleted will be returned for cancelled traverse
         }
 
-        _traverseJob = new Job(ExecuteTraversal(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
+        _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
             if (!jobWasKilled) {
-                D.Log("{0}'s traverse to aim at {1} complete.", Name, targetPosition);
-                Vector3 actualTargetBearing = (targetPosition - barrel.position).normalized;
+                D.Log("{0}'s traverse to aim at {1} complete.", Name, targetName);
+                Vector3 actualTargetBearing = (target.Position - barrel.position).normalized;
                 float deviationAngle = Vector3.Angle(MuzzleFacing, actualTargetBearing);
                 //D.Log("{0}: HubFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoHubPlane.normalized, hub.forward);
                 //Vector3 barrelLocalFacing = hub.InverseTransformDirection(barrel.forward);
                 //D.Log("{0}: LocalBarrelFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoBarrelPlane.normalized, barrelLocalFacing);
                 D.Log("{0}: DeviationAngle = {1}, ActualTargetBearing = {2}, MuzzleBearingAfterTraverse = {3}.", Name, deviationAngle, actualTargetBearing, MuzzleFacing);
-                OnTraverseCompleted();
+                OnTraverseCompleted(firingSolution);
             }
         });
     }
@@ -164,13 +236,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="reqdBarrelElevation">The required (local) elevation of the barrel.</param>
     /// <param name="allowedTime">The allowed time in GameTimeSeconds.</param>
     /// <returns></returns>
-    private IEnumerator ExecuteTraversal(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, float allowedTime) {
-        D.Log("Initiating {0} traversal. HubRotationRate: {1:0.}, BarrelElevationRate: {2:0.} degrees/hour.", Name, _hubRotationRate, _barrelElevationRate);
+    private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, float allowedTime) {
+        //D.Log("Initiating {0} traversal. HubRotationRate: {1:0.}, BarrelElevationRate: {2:0.} degrees/hour.", Name, _hubRotationRate, _barrelElevationRate);
         float hubRotationRateInDegreesPerSecond = _hubRotationRate * GameTime.HoursPerSecond;
         float barrelElevationRateInDegreesPerSecond = _barrelElevationRate * GameTime.HoursPerSecond;
         float cumTime = Constants.ZeroF;
-        //bool isHubRotationCompletionReported = false;
-        //bool isBarrelElevationCompletionReported = false;
         bool isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, _allowedTraversalDeviation);
         bool isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, _allowedTraversalDeviation);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
@@ -184,21 +254,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 //D.Log("{0}: AllowedHabRotationChange = {1}, ActualHabRotationChange = {2}.", Name, allowedHabRotationChange, rotationChangeInDegrees);
                 isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, _allowedTraversalDeviation);
             }
-            else {
-                //D.Log(!isHubRotationCompletionReported, "{0}: Hub Rotation task has completed.", Name);
-                //D.Log(!isHubRotationCompletionReported, "{0}: CompletedHubRotationAngle = {1}.", Name, hub.rotation.eulerAngles);
-                //isHubRotationCompletionReported = true;
-            }
 
             if (!isBarrelElevationCompleted) {
                 float allowedBarrelElevationChange = barrelElevationRateInDegreesPerSecond * deltaTime;
                 barrel.localRotation = Quaternion.RotateTowards(barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
                 isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, _allowedTraversalDeviation);
-            }
-            else {
-                //D.Log(!isBarrelElevationCompletionReported, "{0}: Barrel Elevation task has completed.", Name);
-                //D.Log(!isBarrelElevationCompletionReported, "{0}: CompletedBarrelRotationAngle = {1}.", Name, barrel.localRotation.eulerAngles);
-                //isBarrelElevationCompletionReported = true;
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
@@ -206,41 +266,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             D.Assert(cumTime < allowedTime, "{0}: CumTime {1} > AllowedTime {2}.".Inject(Name, cumTime, allowedTime));
             yield return null; // Note: see Navigator.ExecuteHeadingChange() if wish to use WaitForSeconds() or WaitForFixedUpdate()
         }
-        D.Log("{0} completed Traverse Job. Duration = {1:0.####} GameTimeSecs.", Name, cumTime);
+        //D.Log("{0} completed Traverse Job. Duration = {1:0.####} GameTimeSecs.", Name, cumTime);
     }
 
     /// <summary>
-    /// Checks the firing solution of this weapon on the enemyTarget. Returns <c>true</c> if the target
-    /// fits within the weapon's firing solution, aka within range and can be acquired. if reqd.
-    /// </summary>
-    /// <param name="enemyTarget">The enemy target.</param>
-    /// <returns></returns>
-    public override bool CheckFiringSolution(IElementAttackableTarget enemyTarget) {
-        D.Assert(enemyTarget.IsOperational);
-        D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
-
-        Vector3 targetPosition = enemyTarget.Position;
-        Vector3 vectorToTarget = targetPosition - hub.position;
-        //D.Log("{0}: TargetBearing = {1}.", Name, vectorToTarget.normalized);
-        float targetDistance = vectorToTarget.magnitude;
-        if (targetDistance > Weapon.RangeDistance) {
-            D.Log("{0}: Target {1} is out of range.", Name, enemyTarget.FullName);
-            return false;
-        }
-
-        Quaternion reqdHubRotation, reqdBarrelElevation;
-        bool canBearOnTarget = TestTraverseTo(targetPosition, out reqdHubRotation, out reqdBarrelElevation);
-        if (!canBearOnTarget) {
-            D.Log("{0}: Target {1} is beyond traverse range.", Name, enemyTarget.FullName);
-            return false;
-        }
-        return true;
-    }
-
-    /// <summary>
-    /// Tests whether this turret can traverse to acquire the provided targetPosition. Returns <c>true</c> if the targetPosition
-    /// is within range, and the turret can bear on it, <c>false</c> otherwise. For convenience, also returns the calculated hub and barrel rotation
-    /// and elevation values required for the turret to bear.
+    /// Tests whether this turret can traverse to acquire the provided targetPosition. Returns <c>true</c> if the turret can traverse far enough to
+    /// bear on the targetPosition, <c>false</c> otherwise. Returns the calculated hub and barrel rotation
+    /// and elevation values required for the turret to bear on the target, even if the turret cannot traverse that far.
     /// <remarks>Uses rotated versions of the UpTurret prefab where the rotation is added to the turret object itself so that it appears
     /// to the hub like the ship is rotated.</remarks>
     /// </summary>
@@ -248,18 +280,17 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="reqdHubRotation">The required hub rotation.</param>
     /// <param name="reqdBarrelElevation">The required barrel elevation.</param>
     /// <returns></returns>
-    private bool TestTraverseTo(Vector3 targetPosition, out Quaternion reqdHubRotation, out Quaternion reqdBarrelElevation) {
+    private bool TryCalcTraverse(Vector3 targetPosition, out Quaternion reqdHubRotation, out Quaternion reqdBarrelElevation) {
         // hub rotates within a plane defined by the contour of the hull it resides on. That plane is defined by the position of the hub and the hub's normal. 
         // This distance is to a parallel plane that contains the target.
         float signedDistanceToPlaneParallelToHubContainingTarget = Vector3.Dot(hub.up, targetPosition - hub.position);
-        D.Log("{0}: DistanceToPlaneParallelToHubContainingTarget = {1}.", Name, signedDistanceToPlaneParallelToHubContainingTarget);
-
+        //D.Log("{0}: DistanceToPlaneParallelToHubContainingTarget = {1}.", Name, signedDistanceToPlaneParallelToHubContainingTarget);
 
         Vector3 targetPositionProjectedOntoHubPlane = targetPosition - hub.up * signedDistanceToPlaneParallelToHubContainingTarget;
-        D.Log("{0}: TargetPositionProjectedOntoHubPlane = {1}.", Name, targetPositionProjectedOntoHubPlane);
+        //D.Log("{0}: TargetPositionProjectedOntoHubPlane = {1}.", Name, targetPositionProjectedOntoHubPlane);
 
         __vectorToTargetPositionProjectedOntoHubPlane = targetPositionProjectedOntoHubPlane - hub.position;
-        D.Log("{0}: VectorToTargetPositionProjectedOntoHubPlane = {1}.", Name, __vectorToTargetPositionProjectedOntoHubPlane);
+        //D.Log("{0}: VectorToTargetPositionProjectedOntoHubPlane = {1}.", Name, __vectorToTargetPositionProjectedOntoHubPlane);
 
         if (!__vectorToTargetPositionProjectedOntoHubPlane.IsSameAs(Vector3.zero)) {
             // LookRotation throws an error if the vector to the target is zero, aka directly above the hub
@@ -275,13 +306,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
         // barrel always elevates around its local x Axis
         Vector3 localBarrelVectorToTarget = new Vector3(Constants.ZeroF, signedDistanceToPlaneParallelToHubContainingTarget, barrelLocalZDistanceToTarget);
-        D.Log("{0}: LocalBarrelVectorToTarget = {1}.", Name, localBarrelVectorToTarget);
+        //D.Log("{0}: LocalBarrelVectorToTarget = {1}.", Name, localBarrelVectorToTarget);
 
         __vectorToTargetPositionProjectedOntoBarrelPlane = localBarrelVectorToTarget;    // simply for clarity
 
         if (!__vectorToTargetPositionProjectedOntoBarrelPlane.IsSameAs(Vector3.zero)) {
             reqdBarrelElevation = Quaternion.LookRotation(__vectorToTargetPositionProjectedOntoBarrelPlane);
-            D.Log("{0}: CalculatedBarrelElevationAngle = {1}.", Name, reqdBarrelElevation.eulerAngles);
+            //D.Log("{0}: CalculatedBarrelElevationAngle = {1}.", Name, reqdBarrelElevation.eulerAngles);
         }
         else {
             // target is directly above/infrontof/below turret so return barrels to their amidships bearing to hit it?
@@ -290,51 +321,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         }
 
         var elevationAngleDeviationFromMax = Quaternion.Angle(reqdBarrelElevation, _barrelMaxElevation);
-        D.Log("{0}: ReqdBarrelElevationAngleDeviationFromMax = {1:0.#}, AllowedDeviationFromMax = {2:0.#}.", Name, elevationAngleDeviationFromMax, _allowedBarrelElevationAngleDeviationFromMax);
+        //D.Log("{0}: ReqdBarrelElevationAngleDeviationFromMax = {1:0.#}, AllowedDeviationFromMax = {2:0.#}.", Name, elevationAngleDeviationFromMax, _allowedBarrelElevationAngleDeviationFromMax);
 
         return elevationAngleDeviationFromMax <= _allowedBarrelElevationAngleDeviationFromMax;
     }
 
-    /// <summary>
-    /// Checks the line of sight from this LOSWeaponMount to the provided enemy target, returning <c>true</c>
-    /// if their is a clear line of sight to the target, otherwise <c>false</c>. If <c>false</c> and the LOS interference is from
-    /// another enemy target, then interferingEnemyTgt is assigned that target. Otherwise, interferingEnemyTgt
-    /// will always be null. In route ordnance does not interfere with this LOS check.
-    /// </summary>
-    /// <param name="enemyTarget">The enemy target.</param>
-    /// <param name="interferingEnemyTgt">The interfering enemy target, if any.</param>
-    /// <returns></returns>
-    public bool CheckLineOfSight(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt) {
-        //D.Assert(CheckFiringSolution(enemyTarget)); // should already know targetPosition is in range and can be beared upon
-        interferingEnemyTgt = null;
-        Vector3 vectorToTarget = enemyTarget.Position - hub.position;
-        Vector3 targetDirection = vectorToTarget.normalized;
-        float targetDistance = vectorToTarget.magnitude;
-        RaycastHit hitInfo;
-        if (Physics.Raycast(transform.position, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
-            var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackableTarget>();
-            if (targetHit != null) {
-                if (targetHit == enemyTarget) {
-                    D.Log("{0}: CheckLineOfSight({1}) found its target.", Name, enemyTarget.FullName);
-                    return true;
-                }
-                if (targetHit.Owner.IsEnemyOf(Weapon.Owner)) {
-                    interferingEnemyTgt = targetHit;
-                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2}.", Name, enemyTarget.FullName, interferingEnemyTgt.FullName);
-                    return false;
-                }
-                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2}.", Name, enemyTarget.FullName, targetHit.FullName);
-                return false;
-            }
-            D.Warn("{0}: CheckLineOfSight() didn't find target {1} but found {2}.", Name, enemyTarget.FullName, hitInfo.transform.name);
-            return false;
-        }
-        D.Warn("{0}: CheckLineOfSight({1}) didn't find anything.", Name, enemyTarget.FullName);    // shouldn't happen?
-        return false;
-    }
-
-    private void OnTraverseCompleted() {
-        Weapon.OnTraverseCompleted();
+    private void OnTraverseCompleted(LosFiringSolution firingSolution) {
+        Weapon.OnTraverseCompleted(firingSolution);
     }
 
     protected override void Cleanup() {

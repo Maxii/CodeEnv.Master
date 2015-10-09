@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         protected override Vector2 IconSize { get { return _starIconSize; } }
 
         private IBillboard _glowBillboard;
-        private IRevolver[] _revolvers;
+        private IRevolver[] _revolvers; // star mesh and 2 glows
 
         public StarDisplayManager(IWidgetTrackable trackedStar, IconInfo iconInfo)
             : base(trackedStar) {
@@ -73,6 +73,7 @@ namespace CodeEnv.Master.GameContent {
             starLight.enabled = true;
 
             _revolvers = itemGo.GetSafeInterfacesInChildren<IRevolver>();
+            _revolvers.ForAll(r => r.enabled = false);
             // TODO Revolver settings
         }
 

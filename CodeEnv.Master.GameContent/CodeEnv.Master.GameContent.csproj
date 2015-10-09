@@ -53,15 +53,28 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Graphics\FacilityDisplayManager.cs" />
+    <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
+    <Compile Include="Game\Graphics\PlanetDisplayManager.cs" />
+    <Compile Include="Game\Graphics\ShipDisplayManager.cs" />
+    <Compile Include="Game\Graphics\StarDisplayManager.cs" />
+    <Compile Include="Game\Graphics\UniverseCenterDisplayManager.cs" />
     <Compile Include="Generic\Framework\AElementDesign.cs" />
     <Compile Include="Game\Framework\FacilityDesign.cs" />
+    <Compile Include="Generic\Framework\ALOSWeapon.cs" />
+    <Compile Include="Generic\Framework\AWeapon.cs" />
     <Compile Include="Generic\Framework\Facing.cs" />
     <Compile Include="Generic\Framework\AHullEquipment.cs" />
-    <Compile Include="Generic\Framework\ALOSWeapon.cs" />
     <Compile Include="Generic\Extensions\ElementCategoryExtensions.cs" />
     <Compile Include="Game\Framework\FacilityHullEquipment.cs" />
+    <Compile Include="Generic\Framework\FiringSolution.cs" />
+    <Compile Include="Generic\Framework\IHull.cs" />
+    <Compile Include="Generic\Framework\ILOSWeaponMount.cs" />
+    <Compile Include="Generic\Framework\IWeaponMount.cs" />
+    <Compile Include="Generic\Framework\LosFiringSolution.cs" />
     <Compile Include="Generic\Graphics\ACmdIconInfoFactory.cs" />
     <Compile Include="Game\Graphics\FleetIconInfoFactory.cs" />
+    <Compile Include="Generic\Graphics\AElementDisplayManager.cs" />
     <Compile Include="Generic\IO\AHullStat.cs" />
     <Compile Include="Generic\IO\EngineStat.cs" />
     <Compile Include="Generic\IO\FacilityHullStat.cs" />
@@ -88,10 +101,8 @@
     <Compile Include="Generic\Graphics\ColoredStringBuilder.cs" />
     <Compile Include="Game\GUI\FacilityDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\ADisplayManager.cs" />
-    <Compile Include="Generic\Graphics\AElementDisplayManager.cs" />
     <Compile Include="Generic\Graphics\AIconDisplayManager.cs" />
     <Compile Include="Game\Graphics\EffectsManager.cs" />
-    <Compile Include="Game\Graphics\FacilityDisplayManager.cs" />
     <Compile Include="Generic\Framework\BeamProjector.cs" />
     <Compile Include="Generic\Graphics\GameColor.cs" />
     <Compile Include="Game\Graphics\CoursePlotLine.cs" />
@@ -271,10 +282,7 @@
     <Compile Include="Generic\IO\SpeciesFactory.cs" />
     <Compile Include="Game\Graphics\StarbaseIconInfoFactory.cs" />
     <Compile Include="Generic\Framework\IFacilityHull.cs" />
-    <Compile Include="Generic\Framework\IHull.cs" />
-    <Compile Include="Generic\Framework\ILOSWeaponMount.cs" />
     <Compile Include="Generic\Framework\IShipHull.cs" />
-    <Compile Include="Generic\Framework\IWeaponMount.cs" />
     <Compile Include="Game\Framework\ShipHullEquipment.cs" />
     <Compile Include="Generic\Framework\MountSlotID.cs" />
     <Compile Include="Game\Framework\PlayerDesigns.cs" />
@@ -282,14 +290,11 @@
     <Compile Include="Game\Framework\ShipDesign.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
-    <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />
-    <Compile Include="Game\Graphics\PlanetDisplayManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="Game\Graphics\EffectID.cs" />
-    <Compile Include="Generic\Framework\AWeapon.cs" />
     <Compile Include="Generic\Framework\WDVCategory.cs" />
     <Compile Include="Generic\Framework\ShipOrder.cs" />
     <Compile Include="Generic\IO\SettlementCmdStat.cs" />
@@ -330,13 +335,10 @@
     <Compile Include="Game\Graphics\SfxCapID.cs" />
     <Compile Include="Game\Graphics\SfxClipID.cs" />
     <Compile Include="Game\Graphics\SfxGroupID.cs" />
-    <Compile Include="Game\Graphics\ShipDisplayManager.cs" />
     <Compile Include="Generic\Extensions\SpaceUnityConstants.cs" />
-    <Compile Include="Game\Graphics\StarDisplayManager.cs" />
     <Compile Include="Game\Graphics\SystemDisplayManager.cs" />
     <Compile Include="ThirdParty\WaitJob.cs" />
     <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
-    <Compile Include="Game\Graphics\UniverseCenterDisplayManager.cs" />
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />
     <Compile Include="Game\GUI\UniverseCenterDisplayInfoFactory.cs" />
   </ItemGroup>

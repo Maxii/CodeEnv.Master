@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -30,31 +31,29 @@ namespace CodeEnv.Master.GameContent {
         private static string _editorNameFormat = "{0}[{1}({2:0.})]";
 
         /// <summary>
-        /// Occurs when IsReadyToFire changes.
+        /// Occurs when this weapon is ready to fire using one of the included firing solutions.
         /// </summary>
-        public event Action<AWeapon> onIsReadyToFireChanged;
+        public event Action<IList<FiringSolution>> onReadyToFire;
 
+        private bool _isReady;
         /// <summary>
-        /// Occurs when a qualified enemy target enters this operational 
-        /// weapon's range. Only raised when the weapon IsOperational.
-        /// </summary>
-        public event Action<AWeapon> onEnemyTargetEnteringRange;
-
-        private bool _isReadyToFire;
-        /// <summary>
-        /// Indicates whether this weapon is ready to fire. A weapon is ready to fire when 
+        /// Indicates whether this weapon is ready to execute a firing solution. A weapon is ready when 
         /// it is both operational and loaded. This property is not affected by whether 
-        /// there are any enemy targets within range.
+        /// there are any enemy targets within range, or whether there are any executable firing solutions.
         /// </summary>
-        public bool IsReadyToFire {
-            get { return _isReadyToFire; }
-            private set { SetProperty<bool>(ref _isReadyToFire, value, "IsReadyToFire", OnIsReadyToFireChanged); }
+        private bool IsReady {
+            get { return _isReady; }
+            set { SetProperty<bool>(ref _isReady, value, "IsReady", OnIsReadyChanged); }
         }
 
+        private bool _isEnemyInRange;
         /// <summary>
         /// Indicates whether there are one or more qualified enemy targets within range.
         /// </summary>
-        public bool IsEnemyInRange { get { return _qualifiedEnemyTargets.Any(); } }
+        private bool IsEnemyInRange {
+            get { return _isEnemyInRange; }
+            set { SetProperty<bool>(ref _isEnemyInRange, value, "IsEnemyInRange", OnIsEnemyInRangeChanged); }
+        }
 
         private bool _toShowEffects;
         /// <summary>
@@ -116,6 +115,7 @@ namespace CodeEnv.Master.GameContent {
         protected IList<IElementAttackableTarget> _qualifiedEnemyTargets;
         private bool _isLoaded;
         private WaitJob _reloadJob;
+        private Job _checkForFiringSolutionsJob;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AWeapon" /> class.
@@ -147,46 +147,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public abstract void CheckActiveOrdnanceTargeting();
 
-        /// <summary>
-        /// Gets an estimated firing solution for this weapon on the provided target. The estimate
-        /// takes into account the accuracy of the weapon.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        /// <param name="actualTgtBearing">The actual target bearing.</param>
-        /// <returns></returns>
-        [Obsolete]
-        public Vector3 GetFiringSolution(IElementAttackableTarget target, out Vector3 actualTgtBearing) {
-            actualTgtBearing = (target.Position - WeaponMount.MuzzleLocation).normalized;
-            var inaccuracy = Constants.OneF - Accuracy;
-            var xSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
-            var ySpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
-            var zSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
-            return new Vector3(actualTgtBearing.x + xSpread, actualTgtBearing.y + ySpread, actualTgtBearing.z + zSpread).normalized;
-        }
-
-
-        /// <summary>
-        /// Tries to pick the best (most advantageous) qualified target in range.
-        /// Returns <c>true</c> if a target was picked, <c>false</c> otherwise.
-        /// The hint provided is the initial choice for primary target as determined
-        /// by the Element. It is within sensor range (although not necessarily weapons
-        /// range) and is associated with the target indicated by Command that our
-        /// Element is to attack.
-        /// </summary>
-        /// <param name="hint">The hint.</param>
-        /// <param name="enemyTgt">The enemy target picked.</param>
-        /// <returns></returns>
-        public virtual bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
-            if (hint != null && _qualifiedEnemyTargets.Contains(hint)) {
-                if (WeaponMount.CheckFiringSolution(hint)) {
-                    enemyTgt = hint;
-                    return true;
-                }
-            }
-            var possibleTargets = new List<IElementAttackableTarget>(_qualifiedEnemyTargets);
-            return TryPickBestTarget(possibleTargets, out enemyTgt);
-        }
-
         private void OnWeaponMountChanged() {
             WeaponMount.Weapon = this;
         }
@@ -202,26 +162,126 @@ namespace CodeEnv.Master.GameContent {
                 if (CheckIfQualified(enemyTarget)) {
                     D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget));
                     _qualifiedEnemyTargets.Add(enemyTarget);
-                    if (IsOperational && onEnemyTargetEnteringRange != null) {
-                        onEnemyTargetEnteringRange(this);
-                    }
                 }
             }
             else {
-                if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
-                    _qualifiedEnemyTargets.Remove(enemyTarget);
+                bool isRemoved = _qualifiedEnemyTargets.Remove(enemyTarget);
+                D.Assert(isRemoved);
+            }
+            IsEnemyInRange = _qualifiedEnemyTargets.Any();
+        }
+
+        private void OnIsEnemyInRangeChanged() {
+            if (!IsEnemyInRange) {
+                KillFiringSolutionsCheckJob();
+            }
+            AssessReadinessToFire();
+        }
+
+        private bool TryGetFiringSolutions(out IList<FiringSolution> firingSolutions) {
+            int enemyTgtCount = _qualifiedEnemyTargets.Count;
+            D.Assert(enemyTgtCount > Constants.Zero);
+            firingSolutions = new List<FiringSolution>(enemyTgtCount);
+            foreach (var enemyTgt in _qualifiedEnemyTargets) {
+                FiringSolution firingSolution;
+                if (WeaponMount.TryGetFiringSolution(enemyTgt, out firingSolution)) {
+                    firingSolutions.Add(firingSolution);
                 }
+            }
+            return firingSolutions.Any();
+        }
+
+        /// <summary>
+        /// Called when the element this weapon is attached too declines to fire
+        /// the weapon. This can occur when the target dies while the aiming process
+        /// is underway, or if the element decides to not waste a shot on any of the
+        /// provided firing solutions (e.g. the weapon may not be able to damage the target).
+        /// <remarks>Notifying the weapon of this decision is necessary so that the weapon
+        /// can begin looking for other firing solutions which would otherwise only occur once
+        /// the weapon was fired.</remarks>
+        /// </summary>
+        public void OnElementDeclinedToFire() {
+            LaunchFiringSolutionsCheckJob();
+        }
+
+        private void OnReadyToFire(IList<FiringSolution> firingSolutions) {
+            D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to generate the event
+            if (onReadyToFire != null) {
+                onReadyToFire(firingSolutions);
             }
         }
 
         /// <summary>
-        /// Called when this weapon's firing process against <c>targetFiredOn</c> has begun.
+        /// Launches a process to continuous check for newly uncovered firing solutions
+        /// against targets in range. Only initiated when the weapon is ready to fire with
+        /// enemy targets in range. If either of these conditions change, the job is immediately
+        /// killed using KillFiringSolutionsCheckJob().
+        /// <remarks>This fill-in check job is needed as firing solution checks otherwise
+        /// occur only when 1) the weapon becomes ready to fire, or 2) the first enemy comes
+        /// into range. If a firing solution is not discovered during these event checks, no more
+        /// checks would take place until another event condition arises. This process fills that
+        /// gap, continuously looking for newly uncovered firing solutions which are to be
+        /// expected, given movement and attitude changes of both the firing element and
+        /// the targets.</remarks>
+        /// </summary>
+        private void LaunchFiringSolutionsCheckJob() {
+            KillFiringSolutionsCheckJob();
+            D.Assert(IsReady);
+            D.Assert(IsEnemyInRange);
+            D.Log("{0}.LaunchFiringSolutionsCheckJob() called.", Name);
+            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
+                // TODO
+            });
+        }
+
+        /// <summary>
+        /// Continuously checks for firing solutions against any target in range. When it finds
+        /// one or more, it signals the weapon's readiness to fire and the job terminates.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator CheckForFiringSolutions() {
+            bool hasFiringSolutions = false;
+            while (!hasFiringSolutions) {
+                IList<FiringSolution> firingSolutions;
+                if (TryGetFiringSolutions(out firingSolutions)) {
+                    hasFiringSolutions = true;
+                    D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    OnReadyToFire(firingSolutions);
+                }
+                yield return new WaitForSeconds(1);
+            }
+        }
+
+        private void KillFiringSolutionsCheckJob() {
+            if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
+                D.Warn("{0} FiringSolutionsCheckJob is being killed.", Name);
+                _checkForFiringSolutionsJob.Kill();
+            }
+        }
+
+
+        private void AssessReadinessToFire() {
+            if (!IsReady || !IsEnemyInRange) {
+                return;
+            }
+
+            IList<FiringSolution> firingSolutions;
+            if (TryGetFiringSolutions(out firingSolutions)) {
+                OnReadyToFire(firingSolutions);
+            }
+            else {
+                LaunchFiringSolutionsCheckJob();
+            }
+        }
+
+        /// <summary>
+        /// Called by the weapon's ordnance when this weapon's firing process against <c>targetFiredOn</c> has begun.
         /// </summary>
         /// <param name="targetFiredOn">The target fired on.</param>
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
-            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn));
+            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.".Inject(Name, targetFiredOn.FullName));
 
             D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
@@ -270,10 +330,11 @@ namespace CodeEnv.Master.GameContent {
             NotifyIsOperationalChanged();
         }
 
-        private void OnIsReadyToFireChanged() {
-            if (onIsReadyToFireChanged != null) {
-                onIsReadyToFireChanged(this);
+        private void OnIsReadyChanged() {
+            if (!IsReady) {
+                KillFiringSolutionsCheckJob();
             }
+            AssessReadinessToFire();
         }
 
         private void OnReloaded() {
@@ -296,26 +357,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="terminatedOrdnance">The dead ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
 
-        /// <summary>
-        /// Recursive method that tries to pick a target from a list of possibleTargets. Returns <c>true</c>
-        /// if a target was picked, <c>false</c> if not.
-        /// </summary>
-        /// <param name="possibleTargets">The possible targets.</param>
-        /// <param name="enemyTgt">The enemy target returned.</param>
-        /// <returns></returns>
-        protected virtual bool TryPickBestTarget(IList<IElementAttackableTarget> possibleTargets, out IElementAttackableTarget enemyTgt) {
-            enemyTgt = null;
-            if (possibleTargets.Count == Constants.Zero) {
-                return false;
-            }
-            var candidateTgt = possibleTargets.First();
-            if (WeaponMount.CheckFiringSolution(candidateTgt)) {
-                enemyTgt = candidateTgt;
-                return true;
-            }
-            possibleTargets.Remove(candidateTgt);
-            return TryPickBestTarget(possibleTargets, out enemyTgt);
-        }
 
         private bool CheckIfQualified(IElementAttackableTarget enemyTarget) {
             return true;    // UNDONE
@@ -333,16 +374,83 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessReadiness() {
-            IsReadyToFire = IsOperational && _isLoaded;
+            IsReady = IsOperational && _isLoaded;
         }
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
                 _reloadJob.Dispose();
             }
+            if (_checkForFiringSolutionsJob != null) {
+                _checkForFiringSolutionsJob.Dispose();
+            }
         }
 
         public sealed override string ToString() { return Stat.ToString(); }
+
+        #region Archive
+
+        /// <summary>
+        /// Gets an estimated firing solution for this weapon on the provided target. The estimate
+        /// takes into account the accuracy of the weapon.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        /// <param name="actualTgtBearing">The actual target bearing.</param>
+        /// <returns></returns>
+        //[Obsolete]
+        //public Vector3 GetFiringSolution(IElementAttackableTarget target, out Vector3 actualTgtBearing) {
+        //    actualTgtBearing = (target.Position - WeaponMount.MuzzleLocation).normalized;
+        //    var inaccuracy = Constants.OneF - Accuracy;
+        //    var xSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+        //    var ySpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+        //    var zSpread = UnityEngine.Random.Range(-inaccuracy, inaccuracy);
+        //    return new Vector3(actualTgtBearing.x + xSpread, actualTgtBearing.y + ySpread, actualTgtBearing.z + zSpread).normalized;
+        //}
+
+        /// <summary>
+        /// Tries to pick the best (most advantageous) qualified target in range.
+        /// Returns <c>true</c> if a target was picked, <c>false</c> otherwise.
+        /// The hint provided is the initial choice for primary target as determined
+        /// by the Element. It is within sensor range (although not necessarily weapons
+        /// range) and is associated with the target indicated by Command that our
+        /// Element is to attack.
+        /// </summary>
+        /// <param name="hint">The hint.</param>
+        /// <param name="enemyTgt">The enemy target picked.</param>
+        /// <returns></returns>
+        //public virtual bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
+        //    if (hint != null && _qualifiedEnemyTargets.Contains(hint)) {
+        //        if (WeaponMount.CheckFiringSolution(hint)) {
+        //            enemyTgt = hint;
+        //            return true;
+        //        }
+        //    }
+        //    var possibleTargets = new List<IElementAttackableTarget>(_qualifiedEnemyTargets);
+        //    return TryPickBestTarget(possibleTargets, out enemyTgt);
+        //}
+
+        /// <summary>
+        /// Recursive method that tries to pick a target from a list of possibleTargets. Returns <c>true</c>
+        /// if a target was picked, <c>false</c> if not.
+        /// </summary>
+        /// <param name="possibleTargets">The possible targets.</param>
+        /// <param name="enemyTgt">The enemy target returned.</param>
+        /// <returns></returns>
+        //protected virtual bool TryPickBestTarget(IList<IElementAttackableTarget> possibleTargets, out IElementAttackableTarget enemyTgt) {
+        //    enemyTgt = null;
+        //    if (possibleTargets.Count == Constants.Zero) {
+        //        return false;
+        //    }
+        //    var candidateTgt = possibleTargets.First();
+        //    if (WeaponMount.CheckFiringSolution(candidateTgt)) {
+        //        enemyTgt = candidateTgt;
+        //        return true;
+        //    }
+        //    possibleTargets.Remove(candidateTgt);
+        //    return TryPickBestTarget(possibleTargets, out enemyTgt);
+        //}
+
+        #endregion
 
         #region IDisposable
         [DoNotSerialize]

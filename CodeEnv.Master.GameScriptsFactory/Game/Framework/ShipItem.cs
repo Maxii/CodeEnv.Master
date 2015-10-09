@@ -86,9 +86,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         base.InitializeLocalReferencesAndValues();
         _gameTime = GameTime.Instance;
         // Collider Size and Element Radius now set by UnitFactory using SetSize()
-        //var meshRenderer = gameObject.GetComponentInChildren<Renderer>();
-        //Radius = meshRenderer.bounds.extents.magnitude;
-        //(collider as BoxCollider).size = meshRenderer.bounds.size;    
     }
 
     protected override void InitializeModelMembers() {
@@ -139,8 +136,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// </summary>
     /// <param name="boxSize">Size of the box.</param>
     public void SetSize(Vector3 boxSize) {
-        BoxCollider shipCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        shipCollider.size = boxSize;
+        BoxCollider boxCollider = _collider as BoxCollider;
+        boxCollider.size = boxSize;
         Radius = boxSize.magnitude;
     }
 
@@ -574,10 +571,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         yield return null;
     }
 
-    void Idling_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void Idling_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
+
 
     void Idling_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
         LogEvent();
@@ -713,9 +712,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteMoveOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void ExecuteMoveOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteMoveOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
@@ -786,9 +786,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Return();
     }
 
-    void Moving_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void Moving_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void Moving_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
@@ -875,9 +876,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon, _primaryTarget);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteAttackOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
@@ -1003,9 +1005,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteRepairOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
@@ -1047,9 +1050,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Return();
     }
 
-    void Repairing_OnWeaponReadyAndEnemyInRange(AWeapon weapon) {
+    void Repairing_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
         LogEvent();
-        FindTargetAndFire(weapon);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void Repairing_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {

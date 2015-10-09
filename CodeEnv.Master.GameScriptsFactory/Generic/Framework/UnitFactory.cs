@@ -264,9 +264,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         FacilityHullCategory hullCategory = design.HullCategory;
 
         GameObject hullPrefabGo = _facilityHullPrefabs.Single(fHull => fHull.HullCategory == hullCategory).gameObject;
-        GameObject elementGoClone = UnityUtility.AddChild(null, _shipItemPrefab.gameObject);
+        GameObject elementGoClone = UnityUtility.AddChild(null, _facilityItemPrefab.gameObject);
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
-        hullGoClone.layer = (int)Layers.ShipCull;   // hull layer gets set to item layer by AddChild
+        hullGoClone.layer = (int)Layers.FacilityCull;   // hull layer gets set to item layer by AddChild
 
         FacilityItem element = elementGoClone.GetSafeMonoBehaviour<FacilityItem>();
         PopulateInstance(owner, topography, design, ref element);
@@ -491,6 +491,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // restore the mount's rotation from the prefab as AddChild sets it to Quaternion.Identity
         mountGo.transform.rotation = prefabRotation;
         mountGo.transform.position = mountPlaceholder.transform.position;
+
+        // align the layer of the mount and its children to that of the HullMesh
+        Layers hullMeshLayer = (Layers)hull.HullMesh.gameObject.layer;
+        UnityUtility.SetLayerRecursively(mountGo.transform, hullMeshLayer);
+
         AWeaponMount weaponMount = mountGo.GetSafeMonoBehaviour<AWeaponMount>();
         weaponMount.SlotID = mountSlotID;
         if (isLOSWeapon) {

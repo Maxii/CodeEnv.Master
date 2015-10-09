@@ -133,7 +133,7 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
 
     private void CheckRange() {
         var distanceTraveled = GetDistanceTraveled();
-        D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
+        //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
         if (distanceTraveled > _range) {
             if (ToShowEffects) {
                 ShowImpactEffects(_transform.position); // self destruction effect

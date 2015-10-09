@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipDisplayManager : AElementDisplayManager {
 
+        protected override Layers CullingLayer { get { return Layers.ShipCull; } }
+
         public ShipDisplayManager(IWidgetTrackable trackedShip) : base(trackedShip) { }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
