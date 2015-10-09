@@ -209,6 +209,43 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
+        //protected override void OnIsDamagedChanged() {
+        //    D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
+        //    if (IsOperational) {
+        //        // activated and just fixed previous damage so if not already loaded, reload
+        //        if (!_isLoaded) {
+        //            InitiateReloadCycle();
+        //        }
+        //    }
+        //    else {
+        //        // either not activated or just incurred damage so unload
+        //        if (_reloadJob != null && _reloadJob.IsRunning) {
+        //            _reloadJob.Kill();
+        //        }
+        //        _isLoaded = false;
+        //    }
+        //    AssessReadiness();
+        //    NotifyIsDamagedChanged();
+        //}
+
+        //protected override void OnIsActivatedChanged() {
+        //    base.OnIsActivatedChanged();
+        //    if (IsOperational) {
+        //        // undamaged and just activated so initiate reloading
+        //        if (!_isLoaded) {
+        //            InitiateReloadCycle();
+        //        }
+        //    }
+        //    else {
+        //        // either damaged or just deactivated so unload
+        //        if (_reloadJob != null && _reloadJob.IsRunning) {
+        //            _reloadJob.Kill();
+        //        }
+        //        _isLoaded = false;
+        //    }
+        //    AssessReadiness();
+        //}
+
         protected override void OnIsOperationalChanged() {
             D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             if (IsOperational) {

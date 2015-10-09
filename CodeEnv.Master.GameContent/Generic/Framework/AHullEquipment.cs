@@ -52,7 +52,8 @@ namespace CodeEnv.Master.GameContent {
         public void AddWeapon(AWeapon weapon) {
             D.Assert(weapon.RangeMonitor != null);
             D.Assert(weapon.WeaponMount != null);   // will already have Mount if adding in design screen using drag and drop
-            D.Assert(!weapon.IsOperational);    // Items make equipment operational when the item becomes operational
+            //D.Assert(!weapon.IsOperational);    // Items make equipment operational when the item becomes operational
+            D.Assert(!weapon.IsActivated);    // Items make equipment active when the item becomes operational
             Weapons.Add(weapon);
         }
 

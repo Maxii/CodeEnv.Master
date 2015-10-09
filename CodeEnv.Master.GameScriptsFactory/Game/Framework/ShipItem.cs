@@ -571,7 +571,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         yield return null;
     }
 
-    void Idling_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void Idling_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -712,7 +712,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteMoveOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void ExecuteMoveOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -786,7 +786,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Return();
     }
 
-    void Moving_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void Moving_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -876,7 +876,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
         InitiateFiringSequence(selectedFiringSolution);
@@ -1005,7 +1005,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -1038,11 +1038,16 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             yield return new WaitForSeconds(10F);
         }
 
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
-        Data.Weapons.ForAll(w => w.IsOperational = true);
-        Data.Sensors.ForAll(s => s.IsOperational = true);
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
+        Data.ActiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
+        Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
+        Data.Weapons.ForAll(w => w.IsDamaged = false);
+        Data.Sensors.ForAll(s => s.IsDamaged = false);
+        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        //Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        //Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
+        //Data.Weapons.ForAll(w => w.IsOperational = true);
+        //Data.Sensors.ForAll(s => s.IsOperational = true);
         Data.IsFtlOperational = true;
         //D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
@@ -1050,7 +1055,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Return();
     }
 
-    void Repairing_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void Repairing_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);

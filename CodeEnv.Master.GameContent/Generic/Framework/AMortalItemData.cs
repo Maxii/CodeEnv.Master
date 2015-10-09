@@ -88,7 +88,7 @@ namespace CodeEnv.Master.GameContent {
         private void Initialize(IEnumerable<PassiveCountermeasure> cms) {
             PassiveCountermeasures = cms.ToList();
             PassiveCountermeasures.ForAll(cm => {
-                D.Assert(!cm.IsOperational);
+                D.Assert(!cm.IsActivated);    // D.Assert(!cm.IsOperational);
                 cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
                 // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
             });

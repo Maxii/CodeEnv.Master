@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         /// Traverses the mount to point at the target's world space position.
         /// </summary>
         /// <param name="targetPosition">The target position.</param>
-        void TraverseTo(LosFiringSolution firingSolution);
+        void TraverseTo(LosWeaponFiringSolution firingSolution);
         //void TraverseTo(Vector3 targetPosition);
 
         /// <summary>

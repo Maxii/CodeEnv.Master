@@ -83,12 +83,10 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public StarbaseCmdItem starbaseCmd;
 
     [Header("Ships")]
-    public ShipItem[] ships;
     public ShipItem shipItem;
     public ShipHull[] shipHulls;
 
     [Header("Facilities")]
-    public FacilityItem[] facilities;
     public FacilityItem facilityItem;
     public FacilityHull[] facilityHulls;
 

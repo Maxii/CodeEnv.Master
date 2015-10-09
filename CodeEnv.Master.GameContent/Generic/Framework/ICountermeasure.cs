@@ -27,7 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<AEquipment> onIsOperationalChanged;
 
-        bool IsOperational { get; set; }
+        //bool IsOperational { get; set; }
+        bool IsOperational { get; }
 
         DamageStrength DamageMitigation { get; }
 

@@ -32,11 +32,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     private ShipItem _shipItemPrefab;
-    private ShipItem[] _shipPrefabs;
     private ShipHull[] _shipHullPrefabs;
 
     private FacilityItem _facilityItemPrefab;
-    private FacilityItem[] _facilityPrefabs;
     private FacilityHull[] _facilityHullPrefabs;
 
     private MissileTube[] _missileTubePrefabs;
@@ -59,8 +57,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     protected override void Initialize() {
         var reqdPrefabs = RequiredPrefabs.Instance;
 
-        _shipPrefabs = reqdPrefabs.ships;
-        _facilityPrefabs = reqdPrefabs.facilities;
         _fleetCmdPrefab = reqdPrefabs.fleetCmd.gameObject;
         _starbaseCmdPrefab = reqdPrefabs.starbaseCmd.gameObject;
         _settlementCmdPrefab = reqdPrefabs.settlementCmd.gameObject;

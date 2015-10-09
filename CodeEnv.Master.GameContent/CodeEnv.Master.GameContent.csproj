@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="CountermeasureInterceptSolution.cs" />
     <Compile Include="Game\Graphics\FacilityDisplayManager.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
     <Compile Include="Game\Graphics\PlanetDisplayManager.cs" />
@@ -67,11 +68,11 @@
     <Compile Include="Generic\Framework\AHullEquipment.cs" />
     <Compile Include="Generic\Extensions\ElementCategoryExtensions.cs" />
     <Compile Include="Game\Framework\FacilityHullEquipment.cs" />
-    <Compile Include="Generic\Framework\FiringSolution.cs" />
+    <Compile Include="Generic\Framework\WeaponFiringSolution.cs" />
     <Compile Include="Generic\Framework\IHull.cs" />
     <Compile Include="Generic\Framework\ILOSWeaponMount.cs" />
     <Compile Include="Generic\Framework\IWeaponMount.cs" />
-    <Compile Include="Generic\Framework\LosFiringSolution.cs" />
+    <Compile Include="Generic\Framework\LosWeaponFiringSolution.cs" />
     <Compile Include="Generic\Graphics\ACmdIconInfoFactory.cs" />
     <Compile Include="Game\Graphics\FleetIconInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AElementDisplayManager.cs" />

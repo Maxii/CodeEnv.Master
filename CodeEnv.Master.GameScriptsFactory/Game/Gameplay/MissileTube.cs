@@ -46,7 +46,7 @@ public class MissileTube : AWeaponMount {
     /// <param name="enemyTarget">The enemy target.</param>
     /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution) {
+    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
@@ -63,7 +63,7 @@ public class MissileTube : AWeaponMount {
             firingSolution = null;
             return false;
         }
-        firingSolution = new FiringSolution(Weapon, enemyTarget);
+        firingSolution = new WeaponFiringSolution(Weapon, enemyTarget);
         return true;
     }
 

@@ -65,7 +65,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// <param name="enemyTarget">The enemy target.</param>
     /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public abstract bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution);
+    public abstract bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution);
 
 }
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: LosFiringSolution.cs
-// A firing solution for a Weapon that requires a Line Of Sight to the target.
+// File: LosWeaponFiringSolution.cs
+// A firing solution for a Weapon against an IElementAttackableTarget target that requires Line Of Sight.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// A firing solution for a Weapon that requires a Line Of Sight to the target.
+    /// A firing solution for a Weapon against an IElementAttackableTarget target that requires Line Of Sight.
     /// </summary>
-    public class LosFiringSolution : FiringSolution {
+    public class LosWeaponFiringSolution : WeaponFiringSolution {
 
         public Quaternion TurretRotation { get; private set; }
 
@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new ALOSWeapon Weapon { get { return base.Weapon as ALOSWeapon; } }
 
-        public LosFiringSolution(ALOSWeapon weapon, IElementAttackableTarget enemyTgt, Quaternion turretRotation, Quaternion turretElevation)
+        public LosWeaponFiringSolution(ALOSWeapon weapon, IElementAttackableTarget enemyTgt, Quaternion turretRotation, Quaternion turretElevation)
             : base(weapon, enemyTgt) {
             TurretRotation = turretRotation;
             TurretElevation = turretElevation;

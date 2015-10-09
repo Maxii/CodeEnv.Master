@@ -50,7 +50,8 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// <param name="sensor">The sensor.</param>
     /// <returns></returns>
     public bool Remove(Sensor sensor) {
-        D.Assert(!sensor.IsOperational);
+        D.Assert(!sensor.IsActivated);
+        //D.Assert(!sensor.IsOperational);
         D.Assert(_equipmentList.Contains(sensor));
 
         sensor.RangeMonitor = null;

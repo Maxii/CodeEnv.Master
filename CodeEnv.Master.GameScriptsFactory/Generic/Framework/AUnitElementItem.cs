@@ -108,10 +108,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collider.enabled = true;
-        Data.Weapons.ForAll(w => w.IsOperational = true);
-        Data.Sensors.ForAll(s => s.IsOperational = true);
-        Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
+        Data.Weapons.ForAll(w => w.IsActivated = true);
+        Data.Sensors.ForAll(s => s.IsActivated = true);
+        Data.ActiveCountermeasures.ForAll(cm => cm.IsActivated = true);
+        Data.ShieldGenerators.ForAll(gen => gen.IsActivated = true);
+        //Data.Weapons.ForAll(w => w.IsOperational = true);
+        //Data.Sensors.ForAll(s => s.IsOperational = true);
+        //Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        //Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
     }
 
     /// <summary>
@@ -149,15 +153,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         // this allows in-route ordnance to show its impact effect while the item is showing its death
         Data.Weapons.ForAll(w => {
             w.onReadyToFire -= OnWeaponReadyToFire;
-            w.IsOperational = false;
+            w.IsActivated = false;
+            //w.IsOperational = false;
         });
         Data.ActiveCountermeasures.ForAll(cm => {
             cm.onIsReadyToInterceptAThreatChanged -= OnCountermeasureReadyToInterceptAThreatChanged;
             cm.onThreatEnteringRange -= OnNewThreatInRange;
-            cm.IsOperational = false;
+            cm.IsActivated = false;
+            //cm.IsOperational = false;
         });
-        Data.Sensors.ForAll(s => s.IsOperational = false);
-        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = false);
+        Data.Sensors.ForAll(s => s.IsActivated = false);
+        Data.ShieldGenerators.ForAll(gen => gen.IsActivated = false);
+        //Data.Sensors.ForAll(s => s.IsOperational = false);
+        //Data.ShieldGenerators.ForAll(gen => gen.IsOperational = false);
     }
 
     protected override void CleanupAfterOnDeathNotification() {
@@ -165,11 +173,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         Command.OnSubordinateElementDeath(this);
     }
 
-    #region Weapons
-
     /********************************************************************************************************************************************
            * Equipment (Weapons, Sensors and Countermeasures) no longer added or removed while the item is operating. 
            * Changes in an item's equipment can only occur during a refit where a new item is created to replace the item being refitted.
+           ********************************************************************************************************************************************/
+
+    #region Weapons
+
+    /*******************************************************************************************************************************************
+           * This implementation attempts to calculate a firing solution against every target thought to be in range and leaves it up to the 
+           * element to determine which one to use, if any. If the element declines to fire (would be ineffective, not proper state (ie. refitting), target 
+           * died or diplo relations changed while weapon being aimed, etc.), then the weapon continues to look for firing solutions to put forward.
+           * This approach works best where many weapons or countermeasures may not bear even when the target is in range.
            ********************************************************************************************************************************************/
 
     /// <summary>
@@ -187,7 +202,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         // IsOperational = true is set when item operations commences
     }
 
-    protected FiringSolution PickBestFiringSolution(IList<FiringSolution> firingSolutions, IElementAttackableTarget tgtHint = null) {
+    protected WeaponFiringSolution PickBestFiringSolution(IList<WeaponFiringSolution> firingSolutions, IElementAttackableTarget tgtHint = null) {
         if (tgtHint == null) {
             return firingSolutions.First();
         }
@@ -204,9 +219,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// no interfering obstacles, etc.), the weapon will be fired.
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
-    protected void InitiateFiringSequence(FiringSolution firingSolution) {
+    protected void InitiateFiringSequence(WeaponFiringSolution firingSolution) {
         StartEffect(EffectID.Attacking);
-        LosFiringSolution losFiringSolution = firingSolution as LosFiringSolution;
+        LosWeaponFiringSolution losFiringSolution = firingSolution as LosWeaponFiringSolution;
         if (losFiringSolution != null) {
             var losWeapon = losFiringSolution.Weapon;
             losWeapon.onWeaponAimedAtTarget += OnLosWeaponAimedAtTarget;
@@ -224,10 +239,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// Called when a LOS Weapon has completed its aiming process at a target.
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
-    private void OnLosWeaponAimedAtTarget(LosFiringSolution firingSolution) {
+    private void OnLosWeaponAimedAtTarget(LosWeaponFiringSolution firingSolution) {
         var target = firingSolution.EnemyTarget;
         var losWeapon = firingSolution.Weapon;
-        if (target.IsOperational) {
+        if (target.IsOperational && target.Owner.IsEnemyOf(Owner)) {
             LaunchOrdnance(losWeapon, target);
         }
         else {  // target died during aiming process
@@ -249,8 +264,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
                **************************************************************************************************************************************************/
     }
 
-    private void OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
-        RelayToCurrentState(firingSolutions);
+    private void OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        bool isMsgReceived = RelayToCurrentState(firingSolutions);
+        if (!isMsgReceived) {
+            // element in state that doesn't deal with firing weapons
+            var weapon = firingSolutions.First().Weapon;
+            weapon.OnElementDeclinedToFire();
+        }
     }
 
     #region Weapons Firing Archive
@@ -350,6 +370,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     #endregion
 
     #region Active Countermeasures
+
+    /*******************************************************************************************************************************************
+           * This implementation (previously used by weapons) keeps the element informed when the countermeasure is ready to fire, and when
+           * a new threat enters its range. If the element declines to fire (would be ineffective, not proper state (ie. refitting), target 
+           * died or diplo relations changed while weapon being aimed, etc.), then the weapon continues to look for firing solutions to put forward.
+           * This approach works best where a weapon or countermeasure always bears when the target is in range.
+           ********************************************************************************************************************************************/
+
 
     /// <summary>
     /// Attaches this active countermeasure and its monitor to this item.
@@ -556,28 +584,52 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        //var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        var equipmentDamageChance = damageSeverity;
 
-        var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
-        operationalWeapons.ForAll(w => {
-            w.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-            //D.Log(!w.IsOperational, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
+        var undamagedWeapons = Data.Weapons.Where(w => !w.IsDamaged);
+        undamagedWeapons.ForAll(w => {
+            w.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            //D.Log(w.IsDamaged, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
         });
-        var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
-        operationalSensors.ForAll(s => {
-            s.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-            //D.Log(!s.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
+        //var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
+        //operationalWeapons.ForAll(w => {
+        //    w.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+        //    //D.Log(!w.IsOperational, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
+        //});
+
+        var undamagedSensors = Data.Sensors.Where(s => !s.IsDamaged);
+        undamagedWeapons.ForAll(s => {
+            s.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            //D.Log(s.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
         });
-        var operationalActiveCMs = Data.ActiveCountermeasures.Where(cm => cm.IsOperational);
-        operationalActiveCMs.ForAll(cm => {
-            cm.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-            //D.Log(!cm.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, cm.Name);
+        //var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
+        //operationalSensors.ForAll(s => {
+        //    s.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+        //    //D.Log(!s.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
+        //});
+
+        var undamagedActiveCMs = Data.ActiveCountermeasures.Where(cm => !cm.IsDamaged);
+        undamagedWeapons.ForAll(cm => {
+            cm.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            //D.Log(cm.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, cm.Name);
         });
-        var operationalGenerators = Data.ShieldGenerators.Where(gen => gen.IsOperational);
-        operationalGenerators.ForAll(gen => {
-            gen.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-            D.Log(!gen.IsOperational, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
+        //var operationalActiveCMs = Data.ActiveCountermeasures.Where(cm => cm.IsOperational);
+        //operationalActiveCMs.ForAll(cm => {
+        //    cm.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+        //    //D.Log(!cm.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, cm.Name);
+        //});
+
+        var undamagedGenerators = Data.ShieldGenerators.Where(gen => !gen.IsDamaged);
+        undamagedGenerators.ForAll(gen => {
+            gen.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            //D.Log(gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
         });
+        //var operationalGenerators = Data.ShieldGenerators.Where(gen => gen.IsOperational);
+        //operationalGenerators.ForAll(gen => {
+        //    gen.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
+        //    D.Log(!gen.IsOperational, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
+        //});
     }
 
     #endregion

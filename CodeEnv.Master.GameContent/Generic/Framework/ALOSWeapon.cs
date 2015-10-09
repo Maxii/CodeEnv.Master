@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ALOSWeapon : AWeapon {
 
-        public event Action<LosFiringSolution> onWeaponAimedAtTarget;
+        public event Action<LosWeaponFiringSolution> onWeaponAimedAtTarget;
 
         public new ILOSWeaponMount WeaponMount {
             get { return base.WeaponMount as ILOSWeaponMount; }
@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ALOSWeapon(WeaponStat stat) : base(stat) { }
 
-        public void OnTraverseCompleted(LosFiringSolution firingSolution) {
+        public void OnTraverseCompleted(LosWeaponFiringSolution firingSolution) {
             if (onWeaponAimedAtTarget != null) {
                 onWeaponAimedAtTarget(firingSolution);
             }
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// Aims this LOS Weapon at the target defined by the provided firing solution.
         /// </summary>
         /// <param name="firingSolution">The firing solution.</param>
-        public void AimAtTarget(LosFiringSolution firingSolution) {
+        public void AimAtTarget(LosWeaponFiringSolution firingSolution) {
             WeaponMount.TraverseTo(firingSolution);
         }
 

@@ -152,7 +152,8 @@ namespace CodeEnv.Master.GameContent {
             ActiveCountermeasures = activeCMs.ToList();
             ActiveCountermeasures.ForAll(cm => {
                 D.Assert(cm.RangeMonitor != null);
-                D.Assert(!cm.IsOperational);    // Items make equipment operational when the item becomes operational
+                D.Assert(!cm.IsActivated);    // Items make equipment active when the item becomes operational
+                //D.Assert(!cm.IsOperational);    // Items make equipment operational when the item becomes operational
                 cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
                 // no need to recalc activeCM values as this occurs when IsOperational changes
             });
@@ -164,7 +165,8 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(s.RangeMonitor == null);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
                 // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
                 // and SensorRangeMonitors get attached to Cmds, not elements.
-                D.Assert(!s.IsOperational);    // Items make equipment operational when the item becomes operational
+                D.Assert(!s.IsActivated);    // Items make equipment active when the item becomes operational
+                //D.Assert(!s.IsOperational);    // Items make equipment operational when the item becomes operational
                 s.onIsOperationalChanged += OnSensorIsOperationalChanged;
                 // no need to recalc sensor values as this occurs when IsOperational changes
             });
@@ -174,7 +176,8 @@ namespace CodeEnv.Master.GameContent {
             ShieldGenerators = generators.ToList();
             ShieldGenerators.ForAll(gen => {
                 D.Assert(gen.Shield != null);
-                D.Assert(!gen.IsOperational);    // Items make equipment operational when the item becomes operational
+                D.Assert(!gen.IsActivated);    // Items make equipment active when the item becomes operational
+                //D.Assert(!gen.IsOperational);    // Items make equipment operational when the item becomes operational
                 gen.onIsOperationalChanged += OnShieldGeneratorIsOperationalChanged;
                 // no need to recalc generator values as this occurs when IsOperational changes
             });

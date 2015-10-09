@@ -241,7 +241,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void Idling_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -280,7 +280,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
         InitiateFiringSequence(selectedFiringSolution);
@@ -307,7 +307,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -338,19 +338,24 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
             yield return new WaitForSeconds(10F);
         }
 
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
+        Data.ActiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
+        Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
+        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        //Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        //Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
 
-        Data.Weapons.ForAll(w => w.IsOperational = true);
-        Data.Sensors.ForAll(s => s.IsOperational = true);
+        Data.Weapons.ForAll(w => w.IsDamaged = false);
+        Data.Sensors.ForAll(s => s.IsDamaged = false);
+        //Data.Weapons.ForAll(w => w.IsOperational = true);
+        //Data.Sensors.ForAll(s => s.IsOperational = true);
         D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
         Return();
     }
 
-    void Repairing_OnWeaponReadyToFire(IList<FiringSolution> firingSolutions) {
+    void Repairing_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);

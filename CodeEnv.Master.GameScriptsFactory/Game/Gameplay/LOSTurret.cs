@@ -127,7 +127,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="enemyTarget">The enemy target.</param>
     /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out FiringSolution firingSolution) {
+    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
@@ -152,7 +152,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         if (!isLosClear) {
             return false;
         }
-        firingSolution = new LosFiringSolution(Weapon, enemyTarget, reqdHubRotation, reqdBarrelElevation);
+        firingSolution = new LosWeaponFiringSolution(Weapon, enemyTarget, reqdHubRotation, reqdBarrelElevation);
         return true;
     }
 
@@ -192,7 +192,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// Traverses the mount to point at the target defined by the provided firing solution.
     /// </summary>
     /// <param name="firingSolution"></param>
-    public void TraverseTo(LosFiringSolution firingSolution) {
+    public void TraverseTo(LosWeaponFiringSolution firingSolution) {
         Traverse(firingSolution, allowedTime: 5F);
     }
 
@@ -201,7 +201,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     /// <param name="allowedTime">The allowed time before an error is thrown.</param>
-    private void Traverse(LosFiringSolution firingSolution, float allowedTime = 20F) {
+    private void Traverse(LosWeaponFiringSolution firingSolution, float allowedTime = 20F) {
         IElementAttackableTarget target = firingSolution.EnemyTarget;
         string targetName = target.FullName;
         D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
@@ -326,7 +326,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         return elevationAngleDeviationFromMax <= _allowedBarrelElevationAngleDeviationFromMax;
     }
 
-    private void OnTraverseCompleted(LosFiringSolution firingSolution) {
+    private void OnTraverseCompleted(LosWeaponFiringSolution firingSolution) {
         Weapon.OnTraverseCompleted(firingSolution);
     }
 

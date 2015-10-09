@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Occurs when this weapon is ready to fire using one of the included firing solutions.
         /// </summary>
-        public event Action<IList<FiringSolution>> onReadyToFire;
+        public event Action<IList<WeaponFiringSolution>> onReadyToFire;
 
         private bool _isReady;
         /// <summary>
@@ -178,12 +178,12 @@ namespace CodeEnv.Master.GameContent {
             AssessReadinessToFire();
         }
 
-        private bool TryGetFiringSolutions(out IList<FiringSolution> firingSolutions) {
+        private bool TryGetFiringSolutions(out IList<WeaponFiringSolution> firingSolutions) {
             int enemyTgtCount = _qualifiedEnemyTargets.Count;
             D.Assert(enemyTgtCount > Constants.Zero);
-            firingSolutions = new List<FiringSolution>(enemyTgtCount);
+            firingSolutions = new List<WeaponFiringSolution>(enemyTgtCount);
             foreach (var enemyTgt in _qualifiedEnemyTargets) {
-                FiringSolution firingSolution;
+                WeaponFiringSolution firingSolution;
                 if (WeaponMount.TryGetFiringSolution(enemyTgt, out firingSolution)) {
                     firingSolutions.Add(firingSolution);
                 }
@@ -204,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
             LaunchFiringSolutionsCheckJob();
         }
 
-        private void OnReadyToFire(IList<FiringSolution> firingSolutions) {
+        private void OnReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
             D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to generate the event
             if (onReadyToFire != null) {
                 onReadyToFire(firingSolutions);
@@ -228,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
             KillFiringSolutionsCheckJob();
             D.Assert(IsReady);
             D.Assert(IsEnemyInRange);
-            D.Log("{0}.LaunchFiringSolutionsCheckJob() called.", Name);
+            D.Warn("{0}: Launching FiringSolutionsCheckJob.", Name);
             _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
                 // TODO
             });
@@ -242,10 +242,10 @@ namespace CodeEnv.Master.GameContent {
         private IEnumerator CheckForFiringSolutions() {
             bool hasFiringSolutions = false;
             while (!hasFiringSolutions) {
-                IList<FiringSolution> firingSolutions;
+                IList<WeaponFiringSolution> firingSolutions;
                 if (TryGetFiringSolutions(out firingSolutions)) {
                     hasFiringSolutions = true;
-                    D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    D.Warn("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
                     OnReadyToFire(firingSolutions);
                 }
                 yield return new WaitForSeconds(1);
@@ -259,13 +259,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
         private void AssessReadinessToFire() {
             if (!IsReady || !IsEnemyInRange) {
                 return;
             }
 
-            IList<FiringSolution> firingSolutions;
+            IList<WeaponFiringSolution> firingSolutions;
             if (TryGetFiringSolutions(out firingSolutions)) {
                 OnReadyToFire(firingSolutions);
             }
@@ -311,6 +310,43 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, terminatedOrdnance.Name);
             RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
         }
+
+        //protected override void OnIsDamagedChanged() {
+        //    D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
+        //    if (IsOperational) {
+        //        // activated and just fixed previous damage so if not already loaded, reload
+        //        if (!_isLoaded) {
+        //            InitiateReloadCycle();
+        //        }
+        //    }
+        //    else {
+        //        // either not activated or just incurred damage so unload
+        //        if (_reloadJob != null && _reloadJob.IsRunning) {
+        //            _reloadJob.Kill();
+        //        }
+        //        _isLoaded = false;
+        //    }
+        //    AssessReadiness();
+        //    NotifyIsDamagedChanged();
+        //}
+
+        //protected override void OnIsActivatedChanged() {
+        //    base.OnIsActivatedChanged();
+        //    if (IsOperational) {
+        //        // undamaged and just activated so initiate reloading
+        //        if (!_isLoaded) {
+        //            InitiateReloadCycle();
+        //        }
+        //    }
+        //    else {
+        //        // either damaged or just deactivated so unload
+        //        if (_reloadJob != null && _reloadJob.IsRunning) {
+        //            _reloadJob.Kill();
+        //        }
+        //        _isLoaded = false;
+        //    }
+        //    AssessReadiness();
+        //}
 
         protected override void OnIsOperationalChanged() {
             D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);

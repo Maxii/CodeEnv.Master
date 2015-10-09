@@ -57,7 +57,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = true);
+        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
     }
 
     protected override void OnDataSet() {
@@ -111,8 +112,11 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// Executes any preparation work prior to broadcasting the OnDeath event.
     /// </summary>
     protected virtual void PrepareForOnDeathNotification() {
-        if (IsFocus) { References.MainCameraControl.CurrentFocus = null; }
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = false);
+        if (IsFocus) {
+            References.MainCameraControl.CurrentFocus = null;
+        }
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
+        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = false);
     }
 
     private void OnDeath() {
@@ -178,10 +182,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     /// <param name="damageSeverity">The severity of the damage as a percentage of the item's hit points when hit.</param>
     protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
-        Arguments.ValidateForRange(damageSeverity, Constants.ZeroF, Constants.OneF);
-        var passiveCMSurvivalChance = Constants.OneHundredPercent - damageSeverity;
-        var operationalPassiveCMs = Data.PassiveCountermeasures.Where(cm => cm.IsOperational);
-        operationalPassiveCMs.ForAll(cm => cm.IsOperational = RandomExtended.Chance(passiveCMSurvivalChance));
+        Arguments.ValidateForRange(damageSeverity, Constants.ZeroF, Constants.OneHundredPercent);
+        //var passiveCMSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        var passiveCmDamageChance = damageSeverity;
+        //var operationalPassiveCMs = Data.PassiveCountermeasures.Where(cm => cm.IsOperational);
+        var undamagedPassiveCMs = Data.PassiveCountermeasures.Where(cm => !cm.IsDamaged);
+        undamagedPassiveCMs.ForAll(cm => cm.IsDamaged = RandomExtended.Chance(passiveCmDamageChance));
+        //operationalPassiveCMs.ForAll(cm => cm.IsOperational = RandomExtended.Chance(passiveCMSurvivalChance));
     }
 
     #endregion

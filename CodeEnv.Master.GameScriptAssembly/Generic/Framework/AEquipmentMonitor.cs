@@ -59,7 +59,8 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     }
 
     public virtual void Add(EquipmentType pieceOfEquipment) {
-        D.Assert(!pieceOfEquipment.IsOperational);
+        D.Assert(!pieceOfEquipment.IsActivated);
+        //D.Assert(!pieceOfEquipment.IsOperational);
         D.Assert(!_equipmentList.Contains(pieceOfEquipment));
         if (RangeCategory == RangeCategory.None) {
             RangeCategory = pieceOfEquipment.RangeCategory;

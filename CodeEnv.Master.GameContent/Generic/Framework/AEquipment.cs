@@ -25,6 +25,7 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AEquipment : APropertyChangeTracking {
 
         public event Action<AEquipment> onIsOperationalChanged;
+        public event Action<AEquipment> onIsDamagedChanged;
 
         public virtual string Name { get { return Stat.Name; } }
 
@@ -37,20 +38,62 @@ namespace CodeEnv.Master.GameContent {
         public float PowerRequirement { get { return Stat.PowerRequirement; } }
         public float Expense { get { return Stat.Expense; } }
 
+        private bool _isActivated;
+        public bool IsActivated {
+            get { return _isActivated; }
+            set { SetProperty<bool>(ref _isActivated, value, "IsActivated", OnIsActivatedChanged); }
+        }
+
+        private bool _isDamaged;
+        public bool IsDamaged {
+            get { return _isDamaged; }
+            set { SetProperty<bool>(ref _isDamaged, value, "IsDamaged", OnIsDamagedChanged); }
+        }
 
         private bool _isOperational;
-        /// <summary>
-        /// Indicates whether this equipment is operational (undamaged). 
-        /// </summary>
         public bool IsOperational {
             get { return _isOperational; }
-            set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
+            private set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
         }
+
+
+        //private bool _isOperational;
+        ///// <summary>
+        ///// Indicates whether this equipment is operational (undamaged). 
+        ///// </summary>
+        //public bool IsOperational {
+        //    get { return _isOperational; }
+        //    set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
+        //}
 
         protected AEquipmentStat Stat { get; private set; }
 
         public AEquipment(AEquipmentStat stat) {
             Stat = stat;
+        }
+
+        protected virtual void OnIsActivatedChanged() {
+            D.Log("{0}.IsActivated changed to {1}.", Name, IsActivated);
+            AssessIsOperational();
+        }
+
+        protected virtual void OnIsDamagedChanged() {
+            D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
+            //NotifyIsDamagedChanged();
+            if (onIsDamagedChanged != null) {
+                onIsDamagedChanged(this);
+            }
+            AssessIsOperational();
+        }
+
+        //protected void NotifyIsDamagedChanged() {
+        //    if (onIsDamagedChanged != null) {
+        //        onIsDamagedChanged(this);
+        //    }
+        //}
+
+        private void AssessIsOperational() {
+            IsOperational = IsActivated && !IsDamaged;
         }
 
         protected virtual void OnIsOperationalChanged() {
