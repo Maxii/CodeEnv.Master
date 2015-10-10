@@ -21,6 +21,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IActiveCountermeasureRangeMonitor : IRangedEquipmentMonitor {
 
+        /// <summary>
+        /// Adds the ordnance launched to the list of detected items. 
+        /// Part of a workaround to allow 'detection' of ordnance launched inside the monitor's collider. 
+        /// </summary>
+        /// <param name="ordnance">The ordnance.</param>
+        void AddOrdnanceLaunchedFromInsideMonitor(IInterceptableOrdnance ordnance);
 
     }
 }

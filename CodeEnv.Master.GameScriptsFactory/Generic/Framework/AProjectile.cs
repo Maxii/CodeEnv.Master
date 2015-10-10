@@ -74,6 +74,7 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
         weapon.OnFiringComplete(this);
+        target.OnFiredUponBy(this);
         enabled = true; // enables Update() and FixedUpdate()
     }
 
@@ -190,7 +191,7 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         }
         D.Warn(DeliveryVehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0.", Name);
 
-        D.Log("{0} intercepted. InterceptStrength: {1}, WDV Strength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
+        D.Log("{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
         DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
         if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
             TerminateNow();

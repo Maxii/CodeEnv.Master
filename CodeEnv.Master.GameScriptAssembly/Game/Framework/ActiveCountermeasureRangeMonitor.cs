@@ -26,6 +26,17 @@ using UnityEngine;
 /// </summary>
 public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterceptableOrdnance, ActiveCountermeasure>, IActiveCountermeasureRangeMonitor {
 
+    /// <summary>
+    /// Adds the ordnance launched to the list of detected items. 
+    /// Part of a workaround to allow 'detection' of ordnance launched inside the monitor's collider. 
+    /// </summary>
+    /// <param name="ordnance">The ordnance.</param>
+    public void AddOrdnanceLaunchedFromInsideMonitor(IInterceptableOrdnance ordnance) {
+        D.Assert(ordnance.IsOperational);
+        D.Log("{0} is adding {1} to detected items as it was fired from inside this monitor's collider.", Name, ordnance.Name);
+        AddDetectedItem(ordnance);
+    }
+
     protected override void AssignMonitorTo(ActiveCountermeasure activeCM) {
         activeCM.RangeMonitor = this;
     }

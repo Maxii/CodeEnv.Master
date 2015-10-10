@@ -32,6 +32,18 @@ namespace CodeEnv.Master.GameContent {
 
         new Vector3 Position { get; }
 
+        /// <summary>
+        /// Called by the ordnanceFired to notify its target of the launch
+        /// of the ordnance. This workaround is necessary in cases where the ordnance is
+        /// launched inside the target's ActiveCountermeasureRangeMonitor
+        /// collider sphere since GameObjects instantiated inside a collider are
+        /// not detected by OnTriggerEnter(). The target will only take action on
+        /// this FYI if it determines that the ordnance will not be detected by one or
+        /// more of its monitors.
+        /// </summary>
+        /// <param name="ordnanceFired">The ordnance fired.</param>
+        void OnFiredUponBy(IInterceptableOrdnance ordnanceFired);
+
         void TakeHit(DamageStrength attackerStrength);
 
         bool IsVisualDetailDiscernibleToUser { get; }

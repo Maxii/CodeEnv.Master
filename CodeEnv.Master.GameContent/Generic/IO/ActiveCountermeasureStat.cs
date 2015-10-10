@@ -34,7 +34,13 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength DamageMitigation { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ActiveCountermeasureStat"/> class.
+        /// How frequently this CM can bear on a qualified threat and engage it.
+        /// <remarks>Simulates having a hull mount with limited field of fire.</remarks>
+        /// </summary>
+        public float EngagePercent { get; private set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ActiveCountermeasureStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
@@ -50,14 +56,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="accuracy">The accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
+        /// <param name="engagePercent">How frequently this CM can bear on a qualified threat and engage it.</param>
         public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
             float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength interceptStrength,
-            float accuracy, float reloadPeriod, DamageStrength damageMitigation)
+            float accuracy, float reloadPeriod, DamageStrength damageMitigation, float engagePercent)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
             InterceptStrength = interceptStrength;
             InterceptAccuracy = accuracy;
             ReloadPeriod = reloadPeriod;
             DamageMitigation = damageMitigation;
+            EngagePercent = engagePercent;
         }
 
         public override string ToString() {

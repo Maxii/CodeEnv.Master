@@ -32,7 +32,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected new ARangedEquipmentStat Stat { get { return base.Stat as ARangedEquipmentStat; } }
 
-        public ARangedEquipment(ARangedEquipmentStat stat) : base(stat) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ARangedEquipment"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public ARangedEquipment(ARangedEquipmentStat stat, string name = null) : base(stat, name) { }
 
     }
 }

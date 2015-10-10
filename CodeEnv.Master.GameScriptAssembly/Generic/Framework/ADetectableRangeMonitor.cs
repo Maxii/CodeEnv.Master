@@ -137,7 +137,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
     /// Adds the indicated item to the list of ItemsDetected.
     /// </summary>
     /// <param name="detectedItem">The detected item.</param>
-    private void AddDetectedItem(DetectableType detectedItem) {
+    protected void AddDetectedItem(DetectableType detectedItem) {
         D.Assert(detectedItem.IsOperational);
         if (!_itemsDetected.Contains(detectedItem)) {
             _itemsDetected.Add(detectedItem);

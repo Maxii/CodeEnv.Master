@@ -134,41 +134,70 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CombatStrength" /> struct.
+        /// Only undamaged weapons will be used from those provided.
         /// </summary>
         /// <param name="weapons">The weapons.</param>
         public CombatStrength(IEnumerable<AWeapon> weapons)
             : this() {
             Mode = CombatMode.Offensive;
-            var operationalWeapons = weapons.Where(w => w.IsOperational);
+            var undamagedWeapons = weapons.Where(w => !w.IsDamaged);
 
-            var deliveryStrengths = operationalWeapons.Select(w => w.DeliveryVehicleStrength);
+            var deliveryStrengths = undamagedWeapons.Select(w => w.DeliveryVehicleStrength);
             BeamDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Beam);
             ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Projectile);
             MissileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Missile);
 
-            BeamDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Beam);
-            ProjectileDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Projectile);
-            MissileDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Missile);
+            BeamDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.Beam);
+            ProjectileDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.Projectile);
+            MissileDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.Missile);
         }
+        //public CombatStrength(IEnumerable<AWeapon> weapons)
+        //    : this() {
+        //    Mode = CombatMode.Offensive;
+        //    var operationalWeapons = weapons.Where(w => w.IsOperational);
+
+        //    var deliveryStrengths = operationalWeapons.Select(w => w.DeliveryVehicleStrength);
+        //    BeamDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Beam);
+        //    ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Projectile);
+        //    MissileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Missile);
+
+        //    BeamDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Beam);
+        //    ProjectileDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Projectile);
+        //    MissileDamagePotential = CalcDamagePotential(operationalWeapons, WDVCategory.Missile);
+        //}
 
         /// <summary>
         /// Initializes a new defensive instance of the <see cref="CombatStrength" /> struct.
+        /// Only undamaged countermeasures will be used from those provided.
         /// </summary>
         /// <param name="countermeasures">The countermeasures.</param>
         /// <param name="hullDamageMitigation">The hull damage mitigation.</param>
         public CombatStrength(IEnumerable<ICountermeasure> countermeasures, DamageStrength hullDamageMitigation = default(DamageStrength))
             : this() {
             Mode = CombatMode.Defensive;
-            var operationalCountermeasures = countermeasures.Where(cm => cm.IsOperational);
+            var undamagedCMs = countermeasures.Where(cm => !cm.IsDamaged);
 
-            var activeOperationalCountermeasures = operationalCountermeasures.Where(cm => cm is ActiveCountermeasure).Cast<ActiveCountermeasure>();
-            var deliveryInterceptStrengths = activeOperationalCountermeasures.Select(cm => cm.InterceptStrength);
+            var undamagedActiveCMs = undamagedCMs.Where(cm => cm is ActiveCountermeasure).Cast<ActiveCountermeasure>();
+            var deliveryInterceptStrengths = undamagedActiveCMs.Select(cm => cm.InterceptStrength);
             BeamDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Beam);
             ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Projectile);
             MissileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Missile);
 
-            TotalDamageMitigation = operationalCountermeasures.Select(cm => cm.DamageMitigation).Aggregate(hullDamageMitigation, (accum, strength) => accum + strength);
+            TotalDamageMitigation = undamagedCMs.Select(cm => cm.DamageMitigation).Aggregate(hullDamageMitigation, (accum, strength) => accum + strength);
         }
+        //public CombatStrength(IEnumerable<ICountermeasure> countermeasures, DamageStrength hullDamageMitigation = default(DamageStrength))
+        //    : this() {
+        //    Mode = CombatMode.Defensive;
+        //    var operationalCountermeasures = countermeasures.Where(cm => cm.IsOperational);
+
+        //    var activeOperationalCountermeasures = operationalCountermeasures.Where(cm => cm is ActiveCountermeasure).Cast<ActiveCountermeasure>();
+        //    var deliveryInterceptStrengths = activeOperationalCountermeasures.Select(cm => cm.InterceptStrength);
+        //    BeamDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Beam);
+        //    ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Projectile);
+        //    MissileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Missile);
+
+        //    TotalDamageMitigation = operationalCountermeasures.Select(cm => cm.DamageMitigation).Aggregate(hullDamageMitigation, (accum, strength) => accum + strength);
+        //}
 
         /// <summary>
         /// Initializes a new offensive instance of the <see cref="CombatStrength"/> struct.
@@ -223,6 +252,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private DamageStrength CalcDamagePotential(IEnumerable<AWeapon> weapons, WDVCategory deliveryVehicleCategory) {
+            weapons.ForAll(w => D.Assert(!w.IsDamaged));
             var deliveryVehicleWeapons = weapons.Where(w => w.DeliveryVehicleCategory == deliveryVehicleCategory);
             var weaponsDamagePotential = deliveryVehicleWeapons.Select(w => w.DamagePotential);
             var defaultValueIfEmpty = default(DamageStrength);

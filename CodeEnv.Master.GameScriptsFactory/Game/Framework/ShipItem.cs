@@ -577,12 +577,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-
-    void Idling_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void Idling_OnCollisionEnter(Collision collision) {
         __ReportCollision(collision);
     }
@@ -718,11 +712,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteMoveOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void ExecuteMoveOrder_ExitState() {
         LogEvent();
         _isDestinationUnreachable = false;
@@ -790,11 +779,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
-    }
-
-    void Moving_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void Moving_OnDestinationReached() {
@@ -880,11 +864,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
         InitiateFiringSequence(selectedFiringSolution);
-    }
-
-    void ExecuteAttackOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
     }
 
     void ExecuteAttackOrder_OnTargetDeath(IMortalItem deadTarget) {
@@ -1011,11 +990,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteRepairOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
         _isDestinationUnreachable = false;
@@ -1043,11 +1017,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
-        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        //Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        //Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
-        //Data.Weapons.ForAll(w => w.IsOperational = true);
-        //Data.Sensors.ForAll(s => s.IsOperational = true);
+
         Data.IsFtlOperational = true;
         //D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
@@ -1061,11 +1031,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void Repairing_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void Repairing_ExitState() {
         LogEvent();
     }
@@ -1073,6 +1038,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     #endregion
 
     #region Refitting
+
+    // TODO Deactivate/Activate Equipment
 
     IEnumerator Refitting_EnterState() {
         D.Warn("{0}.Refitting not currently implemented.", FullName);

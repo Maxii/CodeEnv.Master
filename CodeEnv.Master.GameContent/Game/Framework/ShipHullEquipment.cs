@@ -38,7 +38,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected new ShipHullStat Stat { get { return base.Stat as ShipHullStat; } }
 
-        public ShipHullEquipment(ShipHullStat stat) : base(stat) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShipHullEquipment"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public ShipHullEquipment(ShipHullStat stat, string name = null) : base(stat, name) { }
 
         protected override void OnHullChanged() {
             D.Assert(Hull.HullCategory == HullCategory);

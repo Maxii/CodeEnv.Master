@@ -30,7 +30,12 @@ namespace CodeEnv.Master.GameContent {
             set { base.WeaponMount = value; }
         }
 
-        public ALOSWeapon(WeaponStat stat) : base(stat) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ALOSWeapon"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public ALOSWeapon(WeaponStat stat, string name = null) : base(stat, name) { }
 
         public void OnTraverseCompleted(LosWeaponFiringSolution firingSolution) {
             if (onWeaponAimedAtTarget != null) {

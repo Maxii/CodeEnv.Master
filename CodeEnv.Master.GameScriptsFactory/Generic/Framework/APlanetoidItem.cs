@@ -218,6 +218,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IElementAttackableTarget Members
 
+    public void OnFiredUponBy(IInterceptableOrdnance ordnanceFired) {
+        // does nothing as planetoids have no activeCMs to attempt to intercept
+    }
+
     public override void TakeHit(DamageStrength damagePotential) {
         if (DebugSettings.Instance.AllPlayersInvulnerable) {
             return;
@@ -326,6 +330,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     #endregion
+
 
 }
 

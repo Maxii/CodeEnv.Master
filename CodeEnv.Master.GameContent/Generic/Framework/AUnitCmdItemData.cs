@@ -305,12 +305,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitOffensiveStrength() {
-            var defaultValueIfEmpty = default(CombatStrength);//new CombatStrength2(Enumerable.Empty<AWeapon>()); // CombatStrength.Mode needs to be Offensive as this is also the initial seed
+            var defaultValueIfEmpty = default(CombatStrength);
             UnitOffensiveStrength = ElementsData.Select(ed => ed.OffensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
         private void RecalcUnitDefensiveStrength() {
-            var defaultValueIfEmpty = default(CombatStrength);//new CombatStrength2(Enumerable.Empty<ICountermeasure>()); // CombatStrength.Mode needs to be Defensive as this is also the initial seed
+            var defaultValueIfEmpty = default(CombatStrength);
             UnitDefensiveStrength = ElementsData.Select(ed => ed.DefensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
@@ -324,15 +324,26 @@ namespace CodeEnv.Master.GameContent {
 
         private void RecalcUnitWeaponsRange() {
             var allUnitWeapons = ElementsData.SelectMany(ed => ed.Weapons);
-            var operationalUnitWeapons = allUnitWeapons.Where(w => w.IsOperational);
-            var shortRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
-            var mediumRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
-            var longRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
-            float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-            float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-            float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            var undamagedUnitWeapons = allUnitWeapons.Where(w => !w.IsDamaged);
+            var shortRangeWeapons = undamagedUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
+            var mediumRangeWeapons = undamagedUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
+            var longRangeWeapons = undamagedUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
+            float shortRangeDistance = shortRangeWeapons.Any() ? shortRangeWeapons.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeWeapons.Any() ? mediumRangeWeapons.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeWeapons.Any() ? longRangeWeapons.First().RangeDistance : Constants.ZeroF;
             UnitWeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
+        //private void RecalcUnitWeaponsRange() {
+        //    var allUnitWeapons = ElementsData.SelectMany(ed => ed.Weapons);
+        //    var operationalUnitWeapons = allUnitWeapons.Where(w => w.IsOperational);
+        //    var shortRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
+        //    var mediumRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
+        //    var longRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
+        //    float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+        //    float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+        //    float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+        //    UnitWeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+        //}
 
         private void RecalcUnitSensorRange() {
             var allUnitSensors = ElementsData.SelectMany(ed => ed.Sensors);

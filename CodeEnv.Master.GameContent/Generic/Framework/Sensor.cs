@@ -49,8 +49,9 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="Sensor" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        public Sensor(SensorStat stat)
-            : base(stat) {
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public Sensor(SensorStat stat, string name = null)
+            : base(stat, name) {
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached

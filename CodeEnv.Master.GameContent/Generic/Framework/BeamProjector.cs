@@ -32,8 +32,13 @@ namespace CodeEnv.Master.GameContent {
 
         private ITerminatableOrdnance _activeOrdnance;
 
-        public BeamProjector(WeaponStat stat)
-            : base(stat) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BeamProjector"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public BeamProjector(WeaponStat stat, string name = null)
+            : base(stat, name) {
         }
 
         public override void CheckActiveOrdnanceTargeting() {

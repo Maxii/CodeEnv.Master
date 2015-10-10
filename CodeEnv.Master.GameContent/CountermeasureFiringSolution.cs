@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: CountermeasureInterceptSolution.cs
+// File: CountermeasureFiringSolution.cs
 // An firing solution for an ActiveCountermeasure against an IInterceptableOrdnance threat.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,14 +22,13 @@ namespace CodeEnv.Master.GameContent {
     /// A firing solution for an ActiveCountermeasure against an IInterceptableOrdnance threat.
     /// Not currently used.
     /// </summary>
-    [System.Obsolete]
-    public class CountermeasureInterceptSolution {
+    public class CountermeasureFiringSolution {
 
         public IInterceptableOrdnance Threat { get; private set; }
 
         public ActiveCountermeasure Countermeasure { get; private set; }
 
-        public CountermeasureInterceptSolution(ActiveCountermeasure countermeasure, IInterceptableOrdnance threat) {
+        public CountermeasureFiringSolution(ActiveCountermeasure countermeasure, IInterceptableOrdnance threat) {
             Countermeasure = countermeasure;
             Threat = threat;
         }

@@ -247,14 +247,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-
-    void Idling_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        //D.Log("{0}.Idling_OnCountermeasureReadyAndThreatInRange() called. Ready countermeasure = {1}.", FullName, countermeasure.Name);
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
-
     void Idling_ExitState() {
         //LogEvent();
         // TODO register as unavailable
@@ -286,11 +278,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteAttackOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
         _primaryTarget = null;
@@ -313,11 +300,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteRepairOrder_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
     }
@@ -327,28 +309,22 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.Repairing_EnterState called.", FullName);
+        //D.Log("{0}.Repairing_EnterState called.", FullName);
         StartEffect(EffectID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
-            D.Log("{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            //D.Log("{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
             yield return new WaitForSeconds(10F);
         }
 
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
         Data.ActiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
-        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        //Data.ActiveCountermeasures.ForAll(cm => cm.IsOperational = true);
-        //Data.ShieldGenerators.ForAll(gen => gen.IsOperational = true);
-
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
-        //Data.Weapons.ForAll(w => w.IsOperational = true);
-        //Data.Sensors.ForAll(s => s.IsOperational = true);
         D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
@@ -361,11 +337,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void Repairing_OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure countermeasure) {
-        LogEvent();
-        FindIncomingThreatAndIntercept(countermeasure);
-    }
-
     void Repairing_ExitState() {
         LogEvent();
     }
@@ -373,6 +344,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     #endregion
 
     #region Refitting
+
+    // TODO Deactivate/Activate Equipment
 
     IEnumerator Refitting_EnterState() {
         // ShipView shows animation while in this state

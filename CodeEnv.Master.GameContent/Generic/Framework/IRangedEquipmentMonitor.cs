@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         RangeCategory RangeCategory { get; }
 
+        float RangeDistance { get; }
+
         Player Owner { get; }
 
     }

@@ -88,22 +88,40 @@ namespace CodeEnv.Master.GameContent {
         private void Initialize(IEnumerable<PassiveCountermeasure> cms) {
             PassiveCountermeasures = cms.ToList();
             PassiveCountermeasures.ForAll(cm => {
-                D.Assert(!cm.IsActivated);    // D.Assert(!cm.IsOperational);
-                cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
-                // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
+                D.Assert(!cm.IsActivated);
+                cm.onIsDamagedChanged += OnCountermeasureIsDamagedChanged;
             });
-        }
-
-        protected virtual void RecalcDefensiveValues() {
-            var defaultValueIfEmpty = default(DamageStrength);
-            DamageMitigation = PassiveCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
-            DefensiveStrength = new CombatStrength(PassiveCountermeasures.Cast<ICountermeasure>());
-        }
-
-        protected void OnCountermeasureIsOperationalChanged(AEquipment cm) {
-            D.Log("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
             RecalcDefensiveValues();
         }
+        //private void Initialize(IEnumerable<PassiveCountermeasure> cms) {
+        //    PassiveCountermeasures = cms.ToList();
+        //    PassiveCountermeasures.ForAll(cm => {
+        //        D.Assert(!cm.IsActivated);    // D.Assert(!cm.IsOperational);
+        //        cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
+        //        // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
+        //    });
+        //}
+
+        protected virtual void RecalcDefensiveValues() {
+            var undamagedCMs = PassiveCountermeasures.Where(cm => !cm.IsDamaged);
+            var defaultValueIfEmpty = default(DamageStrength);
+            DamageMitigation = undamagedCMs.Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
+            DefensiveStrength = new CombatStrength(undamagedCMs.Cast<ICountermeasure>());
+        }
+        //protected virtual void RecalcDefensiveValues() {
+        //    var defaultValueIfEmpty = default(DamageStrength);
+        //    DamageMitigation = PassiveCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(defaultValueIfEmpty, (accum, cmDmgMit) => accum + cmDmgMit);
+        //    DefensiveStrength = new CombatStrength(PassiveCountermeasures.Cast<ICountermeasure>());
+        //}
+
+        protected void OnCountermeasureIsDamagedChanged(AEquipment cm) {
+            D.Log("{0}'s {1}.IsDamaged is now {2}.", FullName, cm.Name, cm.IsDamaged);
+            RecalcDefensiveValues();
+        }
+        //protected void OnCountermeasureIsOperationalChanged(AEquipment cm) {
+        //    D.Log("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
+        //    RecalcDefensiveValues();
+        //}
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {
             D.Assert(newMaxHitPoints >= Constants.ZeroF);
@@ -133,8 +151,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void Unsubscribe() {
-            PassiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+            PassiveCountermeasures.ForAll(cm => cm.onIsDamagedChanged -= OnCountermeasureIsDamagedChanged);
         }
+        //protected virtual void Unsubscribe() {
+        //    PassiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+        //}
 
         #endregion
 

@@ -39,7 +39,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected new PassiveCountermeasureStat Stat { get { return base.Stat as PassiveCountermeasureStat; } }
 
-        public PassiveCountermeasure(PassiveCountermeasureStat stat) : base(stat) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PassiveCountermeasure"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public PassiveCountermeasure(PassiveCountermeasureStat stat, string name = null) : base(stat, name) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

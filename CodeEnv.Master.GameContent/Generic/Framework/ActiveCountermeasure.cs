@@ -11,60 +11,46 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Countermeasure that has a PassiveCountermeasure's DamageMitigation capability combined with the ability to intercept a weapon delivery vehicle.
     /// </summary>
     public class ActiveCountermeasure : ARangedEquipment, ICountermeasure, IDisposable {
 
-        private static string _editorNameFormat = "{0}[{1}({2:0.})]";
+        private static string _nameFormat = "{0}.{1}";
 
-        /// <summary>
-        /// Occurs when IsReadyToInterceptAThreat changes.
-        /// </summary>
-        public event Action<ActiveCountermeasure> onIsReadyToInterceptAThreatChanged;
-
-        /// <summary>
-        /// Occurs when a qualified incoming ordnance threat enters this operational 
-        /// countermeasure's range. Only raised when the countermeasure IsOperational.
-        /// </summary>
-        public event Action<ActiveCountermeasure> onThreatEnteringRange;
-
-        private bool _isReadyToInterceptAThreat;
-        /// <summary>
-        /// Indicates whether this countermeasure is ready to intercept a threat. A countermeasure is ready when 
-        /// it is both operational and loaded. This property is not affected by whether 
-        /// there are any threats within range.
-        /// </summary>
-        public bool IsReadyToInterceptAThreat {
-            get { return _isReadyToInterceptAThreat; }
-            private set { SetProperty<bool>(ref _isReadyToInterceptAThreat, value, "IsReadyToInterceptAThreat", OnIsReadyToInterceptAThreatChanged); }
+        private bool _isReady;
+        private bool IsReady {
+            get { return _isReady; }
+            set { SetProperty<bool>(ref _isReady, value, "IsReady", OnIsReadyChanged); }
         }
 
+        private bool _isAnyThreatInRange;
         /// <summary>
-        /// Indicates whether there are one or more qualified enemy targets within range.
+        /// Indicates whether there are one or more qualified threats in range of this countermeasure.
         /// </summary>
-        public bool IsThreatInRange { get { return _qualifiedThreats.Any(); } }
+        private bool IsAnyThreatInRange {
+            get { return _isAnyThreatInRange; }
+            set { SetProperty<bool>(ref _isAnyThreatInRange, value, "IsAnyThreatInRange", OnIsAnyThreatInRangeChanged); }
+        }
 
         public IActiveCountermeasureRangeMonitor RangeMonitor { get; set; }
 
         public override string Name {
             get {
-#if UNITY_EDITOR
-                return _editorNameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
-#else 
-                return base.Name;
-#endif
+                return RangeMonitor != null ? _nameFormat.Inject(RangeMonitor.Name, base.Name) : base.Name;
             }
         }
 
@@ -86,16 +72,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The list of enemy targets in range that qualify as targets of this weapon.
+        /// The list of IInterceptableOrdnance threats in range that qualify as targets of this countermeasure.
         /// </summary>
         private IList<IInterceptableOrdnance> _qualifiedThreats;
         private bool _isLoaded;
         private WaitJob _reloadJob;
+        private Job _checkForFiringSolutionsJob;
 
         protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
 
-        public ActiveCountermeasure(ActiveCountermeasureStat stat)
-            : base(stat) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ActiveCountermeasure"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public ActiveCountermeasure(ActiveCountermeasureStat stat, string name = null)
+            : base(stat, name) {
             _qualifiedThreats = new List<IInterceptableOrdnance>();
         }
 
@@ -109,53 +101,37 @@ namespace CodeEnv.Master.GameContent {
                     *****************************************************************************************************************************************/
 
         /**********************************************************************************************************************************************
-                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
+                     * ParentDeath Note: No need to track it as the parent element will turn off the activate state of all equipment when it initiates dying.
                      *********************************************************************************************************************************************/
 
         /// <summary>
-        /// Tries to pick the best (most advantageous) qualified target in range.
-        /// Returns <c>true</c> if a target was picked, <c>false</c> otherwise.
-        /// The hint provided is the initial choice for primary target as determined
-        /// by the Element. It is within sensor range (although not necessarily weapons
-        /// range) and is associated with the target indicated by Command that our
-        /// Element is to attack.
+        /// Fires this countermeasure using the provided firingSolution which attempts
+        /// to intercept an incoming threat.
         /// </summary>
-        /// <param name="hint">The hint.</param>
-        /// <param name="threatPicked">The enemy target picked.</param>
+        /// <param name="firingSolution">The firing solution.</param>
         /// <returns></returns>
-        public bool TryPickMostDangerousThreat(out IInterceptableOrdnance threatPicked) {
-            if (_qualifiedThreats.Count == Constants.ZeroF) {
-                threatPicked = null;
-                return false;
-            }
-            threatPicked = _qualifiedThreats.First();   // IMPROVE closest? biggest payload?, most vulnerable?
-            return true;
-        }
-
-        /// <summary>
-        /// Fires this active countermeasure against the provided WDV threat.
-        /// Returns <c>true</c> if the threat was hit, <c>false</c> if not.
-        /// </summary>
-        /// <param name="threat">The threat.</param>
-        /// <returns></returns>
-        public bool Fire(IInterceptableOrdnance threat) {
+        private bool Fire(CountermeasureFiringSolution firingSolution) {
+            var threat = firingSolution.Threat;
             OnFiringInitiated(threat);
 
-            D.Log("{0} is attempting to fire on {1}.", Name, threat.Name);
-            bool threatHit = false;
+            D.Log("{0} is firing on {1}.", Name, threat.Name);
+            bool isThreatHit = false;
             float hitChance = InterceptAccuracy;
             if (RandomExtended.Chance(hitChance)) {
-                threatHit = true;
+                isThreatHit = true;
                 threat.TakeHit(InterceptStrength);
             }
             OnFiringComplete();
-            return threatHit;
+            return isThreatHit;
         }
 
+        // Note: Unlike Weapons, there is no reason to have a OnDeclinedToFire() method as CMs on automatic 
+        // should always fire on a threat if there is a FiringSolution.
+
         /// <summary>
-        /// Called by this weapon's RangeMonitor when an enemy target enters or exits the weapon's range.
+        /// Called by this countermeasure's RangeMonitor when a IInterceptableOrdnance threat enters or exits its range.
         /// </summary>
-        /// <param name="threat">The enemy threat.</param>
+        /// <param name="threat">The ordnance threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void OnThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
             D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
@@ -163,24 +139,36 @@ namespace CodeEnv.Master.GameContent {
                 if (CheckIfQualified(threat)) {
                     D.Assert(!_qualifiedThreats.Contains(threat));
                     _qualifiedThreats.Add(threat);
-                    if (IsOperational) {
-                        OnThreatEnteringRange(threat);
-                    }
                 }
             }
             else {
+                // some threats going out of range may not have been qualified as targets for this countermeasure
                 if (_qualifiedThreats.Contains(threat)) {
                     _qualifiedThreats.Remove(threat);
                 }
             }
+            IsAnyThreatInRange = _qualifiedThreats.Any();
         }
 
-        private void OnThreatEnteringRange(IInterceptableOrdnance threat) {
-            D.Assert(_qualifiedThreats.Contains(threat));
-            if (onThreatEnteringRange != null) {
-                D.Log("{0} is raising onThreatEnteringRange event.", Name);
-                onThreatEnteringRange(this);
+        private void OnReadyToFire(IList<CountermeasureFiringSolution> firingSolutions) {
+            D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to be ready to fire
+            var bestFiringSolution = PickBestFiringSolution(firingSolutions);
+            bool isThreatHit = Fire(bestFiringSolution);
+            D.Log("{0} has hit threat {1}.", Name, bestFiringSolution.Threat.FullName);
+        }
+
+        private void OnIsReadyChanged() {
+            if (!IsReady) {
+                KillFiringSolutionsCheckJob();
             }
+            AssessReadinessToFire();
+        }
+
+        private void OnIsAnyThreatInRangeChanged() {
+            if (!IsAnyThreatInRange) {
+                KillFiringSolutionsCheckJob();
+            }
+            AssessReadinessToFire();
         }
 
         /// <summary>
@@ -209,43 +197,6 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        //protected override void OnIsDamagedChanged() {
-        //    D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
-        //    if (IsOperational) {
-        //        // activated and just fixed previous damage so if not already loaded, reload
-        //        if (!_isLoaded) {
-        //            InitiateReloadCycle();
-        //        }
-        //    }
-        //    else {
-        //        // either not activated or just incurred damage so unload
-        //        if (_reloadJob != null && _reloadJob.IsRunning) {
-        //            _reloadJob.Kill();
-        //        }
-        //        _isLoaded = false;
-        //    }
-        //    AssessReadiness();
-        //    NotifyIsDamagedChanged();
-        //}
-
-        //protected override void OnIsActivatedChanged() {
-        //    base.OnIsActivatedChanged();
-        //    if (IsOperational) {
-        //        // undamaged and just activated so initiate reloading
-        //        if (!_isLoaded) {
-        //            InitiateReloadCycle();
-        //        }
-        //    }
-        //    else {
-        //        // either damaged or just deactivated so unload
-        //        if (_reloadJob != null && _reloadJob.IsRunning) {
-        //            _reloadJob.Kill();
-        //        }
-        //        _isLoaded = false;
-        //    }
-        //    AssessReadiness();
-        //}
-
         protected override void OnIsOperationalChanged() {
             D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             if (IsOperational) {
@@ -264,21 +215,15 @@ namespace CodeEnv.Master.GameContent {
             NotifyIsOperationalChanged();
         }
 
-        private void OnIsReadyToInterceptAThreatChanged() {
-            if (onIsReadyToInterceptAThreatChanged != null) {
-                onIsReadyToInterceptAThreatChanged(this);
-            }
-        }
-
         private void OnReloaded() {
-            D.Log("{0}.{1} completed reload.", RangeMonitor.Name, Name);
+            D.Log("{0} completed reload.", Name);
             _isLoaded = true;
             AssessReadiness();
         }
 
-        private bool CheckIfQualified(IInterceptableOrdnance enemyTarget) {
-            bool isQualified = InterceptStrength.Category == enemyTarget.DeliveryVehicleStrength.Category;
-            D.Log("{0} isQualified = {1}, Vehicles: {2}, {3}.", Name, isQualified, InterceptStrength.Category.GetValueName(), enemyTarget.DeliveryVehicleStrength.Category.GetValueName());
+        private bool CheckIfQualified(IInterceptableOrdnance threat) {
+            bool isQualified = InterceptStrength.Category == threat.DeliveryVehicleStrength.Category;
+            D.Log("{0} isQualified = {1}, Vehicles: {2}, {3}.", Name, isQualified, InterceptStrength.Category.GetValueName(), threat.DeliveryVehicleStrength.Category.GetValueName());
             return isQualified;
         }
 
@@ -286,20 +231,111 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
             if (_reloadJob != null && _reloadJob.IsRunning) {
                 // UNCLEAR can this happen?
-                D.Warn("{0}.{1}.InitiateReloadCycle() called while already Running.", RangeMonitor.Name, Name);
+                D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
             }
             _reloadJob = GameUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 OnReloaded();
             });
         }
 
+        private CountermeasureFiringSolution PickBestFiringSolution(IList<CountermeasureFiringSolution> firingSolutions) {
+            return firingSolutions.First();     // IMPROVE closest? biggest payload?, most vulnerable?
+        }
+
+        /// <summary>
+        /// Launches a process to continuous check for newly uncovered firing solutions
+        /// against threats in range. Only initiated when the countermeasure is ready to fire with
+        /// qualified threats in range. If either of these conditions change, the job is immediately
+        /// killed using KillFiringSolutionsCheckJob().
+        /// <remarks>This fill-in check job is needed as firing solution checks otherwise
+        /// occur only when 1) the CM becomes ready to fire, or 2) the first qualified threat comes
+        /// into range. If a firing solution is not discovered during these event checks, no more
+        /// checks would take place until another one of the above conditions arise. This process fills that
+        /// gap, continuously looking for newly uncovered firing solutions which are to be
+        /// expected, given movement and attitude changes of both the firing element and
+        /// the threats.</remarks>
+        /// </summary>
+        private void LaunchFiringSolutionsCheckJob() {
+            KillFiringSolutionsCheckJob();
+            D.Assert(IsReady);
+            D.Assert(IsAnyThreatInRange);
+            D.Warn("{0}: Launching FiringSolutionsCheckJob.", Name);
+            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
+                // TODO
+            });
+        }
+
+        /// <summary>
+        /// Continuously checks for firing solutions against any qualified threat in range. When it finds
+        /// one or more, it signals the CM's readiness to fire and the job terminates.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator CheckForFiringSolutions() {
+            bool hasFiringSolutions = false;
+            while (!hasFiringSolutions) {
+                IList<CountermeasureFiringSolution> firingSolutions;
+                if (TryGetFiringSolutions(out firingSolutions)) {
+                    hasFiringSolutions = true;
+                    D.Warn("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    OnReadyToFire(firingSolutions);
+                }
+                yield return new WaitForSeconds(1);
+            }
+        }
+
+        private void KillFiringSolutionsCheckJob() {
+            if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
+                D.Warn("{0} FiringSolutionsCheckJob is being killed.", Name);
+                _checkForFiringSolutionsJob.Kill();
+            }
+        }
+
+        /// <summary>
+        /// Tries to get firing solutions on all the qualified threats in range. Returns <c>true</c> if one or more
+        /// firing solutions were found, <c>false</c> otherwise. For each qualified threat, there is a finite chance
+        /// that the CM can't 'bear' on the threat, resulting in no firing solution.
+        /// </summary>
+        /// <param name="firingSolutions">The firing solutions.</param>
+        /// <returns></returns>
+        private bool TryGetFiringSolutions(out IList<CountermeasureFiringSolution> firingSolutions) {
+            int threatCount = _qualifiedThreats.Count;
+            D.Assert(threatCount > Constants.Zero);
+            float chanceOfBearingOnThreat = Stat.EngagePercent;
+            firingSolutions = new List<CountermeasureFiringSolution>(threatCount);
+            foreach (var threat in _qualifiedThreats) {
+                bool canBearOnThreat = RandomExtended.Chance(chanceOfBearingOnThreat);
+                if (canBearOnThreat) {
+                    CountermeasureFiringSolution firingSolution = new CountermeasureFiringSolution(this, threat);
+                    firingSolutions.Add(firingSolution);
+                }
+            }
+            return firingSolutions.Any();
+        }
+
         private void AssessReadiness() {
-            IsReadyToInterceptAThreat = IsOperational && _isLoaded;
+            IsReady = IsOperational && _isLoaded;
+        }
+
+        private void AssessReadinessToFire() {
+            if (!IsReady || !IsAnyThreatInRange) {
+                return;
+            }
+
+            IList<CountermeasureFiringSolution> firingSolutions;
+            if (TryGetFiringSolutions(out firingSolutions)) {
+                OnReadyToFire(firingSolutions);
+            }
+            else {
+                LaunchFiringSolutionsCheckJob();
+            }
         }
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
                 _reloadJob.Dispose();
+            }
+            if (_checkForFiringSolutionsJob != null) {
+                _checkForFiringSolutionsJob.Dispose();
             }
         }
 

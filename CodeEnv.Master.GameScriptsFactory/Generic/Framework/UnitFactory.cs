@@ -338,9 +338,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="element">The element.</param>
     /// <returns></returns>
     private IEnumerable<ActiveCountermeasure> MakeCountermeasures(IEnumerable<ActiveCountermeasureStat> activeCmStats, AUnitElementItem element) {
+        IDictionary<WDVCategory, int> nameCounter = new Dictionary<WDVCategory, int>() {
+            {WDVCategory.Beam, Constants.One},
+            {WDVCategory.Missile, Constants.One},
+            {WDVCategory.Projectile, Constants.One}
+        };
+
         var activeCMs = new List<ActiveCountermeasure>(activeCmStats.Count());
         activeCmStats.ForAll(stat => {
-            var activeCM = new ActiveCountermeasure(stat);
+            var cmCategory = stat.InterceptStrength.Category;
+            string cmName = stat.Name + nameCounter[cmCategory];
+            nameCounter[cmCategory]++;
+
+            var activeCM = new ActiveCountermeasure(stat, cmName);
             activeCMs.Add(activeCM);
             AttachMonitor(activeCM, element);
         });
@@ -359,26 +369,35 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponDesign> weaponDesigns, AUnitElementItem element, AHull hull) {
+        IDictionary<WDVCategory, int> nameCounter = new Dictionary<WDVCategory, int>() {
+            {WDVCategory.Beam, Constants.One},
+            {WDVCategory.Missile, Constants.One},
+            {WDVCategory.Projectile, Constants.One}
+        };
         var weapons = new List<AWeapon>(weaponDesigns.Count());
         foreach (var design in weaponDesigns) {
             WeaponStat stat = design.WeaponStat;
             MountSlotID mountSlotID = design.MountSlotID;
             Facing mountFacing = design.MountFacing;
+            WDVCategory weaponCategory = stat.DeliveryVehicleCategory;
+
+            string weaponName = stat.Name + nameCounter[weaponCategory];
+            nameCounter[weaponCategory]++;
 
             AWeapon weapon;
-            switch (stat.DeliveryVehicleCategory) {
+            switch (weaponCategory) {
                 case WDVCategory.Beam:
-                    weapon = new BeamProjector(stat);
+                    weapon = new BeamProjector(stat, weaponName);
                     break;
                 case WDVCategory.Projectile:
-                    weapon = new ProjectileLauncher(stat);
+                    weapon = new ProjectileLauncher(stat, weaponName);
                     break;
                 case WDVCategory.Missile:
-                    weapon = new MissileLauncher(stat);
+                    weapon = new MissileLauncher(stat, weaponName);
                     break;
                 case WDVCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(stat.DeliveryVehicleCategory));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponCategory));
             }
             AttachMonitor(weapon, element);
             AttachMount(weapon, mountFacing, mountSlotID, hull);

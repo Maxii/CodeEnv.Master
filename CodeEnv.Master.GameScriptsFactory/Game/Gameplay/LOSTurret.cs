@@ -144,7 +144,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         Quaternion reqdHubRotation, reqdBarrelElevation;
         bool canTraverseToTarget = TryCalcTraverse(targetPosition, out reqdHubRotation, out reqdBarrelElevation);
         if (!canTraverseToTarget) {
-            D.Log("{0}: Target {1} is beyond traverse range.", Name, enemyTarget.FullName);
+            //D.Log("{0}: Target {1} is beyond traverse range.", Name, enemyTarget.FullName);
             return false;
         }
 
@@ -204,7 +204,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     private void Traverse(LosWeaponFiringSolution firingSolution, float allowedTime = 20F) {
         IElementAttackableTarget target = firingSolution.EnemyTarget;
         string targetName = target.FullName;
-        D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
+        //D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
 
         Quaternion reqdHubRotation = firingSolution.TurretRotation;
         Quaternion reqdBarrelElevation = firingSolution.TurretElevation;
@@ -217,13 +217,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
         _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
             if (!jobWasKilled) {
-                D.Log("{0}'s traverse to aim at {1} complete.", Name, targetName);
+                //D.Log("{0}'s traverse to aim at {1} complete.", Name, targetName);
                 Vector3 actualTargetBearing = (target.Position - barrel.position).normalized;
                 float deviationAngle = Vector3.Angle(MuzzleFacing, actualTargetBearing);
                 //D.Log("{0}: HubFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoHubPlane.normalized, hub.forward);
                 //Vector3 barrelLocalFacing = hub.InverseTransformDirection(barrel.forward);
                 //D.Log("{0}: LocalBarrelFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoBarrelPlane.normalized, barrelLocalFacing);
-                D.Log("{0}: DeviationAngle = {1}, ActualTargetBearing = {2}, MuzzleBearingAfterTraverse = {3}.", Name, deviationAngle, actualTargetBearing, MuzzleFacing);
+                //D.Log("{0}: DeviationAngle = {1}, ActualTargetBearing = {2}, MuzzleBearingAfterTraverse = {3}.", Name, deviationAngle, actualTargetBearing, MuzzleFacing);
                 OnTraverseCompleted(firingSolution);
             }
         });

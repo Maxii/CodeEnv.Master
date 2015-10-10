@@ -27,7 +27,8 @@ namespace CodeEnv.Master.GameContent {
         public event Action<AEquipment> onIsOperationalChanged;
         public event Action<AEquipment> onIsDamagedChanged;
 
-        public virtual string Name { get { return Stat.Name; } }
+        //public virtual string Name { get { return Stat.Name; } }
+        public virtual string Name { get; private set; }
 
         public AtlasID ImageAtlasID { get { return Stat.ImageAtlasID; } }
         public string ImageFilename { get { return Stat.ImageFilename; } }
@@ -68,8 +69,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected AEquipmentStat Stat { get; private set; }
 
-        public AEquipment(AEquipmentStat stat) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AEquipment"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public AEquipment(AEquipmentStat stat, string name = null) {
             Stat = stat;
+            Name = name != null ? name : stat.Name;
         }
 
         protected virtual void OnIsActivatedChanged() {

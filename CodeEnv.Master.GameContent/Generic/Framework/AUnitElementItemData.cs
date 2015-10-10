@@ -139,25 +139,42 @@ namespace CodeEnv.Master.GameContent {
             Initialize(sensors);
             Initialize(activeCMs);
             Initialize(shieldGenerators);
+            RecalcDefensiveValues();
         }
 
         private void InitializeWeapons() {
             Weapons.ForAll(weap => {
-                weap.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-                // no need to recalc weapons values as this occurs when IsOperational changes
+                weap.onIsDamagedChanged += OnWeaponIsDamagedChanged;
             });
+            RecalcWeaponsRange();
+            RecalcOffensiveStrength();
         }
+        //private void InitializeWeapons() {
+        //    Weapons.ForAll(weap => {
+        //        weap.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+        //        // no need to recalc weapons values as this occurs when IsOperational changes
+        //    });
+        //}
 
         private void Initialize(IEnumerable<ActiveCountermeasure> activeCMs) {
             ActiveCountermeasures = activeCMs.ToList();
             ActiveCountermeasures.ForAll(cm => {
                 D.Assert(cm.RangeMonitor != null);
                 D.Assert(!cm.IsActivated);    // Items make equipment active when the item becomes operational
-                //D.Assert(!cm.IsOperational);    // Items make equipment operational when the item becomes operational
-                cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
-                // no need to recalc activeCM values as this occurs when IsOperational changes
+                cm.onIsDamagedChanged += OnCountermeasureIsDamagedChanged;
             });
+            // RecalcDefensiveValues(); handled once in Initialize()
         }
+        //private void Initialize(IEnumerable<ActiveCountermeasure> activeCMs) {
+        //    ActiveCountermeasures = activeCMs.ToList();
+        //    ActiveCountermeasures.ForAll(cm => {
+        //        D.Assert(cm.RangeMonitor != null);
+        //        D.Assert(!cm.IsActivated);    // Items make equipment active when the item becomes operational
+        //        //D.Assert(!cm.IsOperational);    // Items make equipment operational when the item becomes operational
+        //        cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
+        //        // no need to recalc activeCM values as this occurs when IsOperational changes
+        //    });
+        //}
 
         private void Initialize(IEnumerable<Sensor> sensors) {
             Sensors = sensors.ToList();
@@ -166,40 +183,72 @@ namespace CodeEnv.Master.GameContent {
                 // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
                 // and SensorRangeMonitors get attached to Cmds, not elements.
                 D.Assert(!s.IsActivated);    // Items make equipment active when the item becomes operational
-                //D.Assert(!s.IsOperational);    // Items make equipment operational when the item becomes operational
-                s.onIsOperationalChanged += OnSensorIsOperationalChanged;
-                // no need to recalc sensor values as this occurs when IsOperational changes
+                s.onIsDamagedChanged += OnSensorIsDamagedChanged;
             });
+            RecalcSensorRange();
         }
+        //private void Initialize(IEnumerable<Sensor> sensors) {
+        //    Sensors = sensors.ToList();
+        //    Sensors.ForAll(s => {
+        //        D.Assert(s.RangeMonitor == null);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
+        //        // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
+        //        // and SensorRangeMonitors get attached to Cmds, not elements.
+        //        D.Assert(!s.IsActivated);    // Items make equipment active when the item becomes operational
+        //        //D.Assert(!s.IsOperational);    // Items make equipment operational when the item becomes operational
+        //        s.onIsOperationalChanged += OnSensorIsOperationalChanged;
+        //        // no need to recalc sensor values as this occurs when IsOperational changes
+        //    });
+        //}
 
         private void Initialize(IEnumerable<ShieldGenerator> generators) {
             ShieldGenerators = generators.ToList();
             ShieldGenerators.ForAll(gen => {
                 D.Assert(gen.Shield != null);
                 D.Assert(!gen.IsActivated);    // Items make equipment active when the item becomes operational
-                //D.Assert(!gen.IsOperational);    // Items make equipment operational when the item becomes operational
-                gen.onIsOperationalChanged += OnShieldGeneratorIsOperationalChanged;
-                // no need to recalc generator values as this occurs when IsOperational changes
+                gen.onIsDamagedChanged += OnShieldGeneratorIsDamagedChanged;
             });
+            RecalcShieldRange();
+            // RecalcDefensiveValues(); handled once in Initialize()
         }
+        //private void Initialize(IEnumerable<ShieldGenerator> generators) {
+        //    ShieldGenerators = generators.ToList();
+        //    ShieldGenerators.ForAll(gen => {
+        //        D.Assert(gen.Shield != null);
+        //        D.Assert(!gen.IsActivated);    // Items make equipment active when the item becomes operational
+        //        //D.Assert(!gen.IsOperational);    // Items make equipment operational when the item becomes operational
+        //        gen.onIsOperationalChanged += OnShieldGeneratorIsOperationalChanged;
+        //        // no need to recalc generator values as this occurs when IsOperational changes
+        //    });
+        //}
 
         private void OnIsHQChanged() {
             Name = IsHQ ? Name + _hqNameAddendum : Name.Remove(_hqNameAddendum);
         }
 
-        private void OnSensorIsOperationalChanged(AEquipment sensor) {
+        private void OnSensorIsDamagedChanged(AEquipment sensor) {
             RecalcSensorRange();
         }
+        //private void OnSensorIsOperationalChanged(AEquipment sensor) {
+        //    RecalcSensorRange();
+        //}
 
-        private void OnWeaponIsOperationalChanged(AEquipment weapon) {
+        private void OnWeaponIsDamagedChanged(AEquipment weapon) {
             RecalcWeaponsRange();
             RecalcOffensiveStrength();
         }
+        //private void OnWeaponIsOperationalChanged(AEquipment weapon) {
+        //    RecalcWeaponsRange();
+        //    RecalcOffensiveStrength();
+        //}
 
-        private void OnShieldGeneratorIsOperationalChanged(AEquipment generator) {
+        private void OnShieldGeneratorIsDamagedChanged(AEquipment generator) {
             RecalcShieldRange();
             RecalcDefensiveValues();
         }
+        //private void OnShieldGeneratorIsOperationalChanged(AEquipment generator) {
+        //    RecalcShieldRange();
+        //    RecalcDefensiveValues();
+        //}
 
         private void RecalcSensorRange() {
             var shortRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Short);
@@ -212,47 +261,85 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcWeaponsRange() {
-            var operationalWeapons = Weapons.Where(w => w.IsOperational);
-            var shortRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
-            var mediumRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
-            var longRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
-            float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-            float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-            float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+            var undamagedWeapons = Weapons.Where(w => !w.IsDamaged);
+            var shortRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
+            var mediumRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
+            var longRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
+            float shortRangeDistance = shortRangeWeapons.Any() ? shortRangeWeapons.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeWeapons.Any() ? mediumRangeWeapons.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeWeapons.Any() ? longRangeWeapons.First().RangeDistance : Constants.ZeroF;
             WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
+        //private void RecalcWeaponsRange() {
+        //    var operationalWeapons = Weapons.Where(w => w.IsOperational);
+        //    var shortRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
+        //    var mediumRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
+        //    var longRangeOpWeapons = operationalWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
+        //    float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+        //    float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+        //    float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
+        //    WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+        //}
 
         private void RecalcShieldRange() {
-            var operationalGenerators = ShieldGenerators.Where(gen => gen.IsOperational);
-            var shortRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Short);
-            var mediumRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Medium);
-            var longRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Long);
-            float shortRangeDistance = shortRangeOpGenerators.Any() ? shortRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
-            float mediumRangeDistance = mediumRangeOpGenerators.Any() ? mediumRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
-            float longRangeDistance = longRangeOpGenerators.Any() ? longRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+            var undamagedGenerators = ShieldGenerators.Where(gen => !gen.IsDamaged);
+            var shortRangeGenerators = undamagedGenerators.Where(gen => gen.RangeCategory == RangeCategory.Short);
+            var mediumRangeGenerators = undamagedGenerators.Where(gen => gen.RangeCategory == RangeCategory.Medium);
+            var longRangeGenerators = undamagedGenerators.Where(gen => gen.RangeCategory == RangeCategory.Long);
+            float shortRangeDistance = shortRangeGenerators.Any() ? shortRangeGenerators.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeGenerators.Any() ? mediumRangeGenerators.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeGenerators.Any() ? longRangeGenerators.First().RangeDistance : Constants.ZeroF;
             ShieldRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
+        //private void RecalcShieldRange() {
+        //    var operationalGenerators = ShieldGenerators.Where(gen => gen.IsOperational);
+        //    var shortRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Short);
+        //    var mediumRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Medium);
+        //    var longRangeOpGenerators = operationalGenerators.Where(gen => gen.RangeCategory == RangeCategory.Long);
+        //    float shortRangeDistance = shortRangeOpGenerators.Any() ? shortRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+        //    float mediumRangeDistance = mediumRangeOpGenerators.Any() ? mediumRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+        //    float longRangeDistance = longRangeOpGenerators.Any() ? longRangeOpGenerators.First().RangeDistance : Constants.ZeroF;
+        //    ShieldRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+        //}
 
         protected override void RecalcDefensiveValues() {
             List<ICountermeasure> allCountermeasures = new List<ICountermeasure>(PassiveCountermeasures.Cast<ICountermeasure>());
             allCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
             allCountermeasures.AddRange(ShieldGenerators.Cast<ICountermeasure>());
-            var cmDamageMitigation = allCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
+            var cmDamageMitigation = allCountermeasures.Where(cm => !cm.IsDamaged).Select(cm => cm.DamageMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
             DamageMitigation = HullEquipment.DamageMitigation + cmDamageMitigation;
             DefensiveStrength = new CombatStrength(allCountermeasures, HullEquipment.DamageMitigation);
         }
+        //protected override void RecalcDefensiveValues() {
+        //    List<ICountermeasure> allCountermeasures = new List<ICountermeasure>(PassiveCountermeasures.Cast<ICountermeasure>());
+        //    allCountermeasures.AddRange(ActiveCountermeasures.Cast<ICountermeasure>());
+        //    allCountermeasures.AddRange(ShieldGenerators.Cast<ICountermeasure>());
+        //    var cmDamageMitigation = allCountermeasures.Where(cm => cm.IsOperational).Select(cm => cm.DamageMitigation).Aggregate(default(DamageStrength), (accum, cmDmgMit) => accum + cmDmgMit);
+        //    DamageMitigation = HullEquipment.DamageMitigation + cmDamageMitigation;
+        //    DefensiveStrength = new CombatStrength(allCountermeasures, HullEquipment.DamageMitigation);
+        //}
 
         private void RecalcOffensiveStrength() {
-            OffensiveStrength = new CombatStrength(Weapons.Where(w => w.IsOperational));
+            OffensiveStrength = new CombatStrength(Weapons);
         }
+        //private void RecalcOffensiveStrength() {
+        //    OffensiveStrength = new CombatStrength(Weapons.Where(w => w.IsOperational));
+        //}
 
         protected override void Unsubscribe() {
             base.Unsubscribe();
-            Weapons.ForAll(w => w.onIsOperationalChanged -= OnWeaponIsOperationalChanged);
-            Sensors.ForAll(s => s.onIsOperationalChanged -= OnSensorIsOperationalChanged);
-            ActiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
-            ShieldGenerators.ForAll(gen => gen.onIsOperationalChanged -= OnShieldGeneratorIsOperationalChanged);
+            Weapons.ForAll(w => w.onIsDamagedChanged -= OnWeaponIsDamagedChanged);
+            Sensors.ForAll(s => s.onIsDamagedChanged -= OnSensorIsDamagedChanged);
+            ActiveCountermeasures.ForAll(cm => cm.onIsDamagedChanged -= OnCountermeasureIsDamagedChanged);
+            ShieldGenerators.ForAll(gen => gen.onIsDamagedChanged -= OnShieldGeneratorIsDamagedChanged);
         }
+        //protected override void Unsubscribe() {
+        //    base.Unsubscribe();
+        //    Weapons.ForAll(w => w.onIsOperationalChanged -= OnWeaponIsOperationalChanged);
+        //    Sensors.ForAll(s => s.onIsOperationalChanged -= OnSensorIsOperationalChanged);
+        //    ActiveCountermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+        //    ShieldGenerators.ForAll(gen => gen.onIsOperationalChanged -= OnShieldGeneratorIsOperationalChanged);
+        //}
 
     }
 }

@@ -53,7 +53,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
     protected IList<IShield> _shields = new List<IShield>();
 
-    private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
+    //private IList<ActiveCountermeasure> _readyCountermeasuresInventory = new List<ActiveCountermeasure>();
     private DetectionHandler _detectionHandler;
     protected Collider _collider;
 
@@ -157,8 +157,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             //w.IsOperational = false;
         });
         Data.ActiveCountermeasures.ForAll(cm => {
-            cm.onIsReadyToInterceptAThreatChanged -= OnCountermeasureReadyToInterceptAThreatChanged;
-            cm.onThreatEnteringRange -= OnNewThreatInRange;
+            //cm.onIsReadyToInterceptAThreatChanged -= OnCountermeasureReadyToInterceptAThreatChanged;
+            //cm.onThreatEnteringRange -= OnNewThreatInRange;
             cm.IsActivated = false;
             //cm.IsOperational = false;
         });
@@ -245,7 +245,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         if (target.IsOperational && target.Owner.IsEnemyOf(Owner)) {
             LaunchOrdnance(losWeapon, target);
         }
-        else {  // target died during aiming process
+        else {  // target died or chaged diplo during aiming process
             losWeapon.OnElementDeclinedToFire();
         }
         losWeapon.onWeaponAimedAtTarget -= OnLosWeaponAimedAtTarget;
@@ -390,8 +390,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _countermeasureRangeMonitors.Add(monitor);
         }
-        activeCM.onIsReadyToInterceptAThreatChanged += OnCountermeasureReadyToInterceptAThreatChanged;
-        activeCM.onThreatEnteringRange += OnNewThreatInRange;
+        //activeCM.onIsReadyToInterceptAThreatChanged += OnCountermeasureReadyToInterceptAThreatChanged;
+        //activeCM.onThreatEnteringRange += OnNewThreatInRange;
         // IsOperational = true is set when item operations commences
     }
 
@@ -399,30 +399,30 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// Attempts to find an incoming ordnance threat in range and intercept it.
     /// </summary>
     /// <param name="activeCM">The active countermeasure.</param>
-    protected void FindIncomingThreatAndIntercept(ActiveCountermeasure activeCM) {
-        D.Assert(activeCM.IsReadyToInterceptAThreat);
-        IInterceptableOrdnance ordnanceThreat;
-        if (activeCM.TryPickMostDangerousThreat(out ordnanceThreat)) {
-            bool isThreatHit = activeCM.Fire(ordnanceThreat);
-            //D.Log(!isThreatHit, "{0}'s {1} missed intercept on {2}.", FullName, activeCM.Name, ordnanceThreat.Name);
-        }
-        else {
-            //D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, activeCM.Name);
-        }
-    }
+    //protected void FindIncomingThreatAndIntercept(ActiveCountermeasure activeCM) {
+    //    D.Assert(activeCM.IsReadyToInterceptAThreat);
+    //    IInterceptableOrdnance ordnanceThreat;
+    //    if (activeCM.TryPickMostDangerousThreat(out ordnanceThreat)) {
+    //        bool isThreatHit = activeCM.Fire(ordnanceThreat);
+    //        //D.Log(!isThreatHit, "{0}'s {1} missed intercept on {2}.", FullName, activeCM.Name, ordnanceThreat.Name);
+    //    }
+    //    else {
+    //        //D.Log("{0} did not find a threat to use countermeasure {1} against.", FullName, activeCM.Name);
+    //    }
+    //}
 
     /// <summary>
     /// Called when there is a change in the readiness to intercept a threat status of the provided countermeasure. 
     /// Readiness to intercept does not mean there is a threat in range to intercept.
     /// </summary>
     /// <param name="activeCM">The active countermeasure.</param>
-    private void OnCountermeasureReadyToInterceptAThreatChanged(ActiveCountermeasure activeCM) {
-        //D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, activeCM.Name, activeCM.IsReadyToInterceptAThreat, activeCM.IsThreatInRange);
-        if (activeCM.IsReadyToInterceptAThreat && activeCM.IsThreatInRange) {
-            OnCountermeasureReadyAndThreatInRange(activeCM);
-        }
-        UpdateReadyCountermeasuresInventory(activeCM);
-    }
+    //private void OnCountermeasureReadyToInterceptAThreatChanged(ActiveCountermeasure activeCM) {
+    //    //D.Log("{0}.OnCountermeasureReadyToInterceptAThreatChange() called by {1}. Ready = {2}, ThreatInRange = {3}.", FullName, activeCM.Name, activeCM.IsReadyToInterceptAThreat, activeCM.IsThreatInRange);
+    //    if (activeCM.IsReadyToInterceptAThreat && activeCM.IsThreatInRange) {
+    //        OnCountermeasureReadyAndThreatInRange(activeCM);
+    //    }
+    //    UpdateReadyCountermeasuresInventory(activeCM);
+    //}
 
     /// <summary>
     /// Called when a new, qualified incoming ordnance threat has come within range 
@@ -430,47 +430,47 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// countermeasure is ready to intercept. However, it does mean the countermeasure is operational.
     /// </summary>
     /// <param name="activeCM">The active countermeasure.</param>
-    private void OnNewThreatInRange(ActiveCountermeasure activeCM) {
-        //D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, activeCM.Name);
-        if (_readyCountermeasuresInventory.Contains(activeCM)) {
-            OnCountermeasureReadyAndThreatInRange(activeCM);
-            UpdateReadyCountermeasuresInventory(activeCM);
-        }
-    }
+    //private void OnNewThreatInRange(ActiveCountermeasure activeCM) {
+    //    //D.Log("{0}.OnNewThreatInRange() called by {1} event.", FullName, activeCM.Name);
+    //    if (_readyCountermeasuresInventory.Contains(activeCM)) {
+    //        OnCountermeasureReadyAndThreatInRange(activeCM);
+    //        UpdateReadyCountermeasuresInventory(activeCM);
+    //    }
+    //}
 
     /// <summary>
     /// Called when the provided countermeasure is ready to intercept and there
     /// is a threat in range.
     /// </summary>
     /// <param name="activeCM">The countermeasure.</param>
-    private void OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure activeCM) {
-        //D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, activeCM.Name);
-        RelayToCurrentState(activeCM);
-    }
+    //private void OnCountermeasureReadyAndThreatInRange(ActiveCountermeasure activeCM) {
+    //    //D.Log("{0}.OnCountermeasureReadyAndThreatInRange() called by {1}.", FullName, activeCM.Name);
+    //    RelayToCurrentState(activeCM);
+    //}
 
     /// <summary>
     /// Updates the ready countermeasures inventory.
     /// </summary>
     /// <param name="activeCM">The countermeasure.</param>
-    private void UpdateReadyCountermeasuresInventory(ActiveCountermeasure activeCM) {
-        if (activeCM.IsReadyToInterceptAThreat) {
-            if (!_readyCountermeasuresInventory.Contains(activeCM)) {
-                _readyCountermeasuresInventory.Add(activeCM);
-                //D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, activeCM.Name);
-            }
-            else {
-                //D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, activeCM.Name);
-                // this occurs when a countermeasure attempts to intercept but doesn't (doesn't currently occur) and therefore remains
-                // IsReadyToInterceptAThreat. If it had intercepted, it would no longer be ready and therefore would have been removed below
-            }
-        }
-        else {
-            if (_readyCountermeasuresInventory.Contains(activeCM)) {
-                _readyCountermeasuresInventory.Remove(activeCM);
-                //D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, activeCM.Name);
-            }
-        }
-    }
+    //private void UpdateReadyCountermeasuresInventory(ActiveCountermeasure activeCM) {
+    //    if (activeCM.IsReadyToInterceptAThreat) {
+    //        if (!_readyCountermeasuresInventory.Contains(activeCM)) {
+    //            _readyCountermeasuresInventory.Add(activeCM);
+    //            //D.Log("{0} added Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, activeCM.Name);
+    //        }
+    //        else {
+    //            //D.Log("{0} properly avoided adding duplicate Countermeasure {1} to ReadyCountermeasuresInventory.", FullName, activeCM.Name);
+    //            // this occurs when a countermeasure attempts to intercept but doesn't (doesn't currently occur) and therefore remains
+    //            // IsReadyToInterceptAThreat. If it had intercepted, it would no longer be ready and therefore would have been removed below
+    //        }
+    //    }
+    //    else {
+    //        if (_readyCountermeasuresInventory.Contains(activeCM)) {
+    //            _readyCountermeasuresInventory.Remove(activeCM);
+    //            //D.Log("{0} removed Countermeasure {1} from ReadyCountermeasuresInventory.", FullName, activeCM.Name);
+    //        }
+    //    }
+    //}
 
     #endregion
 
@@ -667,6 +667,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
     #region IElementAttackableTarget Members
+
+    public void OnFiredUponBy(IInterceptableOrdnance ordnanceFired) {
+        float ordnanceDistanceFromElement = Vector3.Distance(ordnanceFired.Position, Position);
+        _countermeasureRangeMonitors.ForAll(rm => {
+            if (rm.RangeDistance > ordnanceDistanceFromElement) {
+                // ordance was fired inside the collider
+                rm.AddOrdnanceLaunchedFromInsideMonitor(ordnanceFired);
+            }
+        });
+    }
 
     public override void TakeHit(DamageStrength damagePotential) {
         if (DebugSettings.Instance.AllPlayersInvulnerable) {

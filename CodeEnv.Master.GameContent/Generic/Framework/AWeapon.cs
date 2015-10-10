@@ -28,7 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeapon : ARangedEquipment, IDisposable {
 
-        private static string _editorNameFormat = "{0}[{1}({2:0.})]";
+        //private static string _editorNameFormat = "{0}[{1}({2:0.})]";
+        private static string _nameFormat = "{0}.{1}";
 
         /// <summary>
         /// Occurs when this weapon is ready to fire using one of the included firing solutions.
@@ -46,13 +47,13 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isReady, value, "IsReady", OnIsReadyChanged); }
         }
 
-        private bool _isEnemyInRange;
+        private bool _isAnyEnemyInRange;
         /// <summary>
         /// Indicates whether there are one or more qualified enemy targets within range.
         /// </summary>
-        private bool IsEnemyInRange {
-            get { return _isEnemyInRange; }
-            set { SetProperty<bool>(ref _isEnemyInRange, value, "IsEnemyInRange", OnIsEnemyInRangeChanged); }
+        private bool IsAnyEnemyInRange {
+            get { return _isAnyEnemyInRange; }
+            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
         }
 
         private bool _toShowEffects;
@@ -78,11 +79,8 @@ namespace CodeEnv.Master.GameContent {
 
         public override string Name {
             get {
-#if UNITY_EDITOR
-                return _editorNameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
-#else 
-                return base.Name;
-#endif
+                //return _editorNameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
+                return RangeMonitor != null ? _nameFormat.Inject(RangeMonitor.Name, base.Name) : base.Name;
             }
         }
 
@@ -121,8 +119,9 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AWeapon" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        public AWeapon(WeaponStat stat)
-            : base(stat) {
+        /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
+        public AWeapon(WeaponStat stat, string name = null)
+            : base(stat, name) {
             _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
         }
 
@@ -165,30 +164,19 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                bool isRemoved = _qualifiedEnemyTargets.Remove(enemyTarget);
-                D.Assert(isRemoved);
+                // some targets going out of range may not have been qualified as targets for this weapon
+                if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
+                    _qualifiedEnemyTargets.Remove(enemyTarget);
+                }
             }
-            IsEnemyInRange = _qualifiedEnemyTargets.Any();
+            IsAnyEnemyInRange = _qualifiedEnemyTargets.Any();
         }
 
-        private void OnIsEnemyInRangeChanged() {
-            if (!IsEnemyInRange) {
+        private void OnIsAnyEnemyInRangeChanged() {
+            if (!IsAnyEnemyInRange) {
                 KillFiringSolutionsCheckJob();
             }
             AssessReadinessToFire();
-        }
-
-        private bool TryGetFiringSolutions(out IList<WeaponFiringSolution> firingSolutions) {
-            int enemyTgtCount = _qualifiedEnemyTargets.Count;
-            D.Assert(enemyTgtCount > Constants.Zero);
-            firingSolutions = new List<WeaponFiringSolution>(enemyTgtCount);
-            foreach (var enemyTgt in _qualifiedEnemyTargets) {
-                WeaponFiringSolution firingSolution;
-                if (WeaponMount.TryGetFiringSolution(enemyTgt, out firingSolution)) {
-                    firingSolutions.Add(firingSolution);
-                }
-            }
-            return firingSolutions.Any();
         }
 
         /// <summary>
@@ -211,67 +199,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        /// <summary>
-        /// Launches a process to continuous check for newly uncovered firing solutions
-        /// against targets in range. Only initiated when the weapon is ready to fire with
-        /// enemy targets in range. If either of these conditions change, the job is immediately
-        /// killed using KillFiringSolutionsCheckJob().
-        /// <remarks>This fill-in check job is needed as firing solution checks otherwise
-        /// occur only when 1) the weapon becomes ready to fire, or 2) the first enemy comes
-        /// into range. If a firing solution is not discovered during these event checks, no more
-        /// checks would take place until another event condition arises. This process fills that
-        /// gap, continuously looking for newly uncovered firing solutions which are to be
-        /// expected, given movement and attitude changes of both the firing element and
-        /// the targets.</remarks>
-        /// </summary>
-        private void LaunchFiringSolutionsCheckJob() {
-            KillFiringSolutionsCheckJob();
-            D.Assert(IsReady);
-            D.Assert(IsEnemyInRange);
-            D.Warn("{0}: Launching FiringSolutionsCheckJob.", Name);
-            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
-                // TODO
-            });
-        }
-
-        /// <summary>
-        /// Continuously checks for firing solutions against any target in range. When it finds
-        /// one or more, it signals the weapon's readiness to fire and the job terminates.
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator CheckForFiringSolutions() {
-            bool hasFiringSolutions = false;
-            while (!hasFiringSolutions) {
-                IList<WeaponFiringSolution> firingSolutions;
-                if (TryGetFiringSolutions(out firingSolutions)) {
-                    hasFiringSolutions = true;
-                    D.Warn("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
-                    OnReadyToFire(firingSolutions);
-                }
-                yield return new WaitForSeconds(1);
-            }
-        }
-
-        private void KillFiringSolutionsCheckJob() {
-            if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
-                D.Warn("{0} FiringSolutionsCheckJob is being killed.", Name);
-                _checkForFiringSolutionsJob.Kill();
-            }
-        }
-
-        private void AssessReadinessToFire() {
-            if (!IsReady || !IsEnemyInRange) {
-                return;
-            }
-
-            IList<WeaponFiringSolution> firingSolutions;
-            if (TryGetFiringSolutions(out firingSolutions)) {
-                OnReadyToFire(firingSolutions);
-            }
-            else {
-                LaunchFiringSolutionsCheckJob();
-            }
-        }
 
         /// <summary>
         /// Called by the weapon's ordnance when this weapon's firing process against <c>targetFiredOn</c> has begun.
@@ -374,7 +301,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnReloaded() {
-            D.Log("{0}.{1} completed reload.", RangeMonitor.Name, Name);
+            D.Log("{0} completed reload.", Name);
             _isLoaded = true;
             AssessReadiness();
         }
@@ -402,7 +329,7 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
             if (_reloadJob != null && _reloadJob.IsRunning) {
                 // UNCLEAR can this happen?
-                D.Warn("{0}.{1}.InitiateReloadCycle() called while already Running.", RangeMonitor.Name, Name);
+                D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
             }
             _reloadJob = GameUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 OnReloaded();
@@ -412,6 +339,83 @@ namespace CodeEnv.Master.GameContent {
         private void AssessReadiness() {
             IsReady = IsOperational && _isLoaded;
         }
+
+        private void AssessReadinessToFire() {
+            if (!IsReady || !IsAnyEnemyInRange) {
+                return;
+            }
+
+            IList<WeaponFiringSolution> firingSolutions;
+            if (TryGetFiringSolutions(out firingSolutions)) {
+                OnReadyToFire(firingSolutions);
+            }
+            else {
+                LaunchFiringSolutionsCheckJob();
+            }
+        }
+
+        /// <summary>
+        /// Launches a process to continuous check for newly uncovered firing solutions
+        /// against targets in range. Only initiated when the weapon is ready to fire with
+        /// enemy targets in range. If either of these conditions change, the job is immediately
+        /// killed using KillFiringSolutionsCheckJob().
+        /// <remarks>This fill-in check job is needed as firing solution checks otherwise
+        /// occur only when 1) the weapon becomes ready to fire, or 2) the first enemy comes
+        /// into range. If a firing solution is not discovered during these event checks, no more
+        /// checks would take place until another event condition arises. This process fills that
+        /// gap, continuously looking for newly uncovered firing solutions which are to be
+        /// expected, given movement and attitude changes of both the firing element and
+        /// the targets.</remarks>
+        /// </summary>
+        private void LaunchFiringSolutionsCheckJob() {
+            KillFiringSolutionsCheckJob();
+            D.Assert(IsReady);
+            D.Assert(IsAnyEnemyInRange);
+            D.Warn("{0}: Launching FiringSolutionsCheckJob.", Name);
+            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
+                // TODO
+            });
+        }
+
+        /// <summary>
+        /// Continuously checks for firing solutions against any target in range. When it finds
+        /// one or more, it signals the weapon's readiness to fire and the job terminates.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator CheckForFiringSolutions() {
+            bool hasFiringSolutions = false;
+            while (!hasFiringSolutions) {
+                IList<WeaponFiringSolution> firingSolutions;
+                if (TryGetFiringSolutions(out firingSolutions)) {
+                    hasFiringSolutions = true;
+                    D.Warn("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    OnReadyToFire(firingSolutions);
+                }
+                yield return new WaitForSeconds(1);
+            }
+        }
+
+        private void KillFiringSolutionsCheckJob() {
+            if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
+                D.Warn("{0} FiringSolutionsCheckJob is being killed.", Name);
+                _checkForFiringSolutionsJob.Kill();
+            }
+        }
+
+        private bool TryGetFiringSolutions(out IList<WeaponFiringSolution> firingSolutions) {
+            int enemyTgtCount = _qualifiedEnemyTargets.Count;
+            D.Assert(enemyTgtCount > Constants.Zero);
+            firingSolutions = new List<WeaponFiringSolution>(enemyTgtCount);
+            foreach (var enemyTgt in _qualifiedEnemyTargets) {
+                WeaponFiringSolution firingSolution;
+                if (WeaponMount.TryGetFiringSolution(enemyTgt, out firingSolution)) {
+                    firingSolutions.Add(firingSolution);
+                }
+            }
+            return firingSolutions.Any();
+        }
+
+
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
