@@ -57,8 +57,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = true);
-        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.CommenceOperations();
     }
 
     protected override void OnDataSet() {
@@ -72,7 +71,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     /// <param name="cm">The cm.</param>
     private void Attach(PassiveCountermeasure cm) {
-        // IsOperational = true is set when item operations commences
+        // IsActivated = true is set when item operations commences
     }
 
     /// <summary>
@@ -116,7 +115,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
             References.MainCameraControl.CurrentFocus = null;
         }
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
-        //Data.PassiveCountermeasures.ForAll(cm => cm.IsOperational = false);
     }
 
     private void OnDeath() {

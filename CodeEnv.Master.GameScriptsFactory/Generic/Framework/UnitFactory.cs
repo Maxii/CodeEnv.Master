@@ -338,17 +338,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="element">The element.</param>
     /// <returns></returns>
     private IEnumerable<ActiveCountermeasure> MakeCountermeasures(IEnumerable<ActiveCountermeasureStat> activeCmStats, AUnitElementItem element) {
-        IDictionary<WDVCategory, int> nameCounter = new Dictionary<WDVCategory, int>() {
-            {WDVCategory.Beam, Constants.One},
-            {WDVCategory.Missile, Constants.One},
-            {WDVCategory.Projectile, Constants.One}
-        };
+        int nameCounter = Constants.One;
 
         var activeCMs = new List<ActiveCountermeasure>(activeCmStats.Count());
         activeCmStats.ForAll(stat => {
-            var cmCategory = stat.InterceptStrength.Category;
-            string cmName = stat.Name + nameCounter[cmCategory];
-            nameCounter[cmCategory]++;
+            string cmName = stat.Name + nameCounter;
+            nameCounter++;
 
             var activeCM = new ActiveCountermeasure(stat, cmName);
             activeCMs.Add(activeCM);
@@ -626,7 +621,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
-
 
     /// <summary>
     /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.

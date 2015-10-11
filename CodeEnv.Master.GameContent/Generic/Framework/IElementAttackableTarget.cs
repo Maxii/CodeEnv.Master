@@ -40,8 +40,11 @@ namespace CodeEnv.Master.GameContent {
         /// not detected by OnTriggerEnter(). The target will only take action on
         /// this FYI if it determines that the ordnance will not be detected by one or
         /// more of its monitors.
+        /// Note: Obsolete as all interceptable ordnance has a rigidbody which is detected by this monitor when the 
+        /// ordnance moves, even if it first appears inside the monitor's collider.
         /// </summary>
         /// <param name="ordnanceFired">The ordnance fired.</param>
+        [Obsolete]
         void OnFiredUponBy(IInterceptableOrdnance ordnanceFired);
 
         void TakeHit(DamageStrength attackerStrength);

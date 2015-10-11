@@ -333,17 +333,6 @@ namespace CodeEnv.Master.GameContent {
             float longRangeDistance = longRangeWeapons.Any() ? longRangeWeapons.First().RangeDistance : Constants.ZeroF;
             UnitWeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
-        //private void RecalcUnitWeaponsRange() {
-        //    var allUnitWeapons = ElementsData.SelectMany(ed => ed.Weapons);
-        //    var operationalUnitWeapons = allUnitWeapons.Where(w => w.IsOperational);
-        //    var shortRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
-        //    var mediumRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
-        //    var longRangeOpWeapons = operationalUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
-        //    float shortRangeDistance = shortRangeOpWeapons.Any() ? shortRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-        //    float mediumRangeDistance = mediumRangeOpWeapons.Any() ? mediumRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-        //    float longRangeDistance = longRangeOpWeapons.Any() ? longRangeOpWeapons.First().RangeDistance : Constants.ZeroF;
-        //    UnitWeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
-        //}
 
         private void RecalcUnitSensorRange() {
             var allUnitSensors = ElementsData.SelectMany(ed => ed.Sensors);

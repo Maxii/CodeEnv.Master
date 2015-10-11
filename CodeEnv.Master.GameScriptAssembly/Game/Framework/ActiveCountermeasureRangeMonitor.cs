@@ -29,8 +29,11 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// <summary>
     /// Adds the ordnance launched to the list of detected items. 
     /// Part of a workaround to allow 'detection' of ordnance launched inside the monitor's collider. 
+    /// Note: Obsolete as all interceptable ordnance has a rigidbody which is detected by this monitor when the 
+    /// ordnance moves, even if it first appears inside the monitor's collider.
     /// </summary>
     /// <param name="ordnance">The ordnance.</param>
+    [System.Obsolete]
     public void AddOrdnanceLaunchedFromInsideMonitor(IInterceptableOrdnance ordnance) {
         D.Assert(ordnance.IsOperational);
         D.Log("{0} is adding {1} to detected items as it was fired from inside this monitor's collider.", Name, ordnance.Name);
@@ -42,11 +45,14 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     }
 
     protected override void OnDetectedItemAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
+        var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
+        D.Log("{0} detected and added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
         if (newlyDetectedOrdnance.Owner == Owner) {
             // its one of ours
             if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
                 // ... and its not a danger so ignore it
                 RemoveDetectedItem(newlyDetectedOrdnance);
+                D.Log("{0} removed detected item {1} owned by us that moving away.", Name, newlyDetectedOrdnance.FullName);
                 return;
             }
         }

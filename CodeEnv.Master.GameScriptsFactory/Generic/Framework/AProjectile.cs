@@ -74,7 +74,8 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
         weapon.OnFiringComplete(this);
-        target.OnFiredUponBy(this);
+        //target.OnFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor 
+        // even when instantiated inside the monitor's collider.
         enabled = true; // enables Update() and FixedUpdate()
     }
 
@@ -189,7 +190,7 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
             D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", Name, DeliveryVehicleStrength.Category.GetValueName(), interceptStrength.Category.GetValueName());
             return;
         }
-        D.Warn(DeliveryVehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0.", Name);
+        D.Warn(DeliveryVehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0. IsOperational = {1}.", Name, IsOperational);
 
         D.Log("{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
         DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CountermeasureFiringSolution.cs
-// An firing solution for an ActiveCountermeasure against an IInterceptableOrdnance threat.
+// A firing solution for an ActiveCountermeasure against an IInterceptableOrdnance threat.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,6 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// A firing solution for an ActiveCountermeasure against an IInterceptableOrdnance threat.
-    /// Not currently used.
     /// </summary>
     public class CountermeasureFiringSolution {
 

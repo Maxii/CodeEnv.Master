@@ -120,7 +120,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         OperateBeam(deltaTime);
         _cumOperatingTime += deltaTime;
         if (_cumOperatingTime > _operatingDuration) {
-            enabled = false;
             AssessApplyDamage();
             TerminateNow();
         }

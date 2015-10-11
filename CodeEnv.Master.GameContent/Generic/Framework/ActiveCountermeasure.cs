@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public WDVStrength InterceptStrength { get { return Stat.InterceptStrength; } }
+        public WDVStrength[] InterceptStrengths { get { return Stat.InterceptStrengths; } }
 
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
 
@@ -119,10 +119,16 @@ namespace CodeEnv.Master.GameContent {
             float hitChance = InterceptAccuracy;
             if (RandomExtended.Chance(hitChance)) {
                 isThreatHit = true;
-                threat.TakeHit(InterceptStrength);
+                var threatWdvCategory = threat.DeliveryVehicleStrength.Category;
+                WDVStrength interceptStrength = GetInterceptStrength(threatWdvCategory);
+                threat.TakeHit(interceptStrength);
             }
             OnFiringComplete();
             return isThreatHit;
+        }
+
+        private WDVStrength GetInterceptStrength(WDVCategory threatWdvCategory) {
+            return InterceptStrengths.Single(intS => intS.Category == threatWdvCategory);
         }
 
         // Note: Unlike Weapons, there is no reason to have a OnDeclinedToFire() method as CMs on automatic 
@@ -134,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="threat">The ordnance threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void OnThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
-            D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
+            //D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(threat)) {
                     D.Assert(!_qualifiedThreats.Contains(threat));
@@ -151,10 +157,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnReadyToFire(IList<CountermeasureFiringSolution> firingSolutions) {
-            D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to be ready to fire
+            D.Assert(firingSolutions.Count >= Constants.One);    // must have one or more firingSolutions to be ready to fire
             var bestFiringSolution = PickBestFiringSolution(firingSolutions);
             bool isThreatHit = Fire(bestFiringSolution);
-            D.Log("{0} has hit threat {1}.", Name, bestFiringSolution.Threat.FullName);
+            //D.Log(isThreatHit, "{0} has hit threat {1}.", Name, bestFiringSolution.Threat.FullName);
         }
 
         private void OnIsReadyChanged() {
@@ -198,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void OnIsOperationalChanged() {
-            D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
+            //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
                 if (!_isLoaded) {
@@ -216,19 +222,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnReloaded() {
-            D.Log("{0} completed reload.", Name);
+            //D.Log("{0} completed reload.", Name);
             _isLoaded = true;
             AssessReadiness();
         }
 
         private bool CheckIfQualified(IInterceptableOrdnance threat) {
-            bool isQualified = InterceptStrength.Category == threat.DeliveryVehicleStrength.Category;
-            D.Log("{0} isQualified = {1}, Vehicles: {2}, {3}.", Name, isQualified, InterceptStrength.Category.GetValueName(), threat.DeliveryVehicleStrength.Category.GetValueName());
+            bool isQualified = InterceptStrengths.Select(intS => intS.Category).Contains(threat.DeliveryVehicleStrength.Category);
+            string isQualMsg = isQualified ? "is qualified" : "is not qualified";
+            D.Log("{0} {1} to intercept {2} which uses a {3} WDV.", Name, isQualMsg, threat.FullName, threat.DeliveryVehicleStrength.Category.GetValueName());
             return isQualified;
         }
 
         private void InitiateReloadCycle() {
-            D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
+            //D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
             if (_reloadJob != null && _reloadJob.IsRunning) {
                 // UNCLEAR can this happen?
                 D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
@@ -239,7 +246,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private CountermeasureFiringSolution PickBestFiringSolution(IList<CountermeasureFiringSolution> firingSolutions) {
-            return firingSolutions.First();     // IMPROVE closest? biggest payload?, most vulnerable?
+            return firingSolutions.First();     // IMPROVE closest? biggest payload?, most damaged?, softerTarget? greaterHitPwr?
         }
 
         /// <summary>
@@ -259,7 +266,7 @@ namespace CodeEnv.Master.GameContent {
             KillFiringSolutionsCheckJob();
             D.Assert(IsReady);
             D.Assert(IsAnyThreatInRange);
-            D.Warn("{0}: Launching FiringSolutionsCheckJob.", Name);
+            //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
             _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
                 // TODO
             });
@@ -276,7 +283,7 @@ namespace CodeEnv.Master.GameContent {
                 IList<CountermeasureFiringSolution> firingSolutions;
                 if (TryGetFiringSolutions(out firingSolutions)) {
                     hasFiringSolutions = true;
-                    D.Warn("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
                     OnReadyToFire(firingSolutions);
                 }
                 yield return new WaitForSeconds(1);
@@ -285,7 +292,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void KillFiringSolutionsCheckJob() {
             if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
-                D.Warn("{0} FiringSolutionsCheckJob is being killed.", Name);
+                //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
                 _checkForFiringSolutionsJob.Kill();
             }
         }

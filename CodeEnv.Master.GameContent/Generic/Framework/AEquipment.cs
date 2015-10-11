@@ -27,7 +27,6 @@ namespace CodeEnv.Master.GameContent {
         public event Action<AEquipment> onIsOperationalChanged;
         public event Action<AEquipment> onIsDamagedChanged;
 
-        //public virtual string Name { get { return Stat.Name; } }
         public virtual string Name { get; private set; }
 
         public AtlasID ImageAtlasID { get { return Stat.ImageAtlasID; } }
@@ -57,16 +56,6 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
         }
 
-
-        //private bool _isOperational;
-        ///// <summary>
-        ///// Indicates whether this equipment is operational (undamaged). 
-        ///// </summary>
-        //public bool IsOperational {
-        //    get { return _isOperational; }
-        //    set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
-        //}
-
         protected AEquipmentStat Stat { get; private set; }
 
         /// <summary>
@@ -86,18 +75,11 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void OnIsDamagedChanged() {
             D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
-            //NotifyIsDamagedChanged();
             if (onIsDamagedChanged != null) {
                 onIsDamagedChanged(this);
             }
             AssessIsOperational();
         }
-
-        //protected void NotifyIsDamagedChanged() {
-        //    if (onIsDamagedChanged != null) {
-        //        onIsDamagedChanged(this);
-        //    }
-        //}
 
         private void AssessIsOperational() {
             IsOperational = IsActivated && !IsDamaged;

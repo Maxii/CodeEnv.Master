@@ -123,6 +123,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     protected void TerminateNow() {
         D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
+        enabled = false;
         IsOperational = false;
         PrepareForTermination();
         if (onDeathOneShot != null) {

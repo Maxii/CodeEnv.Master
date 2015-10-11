@@ -53,7 +53,7 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     }
 
     protected virtual void OnEquipmentIsOperationalChanged(AEquipment pieceOfEquipment) {
-        D.Log("{0}.OnEquipmentIsOperationalChanged() called. Equipment.IsOperational = {1}.", Name, pieceOfEquipment.IsOperational);
+        //D.Log("{0}.OnEquipmentIsOperationalChanged() called. Equipment.IsOperational = {1}.", Name, pieceOfEquipment.IsOperational);
         RangeDistance = RefreshRangeDistance();
         AssessIsOperational();
     }

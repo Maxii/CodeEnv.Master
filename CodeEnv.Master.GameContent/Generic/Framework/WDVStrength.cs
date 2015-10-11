@@ -186,7 +186,7 @@ namespace CodeEnv.Master.GameContent {
             return "{0}({1})".Inject(Category.GetEnumAttributeText(), Value.FormatValue());
         }
 
-        public override string ToString() { return "{0}: {1}({2})".Inject(GetType().Name, Category.GetValueName(), Value.FormatValue()); }
+        public override string ToString() { return "{0}: {1}({2})".Inject(GetType().Name, Category.GetEnumAttributeText(), Value.FormatValue()); }
 
         #region IEquatable<DeliveryStrength> Members
 

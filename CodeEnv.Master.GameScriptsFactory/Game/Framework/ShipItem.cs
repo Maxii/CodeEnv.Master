@@ -121,9 +121,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        Data.Topography = SectorGrid.Instance.GetSpaceTopography(Position);
-        //D.Log("{0}.CommenceOperations() setting Topography to {1}.", FullName, Data.Topography.GetName());
-        Data.IsFtlOperational = true;   // will trigger Data.AssessFtlAvailability()
         CurrentState = ShipState.Idling;
     }
 
@@ -504,7 +501,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         base.OnTriggerEnter(other);
         if (other.gameObject.layer == (int)Layers.CelestialObjectKeepout) {
             SphereCollider keepoutCollider = other as SphereCollider;
-            string obstacleName = other.transform.parent.name + "." + other.name;
+            string obstacleName = other.transform.parent.parent.name + other.transform.parent.name + "." + other.name;
             float keepoutZoneRadius = keepoutCollider.radius;
             float shipDistanceFromCenter = Vector3.Distance(other.transform.position, Position);
             D.Warn("{0} entered {1}. Radius: {2}, ShipDistanceFromCenter: {3}.", FullName, obstacleName, keepoutZoneRadius, shipDistanceFromCenter);

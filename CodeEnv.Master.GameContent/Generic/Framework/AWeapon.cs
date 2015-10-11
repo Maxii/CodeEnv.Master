@@ -28,7 +28,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeapon : ARangedEquipment, IDisposable {
 
-        //private static string _editorNameFormat = "{0}[{1}({2:0.})]";
         private static string _nameFormat = "{0}.{1}";
 
         /// <summary>
@@ -79,7 +78,6 @@ namespace CodeEnv.Master.GameContent {
 
         public override string Name {
             get {
-                //return _editorNameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
                 return RangeMonitor != null ? _nameFormat.Inject(RangeMonitor.Name, base.Name) : base.Name;
             }
         }
@@ -156,7 +154,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void OnEnemyTargetInRangeChanged(IElementAttackableTarget enemyTarget, bool isInRange) {
-            D.Log("{0} received OnEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+            //D.Log("{0} received OnEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(enemyTarget)) {
                     D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget));
@@ -199,7 +197,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
         /// <summary>
         /// Called by the weapon's ordnance when this weapon's firing process against <c>targetFiredOn</c> has begun.
         /// </summary>
@@ -209,7 +206,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
             D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.".Inject(Name, targetFiredOn.FullName));
 
-            D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
+            //D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
             ordnanceFired.onDeathOneShot += OnOrdnanceDeath;
 
@@ -225,7 +222,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public void OnFiringComplete(IOrdnance ordnanceFired) {
             D.Assert(!_isLoaded);
-            D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
+            //D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
 
             UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
@@ -234,49 +231,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnOrdnanceDeath(IOrdnance terminatedOrdnance) {
-            D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, terminatedOrdnance.Name);
+            //D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, terminatedOrdnance.Name);
             RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
         }
 
-        //protected override void OnIsDamagedChanged() {
-        //    D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
-        //    if (IsOperational) {
-        //        // activated and just fixed previous damage so if not already loaded, reload
-        //        if (!_isLoaded) {
-        //            InitiateReloadCycle();
-        //        }
-        //    }
-        //    else {
-        //        // either not activated or just incurred damage so unload
-        //        if (_reloadJob != null && _reloadJob.IsRunning) {
-        //            _reloadJob.Kill();
-        //        }
-        //        _isLoaded = false;
-        //    }
-        //    AssessReadiness();
-        //    NotifyIsDamagedChanged();
-        //}
-
-        //protected override void OnIsActivatedChanged() {
-        //    base.OnIsActivatedChanged();
-        //    if (IsOperational) {
-        //        // undamaged and just activated so initiate reloading
-        //        if (!_isLoaded) {
-        //            InitiateReloadCycle();
-        //        }
-        //    }
-        //    else {
-        //        // either damaged or just deactivated so unload
-        //        if (_reloadJob != null && _reloadJob.IsRunning) {
-        //            _reloadJob.Kill();
-        //        }
-        //        _isLoaded = false;
-        //    }
-        //    AssessReadiness();
-        //}
-
         protected override void OnIsOperationalChanged() {
-            D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
+            //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
                 if (!_isLoaded) {
@@ -301,7 +261,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnReloaded() {
-            D.Log("{0} completed reload.", Name);
+            //D.Log("{0} completed reload.", Name);
             _isLoaded = true;
             AssessReadiness();
         }
@@ -326,7 +286,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
-            D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
+            //D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
             if (_reloadJob != null && _reloadJob.IsRunning) {
                 // UNCLEAR can this happen?
                 D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
@@ -371,7 +331,7 @@ namespace CodeEnv.Master.GameContent {
             KillFiringSolutionsCheckJob();
             D.Assert(IsReady);
             D.Assert(IsAnyEnemyInRange);
-            D.Warn("{0}: Launching FiringSolutionsCheckJob.", Name);
+            //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
             _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
                 // TODO
             });
@@ -388,7 +348,7 @@ namespace CodeEnv.Master.GameContent {
                 IList<WeaponFiringSolution> firingSolutions;
                 if (TryGetFiringSolutions(out firingSolutions)) {
                     hasFiringSolutions = true;
-                    D.Warn("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
                     OnReadyToFire(firingSolutions);
                 }
                 yield return new WaitForSeconds(1);
@@ -397,7 +357,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void KillFiringSolutionsCheckJob() {
             if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
-                D.Warn("{0} FiringSolutionsCheckJob is being killed.", Name);
+                //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
                 _checkForFiringSolutionsJob.Kill();
             }
         }
@@ -414,8 +374,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return firingSolutions.Any();
         }
-
-
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running

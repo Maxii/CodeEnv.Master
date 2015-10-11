@@ -143,34 +143,6 @@ namespace CodeEnv.Master.GameContent {
             HasCharge = true;
         }
 
-        //protected override void OnIsDamagedChanged() {
-        //    base.OnIsDamagedChanged();
-        //    if (IsOperational) {
-        //        // activated and just fixed previous damage so if not already loaded, reload
-        //        InitiateReloadCycle();
-        //    }
-        //    else {
-        //        // either not activated or just incurred damage so ... cancel any charging and reloading?
-        //        HasCharge = false;
-        //        AssessRechargeState();
-        //        AssessReloadState();
-        //    }
-        //}
-
-        //protected override void OnIsActivatedChanged() {
-        //    base.OnIsActivatedChanged();
-        //    if (IsOperational) {
-        //        // undamaged and just activated so if not already loaded, reload
-        //        InitiateReloadCycle();
-        //    }
-        //    else {
-        //        // either damaged or just deactivated so ... cancel any charging and reloading?
-        //        HasCharge = false;
-        //        AssessRechargeState();
-        //        AssessReloadState();
-        //    }
-        //}
-
         protected override void OnIsOperationalChanged() {
             base.OnIsOperationalChanged();
             if (IsOperational) {

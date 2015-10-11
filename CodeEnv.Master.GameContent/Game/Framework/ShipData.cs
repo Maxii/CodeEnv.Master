@@ -260,6 +260,13 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
+        public override void CommenceOperations() {
+            base.CommenceOperations();
+            Topography = References.SectorGrid.GetSpaceTopography(Position);
+            //D.Log("{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
+            IsFtlOperational = true;    // will trigger Data.AssessFtlAvailability()
+        }
+
         private void OnIsFtlOperationalChanged() {
             string msg = IsFtlOperational ? "now" : "no longer";
             D.Log("{0} FTL is {1} operational.", FullName, msg);

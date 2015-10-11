@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -23,9 +24,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ActiveCountermeasureStat : ARangedEquipmentStat {
 
-        private static string _toStringFormat = "{0}({1}, {2})";
+        private static string _toStringFormat = "{0}({1})";
 
-        public WDVStrength InterceptStrength { get; private set; }
+        public WDVStrength[] InterceptStrengths { get; private set; }
 
         public float InterceptAccuracy { get; private set; }
 
@@ -52,16 +53,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range cat.</param>
         /// <param name="baseRangeDistance">The base range distance.</param>
-        /// <param name="interceptStrength">The intercept strength.</param>
+        /// <param name="interceptStrengths">The intercept strengths.</param>
         /// <param name="accuracy">The accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
         /// <param name="engagePercent">How frequently this CM can bear on a qualified threat and engage it.</param>
         public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength interceptStrength,
+            float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength[] interceptStrengths,
             float accuracy, float reloadPeriod, DamageStrength damageMitigation, float engagePercent)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
-            InterceptStrength = interceptStrength;
+            // confirm if more than one interceptStrength, that they each contain a unique WDVCategory
+            D.Assert(interceptStrengths.Length == interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
+            InterceptStrengths = interceptStrengths;
             InterceptAccuracy = accuracy;
             ReloadPeriod = reloadPeriod;
             DamageMitigation = damageMitigation;
@@ -69,7 +72,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(Name, InterceptStrength, DamageMitigation);
+            string interceptTypesMsg = InterceptStrengths.Select(intS => intS.Category.GetEnumAttributeText()).Concatenate();
+            return _toStringFormat.Inject(Name, interceptTypesMsg);
         }
 
     }

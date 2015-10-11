@@ -56,7 +56,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
         if (detectedItem != null) {
             //D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
             if (!detectedItem.IsOperational) {
-                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(ISensorDetectable).Name, detectedItem.FullName);
+                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, detectedItem.FullName);
                 return;
             }
             AddDetectedItem(detectedItem);
@@ -91,7 +91,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
     protected abstract void OnDetectedItemRemoved(DetectableType lostDetectionItem);
 
     protected sealed override void OnIsOperationalChanged() {
-        D.Log("{0}.OnIsOperationalChanged() called. IsOperational: {1}.", Name, IsOperational);
+        //D.Log("{0}.OnIsOperationalChanged() called. IsOperational: {1}.", Name, IsOperational);
         if (IsOperational) {
             AcquireAllDetectableItemsInRange();
         }

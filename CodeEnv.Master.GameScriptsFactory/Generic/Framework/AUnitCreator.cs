@@ -409,7 +409,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
             RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
-            WDVStrength interceptStrength;
+            WDVStrength[] interceptStrengths;
             float interceptAccuracy;
             float engagementPercent;
             float reloadPeriod;
@@ -419,21 +419,28 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                 case RangeCategory.Short:
                     name = "CIWS";
                     engagementPercent = 0.40F;
-                    interceptStrength = new WDVStrength(WDVCategory.Projectile, 0.2F);
+                    interceptStrengths = new WDVStrength[] { 
+                        new WDVStrength(WDVCategory.Projectile, 0.2F), 
+                        new WDVStrength(WDVCategory.Missile, 0.5F)
+                    };
                     interceptAccuracy = 0.50F;
                     reloadPeriod = 0.1F;
                     break;
                 case RangeCategory.Medium:
                     name = "AvengerADS";
                     engagementPercent = 0.80F;
-                    interceptStrength = new WDVStrength(WDVCategory.Missile, 3.0F);
+                    interceptStrengths = new WDVStrength[] {
+                        new WDVStrength(WDVCategory.Missile, 3.0F) 
+                    };
                     interceptAccuracy = 0.80F;
                     reloadPeriod = 2.0F;
                     break;
                 case RangeCategory.Long:
                     name = "PatriotADS";
                     engagementPercent = 0.90F;
-                    interceptStrength = new WDVStrength(WDVCategory.Missile, 1.0F);
+                    interceptStrengths = new WDVStrength[] {
+                        new WDVStrength(WDVCategory.Missile, 1.0F)
+                    };
                     interceptAccuracy = 0.70F;
                     reloadPeriod = 3.0F;
                     break;
@@ -444,7 +451,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             float baseRangeDistance = rangeCat.GetBaseActiveCountermeasureRange();
             DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
             var countermeasureStat = new ActiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, baseRangeDistance, interceptStrength, interceptAccuracy, reloadPeriod, damageMitigation, engagementPercent);
+                rangeCat, baseRangeDistance, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation, engagementPercent);
             statsList.Add(countermeasureStat);
         }
         return statsList;
