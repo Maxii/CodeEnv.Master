@@ -36,6 +36,11 @@ namespace CodeEnv.Master.GameContent {
         public const int MaxTrackingLabelShowDistance = 5000;
 
         /// <summary>
+        /// The range in degrees that a Turret's minimum barrel elevation setting can take.
+        /// </summary>
+        public static readonly ValueRange<float> MinimumBarrelElevationRange = new ValueRange<float>(-20F, 70F);
+
+        /// <summary>
         /// The multiplier to apply to speed and thrust when using FasterThanLight technology.
         /// </summary>
         public const float __FtlMultiplier = 10F;

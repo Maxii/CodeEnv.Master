@@ -19,6 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Direction a GameObject is facing when mounted on another GameObject.
     /// </summary>
+    [System.Obsolete]
     public enum Facing {
 
         None,

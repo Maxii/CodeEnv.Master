@@ -91,8 +91,8 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public FacilityHull[] facilityHulls;
 
     [Header("WeaponMounts")]
-    public MissileTube[] missileTubes;
-    public LOSTurret[] losTurrets;
+    public MissileTube missileTube; // Up
+    public LOSTurret losTurret; // Up
 
     [Header("System")]
     public SystemItem system;   // without the star and settlement

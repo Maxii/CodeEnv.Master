@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -26,11 +27,11 @@ public class LOSMountPlaceholder : AMountPlaceholder {
 
     [Range(-20F, 70F)]
     [Tooltip("Minimum allowed elevation of the barrel in degrees. 0 elevation is horizontal to the plane of the placeholder.")]
-    public float minimumBarrelElevation = 0F;
+    public float minimumBarrelElevation = Constants.ZeroF;
 
     protected override void Validate() {
         base.Validate();
-        Arguments.ValidateForRange(minimumBarrelElevation, -20F, 70F);
+        Arguments.ValidateForRange(minimumBarrelElevation, TempGameValues.MinimumBarrelElevationRange);
     }
 
     protected override void Cleanup() { }

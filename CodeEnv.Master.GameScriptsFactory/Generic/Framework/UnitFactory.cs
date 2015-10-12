@@ -37,8 +37,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private FacilityItem _facilityItemPrefab;
     private FacilityHull[] _facilityHullPrefabs;
 
-    private MissileTube[] _missileTubePrefabs;
-    private LOSTurret[] _losTurretPrefabs;
+    private MissileTube _missileTubePrefab;
+    private LOSTurret _losTurretPrefab;
 
     private GameObject _fleetCmdPrefab;
     private GameObject _starbaseCmdPrefab;
@@ -72,8 +72,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _facilityItemPrefab = reqdPrefabs.facilityItem;
         _facilityHullPrefabs = reqdPrefabs.facilityHulls;
 
-        _missileTubePrefabs = reqdPrefabs.missileTubes;
-        _losTurretPrefabs = reqdPrefabs.losTurrets;
+        _missileTubePrefab = reqdPrefabs.missileTube;
+        _losTurretPrefab = reqdPrefabs.losTurret;
     }
 
     /// <summary>
@@ -364,20 +364,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponDesign> weaponDesigns, AUnitElementItem element, AHull hull) {
-        IDictionary<WDVCategory, int> nameCounter = new Dictionary<WDVCategory, int>() {
-            {WDVCategory.Beam, Constants.One},
-            {WDVCategory.Missile, Constants.One},
-            {WDVCategory.Projectile, Constants.One}
-        };
+        int nameCounter = Constants.One;
         var weapons = new List<AWeapon>(weaponDesigns.Count());
         foreach (var design in weaponDesigns) {
             WeaponStat stat = design.WeaponStat;
             MountSlotID mountSlotID = design.MountSlotID;
-            Facing mountFacing = design.MountFacing;
             WDVCategory weaponCategory = stat.DeliveryVehicleCategory;
 
-            string weaponName = stat.Name + nameCounter[weaponCategory];
-            nameCounter[weaponCategory]++;
+            string weaponName = stat.Name + nameCounter;
+            nameCounter++;
 
             AWeapon weapon;
             switch (weaponCategory) {
@@ -395,7 +390,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponCategory));
             }
             AttachMonitor(weapon, element);
-            AttachMount(weapon, mountFacing, mountSlotID, hull);
+            AttachMount(weapon, mountSlotID, hull);
             weapons.Add(weapon);
         }
         // destroy any remaining mount placeholders that didn't get weapons
@@ -480,35 +475,35 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="mountFacing">The mount facing.</param>
     /// <param name="mountSlotID">The mount slot identifier.</param>
     /// <param name="hull">The hull.</param>
-    private void AttachMount(AWeapon weapon, Facing mountFacing, MountSlotID mountSlotID, AHull hull) {
-        var weaponDeliveryVehicle = weapon.DeliveryVehicleCategory;
+    private void AttachMount(AWeapon weapon, MountSlotID mountSlotID, AHull hull) {
         AMount mountPlaceholder;
         AWeaponMount weaponMountPrefab;
-        bool isLOSWeapon = weaponDeliveryVehicle != WDVCategory.Missile;
-        if (isLOSWeapon) {
+        var losWeapon = weapon as ALOSWeapon;
+        if (losWeapon != null) {
             mountPlaceholder = hull.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
-            weaponMountPrefab = _losTurretPrefabs.Single(mountPrefab => mountPrefab.facing == mountFacing);
+            weaponMountPrefab = _losTurretPrefab;
         }
         else {
             mountPlaceholder = hull.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
-            weaponMountPrefab = _missileTubePrefabs.Single(mountPrefab => mountPrefab.facing == mountFacing);
+            weaponMountPrefab = _missileTubePrefab;
         }
-        D.Assert(mountPlaceholder.facing == mountFacing);
         D.Assert(weaponMountPrefab.SlotID == MountSlotID.None); // mount prefabs won't yet have a slotID
 
-        Quaternion prefabRotation = weaponMountPrefab.transform.rotation;
+        // align the new mount's position and rotation with that of the placeholder it is replacing
+        Quaternion placeholderRotation = mountPlaceholder.transform.rotation;
         GameObject mountGo = UnityUtility.AddChild(hull.gameObject, weaponMountPrefab.gameObject);
-        // restore the mount's rotation from the prefab as AddChild sets it to Quaternion.Identity
-        mountGo.transform.rotation = prefabRotation;
-        mountGo.transform.position = mountPlaceholder.transform.position;
+        Transform mountTransform = mountGo.transform;
+        mountTransform.rotation = placeholderRotation;
+        mountTransform.position = mountPlaceholder.transform.position;
 
         // align the layer of the mount and its children to that of the HullMesh
         Layers hullMeshLayer = (Layers)hull.HullMesh.gameObject.layer;
-        UnityUtility.SetLayerRecursively(mountGo.transform, hullMeshLayer);
+        UnityUtility.SetLayerRecursively(mountTransform, hullMeshLayer);
 
         AWeaponMount weaponMount = mountGo.GetSafeMonoBehaviour<AWeaponMount>();
         weaponMount.SlotID = mountSlotID;
-        if (isLOSWeapon) {
+        if (losWeapon != null) {
+            // LOS weapon
             var losMountPlaceholder = mountPlaceholder as LOSMountPlaceholder;
             var losWeaponMount = weaponMount as LOSTurret;
             losWeaponMount.InitializeBarrelElevationSettings(losMountPlaceholder.minimumBarrelElevation);
@@ -562,22 +557,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
 
         MountSlotID placeholderSlotID;
-        Facing placeholderFacing;
         foreach (var stat in weapStats) {
             if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
                 var placeholder = RandomExtended.Choice(missileMountPlaceholders);
-                placeholderFacing = placeholder.facing;
                 placeholderSlotID = placeholder.slotID;
                 missileMountPlaceholders.Remove(placeholder);
             }
             else {
                 // LOSWeapon
                 var placeholder = RandomExtended.Choice(losMountPlaceholders);
-                placeholderFacing = placeholder.facing;
                 placeholderSlotID = placeholder.slotID;
                 losMountPlaceholders.Remove(placeholder);
             }
-            var weaponDesign = new WeaponDesign(stat, placeholderSlotID, placeholderFacing);
+            var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
             weapDesigns.Add(weaponDesign);
         }
         UnityUtility.Destroy(tempHullGo);
@@ -600,22 +592,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
 
         MountSlotID placeholderSlotID;
-        Facing placeholderFacing;
         foreach (var stat in weapStats) {
             if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
                 var placeholder = RandomExtended.Choice(missileMountPlaceholders);
-                placeholderFacing = placeholder.facing;
                 placeholderSlotID = placeholder.slotID;
                 missileMountPlaceholders.Remove(placeholder);
             }
             else {
                 // LOSWeapon
                 var placeholder = RandomExtended.Choice(losMountPlaceholders);
-                placeholderFacing = placeholder.facing;
                 placeholderSlotID = placeholder.slotID;
                 losMountPlaceholders.Remove(placeholder);
             }
-            var weaponDesign = new WeaponDesign(stat, placeholderSlotID, placeholderFacing);
+            var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
             weapDesigns.Add(weaponDesign);
         }
         UnityUtility.Destroy(tempHullGo);

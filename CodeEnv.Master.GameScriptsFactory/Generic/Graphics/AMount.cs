@@ -24,8 +24,6 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AMount : AMonoBase {
 
-    public Facing facing;
-
     protected sealed override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
@@ -34,9 +32,7 @@ public abstract class AMount : AMonoBase {
 
     protected virtual void InitializeValuesAndReferences() { }
 
-    protected virtual void Validate() {
-        D.Assert(facing != Facing.None);
-    }
+    protected virtual void Validate() { }
 
 }
 

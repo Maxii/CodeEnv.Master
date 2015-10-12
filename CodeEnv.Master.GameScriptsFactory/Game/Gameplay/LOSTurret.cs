@@ -26,7 +26,7 @@ using UnityEngine;
 /// </summary>
 public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
-    private static string _nameFormat = "{0}.{1}.{2}.{3}";
+    private static string _nameFormat = "{0}.{1}.{2}";
 
     private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
 
@@ -66,7 +66,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             if (Weapon == null) {
                 return base.Name;
             }
-            return _nameFormat.Inject(Weapon.Name, GetType().Name, facing.GetValueName(), SlotID.GetValueName());
+            return _nameFormat.Inject(Weapon.Name, GetType().Name, SlotID.GetValueName());
         }
     }
 

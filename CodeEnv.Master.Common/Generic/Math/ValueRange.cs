@@ -22,8 +22,6 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Immutable helper struct that holds a range of values in the form of a min and max value and 
     /// provides a simple method to determine whether a value is within that range, inclusive. 
-    /// WARNING: While immutable, this is a class not a struct
-    /// and as such, all equality comparisons use Reference semantics not Value semantics.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public struct ValueRange<T> where T : IComparable {

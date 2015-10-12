@@ -50,7 +50,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// </summary>
     public abstract Vector3 MuzzleFacing { get; }
 
-    public MountSlotID SlotID { get; set; }
+    public MountSlotID SlotID { get; set; } // OPTIMIZE Not currently used
 
     protected override void Validate() {
         base.Validate();

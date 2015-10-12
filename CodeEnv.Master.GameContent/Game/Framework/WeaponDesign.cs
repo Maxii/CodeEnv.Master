@@ -29,12 +29,10 @@ namespace CodeEnv.Master.GameContent {
 
         public MountSlotID MountSlotID { get; private set; }
 
-        public Facing MountFacing { get; private set; }
 
-        public WeaponDesign(WeaponStat stat, MountSlotID mountSlotID, Facing mountFacing) {
+        public WeaponDesign(WeaponStat stat, MountSlotID mountSlotID) {
             WeaponStat = stat;
             MountSlotID = mountSlotID;
-            MountFacing = mountFacing;
         }
 
         public override string ToString() {
