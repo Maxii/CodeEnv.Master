@@ -21,7 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface associated with Items that monitor their Topography boundries.
     /// </summary>
-    [System.Obsolete]
     public interface ITopographyMonitorable {
 
         Topography Topography { get; }

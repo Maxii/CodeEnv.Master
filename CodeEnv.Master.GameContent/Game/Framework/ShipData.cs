@@ -279,6 +279,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void OnTopographyChanged() {
             base.OnTopographyChanged();
+            //_rigidbody.drag = Topography.GetDrag();   TODO To be added once FTL/STL modified
             AssessFtlAvailability();
         }
 
@@ -320,6 +321,7 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
         }
 
+        [Obsolete]
         private void AssessFtlAvailability() {
             IsFtlAvailableForUse = Topography == Topography.OpenSpace && IsFtlOperational && !IsFtlDampedByField;
         }

@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitElementItems that are Ships.
 /// </summary>
-public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
+public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyChangeListener {
 
     public event Action onDestinationReached;
 
@@ -140,10 +140,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     public void OnFleetFullSpeedChanged() { _helm.OnFleetFullSpeedChanged(); }
 
-    public void OnTopographicBoundaryTransition(Topography newTopography) {
-        //D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
-        Data.Topography = newTopography;
-    }
+    //public void OnTopographicBoundaryTransition(Topography newTopography) {
+    //    //D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
+    //    Data.Topography = newTopography;
+    //}
 
     /// <summary>
     /// The Captain uses this method to issue orders.
@@ -1247,6 +1247,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     #region INavigableTarget Members
 
     public override bool IsMobile { get { return true; } }
+
+    #endregion
+
+    #region ITopographyChangeListener Members
+
+    public void OnTopographyChanged(Topography newTopography) {
+        //D.Log("{0}.OnTopographyChanged({1}).", FullName, newTopography.GetValueName());
+        Data.Topography = newTopography;
+    }
 
     #endregion
 
@@ -2494,7 +2503,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             /// Sets the thrust values needed to achieve the requested speed. This speed has already
             /// been tested for acceptability, ie. it has been clamped.
             /// </summary>
-            /// <param name="acceptableRequestedSpeed">The acceptable requested speed.</param>
+            /// <param name="acceptableRequestedSpeed">The acceptable requested speed in units/hr.</param>
             private void SetThrustFor(float acceptableRequestedSpeed) {
                 //D.Log("{0} adjusting thrust to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
                 _shipData.RequestedSpeed = acceptableRequestedSpeed;
@@ -4308,6 +4317,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     #endregion
+
 
 }
 

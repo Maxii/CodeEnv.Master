@@ -63,7 +63,7 @@
     <Compile Include="Game\Gameplay\LOSTurret.cs" />
     <Compile Include="Game\Gameplay\MissileTube.cs" />
     <Compile Include="Generic\Framework\AHull.cs" />
-    <Compile Include="Generic\Framework\AProjectile.cs" />
+    <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\AUnitElementItem.cs" />
     <Compile Include="Generic\Framework\AWeaponMount.cs" />

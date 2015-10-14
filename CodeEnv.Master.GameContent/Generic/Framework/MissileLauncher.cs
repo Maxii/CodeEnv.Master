@@ -26,7 +26,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MissileLauncher : AWeapon {
 
-        public float Speed { get { return Stat.Speed; } }
+        public float OrdnanceSpeed { get { return Stat.OrdnanceSpeed; } }
+
+        public float OrdnanceMass { get { return Stat.OrdnanceMass; } }
 
         protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
 

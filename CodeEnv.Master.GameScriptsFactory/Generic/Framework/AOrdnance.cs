@@ -76,7 +76,22 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    //public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    //    Target = target;
+    //    _weapon = weapon;
+
+    //    DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
+    //    DamagePotential = weapon.DamagePotential;
+
+    //    SyncName();
+    //    weapon.OnFiringInitiated(target, this);
+
+    //    _range = weapon.RangeDistance;
+    //    ToShowEffects = toShowEffects;
+    //    IsOperational = true;
+    //}
+
+    protected void PrepareForLaunch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         Target = target;
         _weapon = weapon;
 

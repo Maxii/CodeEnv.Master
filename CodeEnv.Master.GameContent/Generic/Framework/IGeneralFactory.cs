@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="weapon">The weapon.</param>
         /// <param name="firingElement">The GameObject firing this ordnance.</param>
         /// <returns></returns>
-        IOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement);
+        //IOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement);
 
 
     }

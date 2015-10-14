@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AProjectile.cs
+// File: AProjectileOrdnance.cs
 // Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 /// </summary>
-public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
+public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, ITopographyChangeListener {
 
     /// <summary>
     /// The speed of the projectile in units per hour.
@@ -43,9 +43,9 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _rigidbody.isKinematic = false;
-        _rigidbody.drag = Constants.ZeroF;
+        //_rigidbody.drag = Constants.ZeroF;
         _rigidbody.useGravity = false;
-        D.Assert(_rigidbody.mass != Constants.ZeroF, "{0} mass not set.".Inject(Name));
+        //D.Assert(_rigidbody.mass != Constants.ZeroF, "{0} mass not set.".Inject(Name));
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
         UpdateRate = FrameUpdateFrequency.Seldom;
@@ -59,10 +59,12 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 
-    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Launch(target, weapon, toShowEffects);
+    public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
+        PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
         _launchPosition = _transform.position;
+
+        _rigidbody.drag = topography.GetDrag();
 
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
@@ -70,6 +72,18 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
         //target.OnFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
         //enabled = true set by derived classes after all settings initialized
     }
+    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    //    base.Launch(target, weapon, toShowEffects);
+    //    D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
+    //    _launchPosition = _transform.position;
+
+    //    AssessShowMuzzleEffects();
+    //    _hasWeaponFired = true;
+    //    weapon.OnFiringComplete(this);
+    //    //target.OnFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
+    //    //enabled = true set by derived classes after all settings initialized
+    //}
+
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -185,5 +199,12 @@ public abstract class AProjectile : AOrdnance, IInterceptableOrdnance {
 
     #endregion
 
+    #region ITopographyChangeListener Members
+
+    public void OnTopographyChanged(Topography newTopography) {
+        _rigidbody.drag = newTopography.GetDrag();
+    }
+
+    #endregion
 }
 

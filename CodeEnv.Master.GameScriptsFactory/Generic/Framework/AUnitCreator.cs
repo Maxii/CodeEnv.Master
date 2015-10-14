@@ -318,13 +318,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageValue = UnityEngine.Random.Range(3F, 8F);
-            float speed = UnityEngine.Random.Range(4F, 6F);
+            float ordSpeed = UnityEngine.Random.Range(4F, 6F);
+            float ordMass = 5F;
             float baseRangeDistance = rangeCat.GetBaseWeaponRange();
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
 
             var weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, speed);
+                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordSpeed, ordMass);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -365,9 +366,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                     accuracy = UnityEngine.Random.Range(0.80F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(2F, 4F);
                     name = "KineticKiller";
-                    float speed = UnityEngine.Random.Range(6F, 8F);
+                    float ordSpeed = UnityEngine.Random.Range(6F, 8F);
+                    float ordMass = 1F;
                     weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, speed);
+                        baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordSpeed, ordMass);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));

@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Unguided Projectile ordnance containing effects for muzzle flash, inFlight operation and impact.
 /// </summary>
-public class Projectile : AProjectile {
+public class Projectile : AProjectileOrdnance {
 
     public GameObject muzzleEffect;
     /// <summary>
@@ -34,15 +34,23 @@ public class Projectile : AProjectile {
 
     public float Speed { get; private set; }
 
-    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Launch(target, weapon, toShowEffects);
-        Speed = speed > Constants.ZeroF ? speed : (_weapon as ProjectileLauncher).Speed;
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
+        base.Launch(target, weapon, topography, toShowEffects);
+        var projectileWeapon = weapon as ProjectileLauncher;
+        _rigidbody.mass = projectileWeapon.OrdnanceMass;
+        Speed = speed > Constants.ZeroF ? speed : projectileWeapon.OrdnanceSpeed;
         InitializeVelocity();
         enabled = true; // enables Update()
     }
+    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    //    base.Launch(target, weapon, toShowEffects);
+    //    Speed = speed > Constants.ZeroF ? speed : (weapon as ProjectileLauncher).OrdnanceSpeed;
+    //    InitializeVelocity();
+    //    enabled = true; // enables Update()
+    //}
 
     /// <summary>
-    /// One-time initialization of the velocity of this 'bullet.
+    /// One-time initialization of the velocity of this 'bullet'.
     /// </summary>
     private void InitializeVelocity() {
         _rigidbody.velocity = Heading * Speed;

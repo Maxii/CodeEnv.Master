@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Guided projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 /// </summary>
-public class Missile : AProjectile, ITerminatableOrdnance {
+public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private static Vector3 _localSpaceForward = Vector3.forward;
 
@@ -34,13 +34,25 @@ public class Missile : AProjectile, ITerminatableOrdnance {
     public ParticleSystem operatingEffect;
     public ParticleSystem impactEffect;
 
+    /// <summary>
+    /// Arbitrary value to correct drift from momentum when a turn is attempted.
+    /// Higher values correct the drift more aggressively. 0 will not correct the drift at all.
+    /// </summary>
+    [Range(0F, 5F)]
+    public float driftCorrectionFactor = 1F;
+
+    /// <summary>
+    /// The speed of this projectile in units per hour when in Interstellar Space.
+    /// </summary>
     public float Speed { get; private set; }
 
     public Vector3 ElementVelocityAtLaunch { private get; set; }
 
     /// <summary>
-    /// The force propelling this projectile, using a gameSpeedMultiplier of 1.
-    /// ProjectileMass * ProjectileSpeed (distanceInUnits/hour) * hoursPerSecond * _localSpaceForward;
+    /// The force propelling this projectile, using a gameSpeedMultiplier of 1. This force will
+    /// propel the projectile to a top speed of <c>Speed</c> when in interstellar space. When the missile is in
+    /// a System or other high drag topography, the missile's top speed will be lower due to the higher drag.
+    /// ProjectileMass * InterstellarDrag * ProjectileSpeed (units/hour) * hoursPerSecond * _localSpaceForward;
     /// </summary>
     private Vector3 _nominalThrust;
     private float _cumDistanceTraveled;
@@ -52,16 +64,28 @@ public class Missile : AProjectile, ITerminatableOrdnance {
     //    UpdateRate = FrameUpdateFrequency.Continuous;
     //}
 
-    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Launch(target, weapon, toShowEffects);
-        _weaponAccuracy = weapon.Accuracy;
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
+        base.Launch(target, weapon, topography, toShowEffects);
+        var missileWeapon = weapon as MissileLauncher;
+        _weaponAccuracy = missileWeapon.Accuracy;
         _positionLastRangeCheck = _transform.position;
+        _rigidbody.mass = missileWeapon.OrdnanceMass;
         _rigidbody.velocity = ElementVelocityAtLaunch;
-        Speed = speed > Constants.ZeroF ? speed : (_weapon as MissileLauncher).Speed;
+        Speed = speed > Constants.ZeroF ? speed : missileWeapon.OrdnanceSpeed;
 
         _nominalThrust = CalcNominalThrust();
         enabled = true; // enables Update() and FixedUpdate()
     }
+    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    //    base.Launch(target, weapon, toShowEffects);
+    //    _weaponAccuracy = weapon.Accuracy;
+    //    _positionLastRangeCheck = _transform.position;
+    //    _rigidbody.velocity = ElementVelocityAtLaunch;
+    //    Speed = speed > Constants.ZeroF ? speed : (weapon as MissileLauncher).OrdnanceSpeed;
+
+    //    _nominalThrust = CalcNominalThrust();
+    //    enabled = true; // enables Update() and FixedUpdate()
+    //}
 
     protected override void ValidateEffects() {
         base.ValidateEffects();
@@ -143,12 +167,24 @@ public class Missile : AProjectile, ITerminatableOrdnance {
         var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
+        ReduceDrift();
+    }
+
+    /// <summary>
+    /// Reduces the amount of drift of the missile in the direction it was heading prior to a turn.
+    /// IMPROVE Expensive to call every frame when no residual drift left after a turn.
+    /// </summary>
+    private void ReduceDrift() {
+        Vector3 relativeVelocity = transform.InverseTransformDirection(_rigidbody.velocity);
+        _rigidbody.AddRelativeForce(-relativeVelocity.x * driftCorrectionFactor * Vector3.right);
+        _rigidbody.AddRelativeForce(-relativeVelocity.y * driftCorrectionFactor * Vector3.up);
+        //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
     }
 
     protected override Vector3 GetForceOfImpact() { return _nominalThrust * _gameSpeedMultiplier; }
 
     private Vector3 CalcNominalThrust() {
-        return _rigidbody.mass * Speed * GameTime.HoursPerSecond * _localSpaceForward;
+        return _rigidbody.mass * TempGameValues.InterstellerDrag * Speed * GameTime.HoursPerSecond * _localSpaceForward;
     }
 
     protected override float GetDistanceTraveled() {

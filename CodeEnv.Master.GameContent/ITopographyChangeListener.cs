@@ -1,12 +1,13 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipItem.cs
-// Interface for all items that are ships.
+// File: ITopographyChangeListener.cs
+// Interface for mobile objects that need to know when they make
+// a Topography Boundary transition.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +20,12 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Interface for all items that are ships.
+    /// Interface for mobile objects that need to know when they make
+    /// a Topography Boundary transition.
     /// </summary>
-    public interface IShipItem : IUnitElementItem {
+    public interface ITopographyChangeListener {
 
-        //void OnTopographicBoundaryTransition(Topography newTopography);
+        void OnTopographyChanged(Topography newTopography);
 
     }
 }

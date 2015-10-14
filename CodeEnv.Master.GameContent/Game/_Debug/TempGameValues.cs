@@ -26,6 +26,10 @@ namespace CodeEnv.Master.GameContent {
 
         public const float __ReqdMissileTravelDistanceBeforePushover = 0.2F;
 
+        public const float InterstellerDrag = .1F;  // should be .001F
+
+        public const float SystemDrag = 1F; // should be .01F   // TODO not currently used
+
         public const int MaxLosWeaponsForAnyElement = 12;
 
         public const int MaxMissileWeaponsForAnyElement = 6;

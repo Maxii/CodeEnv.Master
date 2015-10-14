@@ -101,14 +101,23 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         D.Assert(!muzzleEffect.playOnAwake);
     }
 
-    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Launch(target, weapon, toShowEffects);
+    public void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.Beams, "{0} is not on Layer {1}.".Inject(Name, Layers.Beams.GetValueName()));
-        weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-        _operatingDuration = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
+        var beamWeapon = weapon as BeamProjector;
+        beamWeapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+        _operatingDuration = beamWeapon.Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
         enabled = true; // enables Update()
     }
+    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    //    base.Launch(target, weapon, toShowEffects);
+    //    D.Assert((Layers)gameObject.layer == Layers.Beams, "{0} is not on Layer {1}.".Inject(Name, Layers.Beams.GetValueName()));
+    //    weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+    //    _operatingDuration = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
+    //    _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
+    //    enabled = true; // enables Update()
+    //}
 
     private void OnWeaponIsOperationalChanged(AEquipment weapon) {
         D.Assert(!weapon.IsOperational);

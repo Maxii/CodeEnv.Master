@@ -292,6 +292,7 @@
     <Compile Include="Game\Framework\WeaponDesign.cs" />
     <Compile Include="Game\Framework\ShipDesign.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
+    <Compile Include="ITopographyChangeListener.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />
@@ -344,6 +345,7 @@
     <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />
     <Compile Include="Game\GUI\UniverseCenterDisplayInfoFactory.cs" />
+    <Compile Include="Generic\Extensions\TopographyExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

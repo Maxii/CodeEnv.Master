@@ -114,7 +114,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     /// <param name="firingElement">The GameObject firing this ordnance.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    public IOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement) {
+    public AOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement) {
         AOrdnance prefab;
         GameObject ordnanceGo;
         GameObject firedOrdnanceFolder = weapon.WeaponMount.FiredOrdnanceFolder;
@@ -144,7 +144,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         }
         ordnanceGo.transform.position = weapon.WeaponMount.MuzzleLocation;
         ordnanceGo.transform.rotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
-        return ordnanceGo.GetSafeInterface<IOrdnance>();
+        return ordnanceGo.GetSafeMonoBehaviour<AOrdnance>();    //ordnanceGo.GetSafeInterface<IOrdnance>();
     }
 
     private void Cleanup() {
