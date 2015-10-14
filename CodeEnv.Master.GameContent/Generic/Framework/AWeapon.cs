@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
             get { return RangeMonitor != null ? Owner.WeaponRangeMultiplier : Constants.OneF; }
         }
 
-        protected new WeaponStat Stat { get { return base.Stat as WeaponStat; } }
+        protected new AWeaponStat Stat { get { return base.Stat as AWeaponStat; } }
 
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
@@ -118,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
-        public AWeapon(WeaponStat stat, string name = null)
+        public AWeapon(AWeaponStat stat, string name = null)
             : base(stat, name) {
             _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
         }

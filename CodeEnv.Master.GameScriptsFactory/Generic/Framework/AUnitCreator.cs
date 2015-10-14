@@ -78,8 +78,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private IList<ElementType> _elements;
     private IList<SensorStat> _availableSensorStats;
 
-    private IList<WeaponStat> _availableLosWeaponStats;
-    private IList<WeaponStat> _availableMissileWeaponStats;
+    private IList<AWeaponStat> _availableLosWeaponStats;
+    private IList<AWeaponStat> _availableMissileWeaponStats;
 
     private bool _isUnitDeployed;
     private IGameManager _gameMgr;
@@ -306,66 +306,72 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     #region Create Stats
 
-    private IList<WeaponStat> __CreateAvailableMissileWeaponStats(int quantity) {
-        IList<WeaponStat> statsList = new List<WeaponStat>(quantity);
+    private IList<AWeaponStat> __CreateAvailableMissileWeaponStats(int quantity) {
+        IList<AWeaponStat> statsList = new List<AWeaponStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             WDVCategory deliveryVehicleCategory = WDVCategory.Missile;
 
             RangeCategory rangeCat = RangeCategory.Long; ;
             float accuracy = UnityEngine.Random.Range(0.95F, Constants.OneF); ;
-            float reloadPeriod = UnityEngine.Random.Range(4F, 6F); ;
+            float reloadPeriod = UnityEngine.Random.Range(4F, 6F);
             string name = "PhotonTorpedo"; ;
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageValue = UnityEngine.Random.Range(3F, 8F);
-            float duration = 0F;
+            float speed = UnityEngine.Random.Range(4F, 6F);
             float baseRangeDistance = rangeCat.GetBaseWeaponRange();
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
 
-            var weapStat = new WeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, duration);
+            var weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
+                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, speed);
             statsList.Add(weapStat);
         }
         return statsList;
     }
 
-    private IList<WeaponStat> __CreateAvailableLosWeaponStats(int quantity) {
-        IList<WeaponStat> statsList = new List<WeaponStat>(quantity);
+    private IList<AWeaponStat> __CreateAvailableLosWeaponStats(int quantity) {
+        IList<AWeaponStat> statsList = new List<AWeaponStat>(quantity);
         for (int i = 0; i < quantity; i++) {
+            AWeaponStat weapStat;
             RangeCategory rangeCat;
+            float baseRangeDistance;
             float accuracy;
             float reloadPeriod;
             string name;
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageValue = UnityEngine.Random.Range(3F, 8F);
-            float duration = 0F;
+            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVCategory deliveryVehicleCategory = Enums<WDVCategory>.GetRandomExcept(default(WDVCategory), WDVCategory.Missile);
             //WDVCategory deliveryVehicleCategory = WDVCategory.Beam;
             //WDVCategory deliveryVehicleCategory = WDVCategory.Projectile;
+            WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
+
             switch (deliveryVehicleCategory) {
                 case WDVCategory.Beam:
                     rangeCat = RangeCategory.Short;
+                    baseRangeDistance = rangeCat.GetBaseWeaponRange();
                     accuracy = UnityEngine.Random.Range(0.90F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(3F, 5F);
                     name = "Phaser";
-                    duration = 2F;
+                    float duration = UnityEngine.Random.Range(1F, 2F);
+                    weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
+                        baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, duration);
                     break;
                 case WDVCategory.Projectile:
                     rangeCat = RangeCategory.Medium;
+                    baseRangeDistance = rangeCat.GetBaseWeaponRange();
                     accuracy = UnityEngine.Random.Range(0.80F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(2F, 4F);
                     name = "KineticKiller";
+                    float speed = UnityEngine.Random.Range(6F, 8F);
+                    weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
+                        baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, speed);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));
             }
-            float baseRangeDistance = rangeCat.GetBaseWeaponRange();
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
-            var weapStat = new WeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, duration);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -585,9 +591,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _designNamesByHullCategory[hullCategory].Add(designName);
     }
 
-    protected abstract void MakeAndRecordDesign(string designName, ElementHullStatType hullStat, IEnumerable<WeaponStat> weaponStats,
-        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats);
+    protected abstract void MakeAndRecordDesign(string designName, ElementHullStatType hullStat, IEnumerable<AWeaponStat> weaponStats,
+    IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
+    IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats);
 
     private IList<ElementType> MakeElements() {
         LogEvent();

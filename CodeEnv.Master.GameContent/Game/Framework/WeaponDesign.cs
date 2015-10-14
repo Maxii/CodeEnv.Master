@@ -25,12 +25,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class WeaponDesign {
 
-        public WeaponStat WeaponStat { get; private set; }
+        public AWeaponStat WeaponStat { get; private set; }
 
         public MountSlotID MountSlotID { get; private set; }
 
-
-        public WeaponDesign(WeaponStat stat, MountSlotID mountSlotID) {
+        public WeaponDesign(AWeaponStat stat, MountSlotID mountSlotID) {
             WeaponStat = stat;
             MountSlotID = mountSlotID;
         }

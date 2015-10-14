@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Duration { get { return Stat.Duration; } }
 
+        protected new BeamWeaponStat Stat { get { return base.Stat as BeamWeaponStat; } }
+
         private ITerminatableOrdnance _activeOrdnance;
 
         /// <summary>
@@ -37,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
-        public BeamProjector(WeaponStat stat, string name = null)
+        public BeamProjector(BeamWeaponStat stat, string name = null)
             : base(stat, name) {
         }
 

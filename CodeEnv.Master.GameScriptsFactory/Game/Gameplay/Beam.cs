@@ -101,12 +101,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         D.Assert(!muzzleEffect.playOnAwake);
     }
 
-    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Initiate(target, weapon, toShowEffects);
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        base.Launch(target, weapon, toShowEffects);
+        D.Assert((Layers)gameObject.layer == Layers.Beams, "{0} is not on Layer {1}.".Inject(Name, Layers.Beams.GetValueName()));
         weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
         _operatingDuration = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
-        enabled = true; // enables Update() and FixedUpdate()
+        enabled = true; // enables Update()
     }
 
     private void OnWeaponIsOperationalChanged(AEquipment weapon) {
@@ -148,7 +149,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
         AssessShowImpactEffects();
     }
-
 
     private void OnImpact(RaycastHit impactInfo, float deltaTime) {
         //D.Log("{0} impacted on {1}.", Name, impactInfo.collider.name);

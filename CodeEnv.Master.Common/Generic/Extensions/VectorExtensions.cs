@@ -53,6 +53,15 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Returns a more precise version of Vector3.ToString().
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <returns></returns>
+        public static string ToPreciseString(this Vector3 source) {
+            return source.ToString("G4");
+        }
+
+        /// <summary>
         /// Finds the average vector between myLoc and all otherLocations.
         /// </summary>
         /// <param name="myLoc">My loc.</param>

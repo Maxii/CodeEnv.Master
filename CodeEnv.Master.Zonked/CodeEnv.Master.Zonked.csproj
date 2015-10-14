@@ -550,6 +550,7 @@
     <Compile Include="View.cs" />
     <Compile Include="ViewDisplayMode.cs" />
     <Compile Include="ViewModeKeys.cs" />
+    <Compile Include="WeaponStat.cs" />
     <Compile Include="XYield.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />

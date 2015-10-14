@@ -237,7 +237,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
         var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
-        ordnance.Initiate(target, weapon, IsVisualDetailDiscernibleToUser);
+        ordnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
         D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
                * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer

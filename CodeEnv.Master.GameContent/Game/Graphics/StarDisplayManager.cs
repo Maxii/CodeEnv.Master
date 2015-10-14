@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         private static Vector2 _starIconSize = new Vector2(16F, 16F);
 
         private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-            Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.Ordnance);
+            Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.Projectiles);
 
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Over; } }
 

@@ -53,6 +53,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\AWeaponStat.cs" />
+    <Compile Include="Generic\IO\BeamWeaponStat.cs" />
     <Compile Include="Generic\Framework\CountermeasureFiringSolution.cs" />
     <Compile Include="Game\Graphics\FacilityDisplayManager.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
@@ -289,6 +291,7 @@
     <Compile Include="Game\Framework\PlayerDesigns.cs" />
     <Compile Include="Game\Framework\WeaponDesign.cs" />
     <Compile Include="Game\Framework\ShipDesign.cs" />
+    <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />
@@ -300,7 +303,6 @@
     <Compile Include="Generic\Framework\ShipOrder.cs" />
     <Compile Include="Generic\IO\SettlementCmdStat.cs" />
     <Compile Include="Generic\IO\StarbaseCmdStat.cs" />
-    <Compile Include="Generic\IO\WeaponStat.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
     <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />

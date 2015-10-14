@@ -2582,7 +2582,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             /// </summary>
             private void ApplyThrust() {
                 Vector3 adjustedThrust = _localSpaceForward * GetThrust() * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                _shipRigidbody.AddRelativeForce(adjustedThrust);
+                _shipRigidbody.AddRelativeForce(adjustedThrust, ForceMode.Force);
                 //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
             }
 

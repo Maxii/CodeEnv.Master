@@ -89,10 +89,14 @@ namespace CodeEnv.Master.Common {
         Shields = 22,        // IgnoreGuiEvents = 22, // Removed 3.19.14, replaced by IgnoreRaycast
 
         /// <summary>
-        /// Layer for Ordnance (specifically Offensive Projectiles) so they won't collide with each other 
-        /// when trying to impact a Target on the Default layer. 
+        /// Layer for Beam Ordnance so it can 
         /// </summary>
-        Ordnance = 23
+        Beams = 23,
+
+        /// <summary>
+        /// Layer for Projectile Ordnance so they won't collide with each other when trying to impact a Target on the Default layer. 
+        /// </summary>
+        Projectiles = 24
 
         /// <summary>
         /// Layer that allows the dedicated VectorCam (Vectrosity Camera) to cull all meshes

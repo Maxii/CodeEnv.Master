@@ -367,7 +367,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         int nameCounter = Constants.One;
         var weapons = new List<AWeapon>(weaponDesigns.Count());
         foreach (var design in weaponDesigns) {
-            WeaponStat stat = design.WeaponStat;
+            AWeaponStat stat = design.WeaponStat;
             MountSlotID mountSlotID = design.MountSlotID;
             WDVCategory weaponCategory = stat.DeliveryVehicleCategory;
 
@@ -377,13 +377,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             AWeapon weapon;
             switch (weaponCategory) {
                 case WDVCategory.Beam:
-                    weapon = new BeamProjector(stat, weaponName);
+                    weapon = new BeamProjector(stat as BeamWeaponStat, weaponName);
                     break;
                 case WDVCategory.Projectile:
-                    weapon = new ProjectileLauncher(stat, weaponName);
+                    weapon = new ProjectileLauncher(stat as ProjectileWeaponStat, weaponName);
                     break;
                 case WDVCategory.Missile:
-                    weapon = new MissileLauncher(stat, weaponName);
+                    weapon = new MissileLauncher(stat as ProjectileWeaponStat, weaponName);
                     break;
                 case WDVCategory.None:
                 default:
@@ -400,6 +400,43 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         return weapons;
     }
+    //private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponDesign> weaponDesigns, AUnitElementItem element, AHull hull) {
+    //    int nameCounter = Constants.One;
+    //    var weapons = new List<AWeapon>(weaponDesigns.Count());
+    //    foreach (var design in weaponDesigns) {
+    //        WeaponStat stat = design.WeaponStat;
+    //        MountSlotID mountSlotID = design.MountSlotID;
+    //        WDVCategory weaponCategory = stat.DeliveryVehicleCategory;
+
+    //        string weaponName = stat.Name + nameCounter;
+    //        nameCounter++;
+
+    //        AWeapon weapon;
+    //        switch (weaponCategory) {
+    //            case WDVCategory.Beam:
+    //                weapon = new BeamProjector(stat, weaponName);
+    //                break;
+    //            case WDVCategory.Projectile:
+    //                weapon = new ProjectileLauncher(stat, weaponName);
+    //                break;
+    //            case WDVCategory.Missile:
+    //                weapon = new MissileLauncher(stat, weaponName);
+    //                break;
+    //            case WDVCategory.None:
+    //            default:
+    //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponCategory));
+    //        }
+    //        AttachMonitor(weapon, element);
+    //        AttachMount(weapon, mountSlotID, hull);
+    //        weapons.Add(weapon);
+    //    }
+    //    // destroy any remaining mount placeholders that didn't get weapons
+    //    var remainingMountPlaceholders = hull.gameObject.GetComponentsInChildren<AMountPlaceholder>();
+    //    if (remainingMountPlaceholders.Any()) {
+    //        remainingMountPlaceholders.ForAll(mp => UnityUtility.Destroy(mp.gameObject));
+    //    }
+    //    return weapons;
+    //}
 
     private IEnumerable<ShieldGenerator> MakeShieldGenerators(IEnumerable<ShieldGeneratorStat> genStats, AUnitElementItem element) {
         var generators = new List<ShieldGenerator>(genStats.Count());
@@ -548,7 +585,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="hullCategory">The hull category.</param>
     /// <param name="weapStats">The weap stats.</param>
     /// <returns></returns>
-    public IEnumerable<WeaponDesign> __MakeWeaponDesigns(ShipHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
+    public IEnumerable<WeaponDesign> __MakeWeaponDesigns(ShipHullCategory hullCategory, IEnumerable<AWeaponStat> weapStats) {
         IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
         ShipHull hullPrefab = _shipHullPrefabs.Single(h => h.HullCategory == hullCategory);
         // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
@@ -575,6 +612,33 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
+    //public IEnumerable<WeaponDesign> __MakeWeaponDesigns(ShipHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
+    //    IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
+    //    ShipHull hullPrefab = _shipHullPrefabs.Single(h => h.HullCategory == hullCategory);
+    //    // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
+    //    GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
+    //    var missileMountPlaceholders = tempHullGo.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
+    //    var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
+
+    //    MountSlotID placeholderSlotID;
+    //    foreach (var stat in weapStats) {
+    //        if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
+    //            var placeholder = RandomExtended.Choice(missileMountPlaceholders);
+    //            placeholderSlotID = placeholder.slotID;
+    //            missileMountPlaceholders.Remove(placeholder);
+    //        }
+    //        else {
+    //            // LOSWeapon
+    //            var placeholder = RandomExtended.Choice(losMountPlaceholders);
+    //            placeholderSlotID = placeholder.slotID;
+    //            losMountPlaceholders.Remove(placeholder);
+    //        }
+    //        var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
+    //        weapDesigns.Add(weaponDesign);
+    //    }
+    //    UnityUtility.Destroy(tempHullGo);
+    //    return weapDesigns;
+    //}
 
     /// <summary>
     ///Temporary method for making WeaponDesigns. Randomly picks a mountPlaceholder from the hull and creates a PlayerWeaponDesign using the stat and
@@ -583,7 +647,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="hullCategory">The hull category.</param>
     /// <param name="weapStats">The weap stats.</param>
     /// <returns></returns>
-    public IEnumerable<WeaponDesign> __MakeWeaponDesigns(FacilityHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
+    public IEnumerable<WeaponDesign> __MakeWeaponDesigns(FacilityHullCategory hullCategory, IEnumerable<AWeaponStat> weapStats) {
         IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
         FacilityHull hullPrefab = _facilityHullPrefabs.Single(h => h.HullCategory == hullCategory);
         // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
@@ -610,6 +674,33 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
+    //public IEnumerable<WeaponDesign> __MakeWeaponDesigns(FacilityHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
+    //    IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
+    //    FacilityHull hullPrefab = _facilityHullPrefabs.Single(h => h.HullCategory == hullCategory);
+    //    // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
+    //    GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
+    //    var missileMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
+    //    var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
+
+    //    MountSlotID placeholderSlotID;
+    //    foreach (var stat in weapStats) {
+    //        if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
+    //            var placeholder = RandomExtended.Choice(missileMountPlaceholders);
+    //            placeholderSlotID = placeholder.slotID;
+    //            missileMountPlaceholders.Remove(placeholder);
+    //        }
+    //        else {
+    //            // LOSWeapon
+    //            var placeholder = RandomExtended.Choice(losMountPlaceholders);
+    //            placeholderSlotID = placeholder.slotID;
+    //            losMountPlaceholders.Remove(placeholder);
+    //        }
+    //        var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
+    //        weapDesigns.Add(weaponDesign);
+    //    }
+    //    UnityUtility.Destroy(tempHullGo);
+    //    return weapDesigns;
+    //}
 
     /// <summary>
     /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.

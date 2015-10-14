@@ -32,6 +32,22 @@ public class Projectile : AProjectile {
     public ParticleSystem operatingEffect;
     public ParticleSystem impactEffect;
 
+    public float Speed { get; private set; }
+
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        base.Launch(target, weapon, toShowEffects);
+        Speed = speed > Constants.ZeroF ? speed : (_weapon as ProjectileLauncher).Speed;
+        InitializeVelocity();
+        enabled = true; // enables Update()
+    }
+
+    /// <summary>
+    /// One-time initialization of the velocity of this 'bullet.
+    /// </summary>
+    private void InitializeVelocity() {
+        _rigidbody.velocity = Heading * Speed;
+    }
+
     protected override void ValidateEffects() {
         base.ValidateEffects();
         D.Assert(impactEffect != null, "{0} has no impact effect.".Inject(Name));
@@ -82,6 +98,8 @@ public class Projectile : AProjectile {
             SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion
         }
     }
+
+    protected override Vector3 GetForceOfImpact() { return _rigidbody.velocity * _rigidbody.mass; }
 
     protected override float GetDistanceTraveled() {
         return Vector3.Distance(_transform.position, _launchPosition);

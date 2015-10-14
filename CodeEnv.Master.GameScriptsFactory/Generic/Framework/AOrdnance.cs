@@ -76,8 +76,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    public virtual void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        D.Assert((Layers)gameObject.layer == Layers.Ordnance, "{0} is not on Layer {1}.".Inject(Name, Layers.Ordnance.GetValueName()));
+    public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         Target = target;
         _weapon = weapon;
 
@@ -96,9 +95,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     protected abstract void AssessShowOperatingEffects();
 
-    protected void ShowImpactEffects(Vector3 position) {
-        ShowImpactEffects(position, Quaternion.identity);
-    }
+    protected void ShowImpactEffects(Vector3 position) { ShowImpactEffects(position, Quaternion.identity); }
 
     protected abstract void ShowImpactEffects(Vector3 position, Quaternion rotation);
 

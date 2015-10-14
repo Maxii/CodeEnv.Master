@@ -60,7 +60,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Name = _transform.name + __instanceID;
     }
 
-    public virtual void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         Target = target;
         _weapon = weapon;
 

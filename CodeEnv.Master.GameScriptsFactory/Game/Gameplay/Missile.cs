@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public class Missile : AProjectile, ITerminatableOrdnance {
 
+    private static Vector3 _localSpaceForward = Vector3.forward;
+
     public GameObject muzzleEffect;
     /// <summary>
     /// The effect this Projectile will show while operating including when the game is paused.
@@ -32,19 +34,33 @@ public class Missile : AProjectile, ITerminatableOrdnance {
     public ParticleSystem operatingEffect;
     public ParticleSystem impactEffect;
 
+    public float Speed { get; private set; }
+
+    public Vector3 ElementVelocityAtLaunch { private get; set; }
+
+    /// <summary>
+    /// The force propelling this projectile, using a gameSpeedMultiplier of 1.
+    /// ProjectileMass * ProjectileSpeed (distanceInUnits/hour) * hoursPerSecond * _localSpaceForward;
+    /// </summary>
+    private Vector3 _nominalThrust;
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
     private float _weaponAccuracy;
 
-    protected override void Awake() {
-        base.Awake();
-        UpdateRate = FrameUpdateFrequency.Infrequent;
-    }
+    //protected override void Awake() {
+    //    base.Awake();
+    //    UpdateRate = FrameUpdateFrequency.Continuous;
+    //}
 
-    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Initiate(target, weapon, toShowEffects);
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        base.Launch(target, weapon, toShowEffects);
         _weaponAccuracy = weapon.Accuracy;
         _positionLastRangeCheck = _transform.position;
+        _rigidbody.velocity = ElementVelocityAtLaunch;
+        Speed = speed > Constants.ZeroF ? speed : (_weapon as MissileLauncher).Speed;
+
+        _nominalThrust = CalcNominalThrust();
+        enabled = true; // enables Update() and FixedUpdate()
     }
 
     protected override void ValidateEffects() {
@@ -94,6 +110,11 @@ public class Missile : AProjectile, ITerminatableOrdnance {
         CheckProgress();
     }
 
+    protected override void FixedUpdate() {
+        base.FixedUpdate();
+        ApplyThrust();
+    }
+
     private void CheckProgress() {
         if (!Target.IsOperational) {
             // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
@@ -118,15 +139,25 @@ public class Missile : AProjectile, ITerminatableOrdnance {
         _transform.rotation = Quaternion.LookRotation(tgtBearing);  // TODO needs inaccuracy    // Missile needs maxTurnRate, add deltaTime
     }
 
+    private void ApplyThrust() {
+        var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
+        _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
+        //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
+    }
+
+    protected override Vector3 GetForceOfImpact() { return _nominalThrust * _gameSpeedMultiplier; }
+
+    private Vector3 CalcNominalThrust() {
+        return _rigidbody.mass * Speed * GameTime.HoursPerSecond * _localSpaceForward;
+    }
+
     protected override float GetDistanceTraveled() {
         _cumDistanceTraveled += Vector3.Distance(_transform.position, _positionLastRangeCheck);
         _positionLastRangeCheck = _transform.position;
         return _cumDistanceTraveled;
     }
 
-    public void Terminate() {
-        TerminateNow();
-    }
+    public void Terminate() { TerminateNow(); }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

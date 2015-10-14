@@ -25,6 +25,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ProjectileLauncher : ALOSWeapon {
 
+        public float Speed { get { return Stat.Speed; } }
+
+        protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
+
         private IList<IOrdnance> _activeFiredOrdnance;
 
         /// <summary>
@@ -32,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
-        public ProjectileLauncher(WeaponStat stat, string name = null)
+        public ProjectileLauncher(ProjectileWeaponStat stat, string name = null)
             : base(stat, name) {
             _activeFiredOrdnance = new List<IOrdnance>();
         }

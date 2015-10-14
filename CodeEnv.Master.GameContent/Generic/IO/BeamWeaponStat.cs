@@ -1,16 +1,16 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: WeaponStat.cs
-// Immutable stat containing externally acquirable values for Weapons.
+// File: BeamWeaponStat.cs
+// Immutable stat containing externally acquirable values for BeamWeapons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -19,24 +19,12 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable stat containing externally acquirable values for Weapons.
+    /// Immutable stat containing externally acquirable values for BeamWeapons.
     /// </summary>
-    public class WeaponStat : ARangedEquipmentStat {
-
-        private static string _toStringFormat = "{0}: Name[{1}], DeliveryVehicleStrength[{2}], DamagePotential[{3}], Range[{4}({5:0.})].";
-
-        public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
-
-        public WDVStrength DeliveryVehicleStrength { get; private set; }
-
-        public DamageStrength DamagePotential { get; private set; }
-
-        public float Accuracy { get; private set; }
-
-        public float ReloadPeriod { get; private set; }
+    public class BeamWeaponStat : AWeaponStat {
 
         /// <summary>
-        /// The firing duration in hours. Applicable only to Beams.
+        /// The firing duration in hours.
         /// </summary>
         public float Duration { get; private set; }
 
@@ -57,26 +45,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="accuracy">The accuracy of the weapon. Range 0...1.0</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
-        /// <param name="duration">The firing duration in hours. Applicable only to Beams.</param>
-        public WeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
+        /// <param name="duration">The firing duration in hours.</param>
+        public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
             float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float accuracy,
-            float reloadPeriod, DamageStrength damagePotential, float duration = Constants.ZeroF)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
-            DeliveryVehicleStrength = deliveryVehicleStrength;
-            Accuracy = accuracy;
-            ReloadPeriod = reloadPeriod;
-            DamagePotential = damagePotential;
+            float reloadPeriod, DamageStrength damagePotential, float duration)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential) {
             Duration = duration;
             Validate();
         }
 
-        private void Validate() {
-            Arguments.ValidateForRange(Accuracy, Constants.ZeroF, Constants.OneF);
-        }
-
-        public override string ToString() {
-            return _toStringFormat.Inject(typeof(AWeapon).Name, Name, DeliveryVehicleStrength.ToString(), DamagePotential.ToString(),
-                RangeCategory.GetEnumAttributeText(), BaseRangeDistance);
+        protected override void Validate() {
+            base.Validate();
+            D.Assert(Duration > Constants.ZeroF);
         }
 
     }

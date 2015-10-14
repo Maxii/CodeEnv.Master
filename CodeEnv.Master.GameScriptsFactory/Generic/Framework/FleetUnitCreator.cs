@@ -50,7 +50,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             hullMass, drag, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
     }
 
-    protected override void MakeAndRecordDesign(string designName, ShipHullStat hullStat, IEnumerable<WeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+    protected override void MakeAndRecordDesign(string designName, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
         ShipHullCategory hullCategory = hullStat.HullCategory;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
         var engineStat = MakeEngineStat(hullCategory);

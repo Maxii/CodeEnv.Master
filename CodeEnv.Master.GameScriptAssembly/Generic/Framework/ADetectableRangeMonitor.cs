@@ -56,7 +56,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
         if (detectedItem != null) {
             //D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
             if (!detectedItem.IsOperational) {
-                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, detectedItem.FullName);
+                D.Warn("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, detectedItem.FullName);
                 return;
             }
             AddDetectedItem(detectedItem);

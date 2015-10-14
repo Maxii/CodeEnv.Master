@@ -63,8 +63,8 @@ public class PlasmaBeam : AOrdnance, ITerminatableOrdnance {
         _initialBeamAnimationOffset = UnityEngine.Random.Range(0f, 5f);
     }
 
-    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Initiate(target, weapon, toShowEffects);
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        base.Launch(target, weapon, toShowEffects);
         weapon.OnFiringInitiated(target, this);
         _durationInSeconds = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
 

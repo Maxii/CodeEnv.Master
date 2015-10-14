@@ -122,22 +122,26 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
             case WDVCategory.Beam:
                 prefab = RequiredPrefabs.Instance.beam;
                 ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
+                ordnanceGo.layer = (int)Layers.Beams;
                 break;
             case WDVCategory.Missile:
                 prefab = RequiredPrefabs.Instance.missile;
                 ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
+                Missile missile = ordnanceGo.GetSafeMonoBehaviour<Missile>();
+                missile.ElementVelocityAtLaunch = firingElement.GetComponent<Rigidbody>().velocity;
+                ordnanceGo.layer = (int)Layers.Projectiles;
                 break;
             case WDVCategory.Projectile:
                 prefab = RequiredPrefabs.Instance.projectile;
                 ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
+                ordnanceGo.layer = (int)Layers.Projectiles;
                 break;
             case WDVCategory.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapon.DeliveryVehicleCategory));
         }
-        ordnanceGo.layer = (int)Layers.Ordnance;
         ordnanceGo.transform.position = weapon.WeaponMount.MuzzleLocation;
         ordnanceGo.transform.rotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
         return ordnanceGo.GetSafeInterface<IOrdnance>();

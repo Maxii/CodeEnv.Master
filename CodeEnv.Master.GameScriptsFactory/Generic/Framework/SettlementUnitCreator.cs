@@ -43,7 +43,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
             hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
     }
 
-    protected override void MakeAndRecordDesign(string designName, FacilityHullStat hullStat, IEnumerable<WeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
+    protected override void MakeAndRecordDesign(string designName, FacilityHullStat hullStat, IEnumerable<AWeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
         FacilityHullCategory hullCategory = hullStat.HullCategory;
         var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
         var design = new FacilityDesign(_owner, designName, hullStat, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);

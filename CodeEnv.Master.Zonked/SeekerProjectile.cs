@@ -92,8 +92,8 @@ public class SeekerProjectile : AOrdnance, IProjectileOrdnance {
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    public override void Initiate(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-        base.Initiate(target, weapon, toShowEffects);
+    public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+        base.Launch(target, weapon, toShowEffects);
         weapon.OnFiringInitiated(target, this);
         _launchPosition = _transform.position;
         _rangeSqrd = _range * _range;

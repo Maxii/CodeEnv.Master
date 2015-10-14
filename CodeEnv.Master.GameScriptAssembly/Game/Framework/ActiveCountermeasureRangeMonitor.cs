@@ -46,7 +46,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void OnDetectedItemAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
         var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
-        D.Log("{0} detected and added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
+        D.Warn("{0} detected and added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
         if (newlyDetectedOrdnance.Owner == Owner) {
             // its one of ours
             if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
