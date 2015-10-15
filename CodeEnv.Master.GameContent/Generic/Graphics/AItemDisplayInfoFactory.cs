@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.Category, "Category: {0}"},
                 {ContentID.SectorIndex, "Sector: {0}"},
                 {ContentID.Position, "Position: {0}"},
-                {ContentID.Density, "Density: {0}"},
+                //{ContentID.Density, "Density: {0}"},
 
                 {ContentID.Composition, CommonTerms.Composition + ": {0}"},
                 {ContentID.Formation, "Formation: {0}"},
@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static IDictionary<ContentID, string> _defaultNumberFormatLookup = new Dictionary<ContentID, string>() {
 
-                {ContentID.Density, Constants.FormatFloat_1DpMax},
+                //{ContentID.Density, Constants.FormatFloat_1DpMax},
 
                 {ContentID.CurrentCmdEffectiveness, Constants.FormatInt_1DMin},
                 {ContentID.UnitCurrentHitPts, Constants.FormatFloat_0Dp},
@@ -267,12 +267,16 @@ namespace CodeEnv.Master.GameContent {
 
             UnitFullSpeed,
             UnitMaxTurnRate,
+
+            [System.Obsolete]
             Density,
 
             CameraDistance,
             TargetDistance,
             OrbitalSpeed
         }
+
+        #region Archive
 
         //public class ColoredTextList_Intel : ColoredTextList {
 
@@ -410,6 +414,7 @@ namespace CodeEnv.Master.GameContent {
         //        return TextElements.Concatenate();
         //    }
         //}
+        #endregion
 
         #endregion
 

@@ -25,9 +25,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ProjectileLauncher : ALOSWeapon {
 
-        public float OrdnanceSpeed { get { return Stat.OrdnanceSpeed; } }
+        /// <summary>
+        /// The maximum speed of this launcher's projectile in units per hour in Topography.OpenSpace.
+        /// </summary>
+        public float OrdnanceMaxSpeed { get { return Stat.OrdnanceMaxSpeed; } }
 
         public float OrdnanceMass { get { return Stat.OrdnanceMass; } }
+
+        /// <summary>
+        /// The drag of this launcher's projectile in Topography.OpenSpace.
+        /// </summary>
+        public float OrdnanceDrag { get { return Stat.OrdnanceDrag; } }
 
         protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
 

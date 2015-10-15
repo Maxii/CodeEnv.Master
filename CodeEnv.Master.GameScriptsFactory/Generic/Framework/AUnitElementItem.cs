@@ -208,8 +208,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         LosWeaponFiringSolution losFiringSolution = firingSolution as LosWeaponFiringSolution;
         if (losFiringSolution != null) {
             var losWeapon = losFiringSolution.Weapon;
-            losWeapon.onWeaponAimedAtTarget += OnLosWeaponAimedAtTarget;
-            losWeapon.AimAtTarget(losFiringSolution);
+            losWeapon.onWeaponAimed += OnLosWeaponAimedAtTarget;
+            losWeapon.AimAt(losFiringSolution);
         }
         else {
             // no aiming reqd, just launch the ordnance
@@ -232,7 +232,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         else {  // target died or chaged diplo during aiming process
             losWeapon.OnElementDeclinedToFire();
         }
-        losWeapon.onWeaponAimedAtTarget -= OnLosWeaponAimedAtTarget;
+        losWeapon.onWeaponAimed -= OnLosWeaponAimedAtTarget;
     }
 
     private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
@@ -255,18 +255,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
                * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
                **************************************************************************************************************************************************/
     }
-    //private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
-    //    var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
-    //    ordnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
-    //    D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
-    //    /***********************************************************************************************************************************************
-    //           * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
-    //           * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
-    //           * death cinematic plays out. Once the target is destroyed, its collider becomes disabled, allowing ordnance to pass through and potentially
-    //           * collide with other items until it runs out of range and self terminates. This behaviour holds for both projectile and beam ordnance. In the
-    //           * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
-    //           **************************************************************************************************************************************************/
-    //}
 
     private void OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         bool isMsgReceived = RelayToCurrentState(firingSolutions);

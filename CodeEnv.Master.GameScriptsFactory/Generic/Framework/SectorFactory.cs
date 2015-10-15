@@ -43,7 +43,7 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
         SectorItem sector = sectorGO.GetSafeMonoBehaviour<SectorItem>();
 
         SectorData data = new SectorData(sector.Transform, sectorIndex) {
-            Density = 1F
+            //Density = 1F
         };
         sector.Data = data;
         // IMPROVE use data values in place of sector values

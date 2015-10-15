@@ -43,6 +43,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// </summary>
     public float beamAnimationSpeed;
 
+    protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
+
     /// <summary>
     /// The duration in seconds this beam instance can continuously operate.
     /// </summary>
@@ -104,24 +106,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     public void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.Beams, "{0} is not on Layer {1}.".Inject(Name, Layers.Beams.GetValueName()));
-        var beamWeapon = weapon as BeamProjector;
-        beamWeapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-        _operatingDuration = beamWeapon.Duration / GameTime.HoursPerSecond;
+        weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+        _operatingDuration = Weapon.Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
         enabled = true; // enables Update()
-    }
-    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-    //    base.Launch(target, weapon, toShowEffects);
-    //    D.Assert((Layers)gameObject.layer == Layers.Beams, "{0} is not on Layer {1}.".Inject(Name, Layers.Beams.GetValueName()));
-    //    weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-    //    _operatingDuration = (weapon as BeamProjector).Duration / GameTime.HoursPerSecond;
-    //    _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
-    //    enabled = true; // enables Update()
-    //}
-
-    private void OnWeaponIsOperationalChanged(AEquipment weapon) {
-        D.Assert(!weapon.IsOperational);
-        TerminateNow(); // a beam requires its firing weapon to be operational to operate
     }
 
     protected override void Update() {
@@ -204,6 +192,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void OnShieldImpact(Shield shield, float deltaTime) {
         var incrementalShieldImpact = DeliveryVehicleStrength * (deltaTime / _operatingDuration);
         shield.AbsorbImpact(incrementalShieldImpact);
+    }
+
+    private void OnWeaponIsOperationalChanged(AEquipment weapon) {
+        D.Assert(!weapon.IsOperational);
+        TerminateNow(); // a beam requires its firing weapon to be operational to operate
     }
 
     private void RefreshImpactLocation(RaycastHit impactInfo) {
@@ -342,8 +335,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
             _operatingAudioSource.Stop();
         }
-        _weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
-        _weapon.OnFiringComplete(this);
+        Weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
+        Weapon.OnFiringComplete(this);
     }
 
     protected override void Cleanup() {

@@ -34,13 +34,13 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string Name { get; private set; }
 
-    public string FullName { get { return _fullNameFormat.Inject(_weapon.RangeMonitor.ParentItem.FullName, Name); } }
+    public string FullName { get { return _fullNameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name); } }
 
     public IElementAttackableTarget Target { get; private set; }
 
     public Vector3 Heading { get { return transform.forward; } }
 
-    public Player Owner { get { return _weapon.Owner; } }
+    public Player Owner { get { return Weapon.Owner; } }
 
     public bool IsOperational { get; private set; }
 
@@ -54,7 +54,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public DamageStrength DamagePotential { get; private set; }
 
-    protected AWeapon _weapon;
+    protected AWeapon Weapon { get; private set; }
+
     protected float _range;
     protected GameManager _gameMgr;
     protected GameTime _gameTime;
@@ -76,24 +77,9 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    //public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-    //    Target = target;
-    //    _weapon = weapon;
-
-    //    DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
-    //    DamagePotential = weapon.DamagePotential;
-
-    //    SyncName();
-    //    weapon.OnFiringInitiated(target, this);
-
-    //    _range = weapon.RangeDistance;
-    //    ToShowEffects = toShowEffects;
-    //    IsOperational = true;
-    //}
-
     protected void PrepareForLaunch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         Target = target;
-        _weapon = weapon;
+        Weapon = weapon;
 
         DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
         DamagePotential = weapon.DamagePotential;

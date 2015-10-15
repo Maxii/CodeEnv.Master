@@ -24,11 +24,16 @@ namespace CodeEnv.Master.GameContent {
     public class ProjectileWeaponStat : AWeaponStat {
 
         /// <summary>
-        /// The speed of the projectile in units per hour.
+        /// The maximum speed of this projectile in units per hour in Topography.OpenSpace.
         /// </summary>
-        public float OrdnanceSpeed { get; private set; }
+        public float OrdnanceMaxSpeed { get; private set; }
 
         public float OrdnanceMass { get; private set; }
+
+        /// <summary>
+        /// The drag of the Ordnance in Topography.OpenSpace.
+        /// </summary>
+        public float OrdnanceDrag { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat" /> struct.
@@ -47,20 +52,22 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="accuracy">The accuracy of the weapon. Range 0...1.0</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
-        /// <param name="ordnanceSpeed">The speed of the ordnance in units per hour.</param>
+        /// <param name="ordnanceMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
+        /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         public ProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
             float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float accuracy,
-            float reloadPeriod, DamageStrength damagePotential, float ordnanceSpeed, float ordnanceMass)
+            float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential) {
-            OrdnanceSpeed = ordnanceSpeed;
+            OrdnanceMaxSpeed = ordnanceMaxSpeed;
             OrdnanceMass = ordnanceMass;
+            OrdnanceDrag = ordnanceDrag;
             Validate();
         }
 
         protected override void Validate() {
             base.Validate();
-            D.Assert(OrdnanceSpeed > Constants.ZeroF);
+            D.Assert(OrdnanceMaxSpeed > Constants.ZeroF);
         }
 
     }

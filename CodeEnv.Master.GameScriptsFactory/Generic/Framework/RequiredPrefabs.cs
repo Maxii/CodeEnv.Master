@@ -29,7 +29,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     #region Prefabs
 
     [Header("Ordnance")]
-    public Projectile projectile;
+    public Bullet projectile;
     public Beam beam;
     public Missile missile;
 

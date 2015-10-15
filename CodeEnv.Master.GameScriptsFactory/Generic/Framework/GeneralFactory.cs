@@ -117,16 +117,16 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     public AOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement) {
         AOrdnance prefab;
         GameObject ordnanceGo;
-        GameObject firedOrdnanceFolder = weapon.WeaponMount.FiredOrdnanceFolder;
         switch (weapon.DeliveryVehicleCategory) {
             case WDVCategory.Beam:
                 prefab = RequiredPrefabs.Instance.beam;
-                ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
+                GameObject muzzle = (weapon.WeaponMount as ILOSWeaponMount).Muzzle;
+                ordnanceGo = UnityUtility.AddChild(muzzle, prefab.gameObject);
                 ordnanceGo.layer = (int)Layers.Beams;
                 break;
             case WDVCategory.Missile:
                 prefab = RequiredPrefabs.Instance.missile;
-                ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
+                ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
                 Missile missile = ordnanceGo.GetSafeMonoBehaviour<Missile>();
                 missile.ElementVelocityAtLaunch = firingElement.GetComponent<Rigidbody>().velocity;
@@ -134,7 +134,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
                 break;
             case WDVCategory.Projectile:
                 prefab = RequiredPrefabs.Instance.projectile;
-                ordnanceGo = UnityUtility.AddChild(firedOrdnanceFolder, prefab.gameObject);
+                ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
                 ordnanceGo.layer = (int)Layers.Projectiles;
                 break;

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Projectile.cs
-// Unguided Projectile ordnance containing effects for muzzle flash, inFlight operation and impact.
+// File: Bullet.cs
+// Unguided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,39 +21,41 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Unguided Projectile ordnance containing effects for muzzle flash, inFlight operation and impact.
+/// Unguided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
 /// </summary>
-public class Projectile : AProjectileOrdnance {
+public class Bullet : AProjectileOrdnance {
 
     public GameObject muzzleEffect;
+
     /// <summary>
     /// The effect this Projectile will show while operating including when the game is paused.
     /// </summary>
     public ParticleSystem operatingEffect;
     public ParticleSystem impactEffect;
 
-    public float Speed { get; private set; }
+    /// <summary>
+    /// The maximum speed of this bullet in units per hour in Topography.OpenSpace.
+    /// The actual speed of this bullet will be at this MaxSpeed when first fired. As it travels
+    /// its speed will decline as the bullet's drag affects it. The bullet's drag will be greater
+    /// in higher density Topography causing the bullet's actual speed to decline faster.
+    /// </summary>
+    public override float MaxSpeed {
+        get { return maxSpeed > Constants.ZeroF ? maxSpeed : Weapon.OrdnanceMaxSpeed; }
+    }
+
+    /// <summary>
+    /// The drag of this projectile in Topography.OpenSpace.
+    /// </summary>
+    public override float Drag { get { return Weapon.OrdnanceDrag; } }
+
+    public override float Mass { get { return Weapon.OrdnanceMass; } }
+
+    protected new ProjectileLauncher Weapon { get { return base.Weapon as ProjectileLauncher; } }
 
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
-        var projectileWeapon = weapon as ProjectileLauncher;
-        _rigidbody.mass = projectileWeapon.OrdnanceMass;
-        Speed = speed > Constants.ZeroF ? speed : projectileWeapon.OrdnanceSpeed;
         InitializeVelocity();
         enabled = true; // enables Update()
-    }
-    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-    //    base.Launch(target, weapon, toShowEffects);
-    //    Speed = speed > Constants.ZeroF ? speed : (weapon as ProjectileLauncher).OrdnanceSpeed;
-    //    InitializeVelocity();
-    //    enabled = true; // enables Update()
-    //}
-
-    /// <summary>
-    /// One-time initialization of the velocity of this 'bullet'.
-    /// </summary>
-    private void InitializeVelocity() {
-        _rigidbody.velocity = Heading * Speed;
     }
 
     protected override void ValidateEffects() {
@@ -65,6 +67,13 @@ public class Projectile : AProjectileOrdnance {
         D.Assert(!operatingEffect.playOnAwake);
         D.Assert(muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
         D.Assert(!muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, muzzleEffect.name));
+    }
+
+    /// <summary>
+    /// One-time initialization of the velocity of this 'bullet'.
+    /// </summary>
+    private void InitializeVelocity() {
+        _rigidbody.velocity = Heading * MaxSpeed;
     }
 
     protected override void AssessShowMuzzleEffects() {

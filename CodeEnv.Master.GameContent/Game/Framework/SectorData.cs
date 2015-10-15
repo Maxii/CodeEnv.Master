@@ -34,6 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// in the sector to reduce its speed for a given thrust. The value
         /// should probably be a function of the OpeYield in the sector.
         /// </summary>
+        [System.Obsolete]
         public float Density { get; set; }
 
         /// <summary>

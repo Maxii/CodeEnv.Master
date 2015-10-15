@@ -202,7 +202,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="targetFiredOn">The target fired on.</param>
         /// <param name="ordnanceFired">The ordnance fired.</param>
-        public void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+        public virtual void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
             D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.".Inject(Name, targetFiredOn.FullName));
 
@@ -220,7 +220,7 @@ namespace CodeEnv.Master.GameContent {
         /// don't complete the firing process until their Beam is terminated.
         /// </summary>
         /// <param name="ordnanceFired">The ordnance fired.</param>
-        public void OnFiringComplete(IOrdnance ordnanceFired) {
+        public virtual void OnFiringComplete(IOrdnance ordnanceFired) {
             D.Assert(!_isLoaded);
             //D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
 

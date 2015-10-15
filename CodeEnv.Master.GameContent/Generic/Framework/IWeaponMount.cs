@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
         bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution);
 
 
-        GameObject FiredOrdnanceFolder { get; }
+        //GameObject FiredOrdnanceFolder { get; }
 
 
     }

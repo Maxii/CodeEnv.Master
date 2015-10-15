@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             ContentID.Name,
             ContentID.Owner,
             ContentID.SectorIndex,
-            ContentID.Density,
+            //ContentID.Density,
 
             ContentID.CameraDistance
         };
@@ -46,10 +46,10 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
             if (!isSuccess) {
                 switch (contentID) {
-                    case ContentID.Density:
-                        isSuccess = true;
-                        colorizedText = _phrase.Inject(GetFormat(contentID).Inject(report.Density));
-                        break;
+                    //case ContentID.Density:
+                    //    isSuccess = true;
+                    //    colorizedText = _phrase.Inject(GetFormat(contentID).Inject(report.Density));
+                    //    break;
                     case ContentID.SectorIndex:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.SectorIndex.ToString());

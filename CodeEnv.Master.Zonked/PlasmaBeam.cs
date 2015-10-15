@@ -224,7 +224,7 @@ public class PlasmaBeam : AOrdnance, ITerminatableOrdnance {
         //    _audioSource.Stop();
         //}
         //OnWeaponFiringComplete();
-        _weapon.OnFiringComplete(this);
+        Weapon.OnFiringComplete(this);
     }
 
     protected override void Cleanup() {

@@ -51,9 +51,19 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public override void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+            base.OnFiringInitiated(targetFiredOn, ordnanceFired);
+            // IMPROVE Track target with turret
+        }
+
         protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) {
             D.Assert(_activeOrdnance == null);
             _activeOrdnance = ordnanceFired as ITerminatableOrdnance;
+        }
+
+        public override void OnFiringComplete(IOrdnance ordnanceFired) {
+            base.OnFiringComplete(ordnanceFired);
+            // IMPROVE Stop tracking target with turret
         }
 
         protected override void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance) {

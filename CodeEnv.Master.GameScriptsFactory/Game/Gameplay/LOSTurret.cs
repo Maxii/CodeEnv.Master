@@ -72,6 +72,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     public override Vector3 MuzzleFacing { get { return (muzzle.position - barrel.position).normalized; } }
 
+    public GameObject Muzzle { get { return muzzle.gameObject; } }
+
     public new ALOSWeapon Weapon {
         get { return base.Weapon as ALOSWeapon; }
         set { base.Weapon = value; }
@@ -218,8 +220,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
             if (!jobWasKilled) {
                 //D.Log("{0}'s traverse to aim at {1} complete.", Name, targetName);
-                Vector3 actualTargetBearing = (target.Position - barrel.position).normalized;
-                float deviationAngle = Vector3.Angle(MuzzleFacing, actualTargetBearing);
+                //Vector3 actualTargetBearing = (target.Position - barrel.position).normalized;
+                //float deviationAngle = Vector3.Angle(MuzzleFacing, actualTargetBearing);
                 //D.Log("{0}: HubFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoHubPlane.normalized, hub.forward);
                 //Vector3 barrelLocalFacing = hub.InverseTransformDirection(barrel.forward);
                 //D.Log("{0}: LocalBarrelFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoBarrelPlane.normalized, barrelLocalFacing);

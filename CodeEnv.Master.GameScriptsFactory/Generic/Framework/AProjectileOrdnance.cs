@@ -26,11 +26,26 @@ using UnityEngine;
 public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, ITopographyChangeListener {
 
     /// <summary>
-    /// The speed of the projectile in units per hour.
+    /// The maximum speed of this projectile in units per hour when in Topography.OpenSpace.
     /// </summary>
     [Range(0F, 5F)]
-    [Tooltip("Speed in Units/Hour. If Zero, Speed from WeaponStat will be used.")]
-    public float speed;
+    [Tooltip("MaxSpeed in Units/Hour. If Zero, MaxSpeed from WeaponStat will be used.")]
+    public float maxSpeed;
+
+    /// <summary>
+    /// The maximum speed of this projectile in units per hour in Topography.OpenSpace.
+    /// </summary>
+    public abstract float MaxSpeed { get; }
+
+    /// <summary>
+    /// The drag of this projectile in Topography.OpenSpace.
+    /// </summary>
+    public abstract float Drag { get; }
+
+    /// <summary>
+    /// The mass of this projectile.
+    /// </summary>
+    public abstract float Mass { get; }
 
     protected Rigidbody _rigidbody;
     protected bool _hasWeaponFired;
@@ -43,9 +58,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _rigidbody.isKinematic = false;
-        //_rigidbody.drag = Constants.ZeroF;
         _rigidbody.useGravity = false;
-        //D.Assert(_rigidbody.mass != Constants.ZeroF, "{0} mass not set.".Inject(Name));
+        // rigidbody drag and mass now set from Launch
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
         UpdateRate = FrameUpdateFrequency.Seldom;
@@ -64,26 +78,14 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
         _launchPosition = _transform.position;
 
-        _rigidbody.drag = topography.GetDrag();
-
+        _rigidbody.drag = Drag * topography.GetRelativeDensity();
+        _rigidbody.mass = Mass;
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
         weapon.OnFiringComplete(this);
         //target.OnFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
         //enabled = true set by derived classes after all settings initialized
     }
-    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-    //    base.Launch(target, weapon, toShowEffects);
-    //    D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
-    //    _launchPosition = _transform.position;
-
-    //    AssessShowMuzzleEffects();
-    //    _hasWeaponFired = true;
-    //    weapon.OnFiringComplete(this);
-    //    //target.OnFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
-    //    //enabled = true set by derived classes after all settings initialized
-    //}
-
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -202,9 +204,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     #region ITopographyChangeListener Members
 
     public void OnTopographyChanged(Topography newTopography) {
-        _rigidbody.drag = newTopography.GetDrag();
+        _rigidbody.drag = Drag * newTopography.GetRelativeDensity();
     }
 
     #endregion
+
 }
 

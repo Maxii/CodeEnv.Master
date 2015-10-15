@@ -26,20 +26,21 @@ namespace CodeEnv.Master.GameContent {
     public static class TopographyExtensions {
 
         /// <summary>
-        /// Gets the drag associated with this topography.
+        /// Gets the density of space in this <c>topography</c> relative to Topography.OpenSpace.
+        /// The density of a <c>Topography</c> affects the drag of ships and projectiles moving through it.
         /// </summary>
         /// <param name="topography">The topography.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static float GetDrag(this Topography topography) {
+        public static float GetRelativeDensity(this Topography topography) {
             switch (topography) {
                 case Topography.OpenSpace:
-                    return TempGameValues.InterstellerDrag; // TODO .001F
+                    return 1F;
                 case Topography.System:
                 case Topography.Nebula:
-                    return TempGameValues.SystemDrag;  // TODO .01F
+                    return 10F;
                 case Topography.DeepNebula:
-                    return 1F;  // TODO .1F?
+                    return 20F;  // TODO 
                 case Topography.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(topography));

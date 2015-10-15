@@ -27,17 +27,9 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
 
     public Transform muzzle;
 
-    [Tooltip("The folder that holds currently deployed ordnance.")]
-    public GameObject firedOrdnanceFolder;
-
     public virtual string Name { get { return transform.name; } }
 
     public AWeapon Weapon { get; set; }
-
-    /// <summary>
-    /// The folder that holds currently deployed ordnance.
-    /// </summary>
-    public GameObject FiredOrdnanceFolder { get { return firedOrdnanceFolder; } }
 
     /// <summary>
     /// The location of the weapon's muzzle in world space coordinates. 
@@ -55,7 +47,6 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     protected override void Validate() {
         base.Validate();
         D.Assert(muzzle != null);
-        D.Assert(firedOrdnanceFolder != null);
     }
 
     /// <summary>

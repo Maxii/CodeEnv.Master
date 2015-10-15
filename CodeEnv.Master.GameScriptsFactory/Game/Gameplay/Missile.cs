@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Missile.cs
-// Guided projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
+// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,13 +21,14 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Guided projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
+/// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
 /// </summary>
 public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private static Vector3 _localSpaceForward = Vector3.forward;
 
     public GameObject muzzleEffect;
+
     /// <summary>
     /// The effect this Projectile will show while operating including when the game is paused.
     /// </summary>
@@ -36,17 +37,37 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     /// <summary>
     /// Arbitrary value to correct drift from momentum when a turn is attempted.
-    /// Higher values correct the drift more aggressively. 0 will not correct the drift at all.
+    /// Higher values cause sharper turns. Zero means no correction.
     /// </summary>
     [Range(0F, 5F)]
+    [Tooltip("Higher values cause sharper turns. Zero means no correction.")]
     public float driftCorrectionFactor = 1F;
 
     /// <summary>
-    /// The speed of this projectile in units per hour when in Interstellar Space.
+    /// The maximum speed of this missile in units per hour in Topography.OpenSpace.
+    /// The actual speed of this missile will asymptotically approach this MaxSpeed as it travels,
+    /// reaching it only when the friction from the missile's drag matches the missile's thrust. 
+    /// The missile's drag will be greater in higher density Topography causing the missile's 
+    /// actual max speed reached to be lower than this MaxSpeed value.
     /// </summary>
-    public float Speed { get; private set; }
+    public override float MaxSpeed {
+        get { return maxSpeed > Constants.ZeroF ? maxSpeed : Weapon.OrdnanceMaxSpeed; }
+    }
 
+    /// <summary>
+    /// The drag of this projectile in Topography.OpenSpace.
+    /// </summary>
+    public override float Drag { get { return Weapon.OrdnanceDrag; } }
+
+    public override float Mass { get { return Weapon.OrdnanceMass; } }
+
+    /// <summary>
+    /// The velocity of the element launching this missile when the missile is launched.
+    /// <remarks>Keeps the missile from being immediately left behind by a moving element when launched.</remarks>
+    /// </summary>
     public Vector3 ElementVelocityAtLaunch { private get; set; }
+
+    protected new MissileLauncher Weapon { get { return base.Weapon as MissileLauncher; } }
 
     /// <summary>
     /// The force propelling this projectile, using a gameSpeedMultiplier of 1. This force will
@@ -66,26 +87,13 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
-        var missileWeapon = weapon as MissileLauncher;
-        _weaponAccuracy = missileWeapon.Accuracy;
+        _weaponAccuracy = weapon.Accuracy;
         _positionLastRangeCheck = _transform.position;
-        _rigidbody.mass = missileWeapon.OrdnanceMass;
         _rigidbody.velocity = ElementVelocityAtLaunch;
-        Speed = speed > Constants.ZeroF ? speed : missileWeapon.OrdnanceSpeed;
 
         _nominalThrust = CalcNominalThrust();
         enabled = true; // enables Update() and FixedUpdate()
     }
-    //public override void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
-    //    base.Launch(target, weapon, toShowEffects);
-    //    _weaponAccuracy = weapon.Accuracy;
-    //    _positionLastRangeCheck = _transform.position;
-    //    _rigidbody.velocity = ElementVelocityAtLaunch;
-    //    Speed = speed > Constants.ZeroF ? speed : (weapon as MissileLauncher).OrdnanceSpeed;
-
-    //    _nominalThrust = CalcNominalThrust();
-    //    enabled = true; // enables Update() and FixedUpdate()
-    //}
 
     protected override void ValidateEffects() {
         base.ValidateEffects();
@@ -167,7 +175,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
-        ReduceDrift();
+        if (driftCorrectionFactor > Constants.ZeroF) {
+            ReduceDrift();
+        }
     }
 
     /// <summary>
@@ -184,7 +194,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     protected override Vector3 GetForceOfImpact() { return _nominalThrust * _gameSpeedMultiplier; }
 
     private Vector3 CalcNominalThrust() {
-        return _rigidbody.mass * TempGameValues.InterstellerDrag * Speed * GameTime.HoursPerSecond * _localSpaceForward;
+        return _rigidbody.mass * Drag * MaxSpeed * GameTime.HoursPerSecond * _localSpaceForward;
     }
 
     protected override float GetDistanceTraveled() {

@@ -32,7 +32,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string Name { get; protected set; }
 
-    public WDVCategory ArmamentCategory { get { return _weapon.ArmamDeliveryVehicleCategory
+    public WDVCategory ArmamentCategory { get { return Weapon.ArmamDeliveryVehicleCategory
 
     public IElementAttackableTarget Target { get; private set; }
 
@@ -42,7 +42,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
     }
 
-    protected CombatStrength Strength { get { return _weapon.Strength; } }
+    protected CombatStrength Strength { get { return Weapon.Strength; } }
 
     protected float _range;
     protected AWeapon _weapon;
@@ -62,7 +62,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         Target = target;
-        _weapon = weapon;
+        Weapon = weapon;
 
         var tgtBearing = (target.Position - _transform.position).normalized;
         _transform.rotation = Quaternion.LookRotation(tgtBearing); // point ordnance in direction of target so _transform.forward is bearing

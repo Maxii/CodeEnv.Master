@@ -2521,6 +2521,33 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
 
             // IMPROVE this approach will cause ships with higher speed capability to accelerate faster than ships with lower, separating members of the fleet
+            //private Vector3 GetThrust() {
+            //    D.Assert(_shipData.RequestedSpeed > Constants.ZeroF);   // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed is 0
+
+            //    float speedRatio = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
+            //    //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, speedRatio);
+            //    if (SpeedTargetRange.ContainsValue(speedRatio)) {
+            //        DeployFlaps(false);
+            //        return _targetThrust;
+            //    }
+            //    if (_speedSlightlyBelowTarget.ContainsValue(speedRatio)) {
+            //        DeployFlaps(false);
+            //        return _targetThrustPlus;
+            //    }
+            //    if (_speedSlightlyAboveTarget.ContainsValue(speedRatio)) {
+            //        DeployFlaps(false);
+            //        return _targetThrustMinus;
+            //    }
+            //    if (_speedWayBelowTarget.ContainsValue(speedRatio)) {
+            //        DeployFlaps(false);
+            //        return _shipData.FullThrust;
+            //    }
+            //    if (_speedWayAboveTarget.ContainsValue(speedRatio)) {
+            //        DeployFlaps(true);
+            //        return Constants.ZeroF;
+            //    }
+            //    return Constants.ZeroF;
+            //}
             private float GetThrust() {
                 if (_shipData.RequestedSpeed == Constants.ZeroF) {
                     // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed == 0

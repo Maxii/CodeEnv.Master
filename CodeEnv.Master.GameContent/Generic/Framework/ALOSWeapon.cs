@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ALOSWeapon : AWeapon {
 
-        public event Action<LosWeaponFiringSolution> onWeaponAimedAtTarget;
+        public event Action<LosWeaponFiringSolution> onWeaponAimed;
 
         public new ILOSWeaponMount WeaponMount {
             get { return base.WeaponMount as ILOSWeaponMount; }
@@ -38,18 +38,18 @@ namespace CodeEnv.Master.GameContent {
         public ALOSWeapon(AWeaponStat stat, string name = null) : base(stat, name) { }
 
         public void OnTraverseCompleted(LosWeaponFiringSolution firingSolution) {
-            if (onWeaponAimedAtTarget != null) {
-                onWeaponAimedAtTarget(firingSolution);
+            if (onWeaponAimed != null) {
+                onWeaponAimed(firingSolution);
             }
         }
 
         // TODO what happens when the traverse fails aka job is killed? onTraverseFailed? why would it ever fail?
 
         /// <summary>
-        /// Aims this LOS Weapon at the target defined by the provided firing solution.
+        /// Aims this LOS Weapon using the provided firing solution.
         /// </summary>
         /// <param name="firingSolution">The firing solution.</param>
-        public void AimAtTarget(LosWeaponFiringSolution firingSolution) {
+        public void AimAt(LosWeaponFiringSolution firingSolution) {
             WeaponMount.TraverseTo(firingSolution);
         }
 

@@ -26,6 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
+        [System.Obsolete]
         public float Density { get; private set; }
 
         public SectorReport(SectorData data, Player player, ISectorItem item)
@@ -39,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
             Owner = sData.Owner;
             Position = sData.Position;
             SectorIndex = sData.SectorIndex;
-            Density = sData.Density;
+            //Density = sData.Density;
         }
 
         public override string ToString() {

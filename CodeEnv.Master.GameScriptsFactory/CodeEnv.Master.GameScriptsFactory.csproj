@@ -179,7 +179,7 @@
     <Compile Include="Game\Framework\SectorItem.cs" />
     <Compile Include="Generic\Graphics\MenuCancelButton.cs" />
     <Compile Include="Game\Gameplay\Missile.cs" />
-    <Compile Include="Game\Gameplay\Projectile.cs" />
+    <Compile Include="Game\Gameplay\Bullet.cs" />
     <Compile Include="Generic\IO\SFXManager.cs" />
     <Compile Include="Generic\Graphics\GuiElement.cs" />
     <Compile Include="Game\GUI\GuiWindow.cs" />

@@ -400,43 +400,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         return weapons;
     }
-    //private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponDesign> weaponDesigns, AUnitElementItem element, AHull hull) {
-    //    int nameCounter = Constants.One;
-    //    var weapons = new List<AWeapon>(weaponDesigns.Count());
-    //    foreach (var design in weaponDesigns) {
-    //        WeaponStat stat = design.WeaponStat;
-    //        MountSlotID mountSlotID = design.MountSlotID;
-    //        WDVCategory weaponCategory = stat.DeliveryVehicleCategory;
-
-    //        string weaponName = stat.Name + nameCounter;
-    //        nameCounter++;
-
-    //        AWeapon weapon;
-    //        switch (weaponCategory) {
-    //            case WDVCategory.Beam:
-    //                weapon = new BeamProjector(stat, weaponName);
-    //                break;
-    //            case WDVCategory.Projectile:
-    //                weapon = new ProjectileLauncher(stat, weaponName);
-    //                break;
-    //            case WDVCategory.Missile:
-    //                weapon = new MissileLauncher(stat, weaponName);
-    //                break;
-    //            case WDVCategory.None:
-    //            default:
-    //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponCategory));
-    //        }
-    //        AttachMonitor(weapon, element);
-    //        AttachMount(weapon, mountSlotID, hull);
-    //        weapons.Add(weapon);
-    //    }
-    //    // destroy any remaining mount placeholders that didn't get weapons
-    //    var remainingMountPlaceholders = hull.gameObject.GetComponentsInChildren<AMountPlaceholder>();
-    //    if (remainingMountPlaceholders.Any()) {
-    //        remainingMountPlaceholders.ForAll(mp => UnityUtility.Destroy(mp.gameObject));
-    //    }
-    //    return weapons;
-    //}
 
     private IEnumerable<ShieldGenerator> MakeShieldGenerators(IEnumerable<ShieldGeneratorStat> genStats, AUnitElementItem element) {
         var generators = new List<ShieldGenerator>(genStats.Count());

@@ -24,23 +24,15 @@ namespace CodeEnv.Master.GameContent {
     public interface ILOSWeaponMount : IWeaponMount {
 
         /// <summary>
-        /// Traverses the mount to point at the target's world space position.
+        /// Traverses the mount to point at the location indicated by the firing solution.
         /// </summary>
-        /// <param name="targetPosition">The target position.</param>
+        /// <param name="firingSolution">The firing solution.</param>
         void TraverseTo(LosWeaponFiringSolution firingSolution);
-        //void TraverseTo(Vector3 targetPosition);
 
         /// <summary>
-        /// Checks the line of sight from this LOSWeaponMount to the provided enemy target, returning <c>true</c>
-        /// if their is a clear line of sight to the target, otherwise <c>false</c>. If <c>false</c> and the LOS interference is from
-        /// another enemy target, then interferingEnemyTgt is assigned that target. Otherwise, interferingEnemyTgt
-        /// will always be null. In route ordnance does not interfere with this LOS check.
+        /// The Muzzle GameObject, used to hold the BeamOrdnance gameObject while being fired.
         /// </summary>
-        /// <param name="enemyTarget">The enemy target.</param>
-        /// <param name="interferingEnemyTgt">The interfering enemy target, if any.</param>
-        /// <returns></returns>
-        //bool CheckLineOfSight(IElementAttackableTarget enemyTarget, out IElementAttackableTarget interferingEnemyTgt);
-
+        GameObject Muzzle { get; }
     }
 }
 
