@@ -301,7 +301,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
                 _targetThrust = acceptableThrust;
                 _targetThrustMinus = _targetThrust / _speedSlightlyAboveTarget.Maximum;
-                _targetThrustPlus = Mathf.Min(_targetThrust / _speedSlightlyBelowTarget.Minimum, _shipData.FullThrust);
+                _targetThrustPlus = Mathf.Min(_targetThrust / _speedSlightlyBelowTarget.Minimum, _shipData.FullEnginePower);
 
                 //_targetThrust = Mathf.Min(requestedThrust, upperThrustLimit);
                 //_targetThrustMinus = Mathf.Min(_targetThrust / _speedSlightlyAboveTarget.Maximum, upperThrustLimit);
@@ -335,7 +335,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
                 //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
                 if (_speedWayBelowTarget.ContainsValue(sr)) {
                     DeployFlaps(false);
-                    return _shipData.FullThrust;
+                    return _shipData.FullEnginePower;
                 }
                 if (_speedWayAboveTarget.ContainsValue(sr)) {
                     DeployFlaps(true);

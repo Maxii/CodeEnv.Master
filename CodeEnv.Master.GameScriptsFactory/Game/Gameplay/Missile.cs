@@ -40,7 +40,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// Higher values cause sharper turns. Zero means no correction.
     /// </summary>
     [Range(0F, 5F)]
-    [Tooltip("Higher values cause sharper turns. Zero means no correction.")]
+    [Tooltip("Higher values correct drift causing sharper turns. Zero means no correction.")]
     public float driftCorrectionFactor = 1F;
 
     /// <summary>

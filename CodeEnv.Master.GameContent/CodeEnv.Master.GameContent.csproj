@@ -292,7 +292,7 @@
     <Compile Include="Game\Framework\WeaponDesign.cs" />
     <Compile Include="Game\Framework\ShipDesign.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
-    <Compile Include="ITopographyChangeListener.cs" />
+    <Compile Include="Generic\Framework\ITopographyChangeListener.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />

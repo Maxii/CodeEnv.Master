@@ -36,8 +36,6 @@ namespace CodeEnv.Master.GameContent {
 
         IElementAttackableTarget Target { get; }
 
-        //void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects);
-
     }
 }
 

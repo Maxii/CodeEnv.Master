@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             _generalSettings = GeneralSettings.Instance;
             Subscribe();
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _thrustHelper = new ThrustHelper(0F, 0F, _data.FullStlThrust);
+            _thrustHelper = new ThrustHelper(0F, 0F, _data.FullStlEnginePower);
         }
 
         private void Subscribe() {
@@ -172,7 +172,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _data.RequestedSpeed = newSpeed;
             float thrustNeededToMaintainRequestedSpeed = newSpeed * _data.Mass * _data.Drag;
-            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.FullStlThrust);
+            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.FullStlEnginePower);
             D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeed);
             _thrust = AdjustThrust();
 

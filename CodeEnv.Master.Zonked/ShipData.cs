@@ -122,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged, OnDragChanging); }
         }
 
-        public float FullThrust { get { return IsFtlAvailableForUse ? FullFtlThrust : FullStlThrust; } }
+        public float FullThrust { get { return IsFtlAvailableForUse ? FullFtlEnginePower : FullStlEnginePower; } }
 
         private float _fullStlThrust;
         /// <summary>

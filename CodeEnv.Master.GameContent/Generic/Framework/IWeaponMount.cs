@@ -37,19 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         AWeapon Weapon { get; set; }
 
-        /// <summary>
-        /// Checks the firing solution of this mount's weapon on the enemyTarget. Returns <c>true</c> if the target
-        /// fits within the weapon's firing solution, aka within range and can be beared upon, if reqd.
-        /// </summary>
-        /// <param name="enemyTarget">The enemy target.</param>
-        /// <returns></returns>
-        //bool CheckFiringSolution(IElementAttackableTarget enemyTarget);
-
         bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution);
-
-
-        //GameObject FiredOrdnanceFolder { get; }
-
 
     }
 }

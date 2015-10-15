@@ -30,6 +30,9 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullCategory HullCategory { get { return Stat.HullCategory; } }
 
+        /// <summary>
+        /// The drag of this hull in Topography.OpenSpace.
+        /// </summary>
         public float Drag { get { return Stat.Drag; } }
 
         public float Science { get { return Stat.Science; } }

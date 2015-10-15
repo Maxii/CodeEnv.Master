@@ -140,11 +140,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     public void OnFleetFullSpeedChanged() { _helm.OnFleetFullSpeedChanged(); }
 
-    //public void OnTopographicBoundaryTransition(Topography newTopography) {
-    //    //D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
-    //    Data.Topography = newTopography;
-    //}
-
     /// <summary>
     /// The Captain uses this method to issue orders.
     /// </summary>
@@ -2382,14 +2377,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
             private static Vector3 _localSpaceForward = Vector3.forward;
 
-            private static ValueRange<float> SpeedTargetRange = new ValueRange<float>(0.99F, 1.01F);
+            /// <summary>
+            /// Arbitrary value to correct drift from momentum when a turn is attempted.
+            /// Higher values cause sharper turns. Zero means no correction.
+            /// </summary>
+            private static float driftCorrectionFactor = 1F;
 
-            private static ValueRange<float> _speedWayAboveTarget = new ValueRange<float>(1.10F, float.PositiveInfinity);
-            //private static Range<float> _speedModeratelyAboveTarget = new Range<float>(1.10F, 1.25F);
-            private static ValueRange<float> _speedSlightlyAboveTarget = new ValueRange<float>(1.01F, 1.10F);
-            private static ValueRange<float> _speedSlightlyBelowTarget = new ValueRange<float>(0.90F, 0.99F);
-            //private static Range<float> _speedModeratelyBelowTarget = new Range<float>(0.75F, 0.90F);
-            private static ValueRange<float> _speedWayBelowTarget = new ValueRange<float>(Constants.ZeroF, 0.90F);
+            private static ValueRange<float> _speedGoalRange = new ValueRange<float>(0.99F, 1.01F);
+            private static ValueRange<float> _wayOverSpeedGoalRange = new ValueRange<float>(1.10F, float.PositiveInfinity);
+            private static ValueRange<float> _overSpeedGoalRange = new ValueRange<float>(1.01F, 1.10F);
+            private static ValueRange<float> _underSpeedGoalRange = new ValueRange<float>(0.90F, 0.99F);
+            private static ValueRange<float> _wayUnderSpeedGoalRange = new ValueRange<float>(Constants.ZeroF, 0.90F);
 
             /// <summary>
             /// Gets the ship's speed in Units per second at this instant. This value already
@@ -2398,10 +2396,18 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// </summary>
             internal float InstantSpeed { get { return _shipRigidbody.velocity.magnitude; } }
 
-            //private float _targetThrustMinusMinus;
-            private float _targetThrustMinus;
-            private float _targetThrust;
-            private float _targetThrustPlus;
+            /// <summary>
+            /// Engine power output value suitable for slowing down when in the _overSpeedGoalRange.
+            /// </summary>
+            private float _pwrOutputGoalMinus;
+            /// <summary>
+            /// Engine power output value suitable for maintaining speed when in the _speedGoalRange.
+            /// </summary>
+            private float _pwrOutputGoal;
+            /// <summary>
+            /// Engine power output value suitable for speeding up when in the _underSpeedGoalRange.
+            /// </summary>
+            private float _pwrOutputGoalPlus;
 
             private float _gameSpeedMultiplier;
             private Vector3 _velocityOnPause;
@@ -2436,7 +2442,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             internal void ChangeSpeed(float newSpeedRequest) {
                 //D.Log("{0}'s speed = {1} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
                 if (CheckForAcceptableSpeedValue(newSpeedRequest)) {
-                    SetThrustFor(newSpeedRequest);
+                    SetPowerOutputFor(newSpeedRequest);
                     if (_operateEnginesJob == null) {
                         _operateEnginesJob = new Job(OperateEngines(), toStart: true, onJobComplete: (wasKilled) => {
                             // OperateEngines() can complete, but it is never killed
@@ -2459,7 +2465,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// <param name="refreshedSpeedValue">The refreshed speed value.</param>
             internal void RefreshSpeedValue(float refreshedSpeedValue) {
                 if (CheckForAcceptableSpeedValue(refreshedSpeedValue)) {
-                    SetThrustFor(refreshedSpeedValue);
+                    SetPowerOutputFor(refreshedSpeedValue);
                 }
             }
 
@@ -2474,7 +2480,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
                 float previousRequestedSpeed = _shipData.RequestedSpeed;
                 float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? speedValue / previousRequestedSpeed : Constants.ZeroF;
-                if (EngineRoom.SpeedTargetRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
+                if (EngineRoom._speedGoalRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
                     return false;
                 }
                 return true;
@@ -2500,87 +2506,45 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
 
             /// <summary>
-            /// Sets the thrust values needed to achieve the requested speed. This speed has already
+            /// Sets the engine power output values needed to achieve the requested speed. This speed has already
             /// been tested for acceptability, ie. it has been clamped.
             /// </summary>
             /// <param name="acceptableRequestedSpeed">The acceptable requested speed in units/hr.</param>
-            private void SetThrustFor(float acceptableRequestedSpeed) {
-                //D.Log("{0} adjusting thrust to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
+            private void SetPowerOutputFor(float acceptableRequestedSpeed) {
+                //D.Log("{0} adjusting engine power output to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
                 _shipData.RequestedSpeed = acceptableRequestedSpeed;
-                float acceptableThrust = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
+                float acceptablePwrOutput = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
 
-                _targetThrust = acceptableThrust;
-                _targetThrustMinus = _targetThrust / _speedSlightlyAboveTarget.Maximum;
-                _targetThrustPlus = Mathf.Min(_targetThrust / _speedSlightlyBelowTarget.Minimum, _shipData.FullThrust);
-
-                //_targetThrust = Mathf.Min(requestedThrust, upperThrustLimit);
-                //_targetThrustMinus = Mathf.Min(_targetThrust / _speedSlightlyAboveTarget.Maximum, upperThrustLimit);
-                //_targetThrustPlus = Mathf.Min(_targetThrust / _speedSlightlyBelowTarget.Minimum, upperThrustLimit);
-                // _targetThrustPlusPlus = Mathf.Min(targetThrust / _speedModeratelyBelowTarget.Min, maxThrust);
-                //_targetThrustMinusMinus = Mathf.Min(targetThrust / _speedModeratelyAboveTarget.Max, maxThrust);
+                _pwrOutputGoal = acceptablePwrOutput;
+                _pwrOutputGoalMinus = _pwrOutputGoal / _overSpeedGoalRange.Maximum;
+                _pwrOutputGoalPlus = Mathf.Min(_pwrOutputGoal / _underSpeedGoalRange.Minimum, _shipData.FullEnginePower);
             }
 
             // IMPROVE this approach will cause ships with higher speed capability to accelerate faster than ships with lower, separating members of the fleet
-            //private Vector3 GetThrust() {
-            //    D.Assert(_shipData.RequestedSpeed > Constants.ZeroF);   // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed is 0
+            private Vector3 GetThrust() {
+                D.Assert(_shipData.RequestedSpeed > Constants.ZeroF);   // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed is 0
 
-            //    float speedRatio = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
-            //    //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, speedRatio);
-            //    if (SpeedTargetRange.ContainsValue(speedRatio)) {
-            //        DeployFlaps(false);
-            //        return _targetThrust;
-            //    }
-            //    if (_speedSlightlyBelowTarget.ContainsValue(speedRatio)) {
-            //        DeployFlaps(false);
-            //        return _targetThrustPlus;
-            //    }
-            //    if (_speedSlightlyAboveTarget.ContainsValue(speedRatio)) {
-            //        DeployFlaps(false);
-            //        return _targetThrustMinus;
-            //    }
-            //    if (_speedWayBelowTarget.ContainsValue(speedRatio)) {
-            //        DeployFlaps(false);
-            //        return _shipData.FullThrust;
-            //    }
-            //    if (_speedWayAboveTarget.ContainsValue(speedRatio)) {
-            //        DeployFlaps(true);
-            //        return Constants.ZeroF;
-            //    }
-            //    return Constants.ZeroF;
-            //}
-            private float GetThrust() {
-                if (_shipData.RequestedSpeed == Constants.ZeroF) {
-                    // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed == 0
-                    D.Assert(false, "Shouldn't happen.");
-                    DeployFlaps(true);
-                    return Constants.ZeroF;
+                float speedRatio = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
+                //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, speedRatio);
+                float enginePowerOutput = Constants.ZeroF;
+                bool toDeployFlaps = false;
+                if (_speedGoalRange.ContainsValue(speedRatio)) {
+                    enginePowerOutput = _pwrOutputGoal;
                 }
-
-                float sr = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
-                //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, sr);
-                if (SpeedTargetRange.ContainsValue(sr)) {
-                    DeployFlaps(false);
-                    return _targetThrust;
+                else if (_underSpeedGoalRange.ContainsValue(speedRatio)) {
+                    enginePowerOutput = _pwrOutputGoalPlus;
                 }
-                if (_speedSlightlyBelowTarget.ContainsValue(sr)) {
-                    DeployFlaps(false);
-                    return _targetThrustPlus;
+                else if (_overSpeedGoalRange.ContainsValue(speedRatio)) {
+                    enginePowerOutput = _pwrOutputGoalMinus;
                 }
-                if (_speedSlightlyAboveTarget.ContainsValue(sr)) {
-                    DeployFlaps(false);
-                    return _targetThrustMinus;
+                else if (_wayUnderSpeedGoalRange.ContainsValue(speedRatio)) {
+                    enginePowerOutput = _shipData.FullEnginePower;
                 }
-                //if (_speedModeratelyBelowTarget.IsInRange(sr)) { return _targetThrustPlusPlus; }
-                //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
-                if (_speedWayBelowTarget.ContainsValue(sr)) {
-                    DeployFlaps(false);
-                    return _shipData.FullThrust;
+                else if (_wayOverSpeedGoalRange.ContainsValue(speedRatio)) {
+                    toDeployFlaps = true;
                 }
-                if (_speedWayAboveTarget.ContainsValue(sr)) {
-                    DeployFlaps(true);
-                    return Constants.ZeroF;
-                }
-                return Constants.ZeroF;
+                DeployFlaps(toDeployFlaps);
+                return enginePowerOutput * _localSpaceForward;
             }
 
             // IMPROVE I've implemented FTL using a thrust multiplier rather than
@@ -2617,9 +2581,21 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// call this method at a pace consistent with FixedUpdate().
             /// </summary>
             private void ApplyThrust() {
-                Vector3 adjustedThrust = _localSpaceForward * GetThrust() * _gameTime.GameSpeedAdjustedHoursPerSecond;
+                Vector3 adjustedThrust = GetThrust() * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 _shipRigidbody.AddRelativeForce(adjustedThrust, ForceMode.Force);
+                ReduceDrift();
                 //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
+            }
+
+            /// <summary>
+            /// Reduces the amount of drift of the ship in the direction it was heading prior to a turn.
+            /// IMPROVE Expensive to call every frame when no residual drift left after a turn.
+            /// </summary>
+            private void ReduceDrift() {
+                Vector3 relativeVelocity = _shipRigidbody.transform.InverseTransformDirection(_shipRigidbody.velocity);
+                _shipRigidbody.AddRelativeForce(-relativeVelocity.x * driftCorrectionFactor * Vector3.right);
+                _shipRigidbody.AddRelativeForce(-relativeVelocity.y * driftCorrectionFactor * Vector3.up);
+                //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
             }
 
             /// <summary>

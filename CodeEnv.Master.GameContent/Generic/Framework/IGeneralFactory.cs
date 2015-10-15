@@ -53,14 +53,6 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         GameObject MakeAutoDestruct3DAudioSFXInstance(string name, Vector3 position);
 
-        /// <summary>
-        /// Makes an instance of Ordnance.
-        /// </summary>
-        /// <param name="weapon">The weapon.</param>
-        /// <param name="firingElement">The GameObject firing this ordnance.</param>
-        /// <returns></returns>
-        //IOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement);
-
 
     }
 }

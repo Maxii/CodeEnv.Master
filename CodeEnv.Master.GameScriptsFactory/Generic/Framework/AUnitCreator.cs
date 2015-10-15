@@ -313,7 +313,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
             RangeCategory rangeCat = RangeCategory.Long; ;
             float accuracy = UnityEngine.Random.Range(0.95F, Constants.OneF); ;
-            float reloadPeriod = UnityEngine.Random.Range(4F, 6F);
+            float reloadPeriod = UnityEngine.Random.Range(10F, 12F);
             string name = "PhotonTorpedo"; ;
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);

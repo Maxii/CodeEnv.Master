@@ -26,12 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         public const float __ReqdMissileTravelDistanceBeforePushover = 0.2F;
 
-        //public const float InterstellerDrag = .1F;  // should be .001F
-        //public const float RelativeOpenSpaceDensity = 1F;
-
-        //public const float SystemDrag = 1F; // should be .01F   // TODO not currently used
-        //public const flaot RelativeSystemDensity = 10F; 
-
         public const int MaxLosWeaponsForAnyElement = 12;
 
         public const int MaxMissileWeaponsForAnyElement = 6;
@@ -51,6 +45,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float __FtlMultiplier = 10F;
 
+        [System.Obsolete]
         public const float FlapsMultiplier = 100F;
 
         public const float DefaultShipOrbitSlotDepth = 2F;

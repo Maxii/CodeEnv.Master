@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         void TraverseTo(LosWeaponFiringSolution firingSolution);
 
         /// <summary>
-        /// The Muzzle GameObject, used to hold the BeamOrdnance gameObject while being fired.
+        /// The Muzzle GameObject, used as the parent of the BeamOrdnance gameObject while being fired.
         /// </summary>
         GameObject Muzzle { get; }
     }

@@ -23,8 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IShipItem : IUnitElementItem {
 
-        //void OnTopographicBoundaryTransition(Topography newTopography);
-
     }
 }
 

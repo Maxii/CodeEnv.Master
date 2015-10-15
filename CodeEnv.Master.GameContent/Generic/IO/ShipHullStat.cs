@@ -25,6 +25,9 @@ namespace CodeEnv.Master.GameContent {
     public class ShipHullStat : AHullStat {
 
         public ShipHullCategory HullCategory { get; private set; }
+        /// <summary>
+        /// The drag of this hull in Topography.OpenSpace.
+        /// </summary>
         public float Drag { get; private set; }
         public float Science { get; private set; }
         public float Culture { get; private set; }
@@ -40,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="description">The description.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
-        /// <param name="drag">The drag.</param>
+        /// <param name="drag">The drag of this hull in Topography.OpenSpace.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
