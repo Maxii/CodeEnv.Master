@@ -38,18 +38,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _population, value, "Population"); }
         }
 
-        public int Capacity { get { return SystemData.Capacity; } }
+        public int Capacity { get { return SystemData.Capacity; } } // TODO need SetProperty to properly keep isChanged updated?
 
-        public ResourceYield Resources { get { return SystemData.Resources; } }
+        public ResourceYield Resources { get { return SystemData.Resources; } } // TODO need SetProperty to properly keep isChanged updated?
 
         private float _approval;
         public float Approval {
             get { return _approval; }
             set { SetProperty<float>(ref _approval, value, "Approval", OnApprovalChanged); }
-        }
-
-        private void OnApprovalChanged() {
-            Arguments.ValidateForRange(Approval, Constants.ZeroF, Constants.OneF);
         }
 
         public SystemData SystemData { private get; set; }
@@ -126,6 +122,10 @@ namespace CodeEnv.Master.GameContent {
                 return SettlementCategory.Colony;
             }
             return SettlementCategory.None;
+        }
+
+        private void OnApprovalChanged() {
+            Arguments.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
         public override string ToString() {

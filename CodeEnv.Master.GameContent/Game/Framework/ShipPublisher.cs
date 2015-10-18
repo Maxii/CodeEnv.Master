@@ -38,6 +38,14 @@ namespace CodeEnv.Master.GameContent {
             return new ShipReport(_data, player, _item);
         }
 
+        // IMPROVE Temporary fix to force ShipPublishers (and FleetPublishers) to generate new reports every time checked
+        // Needed as ShipData CurrentSpeed is readonly get and does not register a change with IsChanged
+        // Also fixes FleetPubllishers as it sees that there is a new ShipReport, so knows of a change
+        protected override bool IsCachedReportCurrent(Player player, out ShipReport cachedReport) {
+            cachedReport = null;
+            return false;
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

@@ -32,9 +32,17 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<StarbaseCategory>(ref _category, value, "Category"); }
         }
 
-        public int Capacity { get; private set; }
+        private int _capacity;
+        public int Capacity {
+            get { return _capacity; }
+            private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
+        }
 
-        public ResourceYield Resources { get; private set; }
+        private ResourceYield _resources;
+        public ResourceYield Resources {
+            get { return _resources; }
+            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+        }
 
         public new FacilityData HQElementData {
             get { return base.HQElementData as FacilityData; }

@@ -1700,7 +1700,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
             }
 
-            AdjustSpeedForTurn(newHeading, currentSpeed);
+            _engineRoom.IsTurnUnderway = true;
+            //AdjustSpeedForTurn(newHeading, currentSpeed);
 
             _ship.Data.RequestedHeading = newHeading;
             _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
@@ -1708,6 +1709,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     if (!jobWasKilled) {
                         //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
                         //Name, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+                        _engineRoom.IsTurnUnderway = false;
 
                         if (onHeadingConfirmed != null) {
                             onHeadingConfirmed();
@@ -1761,7 +1763,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             if (newSpeed == _currentSpeed) {
                 return;
             }
-            //D.Log("{0} Speed changing from {1} to {2}.", Name, _currentSpeed.GetName(), newSpeed.GetName());
+            D.Log("{0} Speed changing from {1} to {2}.", Name, _currentSpeed.GetValueName(), newSpeed.GetValueName());
             _engineRoom.ChangeSpeed(newSpeed.GetValue(_ship.Command.Data, _ship.Data));
             _currentSpeed = newSpeed;
             if (newSpeed == Speed.Stop) {
@@ -1774,9 +1776,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
         }
 
+        [Obsolete]
         private void AdjustSpeedForTurn(Vector3 newHeading, Speed currentSpeed) {
             float turnAngleInDegrees = Vector3.Angle(_ship.Data.CurrentHeading, newHeading);
-            //D.Log("{0}.AdjustSpeedForTurn() called. Turn angle: {1:0.#} degrees.", Name, turnAngleInDegrees);
+            D.Log("{0}.AdjustSpeedForTurn() called. Turn angle: {1:0.#} degrees.", Name, turnAngleInDegrees);
             SpeedStep decreaseStep = SpeedStep.None;
             if (turnAngleInDegrees > 120F) {
                 decreaseStep = SpeedStep.Maximum;
@@ -2370,24 +2373,29 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         }
 
-        /// <summary>
-        /// Runs the engines of a ship generating thrust.
-        /// </summary>
         private class EngineRoom : IDisposable {
 
             private static Vector3 _localSpaceForward = Vector3.forward;
 
             /// <summary>
-            /// Arbitrary value to correct drift from momentum when a turn is attempted.
-            /// Higher values cause sharper turns. Zero means no correction.
+            /// The signed speed (in units per hour) in the ship's forward direction.
             /// </summary>
-            private static float driftCorrectionFactor = 1F;
+            internal float CurrentForwardSpeed {
+                get {
+                    return _shipTransform.InverseTransformDirection(_shipRigidbody.velocity).z / _gameTime.GameSpeedAdjustedHoursPerSecond;
+                }
+            }
 
-            private static ValueRange<float> _speedGoalRange = new ValueRange<float>(0.99F, 1.01F);
-            private static ValueRange<float> _wayOverSpeedGoalRange = new ValueRange<float>(1.10F, float.PositiveInfinity);
-            private static ValueRange<float> _overSpeedGoalRange = new ValueRange<float>(1.01F, 1.10F);
-            private static ValueRange<float> _underSpeedGoalRange = new ValueRange<float>(0.90F, 0.99F);
-            private static ValueRange<float> _wayUnderSpeedGoalRange = new ValueRange<float>(Constants.ZeroF, 0.90F);
+            private bool _isTurnUnderway;
+            internal bool IsTurnUnderway {
+                get { return _isTurnUnderway; }
+                set {
+                    if (_isTurnUnderway != value) {
+                        _isTurnUnderway = value;
+                        OnIsTurnUnderwayChanged();
+                    }
+                }
+            }
 
             /// <summary>
             /// Gets the ship's speed in Units per second at this instant. This value already
@@ -2396,24 +2404,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// </summary>
             internal float InstantSpeed { get { return _shipRigidbody.velocity.magnitude; } }
 
-            /// <summary>
-            /// Engine power output value suitable for slowing down when in the _overSpeedGoalRange.
-            /// </summary>
-            private float _pwrOutputGoalMinus;
-            /// <summary>
-            /// Engine power output value suitable for maintaining speed when in the _speedGoalRange.
-            /// </summary>
-            private float _pwrOutputGoal;
-            /// <summary>
-            /// Engine power output value suitable for speeding up when in the _underSpeedGoalRange.
-            /// </summary>
-            private float _pwrOutputGoalPlus;
+            private float _forwardPropulsionPowerOutput;
+            private Job _operateForwardEnginesJob;
+            private Job _operateReverseEnginesJob;
+
+            private float _driftCorrectionFactor = 1F;
 
             private float _gameSpeedMultiplier;
             private Vector3 _velocityOnPause;
             private ShipData _shipData;
             private Rigidbody _shipRigidbody;
-            private Job _operateEnginesJob;
+            private Transform _shipTransform;
             private IList<IDisposable> _subscriptions;
             private GameManager _gameMgr;
             private GameTime _gameTime;
@@ -2421,6 +2422,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             public EngineRoom(ShipData data, Rigidbody shipRigidbody) {
                 _shipData = data;
                 _shipRigidbody = shipRigidbody;
+                _shipTransform = shipRigidbody.transform;
                 _gameMgr = GameManager.Instance;
                 _gameTime = GameTime.Instance;
                 _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
@@ -2440,21 +2442,18 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
             /// <returns></returns>
             internal void ChangeSpeed(float newSpeedRequest) {
-                //D.Log("{0}'s speed = {1} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
-                if (CheckForAcceptableSpeedValue(newSpeedRequest)) {
-                    SetPowerOutputFor(newSpeedRequest);
-                    if (_operateEnginesJob == null) {
-                        _operateEnginesJob = new Job(OperateEngines(), toStart: true, onJobComplete: (wasKilled) => {
-                            // OperateEngines() can complete, but it is never killed
-                            if (_isDisposing) { return; }
-                            _operateEnginesJob = null;
-                            //string message = "{0} thrust stopped.  Coasting speed is {1:0.##} units/hour.";
-                            //D.Log(message, _shipData.FullName, _shipData.CurrentSpeed);
-                        });
-                    }
+                D.Log("{0}'s speed = {1} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
+                if (CheckForDuplicateSpeedValue(newSpeedRequest)) {
+                    //D.Log("{0} is already generating thrust for {1:0.##} units/hour. Requested speed unchanged.", _shipData.FullName, newSpeedRequest);
+                    return;
+                }
+                _shipData.RequestedSpeed = newSpeedRequest;
+                CalcForwardPropulsionPowerOutputFor(newSpeedRequest);
+                if (CurrentForwardSpeed <= newSpeedRequest) {
+                    EngageOrContinueForwardPropulsion();
                 }
                 else {
-                    D.Warn("{0} is already generating thrust for {1:0.##} units/hour. Requested speed unchanged.", _shipData.FullName, newSpeedRequest);
+                    EngageOrContinueReversePropulsion();
                 }
             }
 
@@ -2464,26 +2463,28 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// </summary>
             /// <param name="refreshedSpeedValue">The refreshed speed value.</param>
             internal void RefreshSpeedValue(float refreshedSpeedValue) {
-                if (CheckForAcceptableSpeedValue(refreshedSpeedValue)) {
-                    SetPowerOutputFor(refreshedSpeedValue);
+                if (CheckForDuplicateSpeedValue(refreshedSpeedValue)) {
+                    return;
                 }
+                _shipData.RequestedSpeed = refreshedSpeedValue;
+                CalcForwardPropulsionPowerOutputFor(refreshedSpeedValue);
             }
 
             /// <summary>
-            /// Checks whether the provided speed value is acceptable. 
-            /// Returns <c>true</c> if it is, <c>false</c> if it is a duplicate.
+            /// Checks whether the provided speed value is a duplicate. 
+            /// Returns <c>true</c> if it is, <c>false</c> otherwise.
             /// </summary>
             /// <param name="speedValue">The speed value.</param>
             /// <returns></returns>
-            private bool CheckForAcceptableSpeedValue(float speedValue) {
+            private bool CheckForDuplicateSpeedValue(float speedValue) {
                 D.Assert(speedValue <= _shipData.FullSpeed, "{0}.{1} speedValue {2:0.0000} > FullSpeed {3:0.0000}. IsFtlAvailableForUse: {4}.".Inject(_shipData.FullName, GetType().Name, speedValue, _shipData.FullSpeed, _shipData.IsFtlAvailableForUse));
+                return Mathfx.Approx(speedValue, _shipData.RequestedSpeed, .01F);
+            }
 
-                float previousRequestedSpeed = _shipData.RequestedSpeed;
-                float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? speedValue / previousRequestedSpeed : Constants.ZeroF;
-                if (EngineRoom._speedGoalRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
-                    return false;
-                }
-                return true;
+            private void OnIsTurnUnderwayChanged() {
+                Vector3 relativeVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
+                string turnStateMsg = IsTurnUnderway ? "turn has begun" : "turn has ended";
+                D.Log("{0} {1}, relativeVelocity = {2}.", _shipData.FullName, turnStateMsg, relativeVelocity.ToPreciseString());
             }
 
             private void OnGameSpeedChanged() {
@@ -2509,93 +2510,98 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// Sets the engine power output values needed to achieve the requested speed. This speed has already
             /// been tested for acceptability, ie. it has been clamped.
             /// </summary>
-            /// <param name="acceptableRequestedSpeed">The acceptable requested speed in units/hr.</param>
-            private void SetPowerOutputFor(float acceptableRequestedSpeed) {
-                //D.Log("{0} adjusting engine power output to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
-                _shipData.RequestedSpeed = acceptableRequestedSpeed;
-                float acceptablePwrOutput = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
-
-                _pwrOutputGoal = acceptablePwrOutput;
-                _pwrOutputGoalMinus = _pwrOutputGoal / _overSpeedGoalRange.Maximum;
-                _pwrOutputGoalPlus = Mathf.Min(_pwrOutputGoal / _underSpeedGoalRange.Minimum, _shipData.FullEnginePower);
+            /// <param name="requestedSpeed">The acceptable requested speed in units/hr.</param>
+            private void CalcForwardPropulsionPowerOutputFor(float requestedSpeed) {
+                D.Log("{0} adjusting engine power output to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, requestedSpeed);
+                _forwardPropulsionPowerOutput = requestedSpeed * _shipRigidbody.drag * _shipData.Mass;
             }
 
-            // IMPROVE this approach will cause ships with higher speed capability to accelerate faster than ships with lower, separating members of the fleet
-            private Vector3 GetThrust() {
-                D.Assert(_shipData.RequestedSpeed > Constants.ZeroF);   // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed is 0
-
-                float speedRatio = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
-                //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, speedRatio);
-                float enginePowerOutput = Constants.ZeroF;
-                bool toDeployFlaps = false;
-                if (_speedGoalRange.ContainsValue(speedRatio)) {
-                    enginePowerOutput = _pwrOutputGoal;
+            private void EngageOrContinueForwardPropulsion() {
+                if (_operateReverseEnginesJob != null && _operateReverseEnginesJob.IsRunning) {
+                    _operateReverseEnginesJob.Kill();
                 }
-                else if (_underSpeedGoalRange.ContainsValue(speedRatio)) {
-                    enginePowerOutput = _pwrOutputGoalPlus;
+                if (_operateForwardEnginesJob == null || !_operateForwardEnginesJob.IsRunning) {
+                    D.Log("{0} is engaging ForwardEngine propulsion.", _shipData.FullName);
+                    _operateForwardEnginesJob = new Job(OperateForwardPropulsion(), toStart: true, onJobComplete: (jobWasKilled) => {
+                        D.Assert(jobWasKilled);
+                    });
                 }
-                else if (_overSpeedGoalRange.ContainsValue(speedRatio)) {
-                    enginePowerOutput = _pwrOutputGoalMinus;
+                else {
+                    D.Log("{0} is continuing ForwardEngine propulsion.", _shipData.FullName);
                 }
-                else if (_wayUnderSpeedGoalRange.ContainsValue(speedRatio)) {
-                    enginePowerOutput = _shipData.FullEnginePower;
-                }
-                else if (_wayOverSpeedGoalRange.ContainsValue(speedRatio)) {
-                    toDeployFlaps = true;
-                }
-                DeployFlaps(toDeployFlaps);
-                return enginePowerOutput * _localSpaceForward;
             }
 
-            // IMPROVE I've implemented FTL using a thrust multiplier rather than
-            // a reduction in Drag. Changing Data.Drag (for flaps or FTL) causes
-            // Data.FullSpeed to change which affects lots of other things
-            // in Helm where the FullSpeed value affects a number of factors. My
-            // flaps implementation below changes rigidbody.drag not Data.Drag.
-            private void DeployFlaps(bool toDeploy) {
-                if (!_shipData.IsFlapsDeployed && toDeploy) {
-                    _shipRigidbody.drag *= TempGameValues.FlapsMultiplier;
-                    _shipData.IsFlapsDeployed = true;
+            private void EngageOrContinueReversePropulsion() {
+                if (_operateForwardEnginesJob != null && _operateForwardEnginesJob.IsRunning) {
+                    _operateForwardEnginesJob.Kill();
                 }
-                else if (_shipData.IsFlapsDeployed && !toDeploy) {
-                    _shipRigidbody.drag /= TempGameValues.FlapsMultiplier;
-                    _shipData.IsFlapsDeployed = false;
+                if (_operateReverseEnginesJob == null || !_operateReverseEnginesJob.IsRunning) {
+                    D.Log("{0} is engaging ReverseEngine propulsion.", _shipData.FullName);
+                    _operateReverseEnginesJob = new Job(OperateReversePropulsion(), toStart: true, onJobComplete: (jobWasKilled) => {
+                        if (!jobWasKilled) {
+                            // ReverseEngines completed naturally and should engage forward engines unless RequestedSpeed is zero
+                            if (_shipData.RequestedSpeed != Constants.ZeroF) {
+                                EngageOrContinueForwardPropulsion();
+                            }
+                        }
+                    });
+                }
+                else {
+                    D.Log("{0} is continuing ReverseEngine propulsion.", _shipData.FullName);
                 }
             }
 
             /// <summary>
-            /// Coroutine that continuously applies thrust while RequestedSpeed is not Zero.
+            /// Coroutine that continuously applies forward thrust while RequestedSpeed is not Zero.
             /// </summary>
             /// <returns></returns>
-            private IEnumerator OperateEngines() {
+            private IEnumerator OperateForwardPropulsion() {
+                D.Assert(CurrentForwardSpeed <= _shipData.RequestedSpeed);
                 yield return new WaitForFixedUpdate();  // required so first ApplyThrust will be applied in fixed update?
-                while (_shipData.RequestedSpeed != Constants.ZeroF) {
-                    ApplyThrust();
+                while (true) {
+                    ApplyForwardThrust();
+                    if (IsTurnUnderway) {
+                        CorrectForDrift();
+                    }
                     yield return new WaitForFixedUpdate();
                 }
-                DeployFlaps(true);
+            }
+
+            private IEnumerator OperateReversePropulsion() {
+                D.Assert(CurrentForwardSpeed > _shipData.RequestedSpeed);
+                yield return new WaitForFixedUpdate();  // required so first ApplyThrust will be applied in fixed update?
+                while (CurrentForwardSpeed > _shipData.RequestedSpeed) {
+                    ApplyReverseThrust();
+                    if (IsTurnUnderway) {
+                        CorrectForDrift();
+                    }
+                    yield return new WaitForFixedUpdate();
+                }
+                // the final thrust in reverse took us below our desired forward speed, so set it there
+                _shipRigidbody.velocity = _shipTransform.TransformDirection(new Vector3(0F, 0F, _shipData.RequestedSpeed));
+                D.Log("{0} has completed ReverseEnginesJob. Velocity = {1}.", _shipData.FullName, _shipRigidbody.velocity);
             }
 
             /// <summary>
             /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
             /// call this method at a pace consistent with FixedUpdate().
             /// </summary>
-            private void ApplyThrust() {
-                Vector3 adjustedThrust = GetThrust() * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                _shipRigidbody.AddRelativeForce(adjustedThrust, ForceMode.Force);
-                ReduceDrift();
-                //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
+            private void ApplyForwardThrust() {
+                Vector3 adjustedFwdThrust = _localSpaceForward * _forwardPropulsionPowerOutput * _gameTime.GameSpeedAdjustedHoursPerSecond;
+                _shipRigidbody.AddRelativeForce(adjustedFwdThrust, ForceMode.Force);
+                D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
             }
 
-            /// <summary>
-            /// Reduces the amount of drift of the ship in the direction it was heading prior to a turn.
-            /// IMPROVE Expensive to call every frame when no residual drift left after a turn.
-            /// </summary>
-            private void ReduceDrift() {
-                Vector3 relativeVelocity = _shipRigidbody.transform.InverseTransformDirection(_shipRigidbody.velocity);
-                _shipRigidbody.AddRelativeForce(-relativeVelocity.x * driftCorrectionFactor * Vector3.right);
-                _shipRigidbody.AddRelativeForce(-relativeVelocity.y * driftCorrectionFactor * Vector3.up);
-                //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
+            private void ApplyReverseThrust() {
+                Vector3 adjustedReverseThrust = -_localSpaceForward * _shipData.FullEnginePower * _gameTime.GameSpeedAdjustedHoursPerSecond;
+                _shipRigidbody.AddRelativeForce(adjustedReverseThrust, ForceMode.Force);
+            }
+
+            private void CorrectForDrift() {
+                D.Assert(IsTurnUnderway);
+                Vector3 relativeVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
+                _shipRigidbody.AddRelativeForce(-relativeVelocity.x * _driftCorrectionFactor * Vector3.right);
+                _shipRigidbody.AddRelativeForce(-relativeVelocity.y * _driftCorrectionFactor * Vector3.up);
             }
 
             /// <summary>
@@ -2618,10 +2624,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
             private void Cleanup() {
                 Unsubscribe();
-                if (_operateEnginesJob != null) {
-                    _operateEnginesJob.Dispose();
+                if (_operateForwardEnginesJob != null) {
+                    _operateForwardEnginesJob.Dispose();
                 }
-                // other cleanup here including any tracking Gui2D elements
+                if (_operateReverseEnginesJob != null) {
+                    _operateReverseEnginesJob.Dispose();
+                }
             }
 
             private void Unsubscribe() {
@@ -2680,6 +2688,321 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             #endregion
 
         }
+
+        #region EngineRoom SpeedRange Approach Archive
+
+        /// <summary>
+        /// Runs the engines of a ship generating thrust.
+        /// </summary>
+        //private class EngineRoom : IDisposable {
+
+        //    private static Vector3 _localSpaceForward = Vector3.forward;
+
+        //    /// <summary>
+        //    /// Arbitrary value to correct drift from momentum when a turn is attempted.
+        //    /// Higher values cause sharper turns. Zero means no correction.
+        //    /// </summary>
+        //    private static float driftCorrectionFactor = 1F;
+
+        //    private static ValueRange<float> _speedGoalRange = new ValueRange<float>(0.99F, 1.01F);
+        //    private static ValueRange<float> _wayOverSpeedGoalRange = new ValueRange<float>(1.10F, float.PositiveInfinity);
+        //    private static ValueRange<float> _overSpeedGoalRange = new ValueRange<float>(1.01F, 1.10F);
+        //    private static ValueRange<float> _underSpeedGoalRange = new ValueRange<float>(0.90F, 0.99F);
+        //    private static ValueRange<float> _wayUnderSpeedGoalRange = new ValueRange<float>(Constants.ZeroF, 0.90F);
+
+        //    /// <summary>
+        //    /// Gets the ship's speed in Units per second at this instant. This value already
+        //    /// has current GameSpeed factored in, aka the value will already be larger 
+        //    /// if the GameSpeed is higher than Normal.
+        //    /// </summary>
+        //    internal float InstantSpeed { get { return _shipRigidbody.velocity.magnitude; } }
+
+        //    /// <summary>
+        //    /// Engine power output value suitable for slowing down when in the _overSpeedGoalRange.
+        //    /// </summary>
+        //    private float _pwrOutputGoalMinus;
+        //    /// <summary>
+        //    /// Engine power output value suitable for maintaining speed when in the _speedGoalRange.
+        //    /// </summary>
+        //    private float _pwrOutputGoal;
+        //    /// <summary>
+        //    /// Engine power output value suitable for speeding up when in the _underSpeedGoalRange.
+        //    /// </summary>
+        //    private float _pwrOutputGoalPlus;
+
+        //    private float _gameSpeedMultiplier;
+        //    private Vector3 _velocityOnPause;
+        //    private ShipData _shipData;
+        //    private Rigidbody _shipRigidbody;
+        //    private Job _operateEnginesJob;
+        //    private IList<IDisposable> _subscriptions;
+        //    private GameManager _gameMgr;
+        //    private GameTime _gameTime;
+
+        //    public EngineRoom(ShipData data, Rigidbody shipRigidbody) {
+        //        _shipData = data;
+        //        _shipRigidbody = shipRigidbody;
+        //        _gameMgr = GameManager.Instance;
+        //        _gameTime = GameTime.Instance;
+        //        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
+        //        //D.Log("{0}.EngineRoom._gameSpeedMultiplier is {1}.", ship.FullName, _gameSpeedMultiplier);
+        //        Subscribe();
+        //    }
+
+        //    private void Subscribe() {
+        //        _subscriptions = new List<IDisposable>();
+        //        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        //        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+        //    }
+
+        //    /// <summary>
+        //    /// Changes the speed.
+        //    /// </summary>
+        //    /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
+        //    /// <returns></returns>
+        //    internal void ChangeSpeed(float newSpeedRequest) {
+        //        //D.Log("{0}'s speed = {1} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
+        //        if (CheckForAcceptableSpeedValue(newSpeedRequest)) {
+        //            SetPowerOutputFor(newSpeedRequest);
+        //            if (_operateEnginesJob == null) {
+        //                _operateEnginesJob = new Job(OperateEngines(), toStart: true, onJobComplete: (wasKilled) => {
+        //                    // OperateEngines() can complete, but it is never killed
+        //                    if (_isDisposing) { return; }
+        //                    _operateEnginesJob = null;
+        //                    //string message = "{0} thrust stopped.  Coasting speed is {1:0.##} units/hour.";
+        //                    //D.Log(message, _shipData.FullName, _shipData.CurrentSpeed);
+        //                });
+        //            }
+        //        }
+        //        else {
+        //            D.Warn("{0} is already generating thrust for {1:0.##} units/hour. Requested speed unchanged.", _shipData.FullName, newSpeedRequest);
+        //        }
+        //    }
+
+        //    /// <summary>
+        //    /// Called when the Helm refreshes its navigational values due to changes that may
+        //    /// affect the speed float value.
+        //    /// </summary>
+        //    /// <param name="refreshedSpeedValue">The refreshed speed value.</param>
+        //    internal void RefreshSpeedValue(float refreshedSpeedValue) {
+        //        if (CheckForAcceptableSpeedValue(refreshedSpeedValue)) {
+        //            SetPowerOutputFor(refreshedSpeedValue);
+        //        }
+        //    }
+
+        //    /// <summary>
+        //    /// Checks whether the provided speed value is acceptable. 
+        //    /// Returns <c>true</c> if it is, <c>false</c> if it is a duplicate.
+        //    /// </summary>
+        //    /// <param name="speedValue">The speed value.</param>
+        //    /// <returns></returns>
+        //    private bool CheckForAcceptableSpeedValue(float speedValue) {
+        //        D.Assert(speedValue <= _shipData.FullSpeed, "{0}.{1} speedValue {2:0.0000} > FullSpeed {3:0.0000}. IsFtlAvailableForUse: {4}.".Inject(_shipData.FullName, GetType().Name, speedValue, _shipData.FullSpeed, _shipData.IsFtlAvailableForUse));
+
+        //        float previousRequestedSpeed = _shipData.RequestedSpeed;
+        //        float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? speedValue / previousRequestedSpeed : Constants.ZeroF;
+        //        if (EngineRoom._speedGoalRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
+        //            return false;
+        //        }
+        //        return true;
+        //    }
+
+        //    private void OnGameSpeedChanged() {
+        //        float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
+        //        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
+        //        float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
+        //        AdjustForGameSpeed(gameSpeedChangeRatio);
+        //    }
+
+        //    private void OnIsPausedChanged() {
+        //        if (_gameMgr.IsPaused) {
+        //            _velocityOnPause = _shipRigidbody.velocity;
+        //            _shipRigidbody.isKinematic = true;  // immediately stops rigidbody and puts it to sleep, but rigidbody.velocity value remains
+        //        }
+        //        else {
+        //            _shipRigidbody.isKinematic = false;
+        //            _shipRigidbody.velocity = _velocityOnPause;
+        //            _shipRigidbody.WakeUp();
+        //        }
+        //    }
+
+        //    /// <summary>
+        //    /// Sets the engine power output values needed to achieve the requested speed. This speed has already
+        //    /// been tested for acceptability, ie. it has been clamped.
+        //    /// </summary>
+        //    /// <param name="acceptableRequestedSpeed">The acceptable requested speed in units/hr.</param>
+        //    private void SetPowerOutputFor(float acceptableRequestedSpeed) {
+        //        //D.Log("{0} adjusting engine power output to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
+        //        _shipData.RequestedSpeed = acceptableRequestedSpeed;
+        //        float acceptablePwrOutput = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
+
+        //        _pwrOutputGoal = acceptablePwrOutput;
+        //        _pwrOutputGoalMinus = _pwrOutputGoal / _overSpeedGoalRange.Maximum;
+        //        _pwrOutputGoalPlus = Mathf.Min(_pwrOutputGoal / _underSpeedGoalRange.Minimum, _shipData.FullEnginePower);
+        //    }
+
+        //    // IMPROVE this approach will cause ships with higher speed capability to accelerate faster than ships with lower, separating members of the fleet
+        //    private Vector3 GetThrust() {
+        //        D.Assert(_shipData.RequestedSpeed > Constants.ZeroF);   // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed is 0
+
+        //        float speedRatio = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
+        //        //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, speedRatio);
+        //        float enginePowerOutput = Constants.ZeroF;
+        //        bool toDeployFlaps = false;
+        //        if (_speedGoalRange.ContainsValue(speedRatio)) {
+        //            enginePowerOutput = _pwrOutputGoal;
+        //        }
+        //        else if (_underSpeedGoalRange.ContainsValue(speedRatio)) {
+        //            enginePowerOutput = _pwrOutputGoalPlus;
+        //        }
+        //        else if (_overSpeedGoalRange.ContainsValue(speedRatio)) {
+        //            enginePowerOutput = _pwrOutputGoalMinus;
+        //        }
+        //        else if (_wayUnderSpeedGoalRange.ContainsValue(speedRatio)) {
+        //            enginePowerOutput = _shipData.FullEnginePower;
+        //        }
+        //        else if (_wayOverSpeedGoalRange.ContainsValue(speedRatio)) {
+        //            toDeployFlaps = true;
+        //        }
+        //        DeployFlaps(toDeployFlaps);
+        //        return enginePowerOutput * _localSpaceForward;
+        //    }
+
+        //    // IMPROVE I've implemented FTL using a thrust multiplier rather than
+        //    // a reduction in Drag. Changing Data.Drag (for flaps or FTL) causes
+        //    // Data.FullSpeed to change which affects lots of other things
+        //    // in Helm where the FullSpeed value affects a number of factors. My
+        //    // flaps implementation below changes rigidbody.drag not Data.Drag.
+        //    private void DeployFlaps(bool toDeploy) {
+        //        if (!_shipData.IsFlapsDeployed && toDeploy) {
+        //            _shipRigidbody.drag *= TempGameValues.FlapsMultiplier;
+        //            _shipData.IsFlapsDeployed = true;
+        //        }
+        //        else if (_shipData.IsFlapsDeployed && !toDeploy) {
+        //            _shipRigidbody.drag /= TempGameValues.FlapsMultiplier;
+        //            _shipData.IsFlapsDeployed = false;
+        //        }
+        //    }
+
+        //    /// <summary>
+        //    /// Coroutine that continuously applies thrust while RequestedSpeed is not Zero.
+        //    /// </summary>
+        //    /// <returns></returns>
+        //    private IEnumerator OperateEngines() {
+        //        yield return new WaitForFixedUpdate();  // required so first ApplyThrust will be applied in fixed update?
+        //        while (_shipData.RequestedSpeed != Constants.ZeroF) {
+        //            ApplyThrust();
+        //            yield return new WaitForFixedUpdate();
+        //        }
+        //        DeployFlaps(true);
+        //    }
+
+        //    /// <summary>
+        //    /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
+        //    /// call this method at a pace consistent with FixedUpdate().
+        //    /// </summary>
+        //    private void ApplyThrust() {
+        //        Vector3 adjustedThrust = GetThrust() * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        //        _shipRigidbody.AddRelativeForce(adjustedThrust, ForceMode.Force);
+        //        ReduceDrift();
+        //        //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
+        //    }
+
+        //    /// <summary>
+        //    /// Reduces the amount of drift of the ship in the direction it was heading prior to a turn.
+        //    /// IMPROVE Expensive to call every frame when no residual drift left after a turn.
+        //    /// </summary>
+        //    private void ReduceDrift() {
+        //        Vector3 relativeVelocity = _shipRigidbody.transform.InverseTransformDirection(_shipRigidbody.velocity);
+        //        _shipRigidbody.AddRelativeForce(-relativeVelocity.x * driftCorrectionFactor * Vector3.right);
+        //        _shipRigidbody.AddRelativeForce(-relativeVelocity.y * driftCorrectionFactor * Vector3.up);
+        //        //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
+        //    }
+
+        //    /// <summary>
+        //    /// Adjusts the velocity and thrust of the ship to reflect the new GameClockSpeed setting. 
+        //    /// The reported speed and directional heading of the ship is not affected.
+        //    /// </summary>
+        //    /// <param name="gameSpeed">The game speed.</param>
+        //    private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
+        //        // must immediately adjust velocity when game speed changes as just adjusting thrust takes
+        //        // a long time to get to increased/decreased velocity
+        //        if (_gameMgr.IsPaused) {
+        //            D.Assert(_velocityOnPause != default(Vector3), "{0} has not yet recorded VelocityOnPause.".Inject(_shipData.FullName));
+        //            _velocityOnPause *= gameSpeedChangeRatio;
+        //        }
+        //        else {
+        //            _shipRigidbody.velocity *= gameSpeedChangeRatio;
+        //            // drag should not be adjusted as it will change the velocity that can be supported by the adjusted thrust
+        //        }
+        //    }
+
+        //    private void Cleanup() {
+        //        Unsubscribe();
+        //        if (_operateEnginesJob != null) {
+        //            _operateEnginesJob.Dispose();
+        //        }
+        //        // other cleanup here including any tracking Gui2D elements
+        //    }
+
+        //    private void Unsubscribe() {
+        //        _subscriptions.ForAll(d => d.Dispose());
+        //        _subscriptions.Clear();
+        //    }
+
+        //    public override string ToString() {
+        //        return new ObjectAnalyzer().ToString(this);
+        //    }
+
+        //    #region IDisposable
+        //    [DoNotSerialize]
+        //    private bool _alreadyDisposed = false;
+        //    protected bool _isDisposing = false;
+
+        //    /// <summary>
+        //    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        //    /// </summary>
+        //    public void Dispose() {
+        //        Dispose(true);
+        //        GC.SuppressFinalize(this);
+        //    }
+
+        //    /// <summary>
+        //    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        //    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        //    /// </summary>
+        //    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        //    protected virtual void Dispose(bool isDisposing) {
+        //        // Allows Dispose(isDisposing) to be called more than once
+        //        if (_alreadyDisposed) {
+        //            D.Warn("{0} has already been disposed.", GetType().Name);
+        //            return;
+        //        }
+
+        //        _isDisposing = isDisposing;
+        //        if (isDisposing) {
+        //            // free managed resources here including unhooking events
+        //            Cleanup();
+        //        }
+        //        // free unmanaged resources here
+
+        //        _alreadyDisposed = true;
+        //    }
+
+        //    // Example method showing check for whether the object has been disposed
+        //    //public void ExampleMethod() {
+        //    //    // throw Exception if called on object that is already disposed
+        //    //    if(alreadyDisposed) {
+        //    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    //    }
+
+        //    //    // method content here
+        //    //}
+        //    #endregion
+
+        //}
+
+        #endregion
 
         #endregion
 

@@ -62,11 +62,11 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private bool _isFlapsDeployed;
-        public bool IsFlapsDeployed {
-            get { return _isFlapsDeployed; }
-            set { SetProperty<bool>(ref _isFlapsDeployed, value, "IsFlapsDeployed", OnIsFlapsDeployedChanged); }
-        }
+        //private bool _isFlapsDeployed;
+        //public bool IsFlapsDeployed {
+        //    get { return _isFlapsDeployed; }
+        //    set { SetProperty<bool>(ref _isFlapsDeployed, value, "IsFlapsDeployed", OnIsFlapsDeployedChanged); }
+        //}
 
         private INavigableTarget _target;
         public INavigableTarget Target {
@@ -120,13 +120,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The drag of the ship in Topography.OpenSpace.
         /// </summary>
-        //public float Drag { get { return HullEquipment.Drag; } }
+        public float Drag { get { return HullEquipment.Drag; } }
 
-        private float _drag;
-        public float Drag {
-            get { return _drag; }
-            set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged, OnDragChanging); }
-        }
+        //private float _drag;
+        //public float Drag {
+        //    get { return _drag; }
+        //    set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged, OnDragChanging); }
+        //}
 
         public float FullEnginePower { get { return IsFtlAvailableForUse ? FullFtlEnginePower : FullStlEnginePower; } }
 
@@ -235,7 +235,7 @@ namespace CodeEnv.Master.GameContent {
             _rigidbody = shipTransform.rigidbody;
             // rigidbody mass assignment handled by AElementData
 
-            Drag = hullEquipment.Drag;
+            //Drag = hullEquipment.Drag;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
@@ -284,23 +284,23 @@ namespace CodeEnv.Master.GameContent {
             AssessFtlAvailability();
         }
 
-        private void OnDragChanging(float newDrag) {
-            if (Drag != Constants.ZeroF && Drag != _rigidbody.drag) {
-                D.Warn("{0}.Drag of {1} and Rigidbody.drag of {2} are not the same.", Name, Drag, _rigidbody.drag);
-                // TODO: Need to rethink this whole Drag subject (flaps, FTL, etc.) as I'm probably changing Drag when the flaps are on
-            }
-        }
+        //private void OnDragChanging(float newDrag) {
+        //    if (Drag != Constants.ZeroF && Drag != _rigidbody.drag) {
+        //        D.Warn("{0}.Drag of {1} and Rigidbody.drag of {2} are not the same.", Name, Drag, _rigidbody.drag);
+        //        // TODO: Need to rethink this whole Drag subject (flaps, FTL, etc.) as I'm probably changing Drag when the flaps are on
+        //    }
+        //}
 
-        private void OnDragChanged() {
-            _rigidbody.drag = IsFlapsDeployed ? Drag / TempGameValues.FlapsMultiplier : Drag;
-            OnFullStlEnginePowerChanged();
-            OnFullFtlEnginePowerChanged();
-        }
+        //private void OnDragChanged() {
+        //    _rigidbody.drag = IsFlapsDeployed ? Drag / TempGameValues.FlapsMultiplier : Drag;
+        //    OnFullStlEnginePowerChanged();
+        //    OnFullFtlEnginePowerChanged();
+        //}
 
-        private void OnIsFlapsDeployedChanged() {
-            string msg = IsFlapsDeployed ? "deployed" : "retracted";
-            D.Log("{0} has {1} flaps.", FullName, msg);
-        }
+        //private void OnIsFlapsDeployedChanged() {
+        //    string msg = IsFlapsDeployed ? "deployed" : "retracted";
+        //    D.Log("{0} has {1} flaps.", FullName, msg);
+        //}
 
         private void OnFullStlEnginePowerChanged() {
             FullStlSpeed = FullStlEnginePower / (Mass * Drag);

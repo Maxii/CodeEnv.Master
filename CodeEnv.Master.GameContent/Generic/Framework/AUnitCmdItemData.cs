@@ -143,13 +143,29 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public float UnitScience { get; private set; }
+        private float _unitScience;
+        public float UnitScience {
+            get { return _unitScience; }
+            private set { SetProperty<float>(ref _unitScience, value, "UnitScience"); }
+        }
 
-        public float UnitCulture { get; private set; }
+        private float _unitCulture;
+        public float UnitCulture {
+            get { return _unitCulture; }
+            private set { SetProperty<float>(ref _unitCulture, value, "UnitCulture"); }
+        }
 
-        public float UnitIncome { get; private set; }
+        private float _unitIncome;
+        public float UnitIncome {
+            get { return _unitIncome; }
+            private set { SetProperty<float>(ref _unitIncome, value, "UnitIncome"); }
+        }
 
-        public float UnitExpense { get; private set; }
+        private float _unitExpense;
+        public float UnitExpense {
+            get { return _unitExpense; }
+            private set { SetProperty<float>(ref _unitExpense, value, "UnitExpense"); }
+        }
 
         protected IList<AUnitElementItemData> ElementsData { get; private set; }
         protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscriptions;
