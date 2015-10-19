@@ -71,9 +71,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     /// <summary>
     /// The force propelling this projectile, using a gameSpeedMultiplier of 1. This force will
-    /// propel the projectile to a top speed of <c>Speed</c> when in interstellar space. When the missile is in
+    /// propel the projectile to a top speed of <c>MaxSpeed</c> when in OpenSpace. When the missile is in
     /// a System or other high drag topography, the missile's top speed will be lower due to the higher drag.
-    /// ProjectileMass * InterstellarDrag * ProjectileSpeed (units/hour) * hoursPerSecond * _localSpaceForward;
+    /// OrdnanceMass * OpenSpaceDrag * MaxSpeed (units/hour) * hoursPerSecond * _localSpaceForward;
     /// </summary>
     private Vector3 _nominalThrust;
     private float _cumDistanceTraveled;
@@ -194,7 +194,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     protected override Vector3 GetForceOfImpact() { return _nominalThrust * _gameSpeedMultiplier; }
 
     private Vector3 CalcNominalThrust() {
-        return _rigidbody.mass * Drag * MaxSpeed * GameTime.HoursPerSecond * _localSpaceForward;
+        return Mass * Drag * MaxSpeed * GameTime.HoursPerSecond * _localSpaceForward;
     }
 
     protected override float GetDistanceTraveled() {

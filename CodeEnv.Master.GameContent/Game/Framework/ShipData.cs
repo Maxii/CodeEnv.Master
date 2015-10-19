@@ -130,27 +130,30 @@ namespace CodeEnv.Master.GameContent {
 
         public float FullEnginePower { get { return IsFtlAvailableForUse ? FullFtlEnginePower : FullStlEnginePower; } }
 
-        private float _fullStlEnginePower;
-        /// <summary>
-        /// The maximum power that can be projected by the STL engines. FullStlSpeed = FullStlEnginePower / (Mass * Drag).
-        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
-        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
-        /// </summary>
-        public float FullStlEnginePower {
-            get { return _fullStlEnginePower; }
-            set { SetProperty<float>(ref _fullStlEnginePower, value, "FullStlEnginePower", OnFullStlEnginePowerChanged); }
-        }
+        //private float _fullStlEnginePower;
+        ///// <summary>
+        ///// The maximum power that can be projected by the STL engines. FullStlSpeed = FullStlEnginePower / (Mass * _rigidbody.drag).
+        ///// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        ///// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        ///// </summary>
+        public float FullStlEnginePower { get { return _engineStat.FullStlPower; } }
+        //public float FullStlEnginePower {
+        //    get { return _fullStlEnginePower; }
+        //    set { SetProperty<float>(ref _fullStlEnginePower, value, "FullStlEnginePower", OnFullStlEnginePowerChanged); }
+        //}
 
-        private float _fullFtlEnginePower;
-        /// <summary>
-        /// The maximum power that can be projected by the FTL engines. FullFtlSpeed = FullFtlEnginePower / (Mass * Drag).
-        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
-        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
-        /// </summary>
-        public float FullFtlEnginePower {
-            get { return _fullFtlEnginePower; }
-            set { SetProperty<float>(ref _fullFtlEnginePower, value, "FullFtlEnginePower", OnFullFtlEnginePowerChanged); }
-        }
+
+        //private float _fullFtlEnginePower;
+        ///// <summary>
+        ///// The maximum power that can be projected by the FTL engines. FullFtlSpeed = FullFtlEnginePower / (Mass * _rigidbody.drag).
+        ///// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        ///// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        ///// </summary>
+        public float FullFtlEnginePower { get { return _engineStat.FullFtlPower; } }
+        //public float FullFtlEnginePower {
+        //    get { return _fullFtlEnginePower; }
+        //    set { SetProperty<float>(ref _fullFtlEnginePower, value, "FullFtlEnginePower", OnFullFtlEnginePowerChanged); }
+        //}
 
         private Vector3 _requestedHeading;
         /// <summary>
@@ -194,24 +197,27 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _fullStlSpeed, value, "FullStlSpeed"); }
         }
 
-        private float _maxTurnRate;
+        //private float _maxTurnRate;
         /// <summary>
         /// The maximum turn rate of the ship in degrees per hour.
         /// </summary>
-        public float MaxTurnRate {
-            get { return _maxTurnRate; }
-            set { SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate"); }
-        }
+        public float MaxTurnRate { get { return _engineStat.MaxTurnRate; } }
+        //public float MaxTurnRate {
+        //    get { return _maxTurnRate; }
+        //    set { SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate"); }
+        //}
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
 
         protected new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
+        private EngineStat _engineStat;
+
         /// <summary>
         /// The speed of the ship in units per hour when it was paused.
         /// </summary>
         private float _currentSpeedOnPause;
-        private Rigidbody _rigidbody;
+        //private Rigidbody _rigidbody;
         private IList<IDisposable> _subscriptions;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
@@ -232,17 +238,21 @@ namespace CodeEnv.Master.GameContent {
     IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
             : base(shipTransform, hullEquipment, owner, activeCMs, sensors, passiveCMs, shieldGenerators) {
 
-            _rigidbody = shipTransform.rigidbody;
-            // rigidbody mass assignment handled by AElementData
+            //_rigidbody = shipTransform.rigidbody;
+            // rigidbody mass assignment handled by AUnitElementItemData
 
             //Drag = hullEquipment.Drag;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
 
-            FullStlEnginePower = engineStat.FullStlThrust;
-            FullFtlEnginePower = engineStat.FullFtlThrust;
-            MaxTurnRate = engineStat.MaxTurnRate;
+            _engineStat = engineStat;
+
+            //FullStlEnginePower = engineStat.FullStlPower;
+            //FullFtlEnginePower = engineStat.FullFtlPower;
+            //MaxTurnRate = engineStat.MaxTurnRate;
+
+            //AssessFullSpeedValues();  // FullSpeedValues will be set/refreshed when Topography is set on CommenceOperations
 
             CombatStance = combatStance;
 
@@ -281,7 +291,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void OnTopographyChanged() {
             base.OnTopographyChanged();
-            AssessFtlAvailability();
+            //AssessFtlAvailability();
+            _rigidbody.drag = Drag * Topography.GetRelativeDensity();
+            RefreshFullSpeedValues();
         }
 
         //private void OnDragChanging(float newDrag) {
@@ -302,15 +314,15 @@ namespace CodeEnv.Master.GameContent {
         //    D.Log("{0} has {1} flaps.", FullName, msg);
         //}
 
-        private void OnFullStlEnginePowerChanged() {
-            FullStlSpeed = FullStlEnginePower / (Mass * Drag);
-            D.Log("{0} FullStlSpeed set to {1} units/hour, FullStlEnginePower = {2}, Mass = {3}, Drag = {4}.", Name, FullStlSpeed, FullStlEnginePower, Mass, Drag);
-        }
+        //private void OnFullStlEnginePowerChanged() {
+        //    FullStlSpeed = FullStlEnginePower / (Mass * _rigidbody.drag);
+        //    D.Log("{0} FullStlSpeed set to {1:0.##} units/hour, FullStlEnginePower = {2:0.##}, Mass = {3:0.#}, Drag = {4:0.##}.", Name, FullStlSpeed, FullStlEnginePower, Mass, _rigidbody.drag);
+        //}
 
-        private void OnFullFtlEnginePowerChanged() {
-            FullFtlSpeed = FullFtlEnginePower / (Mass * Drag);
-            D.Log("{0} FullFtlSpeed set to {1} units/hour, FullFtlEnginePower = {2}, Mass = {3}, Drag = {4}.", Name, FullFtlSpeed, FullFtlEnginePower, Mass, Drag);
-        }
+        //private void OnFullFtlEnginePowerChanged() {
+        //    FullFtlSpeed = FullFtlEnginePower / (Mass * _rigidbody.drag);
+        //    D.Log("{0} FullFtlSpeed set to {1:0.##} units/hour, FullFtlEnginePower = {2:0.##}, Mass = {3:0.#}, Drag = {4:0.##}.", Name, FullFtlSpeed, FullFtlEnginePower, Mass, _rigidbody.drag);
+        //}
 
         private void OnIsPausedChanging(bool isPausing) {
             if (isPausing) {
@@ -322,8 +334,18 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
         }
 
+        /// <summary>
+        /// Refreshes the full speed values the ship is capable of achieving when the ship's drag
+        /// values might change due to a change in Topography. 
+        /// </summary>
+        private void RefreshFullSpeedValues() {
+            FullStlSpeed = FullStlEnginePower / (Mass * _rigidbody.drag);
+            FullFtlSpeed = FullFtlEnginePower / (Mass * _rigidbody.drag);
+        }
+
         private void AssessFtlAvailability() {
-            IsFtlAvailableForUse = Topography == Topography.OpenSpace && IsFtlOperational && !IsFtlDampedByField;
+            //IsFtlAvailableForUse = Topography == Topography.OpenSpace && IsFtlOperational && !IsFtlDampedByField;
+            IsFtlAvailableForUse = IsFtlOperational && !IsFtlDampedByField;
         }
 
         protected override void Unsubscribe() {

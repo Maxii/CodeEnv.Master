@@ -195,7 +195,7 @@ namespace CodeEnv.Master.GameContent {
             return __GetHullMass(hull) * 0.10F;
         }
 
-        public static float __GetFullStlThrust(ShipHullCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
+        public static float __GetFullStlPower(ShipHullCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
             switch (hull) {
                 case ShipHullCategory.Frigate:
                     return UnityEngine.Random.Range(5F, 15F);

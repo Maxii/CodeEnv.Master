@@ -2049,7 +2049,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         // TODO increase speed if further away
         // var vectorToStation = Data.FormationStation.VectorToStation;
         // var distanceToStationSqrd = vectorToStation.sqrMagnitude;
-        speed = Speed.Thrusters;
+        speed = Speed.Docking;
         return true;
     }
 

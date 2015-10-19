@@ -609,7 +609,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         }
 
         Vector3 flagshipBearing = Command.HQElement.Data.RequestedHeading;
-        _helm.ChangeHeading(flagshipBearing, Speed.EmergencyStop, allowedTime: 5F, onHeadingConfirmed: () => {
+        _helm.ChangeHeading(flagshipBearing, allowedTime: 5F, onHeadingConfirmed: () => {
             //D.Log("{0} has aligned heading with Flagship {1}.", FullName, Command.HQElement.FullName);
             CurrentState = ShipState.Idling;
         });
@@ -641,9 +641,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         if (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
             Vector3 targetDirection = (_currentOrIntendedOrbitSlot.OrbitedObject.Position - Position).normalized;
             Vector3 orbitSlotDirection = distanceToMeanOrbit > Constants.ZeroF ? targetDirection : -targetDirection;
-            _helm.ChangeHeading(orbitSlotDirection, Speed.Stop, allowedTime: 5F, onHeadingConfirmed: () => {
-                _helm.ChangeSpeed(Speed.Slow);
-                D.Log("{0} moving to find the orbit slot.", FullName);
+            _helm.ChangeHeading(orbitSlotDirection, allowedTime: 5F, onHeadingConfirmed: () => {
+                Speed approachSpeed = _currentOrIntendedOrbitSlot.OrbitedObject.IsMobile ? Speed.MovingOrbit : Speed.StationaryOrbit;
+                _helm.ChangeSpeed(approachSpeed);
+                D.Log("{0} initiating approach to orbit around {1} at Speed {2}.", FullName, _currentOrIntendedOrbitSlot.OrbitedObject.FullName, approachSpeed.GetEnumAttributeText());
             });
             yield return null;  // allows heading coroutine to engage and change IsBearingConfirmed to false
         }
@@ -1121,7 +1122,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         // TODO increase speed if further away
         // var vectorToStation = Data.FormationStation.VectorToStation;
         // var distanceToStationSqrd = vectorToStation.sqrMagnitude;
-        speed = Speed.Thrusters;
+        speed = Speed.Docking;
         return true;
     }
 
@@ -1517,7 +1518,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 ChangeSpeed(Speed.Stop);
             }
 
-            ChangeHeading(newHeading, _currentSpeed, allowedTime: 5F, onHeadingConfirmed: () => {
+            ChangeHeading(newHeading, allowedTime: 5F, onHeadingConfirmed: () => {
                 //D.Log("{0} is ready for departure.", Name);
 
                 // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
@@ -1540,7 +1541,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             if (_orderSource == OrderSource.UnitCommand) {
-                ChangeHeading(targetPtBearing, _currentSpeed);
+                ChangeHeading(targetPtBearing);
                 _pilotJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, onJobComplete: (wasKilled) => {
                     if (!wasKilled) {
                         //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
@@ -1555,7 +1556,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 });
             }
             else {
-                ChangeHeading(targetPtBearing, _currentSpeed, 5F, onHeadingConfirmed: () => {
+                ChangeHeading(targetPtBearing, 5F, onHeadingConfirmed: () => {
                     //D.Log("{0} is ready for departure.", Name);
                     ChangeSpeed(_travelSpeed);
                     _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, onJobComplete: (wasKilled) => {
@@ -1604,7 +1605,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 Vector3 offset = TargetPoint - Target.Position;    // the fstOffset
                 if (TryCheckForCourseCorrection(Target, distanceToTargetPtSqrd, out correctedHeading, ref courseCorrectionCheckCountdown, offset)) {
                     //D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
-                    ChangeHeading(correctedHeading, _currentSpeed, allowedTime: 5F, onHeadingConfirmed: () => {
+                    ChangeHeading(correctedHeading, allowedTime: 5F, onHeadingConfirmed: () => {
                         ChangeSpeed(_travelSpeed);
                     });
                 }
@@ -1651,7 +1652,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 Vector3 correctedHeading;
                 if (TryCheckForCourseCorrection(obstacleDetour, distanceToDetourSqrd, out correctedHeading, ref courseCorrectionCheckCountdown)) {
                     // D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
-                    ChangeHeading(correctedHeading, _currentSpeed, allowedTime: 5F, onHeadingConfirmed: () => {
+                    ChangeHeading(correctedHeading, allowedTime: 5F, onHeadingConfirmed: () => {
                         ChangeSpeed(_travelSpeed);
                     });
                 }
@@ -1678,11 +1679,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// Changes the direction the ship is headed in normalized world space coordinates.
         /// </summary>
         /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-        /// <param name="currentSpeed">The current speed. Used to potentially reduce speed before the turn.</param>
         /// <param name="allowedTime">The allowed time before an error is thrown.</param>
         /// <param name="onHeadingConfirmed">Delegate that fires when the turn finishes.</param>
-        internal void ChangeHeading(Vector3 newHeading, Speed currentSpeed, float allowedTime = Mathf.Infinity, Action onHeadingConfirmed = null) {
-            D.Assert(currentSpeed != Speed.None);
+        internal void ChangeHeading(Vector3 newHeading, float allowedTime = Mathf.Infinity, Action onHeadingConfirmed = null) {
             newHeading.ValidateNormalized();
 
             if (newHeading.IsSameDirection(_ship.Data.RequestedHeading, _allowedHeadingDeviation)) {
@@ -1700,8 +1699,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
             }
 
-            _engineRoom.IsTurnUnderway = true;
-            //AdjustSpeedForTurn(newHeading, currentSpeed);
+            _engineRoom.IsTurnUnderway = true;  // signals engineRoom to correct for drift during the turn
 
             _ship.Data.RequestedHeading = newHeading;
             _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
@@ -1776,38 +1774,91 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
         }
 
-        [Obsolete]
-        private void AdjustSpeedForTurn(Vector3 newHeading, Speed currentSpeed) {
-            float turnAngleInDegrees = Vector3.Angle(_ship.Data.CurrentHeading, newHeading);
-            D.Log("{0}.AdjustSpeedForTurn() called. Turn angle: {1:0.#} degrees.", Name, turnAngleInDegrees);
-            SpeedStep decreaseStep = SpeedStep.None;
-            if (turnAngleInDegrees > 120F) {
-                decreaseStep = SpeedStep.Maximum;
-            }
-            else if (turnAngleInDegrees > 90F) {
-                decreaseStep = SpeedStep.Five;
-            }
-            else if (turnAngleInDegrees > 60F) {
-                decreaseStep = SpeedStep.Four;
-            }
-            else if (turnAngleInDegrees > 40F) {
-                decreaseStep = SpeedStep.Three;
-            }
-            else if (turnAngleInDegrees > 20F) {
-                decreaseStep = SpeedStep.Two;
-            }
-            else if (turnAngleInDegrees > 10F) {
-                decreaseStep = SpeedStep.One;
-            }
-            else if (turnAngleInDegrees > 3F) {
-                decreaseStep = SpeedStep.Minimum;
-            }
+        #region AdjustSpeedForTurn Archive
 
-            Speed turnSpeed;
-            if (currentSpeed.TryDecrease(decreaseStep, out turnSpeed)) {
-                ChangeSpeed(turnSpeed);
-            }
-        }
+        /// <summary>
+        /// Changes the direction the ship is headed in normalized world space coordinates.
+        /// </summary>
+        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
+        /// <param name="currentSpeed">The current speed. Used to potentially reduce speed before the turn.</param>
+        /// <param name="allowedTime">The allowed time before an error is thrown.</param>
+        /// <param name="onHeadingConfirmed">Delegate that fires when the turn finishes.</param>
+        //internal void ChangeHeading(Vector3 newHeading, Speed currentSpeed, float allowedTime = Mathf.Infinity, Action onHeadingConfirmed = null) {
+        //    D.Assert(currentSpeed != Speed.None);
+        //    newHeading.ValidateNormalized();
+
+        //    if (newHeading.IsSameDirection(_ship.Data.RequestedHeading, _allowedHeadingDeviation)) {
+        //        D.Log("{0} ignoring a very small ChangeHeading request of {1:0.0000} degrees.", Name, Vector3.Angle(_ship.Data.RequestedHeading, newHeading));
+        //        if (onHeadingConfirmed != null) {
+        //            onHeadingConfirmed();
+        //        }
+        //        return;
+        //    }
+
+        //    //D.Log("{0} received ChangeHeading to {1}.", Name, newHeading);
+        //    if (_headingJob != null && _headingJob.IsRunning) {
+        //        _headingJob.Kill();
+        //        // onJobComplete will run next frame so placed cancelled notice here
+        //        D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
+        //    }
+
+        //    AdjustSpeedForTurn(newHeading, currentSpeed);
+
+        //    _ship.Data.RequestedHeading = newHeading;
+        //    _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
+        //        if (!_isDisposing) {
+        //            if (!jobWasKilled) {
+        //                //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
+        //                //Name, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+        //                _engineRoom.IsTurnUnderway = false;
+
+        //                if (onHeadingConfirmed != null) {
+        //                    onHeadingConfirmed();
+        //                }
+        //            }
+        //            // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
+        //            // The actual culprit was the physics engine which when started, found Creators had placed the non-kinematic ships at the same
+        //            // location, relying on the formation generator to properly separate them later. The physics engine came on before the formation
+        //            // had been deployed, resulting in both velocity and angular velocity from the collisions. The fix was to make the ship rigidbodies
+        //            // kinematic until the formation had been deployed.
+        //            //_rigidbody.angularVelocity = Vector3.zero;
+        //        }
+        //    });
+        //}
+
+        //private void AdjustSpeedForTurn(Vector3 newHeading, Speed currentSpeed) {
+        //    float turnAngleInDegrees = Vector3.Angle(_ship.Data.CurrentHeading, newHeading);
+        //    D.Log("{0}.AdjustSpeedForTurn() called. Turn angle: {1:0.#} degrees.", Name, turnAngleInDegrees);
+        //    SpeedStep decreaseStep = SpeedStep.None;
+        //    if (turnAngleInDegrees > 120F) {
+        //        decreaseStep = SpeedStep.Maximum;
+        //    }
+        //    else if (turnAngleInDegrees > 90F) {
+        //        decreaseStep = SpeedStep.Five;
+        //    }
+        //    else if (turnAngleInDegrees > 60F) {
+        //        decreaseStep = SpeedStep.Four;
+        //    }
+        //    else if (turnAngleInDegrees > 40F) {
+        //        decreaseStep = SpeedStep.Three;
+        //    }
+        //    else if (turnAngleInDegrees > 20F) {
+        //        decreaseStep = SpeedStep.Two;
+        //    }
+        //    else if (turnAngleInDegrees > 10F) {
+        //        decreaseStep = SpeedStep.One;
+        //    }
+        //    else if (turnAngleInDegrees > 3F) {
+        //        decreaseStep = SpeedStep.Minimum;
+        //    }
+
+        //    Speed turnSpeed;
+        //    if (currentSpeed.TryDecrease(decreaseStep, out turnSpeed)) {
+        //        ChangeSpeed(turnSpeed);
+        //    }
+        //}
+
+        #endregion
 
         #endregion
 
@@ -2514,6 +2565,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             private void CalcForwardPropulsionPowerOutputFor(float requestedSpeed) {
                 D.Log("{0} adjusting engine power output to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, requestedSpeed);
                 _forwardPropulsionPowerOutput = requestedSpeed * _shipRigidbody.drag * _shipData.Mass;
+                D.Assert(_forwardPropulsionPowerOutput <= _shipData.FullEnginePower, "{0}: Calculated EnginePower {1:0.##} exceeds FullEnginePower {2:0.##}.".Inject(_shipData.FullName, _forwardPropulsionPowerOutput, _shipData.FullEnginePower));
             }
 
             private void EngageOrContinueForwardPropulsion() {
@@ -2589,7 +2641,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             private void ApplyForwardThrust() {
                 Vector3 adjustedFwdThrust = _localSpaceForward * _forwardPropulsionPowerOutput * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 _shipRigidbody.AddRelativeForce(adjustedFwdThrust, ForceMode.Force);
-                D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
+                //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
             }
 
             private void ApplyReverseThrust() {

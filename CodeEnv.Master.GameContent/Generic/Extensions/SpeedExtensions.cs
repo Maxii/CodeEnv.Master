@@ -57,11 +57,17 @@ namespace CodeEnv.Master.GameContent {
                     return Constants.ZeroF;
                 case Speed.Stop:
                     return Constants.ZeroF;
-                case Speed.Thrusters:
-                    result = 0.02F * shipData.FullStlSpeed;
+                case Speed.Docking:
+                    result = 0.04F; // TODO
+                    break;
+                case Speed.StationaryOrbit:
+                    result = 0.1F;  // TODO
+                    break;
+                case Speed.MovingOrbit: // UNCLEAR limit moving orbits to planets in Systems?
+                    result = 0.2F;      // TODO How fast can planets move? ignore moons, slow down planet orbits?
                     break;
                 case Speed.Slow:
-                    result = 0.10F * shipData.FullStlSpeed;
+                    result = 0.3F;
                     break;
                 case Speed.OneThird:
                     result = 0.25F * shipFullSpeed;
@@ -75,12 +81,9 @@ namespace CodeEnv.Master.GameContent {
                 case Speed.Full:
                     result = 1.0F * shipFullSpeed;
                     break;
-                //case Speed.Flank:
-                //    stlSpeed = 1.10F * shipFullSpeed;
-                //    break;
 
                 case Speed.FleetSlow:
-                    result = 0.10F * fleetData.UnitFullStlSpeed;
+                    result = 0.3F;
                     break;
                 case Speed.FleetOneThird:
                     result = 0.25F * fleetFullSpeed;
@@ -112,6 +115,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
+        [Obsolete]
         public static bool TryDecrease(this Speed speed, SpeedStep step, out Speed newSpeed) {
             D.Assert(speed != Speed.None);
             newSpeed = Speed.None;
@@ -122,7 +126,7 @@ namespace CodeEnv.Master.GameContent {
                 case Speed.Stop:
                     newSpeed = Speed.EmergencyStop;
                     return true;
-                case Speed.Thrusters:
+                case Speed.Docking:
                     switch (step) {
                         case SpeedStep.Minimum:
                             newSpeed = Speed.Stop;
@@ -142,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
                 case Speed.Slow:
                     switch (step) {
                         case SpeedStep.Minimum:
-                            newSpeed = Speed.Thrusters;
+                            newSpeed = Speed.Docking;
                             break;
                         case SpeedStep.One:
                             newSpeed = Speed.Stop;
@@ -164,7 +168,7 @@ namespace CodeEnv.Master.GameContent {
                             newSpeed = Speed.Slow;
                             break;
                         case SpeedStep.One:
-                            newSpeed = Speed.Thrusters;
+                            newSpeed = Speed.Docking;
                             break;
                         case SpeedStep.Two:
                             newSpeed = Speed.Stop;
@@ -188,7 +192,7 @@ namespace CodeEnv.Master.GameContent {
                             newSpeed = Speed.Slow;
                             break;
                         case SpeedStep.Two:
-                            newSpeed = Speed.Thrusters;
+                            newSpeed = Speed.Docking;
                             break;
                         case SpeedStep.Three:
                             newSpeed = Speed.Stop;
@@ -214,7 +218,7 @@ namespace CodeEnv.Master.GameContent {
                             newSpeed = Speed.Slow;
                             break;
                         case SpeedStep.Three:
-                            newSpeed = Speed.Thrusters;
+                            newSpeed = Speed.Docking;
                             break;
                         case SpeedStep.Four:
                             newSpeed = Speed.Stop;
@@ -242,7 +246,7 @@ namespace CodeEnv.Master.GameContent {
                             newSpeed = Speed.Slow;
                             break;
                         case SpeedStep.Four:
-                            newSpeed = Speed.Thrusters;
+                            newSpeed = Speed.Docking;
                             break;
                         case SpeedStep.Five:
                             newSpeed = Speed.Stop;

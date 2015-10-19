@@ -91,9 +91,9 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
         float engineMass = TempGameValues.__GetEngineMass(hullCategory);
 
-        float fullStlThrust = TempGameValues.__GetFullStlThrust(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
-        float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
-        return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlThrust, fullFtlThrust,
+        float fullStlPower = TempGameValues.__GetFullStlPower(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
+        float fullFtlPower = fullStlPower * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
+        return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPower, fullFtlPower,
             maxTurnRate, 0F, engineMass, 0F, 0F);
     }
 

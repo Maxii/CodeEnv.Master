@@ -665,7 +665,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         // TODO increase speed if further away
         // var vectorToStation = Data.FormationStation.VectorToStation;
         // var distanceToStationSqrd = vectorToStation.sqrMagnitude;
-        speed = Speed.Thrusters;
+        speed = Speed.Docking;
         return true;
     }
 
