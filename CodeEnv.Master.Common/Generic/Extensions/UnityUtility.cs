@@ -291,10 +291,10 @@ namespace CodeEnv.Master.Common {
         /// <param name="sphereRadius">The sphere radius.</param>
         /// <returns></returns>
         public static Vector3 FindClosestPointOnSphereOrthogonalToIntersectingLine(Vector3 intersectPtA, Vector3 intersectPtB, Vector3 sphereCenter, float sphereRadius) {
-            var aToCenter = Vector3.Distance(intersectPtA, sphereCenter);   // OPTIMIZE with square magnitudes
-            var bToCenter = Vector3.Distance(intersectPtB, sphereCenter);
-            D.Assert(aToCenter.ApproxEquals(sphereRadius), "{0} should equal {1}.".Inject(aToCenter, sphereRadius));
-            D.Assert(bToCenter.ApproxEquals(sphereRadius), "{0} should equal {1}.".Inject(bToCenter, sphereRadius));
+            var aToCenterSqrd = Vector3.SqrMagnitude(intersectPtA - sphereCenter);
+            var bToCenterSqrd = Vector3.SqrMagnitude(intersectPtB - sphereCenter);
+            D.Assert(Mathfx.Approx(aToCenterSqrd, Mathf.Pow(sphereRadius, 2F), .01F), "{0} should equal {1}.".Inject(Mathf.Sqrt(aToCenterSqrd), sphereRadius));
+            D.Assert(Mathfx.Approx(bToCenterSqrd, Mathf.Pow(sphereRadius, 2F), .01F), "{0} should equal {1}.".Inject(Mathf.Sqrt(bToCenterSqrd), sphereRadius));
 
             Vector3 lineMidPt = intersectPtA + (intersectPtB - intersectPtA) / 2F;
             if (lineMidPt != sphereCenter) {

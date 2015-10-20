@@ -64,7 +64,10 @@ internal abstract class ANavigator : IDisposable {
     /// </summary>
     protected float TargetPointDistance { get { return Vector3.Distance(Position, TargetPoint); } }
 
-    protected Speed _travelSpeed;
+    /// <summary>
+    /// The designated speed to travel at.
+    /// </summary>
+    protected Speed _orderSpeed;
     protected OrderSource _orderSource;
     protected Job _pilotJob;
 
@@ -80,7 +83,7 @@ internal abstract class ANavigator : IDisposable {
     internal virtual void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
         D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(Name, speed.GetValueName()));
         Target = target;
-        _travelSpeed = speed;
+        _orderSpeed = speed;
         _orderSource = orderSource;
     }
 
@@ -105,6 +108,8 @@ internal abstract class ANavigator : IDisposable {
     internal virtual void DisengageAutoPilot() {
         KillPilotJobs();
         RefreshCourse(CourseRefreshMode.ClearCourse);
+        _orderSource = OrderSource.None;
+        _orderSpeed = Speed.None;
     }
 
     /// <summary>

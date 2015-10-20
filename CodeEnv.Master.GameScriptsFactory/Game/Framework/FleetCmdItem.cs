@@ -912,7 +912,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 currentWaypoint = detour;
             }
-            _fleet.__IssueShipMovementOrders(currentWaypoint, _travelSpeed);
+            _fleet.__IssueShipMovementOrders(currentWaypoint, _orderSpeed);
 
             int targetDestinationIndex = Course.Count - 1;
             while (_currentWaypointIndex <= targetDestinationIndex) {
@@ -934,7 +934,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         targetDestinationIndex = Course.Count - 1;
                         // IMPROVE validate that the detour provided does not itself leave us with another obstacle to encounter
                     }
-                    _fleet.__IssueShipMovementOrders(currentWaypoint, _travelSpeed);
+                    _fleet.__IssueShipMovementOrders(currentWaypoint, _orderSpeed);
                 }
                 else if (IsCourseReplotNeeded) {
                     RegenerateCourse();
