@@ -88,10 +88,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         Shields = 22,        // IgnoreGuiEvents = 22, // Removed 3.19.14, replaced by IgnoreRaycast
 
-        /// <summary>
-        /// Layer for Beam Ordnance so it can 
-        /// </summary>
-        Beams = 23,
+        //Beams = 23,   // Removed 10.20.15 as beams don't have colliders
 
         /// <summary>
         /// Layer for Projectile Ordnance so they won't collide with each other when trying to impact a Target on the Default layer. 

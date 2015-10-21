@@ -125,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
         public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, Player owner, IEnumerable<ActiveCountermeasure> activeCMs,
             IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
             : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, passiveCMs) {
-                _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(elementTransform.gameObject);
+            _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(elementTransform.gameObject);
             Initialize(hullEquipment, activeCMs, sensors, passiveCMs, shieldGenerators);
         }
 
@@ -215,7 +215,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcSensorRange() {
-            // CalcSensorRangeDistance filters out damage sensors
+            // CalcSensorRangeDistance filters out damaged sensors
             var shortRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Short);
             var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Medium);
             var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Long);

@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
             Category = GenerateCmdCategory(UnitComposition);
         }
 
-        protected override void UpdateComposition() {
+        protected override void RefreshComposition() {
             var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
             UnitComposition = new BaseComposition(elementCategories);
         }

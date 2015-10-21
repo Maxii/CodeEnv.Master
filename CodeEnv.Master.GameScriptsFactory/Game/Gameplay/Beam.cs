@@ -105,7 +105,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     public void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         PrepareForLaunch(target, weapon, toShowEffects);
-        D.Assert((Layers)gameObject.layer == Layers.Beams, "{0} is not on Layer {1}.".Inject(Name, Layers.Beams.GetValueName()));
+        D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
         weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
         _operatingDuration = Weapon.Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located

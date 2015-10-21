@@ -858,17 +858,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="speed">The speed.</param>
-        internal override void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-            base.PlotCourse(target, speed, orderSource);
+        /// <param name="travelSpeed">The speed to travel at.</param>
+        internal override void PlotCourse(INavigableTarget target, Speed travelSpeed, OrderSource orderSource) {
+            base.PlotCourse(target, travelSpeed, orderSource);
             _targetHasKeepoutZone = target is IShipOrbitable;
             ResetCourseReplotValues();
             GenerateCourse();
         }
 
-        internal override void EngageAutoPilot() {
+        //internal override void EngageAutoPilot() {
+        //    _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
+        //    base.EngageAutoPilot();
+        //}
+
+        protected override void InitializeAutoPilot() {
             _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
-            base.EngageAutoPilot();
         }
 
         protected override void RunPilotJobs() {
@@ -912,7 +916,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 currentWaypoint = detour;
             }
-            _fleet.__IssueShipMovementOrders(currentWaypoint, _orderSpeed);
+            _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
 
             int targetDestinationIndex = Course.Count - 1;
             while (_currentWaypointIndex <= targetDestinationIndex) {
@@ -934,7 +938,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         targetDestinationIndex = Course.Count - 1;
                         // IMPROVE validate that the detour provided does not itself leave us with another obstacle to encounter
                     }
-                    _fleet.__IssueShipMovementOrders(currentWaypoint, _orderSpeed);
+                    _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
                 }
                 else if (IsCourseReplotNeeded) {
                     RegenerateCourse();

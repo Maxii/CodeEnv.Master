@@ -625,7 +625,7 @@ public class FleetNavigator : IDisposable {
             }
         }
         // distance traveled in 1 day at FleetStandard Speed
-        CloseEnoughDistanceToTarget = Speed.FleetStandard.GetValue(_data);
+        CloseEnoughDistanceToTarget = Speed.FleetStandard.GetUnitsPerHour(_data);
         // IMPROVE if a cellestial object then closeEnoughDistance should be an 'orbit' value, aka keepoutDistance + 1 or somesuch
     }
 

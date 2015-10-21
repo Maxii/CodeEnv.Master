@@ -73,23 +73,23 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _unitFullSpeed, value, "UnitFullSpeed"); }
         }
 
-        private float _unitFullStlSpeed;
-        /// <summary>
-        /// The maximum sustainable STL speed of the fleet in units per hour.
-        /// </summary>
-        public float UnitFullStlSpeed {
-            get { return _unitFullStlSpeed; }
-            private set { SetProperty<float>(ref _unitFullStlSpeed, value, "UnitFullStlSpeed"); }
-        }
+        //private float _unitFullStlSpeed;
+        ///// <summary>
+        ///// The maximum sustainable STL speed of the fleet in units per hour.
+        ///// </summary>
+        //public float UnitFullStlSpeed {
+        //    get { return _unitFullStlSpeed; }
+        //    private set { SetProperty<float>(ref _unitFullStlSpeed, value, "UnitFullStlSpeed"); }
+        //}
 
-        private float _unitFullFtlSpeed;
-        /// <summary>
-        /// The maximum sustainable FTL speed of the fleet in units per hour.
-        /// </summary>
-        public float UnitFullFtlSpeed {
-            get { return _unitFullFtlSpeed; }
-            private set { SetProperty<float>(ref _unitFullFtlSpeed, value, "UnitFullFtlSpeed"); }
-        }
+        //private float _unitFullFtlSpeed;
+        ///// <summary>
+        ///// The maximum sustainable FTL speed of the fleet in units per hour.
+        ///// </summary>
+        //public float UnitFullFtlSpeed {
+        //    get { return _unitFullFtlSpeed; }
+        //    private set { SetProperty<float>(ref _unitFullFtlSpeed, value, "UnitFullFtlSpeed"); }
+        //}
 
         private float _unitMaxTurnRate;
         /// <summary>
@@ -142,27 +142,27 @@ namespace CodeEnv.Master.GameContent {
             Category = GenerateCmdCategory(UnitComposition);
         }
 
-        protected override void UpdateComposition() {
+        protected override void RefreshComposition() {
             var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.HullCategory);
             UnitComposition = new FleetComposition(elementCategories);
         }
 
         protected override void RecalcPropertiesDerivedFromCombinedElements() {
             base.RecalcPropertiesDerivedFromCombinedElements();
-            UpdateFullSpeed();
-            UpdateMaxTurnRate();
+            RefreshFullSpeed();
+            RefreshMaxTurnRate();
         }
 
-        private void UpdateFullSpeed() {
+        private void RefreshFullSpeed() {
             if (ElementsData.Any()) {
-                //D.Log("{0}.{1}.UpdateFullSpeed() called.", FullName, GetType().Name);
-                UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
-                UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
+                //D.Log("{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
+                //UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
+                //UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
                 UnitFullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
             }
         }
 
-        private void UpdateMaxTurnRate() {
+        private void RefreshMaxTurnRate() {
             if (ElementsData.Any()) {
                 UnitMaxTurnRate = ElementsData.Min(data => (data as ShipData).MaxTurnRate);
             }
@@ -172,22 +172,18 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             ShipData shipData = elementData as ShipData;
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullStlSpeed, OnShipFullSpeedChanged));
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullFtlSpeed, OnShipFullSpeedChanged));
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlAvailableForUse, OnShipFtlAvailableForUseChanged));
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.MaxTurnRate, OnShipElementMaxTurnRateChanged));
+            //anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullStlSpeed, OnShipFullSpeedChanged));
+            //anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullFtlSpeed, OnShipFullSpeedChanged));
+            //anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlOperational, OnShipIsFtlOperationalChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, OnShipFullSpeedChanged));
         }
+
+        //private void OnShipIsFtlOperationalChanged() {
+        //    RefreshFullSpeed();
+        //}
 
         private void OnShipFullSpeedChanged() {
-            UpdateFullSpeed();
-        }
-
-        private void OnShipFtlAvailableForUseChanged() {
-            UpdateFullSpeed();
-        }
-
-        private void OnShipElementMaxTurnRateChanged() {
-            UpdateMaxTurnRate();
+            RefreshFullSpeed();
         }
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {

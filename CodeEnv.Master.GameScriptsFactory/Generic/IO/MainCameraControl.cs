@@ -177,7 +177,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     private LayerMask _mainCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull,
-        Layers.SystemOrbitalPlane, Layers.Beams, Layers.Projectiles);
+        Layers.SystemOrbitalPlane, Layers.Projectiles);
 
     private LayerMask _universeEdgeOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _dummyTargetOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);

@@ -268,7 +268,7 @@ namespace CodeEnv.Master.GameContent {
             UpdateElementParentName(elementData);
             ElementsData.Add(elementData);
 
-            UpdateComposition();
+            RefreshComposition();
             Subscribe(elementData);
             RecalcPropertiesDerivedFromCombinedElements();
         }
@@ -296,13 +296,13 @@ namespace CodeEnv.Master.GameContent {
             bool isRemoved = ElementsData.Remove(elementData);
             D.Assert(isRemoved, "Attempted to remove {0} {1} that is not present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
 
-            UpdateComposition();
+            RefreshComposition();
             Unsubscribe(elementData);
             RecalcPropertiesDerivedFromCombinedElements();
         }
 
         // OPTIMIZE avoid creating new Composition at startup for every element.add transaction
-        protected abstract void UpdateComposition();
+        protected abstract void RefreshComposition();
 
         /// <summary>
         /// Recalculates any Command properties that are dependant upon the total element population.

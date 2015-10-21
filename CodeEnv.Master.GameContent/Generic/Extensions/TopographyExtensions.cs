@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     public static class TopographyExtensions {
 
         /// <summary>
-        /// Gets the density of space in this <c>topography</c> relative to Topography.OpenSpace.
+        /// Gets the density of matter in this <c>topography</c> relative to Topography.OpenSpace.
         /// The density of a <c>Topography</c> affects the drag of ships and projectiles moving through it.
         /// </summary>
         /// <param name="topography">The topography.</param>

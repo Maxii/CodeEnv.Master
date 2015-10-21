@@ -635,7 +635,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         //D.Log("{0}.AssumingOrbit_EnterState called.", FullName);
         D.Assert(_currentOrIntendedOrbitSlot != null);
         D.Assert(!_isInOrbit);
-        //_helm.DisengageAutoPilot();
         _helm.ChangeSpeed(Speed.Stop);
         float distanceToMeanOrbit;
         if (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
@@ -794,8 +793,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         _moveSpeed = Speed.None;
         _orderSource = OrderSource.None;
         _helm.ChangeSpeed(Speed.Stop);
-        //_helm.DisengageAutoPilot();
-        // the ship retains its existing speed and heading upon exit
     }
 
     #endregion
@@ -862,6 +859,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     void ExecuteAttackOrder_OnTargetDeath(IMortalItem deadTarget) {
         D.Assert(_primaryTarget == deadTarget);
+        LogEvent();
         _primaryTarget = null;  // tells EnterState it can stop waiting for targetDeath and pick another primary target
     }
 
@@ -994,7 +992,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        //D.Log("{0}.Repairing_EnterState called.", FullName);
+        D.Log("{0}.Repairing_EnterState called.", FullName);
         //_helm.ChangeSpeed(Speed.Stop);    // ship is already stopped
         StartEffect(EffectID.Repairing);
 
@@ -1011,8 +1009,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
-
-        Data.IsFtlOperational = true;
+        Data.IsFtlDamaged = false;
         //D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
@@ -1206,8 +1203,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
-        Data.IsFtlOperational = RandomExtended.Chance(equipmentSurvivalChance);
+        //var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        var equipDamagedChance = damageSeverity;
+        //Data.IsFtlOperational = RandomExtended.Chance(equipmentSurvivalChance);
+        Data.IsFtlDamaged = RandomExtended.Chance(equipDamagedChance);
     }
 
     #endregion
@@ -1385,9 +1384,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
             _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
-            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
-            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
+            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
+            //_subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+            //_subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
+            //_subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
+            //_subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlOperational, OnIsFtlOperationalChanged));
             //_subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, Topography>(d => d.Topography, OnTopographyChanged));
             _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
         }
@@ -1396,11 +1397,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="speed">The speed.</param>
+        /// <param name="travelSpeed">The speed to travel at.</param>
         /// <param name="orderSource">The source of this move order.</param>
-        internal override void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-            base.PlotCourse(target, speed, orderSource);
-            //D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
+        internal override void PlotCourse(INavigableTarget target, Speed travelSpeed, OrderSource orderSource) {
+            base.PlotCourse(target, travelSpeed, orderSource);
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
             // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone
@@ -1466,9 +1466,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 return;
             }
 
-            RefreshNavigationalValues();
+            //RefreshNavigationalValues();
             RefreshCourse(CourseRefreshMode.NewCourse);
             OnCoursePlotSuccess();
+        }
+
+        protected override void InitializeAutoPilot() {
+            RefreshNavValuesOnEngageAutoPilot();
         }
 
         protected override void RunPilotJobs() {
@@ -1833,13 +1837,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         }
 
         /// <summary>
-        /// Engages the engines to execute course travel at _ordersSpeed.
+        /// Engages the engines to execute course travel at _travelSpeed.
         /// </summary>
         private void EngageEngines() {
-            D.Assert(_orderSpeed != default(Speed));
-            D.Log("{0} engaging engines at speed {1}.", _ship.FullName, _orderSpeed.GetValueName());
-            _engineRoom.ChangeSpeed(_orderSpeed.GetValue(_ship.Command.Data, _ship.Data));
+            D.Assert(TravelSpeed != default(Speed));
+            D.Log("{0} engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
+            _engineRoom.ChangeSpeed(TravelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
         }
+
+        /// <summary>
+        /// The last speed that was set by the captain using ChangeSpeed(), 
+        /// overriding and disengaging the autopilot.
+        /// </summary>
+        private Speed _lastSpeedOverride;
 
         /// <summary>
         /// Primary exposed control that changes the speed the ship is traveling at and disengages the autopilot.
@@ -1850,7 +1860,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             D.Assert(newSpeed != default(Speed));
             D.Log("{0} disengaging autopilot and changing speed to {1}.", Name, newSpeed.GetValueName());
             DisengageAutoPilot();
-            _engineRoom.ChangeSpeed(newSpeed.GetValue(_ship.Command.Data, _ship.Data));
+            _lastSpeedOverride = newSpeed;
+            _engineRoom.ChangeSpeed(newSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
             if (newSpeed == Speed.EmergencyStop) {
                 D.Assert(!_shipRigidbody.isKinematic);
                 _shipRigidbody.velocity = Vector3.zero;
@@ -1944,6 +1955,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         //    }
         //}
 
+        //private float EstimateDistanceTraveledWhileTurning(Vector3 newHeading) {    // IMPROVE use newHeading
+        //    float estimatedMaxTurnDuration = 0.5F;  // in GameTimeSeconds
+        //    var result = InstantSpeed * estimatedMaxTurnDuration;
+        //    //D.Log("{0}.EstimatedDistanceTraveledWhileTurning: {1:0.00}", Name, result);
+        //    return result;
+        //}
+
         #endregion
 
         #endregion
@@ -1971,17 +1989,18 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             _ship.OnDestinationUnreachable();
         }
 
-        private void OnFtlAvailableForUseChanged() {
-            D.Log("{0}.OnFtlAvailableForUseChanged() called. IsFtlAvailableForUse = {1}.", Name, _ship.Data.IsFtlAvailableForUse);
-            RefreshNavigationalValues();
-        }
+        //private void OnIsFtlOperationalChanged() {
+        //    RefreshNavigationalValues();
+        //}
 
         internal void OnFleetFullSpeedChanged() {
-            RefreshNavigationalValues();
+            RefreshNavValuesOnFleetFullSpeedChanged();
+            //RefreshNavigationalValues();
         }
 
         private void OnFullSpeedChanged() {
-            RefreshNavigationalValues();
+            RefreshNavValuesOnShipFullSpeedChanged();
+            //RefreshNavigationalValues();
         }
 
         // Note: No need for OnTopographyChanged as FullSpeedValues get changed when density (and therefore drag) changes
@@ -1991,7 +2010,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         }
 
         private void OnGameSpeedChanged() {
-            RefreshNavigationalValues();
+            RefreshNavValuesOnGameSpeedChange();
+            //RefreshNavigationalValues();
         }
 
         private void OnIsPausedChanged() {
@@ -2073,38 +2093,135 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// Refreshes the values that depend on the target and speedPerSecond.
         /// SpeedPerSecond is affected by a number of factors including: _travelSpeed, gameSpeed, Topography, FtlAvailability, FtlFullSpeed and StlFullSpeed values.
         /// </summary>
-        private void RefreshNavigationalValues() {
-            if (_orderSpeed == default(Speed)) {
-                return; // _orderSpeed will always be None prior to the first PlotCourse
-            }
-            D.Log("{0} is refreshing navigational values.", _ship.FullName);
-            // The sequence in which speed-related values in Ship and Cmd Data are updated is undefined,
-            // so we wait for a frame before refreshing the values that are derived from them.
-            UnityUtility.WaitOneToExecute(onWaitFinished: () => {
-                var travelSpeedInUnitsPerHour = _orderSpeed.GetValue(_ship.Command.Data, _ship.Data);
+        private void RefreshNavValuesOnGameSpeedChange() {
+            if (IsAutoPilotEngaged) {
+                // autopilot values in helm affected by gameSpeed need to be refreshed
+                var cmdData = _orderSource == OrderSource.UnitCommand ? _ship.Command.Data : null;
+                var shipData = _orderSource == OrderSource.ElementCaptain ? _ship.Data : null;
+                var travelSpeedInUnitsPerHour = TravelSpeed.GetUnitsPerHour(cmdData, shipData);
                 var travelSpeedInUnitsPerSecond = travelSpeedInUnitsPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                // Note: speedPerSecond can range from 0.25 (1 unit/hr in a System * 1 hr/sec setting * GameSpeedMultiplier of 0.25) to
-                // 320 (20 units/hr in OpenSpace * 4 hr/sec setting * GameSpeedMultiplier of 4.0). The more typical range using current 
-                // assumptions is 0.75 (1.5 unit/hr in a System * 2 hr/sec setting * GameSpeedMultiplier of 0.25) to 
-                // 120 (15 unit/hr in OpenSpace * 2 hr/sec setting * GameSpeedMultiplier of 4.0).
 
                 _targetProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _targetInfo.ProgressCheckDistance);
                 _detourProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _waypointProgressCheckDistance);
-
-                // higher speedPerSecond needs more frequent course correction checks, and continuous checks starting further away
                 _courseCorrectionCheckCountThreshold = Mathf.CeilToInt(16 / travelSpeedInUnitsPerSecond);
                 _continuousCourseCorrectionCheckSqrdDistanceThreshold = 25F * travelSpeedInUnitsPerSecond;
 
                 _obstacleCheckPeriod = CalcObstacleCheckPeriod(travelSpeedInUnitsPerSecond);
-                //D.Log("{0} TargetProgressCheckPeriod: {1:0.##} secs, ObstacleDetourProgressCheckPeriod: {2:0.##} secs, ObstacleCheckPeriod: {3:0.##} secs.",
-                //    Name, _targetProgressCheckPeriod, _detourProgressCheckPeriod, _obstacleCheckPeriod);
-
-                _engineRoom.RefreshSpeedValue(travelSpeedInUnitsPerHour);
-            });
-            //float courseCorrectionCheckPeriod = _courseProgressCheckPeriod * _numberOfProgressChecksBetweenCourseCorrectionChecks;
-            //D.Log("{0}: Normal course correction check every {1:0.##} seconds, \nContinuous course correction checks start {2:0.##} units from destination.",
-            // _ship.FullName, courseCorrectionCheckPeriod, Mathf.Sqrt(_sqrdDistanceWhereContinuousCourseCorrectionChecksBegin));
+                // no need to refresh engineRoom as it auto adjusts to gameSpeed changes
+            }
         }
+
+        private void RefreshNavValuesOnEngageAutoPilot() {
+            D.Assert(IsAutoPilotEngaged);
+
+            // all values need to be initialized except engineRoom speed value as it will be set when the engines are engaged
+            var cmdData = _orderSource == OrderSource.UnitCommand ? _ship.Command.Data : null;
+            var shipData = _orderSource == OrderSource.ElementCaptain ? _ship.Data : null;
+
+            var travelSpeedInUnitsPerHour = TravelSpeed.GetUnitsPerHour(cmdData, shipData);
+            var travelSpeedInUnitsPerSecond = travelSpeedInUnitsPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond;
+
+            _targetProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _targetInfo.ProgressCheckDistance);
+            _detourProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _waypointProgressCheckDistance);
+
+            _courseCorrectionCheckCountThreshold = Mathf.CeilToInt(16 / travelSpeedInUnitsPerSecond);
+            _continuousCourseCorrectionCheckSqrdDistanceThreshold = 25F * travelSpeedInUnitsPerSecond;
+
+            _obstacleCheckPeriod = CalcObstacleCheckPeriod(travelSpeedInUnitsPerSecond);
+        }
+
+        private void RefreshNavValuesOnShipFullSpeedChanged() {
+            float travelSpeedInUnitsPerHour;
+            if (IsAutoPilotEngaged) {
+                // all values need to be refreshed
+                var cmdData = _orderSource == OrderSource.UnitCommand ? _ship.Command.Data : null;
+                var shipData = _orderSource == OrderSource.ElementCaptain ? _ship.Data : null;
+
+                travelSpeedInUnitsPerHour = TravelSpeed.GetUnitsPerHour(cmdData, shipData);
+                var travelSpeedInUnitsPerSecond = travelSpeedInUnitsPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond;
+
+                _targetProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _targetInfo.ProgressCheckDistance);
+                _detourProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _waypointProgressCheckDistance);
+
+                _courseCorrectionCheckCountThreshold = Mathf.CeilToInt(16 / travelSpeedInUnitsPerSecond);
+                _continuousCourseCorrectionCheckSqrdDistanceThreshold = 25F * travelSpeedInUnitsPerSecond;
+
+                _obstacleCheckPeriod = CalcObstacleCheckPeriod(travelSpeedInUnitsPerSecond);
+                _engineRoom.RefreshSpeedValue(travelSpeedInUnitsPerHour);
+            }
+            else {
+                // not on autopilot
+                if (_ship.Data.RequestedSpeed != Constants.ZeroF) { // or _lastSpeedOverride != default(Speed)?
+                    // ship is underway without the autopilot so ChangeSpeed set the value, no need to refresh if 
+                    travelSpeedInUnitsPerHour = _lastSpeedOverride.GetUnitsPerHour(null, _ship.Data);
+                    _engineRoom.RefreshSpeedValue(travelSpeedInUnitsPerHour);
+                }
+            }
+        }
+
+        private void RefreshNavValuesOnFleetFullSpeedChanged() {
+            //float travelSpeedInUnitsPerHour;
+            //if (IsAutoPilotEngaged) {
+            //    // all values need to be refreshed
+            //    var cmdData = _orderSource == OrderSource.UnitCommand ? _ship.Command.Data : null;
+            //    var shipData = _orderSource == OrderSource.ElementCaptain ? _ship.Data : null;
+
+            //    travelSpeedInUnitsPerHour = TravelSpeed.GetUnitsPerHour(cmdData, shipData);
+            //    var travelSpeedInUnitsPerSecond = travelSpeedInUnitsPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond;
+
+            //    _targetProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _targetInfo.ProgressCheckDistance);
+            //    _detourProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _waypointProgressCheckDistance);
+
+            //    _courseCorrectionCheckCountThreshold = Mathf.CeilToInt(16 / travelSpeedInUnitsPerSecond);
+            //    _continuousCourseCorrectionCheckSqrdDistanceThreshold = 25F * travelSpeedInUnitsPerSecond;
+
+            //    _obstacleCheckPeriod = CalcObstacleCheckPeriod(travelSpeedInUnitsPerSecond);
+            //    _engineRoom.RefreshSpeedValue(travelSpeedInUnitsPerHour);
+            //}
+            //else {
+            //    // not on autopilot
+            //    if (_ship.Data.RequestedSpeed != Constants.ZeroF) {
+            //        // ship is underway without the autopilot so ChangeSpeed set the value
+            //        travelSpeedInUnitsPerHour = _lastSpeedOverride.GetUnitsPerHour(null, _ship.Data);
+            //        _engineRoom.RefreshSpeedValue(travelSpeedInUnitsPerHour);
+            //    }
+            //}
+        }
+
+
+
+        //private void RefreshNavigationalValues() {
+        //    if (_travelSpeed == default(Speed)) {
+        //        return; // _travelSpeed will always be None prior to the first PlotCourse
+        //    }
+        //    D.Log("{0} is refreshing navigational values.", _ship.FullName);
+        //    // The sequence in which speed-related values in Ship and Cmd Data are updated is undefined,
+        //    // so we wait for a frame before refreshing the values that are derived from them.
+        //    UnityUtility.WaitOneToExecute(onWaitFinished: () => {
+        //        var travelSpeedInUnitsPerHour = _travelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data);
+        //        var travelSpeedInUnitsPerSecond = travelSpeedInUnitsPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        //        // Note: speedPerSecond can range from 0.25 (1 unit/hr in a System * 1 hr/sec setting * GameSpeedMultiplier of 0.25) to
+        //        // 320 (20 units/hr in OpenSpace * 4 hr/sec setting * GameSpeedMultiplier of 4.0). The more typical range using current 
+        //        // assumptions is 0.75 (1.5 unit/hr in a System * 2 hr/sec setting * GameSpeedMultiplier of 0.25) to 
+        //        // 120 (15 unit/hr in OpenSpace * 2 hr/sec setting * GameSpeedMultiplier of 4.0).
+
+        //        _targetProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _targetInfo.ProgressCheckDistance);
+        //        _detourProgressCheckPeriod = CalcCourseProgressCheckPeriod(travelSpeedInUnitsPerSecond, _waypointProgressCheckDistance);
+
+        //        // higher speedPerSecond needs more frequent course correction checks, and continuous checks starting further away
+        //        _courseCorrectionCheckCountThreshold = Mathf.CeilToInt(16 / travelSpeedInUnitsPerSecond);
+        //        _continuousCourseCorrectionCheckSqrdDistanceThreshold = 25F * travelSpeedInUnitsPerSecond;
+
+        //        _obstacleCheckPeriod = CalcObstacleCheckPeriod(travelSpeedInUnitsPerSecond);
+        //        //D.Log("{0} TargetProgressCheckPeriod: {1:0.##} secs, ObstacleDetourProgressCheckPeriod: {2:0.##} secs, ObstacleCheckPeriod: {3:0.##} secs.",
+        //        //    Name, _targetProgressCheckPeriod, _detourProgressCheckPeriod, _obstacleCheckPeriod);
+
+        //        _engineRoom.RefreshSpeedValue(travelSpeedInUnitsPerHour);
+        //    });
+        //    //float courseCorrectionCheckPeriod = _courseProgressCheckPeriod * _numberOfProgressChecksBetweenCourseCorrectionChecks;
+        //    //D.Log("{0}: Normal course correction check every {1:0.##} seconds, \nContinuous course correction checks start {2:0.##} units from destination.",
+        //    // _ship.FullName, courseCorrectionCheckPeriod, Mathf.Sqrt(_sqrdDistanceWhereContinuousCourseCorrectionChecksBegin));
+        //}
 
         /// <summary>
         /// Calculates the number of seconds between course progress checks.
@@ -2212,14 +2329,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             //D.Log("CourseCountAfter = {0}.", Course.Count);
             OnCourseChanged();
         }
-
-        //[Obsolete]
-        //private float EstimateDistanceTraveledWhileTurning(Vector3 newHeading) {    // IMPROVE use newHeading
-        //    float estimatedMaxTurnDuration = 0.5F;  // in GameTimeSeconds
-        //    var result = InstantSpeed * estimatedMaxTurnDuration;
-        //    //D.Log("{0}.EstimatedDistanceTraveledWhileTurning: {1:0.00}", Name, result);
-        //    return result;
-        //}
 
         #region SeparationDistance Archive
 
@@ -2578,12 +2687,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
             /// <returns></returns>
             internal void ChangeSpeed(float newSpeedRequest) {
-                D.Assert(newSpeedRequest <= _shipData.FullSpeed, "{0}.{1} speedValue {2:0.##} > FullSpeed {3:0.##}. IsFtlAvailableForUse: {4}.".Inject(_shipData.FullName, GetType().Name, newSpeedRequest, _shipData.FullSpeed, _shipData.IsFtlAvailableForUse));
                 D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
                 _shipData.RequestedSpeed = newSpeedRequest;
                 CalcForwardPropulsionPowerOutputFor(newSpeedRequest);
-                if (CurrentForwardSpeed <= newSpeedRequest) {
-                    EngageOrContinueForwardPropulsion();
+                if (newSpeedRequest >= CurrentForwardSpeed) {
+                    if (newSpeedRequest != Constants.ZeroF) {
+                        EngageOrContinueForwardPropulsion();
+                    }
                 }
                 else {
                     EngageOrContinueReversePropulsion();
@@ -2596,7 +2706,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// </summary>
             /// <param name="refreshedSpeedValue">The refreshed speed value.</param>
             internal void RefreshSpeedValue(float refreshedSpeedValue) {
-                D.Assert(refreshedSpeedValue <= _shipData.FullSpeed, "{0}.{1} speedValue {2:0.##} > FullSpeed {3:0.##}. IsFtlAvailableForUse: {4}.".Inject(_shipData.FullName, GetType().Name, refreshedSpeedValue, _shipData.FullSpeed, _shipData.IsFtlAvailableForUse));
                 _shipData.RequestedSpeed = refreshedSpeedValue;
                 CalcForwardPropulsionPowerOutputFor(refreshedSpeedValue);
             }

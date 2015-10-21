@@ -122,7 +122,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
                 prefab = RequiredPrefabs.Instance.beam;
                 GameObject muzzle = (weapon.WeaponMount as ILOSWeaponMount).Muzzle;
                 ordnanceGo = UnityUtility.AddChild(muzzle, prefab.gameObject);
-                ordnanceGo.layer = (int)Layers.Beams;
+                ordnanceGo.layer = (int)Layers.TransparentFX;
                 break;
             case WDVCategory.Missile:
                 prefab = RequiredPrefabs.Instance.missile;

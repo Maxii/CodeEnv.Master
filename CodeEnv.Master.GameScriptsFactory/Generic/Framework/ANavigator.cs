@@ -30,7 +30,8 @@ internal abstract class ANavigator : IDisposable {
 
     private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
-    internal bool IsAutoPilotEngaged { get { return ArePilotJobsRunning; } }
+    //internal bool IsAutoPilotEngaged { get { return ArePilotJobsRunning; } }
+    internal bool IsAutoPilotEngaged { get; private set; }
 
     /// <summary>
     /// The course this Navigator will follow when engaged. 
@@ -65,9 +66,10 @@ internal abstract class ANavigator : IDisposable {
     protected float TargetPointDistance { get { return Vector3.Distance(Position, TargetPoint); } }
 
     /// <summary>
-    /// The designated speed to travel at.
+    /// The designated speed the autopilot should travel at. 
     /// </summary>
-    protected Speed _orderSpeed;
+    protected Speed TravelSpeed { get; set; }
+
     protected OrderSource _orderSource;
     protected Job _pilotJob;
 
@@ -79,20 +81,27 @@ internal abstract class ANavigator : IDisposable {
     /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
     /// </summary>
     /// <param name="target">The target.</param>
-    /// <param name="speed">The speed to travel at.</param>
-    internal virtual void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-        D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(Name, speed.GetValueName()));
+    /// <param name="travelSpeed">The speed to travel at.</param>
+    internal virtual void PlotCourse(INavigableTarget target, Speed travelSpeed, OrderSource orderSource) {
+        D.Assert(travelSpeed != default(Speed) && travelSpeed != Speed.Stop && travelSpeed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(Name, travelSpeed.GetValueName()));
         Target = target;
-        _orderSpeed = speed;
+        TravelSpeed = travelSpeed;
         _orderSource = orderSource;
     }
 
     /// <summary>
     /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
     /// </summary>
-    internal virtual void EngageAutoPilot() {
+    internal void EngageAutoPilot() {
+        IsAutoPilotEngaged = true;
+        InitializeAutoPilot();
         RunPilotJobs();
     }
+    //internal virtual void EngageAutoPilot() {
+    //    RunPilotJobs();
+    //}
+
+    protected abstract void InitializeAutoPilot();
 
     /// <summary>
     /// Internal control for launching new pilot Job(s).
@@ -106,11 +115,18 @@ internal abstract class ANavigator : IDisposable {
     /// Primary exposed control for disengaging the Navigator's AutoPilot from handling movement.
     /// </summary>
     internal virtual void DisengageAutoPilot() {
+        IsAutoPilotEngaged = false;
         KillPilotJobs();
         RefreshCourse(CourseRefreshMode.ClearCourse);
         _orderSource = OrderSource.None;
-        _orderSpeed = Speed.None;
+        TravelSpeed = Speed.None;
     }
+    //internal virtual void DisengageAutoPilot() {
+    //    KillPilotJobs();
+    //    RefreshCourse(CourseRefreshMode.ClearCourse);
+    //    _orderSource = OrderSource.None;
+    //    //TravelSpeed = Speed.None;
+    //}
 
     /// <summary>
     /// Internal control for killing any existing pilot Job(s).

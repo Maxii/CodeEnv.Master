@@ -45,9 +45,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float __FtlMultiplier = 10F;
 
-        [System.Obsolete]
-        public const float FlapsMultiplier = 100F;
-
         public const float DefaultShipOrbitSlotDepth = 2F;
 
         /// <summary>
@@ -61,11 +58,6 @@ namespace CodeEnv.Master.GameContent {
         public const float BaseRadius = 3F;
 
         public const int MaxShipsPerFleet = 25;
-        /// <summary>
-        /// The radius of a Fleet. May not include all of the fleet's ships.
-        /// TODO MaxShipsPerFleet and FleetRadius should be tied together.
-        /// </summary>
-        //public const float FleetRadius = 4F;
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector
@@ -219,8 +211,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
-
         public static readonly Player NoPlayer = new NoPlayer();
 
         public static readonly ResourceYield NoResources = default(ResourceYield);
@@ -235,7 +225,6 @@ namespace CodeEnv.Master.GameContent {
         public static GameColor GeneralHighlightColor { get { return GameColor.White; } }
 
         public static GameColor SectorHighlightColor { get { return GameColor.Yellow; } }
-
 
         public static GameColor DisabledColor { get { return GameColor.Gray; } }
 

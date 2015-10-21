@@ -912,7 +912,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
                 DisengageAutoPilot();
                 return false;
             }
-            return _engineRoom.ChangeSpeed(newSpeed.GetValue(_ship.Command.Data, _ship.Data));
+            return _engineRoom.ChangeSpeed(newSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
         }
 
         public void AlignBearingWithFlagship() {
@@ -1170,7 +1170,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         /// Refreshes the value of _autoPilotSpeedInUnitsPerHour, derived from AutoPilotSpeed.
         /// </summary>
         private void RefreshAutoPilotSpeedValue() {
-            _autoPilotSpeedInUnitsPerHour = AutoPilotSpeed.GetValue(_ship.Command.Data, _ship.Data);
+            _autoPilotSpeedInUnitsPerHour = AutoPilotSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data);
         }
 
         private void Cleanup() {
