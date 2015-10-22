@@ -85,10 +85,10 @@ namespace CodeEnv.Master.GameContent {
         protected Job _pilotJob;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ANavigator" /> class.
+        /// Initializes a new instance of the <see cref="ANavigator2" /> class.
         /// </summary>
         /// <param name="data">Item data.</param>
-        public ANavigator(AMortalItemData data) {
+        public ANavigator2(AMortalItemData data) {
             Data = data;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?

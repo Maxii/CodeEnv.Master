@@ -866,13 +866,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             GenerateCourse();
         }
 
-        //internal override void EngageAutoPilot() {
-        //    _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
-        //    base.EngageAutoPilot();
-        //}
-
-        protected override void InitializeAutoPilot() {
+        /// <summary>
+        /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
+        /// </summary>
+        internal override void EngageAutoPilot() {
             _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
+            base.EngageAutoPilot();
         }
 
         protected override void RunPilotJobs() {
@@ -880,15 +879,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             InitiateCourseToTarget();
         }
 
-        internal override void DisengageAutoPilot() {
-            base.DisengageAutoPilot();
+        /// <summary>
+        /// Primary exposed control for disengaging the AutoPilot from handling movement.
+        /// </summary>
+        internal void DisengageAutoPilot() {
             _fleet.HQElement.onDestinationReached -= OnFlagshipReachedDestination;
+            IsAutoPilotEngaged = false;
         }
 
         private void InitiateCourseToTarget() {
             D.Assert(!ArePilotJobsRunning);
             D.Assert(!_hasFlagshipReachedDestination);
-            D.Log("{0} initiating course to target {1}. Distance: {2}.", Name, Target.FullName, TargetPointDistance);
+            D.Log("{0} initiating course to target {1}. Distance: {2:0.#}.", Name, Target.FullName, TargetPointDistance);
             _pilotJob = new Job(EngageCourse(), toStart: true, onJobComplete: (wasKilled) => {
                 if (!wasKilled) {
                     OnDestinationReached();

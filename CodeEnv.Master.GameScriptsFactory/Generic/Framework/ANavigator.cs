@@ -30,8 +30,25 @@ internal abstract class ANavigator : IDisposable {
 
     private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
-    //internal bool IsAutoPilotEngaged { get { return ArePilotJobsRunning; } }
-    internal bool IsAutoPilotEngaged { get; private set; }
+    private bool _isAutoPilotEngaged;
+    /// <summary>
+    /// Indicates whether the AutoPilot is engaged. This is also the primary
+    /// internal control for engaging/disengaging the autopilot.
+    /// </summary>
+    public bool IsAutoPilotEngaged {
+        get { return _isAutoPilotEngaged; }
+        protected set {
+            if (_isAutoPilotEngaged != value) {
+                _isAutoPilotEngaged = value;
+                if (_isAutoPilotEngaged) {
+                    OnAutoPilotEngaged();
+                }
+                else {
+                    OnAutoPilotDisengaged();
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// The course this Navigator will follow when engaged. 
@@ -68,7 +85,7 @@ internal abstract class ANavigator : IDisposable {
     /// <summary>
     /// The designated speed the autopilot should travel at. 
     /// </summary>
-    protected Speed TravelSpeed { get; set; }
+    protected Speed TravelSpeed { get; private set; }
 
     protected OrderSource _orderSource;
     protected Job _pilotJob;
@@ -92,16 +109,9 @@ internal abstract class ANavigator : IDisposable {
     /// <summary>
     /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
     /// </summary>
-    internal void EngageAutoPilot() {
+    internal virtual void EngageAutoPilot() {
         IsAutoPilotEngaged = true;
-        InitializeAutoPilot();
-        RunPilotJobs();
     }
-    //internal virtual void EngageAutoPilot() {
-    //    RunPilotJobs();
-    //}
-
-    protected abstract void InitializeAutoPilot();
 
     /// <summary>
     /// Internal control for launching new pilot Job(s).
@@ -110,23 +120,6 @@ internal abstract class ANavigator : IDisposable {
         D.Assert(Course.Count != Constants.Zero, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(Name));
         KillPilotJobs();
     }
-
-    /// <summary>
-    /// Primary exposed control for disengaging the Navigator's AutoPilot from handling movement.
-    /// </summary>
-    internal virtual void DisengageAutoPilot() {
-        IsAutoPilotEngaged = false;
-        KillPilotJobs();
-        RefreshCourse(CourseRefreshMode.ClearCourse);
-        _orderSource = OrderSource.None;
-        TravelSpeed = Speed.None;
-    }
-    //internal virtual void DisengageAutoPilot() {
-    //    KillPilotJobs();
-    //    RefreshCourse(CourseRefreshMode.ClearCourse);
-    //    _orderSource = OrderSource.None;
-    //    //TravelSpeed = Speed.None;
-    //}
 
     /// <summary>
     /// Internal control for killing any existing pilot Job(s).
@@ -141,6 +134,17 @@ internal abstract class ANavigator : IDisposable {
             return true;
         }
         return false;
+    }
+
+    protected virtual void OnAutoPilotEngaged() {
+        RunPilotJobs();
+    }
+
+    protected virtual void OnAutoPilotDisengaged() {
+        KillPilotJobs();
+        RefreshCourse(CourseRefreshMode.ClearCourse);
+        _orderSource = OrderSource.None;
+        TravelSpeed = Speed.None;
     }
 
     protected virtual void OnDestinationReached() {

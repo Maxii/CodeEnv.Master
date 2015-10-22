@@ -58,6 +58,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\ANavigator2.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />
     <Compile Include="Game\Framework\ShipItem.cs" />
     <Compile Include="Game\Gameplay\LOSTurret.cs" />
