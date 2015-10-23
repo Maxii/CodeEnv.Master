@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
 
         Disband,
 
-        SelfDestruct
+        Scuttle
 
     }
 }

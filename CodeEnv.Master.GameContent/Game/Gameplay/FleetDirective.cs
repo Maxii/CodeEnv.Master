@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
 
         Explore,
 
-        SelfDestruct
+        Scuttle
 
     }
 }

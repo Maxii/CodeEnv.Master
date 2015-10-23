@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         Repair,
         Refit,
         Disband,
-        SelfDestruct
+        Scuttle
 
     }
 }

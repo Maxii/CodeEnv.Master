@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsRetainedFocusEligible { get; }
 
-        float OptimalCameraViewingDistance { get; }
+        float OptimalCameraViewingDistance { get; set; }
 
         string DisplayName { get; }
 

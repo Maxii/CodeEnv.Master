@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SystemCtxControl_AI.cs
-// Context Menu Control for <see cref="SystemItem"/>s operated by the AI.
+// Context Menu Control for <see cref="SystemItem"/>s owned by the AI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Context Menu Control for <see cref="SystemItem"/>s operated by the AI.
+/// Context Menu Control for <see cref="SystemItem"/>s owned by the AI.
 /// </summary>
 public class SystemCtxControl_AI : ACtxControl {
 

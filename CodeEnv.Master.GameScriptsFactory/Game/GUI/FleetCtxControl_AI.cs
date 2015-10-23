@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetCtxControl_AI.cs
-// Context Menu Control for <see cref="FleetCommandItem"/>s operated by the AI.
+// Context Menu Control for <see cref="FleetCmdItem"/>s owned by the AI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Context Menu Control for <see cref="FleetCmdItem"/>s operated by the AI.
+/// Context Menu Control for <see cref="FleetCmdItem"/>s owned by the AI.
 /// </summary>
 public class FleetCtxControl_AI : ACtxControl {
 

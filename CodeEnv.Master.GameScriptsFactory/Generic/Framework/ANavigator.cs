@@ -30,6 +30,15 @@ internal abstract class ANavigator : IDisposable {
 
     private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
+    private static IList<Speed> _inValidAutoPilotSpeeds = new List<Speed>() {
+        Speed.None,
+        Speed.EmergencyStop,
+        Speed.Stop,
+        // Speed.Docking    // AssumeFormationStation uses this for now
+        Speed.StationaryOrbit,
+        Speed.MovingOrbit
+    };
+
     private bool _isAutoPilotEngaged;
     /// <summary>
     /// Indicates whether the AutoPilot is engaged. This is also the primary
@@ -95,14 +104,16 @@ internal abstract class ANavigator : IDisposable {
     }
 
     /// <summary>
-    /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
+    /// Records the automatic pilot course values.
     /// </summary>
     /// <param name="target">The target.</param>
-    /// <param name="travelSpeed">The speed to travel at.</param>
-    internal virtual void PlotCourse(INavigableTarget target, Speed travelSpeed, OrderSource orderSource) {
-        D.Assert(travelSpeed != default(Speed) && travelSpeed != Speed.Stop && travelSpeed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(Name, travelSpeed.GetValueName()));
+    /// <param name="speed">The speed to travel at.</param>
+    /// <param name="orderSource">The source of this move order.</param>
+    protected void RecordAutoPilotCourseValues(INavigableTarget target, Speed speed, OrderSource orderSource) {
+        D.Assert(!_inValidAutoPilotSpeeds.Contains(speed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, speed.GetValueName()));
+        orderSource.ValidateSpeed(speed);
         Target = target;
-        TravelSpeed = travelSpeed;
+        TravelSpeed = speed;
         _orderSource = orderSource;
     }
 

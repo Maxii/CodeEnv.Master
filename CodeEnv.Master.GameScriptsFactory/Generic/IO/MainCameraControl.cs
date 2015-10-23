@@ -150,6 +150,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         focusedRotationDampener = 2.0F, freeformPositionDampener = 3.0F, freeformRotationDampener = 2.0F
     };
 
+    /// <summary>
+    /// Indicates whether the MainCamera is in the process of changing its position.
+    /// </summary>
+    protected bool IsCameraMoving { get { return !Mathfx.Approx(_distanceFromTarget, _requestedDistanceFromTarget, .01F); } }
+
     private bool _isResetOnFocusEnabled;
     private bool _isZoomOutOnCursorEnabled;    // ScrollWheel always zooms IN on cursor, zooming OUT with the ScrollWheel is directly backwards by default
 
@@ -528,6 +533,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void OnCurrentFocusChanging(ICameraFocusable newFocus) {
         if (CurrentFocus != null) {
             CurrentFocus.IsFocus = false;
+            CurrentFocus.OptimalCameraViewingDistance = _optimalDistanceFromTarget;
         }
     }
 
@@ -535,7 +541,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (CurrentFocus != null) {
             Transform newFocus = CurrentFocus.Transform;
             D.Log("New Focus is now {0}.", newFocus.name);
-            SetFocus(newFocus);
+            SetFocusAsTarget(newFocus);
         }
         else if (CurrentState != CameraState.Freeform) {
             // CurrentFocus set to null while focused or following so switch to freeform
@@ -708,7 +714,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                              * Instead, it simply scrolls in/out on the current focus no matter where the cursor is
                              *************************************************************************************************************************/
             distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
-            _requestedDistanceFromTarget -= distanceChange;
+            _optimalDistanceFromTarget -= distanceChange;
         }
 
         #region Archived ScrollFocusZoom
@@ -732,11 +738,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFocusZoom.screenEdgeAxis);
             if (activeEdge == InputManager.ActiveScreenEdge.Bottom) {
                 distanceChange = inputValue * edgeFocusZoom.sensitivity * edgeFocusZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
-                _requestedDistanceFromTarget += distanceChange;
+                _optimalDistanceFromTarget += distanceChange;
             }
             else if (activeEdge == InputManager.ActiveScreenEdge.Top) {
                 distanceChange = inputValue * edgeFocusZoom.sensitivity * edgeFocusZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
-                _requestedDistanceFromTarget -= distanceChange;
+                _optimalDistanceFromTarget -= distanceChange;
             }
         }
 
@@ -760,7 +766,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (keyFocusZoom.IsActivated()) {
             inputValue = _inputMgr.GetArrowKeyEventValue(keyFocusZoom.keyboardAxis);
             distanceChange = inputValue * keyFocusZoom.InputTypeNormalizer * keyFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
-            _requestedDistanceFromTarget -= distanceChange;
+            _optimalDistanceFromTarget -= distanceChange;
         }
 
         #region Archived KeyFocusZoom
@@ -776,7 +782,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (dragFocusZoom.IsActivated()) {
             inputValue = _inputMgr.GetDragDelta().y;
             distanceChange = inputValue * dragFocusZoom.InputTypeNormalizer * dragFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
-            _requestedDistanceFromTarget -= distanceChange;
+            _optimalDistanceFromTarget -= distanceChange;
         }
 
         if (keyFocusPan.IsActivated()) {
@@ -805,6 +811,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         // this is the key to re-positioning the already rotated camera so that it is looking at the target
         _targetDirection = _transform.forward;
+        _requestedDistanceFromTarget = _optimalDistanceFromTarget;
 
         // OPTIMIZE lets me change the values on the fly in the inspector
         _cameraRotationDampener = settings.focusedRotationDampener;
@@ -1088,12 +1095,15 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // the distance change value used to modify _optimalDistanceToTarget as determined by inputValue and distanceChgAllowedPerUnitInput
         float distanceChange = 0F;
 
+        //bool isActivatedFound = false;
+
         if (dragFollowOrbit.IsActivated()) {
             Vector2 dragDelta = _inputMgr.GetDragDelta();
             inputValue = dragDelta.x;
             _yAxisRotation += inputValue * dragFollowOrbit.sensitivity * timeSinceLastUpdate;
             inputValue = dragDelta.y;
             _xAxisRotation -= inputValue * dragFollowOrbit.sensitivity * timeSinceLastUpdate;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
         if (edgeFollowPan.IsActivated()) {
             var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFollowPan.screenEdgeAxis);
@@ -1103,6 +1113,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             else if (activeEdge == InputManager.ActiveScreenEdge.Right) {
                 _yAxisRotation -= edgeFollowPan.sensitivity * timeSinceLastUpdate;
             }
+            // edge pan and tilt can be activated on same frame
         }
         if (edgeFollowTilt.IsActivated()) {
             var activeEdge = _inputMgr.GetScreenEdgeEvent(edgeFollowTilt.screenEdgeAxis);
@@ -1112,10 +1123,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             else if (activeEdge == InputManager.ActiveScreenEdge.Top) {
                 _xAxisRotation += edgeFollowTilt.sensitivity * timeSinceLastUpdate;
             }
+            // edge pan and tilt can be activated on same frame
         }
         if (dragFollowRoll.IsActivated()) {
             inputValue = _inputMgr.GetDragDelta().x;
             _zAxisRotation += inputValue * dragFollowRoll.sensitivity * timeSinceLastUpdate;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
 
         // All Zooms must adjust optimalDistance rather than requestedDistance as requestedDistance gets adjusted below to allow spectator-like viewing
@@ -1123,7 +1136,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             var scrollEvent = _inputMgr.GetScrollEvent();
             inputValue = scrollEvent.delta;
             distanceChange = inputValue * scrollFollowZoom.InputTypeNormalizer * scrollFollowZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            //D.Log("ScrollFollowZoom: distance change = {0:0.#}, inputValue = {1:0.#}, normalizer = {2:0.#}, sensitivity = {3:0.##}, allowedChg = {4:0.##}.", distanceChange, inputValue, scrollFollowZoom.InputTypeNormalizer, scrollFollowZoom.sensitivity, distanceChgAllowedPerUnitInput);
             _optimalDistanceFromTarget -= distanceChange;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
         if (edgeFollowZoom.IsActivated()) {
             inputValue = 1F;
@@ -1136,40 +1151,59 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 distanceChange = inputValue * edgeFollowZoom.sensitivity * edgeFollowZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
                 _optimalDistanceFromTarget -= distanceChange;
             }
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
         if (keyFollowZoom.IsActivated()) {
             inputValue = _inputMgr.GetArrowKeyEventValue(keyFollowZoom.keyboardAxis);
             distanceChange = inputValue * keyFollowZoom.InputTypeNormalizer * keyFollowZoom.sensitivity * distanceChgAllowedPerUnitInput;
             _optimalDistanceFromTarget -= distanceChange;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
         if (dragFollowZoom.IsActivated()) {
             inputValue = _inputMgr.GetDragDelta().y;
             distanceChange = inputValue * dragFollowZoom.InputTypeNormalizer * dragFollowZoom.sensitivity * distanceChgAllowedPerUnitInput;
             _optimalDistanceFromTarget -= distanceChange;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
 
         if (keyFollowPan.IsActivated()) {
             _yAxisRotation += _inputMgr.GetArrowKeyEventValue(keyFollowPan.keyboardAxis) * keyFollowPan.sensitivity;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
         if (keyFollowTilt.IsActivated()) {
             _xAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFollowTilt.keyboardAxis) * keyFollowTilt.sensitivity;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
         if (keyFollowRoll.IsActivated()) {
             _zAxisRotation -= _inputMgr.GetArrowKeyEventValue(keyFollowRoll.keyboardAxis) * keyFollowRoll.sensitivity;
+            //__ValidateConfigIsOnlyActivated(ref isActivatedFound);
         }
 
         // These values must be continuously updated as the Target and camera are moving
         _targetPoint = _target.position;
-        _targetDirection = transform.forward;   // this is the key to re-positioning the rotated camera so that it is looking at the target
+        _targetDirection = transform.forward;   // this is the key to re-positioning the rotated camera so that it is always looking at the target
+        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
 
-        // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal follow distance. 
+        // Note: Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal follow distance. 
         // When the Target turns and breaks inside the optimal follow distance, stop the camera from adjusting its position by making 
         // the requested distance the same as the actual distance. As soon as the Target moves outside of the optimal distance, start following again.
-        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
-        if (_distanceFromTarget < _optimalDistanceFromTarget) {
-            _requestedDistanceFromTarget = _distanceFromTarget;
+        // This algorithm does not work when the camera is moving as a change in optimalDistanceFromTarget is likely the cause (from zooming),
+        // and if closer to target the algorithm would think the target has moved rather than the camera.
+        if (!IsCameraMoving) {
+            // camera is not moving so a change in _optimalDistanceFromTarget (from zooming) will not be confused with target movement
+            if (_distanceFromTarget < _optimalDistanceFromTarget) {
+                // target has moved inside optimal distance so stay put and watch it pass by
+                _requestedDistanceFromTarget = _distanceFromTarget;
+            }
+            else {
+                // target is at or outside of optimal distance so move camera to keep it at optimal distance
+                _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+            }
+            //D.Log("Camera is not moving. RequestedDistance is {0:0.#}.", _requestedDistanceFromTarget);
         }
         else {
+            //D.Log("Camera is moving. RequestedDistance is {0:0.#}.", _requestedDistanceFromTarget);
+            // camera is moving so keep requested distance from target at optimal distance
             _requestedDistanceFromTarget = _optimalDistanceFromTarget;
         }
 
@@ -1233,7 +1267,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// what interface the object supports.
     /// </summary>
     /// <arg item="focus">The transform of the GO selected as the focus.</arg>
-    private void SetFocus(Transform focus) {
+    private void SetFocusAsTarget(Transform focus) {
         // any object that can be focused on has the focus's position as the targetPoint
         ChangeTarget(focus, focus.position);
 
@@ -1292,12 +1326,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 return;
             }
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
-            //D.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
+            //D.Log("Target {0} _minimumDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
             ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterface<ICameraFocusable>();
             if (qualifiedCameraFocusTarget != null) {
                 _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
-                //D.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
+                //D.Log("Target {0} _optimalDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _optimalDistanceFromTarget));
             }
             // no reason to know whether the Target is followable or not for these values for now
         }
@@ -1305,7 +1339,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             D.ErrorContext("New Target {0} is not {1}.".Inject(newTarget.name, typeof(ICameraTargetable).Name), this);
             return;
         }
-
         AssignTarget(newTarget, newTargetPoint);
         //D.Log("Camera target changed to {0}.", _target.name);
     }
@@ -1357,7 +1390,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
         //D.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
 
+        //_distanceFromTarget = Mathfx.Hermite(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * deltaTime);
         _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * deltaTime);
+        //_distanceFromTarget = Mathfx.Sinerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * deltaTime);
+        //_distanceFromTarget = Mathfx.Coserp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * deltaTime);
 
         Vector3 proposedPosition = _targetPoint - (_targetDirection * _distanceFromTarget);
         ExecutePositionChange(proposedPosition);
@@ -1643,6 +1679,16 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #endregion
 
     #region Debug
+
+    /// <summary>
+    /// Validates that this activated configuration is the only one that is activated during this update.
+    /// Detects whether another active config is overwriting a previous one.
+    /// </summary>
+    /// <param name="isActivatedAlreadyFound">if set to <c>true</c> [is activated already found].</param>
+    private void __ValidateConfigIsOnlyActivated(ref bool isActivatedAlreadyFound) {
+        D.Assert(!isActivatedAlreadyFound);
+        isActivatedAlreadyFound = true;
+    }
 
     private void CheckScriptCompilerSettings() {
         D.Log("Compiler Preprocessor Settings in {0} follow:".Inject(Instance.GetType().Name) + Constants.NewLine);

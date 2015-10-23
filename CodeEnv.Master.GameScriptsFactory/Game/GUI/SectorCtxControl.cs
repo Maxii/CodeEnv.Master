@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Context Menu Control for Sectors, implemented using SectorExaminer.
-/// No distinction between AI and Player owned.
+/// No distinction between AI and User owned.
 /// </summary>
 public class SectorCtxControl : ACtxControl {
 

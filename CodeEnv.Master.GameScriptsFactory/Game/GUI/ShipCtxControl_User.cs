@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipCtxControl_User.cs
-// Context Menu Control for <see cref="ShipItem"/>s operated by the User.
+// Context Menu Control for <see cref="ShipItem"/>s owned by the User.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,14 +25,14 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Context Menu Control for <see cref="ShipItem"/>s operated by the User.
+/// Context Menu Control for <see cref="ShipItem"/>s owned by the User.
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private static ShipDirective[] _selectedItemDirectivesAvailable = new ShipDirective[] {     ShipDirective.Join, 
                                                                                                 ShipDirective.Disband, 
                                                                                                 ShipDirective.Refit,
-                                                                                                ShipDirective.SelfDestruct };
+                                                                                                ShipDirective.Scuttle };
 
     protected override IEnumerable<ShipDirective> SelectedItemDirectives {
         get { return _selectedItemDirectivesAvailable; }
@@ -62,7 +62,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             // TODO
             case ShipDirective.Join:
             case ShipDirective.Disband:
-            case ShipDirective.SelfDestruct:
+            case ShipDirective.Scuttle:
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -85,7 +85,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             case ShipDirective.Disband:
                 targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsUser).Cast<IUnitAttackableTarget>();
                 return true;
-            case ShipDirective.SelfDestruct:
+            case ShipDirective.Scuttle:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();
                 return false;
             default:
@@ -101,7 +101,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 
     public override string ToString() {

@@ -125,6 +125,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+    protected override float InitializeOptimalCameraViewingDistance() {
+        return Radius * optViewDistanceFactor;
+    }
+
     protected override void SetDeadState() {
         CurrentState = PlanetoidState.Dead;
     }
@@ -271,12 +275,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     #region ICameraTargetable Members
 
     public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
-
-    #endregion
-
-    #region ICameraFocusable Members
-
-    public override float OptimalCameraViewingDistance { get { return Radius * optViewDistanceFactor; } }
 
     #endregion
 

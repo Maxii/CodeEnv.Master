@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SystemCtxControl_User.cs
-// Context Menu Control for <see cref="SystemItem"/>s operated by the User.
+// Context Menu Control for <see cref="SystemItem"/>s owned by the User.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Context Menu Control for <see cref="SystemItem"/>s operated by the User.
+/// Context Menu Control for <see cref="SystemItem"/>s owned by the User.
 /// </summary>
 public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
@@ -170,7 +170,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _settlement;
         var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 
     public override string ToString() {

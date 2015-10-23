@@ -105,6 +105,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+    protected override float InitializeOptimalCameraViewingDistance() {
+        return gameObject.DistanceToCamera();
+    }
+
     protected override void OnOwnerChanged() {
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
     }
@@ -162,8 +166,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible { get { return true; } }
-
-    public override float OptimalCameraViewingDistance { get { return gameObject.DistanceToCamera(); } }
 
     #endregion
 

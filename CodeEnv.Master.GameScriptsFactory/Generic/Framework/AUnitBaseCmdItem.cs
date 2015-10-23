@@ -113,7 +113,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
                     break;
                 case BaseDirective.StopAttack:
                     break;
-                case BaseDirective.SelfDestruct:
+                case BaseDirective.Scuttle:
                     KillUnit();
                     break;
 
@@ -150,11 +150,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     /// <summary>
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
-    /// to SelfDestruct (assume Dead state) which results in the Command assuming its own Dead state.
+    /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
     /// </summary>
     protected void KillUnit() {
-        var elementSelfDestructOrder = new FacilityOrder(FacilityDirective.SelfDestruct, OrderSource.UnitCommand);
-        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementSelfDestructOrder);
+        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.UnitCommand);
+        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
     }
 
     #endregion

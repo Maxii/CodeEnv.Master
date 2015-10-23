@@ -110,6 +110,7 @@
     <Compile Include="AMortalItemPresenter.cs" />
     <Compile Include="AMortalItemView.cs" />
     <Compile Include="ANavigator.cs" />
+    <Compile Include="ANavigator2.cs" />
     <Compile Include="AOrdnance.cs" />
     <Compile Include="AOwnedItemModel.cs" />
     <Compile Include="APlanetoidData.cs" />

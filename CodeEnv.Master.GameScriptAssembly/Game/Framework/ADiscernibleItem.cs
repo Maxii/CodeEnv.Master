@@ -105,8 +105,17 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        OptimalCameraViewingDistance = InitializeOptimalCameraViewingDistance();
         AssessIsDiscernibleToUser();
     }
+
+    /// <summary>
+    /// Initializes the optimal camera viewing distance value. Called by CommenceOperations
+    /// so Radius is properly set. Note: UnitRadius in particular is not established until after its
+    /// Elements have been added.
+    /// </summary>
+    /// <returns></returns>
+    protected abstract float InitializeOptimalCameraViewingDistance();
 
     #endregion
 
@@ -267,7 +276,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     #region ICameraFocusable Members
 
-    public abstract float OptimalCameraViewingDistance { get; }
+    public float OptimalCameraViewingDistance { get; set; }
 
     public virtual bool IsRetainedFocusEligible { get { return false; } }
 

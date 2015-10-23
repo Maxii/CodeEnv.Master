@@ -221,7 +221,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 case ShipDirective.AssumeStation:
                     CurrentState = ShipState.ExecuteAssumeStationOrder;
                     break;
-                case ShipDirective.SelfDestruct:
+                case ShipDirective.Scuttle:
                     InitiateDeath();
                     break;
                 case ShipDirective.Disband:
@@ -1371,10 +1371,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="travelSpeed">The speed to travel at.</param>
+        /// <param name="speed">The speed to travel at.</param>
         /// <param name="orderSource">The source of this move order.</param>
-        internal override void PlotCourse(INavigableTarget target, Speed travelSpeed, OrderSource orderSource) {
-            base.PlotCourse(target, travelSpeed, orderSource);
+        internal void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
+            RecordAutoPilotCourseValues(target, speed, orderSource);
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
             // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone

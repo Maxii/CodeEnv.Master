@@ -104,7 +104,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
     }
 
-    void OnCurrentOrderChanged() {
+    private void OnCurrentOrderChanged() {
         // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
         if (CurrentState == FacilityState.Repairing) {
             Return();
@@ -132,7 +132,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
                 case FacilityDirective.Disband:
                     CurrentState = FacilityState.Disbanding;
                     break;
-                case FacilityDirective.SelfDestruct:
+                case FacilityDirective.Scuttle:
                     InitiateDeath();
                     //CurrentState = FacilityState.Dead;
                     break;

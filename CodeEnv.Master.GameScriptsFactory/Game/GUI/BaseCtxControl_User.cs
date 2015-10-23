@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Context Menu Control for <see cref="AUnitBaseCmdItem"/>s operated by the User.
+/// Context Menu Control for <see cref="AUnitBaseCmdItem"/>s owned by the User.
 /// </summary>
 public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
@@ -33,7 +33,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
                                                                                                 BaseDirective.Refit, 
                                                                                                 BaseDirective.Attack,
                                                                                                 BaseDirective.Disband,
-                                                                                                BaseDirective.SelfDestruct};
+                                                                                                BaseDirective.Scuttle};
 
     private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Disband, 
                                                                                                 FleetDirective.Refit,
@@ -94,7 +94,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Refit:
             // TODO
             case BaseDirective.Disband:
-            case BaseDirective.SelfDestruct:
+            case BaseDirective.Scuttle:
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -116,7 +116,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Disband:
             case BaseDirective.Refit:
             case BaseDirective.Repair:
-            case BaseDirective.SelfDestruct:
+            case BaseDirective.Scuttle:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();
                 return false;
             default:
@@ -175,7 +175,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;
         var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 
     public override string ToString() {

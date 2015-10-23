@@ -149,6 +149,10 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         return Settlement != null ? Settlement.GetReport(player) : null;
     }
 
+    protected override float InitializeOptimalCameraViewingDistance() {
+        return gameObject.DistanceToCamera();
+    }
+
     private void OnStarChanged() {
         Data.StarData = Star.Data;
     }
@@ -313,8 +317,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible { get { return true; } }
-
-    public override float OptimalCameraViewingDistance { get { return gameObject.DistanceToCamera(); } }
 
     #endregion
 

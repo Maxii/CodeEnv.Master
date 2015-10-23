@@ -130,6 +130,10 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+    protected override float InitializeOptimalCameraViewingDistance() {
+        return Radius * optViewDistanceFactor;
+    }
+
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         // there is only 1 type of ContextMenu for Stars so no need to generate a new one
@@ -237,12 +241,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     #region ICameraTargetable Members
 
     public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
-
-    #endregion
-
-    #region ICameraFocusable Members
-
-    public override float OptimalCameraViewingDistance { get { return Radius * optViewDistanceFactor; } }
 
     #endregion
 

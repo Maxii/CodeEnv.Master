@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Context Menu Control for <see cref="APlanetoidItem"/>s. 
-/// No distinction between AI and Player owned.
+/// No distinction between AI and User owned.
 /// </summary>
 public class PlanetoidCtxControl : ACtxControl {
 

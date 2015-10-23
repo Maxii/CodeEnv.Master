@@ -25,9 +25,10 @@ namespace CodeEnv.Master.GameContent {
 
         ElementCaptain,
 
-        UnitCommand,
+        UnitCommand
 
-        User  // UNDONE This has largely not been rolled in yet
+        // User  // Dropped as ShipHelm needs to know which type of Speed
+        // used based off of OrderSource
 
     }
 }

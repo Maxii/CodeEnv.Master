@@ -110,6 +110,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         // AMortalItem.CommenceOperations() calls Data.CommenceOperations for all derived Items
     }
 
+    protected override float InitializeOptimalCameraViewingDistance() {
+        return Radius * optViewDistanceFactor;
+    }
+
     /// <summary>
     /// Parents this element to the provided container that holds the entire Unit.
     /// Local position, rotation and scale auto adjust to keep element unchanged in worldspace.
@@ -635,12 +639,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     #region ICameraTargetable Members
 
     public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
-
-    #endregion
-
-    #region ICameraFocusable Members
-
-    public override float OptimalCameraViewingDistance { get { return Radius * optViewDistanceFactor; } }
 
     #endregion
 

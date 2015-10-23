@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetCtxControl_User.cs
-// Context Menu Control for <see cref="FleetCommandItem"/>s operated by the User.
+// Context Menu Control for <see cref="FleetCmdItem"/>s owned by the User.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Context Menu Control for <see cref="FleetCmdItem"/>s operated by the User.
+/// Context Menu Control for <see cref="FleetCmdItem"/>s owned by the User.
 /// </summary>
 public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
@@ -33,7 +33,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                                                                                                 FleetDirective.Repair, 
                                                                                                 FleetDirective.Disband,
                                                                                                 FleetDirective.Refit,
-                                                                                                FleetDirective.SelfDestruct };
+                                                                                                FleetDirective.Scuttle };
 
     private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Join, 
                                                                                                 FleetDirective.Move, 
@@ -88,7 +88,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Join:
             case FleetDirective.Refit:
             case FleetDirective.Disband:
-            case FleetDirective.SelfDestruct:
+            case FleetDirective.Scuttle:
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -112,7 +112,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Disband:
                 targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsUser).Cast<IUnitAttackableTarget>();
                 return true;
-            case FleetDirective.SelfDestruct:
+            case FleetDirective.Scuttle:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();
                 return false;
             default:
@@ -166,7 +166,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _fleetMenuOperator;
         var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 
     public override string ToString() {

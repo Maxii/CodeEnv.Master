@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
 
         Join,
 
-        SelfDestruct
+        Scuttle
 
     }
 }

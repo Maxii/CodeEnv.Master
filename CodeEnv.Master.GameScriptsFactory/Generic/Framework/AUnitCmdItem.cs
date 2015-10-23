@@ -143,6 +143,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         AssessIcon();
     }
 
+    protected override float InitializeOptimalCameraViewingDistance() {
+        return UnitRadius * optViewDistanceFactor;
+    }
+
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
@@ -522,8 +526,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible { get { return Data.GetUserIntelCoverage() != IntelCoverage.None; } }
-
-    public override float OptimalCameraViewingDistance { get { return UnitRadius * optViewDistanceFactor; } }
 
     #endregion
 

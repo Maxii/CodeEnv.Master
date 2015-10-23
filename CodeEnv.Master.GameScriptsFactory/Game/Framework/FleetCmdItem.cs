@@ -249,7 +249,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 case FleetDirective.Move:
                     CurrentState = FleetState.ExecuteMoveOrder;
                     break;
-                case FleetDirective.SelfDestruct:
+                case FleetDirective.Scuttle:
                     KillUnit();
                     break;
                 case FleetDirective.Explore:
@@ -348,11 +348,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     /// <summary>
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
-    /// to SelfDestruct (execute Die()) which results in the Command also executing Die() when the last element has died.
+    /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
     /// </summary>
     private void KillUnit() {
-        var elementSelfDestructOrder = new ShipOrder(ShipDirective.SelfDestruct, OrderSource.UnitCommand);
-        Elements.ForAll(e => (e as ShipItem).CurrentOrder = elementSelfDestructOrder);
+        var elementScuttleOrder = new ShipOrder(ShipDirective.Scuttle, OrderSource.UnitCommand);
+        Elements.ForAll(e => (e as ShipItem).CurrentOrder = elementScuttleOrder);
     }
 
     public void __OnHQElementEmergency() {
@@ -521,7 +521,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onDeathOneShot += OnTargetDeath;
         }
-        _navigator.PlotCourse(_moveTarget, _moveSpeed, OrderSource.UnitCommand);    // FIXME no use of order source
+        _navigator.PlotCourse(_moveTarget, _moveSpeed);
     }
 
     void Moving_OnCoursePlotSuccess() {
@@ -858,9 +858,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="travelSpeed">The speed to travel at.</param>
-        internal override void PlotCourse(INavigableTarget target, Speed travelSpeed, OrderSource orderSource) {
-            base.PlotCourse(target, travelSpeed, orderSource);
+        /// <param name="speed">The speed to travel at.</param>
+        internal void PlotCourse(INavigableTarget target, Speed speed) {
+            RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
             _targetHasKeepoutZone = target is IShipOrbitable;
             ResetCourseReplotValues();
             GenerateCourse();

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACtxControl_User.cs
-//  Abstract, generic base class for versions of CtxControls for the User.
+// Abstract, generic base class for CtxControls where the MenuOperator (Cmd, Element, Planetoid, etc.) is owned by the User. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,8 +23,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract, generic base class for Player versions of CtxControls. Player versions have
-/// MenuOperatorAccess submenus full of potential targets.
+/// Abstract, generic base class for CtxControls where the MenuOperator (Cmd, Element, Planetoid, etc.) is owned by the User. 
+/// User versions have MenuOperatorAccess submenus full of potential targets.
 /// </summary>
 /// <typeparam name="T">The enum type of Directives used by the MenuOperator.</typeparam>
 public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
