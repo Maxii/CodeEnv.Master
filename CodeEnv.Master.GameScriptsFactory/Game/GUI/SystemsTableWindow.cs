@@ -31,7 +31,7 @@ public class SystemsTableWindow : ATableWindow {
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return GameManager.Instance.GetUserPlayerKnowledge().Systems.Cast<AItem>();
+        return _gameMgr.UserPlayerKnowledge.Systems.Cast<AItem>();
     }
 
     #region Sorting Elements

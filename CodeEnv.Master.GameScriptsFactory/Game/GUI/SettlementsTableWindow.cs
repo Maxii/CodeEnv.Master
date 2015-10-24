@@ -31,7 +31,7 @@ public class SettlementsTableWindow : ACommandsTableWindow {
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return GameManager.Instance.GetUserPlayerKnowledge().Settlements.Cast<AItem>();
+        return _gameMgr.UserPlayerKnowledge.Settlements.Cast<AItem>();
     }
 
     #region Sorting

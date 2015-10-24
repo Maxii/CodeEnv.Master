@@ -35,12 +35,6 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength DamageMitigation { get; private set; }
 
         /// <summary>
-        /// How frequently this CM can bear on a qualified threat and engage it.
-        /// <remarks>Simulates having a hull mount with limited field of fire.</remarks>
-        /// </summary>
-        public float EngagePercent { get; private set; }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ActiveCountermeasureStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -57,10 +51,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="accuracy">The accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
-        /// <param name="engagePercent">How frequently this CM can bear on a qualified threat and engage it.</param>
         public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
             float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength[] interceptStrengths,
-            float accuracy, float reloadPeriod, DamageStrength damageMitigation, float engagePercent)
+            float accuracy, float reloadPeriod, DamageStrength damageMitigation)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
             // confirm if more than one interceptStrength, that they each contain a unique WDVCategory
             D.Assert(interceptStrengths.Length == interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
@@ -68,13 +61,25 @@ namespace CodeEnv.Master.GameContent {
             InterceptAccuracy = accuracy;
             ReloadPeriod = reloadPeriod;
             DamageMitigation = damageMitigation;
-            EngagePercent = engagePercent;
         }
 
         public override string ToString() {
             string interceptTypesMsg = InterceptStrengths.Select(intS => intS.Category.GetEnumAttributeText()).Concatenate();
             return _toStringFormat.Inject(Name, interceptTypesMsg);
         }
+
+        #region ActiveCM Firing Solutions Check Job Archive
+
+        // Note: Removed to allow elimination of ActiveCM CheckFiringSolutionJobs. If an ActiveCM
+        // might not be able to engage (bear on) a target, then no firing solutions was a possibility
+        // which then required the expensive and numerous check jobs.
+        /// <summary>
+        /// How frequently this CM can bear on a qualified threat and engage it.
+        /// <remarks>Simulates having a hull mount with limited field of fire.</remarks>
+        /// </summary>  
+        //public float EngagePercent { get; private set; }
+
+        #endregion
 
     }
 }

@@ -150,13 +150,14 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
 
+            var playerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(player);
             if (rangeLookup.Keys.Count > Constants.Zero) {
                 // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
-                _gameMgr.GetPlayerKnowledge(player).OnItemDetected(_item);
+                playerKnowledge.OnItemDetected(_item);
             }
             else {
                 // there are no DistanceRange keys so player has no Cmds in sensor range of this item
-                _gameMgr.GetPlayerKnowledge(player).OnItemDetectionLost(_item);
+                playerKnowledge.OnItemDetectionLost(_item);
             }
         }
 

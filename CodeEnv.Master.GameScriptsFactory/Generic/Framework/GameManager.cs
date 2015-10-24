@@ -136,11 +136,22 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         protected set { base.CurrentState = value; }
     }
 
-    public PlayerDesigns PlayerDesigns { get; private set; }
+    /// <summary>
+    /// A collection of Element Designs for each player.
+    /// </summary>
+    public PlayersDesigns PlayersDesigns { get; private set; }
+
+    /// <summary>
+    /// A collection of PlayerKnowledge instances, one for each player.
+    /// </summary>
+    public PlayersKnowledge PlayersKnowledge { get; private set; }
+
+    /// <summary>
+    /// The User's PlayerKnowledge instance.
+    /// </summary>
+    public PlayerKnowledge UserPlayerKnowledge { get { return PlayersKnowledge.GetUserKnowledge(); } }
 
     protected override bool IsPersistentAcrossScenes { get { return true; } }
-
-    private IDictionary<Player, PlayerKnowledge> _playerKnowledgeLookup;
 
     private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
     private GameTime _gameTime;
@@ -201,8 +212,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _gameTime = GameTime.Instance;
         UpdateRate = FrameUpdateFrequency.Infrequent;
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
-        _playerKnowledgeLookup = new Dictionary<Player, PlayerKnowledge>();
-        PlayerDesigns = new PlayerDesigns();
     }
 
     #endregion
@@ -358,7 +367,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         AllPlayers = new List<Player>(playerCount);
 
         Player userPlayer = GameSettings.UserPlayer;
-        AddPlayer(userPlayer);
+        AllPlayers.Add(userPlayer);
         for (int i = 0; i < aiPlayerCount; i++) {
             Player aiPlayer = GameSettings.AIPlayers[i];
             // if not startupSimulation, all relationships default to None
@@ -392,41 +401,18 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 userPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(userPlayer));
             }
             D.Log("AI Player {0} created. User relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(userPlayer).GetValueName());
-            AddPlayer(aiPlayer);
+            AllPlayers.Add(aiPlayer);
         }
-    }
-
-    private void AddPlayer(Player player) {
-        D.Assert(player.Color != GameColor.None && player.Color != GameColor.Clear);
-        AllPlayers.Add(player);
-        _playerKnowledgeLookup.Add(player, new PlayerKnowledge(player));
-        PlayerDesigns.Add(player);
-    }
-
-    public PlayerKnowledge GetPlayerKnowledge(Player player) {
-        return _playerKnowledgeLookup[player];
-    }
-
-    public PlayerKnowledge GetUserPlayerKnowledge() {
-        return GetPlayerKnowledge(UserPlayer);
+        PlayersKnowledge = new PlayersKnowledge(AllPlayers);
+        PlayersDesigns = new PlayersDesigns(AllPlayers);
     }
 
     /// <summary>
-    /// Populates each player's knowledge base with the knowledge
-    /// known to all players when the game begins.
+    /// Populates each player's PlayerKnowledge with the initial knowledge known to all players.
     /// </summary>
-    private void PopulatePlayersKnowledgeBase() {
-        var allStars = SystemCreator.AllStars;
-        var universeCenter = __UniverseInitializer.Instance.UniverseCenter;
-        AllPlayers.ForAll(player => {
-            var playerKnowledge = GetPlayerKnowledge(player);
-            allStars.ForAll(star => {
-                playerKnowledge.AddStar(star);
-            });
-            if (universeCenter != null) {   // allows UniverseCenter to be deactivated
-                playerKnowledge.AddUniverseCenter(universeCenter);
-            }
-        });
+    private void InitializeAllPlayersStartingKnowledge() {
+        IEnumerable<IStarItem> allStars = SystemCreator.AllStars.Cast<IStarItem>();
+        PlayersKnowledge.InitializeAllPlayersStartingKnowledge(__UniverseInitializer.Instance.UniverseCenter, allStars);
     }
 
     #endregion
@@ -547,9 +533,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (IsPaused) {
             RequestPauseStateChange(toPause: false, toOverride: true);
         }
-        _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
-        _playerKnowledgeLookup.Clear();
-        PlayerDesigns.Clear();
+        PlayersKnowledge.Dispose();
     }
 
     #region Pausing System
@@ -781,7 +765,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void BuildAndDeploySystems_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.GeneratingPathGraphs);
-        PopulatePlayersKnowledgeBase();
+        InitializeAllPlayersStartingKnowledge();
     }
 
     #endregion
@@ -904,8 +888,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     private void DisposeOfGlobals() {
         _gameTime.Dispose();
-        _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
-
+        PlayersKnowledge.Dispose();
         GameInputHelper.Instance.Dispose();
 
         if (CurrentScene == SceneLevel.GameScene) {

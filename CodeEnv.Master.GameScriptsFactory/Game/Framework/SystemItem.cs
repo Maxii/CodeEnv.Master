@@ -204,7 +204,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     protected override void AssessIsDiscernibleToUser() {
         // a System is not discernible to the User unless it is visible to the camera AND the User has discovered it
-        var isDiscoveredByUser = _gameMgr.GetPlayerKnowledge(_gameMgr.UserPlayer).Systems.Contains(this);
+        var isDiscoveredByUser = _gameMgr.UserPlayerKnowledge.HasKnowledgeOf(this);
         var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
         //D.Log("{0}.AssessDiscernibleToUser() called. InMainCameraLOS = {1}, UserHasDiscovered = {2}.", FullName, isInMainCameraLOS, isDiscoveredByUser);
         IsDiscernibleToUser = isInMainCameraLOS && isDiscoveredByUser;

@@ -31,7 +31,7 @@ public class StarbasesTableWindow : ACommandsTableWindow {
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return GameManager.Instance.GetUserPlayerKnowledge().Starbases.Cast<AItem>();
+        return _gameMgr.UserPlayerKnowledge.Starbases.Cast<AItem>();
     }
 
     #region Sorting

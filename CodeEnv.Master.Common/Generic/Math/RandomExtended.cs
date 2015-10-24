@@ -45,6 +45,23 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// The Random.Range method with a power modifier that skews the returned results.
+        /// If power = 1F, results are the same as Random.Range(). If power = 2F, it increases
+        /// the likelihood that a value closer to min will be returned. If power = 0.5F, it increases
+        /// the likelihood that a value closer to max will be returned.
+        /// <remarks>See http://forum.unity3d.com/threads/random-range-with-decreasing-probability.50596/ </remarks>
+        /// </summary>
+        /// <param name="min">The minimum.</param>
+        /// <param name="max">The maximum.</param>
+        /// <param name="power">The power.</param>
+        /// <returns></returns>
+        public static float RangeSkewed(float min, float max, float power) {
+            Arguments.ValidateNotNegative(max - min);
+            if (min == max) { return min; }
+            return Mathf.Pow(Random.value, power) * (max - min) + min;
+        }
+
+        /// <summary>
         /// This method returns either true or false with an equal chance.
         /// </summary>
         /// <returns></returns>
@@ -71,6 +88,18 @@ namespace CodeEnv.Master.Common {
         public static bool Chance(float truePercentage) {
             Arguments.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
             return truePercentage >= UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent);
+        }
+
+        /// <summary>
+        /// Returns either true or false with the chance of a true return (assuming power = 1F) provided.
+        /// If power is 2F, the chance of a true return is reduced, if 0.5F, the chance of a true return is increased.
+        /// </summary>
+        /// <param name="truePercentage">The true percentage.</param>
+        /// <param name="power">The power.</param>
+        /// <returns></returns>
+        public static bool ChanceSkewed(float truePercentage, float power) {
+            Arguments.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
+            return truePercentage >= RangeSkewed(Constants.ZeroPercent, Constants.OneHundredPercent, power);
         }
 
         /// <summary>

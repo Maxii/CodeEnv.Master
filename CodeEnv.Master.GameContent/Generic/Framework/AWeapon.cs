@@ -112,6 +112,7 @@ namespace CodeEnv.Master.GameContent {
         private bool _isLoaded;
         private WaitJob _reloadJob;
         private Job _checkForFiringSolutionsJob;
+        private GameTime _gameTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AWeapon" /> class.
@@ -120,6 +121,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public AWeapon(AWeaponStat stat, string name = null)
             : base(stat, name) {
+            _gameTime = GameTime.Instance;
             _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
         }
 
@@ -351,7 +353,9 @@ namespace CodeEnv.Master.GameContent {
                     //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
                     OnReadyToFire(firingSolutions);
                 }
-                yield return new WaitForSeconds(1);
+                // OPTIMIZE can also handle this changeable waitDuration by subscribing to a GameSpeed change
+                var waitDuration = TempGameValues.HoursBetweenFiringSolutionChecks / _gameTime.GameSpeedAdjustedHoursPerSecond;
+                yield return new WaitForSeconds(waitDuration);
             }
         }
 

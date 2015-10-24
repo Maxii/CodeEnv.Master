@@ -31,7 +31,7 @@ public class FleetsTableWindow : ACommandsTableWindow {
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return GameManager.Instance.GetUserPlayerKnowledge().Fleets.Cast<AItem>();
+        return _gameMgr.UserPlayerKnowledge.Fleets.Cast<AItem>();
     }
 
     #region Sorting

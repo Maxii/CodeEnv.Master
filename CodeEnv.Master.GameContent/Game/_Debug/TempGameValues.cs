@@ -36,6 +36,11 @@ namespace CodeEnv.Master.GameContent {
         public const int MaxTrackingLabelShowDistance = 5000;
 
         /// <summary>
+        /// The number of hours between FiringSolutionChecks for Weapons and ActiveCountermeasures.
+        /// </summary>
+        public const float HoursBetweenFiringSolutionChecks = 1F;
+
+        /// <summary>
         /// The range in degrees that a Turret's minimum barrel elevation setting can take.
         /// </summary>
         public static readonly ValueRange<float> MinimumBarrelElevationRange = new ValueRange<float>(-20F, 70F);

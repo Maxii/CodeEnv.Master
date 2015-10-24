@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PlayerDesigns.cs
+// File: PlayersDesigns.cs
 // Wrapper that holds a collection of ElementDesigns organized by the owner of the design and the design's name.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -16,32 +16,30 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Linq;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Wrapper that holds a collection of ElementDesigns organized by the owner of the design and the design's name.
     /// </summary>
-    public class PlayerDesigns {
+    public class PlayersDesigns {
 
         private IDictionary<Player, IDictionary<string, ShipDesign>> _shipDesignsByPlayer;
-
         private IDictionary<Player, IDictionary<string, FacilityDesign>> _facilityDesignsByPlayer;
+        private Player _userPlayer;
 
-        public PlayerDesigns() {
-            Initialize();
-        }
-
-        private void Initialize() {
-            _shipDesignsByPlayer = new Dictionary<Player, IDictionary<string, ShipDesign>>();
-            _facilityDesignsByPlayer = new Dictionary<Player, IDictionary<string, FacilityDesign>>();
-        }
-
-        public void Add(Player player) {
-            D.Assert(!_shipDesignsByPlayer.ContainsKey(player));
-            D.Assert(!_facilityDesignsByPlayer.ContainsKey(player));
-            _shipDesignsByPlayer.Add(player, new Dictionary<string, ShipDesign>());
-            _facilityDesignsByPlayer.Add(player, new Dictionary<string, FacilityDesign>());
+        public PlayersDesigns(IEnumerable<Player> allPlayers) {
+            int playerCount = allPlayers.Count();
+            _shipDesignsByPlayer = new Dictionary<Player, IDictionary<string, ShipDesign>>(playerCount);
+            _facilityDesignsByPlayer = new Dictionary<Player, IDictionary<string, FacilityDesign>>(playerCount);
+            allPlayers.ForAll(p => {
+                _shipDesignsByPlayer.Add(p, new Dictionary<string, ShipDesign>());
+                _facilityDesignsByPlayer.Add(p, new Dictionary<string, FacilityDesign>());
+                if (p.IsUser) {
+                    _userPlayer = p;
+                }
+            });
         }
 
         public void Add(ShipDesign design) {
@@ -66,15 +64,18 @@ namespace CodeEnv.Master.GameContent {
             return designsByName[designName];
         }
 
+        public ShipDesign GetUserShipDesign(string designName) {
+            return GetShipDesign(_userPlayer, designName);
+        }
+
         public FacilityDesign GetFacilityDesign(Player player, string designName) {
             var designsByName = _facilityDesignsByPlayer[player];
             D.Assert(designsByName.ContainsKey(designName), "No design named {0} present for {1}.".Inject(designName, player.LeaderName));
             return designsByName[designName];
         }
 
-        public void Clear() {
-            _shipDesignsByPlayer.Clear();
-            _facilityDesignsByPlayer.Clear();
+        public FacilityDesign GetUserFacilityDesign(string designName) {
+            return GetFacilityDesign(_userPlayer, designName);
         }
 
         public override string ToString() {

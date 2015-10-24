@@ -45,7 +45,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         FacilityHullCategory hullCategory = hullStat.HullCategory;
         var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
         var design = new FacilityDesign(_owner, designName, hullStat, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
-        GameManager.Instance.PlayerDesigns.Add(design);
+        GameManager.Instance.PlayersDesigns.Add(design);
     }
 
     protected override FacilityItem MakeElement(string designName) {

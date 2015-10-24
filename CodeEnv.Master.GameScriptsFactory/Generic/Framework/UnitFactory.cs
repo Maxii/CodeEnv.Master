@@ -148,7 +148,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public ShipItem MakeShipInstance(Player owner, string designName) {
-        ShipDesign design = GameManager.Instance.PlayerDesigns.GetShipDesign(owner, designName);
+        ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
         return MakeInstance(owner, design);
     }
 
@@ -166,7 +166,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, string designName, ref ShipItem element) {
-        ShipDesign design = GameManager.Instance.PlayerDesigns.GetShipDesign(owner, designName);
+        ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
         PopulateInstance(owner, design, ref element);
     }
 
@@ -252,7 +252,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public FacilityItem MakeFacilityInstance(Player owner, Topography topography, string designName) {
-        FacilityDesign design = GameManager.Instance.PlayerDesigns.GetFacilityDesign(owner, designName);
+        FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
         return MakeInstance(owner, topography, design);
     }
 
@@ -270,7 +270,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, Topography topography, string designName, ref FacilityItem element) {
-        FacilityDesign design = GameManager.Instance.PlayerDesigns.GetFacilityDesign(owner, designName);
+        FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
         PopulateInstance(owner, topography, design, ref element);
     }
 

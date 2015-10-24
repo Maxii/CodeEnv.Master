@@ -57,6 +57,8 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<IShipItem> Ships { get { return _elements.Where(e => e is IShipItem).Cast<IShipItem>(); } }
 
+        public IEnumerable<IFacilityItem> Facilities { get { return _elements.Where(e => e is IFacilityItem).Cast<IFacilityItem>(); } }
+
         /// <summary>
         /// The Commands this player has knowledge of.
         /// </summary>
@@ -88,6 +90,30 @@ namespace CodeEnv.Master.GameContent {
         public PlayerKnowledge(Player player) {
             D.Assert(player != null && player != TempGameValues.NoPlayer);
             Player = player;
+        }
+
+        /// <summary>
+        /// Indicates whether the player has knowledge of the provided item.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns></returns>
+        public bool HasKnowledgeOf(IDiscernibleItem item) {
+            if (item is ISystemItem) {
+                return _systems.Contains(item as ISystemItem);
+            }
+            if (item is IStarItem) {
+                return _stars.Contains(item as IStarItem);
+            }
+            if (item is IPlanetoidItem) {
+                return _planetoids.Contains(item as IPlanetoidItem);
+            }
+            if (item is IUnitElementItem) {
+                return _elements.Contains(item as IUnitElementItem);
+            }
+            if (item is IUnitCmdItem) {
+                return _commands.Contains(item as IUnitCmdItem);
+            }
+            return false;
         }
 
         /// <summary>

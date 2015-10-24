@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         private IList<IInterceptableOrdnance> _qualifiedThreats;
         private bool _isLoaded;
         private WaitJob _reloadJob;
-        private Job _checkForFiringSolutionsJob;
+        private GameTime _gameTime;
 
         protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
 
@@ -88,6 +88,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public ActiveCountermeasure(ActiveCountermeasureStat stat, string name = null)
             : base(stat, name) {
+            _gameTime = GameTime.Instance;
             _qualifiedThreats = new List<IInterceptableOrdnance>();
         }
 
@@ -105,8 +106,7 @@ namespace CodeEnv.Master.GameContent {
                      *********************************************************************************************************************************************/
 
         /// <summary>
-        /// Fires this countermeasure using the provided firingSolution which attempts
-        /// to intercept an incoming threat.
+        /// Fires this countermeasure using the provided firingSolution which attempts to intercept an incoming threat.
         /// </summary>
         /// <param name="firingSolution">The firing solution.</param>
         /// <returns></returns>
@@ -164,22 +164,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnIsReadyChanged() {
-            if (!IsReady) {
-                KillFiringSolutionsCheckJob();
-            }
             AssessReadinessToFire();
         }
 
         private void OnIsAnyThreatInRangeChanged() {
-            if (!IsAnyThreatInRange) {
-                KillFiringSolutionsCheckJob();
-            }
             AssessReadinessToFire();
         }
 
         /// <summary>
         /// Called when this weapon's firing process against <c>targetFiredOn</c> has begun.
-        /// </summary>
+        /// </summary> 
+        /// <remarks>Note: Done this way to match the way I handled it with Weapons, where
+        /// this was a public method called by the fired ordnance.</remarks>
+
         /// <param name="threatFiredOn">The target fired on.</param>
         private void OnFiringInitiated(IInterceptableOrdnance threatFiredOn) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.Name));
@@ -190,13 +187,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Called when this weapon's firing process launching the provided ordnance is complete. Projectile
-        /// and Missile Weapons initiate and complete the firing process at the same time. Beam Weapons
-        /// don't complete the firing process until their Beam is terminated.
+        /// Called when the firing process launching the ActiveCM is complete. 
         /// </summary>
+        /// <remarks>Note: Done this way to match the way I handled it with Weapons, 
+        /// where this was a public method called by the weapon's ordnance, and
+        /// some ordnance (beams) didn't complete firing until the beam was terminated.</remarks>
         private void OnFiringComplete() {
             D.Assert(!_isLoaded);
-
             UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
                 InitiateReloadCycle();
@@ -250,71 +247,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Launches a process to continuous check for newly uncovered firing solutions
-        /// against threats in range. Only initiated when the countermeasure is ready to fire with
-        /// qualified threats in range. If either of these conditions change, the job is immediately
-        /// killed using KillFiringSolutionsCheckJob().
-        /// <remarks>This fill-in check job is needed as firing solution checks otherwise
-        /// occur only when 1) the CM becomes ready to fire, or 2) the first qualified threat comes
-        /// into range. If a firing solution is not discovered during these event checks, no more
-        /// checks would take place until another one of the above conditions arise. This process fills that
-        /// gap, continuously looking for newly uncovered firing solutions which are to be
-        /// expected, given movement and attitude changes of both the firing element and
-        /// the threats.</remarks>
-        /// </summary>
-        private void LaunchFiringSolutionsCheckJob() {
-            KillFiringSolutionsCheckJob();
-            D.Assert(IsReady);
-            D.Assert(IsAnyThreatInRange);
-            //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
-            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
-                // TODO
-            });
-        }
-
-        /// <summary>
-        /// Continuously checks for firing solutions against any qualified threat in range. When it finds
-        /// one or more, it signals the CM's readiness to fire and the job terminates.
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator CheckForFiringSolutions() {
-            bool hasFiringSolutions = false;
-            while (!hasFiringSolutions) {
-                IList<CountermeasureFiringSolution> firingSolutions;
-                if (TryGetFiringSolutions(out firingSolutions)) {
-                    hasFiringSolutions = true;
-                    //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
-                    OnReadyToFire(firingSolutions);
-                }
-                yield return new WaitForSeconds(1);
-            }
-        }
-
-        private void KillFiringSolutionsCheckJob() {
-            if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
-                //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
-                _checkForFiringSolutionsJob.Kill();
-            }
-        }
-
-        /// <summary>
         /// Tries to get firing solutions on all the qualified threats in range. Returns <c>true</c> if one or more
-        /// firing solutions were found, <c>false</c> otherwise. For each qualified threat, there is a finite chance
-        /// that the CM can't 'bear' on the threat, resulting in no firing solution.
+        /// firing solutions were found, <c>false</c> otherwise. 
+        /// Note: In this version, for each qualified threat, there is NO chance that the CM can't 'bear' on the threat, resulting in no firing solution.
         /// </summary>
         /// <param name="firingSolutions">The firing solutions.</param>
         /// <returns></returns>
         private bool TryGetFiringSolutions(out IList<CountermeasureFiringSolution> firingSolutions) {
             int threatCount = _qualifiedThreats.Count;
             D.Assert(threatCount > Constants.Zero);
-            float chanceOfBearingOnThreat = Stat.EngagePercent;
             firingSolutions = new List<CountermeasureFiringSolution>(threatCount);
             foreach (var threat in _qualifiedThreats) {
-                bool canBearOnThreat = RandomExtended.Chance(chanceOfBearingOnThreat);
-                if (canBearOnThreat) {
-                    CountermeasureFiringSolution firingSolution = new CountermeasureFiringSolution(this, threat);
-                    firingSolutions.Add(firingSolution);
-                }
+                CountermeasureFiringSolution firingSolution = new CountermeasureFiringSolution(this, threat);
+                firingSolutions.Add(firingSolution);
             }
             return firingSolutions.Any();
         }
@@ -333,16 +278,15 @@ namespace CodeEnv.Master.GameContent {
                 OnReadyToFire(firingSolutions);
             }
             else {
-                LaunchFiringSolutionsCheckJob();
+                // With one or more qualified threats in range, there should always be a firing solution
+                // This is because all ActiveCMs now always can bear on their target
+                D.Error("{0} was unable to find any FiringSolutions.", Name);
             }
         }
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
                 _reloadJob.Dispose();
-            }
-            if (_checkForFiringSolutionsJob != null) {
-                _checkForFiringSolutionsJob.Dispose();
             }
         }
 
@@ -392,6 +336,123 @@ namespace CodeEnv.Master.GameContent {
 
         //    // method content here
         //}
+        #endregion
+
+        #region Firing Solutions Check Job Archive
+
+        //private Job _checkForFiringSolutionsJob;
+
+        /// <summary>
+        /// Tries to get firing solutions on all the qualified threats in range. Returns <c>true</c> if one or more
+        /// firing solutions were found, <c>false</c> otherwise. For each qualified threat, there is a finite chance
+        /// that the CM can't 'bear' on the threat, resulting in no firing solution.
+        /// </summary>
+        /// <param name="firingSolutions">The firing solutions.</param>
+        /// <returns></returns>
+        //private bool TryGetFiringSolutions(out IList<CountermeasureFiringSolution> firingSolutions) {
+        //    int threatCount = _qualifiedThreats.Count;
+        //    D.Assert(threatCount > Constants.Zero);
+        //    float chanceOfBearingOnThreat = Stat.EngagePercent;
+        //    firingSolutions = new List<CountermeasureFiringSolution>(threatCount);
+        //    foreach (var threat in _qualifiedThreats) {
+        //        bool canBearOnThreat = RandomExtended.Chance(chanceOfBearingOnThreat);
+        //        if (canBearOnThreat) {
+        //            CountermeasureFiringSolution firingSolution = new CountermeasureFiringSolution(this, threat);
+        //            firingSolutions.Add(firingSolution);
+        //        }
+        //    }
+        //    return firingSolutions.Any();
+        //}
+
+        //private void OnIsReadyChanged() {
+        //    if (!IsReady) {
+        //        KillFiringSolutionsCheckJob();
+        //    }
+        //    AssessReadinessToFire();
+        //}
+
+        //private void OnIsAnyThreatInRangeChanged() {
+        //    if (!IsAnyThreatInRange) {
+        //        KillFiringSolutionsCheckJob();
+        //    }
+        //    AssessReadinessToFire();
+        //}
+
+        //private void AssessReadinessToFire() {
+        //    if (!IsReady || !IsAnyThreatInRange) {
+        //        return;
+        //    }
+
+        //    IList<CountermeasureFiringSolution> firingSolutions;
+        //    if (TryGetFiringSolutions(out firingSolutions)) {
+        //        OnReadyToFire(firingSolutions);
+        //    }
+        //    else {
+        //        LaunchFiringSolutionsCheckJob();
+        //    }
+        //}
+
+        /// <summary>
+        /// Launches a process to continuous check for newly uncovered firing solutions
+        /// against threats in range. Only initiated when the countermeasure is ready to fire with
+        /// qualified threats in range. If either of these conditions change, the job is immediately
+        /// killed using KillFiringSolutionsCheckJob().
+        /// <remarks>This fill-in check job is needed as firing solution checks otherwise
+        /// occur only when 1) the CM becomes ready to fire, or 2) the first qualified threat comes
+        /// into range. If a firing solution is not discovered during these event checks, no more
+        /// checks would take place until another one of the above conditions arise. This process fills that
+        /// gap, continuously looking for newly uncovered firing solutions which are to be
+        /// expected, given movement and attitude changes of both the firing element and
+        /// the threats.</remarks>
+        /// </summary>
+        //private void LaunchFiringSolutionsCheckJob() {
+        //    KillFiringSolutionsCheckJob();
+        //    D.Assert(IsReady);
+        //    D.Assert(IsAnyThreatInRange);
+        //    //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
+        //    _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
+        //        // TODO
+        //    });
+        //}
+
+        /// <summary>
+        /// Continuously checks for firing solutions against any qualified threat in range. When it finds
+        /// one or more, it signals the CM's readiness to fire and the job terminates.
+        /// </summary>
+        /// <returns></returns>
+        //private IEnumerator CheckForFiringSolutions() {
+        //    bool hasFiringSolutions = false;
+        //    while (!hasFiringSolutions) {
+        //        IList<CountermeasureFiringSolution> firingSolutions;
+        //        if (TryGetFiringSolutions(out firingSolutions)) {
+        //            hasFiringSolutions = true;
+        //            //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+        //            OnReadyToFire(firingSolutions);
+        //        }
+        //        // OPTIMIZE can also handle this changeable waitDuration by subscribing to a GameSpeed change
+        //        var waitDuration = TempGameValues.HoursBetweenFiringSolutionChecks / _gameTime.GameSpeedAdjustedHoursPerSecond;
+        //        yield return new WaitForSeconds(waitDuration);
+        //    }
+        //}
+
+        //private void KillFiringSolutionsCheckJob() {
+        //    if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
+        //        //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
+        //        _checkForFiringSolutionsJob.Kill();
+        //    }
+        //}
+
+        //private void Cleanup() {
+        //    if (_reloadJob != null) {   // can be null if element is destroyed before Running
+        //        _reloadJob.Dispose();
+        //    }
+        //    if (_checkForFiringSolutionsJob != null) {
+        //        _checkForFiringSolutionsJob.Dispose();
+        //    }
+        //}
+
+
+
         #endregion
 
     }

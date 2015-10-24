@@ -421,14 +421,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
             WDVStrength[] interceptStrengths;
             float interceptAccuracy;
-            float engagementPercent;
             float reloadPeriod;
             var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageMitigationValue = UnityEngine.Random.Range(1F, 2F);
             switch (rangeCat) {
                 case RangeCategory.Short:
                     name = "CIWS";
-                    engagementPercent = 0.40F;
                     interceptStrengths = new WDVStrength[] { 
                         new WDVStrength(WDVCategory.Projectile, 0.2F), 
                         new WDVStrength(WDVCategory.Missile, 0.5F)
@@ -438,7 +436,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                     break;
                 case RangeCategory.Medium:
                     name = "AvengerADS";
-                    engagementPercent = 0.80F;
                     interceptStrengths = new WDVStrength[] {
                         new WDVStrength(WDVCategory.Missile, 3.0F) 
                     };
@@ -447,7 +444,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                     break;
                 case RangeCategory.Long:
                     name = "PatriotADS";
-                    engagementPercent = 0.90F;
                     interceptStrengths = new WDVStrength[] {
                         new WDVStrength(WDVCategory.Missile, 1.0F)
                     };
@@ -461,7 +457,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             float baseRangeDistance = rangeCat.GetBaseActiveCountermeasureRange();
             DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
             var countermeasureStat = new ActiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, baseRangeDistance, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation, engagementPercent);
+                rangeCat, baseRangeDistance, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
             statsList.Add(countermeasureStat);
         }
         return statsList;

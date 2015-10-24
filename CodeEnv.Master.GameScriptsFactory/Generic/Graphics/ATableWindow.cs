@@ -33,15 +33,16 @@ public abstract class ATableWindow : AGuiWindow {
 
     public ATableRowForm rowPrefab;
 
-    private Transform _contentHolder;
     protected override Transform ContentHolder { get { return _contentHolder; } }
 
     protected SortDirection _sortDirection;
     protected UITable _table;
 
+    private Transform _contentHolder;
     private GuiElementID _lastSortTopic;
     private SortDirection _lastSortDirection;
     private IList<ATableRowForm> _rowForms;
+    protected GameManager _gameMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -51,11 +52,16 @@ public abstract class ATableWindow : AGuiWindow {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         Arguments.ValidateNotNull(rowPrefab);
+        InitializeContentHolder();
+        WireDelegates();
+    }
+
+    protected override void AcquireReferences() {
+        base.AcquireReferences();
         _table = gameObject.GetSafeFirstMonoBehaviourInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
         _rowForms = new List<ATableRowForm>();
-        InitializeContentHolder();
-        WireDelegates();
+        _gameMgr = GameManager.Instance;
     }
 
     private void InitializeContentHolder() {

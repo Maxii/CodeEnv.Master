@@ -89,7 +89,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         IBaseCmdItem myClosestBase = null;
         string distanceText = _unknown;
         if (isPositionValid) {
-            myClosestBase = GameManager.Instance.GetUserPlayerKnowledge().GetMyClosestBase(position);
+            myClosestBase = GameManager.Instance.UserPlayerKnowledge.GetMyClosestBase(position);
             if (myClosestBase != null) {
                 // can be null if there are no bases currently owned by the user
                 _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorIndex, myClosestBase.SectorIndex);

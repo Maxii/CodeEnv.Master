@@ -288,12 +288,13 @@
     <Compile Include="Generic\Framework\IShipHull.cs" />
     <Compile Include="Game\Framework\ShipHullEquipment.cs" />
     <Compile Include="Generic\Framework\MountSlotID.cs" />
-    <Compile Include="Game\Framework\PlayerDesigns.cs" />
+    <Compile Include="Game\Framework\PlayersDesigns.cs" />
     <Compile Include="Game\Framework\WeaponDesign.cs" />
     <Compile Include="Game\Framework\ShipDesign.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
     <Compile Include="Generic\Framework\ITopographyChangeListener.cs" />
     <Compile Include="Generic\Extensions\OrderSourceExtensions.cs" />
+    <Compile Include="PlayersKnowledge.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />

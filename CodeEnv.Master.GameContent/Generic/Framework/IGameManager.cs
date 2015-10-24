@@ -78,7 +78,9 @@ namespace CodeEnv.Master.GameContent {
 
         IList<Player> AIPlayers { get; }
 
-        PlayerKnowledge GetPlayerKnowledge(Player player);
+        PlayersKnowledge PlayersKnowledge { get; }
+
+        PlayerKnowledge UserPlayerKnowledge { get; }
 
         /// <summary>
         /// The current GameState. 
