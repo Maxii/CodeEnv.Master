@@ -68,7 +68,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// reason, including by beam aim, target movement, the interposition of a shield or other target or the 
     /// termination of the beam.
     /// </summary>
-    private float _cumImpactTimeOnTarget;
+    private float _cumImpactTimeOnImpactedTarget;
 
     /// <summary>
     /// The current attackable target being hit. Can be null as a result
@@ -77,10 +77,22 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private IElementAttackableTarget _impactedTarget;
 
     /// <summary>
-    /// Indicates something has been hit. 
+    /// Indicates something is currently being hit. 
     /// Used to visually end the beam line on whatever is being hit. 
     /// </summary>
-    private bool _isImpact;
+    private bool _isCurrentImpact;
+
+    /// <summary>
+    /// Indicates whether the intended target <c>Target</c> has been hit one or more times by this beam.
+    /// Used to AssessCombatResults() when the beam is terminated.
+    /// </summary>
+    private bool _isIntendedTargetHit;
+    /// <summary>
+    /// Indicates whether the beam was interdicted one or more times by a Shield
+    /// or some target other than the intended <c>Target</c>.
+    /// Used to AssessCombatResults() when the beam is terminated.
+    /// </summary>
+    private bool _isInterdicted;
     private float _initialBeamAnimationOffset;
     private Job _animateOperatingEffectJob;
     private Vector3 _impactLocation;
@@ -124,11 +136,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void OperateBeam(float deltaTime) {
-        _isImpact = false;
+        _isCurrentImpact = false;
         RaycastHit impactInfo;
         Ray ray = new Ray(_transform.position, _transform.forward); // ray in direction beam is pointing
         if (Physics.Raycast(ray, out impactInfo, _range, _beamImpactLayerMask)) {
-            _isImpact = true;
+            _isCurrentImpact = true;
             OnImpact(impactInfo, deltaTime);
         }
         else {
@@ -137,7 +149,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
 
         if (ToShowEffects) {
-            float beamLength = _isImpact ? Vector3.Distance(_transform.position, impactInfo.point) : _range;
+            float beamLength = _isCurrentImpact ? Vector3.Distance(_transform.position, impactInfo.point) : _range;
             // end the beam line at either the impact point or its range
             _operatingEffectRenderer.SetPosition(index: 1, position: new Vector3(0F, 0F, beamLength));
             // Set beam scaling based off its length?
@@ -181,7 +193,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
                 impactedTargetRigidbody.AddForceAtPosition(force, impactInfo.point, ForceMode.Impulse);
             }
             // accumulate total impact time on _impactedTarget
-            _cumImpactTimeOnTarget += deltaTime;
+            _cumImpactTimeOnImpactedTarget += deltaTime;
         }
         else {
             // hit something else that can't take damage so apply cumDamage to previous valid target, if any
@@ -192,6 +204,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void OnShieldImpact(Shield shield, float deltaTime) {
         var incrementalShieldImpact = DeliveryVehicleStrength * (deltaTime / _operatingDuration);
         shield.AbsorbImpact(incrementalShieldImpact);
+        _isInterdicted = true;
     }
 
     private void OnWeaponIsOperationalChanged(AEquipment weapon) {
@@ -210,21 +223,27 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         //D.Log("{0}.AssessApplyDamage() called.", Name);
         if (_impactedTarget == null) {
             // no target that can take damage has been hit, so _cumImpactTime should be zero
-            D.Assert(_cumImpactTimeOnTarget == Constants.ZeroF);
+            D.Assert(_cumImpactTimeOnImpactedTarget == Constants.ZeroF);
             return;
         }
         if (!_impactedTarget.IsOperational) {
             // target is dead so don't apply more damage
-            _cumImpactTimeOnTarget = Constants.ZeroF;
+            _cumImpactTimeOnImpactedTarget = Constants.ZeroF;
             _impactedTarget = null;
             return;
         }
 
-        DamageStrength cumDamageToApply = DamagePotential * (_cumImpactTimeOnTarget / _operatingDuration);
+        DamageStrength cumDamageToApply = DamagePotential * (_cumImpactTimeOnImpactedTarget / _operatingDuration);
         D.Log("{0} is applying hit of strength {1} to {2}.", Name, cumDamageToApply, _impactedTarget.DisplayName);
-
         _impactedTarget.TakeHit(cumDamageToApply);
-        _cumImpactTimeOnTarget = Constants.ZeroF;
+
+        if (_impactedTarget == Target) {
+            _isIntendedTargetHit = true;
+        }
+        else {
+            _isInterdicted = true;
+        }
+        _cumImpactTimeOnImpactedTarget = Constants.ZeroF;
         _impactedTarget = null;
     }
 
@@ -289,7 +308,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void AssessShowImpactEffects() {
         //D.Log("{0}.AssessShowImpactEffects() called. ToShowEffects: {1}, IsImpact: {2}.", Name, ToShowEffects, _isImpact);
         // beam impactEffects are not destroyed when used
-        var toShow = ToShowEffects && _isImpact;
+        var toShow = ToShowEffects && _isCurrentImpact;
         if (toShow) {
             ShowImpactEffects(_impactLocation);
         }
@@ -302,7 +321,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
         //D.Log("{0}.ShowImpactEffects() called.", Name);
-        D.Assert(ToShowEffects && _isImpact);
+        D.Assert(ToShowEffects && _isCurrentImpact);
         if (impactEffect.isPlaying) {
             impactEffect.Stop();
         }
@@ -335,8 +354,24 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
             _operatingAudioSource.Stop();
         }
+        AssessCombatResults();
         Weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
         Weapon.OnFiringComplete(this);
+    }
+
+    private void AssessCombatResults() {
+        if (_isIntendedTargetHit) {
+            // Intended Target was hit at least once during beam's duration
+            // It could have been partially interdicted too during its duration, but not fatally if target was hit
+            ReportTargetHit();
+        }
+        else if (_isInterdicted) {
+            // As intended Target was not hit, but beam was at least partially interdicted, record this as an interdiction
+            ReportInterdiction();
+        }
+        else {
+            ReportTargetMissed();
+        }
     }
 
     protected override void Cleanup() {

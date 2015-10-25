@@ -135,7 +135,7 @@ namespace CodeEnv.Master.GameContent {
                 CurrentCharge -= deliveryVehicleImpactValue;
                 AssessRechargeState();
             }
-            D.Warn(!HasCharge, "{0}.{1} has failed.", Shield.Name, Name);
+            D.Log(!HasCharge, "{0}.{1} has failed.", Shield.Name, Name);
             return isHitCompletelyAbsorbed;
         }
 

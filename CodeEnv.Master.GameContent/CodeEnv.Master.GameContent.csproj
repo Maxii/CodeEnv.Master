@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="CombatResult.cs" />
     <Compile Include="Generic\IO\AWeaponStat.cs" />
     <Compile Include="Generic\IO\BeamWeaponStat.cs" />
     <Compile Include="Generic\Framework\CountermeasureFiringSolution.cs" />

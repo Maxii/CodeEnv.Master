@@ -108,7 +108,14 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
     }
 
     private void OnEnemyTargetInRange(IElementAttackableTarget enemyTarget) {
-        _equipmentList.ForAll(weap => weap.OnEnemyTargetInRangeChanged(enemyTarget, isInRange: true));
+        _equipmentList.ForAll(weap => {
+            // GOTCHA!! As each Weapon receives this inRange notice, it can attack and destroy the target
+            // before the next EnemyTargetInRange notice is sent to the next Weapon. 
+            // As a result, IsOperational must be checked after each notice.
+            if (enemyTarget.IsOperational) {
+                weap.OnEnemyTargetInRangeChanged(enemyTarget, isInRange: true);
+            }
+        });
     }
 
     private void OnEnemyTargetOutOfRange(IElementAttackableTarget previousEnemyTarget) {

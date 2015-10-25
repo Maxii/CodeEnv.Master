@@ -139,7 +139,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         //D.Log("{0}: TargetBearing = {1}.", Name, vectorToTarget.normalized);
         float targetDistance = vectorToTarget.magnitude;
         if (targetDistance > Weapon.RangeDistance) {
-            D.Log("{0}: Target {1} is out of range.", Name, enemyTarget.FullName);
+            //D.Log("{0}: Target {1} is out of range.", Name, enemyTarget.FullName);
             return false;
         }
 
@@ -177,16 +177,16 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                     return true;
                 }
                 if (targetHit.Owner.IsEnemyOf(Weapon.Owner)) {
-                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2}.", Name, enemyTarget.FullName, targetHit.FullName);
+                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2}. Date: {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
                     return false;
                 }
-                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2}.", Name, enemyTarget.FullName, targetHit.FullName);
+                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2}. Date: {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
                 return false;
             }
-            D.Warn("{0}: CheckLineOfSight() didn't find target {1} but found {2}.", Name, enemyTarget.FullName, hitInfo.transform.name);
+            D.Warn("{0}: CheckLineOfSight() didn't find target {1} but found {2}. Date: {3}.", Name, enemyTarget.FullName, hitInfo.transform.name, _gameTime.CurrentDate);
             return false;
         }
-        D.Warn("{0}: CheckLineOfSight({1}) didn't find anything.", Name, enemyTarget.FullName);    // shouldn't happen?
+        D.Warn("{0}: CheckLineOfSight({1}) didn't find anything. Date: {3}.", Name, enemyTarget.FullName, _gameTime.CurrentDate);    // shouldn't happen?
         return false;
     }
 

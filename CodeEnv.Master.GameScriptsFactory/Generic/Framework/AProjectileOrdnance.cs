@@ -119,12 +119,17 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                 ShowImpactEffects(impactEffectLocation);
             }
             if (impactedTarget.IsOperational) {
-                //impactedTarget.TakeHit(Strength);
                 impactedTarget.TakeHit(DamagePotential);
+                if (impactedTarget == Target) {
+                    ReportTargetHit();
+                }
+                else {
+                    ReportInterdiction();
+                }
             }
         }
         else {
-            // if not an attackableTarget, then it might be another incoming or outgoing projectile. If so, ignore it
+            // if not an attackableTarget, then??   IMPROVE
             var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
             D.Assert(otherOrdnance == null);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
         }
@@ -144,7 +149,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             if (ToShowEffects) {
                 ShowImpactEffects(_transform.position); // self destruction effect
             }
-            D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            ReportTargetMissed();
             TerminateNow();
         }
     }
@@ -190,12 +196,22 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", Name, DeliveryVehicleStrength.Category.GetValueName(), interceptStrength.Category.GetValueName());
             return;
         }
-        D.Warn(DeliveryVehicleStrength.Value == Constants.ZeroF, "{0} has been intercepted when VehicleStrength.Value = 0. IsOperational = {1}.", Name, IsOperational);
-
-        D.Log("{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
-        DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
         if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
-            TerminateNow();
+            // This problem was caused by the ActiveCMRangeMonitor adding this threat to all ActiveCMs when it came within
+            // the monitor's range. As the ActiveCMs that get the add, IMMEDIATELY can try to destroy the threat, the threat can
+            // be destroyed before it is ever added to the ActiveCMs later in the list. Thus, with the threat already destroyed, the
+            // late CM that is notified of a 'live' threat tries to destroy it, resulting in this warning and the subsequent "object already
+            // destroyed" error.
+            D.Error("{0} has been intercepted when VehicleStrength.Value = 0. IsOperational = {1}. Bypassing duplicate termination.",
+                Name, IsOperational);
+        }
+        else {
+            //D.Log("{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
+            DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
+            if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
+                ReportInterdiction();
+                TerminateNow();
+            }
         }
     }
 

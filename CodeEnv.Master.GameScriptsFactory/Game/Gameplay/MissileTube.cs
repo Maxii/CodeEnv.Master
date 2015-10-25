@@ -59,7 +59,7 @@ public class MissileTube : AWeaponMount {
         Vector3 vectorToTargetFromPushover = targetPosition - pushoverPosition;
         float targetDistanceFromPushover = vectorToTargetFromPushover.magnitude;
         if (distanceToPushover + targetDistanceFromPushover > Weapon.RangeDistance) {
-            D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);
+            //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);
             firingSolution = null;
             return false;
         }

@@ -110,6 +110,23 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         enabled = !_gameMgr.IsPaused;
     }
 
+    protected void ReportTargetHit() {
+        Weapon.OnTargetHit(Target);
+    }
+
+    protected void ReportTargetMissed() {
+        Weapon.OnTargetMissed(Target);
+    }
+
+    /// <summary>
+    /// Called when this ordnance has been fatally interdicted
+    /// by either a Countermeasure (ActiveCM or Shield) or another
+    /// object that was not its target.
+    /// </summary>
+    protected void ReportInterdiction() {
+        Weapon.OnOrdnanceInterdicted(Target);
+    }
+
     /// <summary>
     /// Synchronizes Name and transform's name and adds instanceID.
     /// Must be called after Awake() as UnityUtility.AddChild can't get rid of "Clone" until after Awake runs.
@@ -120,7 +137,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected void TerminateNow() {
-        D.Log("{0} is terminating.", Name); // keep log going as I need to trace why I'm getting "gameobject already destroyed"?
+        //D.Log("{0} is terminating.", Name); 
         enabled = false;
         IsOperational = false;
         PrepareForTermination();

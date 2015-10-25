@@ -250,7 +250,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             D.Assert(beamOrdnance != null);
             beamOrdnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
         }
-        D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
+        //D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
                * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
                * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
@@ -612,7 +612,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            D.Log("{0} has been hit but incurred no damage.", FullName);
+            //D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
         D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);

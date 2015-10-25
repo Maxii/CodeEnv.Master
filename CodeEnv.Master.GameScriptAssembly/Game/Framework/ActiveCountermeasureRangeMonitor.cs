@@ -46,13 +46,13 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void OnDetectedItemAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
         var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
-        D.Warn("{0} detected and added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
+        D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
         if (newlyDetectedOrdnance.Owner == Owner) {
             // its one of ours
             if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
                 // ... and its not a danger so ignore it
                 RemoveDetectedItem(newlyDetectedOrdnance);
-                D.Log("{0} removed detected item {1} owned by us that moving away.", Name, newlyDetectedOrdnance.FullName);
+                D.Log("{0} removed detected item {1} owned by us moving away.", Name, newlyDetectedOrdnance.FullName);
                 return;
             }
         }
@@ -73,7 +73,14 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// </summary>
     /// <param name="newThreat">The IInterceptableOrdnance threat.</param>
     private void OnThreatInRange(IInterceptableOrdnance newThreat) {
-        _equipmentList.ForAll(cm => cm.OnThreatInRangeChanged(newThreat, isInRange: true));
+        _equipmentList.ForAll(cm => {
+            // GOTCHA!! As each CM receives this inRange notice, it can attack and destroy the threat
+            // before the next ThreatInRange notice is sent to the next CM. As a result, IsOperational must
+            // be checked after each notice.
+            if (newThreat.IsOperational) {
+                cm.OnThreatInRangeChanged(newThreat, isInRange: true);
+            }
+        });
     }
 
     /// <summary>
@@ -91,7 +98,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// </summary>
     /// <param name="deadThreat">The dead threat.</param>
     private void OnThreatDeath(IOrdnance deadThreat) {
-        //D.Log("{0} received OnThreatDeath event for {1}.", Name, deadThreat.Name);
+        D.Log("{0} received OnThreatDeath event for {1}.", Name, deadThreat.Name);
         RemoveDetectedItem(deadThreat as IInterceptableOrdnance);
     }
 

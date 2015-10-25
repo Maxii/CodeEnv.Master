@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -109,6 +109,8 @@ namespace CodeEnv.Master.GameContent {
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
         protected IList<IElementAttackableTarget> _qualifiedEnemyTargets;
+
+        private IDictionary<string, CombatResult> _combatResults;
         private bool _isLoaded;
         private WaitJob _reloadJob;
         private Job _checkForFiringSolutionsJob;
@@ -123,6 +125,7 @@ namespace CodeEnv.Master.GameContent {
             : base(stat, name) {
             _gameTime = GameTime.Instance;
             _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
+            _combatResults = new Dictionary<string, CombatResult>();
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
@@ -164,9 +167,13 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                // some targets going out of range may not have been qualified as targets for this weapon
+                // Note: Some targets going out of range may not have been qualified as targets for this Weapon.
+                // Also, a qualified target can be destroyed (goes out of range) by other Weapons before it is ever added
+                // to this one, so if it is not present, it was never added to this Weapon because it was immediately destroyed
+                // by other Weapons as it was being added to them.
                 if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
                     _qualifiedEnemyTargets.Remove(enemyTarget);
+                    ReportCombatResults(enemyTarget);
                 }
             }
             IsAnyEnemyInRange = _qualifiedEnemyTargets.Any();
@@ -212,6 +219,8 @@ namespace CodeEnv.Master.GameContent {
             RecordFiredOrdnance(ordnanceFired);
             ordnanceFired.onDeathOneShot += OnOrdnanceDeath;
 
+            RecordShotFired(targetFiredOn);
+
             _isLoaded = false;
             AssessReadiness();
         }
@@ -230,6 +239,34 @@ namespace CodeEnv.Master.GameContent {
                 // give time for _reloadJob to exit before starting another
                 InitiateReloadCycle();
             });
+        }
+
+        /// <summary>
+        /// Called by fired ordnance when it hits its intended target.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        public void OnTargetHit(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            combatResult.Hits++;
+        }
+
+        /// <summary>
+        /// Called by fired ordnance when it misses its intended target without being permanently interdicted.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        public void OnTargetMissed(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            combatResult.Misses++;
+        }
+
+        /// <summary>
+        /// Called by fired ordnance when it is fatally interdicted by a Countermeasure
+        /// (ActiveCM or Shield) or some other obstacle that was not its target.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        public void OnOrdnanceInterdicted(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            combatResult.Interdictions++;
         }
 
         private void OnOrdnanceDeath(IOrdnance terminatedOrdnance) {
@@ -281,6 +318,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="terminatedOrdnance">The dead ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
+
+        /// <summary>
+        /// Records a shot was fired for purposes of tracking CombatResults.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        private void RecordShotFired(IElementAttackableTarget target) {
+            string targetName = target.Name;
+            CombatResult combatResult;
+            if (!_combatResults.TryGetValue(targetName, out combatResult)) {
+                combatResult = new CombatResult(Name, targetName, Accuracy);
+                _combatResults.Add(targetName, combatResult);
+            }
+            combatResult.ShotsTaken++;
+        }
 
 
         private bool CheckIfQualified(IElementAttackableTarget enemyTarget) {
@@ -377,6 +428,11 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             return firingSolutions.Any();
+        }
+
+        private void ReportCombatResults(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            D.Log(combatResult);
         }
 
         private void Cleanup() {

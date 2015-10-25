@@ -110,7 +110,8 @@ namespace CodeEnv.Master.GameContent {
                     return new Vector3(.07F, .04F, .15F);
                 case ShipHullCategory.Dreadnaught:
                 case ShipHullCategory.Troop:
-                    return new Vector3(.10F, .06F, .25F);
+                    //return new Vector3(.10F, .06F, .25F);
+                    return new Vector3(.21F, .07F, .45F);
                 case ShipHullCategory.Carrier:
                     return new Vector3(.12F, .06F, .35F);
                 case ShipHullCategory.Fighter:

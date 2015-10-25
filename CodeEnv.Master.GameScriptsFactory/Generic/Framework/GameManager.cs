@@ -533,7 +533,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (IsPaused) {
             RequestPauseStateChange(toPause: false, toOverride: true);
         }
-        PlayersKnowledge.Dispose();
+        if (PlayersKnowledge != null) {
+            PlayersKnowledge.Dispose();
+        }
     }
 
     #region Pausing System

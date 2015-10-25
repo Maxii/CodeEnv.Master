@@ -1806,7 +1806,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// </summary>
         private void EngageEnginesAtTravelSpeed() {
             D.Assert(IsAutoPilotEngaged);
-            D.Log("{0} autoPilot is engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
+            //D.Log("{0} autoPilot is engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
             _engineRoom.ChangeSpeed(TravelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
         }
 
@@ -1817,7 +1817,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// <param name="newSpeed">The new speed.</param>
         internal void ChangeSpeed(Speed newSpeed) {
             D.Assert(newSpeed != default(Speed));
-            D.Log("{0} disengaging autopilot and changing speed to {1}.", Name, newSpeed.GetValueName());
+            //D.Log("{0} disengaging autopilot and changing speed to {1}.", Name, newSpeed.GetValueName());
             IsAutoPilotEngaged = false;
             _lastSpeedOverride = newSpeed;
             _engineRoom.ChangeSpeed(newSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
@@ -2108,7 +2108,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// </summary>
         private void RefreshAutoPilotNavValues() {
             D.Assert(IsAutoPilotEngaged);
-            D.Log("{0} is refreshing autoPilot Navigation values.", _ship.FullName);
+            //D.Log("{0} is refreshing autoPilot Navigation values.", _ship.FullName);
 
             // OPTIMIZE Making these data values null is just a temp way to let the GetUnitsPerHour() extension ID erroneous assumptions on my part
             var cmdData = _orderSource == OrderSource.UnitCommand ? _ship.Command.Data : null;
@@ -2134,7 +2134,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// </summary>
         /// <param name="speed">The speed.</param>
         private void RefreshEngineRoomSpeedValues(Speed speed) {
-            D.Log("{0} is refreshing engineRoom speed values.", _ship.FullName);
+            //D.Log("{0} is refreshing engineRoom speed values.", _ship.FullName);
             var speedInUnitsPerHour = speed.GetUnitsPerHour(_ship.Command.Data, _ship.Data);
             _engineRoom.ChangeSpeed(speedInUnitsPerHour);
         }
@@ -2610,10 +2610,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
             /// <returns></returns>
             internal void ChangeSpeed(float newSpeedRequest) {
-                D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2:0.##}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
+                //D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2:0.##}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
 
                 if (Mathfx.Approx(newSpeedRequest, _shipData.RequestedSpeed, .01F)) {
-                    D.Log("{0}'s speed request of {1:0.##} units/hour is a duplicate.", _shipData.FullName, newSpeedRequest);
+                    //D.Log("{0}'s speed request of {1:0.##} units/hour is a duplicate.", _shipData.FullName, newSpeedRequest);
                     return;
                 }
                 _shipData.RequestedSpeed = newSpeedRequest;
@@ -2627,29 +2627,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     EngageOrContinueReversePropulsion();
                 }
             }
-            //internal void ChangeSpeed(float newSpeedRequest) {
-            //    D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
-            //    _shipData.RequestedSpeed = newSpeedRequest;
-            //    CalcForwardPropulsionPowerOutputFor(newSpeedRequest);
-            //    if (newSpeedRequest >= CurrentForwardSpeed) {
-            //        if (newSpeedRequest != Constants.ZeroF) {
-            //            EngageOrContinueForwardPropulsion();
-            //        }
-            //    }
-            //    else {
-            //        EngageOrContinueReversePropulsion();
-            //    }
-            //}
-
-            /// <summary>
-            /// Called when the Helm refreshes its navigational values due to changes that may
-            /// affect the speed float value.
-            /// </summary>
-            /// <param name="refreshedSpeedValue">The refreshed speed value.</param>
-            //internal void RefreshSpeedValue(float refreshedSpeedValue) {
-            //    _shipData.RequestedSpeed = refreshedSpeedValue;
-            //    CalcForwardPropulsionPowerOutputFor(refreshedSpeedValue);
-            //}
 
             private void OnIsTurnUnderwayChanged() {
                 Vector3 relativeVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
@@ -2693,14 +2670,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     _operateReversePropulsionJob.Kill();
                 }
                 if (_operateForwardPropulsionJob == null || !_operateForwardPropulsionJob.IsRunning) {
-                    D.Log("{0} is engaging forward propulsion.", _shipData.FullName);
+                    //D.Log("{0} is engaging forward propulsion.", _shipData.FullName);
                     _operateForwardPropulsionJob = new Job(OperateForwardPropulsion(), toStart: true, onJobComplete: (jobWasKilled) => {
                         D.Assert(jobWasKilled);
-                        D.Log("{0} has ended forward propulsion.", _shipData.FullName);
+                        //D.Log("{0} has ended forward propulsion.", _shipData.FullName);
                     });
                 }
                 else {
-                    D.Log("{0} is continuing forward propulsion.", _shipData.FullName);
+                    //D.Log("{0} is continuing forward propulsion.", _shipData.FullName);
                 }
             }
 
@@ -2709,7 +2686,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     _operateForwardPropulsionJob.Kill();
                 }
                 if (_operateReversePropulsionJob == null || !_operateReversePropulsionJob.IsRunning) {
-                    D.Log("{0} is engaging reverse propulsion.", _shipData.FullName);
+                    //D.Log("{0} is engaging reverse propulsion.", _shipData.FullName);
                     _operateReversePropulsionJob = new Job(OperateReversePropulsion(), toStart: true, onJobComplete: (jobWasKilled) => {
                         if (!jobWasKilled) {
                             // ReverseEngines completed naturally and should engage forward engines unless RequestedSpeed is zero
@@ -2720,7 +2697,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     });
                 }
                 else {
-                    D.Log("{0} is continuing reverse propulsion.", _shipData.FullName);
+                    //D.Log("{0} is continuing reverse propulsion.", _shipData.FullName);
                 }
             }
 

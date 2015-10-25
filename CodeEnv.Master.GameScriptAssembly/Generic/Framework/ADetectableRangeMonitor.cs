@@ -54,9 +54,9 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
 
         var detectedItem = other.gameObject.GetInterface<DetectableType>();
         if (detectedItem != null) {
-            //D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
+            D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
             if (!detectedItem.IsOperational) {
-                D.Warn("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, detectedItem.FullName);
+                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, detectedItem.FullName);
                 return;
             }
             AddDetectedItem(detectedItem);
@@ -73,7 +73,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
 
         var lostDetectionItem = other.gameObject.GetInterface<DetectableType>();
         if (lostDetectionItem != null) {
-            //D.Log("{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionItem.FullName, Vector3.Distance(_transform.position, lostDetectionItem.Position));
+            D.Log("{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionItem.FullName, Vector3.Distance(_transform.position, lostDetectionItem.Position));
             RemoveDetectedItem(lostDetectionItem);
         }
     }
@@ -161,7 +161,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
     protected void RemoveDetectedItem(DetectableType previouslyDetectedItem) {
         bool isRemoved = _itemsDetected.Remove(previouslyDetectedItem);
         if (isRemoved) {
-            //D.Log("{0} has removed {1}. Items remaining = {2}.", Name, previouslyDetectedItem.FullName, _itemsDetected.Select(i => i.FullName).Concatenate());
+            D.Log("{0} has removed {1}. Items remaining = {2}.", Name, previouslyDetectedItem.FullName, _itemsDetected.Select(i => i.FullName).Concatenate());
             if (previouslyDetectedItem.IsOperational) {
                 D.Log("{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(DetectableType).Name, previouslyDetectedItem.FullName, Vector3.Distance(previouslyDetectedItem.Position, _transform.position));
             }
@@ -222,7 +222,7 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
         D.Assert(_itemsDetected.Count == Constants.Zero);
         __itemsDetectedViaWorkaround.Clear();
 
-        D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
+        //D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
         UnityUtility.WaitOneFixedUpdateToExecute(() => {
             // delay to allow monitor 1 fixed update to record items that it detects
             var allCollidersInRange = Physics.OverlapSphere(_transform.position, RangeDistance);

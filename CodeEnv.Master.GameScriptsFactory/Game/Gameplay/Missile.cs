@@ -78,7 +78,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private Vector3 _nominalThrust;
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
-    private float _weaponAccuracy;
 
     //protected override void Awake() {
     //    base.Awake();
@@ -87,7 +86,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
-        _weaponAccuracy = weapon.Accuracy;
         _positionLastRangeCheck = _transform.position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
 

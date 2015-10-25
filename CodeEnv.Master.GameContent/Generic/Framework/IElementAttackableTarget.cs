@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<IMortalItem> onDeathOneShot;
 
+        string Name { get; }
+
         new string FullName { get; }
 
         new string DisplayName { get; }

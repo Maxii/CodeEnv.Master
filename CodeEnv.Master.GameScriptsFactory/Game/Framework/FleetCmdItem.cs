@@ -1099,7 +1099,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="waypoint">The waypoint.</param>
         /// <exception cref="System.NotImplementedException"></exception>
         protected override void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null) {
-            D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
+            //D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.Assert(waypoint == null);

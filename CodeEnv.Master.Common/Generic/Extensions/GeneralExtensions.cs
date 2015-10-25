@@ -134,7 +134,7 @@ namespace CodeEnv.Master.Common {
                 }
             }
             else {
-                formattedValue = value < threshold ? Constants.FormatFloat_1DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
+                formattedValue = value < threshold ? Constants.FormatFloat_2DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
             }
             return formattedValue;
         }

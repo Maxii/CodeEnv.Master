@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
             var threat = firingSolution.Threat;
             OnFiringInitiated(threat);
 
-            D.Log("{0} is firing on {1}.", Name, threat.Name);
+            D.Log("{0} is firing on {1}. Qualified Threats = {2}.", Name, threat.Name, _qualifiedThreats.Select(t => t.Name).Concatenate());
             bool isThreatHit = false;
             float hitChance = InterceptAccuracy;
             if (RandomExtended.Chance(hitChance)) {
@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="threat">The ordnance threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void OnThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
-            //D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
+            D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(threat)) {
                     D.Assert(!_qualifiedThreats.Contains(threat));
@@ -148,7 +148,10 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                // some threats going out of range may not have been qualified as targets for this countermeasure
+                // Note: Some threats going out of range may not have been qualified as targets for this CM
+                // Also, a qualified threat can be destroyed (goes out of range) by other CMs before it is ever added
+                // to this one, so if it is not present, it was never added to this CM because it was immediately destroyed
+                // by other CMs as it was being added to them.
                 if (_qualifiedThreats.Contains(threat)) {
                     _qualifiedThreats.Remove(threat);
                 }
