@@ -150,7 +150,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                 ShowImpactEffects(_transform.position); // self destruction effect
             }
             //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
-            ReportTargetMissed();
+            if (Target.IsOperational) {
+                // reporting a miss after the target is dead will just muddy the combat report
+                ReportTargetMissed();
+            }
             TerminateNow();
         }
     }

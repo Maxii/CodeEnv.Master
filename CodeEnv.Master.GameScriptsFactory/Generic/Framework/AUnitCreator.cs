@@ -312,21 +312,23 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             WDVCategory deliveryVehicleCategory = WDVCategory.Missile;
 
             RangeCategory rangeCat = RangeCategory.Long; ;
-            float accuracy = UnityEngine.Random.Range(0.95F, Constants.OneF); ;
+            float accuracy = Constants.OneHundredPercent;   // missile inaccuracy comes from low turnRate and courseUpdateFreq values
             float reloadPeriod = UnityEngine.Random.Range(10F, 12F);
-            string name = "PhotonTorpedo"; ;
+            string name = "PhotonTorpedo";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageValue = UnityEngine.Random.Range(3F, 8F);
             float ordMaxSpeed = UnityEngine.Random.Range(4F, 6F);
             float ordMass = 5F;
             float ordDrag = 0.01F;
+            float ordTurnRate = 700F;   // degrees per hour
+            float ordCourseUpdateFreq = 1F; // course updates per hour
             float baseRangeDistance = rangeCat.GetBaseWeaponRange();
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
 
-            var weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag);
+            var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
+                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq);
             statsList.Add(weapStat);
         }
         return statsList;

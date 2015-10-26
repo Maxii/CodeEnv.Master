@@ -223,8 +223,8 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
         __itemsDetectedViaWorkaround.Clear();
 
         //D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
-        UnityUtility.WaitOneFixedUpdateToExecute(() => {
-            // delay to allow monitor 1 fixed update to record items that it detects
+        UnityUtility.WaitOneFixedUpdateToExecute(() => {    // delay to allow monitor 1 fixed update to record items that it detects
+            if (_transform == null) { return; } // client (and thus monitor) can be destroyed during this 1 frame delay
             var allCollidersInRange = Physics.OverlapSphere(_transform.position, RangeDistance);
             var allDetectableItemsInRange = allCollidersInRange.Where(c => c.gameObject.GetInterface<DetectableType>() != null).Select(c => c.gameObject.GetInterface<DetectableType>());
             D.Log("{0} has detected the following items prior to attempting workaround: {1}.", Name, _itemsDetected.Select(i => i.FullName).Concatenate());

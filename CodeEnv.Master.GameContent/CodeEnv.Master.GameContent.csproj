@@ -292,10 +292,12 @@
     <Compile Include="Game\Framework\PlayersDesigns.cs" />
     <Compile Include="Game\Framework\WeaponDesign.cs" />
     <Compile Include="Game\Framework\ShipDesign.cs" />
-    <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
+    <Compile Include="Generic\IO\AProjectileWeaponStat.cs" />
     <Compile Include="Generic\Framework\ITopographyChangeListener.cs" />
     <Compile Include="Generic\Extensions\OrderSourceExtensions.cs" />
+    <Compile Include="MissileWeaponStat.cs" />
     <Compile Include="PlayersKnowledge.cs" />
+    <Compile Include="ProjectileWeaponStat.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />

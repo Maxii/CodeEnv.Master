@@ -380,10 +380,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                     weapon = new BeamProjector(stat as BeamWeaponStat, weaponName);
                     break;
                 case WDVCategory.Projectile:
+                    //weapon = new ProjectileLauncher(stat as AProjectileWeaponStat, weaponName);
                     weapon = new ProjectileLauncher(stat as ProjectileWeaponStat, weaponName);
                     break;
                 case WDVCategory.Missile:
-                    weapon = new MissileLauncher(stat as ProjectileWeaponStat, weaponName);
+                    weapon = new MissileLauncher(stat as MissileWeaponStat, weaponName);
+                    //weapon = new MissileLauncher(stat as AProjectileWeaponStat, weaponName);
                     break;
                 case WDVCategory.None:
                 default:

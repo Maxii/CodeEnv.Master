@@ -241,34 +241,6 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        /// <summary>
-        /// Called by fired ordnance when it hits its intended target.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        public void OnTargetHit(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
-            combatResult.Hits++;
-        }
-
-        /// <summary>
-        /// Called by fired ordnance when it misses its intended target without being permanently interdicted.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        public void OnTargetMissed(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
-            combatResult.Misses++;
-        }
-
-        /// <summary>
-        /// Called by fired ordnance when it is fatally interdicted by a Countermeasure
-        /// (ActiveCM or Shield) or some other obstacle that was not its target.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        public void OnOrdnanceInterdicted(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
-            combatResult.Interdictions++;
-        }
-
         private void OnOrdnanceDeath(IOrdnance terminatedOrdnance) {
             //D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, terminatedOrdnance.Name);
             RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
@@ -318,21 +290,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="terminatedOrdnance">The dead ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
-
-        /// <summary>
-        /// Records a shot was fired for purposes of tracking CombatResults.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        private void RecordShotFired(IElementAttackableTarget target) {
-            string targetName = target.Name;
-            CombatResult combatResult;
-            if (!_combatResults.TryGetValue(targetName, out combatResult)) {
-                combatResult = new CombatResult(Name, targetName, Accuracy);
-                _combatResults.Add(targetName, combatResult);
-            }
-            combatResult.ShotsTaken++;
-        }
-
 
         private bool CheckIfQualified(IElementAttackableTarget enemyTarget) {
             return true;    // UNDONE
@@ -430,10 +387,58 @@ namespace CodeEnv.Master.GameContent {
             return firingSolutions.Any();
         }
 
-        private void ReportCombatResults(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
-            D.Log(combatResult);
+        #region CombatResults System
+
+        /// <summary>
+        /// Records a shot was fired for purposes of tracking CombatResults.
+        /// </summary>
+        /// <param name="targetFiredOn">The target.</param>
+        private void RecordShotFired(IElementAttackableTarget targetFiredOn) {
+            string targetName = targetFiredOn.Name;
+            CombatResult combatResult;
+            if (!_combatResults.TryGetValue(targetName, out combatResult)) {
+                combatResult = new CombatResult(Name, targetName, Accuracy);
+                _combatResults.Add(targetName, combatResult);
+            }
+            combatResult.ShotsTaken++;
         }
+
+        /// <summary>
+        /// Called by fired ordnance when it hits its intended target.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        public void OnTargetHit(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            combatResult.Hits++;
+        }
+
+        /// <summary>
+        /// Called by fired ordnance when it misses its intended target without being fatally interdicted.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        public void OnTargetMissed(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            combatResult.Misses++;
+        }
+
+        /// <summary>
+        /// Called by fired ordnance when it is fatally interdicted by a Countermeasure
+        /// (ActiveCM or Shield) or some other obstacle that was not its target.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        public void OnOrdnanceInterdicted(IElementAttackableTarget target) {
+            var combatResult = _combatResults[target.Name];
+            combatResult.Interdictions++;
+        }
+
+        private void ReportCombatResults(IElementAttackableTarget target) {
+            CombatResult combatResult;
+            if (_combatResults.TryGetValue(target.Name, out combatResult)) {    // if the weapon never fired, there won't be a combat result
+                D.Log(combatResult);
+            }
+        }
+
+        #endregion
 
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running

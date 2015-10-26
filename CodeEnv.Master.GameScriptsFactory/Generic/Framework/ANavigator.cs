@@ -65,9 +65,11 @@ internal abstract class ANavigator : IDisposable {
     internal IList<INavigableTarget> Course { get; set; }
 
     /// <summary>
-    /// The target this Navigator's client is trying to reach. 
+    /// The current or last target this AutoPilot is/was engaged to reach.
+    /// The AutoPilot does not have to be engaged for this Target to be valid.
     /// </summary>
-    internal virtual INavigableTarget Target { get; private set; }
+    internal abstract INavigableTarget Target { get; }
+    //internal virtual INavigableTarget Target { get; private set; }
 
     /// <summary>
     /// The current position of this Navigator client in world space.
@@ -109,13 +111,19 @@ internal abstract class ANavigator : IDisposable {
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed to travel at.</param>
     /// <param name="orderSource">The source of this move order.</param>
-    protected void RecordAutoPilotCourseValues(INavigableTarget target, Speed speed, OrderSource orderSource) {
+    protected void RecordAutoPilotCourseValues(Speed speed, OrderSource orderSource) {
         D.Assert(!_inValidAutoPilotSpeeds.Contains(speed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, speed.GetValueName()));
         orderSource.ValidateSpeed(speed);
-        Target = target;
         TravelSpeed = speed;
         _orderSource = orderSource;
     }
+    //protected void RecordAutoPilotCourseValues(INavigableTarget target, Speed speed, OrderSource orderSource) {
+    //    D.Assert(!_inValidAutoPilotSpeeds.Contains(speed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, speed.GetValueName()));
+    //    orderSource.ValidateSpeed(speed);
+    //    Target = target;
+    //    TravelSpeed = speed;
+    //    _orderSource = orderSource;
+    //}
 
     /// <summary>
     /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
@@ -151,11 +159,13 @@ internal abstract class ANavigator : IDisposable {
         RunPilotJobs();
     }
 
-    protected virtual void OnAutoPilotDisengaged() {
+    private void OnAutoPilotDisengaged() {
         KillPilotJobs();
         RefreshCourse(CourseRefreshMode.ClearCourse);
         _orderSource = OrderSource.None;
         TravelSpeed = Speed.None;
+        // Note: I'm leaving Target valid for now when disengaged as it is my principal record
+        // of where I am currently located when the autoPilot arrives and disengages
     }
 
     protected virtual void OnDestinationReached() {

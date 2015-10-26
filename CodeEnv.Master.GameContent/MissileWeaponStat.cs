@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ProjectileWeaponStat.cs
-// Immutable stat containing externally acquirable values for ProjectileWeapons.
+// File: MissileWeaponStat.cs
+// Immutable stat containing externally acquirable values for MissileLauncherWeapons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,21 +19,19 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable stat containing externally acquirable values for ProjectileWeapons.
+    /// Immutable stat containing externally acquirable values for MissileLauncherWeapons.
     /// </summary>
-    public class ProjectileWeaponStat : AWeaponStat {
+    public class MissileWeaponStat : AProjectileWeaponStat {
 
         /// <summary>
-        /// The maximum speed of this projectile in units per hour in Topography.OpenSpace.
+        /// The turn rate of the ordnance in degrees per hour .
         /// </summary>
-        public float OrdnanceMaxSpeed { get; private set; }
-
-        public float OrdnanceMass { get; private set; }
+        public float OrdnanceTurnRate { get; private set; }
 
         /// <summary>
-        /// The drag of the Ordnance in Topography.OpenSpace.
+        /// The frequency the ordnance's course is updated in updates per hour.
         /// </summary>
-        public float OrdnanceDrag { get; private set; }
+        public float OrdnanceUpdateFrequency { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat" /> struct.
@@ -55,19 +53,22 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
-        public ProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
+        /// <param name="ordnanceTurnRate">The turn rate of the ordnance in degrees per hour .</param>
+        /// <param name="ordnanceUpdateFreq">The frequency the ordnance's course is updated in updates per hour.</param>
+        public MissileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
             float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float accuracy,
-            float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential) {
-            OrdnanceMaxSpeed = ordnanceMaxSpeed;
-            OrdnanceMass = ordnanceMass;
-            OrdnanceDrag = ordnanceDrag;
+            float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float ordnanceTurnRate, float ordnanceUpdateFreq)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag) {
+            OrdnanceTurnRate = ordnanceTurnRate;
+            OrdnanceUpdateFrequency = ordnanceUpdateFreq;
             Validate();
         }
 
         protected override void Validate() {
             base.Validate();
-            D.Assert(OrdnanceMaxSpeed > Constants.ZeroF);
+            D.Assert(Accuracy == Constants.OneHundredPercent);  // Missile "inaccuracy' comes from low turnRate and courseUpdateFreq values
+            D.Assert(OrdnanceTurnRate > Constants.ZeroF);
+            D.Assert(OrdnanceUpdateFrequency > Constants.ZeroF);
         }
 
     }

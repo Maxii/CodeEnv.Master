@@ -815,6 +815,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// </summary>
     internal class FleetNavigator : ANavigator {
 
+        private INavigableTarget _target;
+        internal override INavigableTarget Target { get { return _target; } }
+
         protected override string Name { get { return _fleet.DisplayName; } }
 
         protected override Vector3 Position { get { return _fleet.Position; } }
@@ -860,11 +863,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed to travel at.</param>
         internal void PlotCourse(INavigableTarget target, Speed speed) {
-            RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
+            RecordAutoPilotCourseValues(speed, OrderSource.UnitCommand);
+            _target = target;
             _targetHasKeepoutZone = target is IShipOrbitable;
             ResetCourseReplotValues();
             GenerateCourse();
         }
+        //internal void PlotCourse(INavigableTarget target, Speed speed) {
+        //    RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
+        //    _targetHasKeepoutZone = target is IShipOrbitable;
+        //    ResetCourseReplotValues();
+        //    GenerateCourse();
+        //}
 
         /// <summary>
         /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.

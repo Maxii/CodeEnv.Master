@@ -16,20 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
     /// Record of the results of combat between a Weapon or ActiveCM and its target.
     /// </summary>
     public class CombatResult {
 
-        private static string _toStringFormat = "Equipment: {0}, Target: {1}, Shots: {2}, Hits: {3}, Misses: {4}, Interdictions: {5}, Accuracy: {6:P00}, RatedAccuracy: {7:P00}, HitPercentage: {8:P00}.";
+        private static string _toStringFormat = "Equipment: {0}, Target: {1}, Shots: {2}, Hits: {3}, Misses: {4}, Interdictions: {5}, Accuracy: {6}, RatedAccuracy: {7:P00}, HitPercentage: {8}.";
 
         public string EquipmentName { get; private set; }
 
@@ -60,9 +54,11 @@ namespace CodeEnv.Master.GameContent {
 
 
         public override string ToString() {
-            float actualAccuracy = Hits / (float)(Hits + Misses);
-            float hitPercentage = Hits / (float)(Hits + Misses + Interdictions);
-            return _toStringFormat.Inject(EquipmentName, TargetName, ShotsTaken, Hits, Misses, Interdictions, actualAccuracy, EquipmentAccuracy, hitPercentage);
+            int hitsAndMisses = Hits + Misses;
+            string actualAccyMsg = hitsAndMisses != Constants.Zero ? "{0:P00}".Inject(Hits / (float)hitsAndMisses) : "NA";
+            int hitsAndMissesAndInterdictions = hitsAndMisses + Interdictions;
+            string hitPercentMsg = hitsAndMissesAndInterdictions != Constants.Zero ? "{0:P00}".Inject(Hits / (float)(hitsAndMissesAndInterdictions)) : "NA";
+            return _toStringFormat.Inject(EquipmentName, TargetName, ShotsTaken, Hits, Misses, Interdictions, actualAccyMsg, EquipmentAccuracy, hitPercentMsg);
         }
 
     }

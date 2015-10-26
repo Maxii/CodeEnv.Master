@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Missile.cs
-// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
+// Guided Ordnance containing effects for muzzle flash, inFlight operation and impact.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,18 @@
 
 // default namespace
 
+using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
+/// Guided Ordnance containing effects for muzzle flash, inFlight operation and impact.
 /// </summary>
 public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private static Vector3 _localSpaceForward = Vector3.forward;
+    private static float _allowedHeadingDeviation = .01F;
 
     public GameObject muzzleEffect;
 
@@ -55,6 +57,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     /// <summary>
+    /// The turn rate in degrees per hour .
+    /// </summary>
+    public float TurnRate { get { return Weapon.OrdnanceTurnRate; } }
+
+    /// <summary>
+    /// The frequency the course is updated in updates per hour.
+    /// </summary>
+    public float CourseUpdateFrequency { get { return Weapon.OrdnanceUpdateFrequency; } }
+
+    /// <summary>
     /// The drag of this projectile in Topography.OpenSpace.
     /// </summary>
     public override float Drag { get { return Weapon.OrdnanceDrag; } }
@@ -79,15 +91,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
 
-    //protected override void Awake() {
-    //    base.Awake();
-    //    UpdateRate = FrameUpdateFrequency.Continuous;
-    //}
+    private Job _courseUpdateJob;
+    private Job _changeHeadingJob;
+    private float _hoursBetweenCourseUpdates;
+    private bool _hasPushedOver;
 
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
         _positionLastRangeCheck = _transform.position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
+        _hoursBetweenCourseUpdates = 1F / CourseUpdateFrequency;
 
         _nominalThrust = CalcNominalThrust();
         enabled = true; // enables Update() and FixedUpdate()
@@ -153,21 +166,27 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             return;
         }
 
-        if (_cumDistanceTraveled < TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
-            // avoid steering until pushover
-            return;
+        if (!_hasPushedOver) {
+            if (GetDistanceTraveled() > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
+                _hasPushedOver = true;
+                OnPushover();
+            }
         }
-        Steer();
     }
+    //private void CheckProgress() {
+    //    if (!Target.IsOperational) {
+    //        // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
+    //        D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+    //        TerminateNow();
+    //        return;
+    //    }
 
-    /// <summary>
-    /// Keep missile pointed at target.
-    /// IMPROVE Should be checked infrequently enough to allow a miss.
-    /// </summary>
-    private void Steer() {
-        Vector3 tgtBearing = (Target.Position - Position).normalized;
-        _transform.rotation = Quaternion.LookRotation(tgtBearing);  // TODO needs inaccuracy    // Missile needs maxTurnRate, add deltaTime
-    }
+    //    if (_cumDistanceTraveled < TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
+    //        // avoid steering until pushover
+    //        return;
+    //    }
+    //    Steer();
+    //}
 
     private void ApplyThrust() {
         var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
@@ -177,6 +196,72 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             ReduceDrift();
         }
     }
+
+    private void OnPushover() {
+        LaunchCourseUpdateJob();
+    }
+
+    private void LaunchCourseUpdateJob() {
+        D.Assert(_courseUpdateJob == null);
+        _courseUpdateJob = new Job(UpdateCourse(), toStart: true, onJobComplete: (jobWasKilled) => {
+            // TODO
+        });
+    }
+
+    private IEnumerator UpdateCourse() {
+        while (true) {
+            CheckCourse();  // IMPROVE won't adjust to new gameSpeed until previous wait period expires
+            yield return new WaitForSeconds(_hoursBetweenCourseUpdates / _gameTime.GameSpeedAdjustedHoursPerSecond);
+        }
+    }
+
+    private void CheckCourse() {
+        Vector3 tgtBearing = (Target.Position - Position).normalized;
+        if (!transform.forward.IsSameDirection(tgtBearing, _allowedHeadingDeviation)) {
+            LaunchChangeHeadingJob(tgtBearing);
+        }
+    }
+
+    private void LaunchChangeHeadingJob(Vector3 newHeading) {
+        if (_changeHeadingJob != null && _changeHeadingJob.IsRunning) {
+            _changeHeadingJob.Kill();
+        }
+        _changeHeadingJob = new Job(ChangeHeading(newHeading), toStart: true, onJobComplete: (jobWasKilled) => {
+            if (!IsOperational) { return; } // missile is or about to be destroyed
+            if (jobWasKilled) {
+                D.Warn("{0} had its ChangeHeadingJob killed.", Name);   // -> course update freq is too high or turnRate too low
+                // missile should be able to complete a turn between course updates
+            }
+            else {
+                D.Log("{0} has completed a heading change.", Name);
+            }
+        });
+    }
+
+    private IEnumerator ChangeHeading(Vector3 newHeading, float allowedTime = 5F) {
+        float cumTime = Constants.ZeroF;
+        while (!transform.forward.IsSameDirection(newHeading, _allowedHeadingDeviation)) {
+            float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
+            float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
+            Vector3 heading = Vector3.RotateTowards(transform.forward, newHeading, allowedTurn, maxMagnitudeDelta: 1F);
+            // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
+            transform.rotation = Quaternion.LookRotation(heading); // UNCLEAR turn kinematic on and off while rotating?
+            //D.Log("{0} actual heading after turn step: {1}.", Name, transform.forward);
+            cumTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused; // WARNING: works only with yield return null;
+            D.Assert(cumTime < allowedTime, "CumTime {0:0.##} > AllowedTime {1:0.##}.".Inject(cumTime, allowedTime));
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// Keep missile pointed at target.
+    /// IMPROVE Should be checked infrequently enough to allow a miss.
+    /// </summary>
+    //private void Steer() {
+    //    Vector3 tgtBearing = (Target.Position - Position).normalized;
+    //    _transform.rotation = Quaternion.LookRotation(tgtBearing);  // TODO needs inaccuracy    // Missile needs maxTurnRate, add deltaTime
+    //}
+
 
     /// <summary>
     /// Reduces the amount of drift of the missile in the direction it was heading prior to a turn.
@@ -202,6 +287,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     public void Terminate() { TerminateNow(); }
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_courseUpdateJob != null) {
+            _courseUpdateJob.Dispose();
+        }
+        if (_changeHeadingJob != null) {
+            _changeHeadingJob.Dispose();
+        }
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

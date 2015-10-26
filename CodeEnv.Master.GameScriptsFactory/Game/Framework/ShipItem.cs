@@ -1374,7 +1374,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// <param name="speed">The speed to travel at.</param>
         /// <param name="orderSource">The source of this move order.</param>
         internal void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-            RecordAutoPilotCourseValues(target, speed, orderSource);
+            RecordAutoPilotCourseValues(speed, orderSource);
+            //RecordAutoPilotCourseValues(target, speed, orderSource);
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
             // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone
@@ -1782,7 +1783,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         private IEnumerator ExecuteHeadingChange(float allowedTime) {
             int previousFrameCount = Time.frameCount - 1;   // makes initial framesSinceLastPass = 1
             int cumFrameCount = 0;
-            float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * GameTime.HoursPerSecond;
+            float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;   //GameTime.HoursPerSecond;
             //D.Log("{0} initiating turn to heading {1} at {2:0.} degrees/hour.", Name, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
             float cumTime = 0F;
             while (!_ship.IsHeadingConfirmed) {
@@ -1981,10 +1982,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             base.OnAutoPilotEngaged();
         }
 
-        protected override void OnAutoPilotDisengaged() {
-            base.OnAutoPilotDisengaged();
-            _targetInfo = null;
-        }
+        //protected override void OnAutoPilotDisengaged() {
+        //    base.OnAutoPilotDisengaged();
+        //    _targetInfo = null;
+        //}
 
         internal void OnFleetFullSpeedChanged() {
             if (IsAutoPilotEngaged) {

@@ -27,6 +27,16 @@ namespace CodeEnv.Master.GameContent {
     public class MissileLauncher : AWeapon {
 
         /// <summary>
+        /// The turn rate of the ordnance in degrees per hour .
+        /// </summary>
+        public float OrdnanceTurnRate { get { return Stat.OrdnanceTurnRate; } }
+
+        /// <summary>
+        /// The frequency the ordnance's course is updated in updates per hour.
+        /// </summary>
+        public float OrdnanceUpdateFrequency { get { return Stat.OrdnanceUpdateFrequency; } }
+
+        /// <summary>
         /// The maximum speed of this launcher's missile in units per hour in Topography.OpenSpace.
         /// </summary>
         public float OrdnanceMaxSpeed { get { return Stat.OrdnanceMaxSpeed; } }
@@ -38,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float OrdnanceDrag { get { return Stat.OrdnanceDrag; } }
 
-        protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
+        protected new MissileWeaponStat Stat { get { return base.Stat as MissileWeaponStat; } }
 
         private IList<ITerminatableOrdnance> _activeFiredOrdnance;
 
@@ -47,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
-        public MissileLauncher(ProjectileWeaponStat stat, string name = null)
+        public MissileLauncher(MissileWeaponStat stat, string name = null)
             : base(stat, name) {
             _activeFiredOrdnance = new List<ITerminatableOrdnance>();
         }
