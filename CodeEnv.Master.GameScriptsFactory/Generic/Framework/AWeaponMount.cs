@@ -29,7 +29,15 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
 
     public virtual string Name { get { return transform.name; } }
 
-    public AWeapon Weapon { get; set; }
+    private AWeapon _weapon;
+    public AWeapon Weapon {
+        get { return _weapon; }
+        set {
+            D.Assert(_weapon == null);  // only happens once
+            _weapon = value;
+            OnWeaponSet();
+        }
+    }
 
     /// <summary>
     /// The location of the weapon's muzzle in world space coordinates. 
@@ -57,6 +65,15 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// <param name="firingSolution"></param>
     /// <returns></returns>
     public abstract bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution);
+
+    /// <summary>
+    /// Confirms the provided enemyTarget is in range prior to launching the weapon's ordnance.
+    /// </summary>
+    /// <param name="enemyTarget">The target.</param>
+    /// <returns></returns>
+    public abstract bool ConfirmInRange(IElementAttackableTarget enemyTarget);
+
+    protected virtual void OnWeaponSet() { }
 
 }
 

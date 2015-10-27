@@ -31,14 +31,12 @@ namespace CodeEnv.Master.GameContent {
 
         public DamageStrength DamagePotential { get; private set; }
 
-        public float Accuracy { get; private set; }
-
         public float ReloadPeriod { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat" /> struct.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The name of the weapon.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
@@ -49,21 +47,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="rangeCat">The range category of the weapon.</param>
         /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
-        /// <param name="accuracy">The accuracy of the weapon. Range 0...1.0</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
         public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float accuracy,
-            float reloadPeriod, DamageStrength damagePotential)
+    float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            DamageStrength damagePotential)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
             DeliveryVehicleStrength = deliveryVehicleStrength;
-            Accuracy = accuracy;
             ReloadPeriod = reloadPeriod;
             DamagePotential = damagePotential;
         }
 
         protected virtual void Validate() {
-            Arguments.ValidateForRange(Accuracy, Constants.ZeroF, Constants.OneHundredPercent);
+            //Arguments.ValidateForRange(Accuracy, Constants.ZeroF, Constants.OneHundredPercent);
         }
 
         public override sealed string ToString() {

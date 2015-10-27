@@ -29,8 +29,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ActiveCountermeasure : ARangedEquipment, ICountermeasure, IDisposable {
 
-        private static string _nameFormat = "{0}.{1}";
-
         private bool _isReady;
         private bool IsReady {
             get { return _isReady; }
@@ -48,9 +46,9 @@ namespace CodeEnv.Master.GameContent {
 
         public IActiveCountermeasureRangeMonitor RangeMonitor { get; set; }
 
-        public override string Name {
+        public override string FullName {
             get {
-                return RangeMonitor != null ? _nameFormat.Inject(RangeMonitor.Name, base.Name) : base.Name;
+                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.Name, Name) : Name;
             }
         }
 

@@ -50,21 +50,30 @@ public class MissileTube : AWeaponMount {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
-        float distanceToPushover = TempGameValues.__ReqdMissileTravelDistanceBeforePushover;
-        Vector3 launchDirection = MuzzleFacing;
-        Vector3 vectorToPushover = launchDirection * distanceToPushover;
-        Vector3 pushoverPosition = MuzzleLocation + vectorToPushover;
-
-        Vector3 targetPosition = enemyTarget.Position;
-        Vector3 vectorToTargetFromPushover = targetPosition - pushoverPosition;
-        float targetDistanceFromPushover = vectorToTargetFromPushover.magnitude;
-        if (distanceToPushover + targetDistanceFromPushover > Weapon.RangeDistance) {
+        if (!ConfirmInRange(enemyTarget)) {
             //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);
             firingSolution = null;
             return false;
         }
         firingSolution = new WeaponFiringSolution(Weapon, enemyTarget);
         return true;
+    }
+
+    /// <summary>
+    /// Confirms the provided enemyTarget is in range prior to launching the weapon's ordnance.
+    /// </summary>
+    /// <param name="enemyTarget">The target.</param>
+    /// <returns></returns>
+    public override bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
+        float distanceToPushover = TempGameValues.__ReqdMissileTravelDistanceBeforePushover;
+        Vector3 launchDirection = MuzzleFacing;
+        Vector3 vectorToPushover = launchDirection * distanceToPushover;
+        Vector3 launchPosition = MuzzleLocation;
+        Vector3 pushoverPosition = launchPosition + vectorToPushover;
+
+        Vector3 vectorToTargetFromPushover = enemyTarget.Position - pushoverPosition;
+        float targetDistanceFromPushover = vectorToTargetFromPushover.magnitude;
+        return distanceToPushover + targetDistanceFromPushover < Weapon.RangeDistance;
     }
 
     protected override void Cleanup() { }

@@ -269,7 +269,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         D.Assert(!_isInOrbit);
         D.Assert(!_helm.IsAutoPilotEngaged, "{0}'s autopilot is still engaged.".Inject(FullName));
         orbitSlot = null;
-        var objectToOrbit = _helm.Target as IShipOrbitable;
+        var objectToOrbit = _helm.Target as IShipOrbitable;     // IMPROVE something else than helm.Target as AutoPilot not engaged?
         if (objectToOrbit != null) {
             var baseCmdObjectToOrbit = objectToOrbit as AUnitBaseCmdItem;
             if (baseCmdObjectToOrbit != null) {
@@ -4788,7 +4788,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     private void __ReportCollision(Collision collision) {
         SphereCollider sphereCollider = collision.collider as SphereCollider;
-        string colliderSizeMsg = sphereCollider != null ? "radius = " + sphereCollider.radius : "size = " + collision.collider.bounds.size;
+        CapsuleCollider capsuleCollider = collision.collider as CapsuleCollider;
+        string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((capsuleCollider != null) ? "radius = " + capsuleCollider.radius : "size = " + (collision.collider as BoxCollider).size.ToPreciseString());
         D.Warn("While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
             CurrentState.GetValueName(), FullName, collision.collider.name, rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
 

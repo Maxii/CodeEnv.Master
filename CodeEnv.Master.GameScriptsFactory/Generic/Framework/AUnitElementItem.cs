@@ -230,10 +230,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     private void OnLosWeaponAimedAtTarget(LosWeaponFiringSolution firingSolution) {
         var target = firingSolution.EnemyTarget;
         var losWeapon = firingSolution.Weapon;
-        if (target.IsOperational && target.Owner.IsEnemyOf(Owner)) {
+        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRange(target)) {
             LaunchOrdnance(losWeapon, target);
         }
-        else {  // target died or chaged diplo during aiming process
+        else {
+            // target moved out of range, died or changed diplo during aiming process
             losWeapon.OnElementDeclinedToFire();
         }
         losWeapon.onWeaponAimed -= OnLosWeaponAimedAtTarget;

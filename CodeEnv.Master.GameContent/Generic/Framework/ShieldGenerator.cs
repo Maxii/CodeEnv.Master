@@ -27,18 +27,18 @@ namespace CodeEnv.Master.GameContent {
     public class ShieldGenerator : ARangedEquipment, ICountermeasure {
 
         private static float _hoursPerSecond = GameTime.HoursPerSecond;
-        private static string _editorNameFormat = "{0}[{1}({2:0.})]";
+        private static string _nameFormat = "{0}[{1}({2:0.})]";
 
         public event Action<ShieldGenerator> onHasChargeChanged;
 
         public override string Name {
             get {
-#if UNITY_EDITOR
-                return _editorNameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
-#else 
-                return base.Name;
-#endif
+                return _nameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
             }
+        }
+
+        public override string FullName {
+            get { return Shield != null ? _fullNameFormat.Inject(Shield.Name, Name) : Name; }
         }
 
         public IShield Shield { get; set; }

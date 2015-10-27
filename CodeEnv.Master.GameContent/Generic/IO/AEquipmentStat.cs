@@ -21,6 +21,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AEquipmentStat {
 
+        /// <summary>
+        /// Name of the equipment.
+        /// </summary>
         public string Name { get; private set; }
 
         public AtlasID ImageAtlasID { get; private set; }
@@ -44,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipmentStat" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The name of the Equipment.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>

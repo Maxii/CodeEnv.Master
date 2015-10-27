@@ -81,10 +81,10 @@ namespace CodeEnv.Master.Common {
             int index = source.IndexOf(stringToRemove);
             string result = index < 0 ? source : source.Remove(index, stringToRemove.Length);
             if (source.Equals(result)) {
-                D.Warn("Attempted to remove {0} from {1} but did not find it.", stringToRemove, source);
+                D.Warn("Attempted to remove string {0} from {1} but did not find it.", stringToRemove, source);
             }
             else {
-                D.Log("Removed {0} from {1} resulting in {2}.", stringToRemove, source, result);
+                D.Log("Removed string {0} from {1} resulting in {2}.", stringToRemove, source, result);
             }
             return result;
         }

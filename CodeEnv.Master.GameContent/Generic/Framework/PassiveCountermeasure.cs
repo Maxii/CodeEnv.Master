@@ -23,15 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PassiveCountermeasure : AEquipment, ICountermeasure {
 
-        private static string _editorNameFormat = "{0}_{1:0.#}";
+        private static string _nameFormat = "{0}_{1:0.#}";
 
         public override string Name {
             get {
-#if UNITY_EDITOR
-                return _editorNameFormat.Inject(base.Name, DamageMitigation.Total);
-#else
-                return base.Name;
-#endif
+                return _nameFormat.Inject(base.Name, DamageMitigation.Total);
             }
         }
 

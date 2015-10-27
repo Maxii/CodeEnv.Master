@@ -25,17 +25,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Sensor : ARangedEquipment {
 
-        private static string _editorNameFormat = "{0}[{1}({2:0.})]";
+        private static string _nameFormat = "{0}[{1}({2:0.})]";
 
         public ISensorRangeMonitor RangeMonitor { get; set; }
 
         public override string Name {
             get {
-#if UNITY_EDITOR
-                return _editorNameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
-#else 
-                return base.Name;
-#endif
+                return _nameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
+            }
+        }
+
+        public override string FullName {
+            get {
+                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.Name, Name) : Name;
             }
         }
 

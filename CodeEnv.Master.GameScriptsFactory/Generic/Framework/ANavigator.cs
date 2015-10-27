@@ -69,7 +69,6 @@ internal abstract class ANavigator : IDisposable {
     /// The AutoPilot does not have to be engaged for this Target to be valid.
     /// </summary>
     internal abstract INavigableTarget Target { get; }
-    //internal virtual INavigableTarget Target { get; private set; }
 
     /// <summary>
     /// The current position of this Navigator client in world space.
@@ -117,13 +116,6 @@ internal abstract class ANavigator : IDisposable {
         TravelSpeed = speed;
         _orderSource = orderSource;
     }
-    //protected void RecordAutoPilotCourseValues(INavigableTarget target, Speed speed, OrderSource orderSource) {
-    //    D.Assert(!_inValidAutoPilotSpeeds.Contains(speed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, speed.GetValueName()));
-    //    orderSource.ValidateSpeed(speed);
-    //    Target = target;
-    //    TravelSpeed = speed;
-    //    _orderSource = orderSource;
-    //}
 
     /// <summary>
     /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.

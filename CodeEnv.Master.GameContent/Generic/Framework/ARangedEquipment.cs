@@ -21,7 +21,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ARangedEquipment : AEquipment {
 
+        protected static string _fullNameFormat = "{0}.{1}";
+
         public RangeCategory RangeCategory { get { return Stat.RangeCategory; } }
+
+        public abstract string FullName { get; }
 
         /// <summary>
         /// The equipment's range in units adjusted for any range modifiers from owners, etc.

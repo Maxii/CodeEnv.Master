@@ -137,6 +137,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected void TerminateNow() {
+        if (!IsOperational) {
+            D.Warn("{0}.TerminateNow called when already terminating.", Name);
+            return;
+        }
         //D.Log("{0} is terminating.", Name); 
         enabled = false;
         IsOperational = false;

@@ -113,6 +113,10 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         return _equipmentList.First().RangeDistance;    // currently no qty effects on range distance
     }
 
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
 
 }
 

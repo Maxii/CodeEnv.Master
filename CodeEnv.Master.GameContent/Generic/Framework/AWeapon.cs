@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeapon : ARangedEquipment, IDisposable {
 
-        private static string _nameFormat = "{0}.{1}";
-
         /// <summary>
         /// Occurs when this weapon is ready to fire using one of the included firing solutions.
         /// </summary>
@@ -76,10 +74,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override string Name {
-            get {
-                return RangeMonitor != null ? _nameFormat.Inject(RangeMonitor.Name, base.Name) : base.Name;
-            }
+        public override string FullName {
+            get { return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.Name, Name) : Name; }
         }
 
         public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
@@ -87,8 +83,6 @@ namespace CodeEnv.Master.GameContent {
         public WDVStrength DeliveryVehicleStrength { get { return Stat.DeliveryVehicleStrength; } }
 
         public DamageStrength DamagePotential { get { return Stat.DamagePotential; } }
-
-        public float Accuracy { get { return Stat.Accuracy; } }
 
         public float ReloadPeriod {
             get {
@@ -177,6 +171,15 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             IsAnyEnemyInRange = _qualifiedEnemyTargets.Any();
+        }
+
+        /// <summary>
+        /// Confirms the provided enemyTarget is in range prior to launching the weapon's ordnance.
+        /// </summary>
+        /// <param name="enemyTarget">The target.</param>
+        /// <returns></returns>
+        public bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
+            return WeaponMount.ConfirmInRange(enemyTarget);
         }
 
         private void OnIsAnyEnemyInRangeChanged() {
@@ -397,7 +400,7 @@ namespace CodeEnv.Master.GameContent {
             string targetName = targetFiredOn.Name;
             CombatResult combatResult;
             if (!_combatResults.TryGetValue(targetName, out combatResult)) {
-                combatResult = new CombatResult(Name, targetName, Accuracy);
+                combatResult = new CombatResult(FullName, targetName);
                 _combatResults.Add(targetName, combatResult);
             }
             combatResult.ShotsTaken++;

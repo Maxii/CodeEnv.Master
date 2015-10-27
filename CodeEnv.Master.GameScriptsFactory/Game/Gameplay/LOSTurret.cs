@@ -53,9 +53,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     private static float _barrelElevationRate = 90F;
 
     /// <summary>
-    /// The allowed deviation in degrees when determining when a traverse is completed.
+    /// The minimum traverse inaccuracy that can be used in degrees. 
+    /// Used to allow ExecuteTraverse() to complete early rather than wait
+    /// until the direction error is below UnityConstants.FloatEqualityPrecision.
     /// </summary>
-    private static float _allowedTraversalDeviation = .01F;
+    private static float _minTraverseInaccuracy = .01F;
 
     public Transform hub;
 
@@ -71,6 +73,12 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     }
 
     public override Vector3 MuzzleFacing { get { return (muzzle.position - barrel.position).normalized; } }
+
+    /// <summary>
+    /// The inaccuracy of this Turret when traversing in degrees.
+    /// Affects both hub rotation and barrel elevation.
+    /// </summary>
+    public float TraverseInaccuracy { get; private set; }
 
     public GameObject Muzzle { get { return muzzle.gameObject; } }
 
@@ -134,19 +142,16 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
         firingSolution = null;
-        Vector3 targetPosition = enemyTarget.Position;
-        Vector3 vectorToTarget = targetPosition - hub.position;
-        //D.Log("{0}: TargetBearing = {1}.", Name, vectorToTarget.normalized);
-        float targetDistance = vectorToTarget.magnitude;
-        if (targetDistance > Weapon.RangeDistance) {
+        if (!ConfirmInRange(enemyTarget)) {
             //D.Log("{0}: Target {1} is out of range.", Name, enemyTarget.FullName);
             return false;
         }
 
+        Vector3 targetPosition = enemyTarget.Position;
         Quaternion reqdHubRotation, reqdBarrelElevation;
         bool canTraverseToTarget = TryCalcTraverse(targetPosition, out reqdHubRotation, out reqdBarrelElevation);
         if (!canTraverseToTarget) {
-            //D.Log("{0}: Target {1} is beyond traverse range.", Name, enemyTarget.FullName);
+            //D.Log("{0}: Target {1} is out of traverse range.", Name, enemyTarget.FullName);
             return false;
         }
 
@@ -159,17 +164,27 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     }
 
     /// <summary>
+    /// Confirms the provided enemyTarget is in range prior to launching the weapon's ordnance.
+    /// </summary>
+    /// <param name="enemyTarget">The target.</param>
+    /// <returns></returns>
+    public override bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
+        return Vector3.Distance(enemyTarget.Position, hub.position) < Weapon.RangeDistance;
+    }
+
+    /// <summary>
     /// Checks the line of sight from this LOSWeaponMount to the provided enemy target, returning <c>true</c>
-    /// if there is a clear line of sight to the target, otherwise <c>false</c>.
+    /// if there is a clear line of sight in the direction of the target, otherwise <c>false</c>.
     /// </summary>
     /// <param name="enemyTarget">The enemy target.</param>
     /// <returns></returns>
     private bool CheckLineOfSight(IElementAttackableTarget enemyTarget) {
-        Vector3 vectorToTarget = enemyTarget.Position - hub.position;
+        Vector3 turretPosition = hub.position;
+        Vector3 vectorToTarget = enemyTarget.Position - turretPosition;
         Vector3 targetDirection = vectorToTarget.normalized;
         float targetDistance = vectorToTarget.magnitude;
         RaycastHit hitInfo;
-        if (Physics.Raycast(transform.position, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
+        if (Physics.Raycast(turretPosition, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
             var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackableTarget>();
             if (targetHit != null) {
                 if (targetHit == enemyTarget) {
@@ -183,11 +198,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2}. Date: {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
                 return false;
             }
-            D.Warn("{0}: CheckLineOfSight() didn't find target {1} but found {2}. Date: {3}.", Name, enemyTarget.FullName, hitInfo.transform.name, _gameTime.CurrentDate);
+            D.Log("{0}: CheckLineOfSight({1}) didn't find target but found {2}. Date: {3}.", Name, enemyTarget.FullName, hitInfo.transform.name, _gameTime.CurrentDate);
             return false;
         }
-        D.Warn("{0}: CheckLineOfSight({1}) didn't find anything. Date: {3}.", Name, enemyTarget.FullName, _gameTime.CurrentDate);    // shouldn't happen?
-        return false;
+        D.Log("{0}: CheckLineOfSight({1}) didn't find anything. Date: {2}.", Name, enemyTarget.FullName, _gameTime.CurrentDate);
+        return true;
     }
 
     /// <summary>
@@ -243,8 +258,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         float hubRotationRateInDegreesPerSecond = _hubRotationRate * GameTime.HoursPerSecond;
         float barrelElevationRateInDegreesPerSecond = _barrelElevationRate * GameTime.HoursPerSecond;
         float cumTime = Constants.ZeroF;
-        bool isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, _allowedTraversalDeviation);
-        bool isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, _allowedTraversalDeviation);
+        bool isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
+        bool isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
         while (!isTraverseCompleted) {
             float deltaTime = _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
@@ -254,13 +269,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 hub.rotation = Quaternion.RotateTowards(hub.rotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, hub.rotation);
                 //D.Log("{0}: AllowedHabRotationChange = {1}, ActualHabRotationChange = {2}.", Name, allowedHabRotationChange, rotationChangeInDegrees);
-                isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, _allowedTraversalDeviation);
+                isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
             }
 
             if (!isBarrelElevationCompleted) {
                 float allowedBarrelElevationChange = barrelElevationRateInDegreesPerSecond * deltaTime;
                 barrel.localRotation = Quaternion.RotateTowards(barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
-                isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, _allowedTraversalDeviation);
+                isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
@@ -329,7 +344,17 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     }
 
     private void OnTraverseCompleted(LosWeaponFiringSolution firingSolution) {
-        Weapon.OnTraverseCompleted(firingSolution);
+        Weapon.OnWeaponAimed(firingSolution);
+    }
+
+    protected override void OnWeaponSet() {
+        base.OnWeaponSet();
+        TraverseInaccuracy = CalcTraverseInaccuracy();
+    }
+
+    private float CalcTraverseInaccuracy() {
+        var maxTraverseInaccuracy = Mathf.Max(_minTraverseInaccuracy, Weapon.MaxTraverseInaccuracy);
+        return UnityEngine.Random.Range(_minTraverseInaccuracy, maxTraverseInaccuracy);
     }
 
     protected override void Cleanup() {

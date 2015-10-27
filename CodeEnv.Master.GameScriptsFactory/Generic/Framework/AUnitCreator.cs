@@ -285,7 +285,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         BeginCommandOperations();
         UnityUtility.WaitOneToExecute(() => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
-            RecordInStaticCollections();
+            RecordCommandInStaticCollections();
             __IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
@@ -312,9 +312,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             WDVCategory deliveryVehicleCategory = WDVCategory.Missile;
 
             RangeCategory rangeCat = RangeCategory.Long; ;
-            float accuracy = Constants.OneHundredPercent;   // missile inaccuracy comes from low turnRate and courseUpdateFreq values
+            float maxSteeringInaccuracy = UnityEngine.Random.Range(Constants.ZeroF, 3F);    // missile steering inaccuracy of 0 - 3 degrees
             float reloadPeriod = UnityEngine.Random.Range(10F, 12F);
-            string name = "PhotonTorpedo";
+            string name = "Torpedo Launcher";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageValue = UnityEngine.Random.Range(3F, 8F);
@@ -328,7 +328,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
 
             var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq);
+    baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -340,7 +340,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             AWeaponStat weapStat;
             RangeCategory rangeCat;
             float baseRangeDistance;
-            float accuracy;
+            float maxTraverseInaccuracy = UnityEngine.Random.Range(Constants.ZeroF, 3F);    // turret traverse inaccuracy of 0 - 3 degrees
             float reloadPeriod;
             string name;
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
@@ -356,24 +356,22 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                 case WDVCategory.Beam:
                     rangeCat = RangeCategory.Short;
                     baseRangeDistance = rangeCat.GetBaseWeaponRange();
-                    accuracy = UnityEngine.Random.Range(0.90F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(3F, 5F);
-                    name = "Phaser";
+                    name = "Phaser Projector";
                     float duration = UnityEngine.Random.Range(1F, 2F);
                     weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, duration);
+                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxTraverseInaccuracy);
                     break;
                 case WDVCategory.Projectile:
                     rangeCat = RangeCategory.Medium;
                     baseRangeDistance = rangeCat.GetBaseWeaponRange();
-                    accuracy = UnityEngine.Random.Range(0.80F, Constants.OneF);
                     reloadPeriod = UnityEngine.Random.Range(2F, 4F);
-                    name = "KineticKiller";
+                    name = "KineticKill Projector";
                     float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);
                     float ordMass = 1F;
                     float ordDrag = 0.02F;
                     weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, accuracy, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag);
+                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxTraverseInaccuracy);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));
@@ -515,22 +513,36 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _elementHullStats = isCompositionPreset ? CreateElementHullStatsFromChildren() : CreateRandomElementHullStats();
     }
 
+    //private IList<ElementHullStatType> CreateElementHullStatsFromChildren() {
+    //    LogEvent();
+    //    var elements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>();
+    //    var elementHullStats = new List<ElementHullStatType>(elements.Count());
+    //    var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
+    //    foreach (var element in elements) {
+    //        AHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<AHull>();
+    //        ElementCategoryType category = GetCategory(hull);
+    //        if (!elementCategoriesUsedCount.ContainsKey(category)) {
+    //            elementCategoriesUsedCount.Add(category, Constants.One);
+    //        }
+    //        else {
+    //            elementCategoriesUsedCount[category]++;
+    //        }
+    //        int elementInstanceIndex = elementCategoriesUsedCount[category];
+    //        string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
+    //        elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
+    //    }
+    //    return elementHullStats;
+    //}
     private IList<ElementHullStatType> CreateElementHullStatsFromChildren() {
         LogEvent();
         var elements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>();
         var elementHullStats = new List<ElementHullStatType>(elements.Count());
-        var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
         foreach (var element in elements) {
             AHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<AHull>();
             ElementCategoryType category = GetCategory(hull);
-            if (!elementCategoriesUsedCount.ContainsKey(category)) {
-                elementCategoriesUsedCount.Add(category, Constants.One);
-            }
-            else {
-                elementCategoriesUsedCount[category]++;
-            }
-            int elementInstanceIndex = elementCategoriesUsedCount[category];
-            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
+            int elementInstanceID = _elementCounter;
+            _elementCounter++;
+            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceID;
             elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
         }
         return elementHullStats;
@@ -544,18 +556,33 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         var elementHullStats = new List<ElementHullStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {
             ElementCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
-            if (!elementCategoriesUsedCount.ContainsKey(category)) {
-                elementCategoriesUsedCount.Add(category, Constants.One);
-            }
-            else {
-                elementCategoriesUsedCount[category]++;
-            }
-            int elementInstanceIndex = elementCategoriesUsedCount[category];
-            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
+            int elementInstanceID = _elementCounter;
+            _elementCounter++;
+            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceID;
             elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
         }
         return elementHullStats;
     }
+    //private IList<ElementHullStatType> CreateRandomElementHullStats() {
+    //    LogEvent();
+    //    var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
+    //    int elementCount = RandomExtended.Range(1, maxElementsInRandomUnit);
+    //    //D.Log("{0} Element count is {1}.", UnitName, elementCount);
+    //    var elementHullStats = new List<ElementHullStatType>(elementCount);
+    //    for (int i = 0; i < elementCount; i++) {
+    //        ElementCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
+    //        if (!elementCategoriesUsedCount.ContainsKey(category)) {
+    //            elementCategoriesUsedCount.Add(category, Constants.One);
+    //        }
+    //        else {
+    //            elementCategoriesUsedCount[category]++;
+    //        }
+    //        int elementInstanceIndex = elementCategoriesUsedCount[category];
+    //        string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
+    //        elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
+    //    }
+    //    return elementHullStats;
+    //}
 
     protected abstract ElementHullStatType CreateElementHullStat(ElementCategoryType hullCat, string elementName);
 
@@ -700,7 +727,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// Note: The Assert tests are here to make sure instances from a prior scene are not still present, as the collections
     /// these items are stored in are static and persist across scenes.
     /// </summary>
-    private void RecordInStaticCollections() {
+    private void RecordCommandInStaticCollections() {
         _command.onDeathOneShot += OnUnitDeath;
         var cmdNamesStored = _allUnitCommands.Select(cmd => cmd.DisplayName);
         // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
@@ -819,6 +846,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private static void CleanupStaticMembers() {
         _allUnitCommands.ForAll(cmd => cmd.onDeathOneShot -= OnUnitDeath);
         _allUnitCommands.Clear();
+        _elementCounter = Constants.One;
     }
 
     /// <summary>

@@ -119,7 +119,7 @@ public class Bullet : AProjectileOrdnance {
     protected override Vector3 GetForceOfImpact() { return _rigidbody.velocity * _rigidbody.mass; }
 
     protected override float GetDistanceTraveled() {
-        return Vector3.Distance(_transform.position, _launchPosition);
+        return Vector3.Distance(Position, _launchPosition);
     }
 
     public override string ToString() {

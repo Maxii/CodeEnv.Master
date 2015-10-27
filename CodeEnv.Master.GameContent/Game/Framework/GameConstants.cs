@@ -46,7 +46,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
     }
 }
 

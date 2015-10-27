@@ -30,6 +30,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Duration { get { return Stat.Duration; } }
 
+        /// <summary>
+        /// The maximum inaccuracy of this Weapon's Turret mount when traversing in degrees.
+        /// </summary>
+        public override float MaxTraverseInaccuracy { get { return Stat.MaxTraverseInaccuracy; } }
+
         protected new BeamWeaponStat Stat { get { return base.Stat as BeamWeaponStat; } }
 
         private ITerminatableOrdnance _activeOrdnance;

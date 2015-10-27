@@ -27,7 +27,13 @@ using UnityEngine;
 public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private static Vector3 _localSpaceForward = Vector3.forward;
-    private static float _allowedHeadingDeviation = .01F;
+
+    /// <summary>
+    /// The minimum steering inaccuracy that can be used in degrees. 
+    /// Used to allow ChangeHeading() to complete early rather than wait
+    /// until the direction error is below UnityConstants.FloatEqualityPrecision.
+    /// </summary>
+    private static float _minSteeringInaccuracy = .01F;
 
     public GameObject muzzleEffect;
 
@@ -64,7 +70,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// <summary>
     /// The frequency the course is updated in updates per hour.
     /// </summary>
-    public float CourseUpdateFrequency { get { return Weapon.OrdnanceUpdateFrequency; } }
+    public float CourseUpdateFrequency { get { return Weapon.OrdnanceCourseUpdateFrequency; } }
+
+    /// <summary>
+    /// The inaccuracy of the missile's steering system in degrees.
+    /// </summary>
+    public float SteeringInaccuracy { get; private set; }
 
     /// <summary>
     /// The drag of this projectile in Topography.OpenSpace.
@@ -98,9 +109,11 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
-        _positionLastRangeCheck = _transform.position;
+        _positionLastRangeCheck = Position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
         _hoursBetweenCourseUpdates = 1F / CourseUpdateFrequency;
+        SteeringInaccuracy = CalcSteeringInaccuracy();
+        target.onDeathOneShot += OnTargetDeath;
 
         _nominalThrust = CalcNominalThrust();
         enabled = true; // enables Update() and FixedUpdate()
@@ -148,45 +161,40 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        CheckProgress();
+    protected override float CheckProgress() {
+        var distanceTraveled = base.CheckProgress();
+        if (IsOperational) {    // Missile can be terminated by base.CheckProgress() if beyond range
+            if (!_hasPushedOver) {
+                if (distanceTraveled > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
+                    _hasPushedOver = true;
+                    OnPushover();
+                }
+            }
+        }
+        return distanceTraveled;
     }
+    //protected override float CheckProgress() {
+    //    var distanceTraveled = base.CheckProgress();
+    //    if (IsOperational) {    // Missile can be terminated by base.CheckProgress() if beyond range
+    //        if (!Target.IsOperational) {
+    //            // target is dead and about to be destroyed. 
+    //            D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+    //            TerminateNow();
+    //        }
+    //        else if (!_hasPushedOver) {
+    //            if (distanceTraveled > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
+    //                _hasPushedOver = true;
+    //                OnPushover();
+    //            }
+    //        }
+    //    }
+    //    return distanceTraveled;
+    //}
 
     protected override void FixedUpdate() {
         base.FixedUpdate();
         ApplyThrust();
     }
-
-    private void CheckProgress() {
-        if (!Target.IsOperational) {
-            // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
-            D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
-            TerminateNow();
-            return;
-        }
-
-        if (!_hasPushedOver) {
-            if (GetDistanceTraveled() > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
-                _hasPushedOver = true;
-                OnPushover();
-            }
-        }
-    }
-    //private void CheckProgress() {
-    //    if (!Target.IsOperational) {
-    //        // target is dead and about to be destroyed. GetTargetFiringSolution() will throw errors when destroyed
-    //        D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
-    //        TerminateNow();
-    //        return;
-    //    }
-
-    //    if (_cumDistanceTraveled < TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
-    //        // avoid steering until pushover
-    //        return;
-    //    }
-    //    Steer();
-    //}
 
     private void ApplyThrust() {
         var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
@@ -198,7 +206,23 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     private void OnPushover() {
+        //D.Log("{0} has reached pushover. Checking course to target {1}.", Name, Target.FullName);
         LaunchCourseUpdateJob();
+    }
+
+    /// <summary>
+    /// Must terminate the missile in a timely fashion on Target death as
+    /// there are multiple Jobs running to track the target. Previously, I checked
+    /// for death in CheckProgress() but that is no longer 'timely' enough
+    /// when using Jobs.
+    /// </summary>
+    /// <param name="deadTarget">The dead target.</param>
+    private void OnTargetDeath(IMortalItem deadTarget) {
+        D.Assert(deadTarget == Target);
+        if (IsOperational) {
+            D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+            TerminateNow();
+        }
     }
 
     private void LaunchCourseUpdateJob() {
@@ -217,7 +241,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private void CheckCourse() {
         Vector3 tgtBearing = (Target.Position - Position).normalized;
-        if (!transform.forward.IsSameDirection(tgtBearing, _allowedHeadingDeviation)) {
+        if (!Heading.IsSameDirection(tgtBearing, SteeringInaccuracy)) {
+            // IMPROVE check LOS to target before making heading change, check ahead too?
             LaunchChangeHeadingJob(tgtBearing);
         }
     }
@@ -233,14 +258,15 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
                 // missile should be able to complete a turn between course updates
             }
             else {
-                D.Log("{0} has completed a heading change.", Name);
+                //D.Log("{0} has completed a heading change.", Name);
             }
         });
     }
 
     private IEnumerator ChangeHeading(Vector3 newHeading, float allowedTime = 5F) {
         float cumTime = Constants.ZeroF;
-        while (!transform.forward.IsSameDirection(newHeading, _allowedHeadingDeviation)) {
+        float angle = Vector3.Angle(Heading, newHeading);
+        while (!Heading.IsSameDirection(newHeading, SteeringInaccuracy)) {
             float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
             float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
             Vector3 heading = Vector3.RotateTowards(transform.forward, newHeading, allowedTurn, maxMagnitudeDelta: 1F);
@@ -251,17 +277,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             D.Assert(cumTime < allowedTime, "CumTime {0:0.##} > AllowedTime {1:0.##}.".Inject(cumTime, allowedTime));
             yield return null;
         }
+        //D.Log("{0} has completed heading change of {1:0.#} degrees. Turn Duration = {2:0.##}.", Name, angle, cumTime);
     }
-
-    /// <summary>
-    /// Keep missile pointed at target.
-    /// IMPROVE Should be checked infrequently enough to allow a miss.
-    /// </summary>
-    //private void Steer() {
-    //    Vector3 tgtBearing = (Target.Position - Position).normalized;
-    //    _transform.rotation = Quaternion.LookRotation(tgtBearing);  // TODO needs inaccuracy    // Missile needs maxTurnRate, add deltaTime
-    //}
-
 
     /// <summary>
     /// Reduces the amount of drift of the missile in the direction it was heading prior to a turn.
@@ -280,13 +297,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         return Mass * Drag * MaxSpeed * GameTime.HoursPerSecond * _localSpaceForward;
     }
 
-    protected override float GetDistanceTraveled() {
-        _cumDistanceTraveled += Vector3.Distance(_transform.position, _positionLastRangeCheck);
-        _positionLastRangeCheck = _transform.position;
-        return _cumDistanceTraveled;
+    private float CalcSteeringInaccuracy() {
+        var maxSteeringInaccuracy = Mathf.Max(_minSteeringInaccuracy, Weapon.OrdnanceMaxSteeringInaccuracy);
+        return UnityEngine.Random.Range(_minSteeringInaccuracy, maxSteeringInaccuracy);
     }
 
-    public void Terminate() { TerminateNow(); }
+    protected override float GetDistanceTraveled() {
+        _cumDistanceTraveled += Vector3.Distance(Position, _positionLastRangeCheck);
+        _positionLastRangeCheck = Position;
+        return _cumDistanceTraveled;
+    }
 
     protected override void Cleanup() {
         base.Cleanup();
@@ -296,11 +316,18 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null) {
             _changeHeadingJob.Dispose();
         }
+        Target.onDeathOneShot -= OnTargetDeath;
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ITerminatableOrdnance Members
+
+    public void Terminate() { TerminateNow(); }
+
+    #endregion
 
 }
 

@@ -25,6 +25,11 @@ using CodeEnv.Master.Common;
 [SerializeAll]
 public abstract class ACreator : AMonoBase {
 
+    /// <summary>
+    /// Static counter used to provide a unique name for each element.
+    /// </summary>
+    protected static int _elementCounter = Constants.One;
+
     public bool isOwnerUser;
     public __DiploStateWithUser ownerRelationshipWithUser;
 
@@ -47,6 +52,7 @@ public abstract class ACreator : AMonoBase {
     public int countermeasuresPerCmd = 2;
 
     public bool enableTrackingLabel = false;
+
 
     #region Nested Classes
 

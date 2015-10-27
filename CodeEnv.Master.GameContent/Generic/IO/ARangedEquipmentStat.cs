@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="ARangedEquipmentStat" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">The name of the RangedEquipment.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>

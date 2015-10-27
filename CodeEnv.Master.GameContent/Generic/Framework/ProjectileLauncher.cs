@@ -37,6 +37,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float OrdnanceDrag { get { return Stat.OrdnanceDrag; } }
 
+        /// <summary>
+        /// The maximum inaccuracy of this Weapon's Turret mount when traversing in degrees.
+        /// </summary>
+        public override float MaxTraverseInaccuracy { get { return Stat.MaxTraverseInaccuracy; } }
+
         protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
 
         private IList<IOrdnance> _activeFiredOrdnance;

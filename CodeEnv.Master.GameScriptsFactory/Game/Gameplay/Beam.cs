@@ -344,10 +344,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
-    public void Terminate() {
-        TerminateNow();
-    }
-
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
         if (_operatingAudioSource != null && _operatingAudioSource.isPlaying) {
@@ -384,6 +380,12 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ITerminatableOrdnance Members
+
+    public void Terminate() { TerminateNow(); }
+
+    #endregion
 
 }
 

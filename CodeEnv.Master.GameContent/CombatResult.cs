@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CombatResult {
 
-        private static string _toStringFormat = "Equipment: {0}, Target: {1}, Shots: {2}, Hits: {3}, Misses: {4}, Interdictions: {5}, Accuracy: {6}, RatedAccuracy: {7:P00}, HitPercentage: {8}.";
+        private static string _toStringFormat = "COMBAT REPORT: Equipment: {0}, Target: {1}, Shots: {2}, Hits: {3}, Misses: {4}, Interdictions: {5}, Accuracy: {6}, HitPercentage: {7}.";
 
         public string EquipmentName { get; private set; }
 
@@ -44,21 +44,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public int Interdictions { get; set; }
 
-        public float EquipmentAccuracy { get; private set; }
-
-        public CombatResult(string equipmentName, string targetName, float equipmentAccuracy) {
+        public CombatResult(string equipmentName, string targetName) {
             EquipmentName = equipmentName;
             TargetName = targetName;
-            EquipmentAccuracy = equipmentAccuracy;
         }
-
 
         public override string ToString() {
             int hitsAndMisses = Hits + Misses;
             string actualAccyMsg = hitsAndMisses != Constants.Zero ? "{0:P00}".Inject(Hits / (float)hitsAndMisses) : "NA";
             int hitsAndMissesAndInterdictions = hitsAndMisses + Interdictions;
             string hitPercentMsg = hitsAndMissesAndInterdictions != Constants.Zero ? "{0:P00}".Inject(Hits / (float)(hitsAndMissesAndInterdictions)) : "NA";
-            return _toStringFormat.Inject(EquipmentName, TargetName, ShotsTaken, Hits, Misses, Interdictions, actualAccyMsg, EquipmentAccuracy, hitPercentMsg);
+            return _toStringFormat.Inject(EquipmentName, TargetName, ShotsTaken, Hits, Misses, Interdictions, actualAccyMsg, hitPercentMsg);
         }
 
     }

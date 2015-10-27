@@ -869,12 +869,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             ResetCourseReplotValues();
             GenerateCourse();
         }
-        //internal void PlotCourse(INavigableTarget target, Speed speed) {
-        //    RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
-        //    _targetHasKeepoutZone = target is IShipOrbitable;
-        //    ResetCourseReplotValues();
-        //    GenerateCourse();
-        //}
 
         /// <summary>
         /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.

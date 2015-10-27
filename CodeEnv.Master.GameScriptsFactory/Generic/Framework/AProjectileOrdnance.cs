@@ -87,9 +87,30 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //enabled = true set by derived classes after all settings initialized
     }
 
-    protected override void OccasionalUpdate() {
+    protected sealed override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        CheckRange();
+        CheckProgress();
+    }
+
+    /// <summary>
+    /// Checks various factors related to distance traveled.
+    /// </summary>
+    /// <returns></returns>
+    protected virtual float CheckProgress() {
+        var distanceTraveled = GetDistanceTraveled();
+        //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
+        if (distanceTraveled > _range) {
+            if (ToShowEffects) {
+                ShowImpactEffects(_transform.position); // self destruction effect
+            }
+            //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            if (Target.IsOperational) {
+                // reporting a miss after the target is dead will just muddy the combat report
+                ReportTargetMissed();
+            }
+            TerminateNow();
+        }
+        return distanceTraveled;
     }
 
     protected override void OnCollisionEnter(Collision collision) {
@@ -102,7 +123,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         var impactedTarget = impactedGo.GetInterface<IElementAttackableTarget>();
         if (impactedTarget != null) {
             // hit an attackableTarget
-            //D.Log("{0} collided with {1}.", Name, impactedTarget.DisplayName);
+            D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
             ContactPoint contactPoint = collision.contacts[0];
             var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
@@ -141,22 +162,6 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// </summary>
     /// <returns></returns>
     protected abstract Vector3 GetForceOfImpact();
-
-    private void CheckRange() {
-        var distanceTraveled = GetDistanceTraveled();
-        //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
-        if (distanceTraveled > _range) {
-            if (ToShowEffects) {
-                ShowImpactEffects(_transform.position); // self destruction effect
-            }
-            //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
-            if (Target.IsOperational) {
-                // reporting a miss after the target is dead will just muddy the combat report
-                ReportTargetMissed();
-            }
-            TerminateNow();
-        }
-    }
 
     protected abstract float GetDistanceTraveled();
 
