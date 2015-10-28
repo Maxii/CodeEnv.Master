@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShieldGenerator : ARangedEquipment, ICountermeasure {
 
-        private static float _hoursPerSecond = GameTime.HoursPerSecond;
+        //private static float _hoursPerSecond = GameTime.HoursPerSecond;
         private static string _nameFormat = "{0}[{1}({2:0.})]";
 
         public event Action<ShieldGenerator> onHasChargeChanged;
@@ -198,7 +198,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IEnumerator Recharge() {
             while (CurrentCharge < MaximumCharge) {
-                CurrentCharge += TrickleChargeRate * _gameTime.GameSpeedAdjustedDeltaTimeOrPaused / _hoursPerSecond;
+                CurrentCharge += TrickleChargeRate * _gameTime.GameSpeedAdjustedHoursPerSecond * _gameTime.DeltaTimeOrPaused;
                 yield return null;
             }
         }

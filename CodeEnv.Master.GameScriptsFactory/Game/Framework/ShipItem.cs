@@ -189,11 +189,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
+            //D.Log("{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
             if (Data.Target == null || !Data.Target.Equals(CurrentOrder.Target)) {   // OPTIMIZE     avoids Property equal warning
                 Data.Target = CurrentOrder.Target;  // can be null
                 if (CurrentOrder.Target != null) {
-                    D.Log("{0}'s new target for order {1} is {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentOrder.Target.FullName);
+                    //D.Log("{0}'s new target for order {1} is {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentOrder.Target.FullName);
                 }
             }
 
@@ -232,7 +232,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-            D.Log("{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentState.GetValueName());
+            //D.Log("{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentState.GetValueName());
         }
     }
 
@@ -600,11 +600,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         _helm.ChangeSpeed(Speed.EmergencyStop);
         //D.Log("{0} has assumed its formation station.", FullName);
 
-        float cumWaitTime = 0F;
+        float cumWaitTime = Constants.ZeroF;
         while (!Command.HQElement.IsHeadingConfirmed) {
             // wait here until Flagship has stopped turning
-            cumWaitTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
-            D.Assert(cumWaitTime < 5F);
+            cumWaitTime += _gameTime.DeltaTimeOrPaused;
+            D.Assert(cumWaitTime < 5F); // IMPROVE this could fail on GameSpeed.Slowest
             yield return null;
         }
 
@@ -651,11 +651,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             D.Log("{0} is within the orbit slot.", FullName);
         }
 
-        float cumWaitTime = 0F;
+        float cumWaitTime = Constants.ZeroF;
         while (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
             // wait until we are inside the orbit slot
-            cumWaitTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
-            if (cumWaitTime > 15F) {
+            cumWaitTime += _gameTime.DeltaTimeOrPaused;
+            if (cumWaitTime > 15F) {    // IMPROVE this could trip on GameSpeed.Slowest
                 D.Warn("{0}.AssumeOrbit taking a long time. DistanceToMeanOrbit = {1:0.0000}.", FullName, distanceToMeanOrbit);
             }
             yield return null;
@@ -681,6 +681,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
         _orderSource = OrderSource.UnitCommand;
+
+        if (IsHQ) {
+            D.Log("{0} calling {1}.{2}. Target: {3}, Speed: {4}, OrderSource: {5}.", FullName, typeof(ShipState).Name,
+                ShipState.Moving.GetEnumAttributeText(), _moveTarget.FullName, _moveSpeed.GetEnumAttributeText(), _orderSource.GetEnumAttributeText());
+        }
 
         Call(ShipState.Moving);
         yield return null;  // not reqd as Moving_EnterState() executes immediately and Return()s here?
@@ -1491,7 +1496,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 ChangeHeading(newHeading, 5F);
                 _pilotJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, onJobComplete: (wasKilled) => {
                     if (!wasKilled) {
-                        D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
+                        //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
                         EngageEnginesAtTravelSpeed();
                         // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
                         _pilotJob = new Job(EngageDirectCourseTo(obstacleDetour), toStart: true, onJobComplete: (wasKilled2) => {
@@ -1526,15 +1531,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         private void InitiateDirectCourseToTarget() {
             D.Assert(!ArePilotJobsRunning); // called only to Start a journey to target so no job should be running  
 
-            D.Log("{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
-                Name, Target.FullName, TargetPoint, TargetPointDistance, _ship.IsHeadingConfirmed);
+            //D.Log("{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
+            //Name, Target.FullName, TargetPoint, TargetPointDistance, _ship.IsHeadingConfirmed);
 
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             if (_orderSource == OrderSource.UnitCommand) {
                 ChangeHeading(targetPtBearing, 5F);
                 _pilotJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, onJobComplete: (wasKilled) => {
                     if (!wasKilled) {
-                        D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
+                        //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
                         EngageEnginesAtTravelSpeed();
                         _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, onJobComplete: (wasKilled2) => {
                             if (!wasKilled2) {
@@ -1547,7 +1552,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
             else {
                 ChangeHeading(targetPtBearing, 5F, onHeadingConfirmed: () => {
-                    D.Log("{0} is initiating direct course to {1}.", Name, Target.FullName);
+                    //D.Log("{0} is initiating direct course to {1}.", Name, Target.FullName);
                     EngageEnginesAtTravelSpeed();
                     _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, onJobComplete: (wasKilled) => {
                         if (!wasKilled) {
@@ -1566,12 +1571,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// </summary>
         private void ResumeDirectCourseToTarget() {
             KillPilotJobs();   // always called while already engaged
-            D.Log("{0} beginning prep to resume direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
-            Name, Target.FullName, TargetPoint, TargetPointDistance, _ship.IsHeadingConfirmed);
+            //D.Log("{0} beginning prep to resume direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
+            //Name, Target.FullName, TargetPoint, TargetPointDistance, _ship.IsHeadingConfirmed);
 
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             ChangeHeading(targetPtBearing, 5F, onHeadingConfirmed: () => {
-                D.Log("{0} is now on heading to reach {1}.", Name, Target.FullName);
+                //D.Log("{0} is now on heading to reach {1}.", Name, Target.FullName);
                 _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, onJobComplete: (wasKilled) => {
                     if (!wasKilled) {
                         OnDestinationReached();
@@ -1588,13 +1593,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// <param name="obstacleHitDistance">The obstacle hit distance.</param>
         private void ContinueCourseToTargetVia(INavigableTarget obstacleDetour, float obstacleHitDistance) {
             KillPilotJobs();   // always be called while already engaged
-            D.Log("{0} continuing course to target {1} at {2} via obstacle detour {3}. DistanceToObstacleHit = {4:0.00}, Distance to detour = {5:0.0}.",
-                Name, Target.FullName, TargetPoint, obstacleDetour.FullName, obstacleHitDistance, Vector3.Distance(Position, obstacleDetour.Position));
+            //D.Log("{0} continuing course to target {1} at {2} via obstacle detour {3}. DistanceToObstacleHit = {4:0.00}, Distance to detour = {5:0.0}.",
+            //Name, Target.FullName, TargetPoint, obstacleDetour.FullName, obstacleHitDistance, Vector3.Distance(Position, obstacleDetour.Position));
 
             Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
 
             ChangeHeading(newHeading, allowedTime: 5F, onHeadingConfirmed: () => {
-                D.Log("{0} is now on heading to reach obstacle detour {1}.", Name, obstacleDetour.FullName);
+                //D.Log("{0} is now on heading to reach obstacle detour {1}.", Name, obstacleDetour.FullName);
 
                 // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
                 _pilotJob = new Job(EngageDirectCourseTo(obstacleDetour), toStart: true, onJobComplete: (wasKilled) => {
@@ -1610,13 +1615,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         #region Course Execution Coroutines
 
-        private IEnumerator WaitWhileFleetAlignsForDeparture() {
+        /// <summary>
+        /// Waits the while fleet aligns for departure.
+        /// </summary>
+        /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
+        /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
+        /// <returns></returns>
+        private IEnumerator WaitWhileFleetAlignsForDeparture(float allowedTime = 5F) {
             //D.Log("{0} is beginning wait for {1} to complete turn.", Name, _ship.Command.DisplayName);
-            float cumWaitTime = 0F;
+            float cumTime = Constants.ZeroF;
             while (!_ship.Command.IsHeadingConfirmed) {
                 // wait here until the fleet is ready for departure
-                cumWaitTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
-                D.Assert(cumWaitTime < 5F);
+                cumTime += _gameTime.DeltaTimeOrPaused;
+                D.Assert(cumTime < allowedTime, "{0}: CumTime {1:0.##} > AllowedTime {2:0.##}.".Inject(Name, cumTime, allowedTime));
                 yield return null;
             }
         }
@@ -1749,7 +1760,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             if (_headingJob != null && _headingJob.IsRunning) {
                 _headingJob.Kill();
                 // onJobComplete will run next frame so placed cancelled notice here
-                D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
+                //D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
             }
 
             _engineRoom.IsTurnUnderway = true;  // signals engineRoom to correct for drift during the turn
@@ -1778,25 +1789,26 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// <summary>
         /// Coroutine that executes a heading change without overshooting.
         /// </summary>
-        /// <param name="allowedTime">The allowed time in GameTimeSeconds.</param>
+        /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
+        /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
         /// <returns></returns>
         private IEnumerator ExecuteHeadingChange(float allowedTime) {
             int previousFrameCount = Time.frameCount - 1;   // makes initial framesSinceLastPass = 1
             int cumFrameCount = 0;
-            float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;   //GameTime.HoursPerSecond;
             //D.Log("{0} initiating turn to heading {1} at {2:0.} degrees/hour.", Name, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
-            float cumTime = 0F;
+            float cumTime = Constants.ZeroF;
             while (!_ship.IsHeadingConfirmed) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
                 cumFrameCount += framesSinceLastPass;   // IMPROVE adjust frameCount for pausing?
                 previousFrameCount = Time.frameCount;
-                float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.GameSpeedAdjustedDeltaTimeOrPaused * framesSinceLastPass;
+                float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;   //GameTime.HoursPerSecond;
+                float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTimeOrPaused * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
                 // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
                 _ship._transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
                 //D.Log("{0} actual heading after turn step: {1}.", ClientName, _ship.Data.CurrentHeading);
-                cumTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused; // WARNING: works only with yield return null;
-                D.Assert(cumTime < allowedTime, "CumTime {0} > AllowedTime {1}.".Inject(cumTime, allowedTime));
+                cumTime += _gameTime.DeltaTimeOrPaused; // WARNING: works only with yield return null;
+                D.Assert(cumTime < allowedTime, "{0}: CumTime {1:0.##} > AllowedTime {2:0.##}.".Inject(Name, cumTime, allowedTime));
                 yield return null; // new WaitForSeconds(0.5F); // new WaitForFixedUpdate();
             }
             //D.Log("{0} completed HeadingChange Job. Duration = {1:0.##} GameTimeSecs. FrameCount = {2}.", Name, cumTime, cumFrameCount);
@@ -1981,11 +1993,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             // no need to RefreshEngineSpeedValues as the AutoPilot will engage the engines when ready to move
             base.OnAutoPilotEngaged();
         }
-
-        //protected override void OnAutoPilotDisengaged() {
-        //    base.OnAutoPilotDisengaged();
-        //    _targetInfo = null;
-        //}
 
         internal void OnFleetFullSpeedChanged() {
             if (IsAutoPilotEngaged) {

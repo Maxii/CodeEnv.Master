@@ -28,7 +28,7 @@ public abstract class ACreator : AMonoBase {
     /// <summary>
     /// Static counter used to provide a unique name for each element.
     /// </summary>
-    protected static int _elementCounter = Constants.One;
+    protected static int _elementInstanceIDCounter = Constants.One;
 
     public bool isOwnerUser;
     public __DiploStateWithUser ownerRelationshipWithUser;

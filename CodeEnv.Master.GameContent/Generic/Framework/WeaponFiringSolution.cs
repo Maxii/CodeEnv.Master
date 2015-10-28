@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class WeaponFiringSolution {
 
+        private static string _toStringFormat = "{0}: WeaponName = {1}, TargetName = {2}.";
+
         public IElementAttackableTarget EnemyTarget { get; private set; }
 
         public AWeapon Weapon { get; private set; }
@@ -32,8 +34,8 @@ namespace CodeEnv.Master.GameContent {
             EnemyTarget = enemyTgt;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return _toStringFormat.Inject(GetType().Name, Weapon.FullName, EnemyTarget.FullName);
         }
 
     }

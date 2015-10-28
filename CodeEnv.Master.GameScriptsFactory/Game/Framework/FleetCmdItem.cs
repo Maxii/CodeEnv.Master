@@ -894,7 +894,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private void InitiateCourseToTarget() {
             D.Assert(!ArePilotJobsRunning);
             D.Assert(!_hasFlagshipReachedDestination);
-            D.Log("{0} initiating course to target {1}. Distance: {2:0.#}.", Name, Target.FullName, TargetPointDistance);
+            D.Log("{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
             _pilotJob = new Job(EngageCourse(), toStart: true, onJobComplete: (wasKilled) => {
                 if (!wasKilled) {
                     OnDestinationReached();

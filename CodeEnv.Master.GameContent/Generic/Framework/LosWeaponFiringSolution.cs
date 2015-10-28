@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: LosWeaponFiringSolution.cs
-// A firing solution for a Weapon against an IElementAttackableTarget target that requires Line Of Sight.
+// A firing solution for a Weapon against an IElementAttackableTarget that requires Line Of Sight.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// A firing solution for a Weapon against an IElementAttackableTarget target that requires Line Of Sight.
+    /// A firing solution for a Weapon against an IElementAttackableTarget that requires Line Of Sight.
     /// </summary>
     public class LosWeaponFiringSolution : WeaponFiringSolution {
 
@@ -34,10 +34,6 @@ namespace CodeEnv.Master.GameContent {
             : base(weapon, enemyTgt) {
             TurretRotation = turretRotation;
             TurretElevation = turretElevation;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

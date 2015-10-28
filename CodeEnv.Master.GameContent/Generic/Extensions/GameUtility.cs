@@ -111,13 +111,23 @@ namespace CodeEnv.Master.GameContent {
 
         private static IEnumerator WaitForHours(float hours) {
             var gameTime = GameTime.Instance;
-            var allowedSeconds = hours / GameTime.HoursPerSecond;
+            var allowedSeconds = hours / gameTime.GameSpeedAdjustedHoursPerSecond;
             float elapsedSeconds = Constants.ZeroF;
             while (elapsedSeconds < allowedSeconds) {
-                elapsedSeconds += gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
+                elapsedSeconds += gameTime.DeltaTimeOrPaused;
+                allowedSeconds = hours / gameTime.GameSpeedAdjustedHoursPerSecond;
                 yield return null;
             }
         }
+        //private static IEnumerator WaitForHours(float hours) {
+        //    var gameTime = GameTime.Instance;
+        //    var allowedSeconds = hours / GameTime.HoursPerSecond;
+        //    float elapsedSeconds = Constants.ZeroF;
+        //    while (elapsedSeconds < allowedSeconds) {
+        //        elapsedSeconds += gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
+        //        yield return null;
+        //    }
+        //}
 
         /// <summary>
         /// Waits the designated number of hours, then executes the provided delegate.

@@ -39,8 +39,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override ShipHullStat CreateElementHullStat(ShipHullCategory hullCat, string elementName) {
-        float hullMass = TempGameValues.__GetHullMass(hullCat);
-        float drag = 0.1F;
+        float hullMass = __GetHullMass(hullCat);
+        float drag = __GetHullDrag(hullCat);    //0.1F;
         float science = hullCat == ShipHullCategory.Science ? 10F : Constants.ZeroF;
         float culture = hullCat == ShipHullCategory.Support || hullCat == ShipHullCategory.Colonizer ? 2F : Constants.ZeroF;
         float income = __GetIncome(hullCat);
@@ -89,9 +89,9 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     private EngineStat MakeEngineStat(ShipHullCategory hullCategory) {
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
-        float engineMass = TempGameValues.__GetEngineMass(hullCategory);
+        float engineMass = __GetEngineMass(hullCategory);
 
-        float fullStlPower = TempGameValues.__GetFullStlPower(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
+        float fullStlPower = __GetFullStlPower(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
         float fullFtlPower = fullStlPower * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
         return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPower, fullFtlPower,
             maxTurnRate, 0F, engineMass, 0F, 0F);
@@ -253,6 +253,88 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                 return 1F;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+        }
+    }
+
+    private float __GetHullMass(ShipHullCategory hullCat) {
+        switch (hullCat) {
+            case ShipHullCategory.Frigate:
+                return 50F;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                return 100F;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Colonizer:
+            case ShipHullCategory.Science:
+                return 200F;
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Troop:
+                return 400F;
+            case ShipHullCategory.Carrier:
+                return 500F;
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+    }
+
+    /// <summary>
+    ///ShipHull Drag in Topography.OpenSpace.
+    /// </summary>
+    /// <param name="hullCat">The hull cat.</param>
+    /// <returns></returns>
+    /// <exception cref="System.NotImplementedException"></exception>
+    private float __GetHullDrag(ShipHullCategory hullCat) {
+        switch (hullCat) {
+            case ShipHullCategory.Frigate:
+                return .05F;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                return .08F;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Colonizer:
+            case ShipHullCategory.Science:
+                return .10F;
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Troop:
+                return .15F;
+            case ShipHullCategory.Carrier:
+                return .25F;
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+    }
+
+    private float __GetEngineMass(ShipHullCategory hull) {
+        return __GetHullMass(hull) * 0.10F;
+    }
+
+    private float __GetFullStlPower(ShipHullCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
+        switch (hull) {
+            case ShipHullCategory.Frigate:
+                return UnityEngine.Random.Range(5F, 15F);
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                return UnityEngine.Random.Range(10F, 30F);
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Colonizer:
+            case ShipHullCategory.Science:
+                return UnityEngine.Random.Range(20F, 60F);
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Troop:
+                return UnityEngine.Random.Range(40F, 120F);
+            case ShipHullCategory.Carrier:
+                return UnityEngine.Random.Range(50F, 150F);
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
         }
     }
 

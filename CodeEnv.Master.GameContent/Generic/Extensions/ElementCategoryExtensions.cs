@@ -99,21 +99,25 @@ namespace CodeEnv.Master.GameContent {
 
         public static Vector3 __HullDimensions(this ShipHullCategory cat) {
             switch (cat) {
-                case ShipHullCategory.Frigate:
-                    return new Vector3(.03F, .01F, .05F);
+                case ShipHullCategory.Frigate:  // 10.28.15 Hull collider dimensions increased to encompass turrets
+                    //return new Vector3(.03F, .01F, .05F);
+                    return new Vector3(.04F, .035F, .10F);
                 case ShipHullCategory.Destroyer:
                 case ShipHullCategory.Support:
-                    return new Vector3(.05F, .02F, .10F);
+                    //return new Vector3(.05F, .02F, .10F);
+                    return new Vector3(.08F, .05F, .18F);
                 case ShipHullCategory.Cruiser:
                 case ShipHullCategory.Science:
                 case ShipHullCategory.Colonizer:
-                    return new Vector3(.07F, .04F, .15F);
+                    //return new Vector3(.07F, .04F, .15F);
+                    return new Vector3(.15F, .08F, .30F);
                 case ShipHullCategory.Dreadnaught:
                 case ShipHullCategory.Troop:
                     //return new Vector3(.10F, .06F, .25F);
                     return new Vector3(.21F, .07F, .45F);
                 case ShipHullCategory.Carrier:
-                    return new Vector3(.12F, .06F, .35F);
+                    //return new Vector3(.12F, .06F, .35F);
+                    return new Vector3(.20F, .10F, .60F);
                 case ShipHullCategory.Fighter:
                 case ShipHullCategory.Scout:
                 case ShipHullCategory.None:

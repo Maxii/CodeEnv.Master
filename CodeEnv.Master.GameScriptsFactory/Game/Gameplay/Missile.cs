@@ -263,17 +263,24 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         });
     }
 
-    private IEnumerator ChangeHeading(Vector3 newHeading, float allowedTime = 5F) {
+    /// <summary>
+    /// Changes the heading.
+    /// </summary>
+    /// <param name="requestedHeading">The requested heading.</param>
+    /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
+    /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
+    /// <returns></returns>
+    private IEnumerator ChangeHeading(Vector3 requestedHeading, float allowedTime = 5F) {
         float cumTime = Constants.ZeroF;
-        float angle = Vector3.Angle(Heading, newHeading);
-        while (!Heading.IsSameDirection(newHeading, SteeringInaccuracy)) {
+        //float angle = Vector3.Angle(Heading, newHeading);
+        while (!Heading.IsSameDirection(requestedHeading, SteeringInaccuracy)) {
             float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
-            Vector3 heading = Vector3.RotateTowards(transform.forward, newHeading, allowedTurn, maxMagnitudeDelta: 1F);
+            float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTimeOrPaused;
+            Vector3 newHeading = Vector3.RotateTowards(Heading, requestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
             // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-            transform.rotation = Quaternion.LookRotation(heading); // UNCLEAR turn kinematic on and off while rotating?
-            //D.Log("{0} actual heading after turn step: {1}.", Name, transform.forward);
-            cumTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused; // WARNING: works only with yield return null;
+            transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
+            //D.Log("{0} actual heading after turn step: {1}.", Name, Heading);
+            cumTime += _gameTime.DeltaTimeOrPaused; // WARNING: works only with yield return null;
             D.Assert(cumTime < allowedTime, "CumTime {0:0.##} > AllowedTime {1:0.##}.".Inject(cumTime, allowedTime));
             yield return null;
         }

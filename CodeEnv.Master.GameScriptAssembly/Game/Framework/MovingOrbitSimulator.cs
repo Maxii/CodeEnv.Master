@@ -34,11 +34,10 @@ public class MovingOrbitSimulator : OrbitSimulator {
     /// (it is coincident with the position of the object being orbited)
     /// to simulate the orbit of anything attached around the object orbited.
     /// </summary>
-    /// <param name="deltaTime">The delta time.</param>
-    protected override void UpdateOrbit(float deltaTime) {
-        float desiredStepAngle = _orbitSpeedInDegreesPerSecond * deltaTime;
-        //D.Log("{0}.{1}.desiredStepAngle = {2}.", _transform.name, GetType().Name, desiredStepAngle);
-        _transform.RotateAround(_transform.position, axisOfOrbit, desiredStepAngle);
+    /// <param name="deltaTimeSinceLastUpdate">The delta time since the last update.</param>
+    protected override void UpdateOrbit(float deltaTimeSinceLastUpdate) {
+        float angleStep = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
+        transform.RotateAround(transform.position, axisOfOrbit, angleStep);
     }
 
     public override string ToString() {

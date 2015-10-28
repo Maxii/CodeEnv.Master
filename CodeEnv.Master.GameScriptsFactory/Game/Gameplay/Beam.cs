@@ -46,14 +46,9 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
 
     /// <summary>
-    /// The duration in seconds this beam instance can continuously operate.
+    /// The cumulative time in hours that this beam has been operating.
     /// </summary>
-    private float _operatingDuration;
-
-    /// <summary>
-    /// The cumulative time in seconds that this beam instance has been operating.
-    /// </summary>
-    private float _cumOperatingTime;
+    private float _cumHoursOperating;
 
     /// <summary>
     /// LineRenderer that shows the effect of this beam while operating
@@ -62,13 +57,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private LineRenderer _operatingEffectRenderer;
 
     /// <summary>
-    /// The cumulative time the _impactedTarget has been hit. Used to accumulate the amount
+    /// The cumulative time in hours the _impactedTarget has been hit. Used to accumulate the amount
     /// of time the target has been hit between each application of damage to the target.
     /// Application of damage to the target occurs whenever the impact is interrupted for whatever
     /// reason, including by beam aim, target movement, the interposition of a shield or other target or the 
     /// termination of the beam.
     /// </summary>
-    private float _cumImpactTimeOnImpactedTarget;
+    private float _cumHoursOfImpactOnImpactedTarget;
 
     /// <summary>
     /// The current attackable target being hit. Can be null as a result
@@ -119,29 +114,29 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
         weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-        _operatingDuration = Weapon.Duration / GameTime.HoursPerSecond;
+        //_operatingDuration = Weapon.Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
         enabled = true; // enables Update()
     }
 
     protected override void Update() {
         base.Update();
-        var deltaTime = _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
-        OperateBeam(deltaTime);
-        _cumOperatingTime += deltaTime;
-        if (_cumOperatingTime > _operatingDuration) {
+        var deltaTimeInHours = _gameTime.DeltaTimeOrPaused * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        OperateBeam(deltaTimeInHours);
+        _cumHoursOperating += deltaTimeInHours;
+        if (_cumHoursOperating > Weapon.Duration) {
             AssessApplyDamage();
             TerminateNow();
         }
     }
 
-    private void OperateBeam(float deltaTime) {
+    private void OperateBeam(float deltaTimeInHours) {
         _isCurrentImpact = false;
         RaycastHit impactInfo;
-        Ray ray = new Ray(_transform.position, _transform.forward); // ray in direction beam is pointing
+        Ray ray = new Ray(transform.position, Heading); // ray in direction beam is pointing
         if (Physics.Raycast(ray, out impactInfo, _range, _beamImpactLayerMask)) {
             _isCurrentImpact = true;
-            OnImpact(impactInfo, deltaTime);
+            OnImpact(impactInfo, deltaTimeInHours);
         }
         else {
             // we missed so apply damage to the target previously hit, if any
@@ -149,7 +144,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
 
         if (ToShowEffects) {
-            float beamLength = _isCurrentImpact ? Vector3.Distance(_transform.position, impactInfo.point) : _range;
+            float beamLength = _isCurrentImpact ? Vector3.Distance(transform.position, impactInfo.point) : _range;
             // end the beam line at either the impact point or its range
             _operatingEffectRenderer.SetPosition(index: 1, position: new Vector3(0F, 0F, beamLength));
             // Set beam scaling based off its length?
@@ -159,7 +154,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         AssessShowImpactEffects();
     }
 
-    private void OnImpact(RaycastHit impactInfo, float deltaTime) {
+    private void OnImpact(RaycastHit impactInfo, float deltaTimeInHours) {
         //D.Log("{0} impacted on {1}.", Name, impactInfo.collider.name);
         RefreshImpactLocation(impactInfo);
 
@@ -168,7 +163,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             var shield = impactedGo.GetComponent<Shield>();
             D.Assert(shield != null);
             AssessApplyDamage();    // hit a shield so apply cumDamage to previous valid target, if any
-            OnShieldImpact(shield, deltaTime);
+            OnShieldImpact(shield, deltaTimeInHours);
             // for now, no impact force will be applied to the shield's parentElement
             return;
         }
@@ -183,7 +178,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             }
             _impactedTarget = impactedTarget;
 
-            float percentOfBeamDuration = deltaTime / _operatingDuration;    // the percentage of the beam's duration that deltaTime represents
+            float percentOfBeamDuration = deltaTimeInHours / Weapon.Duration;    // the percentage of the beam's duration that deltaTime represents
             var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
                 // target has a normal rigidbody so apply impact force
@@ -193,7 +188,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
                 impactedTargetRigidbody.AddForceAtPosition(force, impactInfo.point, ForceMode.Impulse);
             }
             // accumulate total impact time on _impactedTarget
-            _cumImpactTimeOnImpactedTarget += deltaTime;
+            _cumHoursOfImpactOnImpactedTarget += deltaTimeInHours;
         }
         else {
             // hit something else that can't take damage so apply cumDamage to previous valid target, if any
@@ -201,8 +196,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
-    private void OnShieldImpact(Shield shield, float deltaTime) {
-        var incrementalShieldImpact = DeliveryVehicleStrength * (deltaTime / _operatingDuration);
+    private void OnShieldImpact(Shield shield, float deltaTimeInHours) {
+        var incrementalShieldImpact = DeliveryVehicleStrength * (deltaTimeInHours / Weapon.Duration);
         shield.AbsorbImpact(incrementalShieldImpact);
         _isInterdicted = true;
     }
@@ -223,17 +218,17 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         //D.Log("{0}.AssessApplyDamage() called.", Name);
         if (_impactedTarget == null) {
             // no target that can take damage has been hit, so _cumImpactTime should be zero
-            D.Assert(_cumImpactTimeOnImpactedTarget == Constants.ZeroF);
+            D.Assert(_cumHoursOfImpactOnImpactedTarget == Constants.ZeroF);
             return;
         }
         if (!_impactedTarget.IsOperational) {
             // target is dead so don't apply more damage
-            _cumImpactTimeOnImpactedTarget = Constants.ZeroF;
+            _cumHoursOfImpactOnImpactedTarget = Constants.ZeroF;
             _impactedTarget = null;
             return;
         }
 
-        DamageStrength cumDamageToApply = DamagePotential * (_cumImpactTimeOnImpactedTarget / _operatingDuration);
+        DamageStrength cumDamageToApply = DamagePotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
         D.Log("{0} is applying hit of strength {1} to {2}.", Name, cumDamageToApply, _impactedTarget.DisplayName);
         _impactedTarget.TakeHit(cumDamageToApply);
 
@@ -243,7 +238,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         else {
             _isInterdicted = true;
         }
-        _cumImpactTimeOnImpactedTarget = Constants.ZeroF;
+        _cumHoursOfImpactOnImpactedTarget = Constants.ZeroF;
         _impactedTarget = null;
     }
 

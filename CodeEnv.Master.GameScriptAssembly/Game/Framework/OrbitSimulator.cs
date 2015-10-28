@@ -54,12 +54,13 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// The relative orbit speed of the object around the location. A value of 1 means
     /// an orbit will take one OrbitPeriod.
     /// </summary>
-    public float relativeOrbitSpeed = 1.0F;
+    public float relativeOrbitRate = 1.0F;
 
     /// <summary>
-    /// The speed of this OrbitSimulator around the orbited object in degrees per second.
+    /// The rate this OrbitSimulator orbits around the orbited object in degrees per hour.
     /// </summary>
-    protected float _orbitSpeedInDegreesPerSecond;
+    protected float _orbitRateInDegreesPerHour;
+    protected GameTime _gameTime;
 
     /// <summary>
     /// The speed of the orbiting object around the orbited object in units per hour. 
@@ -68,7 +69,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     private float _orbitSpeedInUnitsPerHour;
     private IList<IDisposable> _subscriptions;
     private IGameManager _gameMgr;
-    private GameTime _gameTime;
 
     protected override void Awake() {
         base.Awake();
@@ -87,26 +87,24 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     protected override void Start() {
         base.Start();
         D.Assert(OrbitPeriod != default(GameTimeDuration), "{0}.{1}.OrbitPeriod has not been set.".Inject(_transform.name, GetType().Name));
-        var orbitSpeedInDegreesPerHour = relativeOrbitSpeed * Constants.DegreesPerOrbit / (float)OrbitPeriod.TotalInHours;
-        _orbitSpeedInDegreesPerSecond = orbitSpeedInDegreesPerHour * GameTime.HoursPerSecond;
-        //D.Log("OrbitSpeedInDegreesPerSecond = {0}, OrbitPeriodInTotalHours = {1}.", _orbitSpeedInDegreesPerSecond, orbitPeriod.TotalInHours);
+        _orbitRateInDegreesPerHour = relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitPeriod.TotalInHours;
+        //D.Log("OrbitRateInDegreesPerHour = {0:0.#}, OrbitPeriodInTotalHours = {1:0.}.", _orbitRateInDegreesPerHour, OrbitPeriod.TotalInHours);
     }
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        float gameSpeedAdjustedDeltaTimeSinceLastUpdate = _gameTime.GameSpeedAdjustedDeltaTimeOrPaused * (int)UpdateRate;
+        float deltaTimeSinceLastUpdate = _gameTime.DeltaTimeOrPaused * (int)UpdateRate;
         //D.Log("Time.DeltaTime = {0}, GameTime.DeltaTimeWithGameSpeed = {1}, UpdateRate = {2}.", Time.deltaTime, GameTime.DeltaTimeOrPausedWithGameSpeed, (int)UpdateRate);
-        UpdateOrbit(gameSpeedAdjustedDeltaTimeSinceLastUpdate);
+        UpdateOrbit(deltaTimeSinceLastUpdate);
     }
 
     /// <summary>
-    /// Updates the rotation of this object around its local Y axis (it is coincident with the position of the object being orbited)
-    /// to simulate the orbit of this object's child around the object orbited. The delta time used is adjusted for GameSpeed
-    /// so the orbit rotates faster or slower depending on the GameSpeed.
+    /// Updates the rotation of this object around its axis of orbit (it is coincident with the position of the object being orbited)
+    /// to simulate the orbit of this object's child around the object orbited. The visual speed of the orbit varies with game speed.
     /// </summary>
-    /// <param name="gameSpeedAdjustedDeltaTime">The delta time adjusted for GameSpeed.</param>
-    protected virtual void UpdateOrbit(float gameSpeedAdjustedDeltaTime) {
-        float degreesToRotate = _orbitSpeedInDegreesPerSecond * gameSpeedAdjustedDeltaTime;
+    /// <param name="deltaTimeSinceLastUpdate">The delta time since last update.</param>
+    protected virtual void UpdateOrbit(float deltaTimeSinceLastUpdate) {
+        float degreesToRotate = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
         _transform.Rotate(axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
     }
 
@@ -151,7 +149,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// <returns></returns>
     public float GetRelativeOrbitSpeed(float radius) {
         if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
-            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitPeriod.TotalInHours / relativeOrbitSpeed);
+            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitPeriod.TotalInHours / relativeOrbitRate);
         }
         return _orbitSpeedInUnitsPerHour;
     }

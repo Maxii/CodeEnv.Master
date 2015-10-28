@@ -38,7 +38,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
         float culture = hullCat == FacilityHullCategory.CentralHub || hullCat == FacilityHullCategory.ColonyHab ? 2.5F : Constants.ZeroF;
         float income = __GetIncome(hullCat);
         float expense = __GetExpense(hullCat);
-        float hullMass = TempGameValues.__GetHullMass(hullCat);
+        float hullMass = __GetHullMass(hullCat);
         return new FacilityHullStat(hullCat, elementName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
             hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
     }
@@ -154,6 +154,24 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
                 return 10F;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+        }
+    }
+
+    private float __GetHullMass(FacilityHullCategory hullCat) {
+        switch (hullCat) {
+            case FacilityHullCategory.CentralHub:
+                return 10000F;
+            case FacilityHullCategory.Defense:
+            case FacilityHullCategory.Factory:
+                return 5000F;
+            case FacilityHullCategory.ColonyHab:
+            case FacilityHullCategory.Economic:
+            case FacilityHullCategory.Barracks:
+            case FacilityHullCategory.Laboratory:
+                return 2000F;
+            case FacilityHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
     }
 

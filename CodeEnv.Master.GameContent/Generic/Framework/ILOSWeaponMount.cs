@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     public interface ILOSWeaponMount : IWeaponMount {
 
         /// <summary>
-        /// Traverses the mount to point at the location indicated by the firing solution.
+        /// Traverses the mount to point at the target indicated by the firing solution.
         /// </summary>
         /// <param name="firingSolution">The firing solution.</param>
         void TraverseTo(LosWeaponFiringSolution firingSolution);

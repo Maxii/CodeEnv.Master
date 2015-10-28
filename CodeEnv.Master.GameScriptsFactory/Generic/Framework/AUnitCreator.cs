@@ -513,26 +513,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _elementHullStats = isCompositionPreset ? CreateElementHullStatsFromChildren() : CreateRandomElementHullStats();
     }
 
-    //private IList<ElementHullStatType> CreateElementHullStatsFromChildren() {
-    //    LogEvent();
-    //    var elements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>();
-    //    var elementHullStats = new List<ElementHullStatType>(elements.Count());
-    //    var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
-    //    foreach (var element in elements) {
-    //        AHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<AHull>();
-    //        ElementCategoryType category = GetCategory(hull);
-    //        if (!elementCategoriesUsedCount.ContainsKey(category)) {
-    //            elementCategoriesUsedCount.Add(category, Constants.One);
-    //        }
-    //        else {
-    //            elementCategoriesUsedCount[category]++;
-    //        }
-    //        int elementInstanceIndex = elementCategoriesUsedCount[category];
-    //        string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
-    //        elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
-    //    }
-    //    return elementHullStats;
-    //}
     private IList<ElementHullStatType> CreateElementHullStatsFromChildren() {
         LogEvent();
         var elements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>();
@@ -540,10 +520,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         foreach (var element in elements) {
             AHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<AHull>();
             ElementCategoryType category = GetCategory(hull);
-            int elementInstanceID = _elementCounter;
-            _elementCounter++;
-            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceID;
-            elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
+            int elementInstanceID = _elementInstanceIDCounter;
+            _elementInstanceIDCounter++;
+            string uniqueElementName = category.ToString() + Constants.Underscore + elementInstanceID;
+            elementHullStats.Add(CreateElementHullStat(category, uniqueElementName));
         }
         return elementHullStats;
     }
@@ -556,33 +536,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         var elementHullStats = new List<ElementHullStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {
             ElementCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
-            int elementInstanceID = _elementCounter;
-            _elementCounter++;
-            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceID;
-            elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
+            int elementInstanceID = _elementInstanceIDCounter;
+            _elementInstanceIDCounter++;
+            string uniqueElementName = category.ToString() + Constants.Underscore + elementInstanceID;
+            elementHullStats.Add(CreateElementHullStat(category, uniqueElementName));
         }
         return elementHullStats;
     }
-    //private IList<ElementHullStatType> CreateRandomElementHullStats() {
-    //    LogEvent();
-    //    var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
-    //    int elementCount = RandomExtended.Range(1, maxElementsInRandomUnit);
-    //    //D.Log("{0} Element count is {1}.", UnitName, elementCount);
-    //    var elementHullStats = new List<ElementHullStatType>(elementCount);
-    //    for (int i = 0; i < elementCount; i++) {
-    //        ElementCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
-    //        if (!elementCategoriesUsedCount.ContainsKey(category)) {
-    //            elementCategoriesUsedCount.Add(category, Constants.One);
-    //        }
-    //        else {
-    //            elementCategoriesUsedCount[category]++;
-    //        }
-    //        int elementInstanceIndex = elementCategoriesUsedCount[category];
-    //        string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
-    //        elementHullStats.Add(CreateElementHullStat(category, elementInstanceName));
-    //    }
-    //    return elementHullStats;
-    //}
 
     protected abstract ElementHullStatType CreateElementHullStat(ElementCategoryType hullCat, string elementName);
 
@@ -846,7 +806,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private static void CleanupStaticMembers() {
         _allUnitCommands.ForAll(cmd => cmd.onDeathOneShot -= OnUnitDeath);
         _allUnitCommands.Clear();
-        _elementCounter = Constants.One;
+        _elementInstanceIDCounter = Constants.One;
     }
 
     /// <summary>

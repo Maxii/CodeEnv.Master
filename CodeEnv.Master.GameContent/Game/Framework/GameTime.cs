@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -54,7 +54,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The number of Hours passing per second, adjusted for GameSpeed.
         /// </summary>
-        public float GameSpeedAdjustedHoursPerSecond { get { return HoursPerSecond * _gameSpeedMultiplier; } }
+        public float GameSpeedAdjustedHoursPerSecond { get { return HoursPerSecond * GameSpeedMultiplier; } }
+
+        public float GameSpeedMultiplier { get; private set; }
 
         private GameSpeed _gameSpeed;
         public GameSpeed GameSpeed {
@@ -62,25 +64,45 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<GameSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging); }
         }
 
+        #region GameSpeed Adjusted DeltaTime Archive
+
+        /********************************************************************************************************************************
+                    * Removed as I was erroneously using both GameSpeedAdjustedHoursPerSecond and these deltaTimes in same coroutines
+                    ********************************************************************************************************************************/
+
         /// <summary>
         /// The number of seconds elapsed, adjusted for GameSpeed, since the last Frame 
         /// was rendered or zero if the game is paused. Useful for animations
         /// or other work that should reflect GameSpeed and stop while paused.
         /// </summary>
-        public float GameSpeedAdjustedDeltaTimeOrPaused {
-            get {
-                //WarnIfGameInstanceNotRunning();   // Jobs can call this even when IsRunning = false when launching new game within old game
-                if (_gameMgr.IsPaused) {
-                    return Constants.ZeroF;
-                }
-                return GameSpeedAdjustedDeltaTime;
-            }
-        }
+        //public float GameSpeedAdjustedDeltaTimeOrPaused {
+        //    get {
+        //        //WarnIfGameInstanceNotRunning();   // Jobs can call this even when IsRunning = false when launching new game within old game
+        //        if (_gameMgr.IsPaused) {
+        //            return Constants.ZeroF;
+        //        }
+        //        return GameSpeedAdjustedDeltaTime;
+        //    }
+        //}
+
+        ///// <summary>
+        ///// The number of seconds elapsed, adjusted for GameSpeed, since the last Frame 
+        ///// was rendered whether the game is paused or not. Useful for animations or other
+        ///// work that should reflect GameSpeed and continue even when the game is paused.
+        ///// </summary>
+        //public float GameSpeedAdjustedDeltaTime {
+        //    get {
+        //        WarnIfGameInstanceNotRunning();
+        //        return DeltaTime * GameSpeedMultiplier;
+        //    }
+        //}
+
+        #endregion
 
         /// <summary>
         /// The number of seconds elapsed since the last Frame 
         /// was rendered or zero if the game is paused. Useful for animations
-        /// or other work that should not reflect GameSpeed but stop while paused.
+        /// or other work that should stop while paused.
         /// </summary>
         public float DeltaTimeOrPaused {
             get {
@@ -93,21 +115,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The number of seconds elapsed, adjusted for GameSpeed, since the last Frame 
-        /// was rendered whether the game is paused or not. Useful for animations or other
-        /// work that should reflect GameSpeed and continue even when the game is paused.
-        /// </summary>
-        public float GameSpeedAdjustedDeltaTime {
-            get {
-                WarnIfGameInstanceNotRunning();
-                return DeltaTime * _gameSpeedMultiplier;
-            }
-        }
-
-        /// <summary>
         /// The number of seconds elapsed since the last Frame was rendered whether the 
-        /// game is paused or not. Useful for animations or other work that should not reflect 
-        /// GameSpeed and continue even when the game is paused.
+        /// game is paused or not. Useful for animations or other work that should continue even when the game is paused.
         /// </summary>
         public float DeltaTime { get { return Time.deltaTime; } }
 
@@ -215,8 +224,6 @@ namespace CodeEnv.Master.GameContent {
         ///A marker indicating the GameInstancePlayTime value when the last CurrentDateTimeRefresh was executed.
         /// </summary>
         private float _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
-
-        private float _gameSpeedMultiplier;
         private PlayerPrefsManager _playerPrefsMgr;
         private IGameManager _gameMgr;
 
@@ -280,7 +287,7 @@ namespace CodeEnv.Master.GameContent {
             __savedCurrentDateTime = Constants.ZeroF;
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
-            _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
+            GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synched CurrentDate instance once Date is requested
             // onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
         }
@@ -310,7 +317,7 @@ namespace CodeEnv.Master.GameContent {
             D.Log("CurrentDateTime restored to {0:0.00}.", _currentDateTime);
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the GameSpeed when saved is not relevant to the resumed GameInstance
-            _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
+            GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime everytime it is used
             // the list of subscribers to onDateChanged should be fine as saved
         }
@@ -320,7 +327,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnGameSpeedChanged() {
-            _gameSpeedMultiplier = GameSpeed.SpeedMultiplier();
+            GameSpeedMultiplier = GameSpeed.SpeedMultiplier();
         }
 
         /// <summary>
@@ -331,7 +338,7 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshCurrentDateTime() {
             D.Assert(_gameMgr.IsRunning);
             D.Assert(!_gameMgr.IsPaused);   // it keeps adding to currentDateTime
-            _currentDateTime += _gameSpeedMultiplier * (GameInstancePlayTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh);
+            _currentDateTime += GameSpeedMultiplier * (GameInstancePlayTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh);
             _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
             //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", GetType().Name, _currentDateTime);
         }

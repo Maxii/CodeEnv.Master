@@ -104,9 +104,14 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     #region Debug
 
+    /// <summary>
+    /// Used for debugging when a traverse job is killed.
+    /// </summary>
+    private LosWeaponFiringSolution __lastFiringSolution;
+
     // Externalized this way to allow reporting of the results of a traverse.
-    Vector3 __vectorToTargetPositionProjectedOntoHubPlane;
-    Vector3 __vectorToTargetPositionProjectedOntoBarrelPlane;
+    private Vector3 __vectorToTargetPositionProjectedOntoHubPlane;
+    private Vector3 __vectorToTargetPositionProjectedOntoBarrelPlane;
 
     #endregion
 
@@ -208,17 +213,18 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <summary>
     /// Traverses the mount to point at the target defined by the provided firing solution.
     /// </summary>
-    /// <param name="firingSolution"></param>
+    /// <param name="firingSolution">The firing solution.</param>
     public void TraverseTo(LosWeaponFiringSolution firingSolution) {
-        Traverse(firingSolution, allowedTime: 5F);
+        Traverse(firingSolution, 5F);
     }
 
     /// <summary>
     /// Traverses the mount to point at the target defined by the provided firing solution.
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
-    /// <param name="allowedTime">The allowed time before an error is thrown.</param>
-    private void Traverse(LosWeaponFiringSolution firingSolution, float allowedTime = 20F) {
+    /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
+    /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
+    private void Traverse(LosWeaponFiringSolution firingSolution, float allowedTime) {
         IElementAttackableTarget target = firingSolution.EnemyTarget;
         string targetName = target.FullName;
         //D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
@@ -227,9 +233,9 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         Quaternion reqdBarrelElevation = firingSolution.TurretElevation;
 
         if (_traverseJob != null && _traverseJob.IsRunning) {
+            D.Error("{0} is killing a Traverse Job that was traversing to {1}.", Name, __lastFiringSolution);   // if this happens, no onTraverseCompleted will be returned for cancelled traverse
             _traverseJob.Kill();
             // onJobComplete will run next frame so placed cancelled notice here
-            D.Error("{0}'s previous Traverse Job has been cancelled.", Name);   // if this happens, no onTraverseCompleted will be returned for cancelled traverse
         }
 
         _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
@@ -244,6 +250,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 OnTraverseCompleted(firingSolution);
             }
         });
+        __lastFiringSolution = firingSolution;
     }
 
     /// <summary>
@@ -251,20 +258,20 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="reqdHubRotation">The required rotation of the hub.</param>
     /// <param name="reqdBarrelElevation">The required (local) elevation of the barrel.</param>
-    /// <param name="allowedTime">The allowed time in GameTimeSeconds.</param>
+    /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
+    /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
     /// <returns></returns>
     private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, float allowedTime) {
         //D.Log("Initiating {0} traversal. HubRotationRate: {1:0.}, BarrelElevationRate: {2:0.} degrees/hour.", Name, _hubRotationRate, _barrelElevationRate);
-        float hubRotationRateInDegreesPerSecond = _hubRotationRate * GameTime.HoursPerSecond;
-        float barrelElevationRateInDegreesPerSecond = _barrelElevationRate * GameTime.HoursPerSecond;
         float cumTime = Constants.ZeroF;
         bool isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
         bool isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
         while (!isTraverseCompleted) {
-            float deltaTime = _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
+            float deltaTime = _gameTime.DeltaTimeOrPaused;
             if (!isHubRotationCompleted) {
                 //Quaternion previousHubRotation = hub.rotation;
+                float hubRotationRateInDegreesPerSecond = _hubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 float allowedHubRotationChange = hubRotationRateInDegreesPerSecond * deltaTime;
                 hub.rotation = Quaternion.RotateTowards(hub.rotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, hub.rotation);
@@ -273,14 +280,15 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             }
 
             if (!isBarrelElevationCompleted) {
+                float barrelElevationRateInDegreesPerSecond = _barrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 float allowedBarrelElevationChange = barrelElevationRateInDegreesPerSecond * deltaTime;
                 barrel.localRotation = Quaternion.RotateTowards(barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
                 isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
-            cumTime += _gameTime.GameSpeedAdjustedDeltaTimeOrPaused;
-            D.Assert(cumTime < allowedTime, "{0}: CumTime {1} > AllowedTime {2}.".Inject(Name, cumTime, allowedTime));
+            cumTime += deltaTime;
+            D.Assert(cumTime < allowedTime, "{0}: CumTime {1:0.##} > AllowedTime {2:0.##}.".Inject(Name, cumTime, allowedTime));
             yield return null; // Note: see Navigator.ExecuteHeadingChange() if wish to use WaitForSeconds() or WaitForFixedUpdate()
         }
         //D.Log("{0} completed Traverse Job. Duration = {1:0.####} GameTimeSecs.", Name, cumTime);
