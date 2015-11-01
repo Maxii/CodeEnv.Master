@@ -42,6 +42,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
+    private SphereCollider _collider;
 
     #region Initialization
 
@@ -50,12 +51,24 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
-        collider.enabled = false;
-        collider.isTrigger = false;
-        (collider as SphereCollider).radius = Radius;
+        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+        _collider.enabled = false;
+        _collider.isTrigger = false;
+        _collider.radius = Radius;
         InitializeKeepoutZone();
         InitializeShipOrbitSlot();
     }
+    //protected override void InitializeLocalReferencesAndValues() {
+    //    base.InitializeLocalReferencesAndValues();
+    //    var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
+    //    Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+    //    D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
+    //    collider.enabled = false;
+    //    collider.isTrigger = false;
+    //    (collider as SphereCollider).radius = Radius;
+    //    InitializeKeepoutZone();
+    //    InitializeShipOrbitSlot();
+    //}
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
@@ -98,8 +111,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        collider.enabled = true;
+        _collider.enabled = true;
     }
+    //public override void CommenceOperations() {
+    //    base.CommenceOperations();
+    //    collider.enabled = true;
+    //}
 
     public UniverseCenterReport GetUserReport() { return Publisher.GetUserReport(); }
 

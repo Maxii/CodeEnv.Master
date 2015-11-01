@@ -255,6 +255,30 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        ///// <summary>
+        ///// Populates the source list with the provided value.
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="list">The list.</param>
+        ///// <param name="value">The value.</param>
+        //public static void Populate<T>(this List<T> list, T value) {
+        //    for (int i = 0; i < list.Count; i++) {
+        //        list[i] = value;
+        //    }
+        //}
+
+        /// <summary>
+        /// Populates the source list with the provided value.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="value">The value.</param>
+        public static void Populate<T>(this IList<T> list, T value) {
+            for (int i = 0; i < list.Count; i++) {
+                list[i] = value;
+            }
+        }
+
         /// <summary>
         /// Returns the next item in the list that follows <c>item</c>. If <c>item</c> is not 
         /// present or the last item in the list, the first item in the list is returned. Warns if the

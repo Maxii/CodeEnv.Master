@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System.Collections;
+    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -47,9 +48,11 @@ namespace CodeEnv.Master.GameContent {
 
         public int MaxCircles { get; set; }
 
-        public GameColor[] Colors { get; set; }
+        //public GameColor[] Colors { get; set; }
+        public IList<GameColor> Colors { get; set; }
 
-        public float[] Widths { get; set; }
+        //public float[] Widths { get; set; }
+        public IList<float> Widths { get; set; }
 
         private bool[] _circlesToShow;
         private int _segmentsPerCircle = 30;
@@ -71,11 +74,22 @@ namespace CodeEnv.Master.GameContent {
             NormalizedRadius = normalizedRadius;
             IsRadiusDynamic = isRadiusDynamic;
             MaxCircles = maxCircles;
-            Widths = new float[maxCircles];
+            Widths = new List<float>(maxCircles);
             Widths.Populate<float>(width);
-            Colors = new GameColor[maxCircles];
+            Colors = new List<GameColor>(maxCircles);
             Colors.Populate<GameColor>(color);
         }
+        //public HighlightCircle(string name, Transform target, float normalizedRadius, bool isRadiusDynamic = true, int maxCircles = 1, float width = 1F, GameColor color = GameColor.White)
+        //    : base(name) {
+        //    Target = target;
+        //    NormalizedRadius = normalizedRadius;
+        //    IsRadiusDynamic = isRadiusDynamic;
+        //    MaxCircles = maxCircles;
+        //    Widths = new float[maxCircles];
+        //    Widths.Populate<float>(width);
+        //    Colors = new GameColor[maxCircles];
+        //    Colors.Populate<GameColor>(color);
+        //}
 
         /// <summary>
         /// Shows or hides a circle around a target.
@@ -164,10 +178,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Initialize() {
             int pointsCount = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
-            _line = new VectorLine(LineName, new Vector2[pointsCount], null, 1F, LineType.Discrete);
+            _line = new VectorLine(LineName, new List<Vector2>(pointsCount), texture, 1F, LineType.Discrete);
 
-            // can't use this as Vectrosity2D layer was only seen by the removed VectorCam, the default layer is now UI which the GuiCamera should see
-            //_line.rectTransform.gameObject.layer = (int)Layers.Vectrosity2D;    //_line.vectorObject.layer = (int)Layers.Vectrosity2D;  // vectorObject removed in Vectrosity 4.0
             _line.active = false;
 
             _circlesToShow = new bool[MaxCircles];
@@ -176,11 +188,8 @@ namespace CodeEnv.Master.GameContent {
             InitializeWidths();
         }
         //protected override void Initialize() {
-        //    int points = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
-        //    _line = new VectorLine(LineName, new Vector2[points], null, 1F, LineType.Discrete);
-        //    if (Parent != null) {
-        //        OnParentChanged();
-        //    }
+        //    int pointsCount = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
+        //    _line = new VectorLine(LineName, new Vector2[pointsCount], null, 1F, LineType.Discrete);
 
         //    // can't use this as Vectrosity2D layer was only seen by the removed VectorCam, the default layer is now UI which the GuiCamera should see
         //    //_line.rectTransform.gameObject.layer = (int)Layers.Vectrosity2D;    //_line.vectorObject.layer = (int)Layers.Vectrosity2D;  // vectorObject removed in Vectrosity 4.0
@@ -193,11 +202,11 @@ namespace CodeEnv.Master.GameContent {
         //}
 
         private void InitializeColors() {
-            int length = Colors.Length;
-            if (length == 1) {
+            int colorCount = Colors.Count;
+            if (colorCount == 1) {
                 _line.SetColor(Colors[0].ToUnityColor());
             }
-            else if (length == MaxCircles) {
+            else if (colorCount == MaxCircles) {
                 for (int i = 0; i < MaxCircles; i++) {
                     int segmentStartIndex = _segmentsPerCircle * i;
                     int segmentEndIndex = _segmentsPerCircle * (i + 1) - 1;
@@ -205,18 +214,35 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                D.Warn("{0} color count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Colors[0].GetValueName());
+                D.Warn("{0} color count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, colorCount, MaxCircles, Colors[0].GetValueName());
                 _line.SetColor(GameColor.White.ToUnityColor());
             }
         }
+        //private void InitializeColors() {
+        //    int length = Colors.Length;
+        //    if (length == 1) {
+        //        _line.SetColor(Colors[0].ToUnityColor());
+        //    }
+        //    else if (length == MaxCircles) {
+        //        for (int i = 0; i < MaxCircles; i++) {
+        //            int segmentStartIndex = _segmentsPerCircle * i;
+        //            int segmentEndIndex = _segmentsPerCircle * (i + 1) - 1;
+        //            _line.SetColor(Colors[i].ToUnityColor(), segmentStartIndex, segmentEndIndex);
+        //        }
+        //    }
+        //    else {
+        //        D.Warn("{0} color count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Colors[0].GetValueName());
+        //        _line.SetColor(GameColor.White.ToUnityColor());
+        //    }
+        //}
 
         private void InitializeWidths() {
-            int length = Widths.Length;
-            if (length == 1) {
-                _line.lineWidth = Widths[0];
+            int widthCount = Widths.Count;
+            if (widthCount == 1) {
+                _line.SetWidth(Widths[0]);
             }
-            else if (length == MaxCircles) {
-                float[] segmentWidths = new float[MaxCircles * _segmentsPerCircle];
+            else if (widthCount == MaxCircles) {
+                List<float> segmentWidths = new List<float>(MaxCircles * _segmentsPerCircle);
                 for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
                     int segmentStartIndex = _segmentsPerCircle * circleIndex;
                     int segmentEndIndex = _segmentsPerCircle * (circleIndex + 1) - 1;
@@ -227,10 +253,31 @@ namespace CodeEnv.Master.GameContent {
                 _line.SetWidths(segmentWidths);
             }
             else {
-                D.Warn("{0} width count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Widths[0]);
-                _line.SetColor(GameColor.White.ToUnityColor());
+                D.Warn("{0} width count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, widthCount, MaxCircles, Widths[0]);
+                _line.SetWidth(Widths[0]);
             }
         }
+        //private void InitializeWidths() {
+        //    int length = Widths.Length;
+        //    if (length == 1) {
+        //        _line.lineWidth = Widths[0];
+        //    }
+        //    else if (length == MaxCircles) {
+        //        float[] segmentWidths = new float[MaxCircles * _segmentsPerCircle];
+        //        for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
+        //            int segmentStartIndex = _segmentsPerCircle * circleIndex;
+        //            int segmentEndIndex = _segmentsPerCircle * (circleIndex + 1) - 1;
+        //            for (int segmentIndex = segmentStartIndex; segmentIndex <= segmentEndIndex; segmentIndex++) {
+        //                segmentWidths[segmentIndex] = Widths[circleIndex];
+        //            }
+        //        }
+        //        _line.SetWidths(segmentWidths);
+        //    }
+        //    else {
+        //        D.Warn("{0} width count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Widths[0]);
+        //        _line.SetColor(GameColor.White.ToUnityColor());
+        //    }
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

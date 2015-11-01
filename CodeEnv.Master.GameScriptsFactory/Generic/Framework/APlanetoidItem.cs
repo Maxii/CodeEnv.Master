@@ -58,6 +58,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
+    private SphereCollider _collider;
 
     #region Initialization
 
@@ -65,13 +66,25 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         base.InitializeLocalReferencesAndValues();
         var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        collider.enabled = false;
-        collider.isTrigger = false;
-        (collider as SphereCollider).radius = Radius;
+        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+        _collider.enabled = false;
+        _collider.isTrigger = false;
+        _collider.radius = Radius;
 
         InitializeKeepoutZone();
         InitializeShipOrbitSlot();
     }
+    //protected override void InitializeLocalReferencesAndValues() {
+    //    base.InitializeLocalReferencesAndValues();
+    //    var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
+    //    Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+    //    collider.enabled = false;
+    //    collider.isTrigger = false;
+    //    (collider as SphereCollider).radius = Radius;
+
+    //    InitializeKeepoutZone();
+    //    InitializeShipOrbitSlot();
+    //}
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildrenOnly<SphereCollider>().Where(c => c.isTrigger).Single();
@@ -116,10 +129,16 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        collider.enabled = true;
+        _collider.enabled = true;
         PlaceParentOrbiterInMotion(true);
         CurrentState = PlanetoidState.Idling;
     }
+    //public override void CommenceOperations() {
+    //    base.CommenceOperations();
+    //    collider.enabled = true;
+    //    PlaceParentOrbiterInMotion(true);
+    //    CurrentState = PlanetoidState.Idling;
+    //}
 
     public PlanetoidReport GetUserReport() { return Publisher.GetUserReport(); }
 

@@ -268,9 +268,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <param name="position">The position.</param>
     /// <param name="rotation">The rotation.</param>
     /// <returns>A clone of original named [original.Name](Clone)</returns>
-    public T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : UnityEngine.Object {
-        return (T)UnityEngine.Object.Instantiate(original, position, rotation);
-    }
+    //public T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : UnityEngine.Object {
+    //    return (T)UnityEngine.Object.Instantiate(original, position, rotation);
+    //}
 
     /// <summary>
     /// Instantiates a clone of the original object at the original objects position and rotation.
@@ -278,9 +278,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <typeparam name="T">The Type of the original to be cloned.</typeparam>
     /// <param name="original">The original.</param>
     /// <returns>A clone of original named [original.Name](Clone)</returns>
-    public T Instantiate<T>(T original) where T : UnityEngine.Object {
-        return (T)UnityEngine.Object.Instantiate(original);
-    }
+    //public T Instantiate<T>(T original) where T : UnityEngine.Object {
+    //    return (T)UnityEngine.Object.Instantiate(original);
+    //}
 
     #endregion
 

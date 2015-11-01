@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0}.InitializePrimaryMesh({1}) called.", GetType().Name, elementItemGo.name);
             IHull hull = elementItemGo.GetSafeInterfaceInChildren<IHull>();
             var primaryMeshRenderer = hull.HullMesh.gameObject.GetComponent<MeshRenderer>();
-            primaryMeshRenderer.castShadows = true;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             return primaryMeshRenderer;
         }
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
                 // Mounts
                 _secondaryMeshRenderers.ForAll(r => {
                     D.Assert((Layers)r.gameObject.layer == CullingLayer);
-                    r.castShadows = true;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;   //r.castShadows = true;
                     r.receiveShadows = true;
                     r.enabled = false;
                 });

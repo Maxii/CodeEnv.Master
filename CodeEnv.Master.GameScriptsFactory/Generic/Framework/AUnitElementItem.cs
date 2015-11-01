@@ -55,6 +55,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     private DetectionHandler _detectionHandler;
     protected Collider _collider;
+    protected Rigidbody _rigidbody;
 
     #region Initialization
 
@@ -64,6 +65,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         _collider.isTrigger = false;
         _collider.enabled = false;
+        _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        _rigidbody.useGravity = false;
     }
 
     protected override void Subscribe() {

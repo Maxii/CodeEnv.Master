@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System.Collections;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
     using Vectrosity;
@@ -38,11 +39,17 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _lineWidth, value, "LineWidth", OnLineWidthChanged); }
         }
 
-        private Vector3[] _points;
-        public Vector3[] Points {
+        //private Vector3[] _points;
+        //public Vector3[] Points {
+        //    get { return _points; }
+        //    set { SetProperty<Vector3[]>(ref _points, value, "Points", OnPointsChanged); }
+        //}
+        private IList<Vector3> _points;
+        public IList<Vector3> Points {
             get { return _points; }
-            set { SetProperty<Vector3[]>(ref _points, value, "Points", OnPointsChanged); }
+            set { SetProperty<IList<Vector3>>(ref _points, value, "Points", OnPointsChanged); }
         }
+
 
         protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
         private LineType _lineType;
@@ -56,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="lineType">Type of the line.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public A3DVectrosityBase(string name, Vector3[] points, Transform target, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
+        public A3DVectrosityBase(string name, IList<Vector3> points, Transform target, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
             : base(name) {
             _points = points;
             _target = target;
@@ -64,15 +71,32 @@ namespace CodeEnv.Master.GameContent {
             _lineWidth = width;
             _color = color;
         }
+        //public A3DVectrosityBase(string name, Vector3[] points, Transform target, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
+        //    : base(name) {
+        //    _points = points;
+        //    _target = target;
+        //    _lineType = lineType;
+        //    _lineWidth = width;
+        //    _color = color;
+        //}
 
         protected override void Initialize() {
-            VectorLine.canvas3D.gameObject.layer = (int)Layers.TransparentFX;   // make the 3D canvas visible to the default 3D camera, aka mainCamera
+            //VectorLine.canvas3D.gameObject.layer = (int)Layers.TransparentFX;   // make the 3D canvas visible to the default 3D camera, aka mainCamera
 
-            _line = new VectorLine(LineName, _points, material, LineWidth, _lineType);
+            _line = new VectorLine(LineName, new List<Vector3>(Points), texture, LineWidth, _lineType);
             _line.color = Color.ToUnityColor(); // color removed from constructor in Vectrosity 4.0
+            _line.layer = (int)Layers.TransparentFX;
 
             if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
         }
+        //protected override void Initialize() {
+        //    VectorLine.canvas3D.gameObject.layer = (int)Layers.TransparentFX;   // make the 3D canvas visible to the default 3D camera, aka mainCamera
+
+        //    _line = new VectorLine(LineName, _points, material, LineWidth, _lineType);
+        //    _line.color = Color.ToUnityColor(); // color removed from constructor in Vectrosity 4.0
+
+        //    if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
+        //}
 
         /// <summary>
         /// Shows or hides a VectorLine that moves with the provided <c>target</c> if not null.

@@ -43,12 +43,10 @@
     <Reference Include="System.Core" />
     <Reference Include="System.XML" />
     <Reference Include="UnityEditor">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -267,10 +265,6 @@
     <ProjectReference Include="..\..\..\Plugins\SoundManagerPro\SoundManagerPro.csproj">
       <Project>{6150de6a-13ce-45c9-9254-1486a6bc6661}</Project>
       <Name>SoundManagerPro</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Plugins\SpaceD\SpaceD.csproj">
-      <Project>{d1d9e6da-d2ac-4cdc-b8a8-3b749d41ca5e}</Project>
-      <Name>SpaceD</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\Vectrosity\Vectrosity.csproj">
       <Project>{742472e2-310c-430c-a59b-1b527d852181}</Project>

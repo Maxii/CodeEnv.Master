@@ -99,7 +99,7 @@ namespace CodeEnv.Master.GameContent {
                     return _currentSpeedOnPause;
                 }
                 else {
-                    var speedInGameSpeedAdjustedUnitsPerSec = _rigidbody.velocity.magnitude;
+                    var speedInGameSpeedAdjustedUnitsPerSec = _shipRigidbody.velocity.magnitude;
                     var speedInUnitsPerHour = speedInGameSpeedAdjustedUnitsPerSec / _gameTime.GameSpeedAdjustedHoursPerSecond;
                     return speedInUnitsPerHour;
                 }
@@ -206,11 +206,13 @@ namespace CodeEnv.Master.GameContent {
         private IList<IDisposable> _subscriptions;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
+        private Rigidbody _shipRigidbody;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipData" /> class.
         /// </summary>
         /// <param name="shipTransform">The ship transform.</param>
+        /// <param name="shipRigidbody">The ship rigidbody.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="engineStat">The engine stat.</param>
         /// <param name="combatStance">The combat stance.</param>
@@ -219,9 +221,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public ShipData(Transform shipTransform, ShipHullEquipment hullEquipment, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
+        public ShipData(Transform shipTransform, Rigidbody shipRigidbody, ShipHullEquipment hullEquipment, EngineStat engineStat, ShipCombatStance combatStance, Player owner,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
             : base(shipTransform, hullEquipment, owner, activeCMs, sensors, passiveCMs, shieldGenerators) {
+            _shipRigidbody = shipRigidbody;
+            _shipRigidbody.mass = Mass;
+            // _shipRigidbody.drag gets set when Topography gets set/changed
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
@@ -271,7 +276,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void OnTopographyChanged() {
             base.OnTopographyChanged();
-            _rigidbody.drag = Drag * Topography.GetRelativeDensity();
+            _shipRigidbody.drag = Drag * Topography.GetRelativeDensity();
             RefreshFullSpeedValues();
         }
 
@@ -292,7 +297,7 @@ namespace CodeEnv.Master.GameContent {
             //FullStlSpeed = FullStlEnginePower / (Mass * _rigidbody.drag);
             //FullFtlSpeed = FullFtlEnginePower / (Mass * _rigidbody.drag);
             //FullSpeed = IsFtlOperational ? FullFtlSpeed : FullStlSpeed;
-            FullSpeed = IsFtlOperational ? FullFtlEnginePower / (Mass * _rigidbody.drag) : FullStlEnginePower / (Mass * _rigidbody.drag);
+            FullSpeed = IsFtlOperational ? FullFtlEnginePower / (Mass * _shipRigidbody.drag) : FullStlEnginePower / (Mass * _shipRigidbody.drag);
         }
 
         private void AssessIsFtlOperational() {

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
-            primaryMeshRenderer.castShadows = true;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
             return primaryMeshRenderer;

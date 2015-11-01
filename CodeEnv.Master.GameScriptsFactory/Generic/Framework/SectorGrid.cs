@@ -476,6 +476,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             _gridWireframe.Show(toShow);
         }
     }
+    //public void ShowSectorGrid(bool toShow) {
+    //    if (_gridWireframe == null) {
+    //        Vector3[] gridPoints;
+    //        if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
+    //            _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
+    //        }
+    //    }
+
+    //    if (_gridWireframe != null) {
+    //        _gridWireframe.Show(toShow);
+    //    }
+    //}
 
     protected override void Cleanup() {
         References.SectorGrid = null;

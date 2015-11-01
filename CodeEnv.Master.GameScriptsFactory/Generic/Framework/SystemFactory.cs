@@ -141,8 +141,9 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(planetStat.Category == planet.category,
             "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName()));
 
+        Rigidbody planetRigidbody = planet.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
-        planet.Data = new PlanetoidData(planet.Transform, planetStat, passiveCMs) {
+        planet.Data = new PlanetoidData(planet.transform, planetRigidbody, planetStat, passiveCMs) {
             ParentName = parentSystemName
         };
     }
@@ -179,8 +180,9 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(moonStat.Category == moon.category,
             "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName()));
 
+        Rigidbody moonRigidbody = moon.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
-        moon.Data = new PlanetoidData(moon.Transform, moonStat, passiveCMs) {
+        moon.Data = new PlanetoidData(moon.transform, moonRigidbody, moonStat, passiveCMs) {
             ParentName = parentPlanetName
         };
     }

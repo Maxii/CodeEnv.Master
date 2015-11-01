@@ -45,7 +45,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
                 Type thisType = typeof(T);
                 _instance = GameObject.FindObjectOfType(thisType) as T;
                 // value is required for the first time, so look for it                        
-                if (_instance == null && !Application.isLoadingLevel) {
+                if (_instance == null) { //if (_instance == null && !Application.isLoadingLevel) {
                     var stackFrame = new System.Diagnostics.StackTrace().GetFrame(2);
                     string callerIdMessage = "{0}.{1}().".Inject(stackFrame.GetMethod().DeclaringType, stackFrame.GetMethod().Name);
                     D.Error("No instance of {0} found. Is it destroyed/deactivated? Called by {1}.".Inject(thisType.Name, callerIdMessage));

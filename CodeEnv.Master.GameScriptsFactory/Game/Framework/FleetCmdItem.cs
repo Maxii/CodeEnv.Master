@@ -286,13 +286,22 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     protected internal override void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
         ShipItem ship = element as ShipItem;
-        if (ship.transform.rigidbody.isKinematic) { // if kinematic, this ship came directly from the FleetCreator so it needs to get its initial position
+
+        Rigidbody shipRigidbody = ship.transform.GetComponent<Rigidbody>();
+        if (shipRigidbody.isKinematic) {
+            // if kinematic, this ship came directly from the FleetCreator so it needs to get its initial position
             // instantly places the ship in its proper position before assigning it to a station so the station will find it 'onStation'
-            // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idle
-            base.PositionElementInFormation(element, stationOffset);
+            // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idlebase.PositionElementInFormation(element, stationOffset);
+            shipRigidbody.isKinematic = false;
             // as ships were temporarily set to be immune to physics in FleetUnitCreator. Now that they are properly positioned, change them back
-            ship.Transform.rigidbody.isKinematic = false;
         }
+        //if (ship.transform.rigidbody.isKinematic) { // if kinematic, this ship came directly from the FleetCreator so it needs to get its initial position
+        //    // instantly places the ship in its proper position before assigning it to a station so the station will find it 'onStation'
+        //    // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idle
+        //    base.PositionElementInFormation(element, stationOffset);
+        //    // as ships were temporarily set to be immune to physics in FleetUnitCreator. Now that they are properly positioned, change them back
+        //    ship.Transform.rigidbody.isKinematic = false;
+        //}
 
         FormationStationMonitor shipStation = ship.FormationStation;
         if (shipStation == null) {

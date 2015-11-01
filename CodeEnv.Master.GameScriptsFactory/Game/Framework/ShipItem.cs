@@ -90,7 +90,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     protected override void InitializeModelMembers() {
         base.InitializeModelMembers();
-        _helm = new ShipHelm(this);
+        _helm = new ShipHelm(this, _rigidbody);
         CurrentState = ShipState.None;
     }
 
@@ -1354,16 +1354,27 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// Initializes a new instance of the <see cref="ShipHelm" /> class.
         /// </summary>
         /// <param name="ship">The ship.</param>
-        internal ShipHelm(ShipItem ship)
+        /// <param name="shipRigidbody">The ship rigidbody.</param>
+        internal ShipHelm(ShipItem ship, Rigidbody shipRigidbody)
             : base() {
             _ship = ship;
-            _shipRigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(ship.gameObject);
-            _shipRigidbody.useGravity = false;
+            _shipRigidbody = shipRigidbody;
+            //_shipRigidbody.useGravity = false;
             _shipRigidbody.freezeRotation = true;
             _gameTime = GameTime.Instance;
-            _engineRoom = new EngineRoom(ship.Data, _shipRigidbody);
+            _engineRoom = new EngineRoom(ship.Data, shipRigidbody);
             Subscribe();
         }
+        //internal ShipHelm(ShipItem ship)
+        //    : base() {
+        //    _ship = ship;
+        //    _shipRigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(ship.gameObject);
+        //    _shipRigidbody.useGravity = false;
+        //    _shipRigidbody.freezeRotation = true;
+        //    _gameTime = GameTime.Instance;
+        //    _engineRoom = new EngineRoom(ship.Data, _shipRigidbody);
+        //    Subscribe();
+        //}
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
@@ -4790,20 +4801,43 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;
         D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
-            FullName, rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
+            FullName, _rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
     }
+    //private void __CompareVelocity() {
+    //    Vector3 currentPosition = _transform.position;
+    //    float distanceTraveled = Vector3.Distance(currentPosition, __lastPosition);
+    //    __lastPosition = currentPosition;
+
+    //    float currentTime = GameTime.Instance.GameInstanceTime;
+    //    float elapsedTime = currentTime - __lastTime;
+    //    __lastTime = currentTime;
+    //    float calcVelocity = distanceTraveled / elapsedTime;
+    //    D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
+    //        FullName, rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
+    //}
 
     private void __ReportCollision(Collision collision) {
         SphereCollider sphereCollider = collision.collider as SphereCollider;
         CapsuleCollider capsuleCollider = collision.collider as CapsuleCollider;
         string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((capsuleCollider != null) ? "radius = " + capsuleCollider.radius : "size = " + (collision.collider as BoxCollider).size.ToPreciseString());
         D.Warn("While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
-            CurrentState.GetValueName(), FullName, collision.collider.name, rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
+            CurrentState.GetValueName(), FullName, collision.collider.name, _rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
 
         //foreach (ContactPoint contact in collision.contacts) {
         //    Debug.DrawRay(contact.point, contact.normal, Color.white);
         //}
     }
+    //private void __ReportCollision(Collision collision) {
+    //    SphereCollider sphereCollider = collision.collider as SphereCollider;
+    //    CapsuleCollider capsuleCollider = collision.collider as CapsuleCollider;
+    //    string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((capsuleCollider != null) ? "radius = " + capsuleCollider.radius : "size = " + (collision.collider as BoxCollider).size.ToPreciseString());
+    //    D.Warn("While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
+    //        CurrentState.GetValueName(), FullName, collision.collider.name, rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
+
+    //    //foreach (ContactPoint contact in collision.contacts) {
+    //    //    Debug.DrawRay(contact.point, contact.normal, Color.white);
+    //    //}
+    //}
 
     #endregion
 

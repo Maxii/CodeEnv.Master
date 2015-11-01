@@ -17,7 +17,6 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections;
     using CodeEnv.Master.Common;
     using UnityEngine;
     using Vectrosity;
@@ -27,7 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AVectrosityBase : APropertyChangeTracking, IDisposable {
 
-        public Material material;
+        //public Material material;
+        public Texture texture;
 
         public bool IsShowing {
             get {

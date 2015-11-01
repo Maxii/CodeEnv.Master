@@ -45,6 +45,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
         /// <param name="facilityTransform">The facility transform.</param>
+        /// <param name="facilityRigidbody">The facility rigidbody.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="topography">The topography.</param>
         /// <param name="owner">The owner.</param>
@@ -52,9 +53,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public FacilityData(Transform facilityTransform, FacilityHullEquipment hullEquipment, Topography topography, Player owner,
+        public FacilityData(Transform facilityTransform, Rigidbody facilityRigidbody, FacilityHullEquipment hullEquipment, Topography topography, Player owner,
     IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
             : base(facilityTransform, hullEquipment, owner, activeCMs, sensors, passiveCMs, shieldGenerators) {
+            facilityRigidbody.mass = Mass;
             Topography = topography;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;

@@ -27,14 +27,17 @@ public class BoxColliderToFit : MonoBehaviour {
     [MenuItem("My Tools/Collider/Fit to Children")]
     public static void FitToChildren() {
         foreach (GameObject rootGameObject in Selection.gameObjects) {
-            if (!(rootGameObject.collider is BoxCollider))
+            BoxCollider boxCollider = rootGameObject.GetComponent<BoxCollider>();
+            if (boxCollider == null) {
+                // not a box collider
                 continue;
+            }
 
             bool hasBounds = false;
             Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
 
             for (int i = 0; i < rootGameObject.transform.childCount; ++i) {
-                Renderer childRenderer = rootGameObject.transform.GetChild(i).renderer;
+                Renderer childRenderer = rootGameObject.transform.GetChild(i).GetComponent<Renderer>();
                 if (childRenderer != null) {
                     if (hasBounds) {
                         bounds.Encapsulate(childRenderer.bounds);
@@ -46,11 +49,36 @@ public class BoxColliderToFit : MonoBehaviour {
                 }
             }
 
-            BoxCollider collider = (BoxCollider)rootGameObject.collider;
-            collider.center = bounds.center - rootGameObject.transform.position;
-            collider.size = bounds.size;
+            boxCollider.center = bounds.center - rootGameObject.transform.position;
+            boxCollider.size = bounds.size;
         }
     }
+    //public static void FitToChildren() {
+    //    foreach (GameObject rootGameObject in Selection.gameObjects) {
+    //        if (!(rootGameObject.collider is BoxCollider))
+    //            continue;
+
+    //        bool hasBounds = false;
+    //        Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+    //        for (int i = 0; i < rootGameObject.transform.childCount; ++i) {
+    //            Renderer childRenderer = rootGameObject.transform.GetChild(i).renderer;
+    //            if (childRenderer != null) {
+    //                if (hasBounds) {
+    //                    bounds.Encapsulate(childRenderer.bounds);
+    //                }
+    //                else {
+    //                    bounds = childRenderer.bounds;
+    //                    hasBounds = true;
+    //                }
+    //            }
+    //        }
+
+    //        BoxCollider collider = (BoxCollider)rootGameObject.collider;
+    //        collider.center = bounds.center - rootGameObject.transform.position;
+    //        collider.size = bounds.size;
+    //    }
+    //}
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

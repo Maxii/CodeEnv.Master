@@ -54,6 +54,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
+    private SphereCollider _collider;
 
     #region Initialization
 
@@ -62,13 +63,26 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         var primaryMeshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
         //D.Log("Star renderer name = {0}, bounds size = {1}.", primaryMeshRenderer.name, primaryMeshRenderer.bounds.size);
         Radius = primaryMeshRenderer.bounds.size.x / 2F;    // half of the length, width or height, all the same surrounding a sphere
-        collider.enabled = false;
-        collider.isTrigger = false;
-        (collider as SphereCollider).radius = Radius;
+        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+        _collider.enabled = false;
+        _collider.isTrigger = false;
+        _collider.radius = Radius;
         InitializeKeepoutZone();
         InitializeShipOrbitSlot();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
     }
+    //protected override void InitializeLocalReferencesAndValues() {
+    //    base.InitializeLocalReferencesAndValues();
+    //    var primaryMeshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
+    //    //D.Log("Star renderer name = {0}, bounds size = {1}.", primaryMeshRenderer.name, primaryMeshRenderer.bounds.size);
+    //    Radius = primaryMeshRenderer.bounds.size.x / 2F;    // half of the length, width or height, all the same surrounding a sphere
+    //    collider.enabled = false;
+    //    collider.isTrigger = false;
+    //    (collider as SphereCollider).radius = Radius;
+    //    InitializeKeepoutZone();
+    //    InitializeShipOrbitSlot();
+    //    //D.Log("{0}.Radius set to {1}.", FullName, Radius);
+    //}
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
@@ -123,8 +137,12 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        collider.enabled = true;
+        _collider.enabled = true;
     }
+    //public override void CommenceOperations() {
+    //    base.CommenceOperations();
+    //    collider.enabled = true;
+    //}
 
     public StarReport GetUserReport() { return Publisher.GetUserReport(); }
 

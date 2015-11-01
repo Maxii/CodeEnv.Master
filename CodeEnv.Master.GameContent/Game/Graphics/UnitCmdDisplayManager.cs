@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
             _currentPrimaryMeshRadius = primaryMeshRenderer.bounds.size.x / 2F;
-            primaryMeshRenderer.castShadows = false;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;    //primaryMeshRenderer.castShadows = false;
             primaryMeshRenderer.receiveShadows = false;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) != Layers.Default); // HACK    // layer automatically handles showing
             return primaryMeshRenderer;

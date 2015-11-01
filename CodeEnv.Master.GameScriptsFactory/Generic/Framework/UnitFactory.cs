@@ -191,7 +191,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design.SensorStats);
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
-        ShipData data = new ShipData(element.Transform, hullEquipment, design.EngineStat, design.CombatStance, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
+        Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
+
+        ShipData data = new ShipData(element.transform, elementRigidbody, hullEquipment, design.EngineStat, design.CombatStance, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
         element.Data = data;
     }
 
@@ -295,7 +297,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design.SensorStats);
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
-        FacilityData data = new FacilityData(element.Transform, hullEquipment, topography, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
+        Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
+
+        FacilityData data = new FacilityData(element.transform, elementRigidbody, hullEquipment, topography, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
         element.Data = data;
     }
 

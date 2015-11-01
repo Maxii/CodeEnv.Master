@@ -84,5 +84,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
     }
 
     #endregion
+
 }
 

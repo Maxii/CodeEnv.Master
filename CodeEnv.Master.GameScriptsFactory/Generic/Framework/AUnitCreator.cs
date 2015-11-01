@@ -23,6 +23,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Abstract, generic base class for Unit Creators.
@@ -607,8 +608,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             // (after element.Start() completes?), rigidbodies that are not kinematic (ships) are imparted with both linear and angular 
             // velocity from this intentional collision. This occurs before the elements are moved away from each other by being formed
             // into a formation. Accordingly, make the rigidbody kinematic here, then change the ships back when the formation is made.
-            element.transform.rigidbody.isKinematic = true;
-            element.transform.position = _transform.position;
+            var elementRigidbody = element.GetComponent<Rigidbody>();
+            elementRigidbody.isKinematic = true;    //element.transform.rigidbody.isKinematic = true;
+            element.transform.position = transform.position;
             elements.Add(element);
         }
         return elements;

@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
-            primaryMeshRenderer.castShadows = true;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.StarCull);    // layer automatically handles showing
             return primaryMeshRenderer;
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
 
             var glowRenderers = itemGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             glowRenderers.ForAll(gr => {
-                gr.castShadows = false;
+                gr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; //gr.castShadows = false;
                 gr.receiveShadows = false;
                 D.Assert((Layers)(gr.gameObject.layer) == Layers.StarCull); // layer automatically handles showing
                 gr.enabled = true;

@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected AHullEquipment HullEquipment { get; private set; }
 
-        protected Rigidbody _rigidbody;
+        //protected Rigidbody _rigidbody;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitElementItemData" /> class.
@@ -125,16 +125,12 @@ namespace CodeEnv.Master.GameContent {
         public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, Player owner, IEnumerable<ActiveCountermeasure> activeCMs,
             IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
             : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, passiveCMs) {
-            _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(elementTransform.gameObject);
-            Initialize(hullEquipment, activeCMs, sensors, passiveCMs, shieldGenerators);
-        }
-
-        private void Initialize(AHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
-            IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators) {
+            //_rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(elementTransform.gameObject);
+            //Initialize(hullEquipment, activeCMs, sensors, passiveCMs, shieldGenerators);
             HullEquipment = hullEquipment;
-            float mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
-            Mass = mass;
-            _rigidbody.mass = mass;
+            Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
+            //Mass = mass;
+            //_rigidbody.mass = mass;
 
             Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
 
@@ -143,6 +139,21 @@ namespace CodeEnv.Master.GameContent {
             Initialize(activeCMs);
             Initialize(shieldGenerators);
         }
+
+        //private void Initialize(AHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
+        //    IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators) {
+        //    HullEquipment = hullEquipment;
+        //    Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
+        //    //Mass = mass;
+        //    //_rigidbody.mass = mass;
+
+        //    Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
+
+        //    InitializeWeapons();
+        //    Initialize(sensors);
+        //    Initialize(activeCMs);
+        //    Initialize(shieldGenerators);
+        //}
 
         public override void CommenceOperations() {
             base.CommenceOperations();

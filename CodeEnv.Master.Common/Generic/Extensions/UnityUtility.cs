@@ -102,19 +102,20 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Gets the rendering bounds of the transform including any children.
         /// </summary>
-        /// <param name="transform">The game object to get the bounding box for.</param>
+        /// <param name="t">The Transform to get the bounding box for.</param>
         /// <param name="providedBounds">The provided bounding box that will be adjusted to encapsulate the transform and its children.</param>
         /// <param name="toEncapsulate">Used to determine if the bounds of the provided bounding box should affect the resulting bounding box.
         /// WARNING: this value can be changed by the method, so if iterating with this method, make sure it is reset to the value desired each time the
         /// method is used. </param>
         /// <returns>Returns true if at least one bounding box was calculated.</returns>
-        public static bool GetBoundWithChildren(Transform transform, ref Bounds providedBounds, ref bool toEncapsulate) {
+        public static bool GetBoundWithChildren(Transform t, ref Bounds providedBounds, ref bool toEncapsulate) {
             var bound = new Bounds();
             var didOne = false;
 
             // get 'this' bound
-            if (transform.gameObject.renderer != null) {
-                bound = transform.gameObject.renderer.bounds;
+            var renderer = t.GetComponent<Renderer>();
+            if (renderer != null) {                     //if (t.gameObject.renderer != null) {
+                bound = renderer.bounds;                // bound = t.gameObject.renderer.bounds;
                 if (toEncapsulate) {
                     providedBounds.Encapsulate(bound.min);
                     providedBounds.Encapsulate(bound.max);
@@ -129,7 +130,7 @@ namespace CodeEnv.Master.Common {
             }
 
             // union with bound(s) of any/all children
-            foreach (Transform child in transform) {
+            foreach (Transform child in t) {
                 if (GetBoundWithChildren(child, ref providedBounds, ref toEncapsulate)) {
                     didOne = true;
                 }

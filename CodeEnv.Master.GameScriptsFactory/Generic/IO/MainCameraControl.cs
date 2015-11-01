@@ -363,11 +363,29 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
         }
         else {
-            universeEdge = NGUITools.AddChild(UniverseFolder.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
+            universeEdge = UnityUtility.AddChild(UniverseFolder.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
         }
-        (universeEdge.collider as SphereCollider).radius = _universeRadius;
+        SphereCollider universeEdgeCollider = UnityUtility.ValidateComponentPresence<SphereCollider>(universeEdge.gameObject);
+        universeEdgeCollider.radius = _universeRadius;
         universeEdge.layer = (int)Layers.UniverseEdge;
     }
+    //private void CreateUniverseEdge() {
+    //    GameObject universeEdge = null;
+    //    SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.universeEdge;
+    //    if (universeEdgePrefab == null) {
+    //        D.Warn("UniverseEdgePrefab on RequiredPrefabs is null.");
+    //        string universeEdgeName = Layers.UniverseEdge.GetValueName();
+    //        universeEdge = new GameObject(universeEdgeName);
+    //        universeEdge.AddComponent<SphereCollider>();
+    //        universeEdge.isStatic = true;
+    //        UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
+    //    }
+    //    else {
+    //        universeEdge = NGUITools.AddChild(UniverseFolder.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
+    //    }
+    //    (universeEdge.collider as SphereCollider).radius = _universeRadius;
+    //    universeEdge.layer = (int)Layers.UniverseEdge;
+    //}
 
     private void CreateDummyTarget() {
         Transform dummyTargetPrefab = RequiredPrefabs.Instance.cameraDummyTarget;
@@ -381,7 +399,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             UnityUtility.AttachChildToParent(dummyTarget, DynamicObjectsFolder.Instance.Folder.gameObject);
         }
         else {
-            dummyTarget = NGUITools.AddChild(DynamicObjectsFolder.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
+            dummyTarget = UnityUtility.AddChild(DynamicObjectsFolder.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
         }
         dummyTarget.layer = (int)Layers.DummyTarget;
         _dummyTarget = dummyTarget.transform;
@@ -393,13 +411,22 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// DummyTarget positioned directly ahead. 
     /// </summary>
     private void ResetAtCurrentLocation() {
-        _dummyTarget.collider.enabled = false;
+        SphereCollider dummyTargetCollider = _dummyTarget.GetComponent<SphereCollider>();
+        dummyTargetCollider.enabled = false;
         // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
-        PlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
-        _dummyTarget.collider.enabled = true;
+        PlaceDummyTargetAtUniverseEdgeInDirection(transform.forward);
+        dummyTargetCollider.enabled = true;
         SyncRotation();
         CurrentState = CameraState.Freeform;
     }
+    //private void ResetAtCurrentLocation() {
+    //    _dummyTarget.collider.enabled = false;
+    //    // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
+    //    PlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
+    //    _dummyTarget.collider.enabled = true;
+    //    SyncRotation();
+    //    CurrentState = CameraState.Freeform;
+    //}
 
     private void SyncRotation() {
         Quaternion startingRotation = _transform.rotation;
@@ -1374,13 +1401,25 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void LockCursor(bool toLockCursor) {
-        if (toLockCursor && !Screen.lockCursor) {
-            Screen.lockCursor = true;   // cursor disappears
+        if (toLockCursor) {
+            // cursor locked to center of screen and disappears
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false; 
         }
-        else if (Screen.lockCursor && !toLockCursor) {
-            Screen.lockCursor = false;  // cursor reappears in the center of the screen
+        else {
+            // cursor reappears in the center of the screen
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;  
         }
     }
+    //private void LockCursor(bool toLockCursor) {
+    //    if (toLockCursor && !Screen.lockCursor) {
+    //        Screen.lockCursor = true;   // cursor disappears
+    //    }
+    //    else if (Screen.lockCursor && !toLockCursor) {
+    //        Screen.lockCursor = false;  // cursor reappears in the center of the screen
+    //    }
+    //}
 
     private void ProcessChanges(float deltaTime) {
         _transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);

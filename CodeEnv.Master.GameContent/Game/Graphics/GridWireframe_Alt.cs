@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GridWireframe_Alt.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Generates an entire Grid of Sectors as a Wireframe.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,7 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
     using Vectrosity;
@@ -58,10 +58,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private VectorLine _line;
-        private Vector3[] _points;
+        //private Vector3[] _points;
+        private IList<Vector3> _points;
         private Visibility _visibility;
 
-        public GridWireframe_Alt(string name, Transform target, Vector3[] points, Visibility visibility = Visibility.Always, float width = 1F, GameColor color = GameColor.Gray) {
+        public GridWireframe_Alt(string name, Transform target, IList<Vector3> points, Visibility visibility = Visibility.Always, float width = 1F, GameColor color = GameColor.Gray) {
             _lineName = name;
             _target = target;
             _points = points;
@@ -69,18 +70,26 @@ namespace CodeEnv.Master.GameContent {
             _lineWidth = width;
             _color = color;
         }
+        //public GridWireframe_Alt(string name, Transform target, Vector3[] points, Visibility visibility = Visibility.Always, float width = 1F, GameColor color = GameColor.Gray) {
+        //    _lineName = name;
+        //    _target = target;
+        //    _points = points;
+        //    _visibility = visibility;
+        //    _lineWidth = width;
+        //    _color = color;
+        //}
 
         public void Show(bool toShow) {
             if (!toShow && _line == null) {
                 return;
             }
             if (_line == null) {
-                _line = new VectorLine(LineName, _points, null, LineWidth);
+                _line = new VectorLine(LineName, new List<Vector3>(_points), null, LineWidth);
                 _line.color = Color.ToUnityColor(); // color removed from constructor by Vectrosity 4.0
 
                 VectorManager.useDraw3D = true;
                 VectorManager.ObjectSetup(_target.gameObject, _line, _visibility, Brightness.Fog);
-                VectorManager.SetBrightnessParameters(5000F, 250f, 32, .2F, GameColor.Clear.ToUnityColor());
+                VectorManager.SetBrightnessParameters(5000F, 250F, 32, .2F, GameColor.Clear.ToUnityColor());
                 // NOTE: Using makeBounds: false means this CubeWireframe object does not automatically gain a renderer and invisible mesh. This renderer 
                 // and mesh enables OnBecameVisible/Invisible which overrides the line.active on/off commands I use to show/not show the line. There is another
                 // alternative to retain control: destroy this SectorWireframe gameobject each time I turn the line off (and then rebuild it of course). Destroying 
@@ -89,6 +98,25 @@ namespace CodeEnv.Master.GameContent {
             _line.active = toShow;
             D.Log("{0} line.active = {1}.", this.GetType().Name, toShow);
         }
+        //public void Show(bool toShow) {
+        //    if (!toShow && _line == null) {
+        //        return;
+        //    }
+        //    if (_line == null) {
+        //        _line = new VectorLine(LineName, _points, null, LineWidth);
+        //        _line.color = Color.ToUnityColor(); // color removed from constructor by Vectrosity 4.0
+
+        //        VectorManager.useDraw3D = true;
+        //        VectorManager.ObjectSetup(_target.gameObject, _line, _visibility, Brightness.Fog);
+        //        VectorManager.SetBrightnessParameters(5000F, 250f, 32, .2F, GameColor.Clear.ToUnityColor());
+        //        // NOTE: Using makeBounds: false means this CubeWireframe object does not automatically gain a renderer and invisible mesh. This renderer 
+        //        // and mesh enables OnBecameVisible/Invisible which overrides the line.active on/off commands I use to show/not show the line. There is another
+        //        // alternative to retain control: destroy this SectorWireframe gameobject each time I turn the line off (and then rebuild it of course). Destroying 
+        //        // the VectorLine itself when using VectorManager.ObjectSetup will result in an error.
+        //    }
+        //    _line.active = toShow;
+        //    D.Log("{0} line.active = {1}.", this.GetType().Name, toShow);
+        //}
 
         private void OnColorChanged() {
             if (_line != null) {

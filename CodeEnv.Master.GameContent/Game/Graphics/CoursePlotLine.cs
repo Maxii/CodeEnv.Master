@@ -48,9 +48,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="lineWidth">Width of the line.</param>
         /// <param name="color">The color of the line. Default is Gray.</param>
         public CoursePlotLine(string name, IList<INavigableTarget> course, float lineWidth, GameColor color = GameColor.Gray)
-            : base(name, course.Select(wayPt => wayPt.Position).ToArray(), null, LineType.Continuous, lineWidth, color) {
+            : base(name, course.Select(wayPt => wayPt.Position).ToList(), null, LineType.Continuous, lineWidth, color) {
             _course = new List<INavigableTarget>(course);   // must be copied
         }
+        //public CoursePlotLine(string name, IList<INavigableTarget> course, float lineWidth, GameColor color = GameColor.Gray)
+        //    : base(name, course.Select(wayPt => wayPt.Position).ToArray(), null, LineType.Continuous, lineWidth, color) {
+        //    _course = new List<INavigableTarget>(course);   // must be copied
+        //}
 
         /// <summary>
         /// Updates the course. 
@@ -60,8 +64,13 @@ namespace CodeEnv.Master.GameContent {
         public void UpdateCourse(IList<INavigableTarget> course) {
             // copied. Otherwise changes to the original immediately show up in _course without using UpdateCourse()
             _course = new List<INavigableTarget>(course);
-            Points = course.Select(wayPt => wayPt.Position).ToArray();   // updating Points will update _line.points3[]
+            Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3[]
         }
+        //public void UpdateCourse(IList<INavigableTarget> course) {
+        //    // copied. Otherwise changes to the original immediately show up in _course without using UpdateCourse()
+        //    _course = new List<INavigableTarget>(course);
+        //    Points = course.Select(wayPt => wayPt.Position).ToArray();   // updating Points will update _line.points3[]
+        //}
 
         protected override void Draw3D() {
             for (int i = 0; i < _course.Count; i++) {

@@ -42,8 +42,7 @@
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEngine">
-      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -53,7 +52,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="CombatResult.cs" />
+    <Compile Include="Generic\_Debug\CombatResult.cs" />
     <Compile Include="Generic\IO\AWeaponStat.cs" />
     <Compile Include="Generic\IO\BeamWeaponStat.cs" />
     <Compile Include="Generic\Framework\CountermeasureFiringSolution.cs" />
@@ -295,9 +294,9 @@
     <Compile Include="Generic\IO\AProjectileWeaponStat.cs" />
     <Compile Include="Generic\Framework\ITopographyChangeListener.cs" />
     <Compile Include="Generic\Extensions\OrderSourceExtensions.cs" />
-    <Compile Include="MissileWeaponStat.cs" />
-    <Compile Include="PlayersKnowledge.cs" />
-    <Compile Include="ProjectileWeaponStat.cs" />
+    <Compile Include="Generic\IO\MissileWeaponStat.cs" />
+    <Compile Include="Game\Gameplay\PlayersKnowledge.cs" />
+    <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />

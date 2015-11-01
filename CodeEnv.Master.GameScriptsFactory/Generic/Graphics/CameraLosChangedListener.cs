@@ -51,10 +51,11 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     protected override void Start() {
         base.Start();
-        if (renderer != null) {
-            renderer.enabled = true;    // renderers usually start enabled. This is to make sure as renderers do not deliver OnBecameVisible() events if not enabled
+        var meshRenderer = GetComponent<MeshRenderer>();
+        if (meshRenderer != null) {
+            meshRenderer.enabled = true;    // renderers usually start enabled. This is to make sure as renderers do not deliver OnBecameVisible() events if not enabled
 
-            if (!renderer.isVisible) {
+            if (!meshRenderer.isVisible) {
                 // all subscribers begin with InCameraLOS = true, aka they think they are in the camera's line of sight. When the renderer first wakes up,
                 // it sends OnBecameInvisible if it is not visible. If this occurs before this listener is enabled, the listener's subscribers will not receive
                 // the notification. This makes sure the notification is repeated when this listener becomes enabled. It is not needed when 
@@ -66,6 +67,23 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             InitializeInvisibleMesh();
         }
     }
+    //protected override void Start() {
+    //    base.Start();
+    //    if (renderer != null) {
+    //        renderer.enabled = true;    // renderers usually start enabled. This is to make sure as renderers do not deliver OnBecameVisible() events if not enabled
+
+    //        if (!renderer.isVisible) {
+    //            // all subscribers begin with InCameraLOS = true, aka they think they are in the camera's line of sight. When the renderer first wakes up,
+    //            // it sends OnBecameInvisible if it is not visible. If this occurs before this listener is enabled, the listener's subscribers will not receive
+    //            // the notification. This makes sure the notification is repeated when this listener becomes enabled. It is not needed when 
+    //            // using an invisible mesh as the newly installed invisible mesh renderer will immediately notify subscribers of its inCameraLOS state.
+    //            OnBecameInvisible();
+    //        }
+    //    }
+    //    else {
+    //        InitializeInvisibleMesh();
+    //    }
+    //}
 
     void OnBecameVisible() {
         if (enabled) {
@@ -84,7 +102,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     }
 
     void OnBecameInvisible() {
-        if (IsApplicationQuiting || Application.isLoadingLevel) { return; }  // OnBecameInvisible called if already visible when application is quiting
+        //if (IsApplicationQuiting || Application.isLoadingLevel) { return; }  // OnBecameInvisible called if already visible when application is quiting
+        if (IsApplicationQuiting || GameManager.Instance.IsSceneLoading) { return; }  // OnBecameInvisible called if already visible when application is quiting
         if (enabled) {
             //D.LogContext("{0}.{1} has received OnBecameInvisible().".Inject(_transform.name, GetType().Name), this);
             if (onCameraLosChanged != null) {
@@ -120,7 +139,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         _meshFilter = gameObject.AddMissingComponent<MeshFilter>();
 
         var meshRenderer = gameObject.AddMissingComponent<MeshRenderer>();
-        meshRenderer.castShadows = false;
+        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   //meshRenderer.castShadows = false;
         meshRenderer.receiveShadows = false;
         meshRenderer.enabled = true;    // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
 

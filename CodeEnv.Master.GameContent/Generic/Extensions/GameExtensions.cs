@@ -230,7 +230,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private static Color _teal = new Color(0F, 0.5F, 0.5F, 1F);
 
-        public static Color ToUnityColor(this GameColor color) {
+        public static Color ToUnityColor(this GameColor color) {    // OPTIMIZE use Color32 
             switch (color) {
                 case GameColor.Black:
                     return Color.black;

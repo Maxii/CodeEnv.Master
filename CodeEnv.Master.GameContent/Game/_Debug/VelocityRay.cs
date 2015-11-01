@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
     using Vectrosity;
@@ -36,9 +37,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public VelocityRay(string name, Transform target, Reference<float> speed, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new Vector3[2], target, LineType.Discrete, width, color) {
+            : base(name, new List<Vector3>(2), target, LineType.Discrete, width, color) {
             _speed = speed;
         }
+        //public VelocityRay(string name, Transform target, Reference<float> speed, float width = 1F, GameColor color = GameColor.White)
+        //    : base(name, new Vector3[2], target, LineType.Discrete, width, color) {
+        //    _speed = speed;
+        //}
 
         public override void Show(bool toShow) {
             base.Show(toShow);
