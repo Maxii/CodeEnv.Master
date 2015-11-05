@@ -85,7 +85,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public FleetCmdItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _fleetCmdPrefab);
-        var cmd = cmdGo.GetSafeMonoBehaviour<FleetCmdItem>();
+        var cmd = cmdGo.GetSafeComponent<FleetCmdItem>();
         MakeInstance(cmdStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
@@ -100,7 +100,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref FleetCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new FleetCmdData(item.Transform, cmdStat, owner, passiveCMs);
+        item.Data = new FleetCmdData(item.transform, cmdStat, owner, passiveCMs);
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
         hullGoClone.layer = (int)Layers.ShipCull;   // hull layer gets set to item layer by AddChild
 
-        ShipItem element = elementGoClone.GetSafeMonoBehaviour<ShipItem>();
+        ShipItem element = elementGoClone.GetSafeComponent<ShipItem>();
         PopulateInstance(owner, design, ref element);
         return element;
     }
@@ -172,7 +172,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     public void PopulateInstance(Player owner, ShipDesign design, ref ShipItem element) {
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
-        ShipHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<ShipHull>();
+        ShipHull hull = element.gameObject.GetSingleComponentInChildren<ShipHull>();
         var hullCategory = design.HullCategory;
         D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
         ShipHullEquipment hullEquipment = new ShipHullEquipment(design.HullStat);
@@ -206,7 +206,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public StarbaseCmdItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _starbaseCmdPrefab);
-        StarbaseCmdItem cmd = cmdGo.GetSafeMonoBehaviour<StarbaseCmdItem>();
+        StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
         PopulateInstance(cmdStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
@@ -221,7 +221,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new StarbaseCmdData(item.Transform, cmdStat, owner, passiveCMs);
+        item.Data = new StarbaseCmdData(item.transform, cmdStat, owner, passiveCMs);
     }
 
     /// <summary>
@@ -233,7 +233,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _settlementCmdPrefab);
-        SettlementCmdItem cmd = cmdGo.GetSafeMonoBehaviour<SettlementCmdItem>();
+        SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
         PopulateInstance(cmdStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
@@ -248,7 +248,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new SettlementCmdData(item.Transform, cmdStat, owner, passiveCMs) {
+        item.Data = new SettlementCmdData(item.transform, cmdStat, owner, passiveCMs) {
             Approval = UnityEngine.Random.Range(.01F, 1.0F)
         };
     }
@@ -266,7 +266,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
         hullGoClone.layer = (int)Layers.FacilityCull;   // hull layer gets set to item layer by AddChild
 
-        FacilityItem element = elementGoClone.GetSafeMonoBehaviour<FacilityItem>();
+        FacilityItem element = elementGoClone.GetSafeComponent<FacilityItem>();
         PopulateInstance(owner, topography, design, ref element);
         return element;
     }
@@ -278,7 +278,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     public void PopulateInstance(Player owner, Topography topography, FacilityDesign design, ref FacilityItem element) {
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
-        FacilityHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<FacilityHull>();
+        FacilityHull hull = element.gameObject.GetSingleComponentInChildren<FacilityHull>();
         var hullCategory = design.HullCategory;
         D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
         FacilityHullEquipment hullEquipment = new FacilityHullEquipment(design.HullStat);
@@ -317,7 +317,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
 
         GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, _formationStationPrefab);
-        FormationStationMonitor station = stationGo.GetSafeMonoBehaviour<FormationStationMonitor>();
+        FormationStationMonitor station = stationGo.GetSafeComponent<FormationStationMonitor>();
         station.ParentItem = fleetCmd;
         station.StationOffset = stationOffset;
         //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
@@ -435,7 +435,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject shieldGo = UnityUtility.AddChild(element.gameObject, _shieldPrefab);
                 shieldGo.layer = (int)Layers.Shields;  // AddChild resets prefab layer to elementGo's layer
-                shield = shieldGo.GetSafeFirstMonoBehaviourInChildren<Shield>();
+                shield = shieldGo.GetSafeComponent<Shield>();
             }
             shield.ParentItem = element;
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(Shield).Name, generator.Name);
@@ -464,7 +464,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeFirstMonoBehaviourInChildren<WeaponRangeMonitor>();
+                monitor = monitorGo.GetSafeComponent<WeaponRangeMonitor>();
             }
             monitor.ParentItem = element;
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
@@ -484,11 +484,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AWeaponMount weaponMountPrefab;
         var losWeapon = weapon as ALOSWeapon;
         if (losWeapon != null) {
-            mountPlaceholder = hull.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
             weaponMountPrefab = _losTurretPrefab;
         }
         else {
-            mountPlaceholder = hull.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
             weaponMountPrefab = _missileTubePrefab;
         }
         D.Assert(weaponMountPrefab.SlotID == MountSlotID.None); // mount prefabs won't yet have a slotID
@@ -504,7 +504,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         Layers hullMeshLayer = (Layers)hull.HullMesh.gameObject.layer;
         UnityUtility.SetLayerRecursively(mountTransform, hullMeshLayer);
 
-        AWeaponMount weaponMount = mountGo.GetSafeMonoBehaviour<AWeaponMount>();
+        AWeaponMount weaponMount = mountGo.GetSafeComponent<AWeaponMount>();
         weaponMount.SlotID = mountSlotID;
         if (losWeapon != null) {
             // LOS weapon
@@ -537,7 +537,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _countermeasureRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeFirstMonoBehaviourInChildren<ActiveCountermeasureRangeMonitor>();
+                monitor = monitorGo.GetSafeComponent<ActiveCountermeasureRangeMonitor>();
             }
             monitor.ParentItem = element;
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
@@ -557,8 +557,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         ShipHull hullPrefab = _shipHullPrefabs.Single(h => h.HullCategory == hullCategory);
         // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
         GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
-        var missileMountPlaceholders = tempHullGo.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
-        var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
+        var missileMountPlaceholders = tempHullGo.GetSafeComponentsInChildren<MissileMountPlaceholder>().ToList();
+        var losMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().ToList();
 
         MountSlotID placeholderSlotID;
         foreach (var stat in weapStats) {
@@ -579,33 +579,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
-    //public IEnumerable<WeaponDesign> __MakeWeaponDesigns(ShipHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
-    //    IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
-    //    ShipHull hullPrefab = _shipHullPrefabs.Single(h => h.HullCategory == hullCategory);
-    //    // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
-    //    GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
-    //    var missileMountPlaceholders = tempHullGo.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
-    //    var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
-
-    //    MountSlotID placeholderSlotID;
-    //    foreach (var stat in weapStats) {
-    //        if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
-    //            var placeholder = RandomExtended.Choice(missileMountPlaceholders);
-    //            placeholderSlotID = placeholder.slotID;
-    //            missileMountPlaceholders.Remove(placeholder);
-    //        }
-    //        else {
-    //            // LOSWeapon
-    //            var placeholder = RandomExtended.Choice(losMountPlaceholders);
-    //            placeholderSlotID = placeholder.slotID;
-    //            losMountPlaceholders.Remove(placeholder);
-    //        }
-    //        var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
-    //        weapDesigns.Add(weaponDesign);
-    //    }
-    //    UnityUtility.Destroy(tempHullGo);
-    //    return weapDesigns;
-    //}
 
     /// <summary>
     ///Temporary method for making WeaponDesigns. Randomly picks a mountPlaceholder from the hull and creates a PlayerWeaponDesign using the stat and
@@ -619,8 +592,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         FacilityHull hullPrefab = _facilityHullPrefabs.Single(h => h.HullCategory == hullCategory);
         // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
         GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
-        var missileMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
-        var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
+        var missileMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().ToList();
+        var losMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().ToList();
 
         MountSlotID placeholderSlotID;
         foreach (var stat in weapStats) {
@@ -641,33 +614,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
-    //public IEnumerable<WeaponDesign> __MakeWeaponDesigns(FacilityHullCategory hullCategory, IEnumerable<WeaponStat> weapStats) {
-    //    IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
-    //    FacilityHull hullPrefab = _facilityHullPrefabs.Single(h => h.HullCategory == hullCategory);
-    //    // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
-    //    GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
-    //    var missileMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<MissileMountPlaceholder>().ToList();
-    //    var losMountPlaceholders = tempHullGo.gameObject.GetSafeMonoBehavioursInChildren<LOSMountPlaceholder>().ToList();
-
-    //    MountSlotID placeholderSlotID;
-    //    foreach (var stat in weapStats) {
-    //        if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
-    //            var placeholder = RandomExtended.Choice(missileMountPlaceholders);
-    //            placeholderSlotID = placeholder.slotID;
-    //            missileMountPlaceholders.Remove(placeholder);
-    //        }
-    //        else {
-    //            // LOSWeapon
-    //            var placeholder = RandomExtended.Choice(losMountPlaceholders);
-    //            placeholderSlotID = placeholder.slotID;
-    //            losMountPlaceholders.Remove(placeholder);
-    //        }
-    //        var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
-    //        weapDesigns.Add(weaponDesign);
-    //    }
-    //    UnityUtility.Destroy(tempHullGo);
-    //    return weapDesigns;
-    //}
 
     /// <summary>
     /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.
@@ -690,7 +636,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeFirstMonoBehaviourInChildren<SensorRangeMonitor>();
+                monitor = monitorGo.GetSafeComponent<SensorRangeMonitor>();
             }
             monitor.ParentItem = command;
             //D.Log("{0} has had a {1} chosen for {2}.", command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);

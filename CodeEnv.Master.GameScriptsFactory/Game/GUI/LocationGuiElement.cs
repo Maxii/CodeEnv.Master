@@ -58,7 +58,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     protected override void Awake() {
         base.Awake();
-        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     private void OnSectorIndexChanged() {

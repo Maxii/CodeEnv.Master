@@ -86,9 +86,13 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
         base.InitializeViewMembersWhenFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
+        __InitializeOrbitalPlaneMeshCollider();
+    }
 
+    private void __InitializeOrbitalPlaneMeshCollider() {
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
         _orbitalPlaneCollider.isTrigger = true;
+        _orbitalPlaneCollider.convex = true;
         _orbitalPlaneCollider.enabled = true;
     }
 

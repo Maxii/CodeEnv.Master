@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float MinimumCameraViewingDistance { get; }
 
-        Transform Transform { get; }
+        Transform transform { get; }
 
     }
 }

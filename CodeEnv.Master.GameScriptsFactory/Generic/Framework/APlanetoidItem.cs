@@ -64,7 +64,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
+        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.enabled = false;
@@ -74,20 +74,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         InitializeKeepoutZone();
         InitializeShipOrbitSlot();
     }
-    //protected override void InitializeLocalReferencesAndValues() {
-    //    base.InitializeLocalReferencesAndValues();
-    //    var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
-    //    Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-    //    collider.enabled = false;
-    //    collider.isTrigger = false;
-    //    (collider as SphereCollider).radius = Radius;
-
-    //    InitializeKeepoutZone();
-    //    InitializeShipOrbitSlot();
-    //}
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildrenOnly<SphereCollider>().Where(c => c.isTrigger).Single();
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -111,8 +100,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         base.InitializeViewMembersWhenFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
 
-        float orbitalRadius = _transform.localPosition.magnitude;
-        Data.OrbitalSpeed = gameObject.GetSafeFirstMonoBehaviourInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
+        float orbitalRadius = transform.localPosition.magnitude;
+        // moons will have 2 OrbitSimulators as parents, 1 for the moon and 1 for the planet        
+        Data.OrbitalSpeed = gameObject.GetSafeFirstComponentInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -133,12 +123,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         PlaceParentOrbiterInMotion(true);
         CurrentState = PlanetoidState.Idling;
     }
-    //public override void CommenceOperations() {
-    //    base.CommenceOperations();
-    //    collider.enabled = true;
-    //    PlaceParentOrbiterInMotion(true);
-    //    CurrentState = PlanetoidState.Idling;
-    //}
 
     public PlanetoidReport GetUserReport() { return Publisher.GetUserReport(); }
 
@@ -160,7 +144,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     private void PlaceParentOrbiterInMotion(bool toOrbit) {
-        _transform.parent.GetInterface<IOrbitSimulator>().IsActive = toOrbit;
+        transform.parent.GetComponent<IOrbitSimulator>().IsActive = toOrbit;
     }
 
     protected override void OnOwnerChanging(Player newOwner) {

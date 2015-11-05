@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
     /// UnitySession - In a standalone player, a session starts when the player starts. 
     /// In the editor, a session starts when the Editor Play button is pushed.
     /// </remarks>
-    [SerializeAll]
+    //[SerializeAll]
     public class GameTime : AGenericSingleton<GameTime>, IDisposable {
 
         #region Static Constants
@@ -362,6 +362,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region IDisposable
+
         private bool alreadyDisposed = false;
 
         /// <summary>

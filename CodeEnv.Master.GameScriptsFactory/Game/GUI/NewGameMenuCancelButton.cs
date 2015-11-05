@@ -30,9 +30,8 @@ public class NewGameMenuCancelButton : MenuCancelButton {
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        var newGameWindow = gameObject.GetSafeFirstMonoBehaviourInParents<GuiWindow>();
-        _playerColorMgr = newGameWindow.gameObject.GetSafeFirstMonoBehaviourInChildren<PlayerColorManager>();
-        // moved PlayerColorManager to Players Container    //_playerColorMgr = gameObject.GetSafeMonoBehaviourInParents<PlayerColorManager>();
+        var newGameWindow = gameObject.GetSingleComponentInParents<GuiWindow>();
+        _playerColorMgr = newGameWindow.gameObject.GetSingleComponentInChildren<PlayerColorManager>();  // moved PlayerColorManager to Players Container    
     }
 
     protected override void SubscribeToParentWindowToCaptureMenuState() {

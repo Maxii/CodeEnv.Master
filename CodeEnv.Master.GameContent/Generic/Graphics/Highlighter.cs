@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="highlightableObject">The highlightable object.</param>
         public Highlighter(IHighlightable highlightableObject)
-            : this(highlightableObject, highlightableObject.Transform, true) { }
+            : this(highlightableObject, highlightableObject.transform, true) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Highlighter"/> class. This version highlights
@@ -70,8 +70,8 @@ namespace CodeEnv.Master.GameContent {
                 float innerCircleRadius = _highlightableObject.HighlightRadius;
                 D.Assert(_trackedTransform != null, "{0} _trackedTransform is null.".Inject(circlesTitle));
                 _circles = new HighlightCircle(circlesTitle, _trackedTransform, innerCircleRadius, _shouldHighlightSizeOnScreenChange, maxCircles: 3);
-                _circles.Colors = new GameColor[3] { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };
-                _circles.Widths = new float[3] { 2F, 2F, 1F };
+                _circles.Colors = new List<GameColor>() { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };
+                _circles.Widths = new List<float>() { 2F, 2F, 1F };
             }
             _circles.Show(true, GetCircleIndex(id));
         }
@@ -138,7 +138,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         #region IDisposable
-        [DoNotSerialize]
+
         private bool _alreadyDisposed = false;
         protected bool _isDisposing = false;
 

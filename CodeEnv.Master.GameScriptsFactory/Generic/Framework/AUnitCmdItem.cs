@@ -92,7 +92,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     protected override void InitializeModelMembers() {
         // the only collider is for player interaction with the item's CmdIcon
-        UnitContainer = _transform.parent;
+        UnitContainer = transform.parent;
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -205,7 +205,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
 
             if (!isRangeMonitorStillInUse) {
-                //monitor.ResetForReuse();
                 monitor.Reset();
                 SensorRangeMonitors.Remove(monitor);
                 //D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
@@ -299,7 +298,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     protected internal virtual void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
-        element.Transform.position = HQElement.Position + stationOffset;
+        element.transform.position = HQElement.Position + stationOffset;
         //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
         //element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);
     }

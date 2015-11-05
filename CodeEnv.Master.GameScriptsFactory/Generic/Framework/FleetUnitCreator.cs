@@ -24,13 +24,13 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using MoreLinq;
 
 /// <summary>
 /// Initialization class that deploys a fleet at the location of this FleetCreator. The fleet
 /// deployed will simply be initialized if already present in the scene. If it is not present, then
 /// it will be built and then initialized.
 /// </summary>
-[SerializeAll]
 public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
     public bool move;
@@ -66,7 +66,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
         FleetCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeFirstMonoBehaviourInChildren<FleetCmdItem>();
+            cmd = gameObject.GetSingleComponentInChildren<FleetCmdItem>();
             _factory.MakeInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
@@ -172,7 +172,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                 }
             }
         }
-        INavigableTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        INavigableTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
         //INavigableTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
         D.Log("{0} destination is {1}.", UnitName, destination.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, destination, Speed.FleetStandard);
@@ -200,7 +200,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                 }
             }
         }
-        IUnitAttackableTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
+        IUnitAttackableTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
         //IUnitAttackableTarget attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
         D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);

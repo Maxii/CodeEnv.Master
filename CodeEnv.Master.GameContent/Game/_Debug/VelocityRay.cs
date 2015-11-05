@@ -40,10 +40,6 @@ namespace CodeEnv.Master.GameContent {
             : base(name, new List<Vector3>(2), target, LineType.Discrete, width, color) {
             _speed = speed;
         }
-        //public VelocityRay(string name, Transform target, Reference<float> speed, float width = 1F, GameColor color = GameColor.White)
-        //    : base(name, new Vector3[2], target, LineType.Discrete, width, color) {
-        //    _speed = speed;
-        //}
 
         public override void Show(bool toShow) {
             base.Show(toShow);
@@ -51,6 +47,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Draw3D() {
+            //D.Log("{0}.Draw3D() called. Capacity = {1}, Count = {2}.", GetType().Name, _line.points3.Capacity, _line.points3.Count);
             _line.points3[1] = Vector3.forward * _speed.Value;
             base.Draw3D();
         }

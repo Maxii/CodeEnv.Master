@@ -46,17 +46,17 @@ public abstract class AImageGuiElement : AGuiElement {
     private void InitializeValuesAndReferences() {
         switch (widgetsPresent) {
             case WidgetsPresent.Image:
-                var imageFrameSprite = gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UISprite>();
-                _imageSprite = imageFrameSprite.gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UISprite>();
+                var imageFrameSprite = gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+                _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
                 NGUITools.AddWidgetCollider(gameObject);
                 break;
             case WidgetsPresent.Label:
-                _imageNameLabel = gameObject.GetSafeFirstMonoBehaviourInChildrenOnly<UILabel>();
+                _imageNameLabel = gameObject.GetSingleComponentInChildren<UILabel>(excludeSelf: true);
                 break;
             case WidgetsPresent.Both:
-                imageFrameSprite = gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UISprite>();
-                _imageSprite = imageFrameSprite.gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UISprite>();
-                _imageNameLabel = gameObject.GetSafeFirstMonoBehaviourInChildrenOnly<UILabel>();
+                imageFrameSprite = gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+                _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+                _imageNameLabel = gameObject.GetSingleComponentInChildren<UILabel>(excludeSelf: true);
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
@@ -89,7 +89,6 @@ public abstract class AImageGuiElement : AGuiElement {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
         }
     }
-
 
     #region Nested Classes
 

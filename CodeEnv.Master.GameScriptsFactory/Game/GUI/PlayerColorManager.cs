@@ -48,7 +48,7 @@ public class PlayerColorManager : AMonoBase {
         _aiPlayerPopupLookupByColor = new Dictionary<GameColor, GuiPlayerColorPopupList>(TempGameValues.MaxAIPlayers);
 
         _aiPlayerColorPopupLists = new List<GuiPlayerColorPopupList>(TempGameValues.MaxAIPlayers);
-        var colorPopupLists = gameObject.GetSafeMonoBehavioursInChildren<GuiPlayerColorPopupList>(includeInactive: true);
+        var colorPopupLists = gameObject.GetSafeComponentsInChildren<GuiPlayerColorPopupList>(includeInactive: true);
         colorPopupLists.ForAll(cpl => {
             if (cpl.ElementID == GuiElementID.UserPlayerColorPopupList) {
                 _userPlayerColorPopupList = cpl;

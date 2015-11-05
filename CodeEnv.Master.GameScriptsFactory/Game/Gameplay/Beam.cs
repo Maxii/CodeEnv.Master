@@ -114,7 +114,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
         weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
-        //_operatingDuration = Weapon.Duration / GameTime.HoursPerSecond;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
         enabled = true; // enables Update()
     }
@@ -168,7 +167,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             return;
         }
 
-        var impactedTarget = impactedGo.GetInterface<IElementAttackableTarget>();
+        var impactedTarget = impactedGo.GetComponent<IElementAttackableTarget>();
         if (impactedTarget != null) {
             // hit an attackableTarget
             //D.Log("{0} has hit {1} {2}.", Name, typeof(IElementAttackableTarget).Name, impactedTarget.DisplayName);
@@ -183,7 +182,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
                 // target has a normal rigidbody so apply impact force
                 float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
-                Vector3 force = _transform.forward * forceMagnitude;
+                Vector3 force = transform.forward * forceMagnitude;
                 //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
                 impactedTargetRigidbody.AddForceAtPosition(force, impactInfo.point, ForceMode.Impulse);
             }

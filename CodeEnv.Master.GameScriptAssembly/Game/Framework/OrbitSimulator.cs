@@ -86,7 +86,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     protected override void Start() {
         base.Start();
-        D.Assert(OrbitPeriod != default(GameTimeDuration), "{0}.{1}.OrbitPeriod has not been set.".Inject(_transform.name, GetType().Name));
+        D.Assert(OrbitPeriod != default(GameTimeDuration), "{0}.{1}.OrbitPeriod has not been set.".Inject(transform.name, GetType().Name));
         _orbitRateInDegreesPerHour = relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitPeriod.TotalInHours;
         //D.Log("OrbitRateInDegreesPerHour = {0:0.#}, OrbitPeriodInTotalHours = {1:0.}.", _orbitRateInDegreesPerHour, OrbitPeriod.TotalInHours);
     }
@@ -105,7 +105,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// <param name="deltaTimeSinceLastUpdate">The delta time since last update.</param>
     protected virtual void UpdateOrbit(float deltaTimeSinceLastUpdate) {
         float degreesToRotate = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
-        _transform.Rotate(axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
+        transform.Rotate(axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
     }
 
     private void OnIsActiveChanged() {
@@ -134,8 +134,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     }
 
     #region IOrbitSimulator Members
-
-    public Transform Transform { get { return _transform; } }
 
     /// <summary>
     /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling 

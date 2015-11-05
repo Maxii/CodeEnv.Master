@@ -37,23 +37,23 @@ public class ScaleRelativeToCamera : AMonoBase {
     protected override void Awake() {
         base.Awake();
         // record initial scale of the GO and use it as a basis
-        _initialScale = _transform.localScale;
+        _initialScale = transform.localScale;
         UpdateRate = updateRate;
         CheckForUIPanelPresenceInParents();
         enabled = false;
     }
 
     private void CheckForUIPanelPresenceInParents() {
-        if (gameObject.GetFirstComponentInParents<UIPanel>() != null) {
+        if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
-            D.WarnContext("{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.".Inject(GetType().Name), this);
+            D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);
         }
     }
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        Scale = _initialScale * _transform.DistanceToCamera() * scaleFactor;
-        _transform.localScale = Scale;
+        Scale = _initialScale * transform.DistanceToCamera() * scaleFactor;
+        transform.localScale = Scale;
     }
 
     protected override void Cleanup() { }

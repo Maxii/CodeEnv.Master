@@ -54,7 +54,7 @@ public class NguiEventLogger : AMonoBase {
     /// <param name="parameter">The parameter.</param>
     public void LogNguiEvent(object parameter = null) {
         var stackFrame = new System.Diagnostics.StackFrame(1);
-        string name = _transform.name + "(from transform)";
+        string name = transform.name + "(from transform)";
         string paramName = parameter != null ? parameter.ToString() : string.Empty;
         Debug.Log("{0}.{1}({2}) called.".Inject(name, stackFrame.GetMethod().Name, paramName));
     }

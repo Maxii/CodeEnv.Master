@@ -222,7 +222,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     }
 
     #region IDisposable
-    [DoNotSerialize]
+
     private bool _alreadyDisposed = false;
     protected bool _isDisposing = false;
 

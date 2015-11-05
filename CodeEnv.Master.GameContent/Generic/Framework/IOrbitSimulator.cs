@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         GameTimeDuration OrbitPeriod { get; set; }
 
-        Transform Transform { get; }
+        Transform transform { get; }
 
         /// <summary>
         /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling.

@@ -45,7 +45,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
                 Type thisType = typeof(T);
                 _instance = GameObject.FindObjectOfType(thisType) as T;
                 // value is required for the first time, so look for it                        
-                if (_instance == null) { //if (_instance == null && !Application.isLoadingLevel) {
+                if (_instance == null) { //if (_instance == null && !Application.isLoadingLevel) { Application.isLoadingLevel deprecated in Unity5
                     var stackFrame = new System.Diagnostics.StackTrace().GetFrame(2);
                     string callerIdMessage = "{0}.{1}().".Inject(stackFrame.GetMethod().DeclaringType, stackFrame.GetMethod().Name);
                     D.Error("No instance of {0} found. Is it destroyed/deactivated? Called by {1}.".Inject(thisType.Name, callerIdMessage));
@@ -99,13 +99,13 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
 
     protected override void AcquireReferences() {
         base.AcquireReferences();
-        _backgroundEnvelopContent = gameObject.GetSafeFirstMonoBehaviourInChildren<MyEnvelopContent>();
+        _backgroundEnvelopContent = gameObject.GetSingleComponentInChildren<MyEnvelopContent>();
         // TODO set envelopContent padding programmatically once background is permanently picked?
-        _backgroundWidget = _backgroundEnvelopContent.gameObject.GetSafeMonoBehaviour<UIWidget>();
+        _backgroundWidget = _backgroundEnvelopContent.gameObject.GetSafeComponent<UIWidget>();
     }
 
     private void InitializeFormLookup() {
-        var hudForms = gameObject.GetSafeMonoBehavioursInChildren<AForm>();
+        var hudForms = gameObject.GetSafeComponentsInChildren<AForm>();
         _formLookup = hudForms.ToDictionary(form => form.FormID);
     }
 

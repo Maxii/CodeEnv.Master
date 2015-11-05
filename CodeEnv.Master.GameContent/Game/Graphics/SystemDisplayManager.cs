@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var orbitalPlaneMeshCollider = itemGo.GetComponentInChildren<MeshCollider>();   // IMPROVE don't use MeshCollider
             var primaryMeshRenderer = orbitalPlaneMeshCollider.gameObject.GetComponent<MeshRenderer>();
-            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;    //primaryMeshRenderer.castShadows = false;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.SystemOrbitalPlane);
             return primaryMeshRenderer;
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
             base.InitializeSecondaryMeshes(itemGo);
             var orbitalPlaneLineRenderers = _primaryMeshRenderer.gameObject.GetComponentsInChildren<LineRenderer>();
             orbitalPlaneLineRenderers.ForAll(lr => {
-                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; //lr.castShadows = false;
+                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 lr.receiveShadows = false;
                 D.Assert((Layers)(lr.gameObject.layer) == Layers.SystemOrbitalPlane);
                 lr.enabled = true;

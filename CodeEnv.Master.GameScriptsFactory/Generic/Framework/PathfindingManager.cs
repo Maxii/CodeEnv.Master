@@ -38,19 +38,20 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _gameMgr = GameManager.Instance;
-        InitializeAstarPath();
-        Subscribe();
-    }
-
-    private void Subscribe() {
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
-        AstarPath.OnLatePostScan += OnGraphScansCompleted;
-        AstarPath.OnGraphsUpdated += OnGraphRuntimeUpdateCompleted;
+        if (AstarPath.active == null) {
+            // this Awake was called before AstarPath.Awake so AstarPath has not initialized yet
+            AstarPath.OnAwakeSettings += InitializeAstarPath;   // event raised on AstarPath.Awake(), right after AstarPath.active is set
+        }
+        else {
+            // AstarPath Awake has already been called 
+            InitializeAstarPath();
+        }
     }
 
     private void InitializeAstarPath() {
         _astarPath = AstarPath.active;
-        _astarPath.scanOnStartup = false;
+        // As we can't reliably know which Awake() will be called first, scanOnStartup must be set to false in inspector to avoid initial scan
+        D.Assert(_astarPath.scanOnStartup == false);
         // IMPROVE 600 seems a good max distance from a worldspace position to a node from my experimentation
         // This distance is used during the construction of a path. MaxDistance is used in the generation of a point graph
         // Assumptions:
@@ -60,12 +61,21 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         //_astarPath.logPathResults = PathLog.Heavy;    // Editor controls will work if save change as prefab
 
         // Can't programmatically set TagNames. They appear to only be setable through the Editor
+
+        AstarPath.OnAwakeSettings -= InitializeAstarPath;
+        Subscribe();
+    }
+
+    private void Subscribe() {
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
+        AstarPath.OnLatePostScan += OnGraphScansCompleted;
+        AstarPath.OnGraphsUpdated += OnGraphRuntimeUpdateCompleted;
     }
 
     private void OnGameStateChanged() {
         if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: false);
-            AstarPath.active.Scan();
+            _astarPath.Scan();  //AstarPath.active.Scan();
         }
     }
 
@@ -76,8 +86,8 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         // This GraphScansCompletedEvent occurs while we are still processing OnGameStateChanged.
     }
 
-    private void OnGraphRuntimeUpdateCompleted(AstarPath script) {
-        D.Assert(script.graphs[0] == Graph);
+    private void OnGraphRuntimeUpdateCompleted(AstarPath astarPath) {
+        D.Assert(astarPath.graphs[0] == Graph);
         D.Log("{0} node count after graph update.", Graph.nodeCount);
         Graph.GetNodes(delegate(GraphNode node) {   // while return true, passes each node to this anonymous method
             if (!node.Walkable) {

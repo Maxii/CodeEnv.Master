@@ -85,25 +85,6 @@ namespace CodeEnv.Master.GameContent {
             _line.active = toShow;
             D.Log("{0} line.active = {1}.", this.GetType().Name, toShow);
         }
-        //public void Show(bool toShow) {
-        //    if (!toShow && _line == null) {
-        //        return;
-        //    }
-        //    if (_line == null) {
-        //        _line = new VectorLine(LineName, new Vector3[24], null, LineWidth, LineType.Discrete);
-        //        _line.color = Color.ToUnityColor(); // color removed from constructor in Vectrosity 4.0
-
-        //        VectorManager.useDraw3D = true;
-        //        _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
-        //        VectorManager.ObjectSetup(_target.gameObject, _line, _visibility, Brightness.None, makeBounds: false);
-        //        // NOTE: Using makeBounds: false means this CubeWireframe object does not automatically gain a renderer and invisible mesh. This renderer 
-        //        // and mesh enables OnBecameVisible/Invisible which overrides the line.active on/off commands I use to show/not show the line. There is another
-        //        // alternative to retain control: destroy this SectorWireframe gameobject each time I turn the line off (and then rebuild it of course). Destroying 
-        //        // the VectorLine itself when using VectorManager.ObjectSetup will result in an error.
-        //    }
-        //    _line.active = toShow;
-        //    D.Log("{0} line.active = {1}.", this.GetType().Name, toShow);
-        //}
 
         private void OnColorChanged() {
             if (_line != null) {

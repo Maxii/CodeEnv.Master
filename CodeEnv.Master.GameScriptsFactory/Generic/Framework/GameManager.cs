@@ -31,7 +31,6 @@ using UnityEngine;
 /// <summary>
 /// Singleton. The main manager for the game, implemented as a mono state machine.
 /// </summary>
-[SerializeAll]
 public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameManager {
 
     public static bool IsFirstStartup {
@@ -318,7 +317,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         float startTime = Time.time;
         while (CurrentState != GameState.Running) {
             D.Assert(CurrentState != GameState.Lobby);
-            D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(CurrentState), "{0} key not found.".Inject(CurrentState), pauseOnFail: true);
+            D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(CurrentState), "{0} key not found.", CurrentState.GetValueName());
             // this will tell me what state failed, whereas failing while accessing the dictionary won't
             IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[CurrentState];
             //D.Log("{0}_{1}.AssessReadinessToProgressGameState() called. GameState = {2}, UnreadyElements count = {3}.", GetType().Name, InstanceCount, CurrentState.GetName(), unreadyElements.Count);
@@ -485,41 +484,53 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #region Saving and Restoring
 
     public void SaveGame(string gameName) {
-        GameSettings.IsSavedGame = true;
-        GameSettings.__IsStartupSimulation = false;
-        _gameTime.PrepareToSaveGame();
-        LevelSerializer.SaveGame(gameName);
+        D.Warn("{0}.SaveGame() not currently implemented.", GetType().Name);
     }
 
     public void LoadSavedGame(string gameID) {
-        LoadAndRestoreSavedGame(gameID);
+        D.Warn("{0}.LoadSavedGame() not currently implemented.", GetType().Name);
     }
 
-    private void LoadAndRestoreSavedGame(string gameID) {
-        var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
-        var gamesWithID = from g in savedGames where g.Caption == gameID select g;
-        if (gamesWithID.IsNullOrEmpty<LevelSerializer.SaveEntry>()) {
-            D.Warn("No saved game matches selected game caption {0}. \nLoad Saved Game not currently implemented.", gameID);
-            return;
-        }
+    #region WhyDoIDoIt.UnitySerializer Save/Restore Archive
 
-        // HACK to deal with multiple games with the same caption, ie. saved the same minute
-        var idArray = gamesWithID.ToArray<LevelSerializer.SaveEntry>();
-        LevelSerializer.SaveEntry selectedGame = null;
-        if (idArray.Length > 1) {
-            selectedGame = idArray[0];
-        }
-        else {
-            selectedGame = gamesWithID.Single<LevelSerializer.SaveEntry>();
-        }
+    //public void SaveGame(string gameName) {
+    //    GameSettings.IsSavedGame = true;
+    //    GameSettings.__IsStartupSimulation = false;
+    //    _gameTime.PrepareToSaveGame();
+    //    LevelSerializer.SaveGame(gameName);
+    //}
 
-        CurrentState = GameState.Loading;
-        selectedGame.Load();
-    }
+    //public void LoadSavedGame(string gameID) {
+    //    LoadAndRestoreSavedGame(gameID);
+    //}
 
-    protected override void OnDeserialized() {
-        RelayToCurrentState();
-    }
+    //private void LoadAndRestoreSavedGame(string gameID) {
+    //    var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
+    //    var gamesWithID = from g in savedGames where g.Caption == gameID select g;
+    //    if (gamesWithID.IsNullOrEmpty<LevelSerializer.SaveEntry>()) {
+    //        D.Warn("No saved game matches selected game caption {0}. \nLoad Saved Game not currently implemented.", gameID);
+    //        return;
+    //    }
+
+    //    // HACK to deal with multiple games with the same caption, ie. saved the same minute
+    //    var idArray = gamesWithID.ToArray<LevelSerializer.SaveEntry>();
+    //    LevelSerializer.SaveEntry selectedGame = null;
+    //    if (idArray.Length > 1) {
+    //        selectedGame = idArray[0];
+    //    }
+    //    else {
+    //        selectedGame = gamesWithID.Single<LevelSerializer.SaveEntry>();
+    //    }
+
+    //    CurrentState = GameState.Loading;
+    //    selectedGame.Load();
+    //}
+
+    //protected override void OnDeserialized() {
+    //    RelayToCurrentState();
+    //}
+
+    #endregion
 
     #endregion
 
@@ -662,7 +673,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Loading_ProgressState() {
         LogEvent();
-        CurrentState = (LevelSerializer.IsDeserializing || GameSettings.IsSavedGame) ? GameState.Restoring : GameState.Building;
+        CurrentState = GameState.Building;  //CurrentState = (LevelSerializer.IsDeserializing || GameSettings.IsSavedGame) ? GameState.Restoring : GameState.Building;
     }
 
     void Loading_ExitState() {

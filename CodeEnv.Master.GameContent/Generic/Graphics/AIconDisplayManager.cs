@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         private IWidgetTrackable _trackedItem;
 
         public AIconDisplayManager(IWidgetTrackable itemTracked)
-            : base(itemTracked.Transform.gameObject) {
+            : base(itemTracked.transform.gameObject) {
             _trackedItem = itemTracked;
         }
 

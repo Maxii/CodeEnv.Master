@@ -76,7 +76,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
-        _launchPosition = _transform.position;
+        _launchPosition = transform.position;
 
         _rigidbody.drag = Drag * topography.GetRelativeDensity();
         _rigidbody.mass = Mass;
@@ -101,7 +101,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
         if (distanceTraveled > _range) {
             if (ToShowEffects) {
-                ShowImpactEffects(_transform.position); // self destruction effect
+                ShowImpactEffects(transform.position); // self destruction effect
             }
             //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
             if (Target.IsOperational) {
@@ -120,7 +120,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //Name, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
         //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(_transform.position, Target.Position));
         var impactedGo = collision.collider.gameObject;
-        var impactedTarget = impactedGo.GetInterface<IElementAttackableTarget>();
+        var impactedTarget = impactedGo.GetComponent<IElementAttackableTarget>();
         if (impactedTarget != null) {
             // hit an attackableTarget
             D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
@@ -187,7 +187,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
-            D.Assert(_velocityOnPause != default(Vector3), "{0} has not yet recorded VelocityOnPause.".Inject(_transform.name));
+            D.Assert(_velocityOnPause != default(Vector3), "{0} has not yet recorded VelocityOnPause.".Inject(transform.name));
             _velocityOnPause *= gameSpeedChangeRatio;
         }
         else {

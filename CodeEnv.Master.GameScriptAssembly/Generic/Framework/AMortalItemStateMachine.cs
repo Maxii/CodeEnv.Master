@@ -580,7 +580,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     public override void LogEvent() {
         if (DebugSettings.Instance.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = Utility.CheckForContent(FullName) ? FullName : _transform.name + "(from transform)";
+            string name = Utility.CheckForContent(FullName) ? FullName : transform.name + "(from transform)";
             Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
         }
     }

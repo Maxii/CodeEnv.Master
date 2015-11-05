@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarPresenter(IViewable view)
             : base(view) {
-            _systemView = _viewGameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
+            _systemView = _viewGameObject.GetSafeFirstInterfaceInParents<IViewable>(excludeSelf: true);
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

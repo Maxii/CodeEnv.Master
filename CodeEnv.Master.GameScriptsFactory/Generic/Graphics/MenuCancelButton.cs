@@ -40,7 +40,7 @@ public class MenuCancelButton : AGuiButton {
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        _window = gameObject.GetSafeFirstMonoBehaviourInParents<AGuiWindow>();
+        _window = gameObject.GetSingleComponentInParents<AGuiWindow>();
 
         _checkboxes = _window.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         _checkboxesStateOnShow = new bool[_checkboxes.Length];

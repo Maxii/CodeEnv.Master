@@ -78,7 +78,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
 
         StarbaseCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeFirstMonoBehaviourInChildren<StarbaseCmdItem>();
+            cmd = gameObject.GetSingleComponentInChildren<StarbaseCmdItem>();
             _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
@@ -166,7 +166,6 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
     }
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

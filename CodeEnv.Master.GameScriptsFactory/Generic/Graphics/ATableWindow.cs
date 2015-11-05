@@ -58,14 +58,14 @@ public abstract class ATableWindow : AGuiWindow {
 
     protected override void AcquireReferences() {
         base.AcquireReferences();
-        _table = gameObject.GetSafeFirstMonoBehaviourInChildren<UITable>();
+        _table = gameObject.GetSingleComponentInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
         _rowForms = new List<ATableRowForm>();
         _gameMgr = GameManager.Instance;
     }
 
     private void InitializeContentHolder() {
-        _contentHolder = gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<UISprite>().transform;    // background sprite
+        _contentHolder = gameObject.GetSingleComponentInImmediateChildren<UISprite>().transform;    // background sprite
     }
 
     private void WireDelegates() {
@@ -95,7 +95,7 @@ public abstract class ATableWindow : AGuiWindow {
     }
 
     private void CloseScreenAndFocusOnItem(ICameraFocusable item) {
-        GameObject doneButtonGo = gameObject.GetSafeFirstMonoBehaviourInChildren<InputModeControlButton>().gameObject;
+        GameObject doneButtonGo = gameObject.GetSingleComponentInChildren<InputModeControlButton>().gameObject;
         GameInputHelper.Instance.Notify(doneButtonGo, "OnClick");
         item.IsFocus = true;
     }
@@ -127,7 +127,7 @@ public abstract class ATableWindow : AGuiWindow {
         GameObject rowGo = NGUITools.AddChild(_table.gameObject, rowPrefab.gameObject);
         rowGo.name = itemName + _rowNameExtension;
         // Note: Can't anchor as UIScrollVIew.Movement = Unrestricted which means the row needs to be able to move both in x and y
-        return rowGo.GetSafeMonoBehaviour<ATableRowForm>(); ;
+        return rowGo.GetSafeComponent<ATableRowForm>(); ;
     }
 
     private void ConfigureRow(ATableRowForm rowForm, AItem item) {
@@ -297,11 +297,11 @@ public abstract class ATableWindow : AGuiWindow {
     }
 
     private UILabel GetLabel(Transform row, GuiElementID elementID) {
-        return GetGuiElement(row, elementID).gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        return GetGuiElement(row, elementID).gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     private AGuiElement GetGuiElement(Transform row, GuiElementID elementID) {
-        var rowElements = row.gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<AGuiElement>();
+        var rowElements = row.gameObject.GetSafeComponentsInImmediateChildren<AGuiElement>();
         return rowElements.Single(e => e.ElementID == elementID);
     }
 

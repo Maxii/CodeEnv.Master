@@ -54,9 +54,9 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
     }
 
     private void InitializeUniverseCenter() {
-        UniverseCenter = gameObject.GetSafeFirstMonoBehaviourInChildren<UniverseCenterItem>();
+        UniverseCenter = gameObject.GetSingleComponentInChildren<UniverseCenterItem>();
         if (UniverseCenter != null) {
-            UniverseCenterData data = new UniverseCenterData(UniverseCenter.Transform, "UniverseCenter");
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, "UniverseCenter");
             UniverseCenter.Data = data;
             UniverseCenter.enabled = true;
         }

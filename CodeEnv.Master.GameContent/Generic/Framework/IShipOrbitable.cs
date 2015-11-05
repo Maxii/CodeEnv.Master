@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
-        Transform Transform { get; }
+        Transform transform { get; }
 
         bool IsMobile { get; }
 

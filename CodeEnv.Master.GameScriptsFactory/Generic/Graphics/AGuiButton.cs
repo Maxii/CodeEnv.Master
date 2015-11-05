@@ -35,7 +35,7 @@ public abstract class AGuiButton : ATextTooltip {
         base.Awake();
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _gameMgr = GameManager.Instance;
-        _button = gameObject.GetSafeMonoBehaviour<UIButton>();
+        _button = gameObject.GetSafeComponent<UIButton>();
     }
 
     void OnClick() {

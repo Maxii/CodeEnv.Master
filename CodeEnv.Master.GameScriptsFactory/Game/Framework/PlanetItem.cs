@@ -55,7 +55,7 @@ public class PlanetItem : APlanetoidItem {
 
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
-        var moons = _transform.GetComponentsInChildren<MoonItem>();
+        var moons = transform.GetComponentsInChildren<MoonItem>();
         if (moons.Any()) {
             // since the planet is on its way to destruction, the moons need to show their destruction too
             moons.ForAll(moon => moon.OnPlanetDying());

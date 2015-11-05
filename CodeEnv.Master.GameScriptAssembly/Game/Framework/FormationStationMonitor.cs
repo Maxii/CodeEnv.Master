@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -73,7 +73,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
             return;
         }
         //D.Log("{0}.{1} OnTriggerEnter() tripped by Collider {2}.", FullName, GetType().Name, other.name);
-        var arrivingShip = other.gameObject.GetInterface<IShipItem>();
+        var arrivingShip = other.GetComponent<IShipItem>();
         if (arrivingShip != null) {
             if (arrivingShip == AssignedShip) {
                 IsOnStation = true;
@@ -87,7 +87,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
             return;
         }
         //D.Log("{0}.{1} OnTriggerExit() tripped by Collider {2}.", FullName, GetType().Name, other.name);
-        var departingShip = other.gameObject.GetInterface<IShipItem>();
+        var departingShip = other.GetComponent<IShipItem>();
         if (departingShip != null) {
             if (departingShip == AssignedShip) {
                 IsOnStation = false;
@@ -116,7 +116,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
 
     private void OnStationOffsetChanged() {
         // setting local position doesn't work as the resultant world position is modified by the rotation of FleetCmd
-        _transform.position += StationOffset;
+        transform.position += StationOffset;
         // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
     }
 
@@ -132,7 +132,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
 
     public string FullName { get { return Name; } }
 
-    public Vector3 Position { get { return _transform.position; } }
+    public Vector3 Position { get { return transform.position; } }
 
     public bool IsMobile { get { return true; } }
 

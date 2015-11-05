@@ -51,10 +51,10 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
 
     private void PopulateAIPlayerContainerLookup() {
         _aiPlayerContainerLookup = new Dictionary<GuiElementID, UIWidget>(TempGameValues.MaxAIPlayers);
-        var newGameMenuWindow = gameObject.GetSafeFirstMonoBehaviourInParents<AGuiWindow>();
-        var aiIQPopups = newGameMenuWindow.gameObject.GetSafeMonoBehavioursInChildren<GuiPlayerIQPopupList>(includeInactive: true);
+        var newGameMenuWindow = gameObject.GetSingleComponentInParents<AGuiWindow>();
+        var aiIQPopups = newGameMenuWindow.gameObject.GetSafeComponentsInChildren<GuiPlayerIQPopupList>(includeInactive: true);
         aiIQPopups.ForAll(aiIQPopup => {
-            var aiPlayerContainer = aiIQPopup.transform.parent.parent.gameObject.GetSafeMonoBehaviour<UIWidget>();
+            var aiPlayerContainer = aiIQPopup.transform.parent.parent.gameObject.GetSafeComponent<UIWidget>();  // HACK
             _aiPlayerContainerLookup.Add(aiIQPopup.ElementID, aiPlayerContainer);
         });
     }

@@ -61,7 +61,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
     /// A Unit contains a Command and one or more Elements.
     /// </summary>
-    public string UnitName { get { return _transform.name; } }
+    public string UnitName { get { return transform.name; } }
 
     /// <summary>
     /// Local list of design names keyed by hull category. Each Creator needs their own local list
@@ -87,7 +87,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(isCompositionPreset == _transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
+        D.Assert(isCompositionPreset == transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
         InitializeValuesAndReferences();
     }
 
@@ -516,10 +516,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private IList<ElementHullStatType> CreateElementHullStatsFromChildren() {
         LogEvent();
-        var elements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>();
+        var elements = gameObject.GetSafeComponentsInChildren<ElementType>();
         var elementHullStats = new List<ElementHullStatType>(elements.Count());
         foreach (var element in elements) {
-            AHull hull = element.gameObject.GetSafeFirstMonoBehaviourInChildren<AHull>();
+            AHull hull = element.gameObject.GetSingleComponentInChildren<AHull>();
             ElementCategoryType category = GetCategory(hull);
             int elementInstanceID = _elementInstanceIDCounter;
             _elementInstanceIDCounter++;
@@ -567,7 +567,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             var sensorStats = _availableSensorStats.Shuffle().Take(sensorsPerElement);
             var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGeneratorsPerElement);
 
-            //string designName = GetNextDesignName(hullCategory);
             string designName = GetUniqueDesignName(hullCategory);
             RecordDesignName(hullCategory, designName);
             MakeAndRecordDesign(designName, hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
@@ -594,8 +593,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             ElementType element = null;
             if (isCompositionPreset) {
                 // find a preExisting element of the right category first to provide to Make
-                var categoryElements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>()
-                    .Where(e => GetCategory(e.gameObject.GetSafeFirstMonoBehaviourInChildren<AHull>()).Equals(hullCategory));
+                var categoryElements = gameObject.GetSafeComponentsInChildren<ElementType>()
+                    .Where(e => GetCategory(e.gameObject.GetSingleComponentInChildren<AHull>()).Equals(hullCategory));
+
                 var categoryElementsStillAvailable = categoryElements.Except(elements);
                 element = categoryElementsStillAvailable.First();
                 PopulateElement(designName, ref element);
@@ -609,7 +609,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             // velocity from this intentional collision. This occurs before the elements are moved away from each other by being formed
             // into a formation. Accordingly, make the rigidbody kinematic here, then change the ships back when the formation is made.
             var elementRigidbody = element.GetComponent<Rigidbody>();
-            elementRigidbody.isKinematic = true;    //element.transform.rigidbody.isKinematic = true;
+            elementRigidbody.isKinematic = true;
             element.transform.position = transform.position;
             elements.Add(element);
         }

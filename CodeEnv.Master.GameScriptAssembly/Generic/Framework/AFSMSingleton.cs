@@ -133,7 +133,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             if (!param.IsNullOrEmpty()) {
                 parameters = param.Concatenate();
             }
-            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", _transform.name, message, parameters);  // my addition
+            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", transform.name, message, parameters);  // my addition
             return false;   // my addition
         }
     }
@@ -515,10 +515,10 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             else {
                 returnValue = Default as Delegate;
                 if (methodRoot == _enterStateText || methodRoot == _exitStateText) {
-                    D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?", _transform.name, state.currentState.ToString(), methodRoot);
+                    D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
                 }
                 else {
-                    D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", _transform.name, state.currentState.ToString(), methodRoot);
+                    D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
                 }
             }
             lookup[methodRoot] = returnValue;

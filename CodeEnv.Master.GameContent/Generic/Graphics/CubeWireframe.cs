@@ -35,7 +35,6 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The visual center point of the wireframe.
         /// </summary>
-        //private VectorPoints _pointLine;
         private VectorLine _centerPoint;
 
         /// <summary>
@@ -51,33 +50,17 @@ namespace CodeEnv.Master.GameContent {
             Arguments.ValidateNotNull(target);
             _size = cubeSize;
         }
-        //public CubeWireframe(string name, Transform target, Vector3 cubeSize, float width = 1F, GameColor color = GameColor.White)
-        //    : base(name, new Vector3[24], target, LineType.Discrete, width, color) {
-        //    Arguments.ValidateNotNull(target);
-        //    _size = cubeSize;
-        //}
 
         protected override void Initialize() {
             base.Initialize();
             _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
-            //Vector3[] centerPoint = new Vector3[] { new Vector3(0F, 0F, 0F) };
-            List<Vector3> centerPoint = new List<Vector3>() { new Vector3(0F, 0F, 0F) };
+            List<Vector3> centerPoint = new List<Vector3>() { Vector3.zero };
 
             _centerPoint = new VectorLine("CenterPoint", centerPoint, texture, 2F, LineType.Points);
             _centerPoint.color = Color.ToUnityColor();    // color removed from constructor in Vectrosity 4.0
 
             _centerPoint.drawTransform = _target; // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
-        //protected override void Initialize() {
-        //    base.Initialize();
-        //    _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
-        //    Vector3[] centerPoint = new Vector3[] { new Vector3(0F, 0F, 0F) };
-
-        //    _pointLine = new VectorPoints("CenterPoint", centerPoint, material, 2F);
-        //    _pointLine.color = Color.ToUnityColor();    // color removed from constructor in Vectrosity 4.0
-
-        //    _pointLine.drawTransform = _target; // _line.Draw3D(_target);  removed by Vectrosity 3.0
-        //}
 
         public override void Show(bool toShow) {
             base.Show(toShow);

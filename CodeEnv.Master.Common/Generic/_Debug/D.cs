@@ -21,30 +21,20 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Conditional Debug class for pre-compiled classes replacing UnityEngine.Debug.
     /// </summary>
-    /// <remarks> Setting the conditional to the platform of choice will only compile the method for that platform
+    /// <remarks> Setting the conditional to the platform of choice will only compile the method for that platform.
     /// Alternatively, use the #defines at the top of this file</remarks>
     public static class D {
 
         /// <summary>
-        /// Sends the specified message to the Unity.Debug log.
+        /// Sends the specified message object (typically a composite message string) to the Unity.Debug log.
         /// </summary>
-        /// <remarks>Use this when including MyObject.ToString() which contains {} that string.Format() doesn't like.</remarks>
-        /// <param name="message">The string message.</param>
-        [System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Log(string message) {
-            Debug.Log(message);
-        }
-
-        /// <summary>
-        /// Sends the specified message object (typically a composite message string) to the Unity.Debug
-        /// log.
-        /// </summary>
-        /// <param name="format">The message object, typically a composite message string.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="format">A System.Object to use ToString() or a composite message format string.</param>
+        /// <param name="paramList">The paramaters to insert into the composite message format string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Log(object format, params object[] paramList) {
-            if (format is string) {
-                Debug.Log(string.Format(format as string, paramList));
+            string msgFormat = format as string;
+            if (msgFormat != null) {
+                Debug.LogFormat(msgFormat, paramList);
             }
             else {
                 Debug.Log(format);
@@ -52,14 +42,13 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// If <c>condition</c> is <c>true</c>, sends the specified message object (typically a composite message string) 
-        /// to the Unity.Debug log.
+        /// If <c>condition</c> is <c>true</c>, sends the composite message format string to the Unity.Debug log.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="format">The format.</param>
         /// <param name="paramList">The paramaters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Log(bool condition, object format, params object[] paramList) {
+        public static void Log(bool condition, string format, params object[] paramList) {
             if (condition) {
                 Log(format, paramList);
             }
@@ -69,23 +58,47 @@ namespace CodeEnv.Master.Common {
         /// Sends the specified message to the Unity.Debug log with a ping connection
         /// to the object that sent it.
         /// </summary>
-        /// <param name="message">The message string.</param>
-        /// <param name="context">The object that sent the message.</param>
+        /// <param name="context">The context.</param>
+        /// <param name="format">The format.</param>
+        /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void LogContext(string message, Object context) {
-            Debug.Log(message, context);
+        public static void LogContext(Object context, string format, params object[] paramList) {
+            Debug.LogFormat(context, format, paramList);
         }
 
         /// <summary>
         /// If the condition is true, sends the specified msg to the Unity.Debug log.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
-        /// <param name="msg">The message.</param>
         /// <param name="context">The context.</param>
+        /// <param name="format">The format.</param>
+        /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void LogContext(bool condition, string msg, Object context) {
+        public static void LogContext(bool condition, Object context, string format, params object[] paramList) {
             if (condition) {
-                Debug.Log(msg, context);
+                Debug.LogFormat(context, format, paramList);
+            }
+        }
+
+        /// <summary>
+        /// Sends the composite message format string to the Unity.Debug warning log.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void Warn(string format, params object[] paramList) {
+            Debug.LogWarningFormat(format, paramList);
+        }
+
+        /// <summary>
+        /// If <c>condition</c> is <c>true</c>, sends the composite message format string to the Unity.Debug warning log.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="format">The composite message format string.</param>
+        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        public static void Warn(bool condition, string format, params object[] paramList) {
+            if (condition) {
+                Debug.LogWarningFormat(format, paramList);
             }
         }
 
@@ -93,135 +106,87 @@ namespace CodeEnv.Master.Common {
         /// Sends the specified message to the Unity.Debug warning log with a ping connection
         /// to the object that sent it.
         /// </summary>
-        /// <param name="message">The message string.</param>
         /// <param name="context">The object that sent the message.</param>
+        /// <param name="format">The format.</param>
+        /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void WarnContext(string message, Object context) {
-            Debug.LogWarning(message, context);
+        public static void WarnContext(Object context, string format, params object[] paramList) {
+            Debug.LogWarningFormat(context, format, paramList);
         }
 
         /// <summary>
-        /// If <c>condition</c> is <c>true</c>, sends the specified message to the Unity.Debug warning log 
+        /// If <c>condition</c> is <c>true</c>, sends the specified message to the Unity.Debug warning log
         /// with a ping connection to <c>context</c>.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
-        /// <param name="message">The message string.</param>
         /// <param name="context">The object that sent the message.</param>
-        [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void WarnContext(bool condition, string message, Object context) {
-            if (condition) {
-                Debug.LogWarning(message, context);
-            }
-        }
-
-        /// <summary>
-        /// Sends the specified message object (typically a composite message string) to the Unity.Debug
-        /// warning log.
-        /// </summary>
-        /// <param name="message">The message object, typically a composite message string.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
-        [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Warn(object format, params object[] paramList) {
-            if (format is string) {
-                Debug.LogWarning(string.Format(format as string, paramList));
-            }
-            else {
-                Debug.LogWarning(format);
-            }
-        }
-
-        /// <summary>
-        /// If <c>condition</c> is <c>true</c>, sends the specified message object (typically a composite message string) 
-        /// to the Unity.Debug warning log.
-        /// </summary>
-        /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="format">The format.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Warn(bool condition, object format, params object[] paramList) {
+        public static void WarnContext(bool condition, Object context, string format, params object[] paramList) {
             if (condition) {
-                Warn(format, paramList);
-            }
-        }
-
-
-        /// <summary>
-        /// Sends the specified message to the Unity.Debug error log with a ping connection
-        /// to <c>context</c>.
-        /// </summary>
-        /// <param name="message">The message string.</param>
-        /// <param name="context">The object that sent the message.</param>
-        /// <param name="pause">if set to <c>true</c> [pause]. Default is <c>true</c>.</param>
-        [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void ErrorContext(string message, Object context, bool pause = true) {
-            Debug.LogError(message, context);
-            if (pause) {
-                Debug.Break();
+                Debug.LogWarningFormat(context, format, paramList);
             }
         }
 
         /// <summary>
-        /// Sends the specified message object (typically a composite message string) to the Unity.Debug
-        /// Error log.
+        /// Sends the composite message format string to the Unity.Debug Error log.
         /// </summary>
-        /// <param name="message">The message object, typically a composite message string.</param>
+        /// <param name="message">The composite message format string.</param>
         /// <param name="paramList">The paramaters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Error(object format, params object[] paramList) {
-            if (format is string) {
-                Debug.LogError(string.Format(format as string, paramList));
-            }
-            else {
-                Debug.LogError(format);
-            }
-            Debug.Break();
+        public static void Error(string format, params object[] paramList) {
+            Debug.LogErrorFormat(format, paramList);
         }
 
         /// <summary>
-        /// Tests the specified condition and immediately pauses on failure.
+        /// Sends the composite message format string to the Unity.Debug Error log and pings the context object.
         /// </summary>
-        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="context">The context object.</param>
+        /// <param name="format">The composite message format string.</param>
+        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Assert(bool condition, Object context = null) {
-            Assert(condition, string.Empty, true, context);
+        public static void ErrorContext(Object context, string format, params object[] paramList) {
+            Debug.LogErrorFormat(context, format, paramList);
         }
 
         /// <summary>
-        /// Tests the specified condition and logs the provided message as an Error if it fails. Does not pause
-        /// on failure.
-        /// WARNING: The assertString must be valid (no potential NREs) whether or not the condition passes. Invalid
-        /// strings typically manifest themselves when using string.Inject() as Inject() is called whether or not the condition passes.
+        /// Tests the specified condition and logs the provided message as an Error if it fails.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
-        /// <param name="assertString">The message to log as an Error on failure.</param>
+        /// <param name="context">The context object.</param>
+        /// <param name="format">The composite message format string.</param>
+        /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Assert(bool condition, string assertString, Object context = null) {
-            Assert(condition, assertString, false, context);
-        }
-
-        /// <summary>
-        /// Tests the specified condition and logs the provided message as an Error if it fails, with an option for
-        /// the Editor to pause on failure.
-        /// WARNING: The assertString must be valid (no potential NREs) whether or not the condition passes. Invalid
-        /// strings typically manifest themselves when using string.Inject() as Inject() is called whether or not the condition passes.
-        /// </summary>
-        /// <param name="condition">if set to <c>true</c> [condition].</param>
-        /// <param name="assertString">The message to log as an Error on failure.</param>
-        /// <param name="pauseOnFail">if set to <c>true</c>, the UnityEditor will [pause on fail].</param>
-        [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Assert(bool condition, string assertString, bool pauseOnFail, Object context = null) {
+        public static void Assert(bool condition, Object context, string format, params object[] paramList) {
             if (!condition) {
-                if (context != null) {
-                    Debug.LogError("Assert failed! " + assertString, context);
-                }
-                else {
-                    Debug.LogError("Assert failed! " + assertString);
-                }
-                if (pauseOnFail) {
-                    Debug.Break();
-                }
+                Debug.LogErrorFormat(context, "Assert failed! " + format, paramList);
             }
         }
+
+        /// <summary>
+        /// Tests the specified condition and logs the provided message as an Error if it fails.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="format">The composite message format string.</param>
+        /// <param name="paramList">The parameter list.</param>
+        [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void Assert(bool condition, string format, params object[] paramList) {
+            //if (!condition) {
+            //    Debug.LogErrorFormat("Assert failed! " + format, paramList);
+            //}
+            Debug.Assert(condition, format, paramList);
+        }
+
+        /// <summary>
+        /// Tests the specified condition and raises a Debug.Assert() if it fails.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void Assert(bool condition) {
+            Debug.Assert(condition);
+        }
+
     }
 }
 

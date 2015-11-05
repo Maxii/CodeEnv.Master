@@ -42,7 +42,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     }
 
     protected override void InitializeRadiiComponents() {
-        var meshRenderers = gameObject.GetComponentsInImmediateChildrenOnly<Renderer>();    // some planetoids have an atmosphere
+        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         (collider as SphereCollider).radius = Radius;
     }

@@ -14,9 +14,11 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-using System;
-using UnityEngine;
+
 namespace CodeEnv.Master.Common {
+
+    using System;
+    using UnityEngine;
 
     /// <summary>
     /// Immutable location struct holding 3 ints.

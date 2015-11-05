@@ -54,7 +54,7 @@ public abstract class AForm : AMonoBase {
     /// <param name="element">The element.</param>
     /// <returns></returns>
     protected UILabel GetLabel(AGuiElement element) {
-        return element.gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        return element.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
 }

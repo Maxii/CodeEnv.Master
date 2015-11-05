@@ -31,8 +31,8 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsShowing {
             get {
-                if (_line == null || _job == null) { return false; }
-                return _line.active && _job.IsRunning;
+                if (_line == null || _drawJob == null) { return false; }
+                return _line.active && _drawJob.IsRunning;
             }
         }
 
@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _lineName, value, "LineName", OnLineNameChanged); }
         }
 
-        protected Job _job;
+        protected Job _drawJob;
         protected VectorLine _line;
 
         /// <summary>
@@ -66,13 +66,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void Cleanup() {
             VectorLine.Destroy(ref _line);
-            if (_job != null) {
-                _job.Dispose();
+            if (_drawJob != null) {
+                _drawJob.Dispose();
             }
         }
 
         #region IDisposable
-        [DoNotSerialize]
+
         private bool alreadyDisposed = false;
 
         /// <summary>

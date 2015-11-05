@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CoursePlotLine : A3DVectrosityBase {
 
-        private IList<INavigableTarget> _course;
+        private List<INavigableTarget> _course;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CoursePlotLine" /> class
@@ -49,12 +49,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="color">The color of the line. Default is Gray.</param>
         public CoursePlotLine(string name, IList<INavigableTarget> course, float lineWidth, GameColor color = GameColor.Gray)
             : base(name, course.Select(wayPt => wayPt.Position).ToList(), null, LineType.Continuous, lineWidth, color) {
-            _course = new List<INavigableTarget>(course);   // must be copied
+            // Copied. Otherwise changes to the original immediately show up in _course without using UpdateCourse()
+            _course = new List<INavigableTarget>(course);
         }
-        //public CoursePlotLine(string name, IList<INavigableTarget> course, float lineWidth, GameColor color = GameColor.Gray)
-        //    : base(name, course.Select(wayPt => wayPt.Position).ToArray(), null, LineType.Continuous, lineWidth, color) {
-        //    _course = new List<INavigableTarget>(course);   // must be copied
-        //}
 
         /// <summary>
         /// Updates the course. 
@@ -62,17 +59,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="course">The course.</param>
         public void UpdateCourse(IList<INavigableTarget> course) {
-            // copied. Otherwise changes to the original immediately show up in _course without using UpdateCourse()
+            // Copied. Otherwise changes to the original immediately show up in _course without using UpdateCourse()
             _course = new List<INavigableTarget>(course);
-            Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3[]
+            Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3 list
         }
-        //public void UpdateCourse(IList<INavigableTarget> course) {
-        //    // copied. Otherwise changes to the original immediately show up in _course without using UpdateCourse()
-        //    _course = new List<INavigableTarget>(course);
-        //    Points = course.Select(wayPt => wayPt.Position).ToArray();   // updating Points will update _line.points3[]
-        //}
 
-        protected override void Draw3D() {
+        protected override void Draw3D() {  // OPTIMIZE not clear why _course or this override is needed
             for (int i = 0; i < _course.Count; i++) {
                 _line.points3[i] = _course[i].Position;
             }

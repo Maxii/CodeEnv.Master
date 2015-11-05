@@ -123,7 +123,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     /// <param name="unitContainer">The unit container.</param>
     protected internal virtual void AttachAsChildOf(Transform unitContainer) {
-        _transform.parent = unitContainer;
+        transform.parent = unitContainer;
     }
 
     protected override void OnDataSet() {

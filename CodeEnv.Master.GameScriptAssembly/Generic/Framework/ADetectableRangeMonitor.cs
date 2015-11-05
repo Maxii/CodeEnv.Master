@@ -26,22 +26,22 @@ using UnityEngine;
 /// Abstract base class for a ColliderMonitor that detects <c>DetectableType</c> gameObjects at a set distance (range).
 /// Examples include interceptable ordnance, unit elements and celestial objects.
 /// </summary>
-/// <typeparam name="DetectableType">The Type of gameObjects to detect.</typeparam>
+/// <typeparam name="IDetectableType">The Type of gameObject interfaces to detect.</typeparam>
 /// <typeparam name="EquipmentType">The Type of ranged equipment.</typeparam>
-public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : AEquipmentMonitor<EquipmentType>
-    where DetectableType : class, IDetectable
+public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : AEquipmentMonitor<EquipmentType>
+    where IDetectableType : class, IDetectable
     where EquipmentType : ARangedEquipment {
 
     /// <summary>
     /// All the detectable Items in range of this Monitor.
     /// </summary>
-    private IList<DetectableType> _itemsDetected;
-    private IList<DetectableType> __itemsDetectedViaWorkaround;
+    private IList<IDetectableType> _itemsDetected;
+    private IList<IDetectableType> __itemsDetectedViaWorkaround;
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        _itemsDetected = new List<DetectableType>();
-        __itemsDetectedViaWorkaround = new List<DetectableType>();
+        _itemsDetected = new List<IDetectableType>();
+        __itemsDetectedViaWorkaround = new List<IDetectableType>();
     }
 
     protected sealed override void OnTriggerEnter(Collider other) {
@@ -52,11 +52,11 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
             return;
         }
 
-        var detectedItem = other.gameObject.GetInterface<DetectableType>();
+        var detectedItem = other.GetComponent<IDetectableType>();
         if (detectedItem != null) {
-            D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
+            D.Log("{0} detected {1} at {2:0.} units.", Name, detectedItem.FullName, Vector3.Distance(transform.position, detectedItem.Position));
             if (!detectedItem.IsOperational) {
-                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, detectedItem.FullName);
+                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
                 return;
             }
             AddDetectedItem(detectedItem);
@@ -71,9 +71,9 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
             return;
         }
 
-        var lostDetectionItem = other.gameObject.GetInterface<DetectableType>();
+        var lostDetectionItem = other.GetComponent<IDetectableType>();
         if (lostDetectionItem != null) {
-            D.Log("{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionItem.FullName, Vector3.Distance(_transform.position, lostDetectionItem.Position));
+            D.Log("{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionItem.FullName, Vector3.Distance(transform.position, lostDetectionItem.Position));
             RemoveDetectedItem(lostDetectionItem);
         }
     }
@@ -82,13 +82,13 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
     /// Called immediately after an item has been added to the list of items detected by this monitor.
     /// </summary>
     /// <param name="newlyDetectedItem">The item just detected and now tracked.</param>
-    protected abstract void OnDetectedItemAdded(DetectableType newlyDetectedItem);
+    protected abstract void OnDetectedItemAdded(IDetectableType newlyDetectedItem);
 
     /// <summary>
     /// Called immediately after an item has been removed from the list of items detected by this monitor. 
     /// </summary>
     /// <param name="lostDetectionItem">The item whose detection was just lost and is no longer tracked .</param>
-    protected abstract void OnDetectedItemRemoved(DetectableType lostDetectionItem);
+    protected abstract void OnDetectedItemRemoved(IDetectableType lostDetectionItem);
 
     protected sealed override void OnIsOperationalChanged() {
         //D.Log("{0}.OnIsOperationalChanged() called. IsOperational: {1}.", Name, IsOperational);
@@ -137,19 +137,19 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
     /// Adds the indicated item to the list of ItemsDetected.
     /// </summary>
     /// <param name="detectedItem">The detected item.</param>
-    protected void AddDetectedItem(DetectableType detectedItem) {
+    protected void AddDetectedItem(IDetectableType detectedItem) {
         D.Assert(detectedItem.IsOperational);
         if (!_itemsDetected.Contains(detectedItem)) {
             _itemsDetected.Add(detectedItem);
-            D.Log("{0} now tracking {1} {2}.", Name, typeof(DetectableType).Name, detectedItem.FullName);
+            D.Log("{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
             OnDetectedItemAdded(detectedItem);
         }
         else {
             if (!__itemsDetectedViaWorkaround.Contains(detectedItem)) {
-                D.Warn("{0} improperly attempted to add duplicate {1} {2}.", Name, typeof(DetectableType).Name, detectedItem.FullName);
+                D.Warn("{0} improperly attempted to add duplicate {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
             }
             else {
-                D.Log("{0} properly avoided adding duplicate {1} {2}.", Name, typeof(DetectableType).Name, detectedItem.FullName);
+                D.Log("{0} properly avoided adding duplicate {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
             }
         }
     }
@@ -158,22 +158,22 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
     /// Removes the indicated item from the list of ItemsDetected.
     /// </summary>
     /// <param name="previouslyDetectedItem">The item we just lost detection of.</param>
-    protected void RemoveDetectedItem(DetectableType previouslyDetectedItem) {
+    protected void RemoveDetectedItem(IDetectableType previouslyDetectedItem) {
         bool isRemoved = _itemsDetected.Remove(previouslyDetectedItem);
         if (isRemoved) {
             D.Log("{0} has removed {1}. Items remaining = {2}.", Name, previouslyDetectedItem.FullName, _itemsDetected.Select(i => i.FullName).Concatenate());
             if (previouslyDetectedItem.IsOperational) {
-                D.Log("{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(DetectableType).Name, previouslyDetectedItem.FullName, Vector3.Distance(previouslyDetectedItem.Position, _transform.position));
+                D.Log("{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(IDetectableType).Name, previouslyDetectedItem.FullName, Vector3.Distance(previouslyDetectedItem.Position, transform.position));
             }
             else {
-                D.Log("{0} no longer tracking dead {1} {2}.", Name, typeof(DetectableType).Name, previouslyDetectedItem.FullName);
+                D.Log("{0} no longer tracking dead {1} {2}.", Name, typeof(IDetectableType).Name, previouslyDetectedItem.FullName);
             }
             OnDetectedItemRemoved(previouslyDetectedItem);
         }
         else {
             // Note: Sometimes OnTriggerExit fires when an Item is destroyed within the collider's radius. However, it is not reliable
             // so I remove it manually when I detect the item's death (prior to its destruction). When this happens, the item will no longer be present to be removed.
-            D.Log("{0} reports {1} {2} not present to be removed.", Name, typeof(DetectableType).Name, previouslyDetectedItem.FullName);
+            D.Log("{0} reports {1} {2} not present to be removed.", Name, typeof(IDetectableType).Name, previouslyDetectedItem.FullName);
         }
     }
 
@@ -224,15 +224,15 @@ public abstract class ADetectableRangeMonitor<DetectableType, EquipmentType> : A
 
         //D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
         UnityUtility.WaitOneFixedUpdateToExecute(() => {    // delay to allow monitor 1 fixed update to record items that it detects
-            if (_transform == null) { return; } // client (and thus monitor) can be destroyed during this 1 frame delay
-            var allCollidersInRange = Physics.OverlapSphere(_transform.position, RangeDistance);
-            var allDetectableItemsInRange = allCollidersInRange.Where(c => c.gameObject.GetInterface<DetectableType>() != null).Select(c => c.gameObject.GetInterface<DetectableType>());
+            if (transform == null) { return; } // client (and thus monitor) can be destroyed during this 1 frame delay
+            var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
+            var allDetectableItemsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
             D.Log("{0} has detected the following items prior to attempting workaround: {1}.", Name, _itemsDetected.Select(i => i.FullName).Concatenate());
             var undetectedDetectableItems = allDetectableItemsInRange.Except(_itemsDetected);
             if (undetectedDetectableItems.Any()) {
                 foreach (var undetectedItem in undetectedDetectableItems) {
                     if (!undetectedItem.IsOperational) {
-                        D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(DetectableType).Name, undetectedItem.FullName);
+                        D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, undetectedItem.FullName);
                         continue;
                     }
                     D.Log("{0}'s detection workaround is adding {1}.", Name, undetectedItem.FullName);

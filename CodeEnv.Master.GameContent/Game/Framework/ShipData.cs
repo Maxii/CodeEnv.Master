@@ -161,32 +161,11 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum speed that the ship can currently achieve in units per hour.
         /// </summary>
-        //public float FullSpeed { get { return IsFtlOperational ? FullFtlSpeed : FullStlSpeed; } }
         private float _fullSpeed;
         public float FullSpeed {
             get { return _fullSpeed; }
             private set { SetProperty<float>(ref _fullSpeed, value, "FullSpeed"); }
         }
-
-        //private float _fullFtlSpeed;
-        /// <summary>
-        /// The maximum FTL speed that the ship can currently achieve in units per hour.
-        /// Derived directly from FullFtlThrust, mass and drag of the ship.
-        /// </summary>
-        //public float FullFtlSpeed {
-        //    get { return _fullFtlSpeed; }
-        //    private set { SetProperty<float>(ref _fullFtlSpeed, value, "FullFtlSpeed"); }
-        //}
-
-        //private float _fullStlSpeed;
-        /// <summary>
-        /// The maximum STL speed that the ship can currently achieve in units per hour.
-        /// Derived directly from FullStlThrust, mass and drag of the ship.
-        /// </summary>
-        //public float FullStlSpeed {
-        //    get { return _fullStlSpeed; }
-        //    private set { SetProperty<float>(ref _fullStlSpeed, value, "FullStlSpeed"); }
-        //}
 
         /// <summary>
         /// The maximum turn rate of the ship in degrees per hour.
@@ -251,7 +230,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will trigger Data.AssessFullSpeedValues()
+            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will trigger Data.AssessFullSpeedValue()
             //D.Log("{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
             IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
         }
@@ -259,7 +238,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnIsFtlOperationalChanged() {
             string msg = IsFtlOperational ? "now" : "no longer";
             D.Log("{0} FTL is {1} operational.", FullName, msg);
-            RefreshFullSpeedValues();
+            RefreshFullSpeedValue();
         }
 
         private void OnIsFtlDampedByFieldChanged() {
@@ -277,7 +256,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void OnTopographyChanged() {
             base.OnTopographyChanged();
             _shipRigidbody.drag = Drag * Topography.GetRelativeDensity();
-            RefreshFullSpeedValues();
+            RefreshFullSpeedValue();
         }
 
         private void OnIsPausedChanging(bool isPausing) {
@@ -291,12 +270,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Refreshes the full speed values the ship is capable of achieving.
+        /// Refreshes the full speed value the ship is capable of achieving.
         /// </summary>
-        private void RefreshFullSpeedValues() {
-            //FullStlSpeed = FullStlEnginePower / (Mass * _rigidbody.drag);
-            //FullFtlSpeed = FullFtlEnginePower / (Mass * _rigidbody.drag);
-            //FullSpeed = IsFtlOperational ? FullFtlSpeed : FullStlSpeed;
+        private void RefreshFullSpeedValue() {
             FullSpeed = IsFtlOperational ? FullFtlEnginePower / (Mass * _shipRigidbody.drag) : FullStlEnginePower / (Mass * _shipRigidbody.drag);
         }
 

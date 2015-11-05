@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -54,15 +54,15 @@ namespace CodeEnv.Master.Common {
         /// Sequences must implement IComparable<typeparamref name="T"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="source">The source sequence.</param>
+        /// <param name="sequence">The source sequence.</param>
         /// <param name="second">The second sequence.</param>
         /// <param name="ignoreOrder">if set to <c>true</c> [ignore order].</param>
         /// <returns></returns>
-        public static bool SequenceEquals<T>(this IEnumerable<T> source, IEnumerable<T> second, bool ignoreOrder = false) where T : IComparable<T> {
+        public static bool SequenceEquals<T>(this IEnumerable<T> sequence, IEnumerable<T> second, bool ignoreOrder = false) where T : IComparable<T> {
             if (ignoreOrder) {
-                return source.OrderBy(s => s).SequenceEqual<T>(second.OrderBy(s => s));
+                return sequence.OrderBy(s => s).SequenceEqual<T>(second.OrderBy(s => s));
             }
-            return source.SequenceEqual<T>(second);
+            return sequence.SequenceEqual<T>(second);
         }
 
         /// <summary>
@@ -92,15 +92,21 @@ namespace CodeEnv.Master.Common {
         /// If sourceSequence is null or empty, simply returns.
         /// Syntax: <code>sequenceOfTypeT.ForAll((T n) => Console.WriteLine(n.ToString()));</code> read as
         /// "For each element in the T sourceSequence, write the string version to the console."
+        /// OPTIMIZE use MoreLinq.ForEach()? What about when the action modifies the underlying IEnumerable?
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="sourceSequence">The Sequence of Type T calling the extension.</param>
+        /// <param name="sequence">The Sequence of Type T calling the extension.</param>
         /// <param name="actionToExecute">The work to perform on the sequence, usually expressed in lambda form.</param>
-        public static void ForAll<T>(this IEnumerable<T> sourceSequence, Action<T> actionToExecute) {
-            if (sourceSequence.IsNullOrEmpty()) { return; }
-            foreach (T item in sourceSequence.ToList<T>()) {   // ToList avoids exceptions when the sequence is modified by the action
-                actionToExecute(item);
-            }
+        public static void ForAll<T>(this IEnumerable<T> sequence, Action<T> actionToExecute) {
+            //if (sourceSequence.IsNullOrEmpty()) { return; }
+            //foreach (T item in sourceSequence.ToList<T>()) {   // ToList avoids exceptions when the sequence is modified by the action
+            //    actionToExecute(item);
+            //}
+            Arguments.ValidateNotNull(sequence);
+            Arguments.ValidateNotNull(actionToExecute);
+            sequence.ToList<T>().ForEach(actionToExecute);
+            // Warning: Per Microsoft, modifying the underlying collection in the body of the action is not supported and causes undefined behaviour.
+            // Starting in .Net 4.5, an InvalidOperationException will be thrown if this occurs. Prior to this no exception is thrown.
         }
 
         /// <summary>
@@ -184,33 +190,33 @@ namespace CodeEnv.Master.Common {
         /// Determines whether the collection is null or contains no elements.
         /// </summary>
         /// <typeparam name="T">The IEnumerable type.</typeparam>
-        /// <param name="enumerable">The enumerable, which may be null or empty.</param>
+        /// <param name="sequence">The enumerable, which may be null or empty.</param>
         /// <returns>
         ///     <c>true</c> if the IEnumerable is null or empty; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable) {
-            if (enumerable == null) {
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T> sequence) {
+            if (sequence == null) {
                 return true;
             }
             // If this is a list, use the Count property for efficiency. The Count property is O(1) while IEnumerable.Count() is O(N).
-            var collection = enumerable as ICollection<T>;
+            var collection = sequence as ICollection<T>;
             if (collection != null) {
-                return collection.Count < 1;
+                return collection.Count == Constants.Zero;  // < 1;
             }
-            return !enumerable.Any();
+            return !sequence.Any();
         }
 
         /// <summary>
         /// Constructs a string separated by the provided delimiter from the elements of the IEnumerable source.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="source">The source.</param>
+        /// <param name="sequence">The source.</param>
         /// <param name="delimiter">The delimiter string. Default is ",".</param>
         /// <returns></returns>
-        public static string Concatenate<T>(this IEnumerable<T> source, string delimiter = Constants.Comma) {
+        public static string Concatenate<T>(this IEnumerable<T> sequence, string delimiter = Constants.Comma) {
             var sb = new StringBuilder();
             bool first = true;
-            foreach (T t in source) {
+            foreach (T t in sequence) {
                 if (first) {
                     first = false;
                 }
@@ -227,10 +233,10 @@ namespace CodeEnv.Master.Common {
         /// Shuffles the specified source.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="source">The source.</param>
+        /// <param name="sequence">The source.</param>
         /// <returns></returns>
-        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
-            return RandomExtended.Shuffle<T>(source.ToArray());
+        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> sequence) {
+            return RandomExtended.Shuffle<T>(sequence.ToArray());
         }
 
         /// <summary>
@@ -244,39 +250,48 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Populates the source array with the provided value.
+        /// Populates the collection with the provided T value. The number of slots
+        /// to populate is determined by quantity.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="array">The array.</param>
-        /// <param name="value">The value.</param>
-        public static void Populate<T>(this T[] array, T value) {
-            for (int i = 0; i < array.Length; i++) {
-                array[i] = value;
+        /// <param name="list">The list.</param>
+        /// <param name="value">The value to populate with.</param>
+        /// <param name="quantity">The quantity of slots in the collection that will be populated.</param>
+        public static void Populate<T>(this ICollection<T> list, T value, int quantity) {
+            list.Clear();
+            for (int i = 0; i < quantity; i++) {
+                list.Add(value);
             }
         }
 
-        ///// <summary>
-        ///// Populates the source list with the provided value.
-        ///// </summary>
-        ///// <typeparam name="T"></typeparam>
-        ///// <param name="list">The list.</param>
-        ///// <param name="value">The value.</param>
-        //public static void Populate<T>(this List<T> list, T value) {
-        //    for (int i = 0; i < list.Count; i++) {
-        //        list[i] = value;
-        //    }
-        //}
+        /// <summary>
+        /// Populates the collection with default(T) value. The number of slots
+        /// to populate is determined by quantity.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="quantity">The quantity.</param>
+        public static void Populate<T>(this ICollection<T> list, int quantity) {
+            Populate<T>(list, default(T), quantity);
+        }
 
         /// <summary>
-        /// Populates the source list with the provided value.
+        /// Populates the capacity of the List with the provided T value. 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <param name="value">The value.</param>
-        public static void Populate<T>(this IList<T> list, T value) {
-            for (int i = 0; i < list.Count; i++) {
-                list[i] = value;
-            }
+        public static void Populate<T>(this List<T> list, T value) {
+            Populate<T>(list, value, list.Capacity);
+        }
+
+        /// <summary>
+        /// Populates the capacity of the List with default(T).
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">The list.</param>
+        public static void Populate<T>(this List<T> list) {
+            Populate<T>(list, list.Capacity);
         }
 
         /// <summary>

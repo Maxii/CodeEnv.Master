@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -36,7 +36,7 @@ public class TopographyMonitor : AColliderMonitor {
         }
         //D.Log("{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3}.",
         //ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
-        var listener = other.gameObject.GetInterface<ITopographyChangeListener>();
+        var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             listener.OnTopographyChanged(ParentItem.Topography);
         }
@@ -49,7 +49,7 @@ public class TopographyMonitor : AColliderMonitor {
         }
         //D.Log("{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3}.",
         //  ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
-        var listener = other.gameObject.GetInterface<ITopographyChangeListener>();
+        var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             listener.OnTopographyChanged(SurroundingTopography);
         }

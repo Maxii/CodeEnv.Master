@@ -41,7 +41,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         base.InitializeOnAwake();
         _hiddenPanels = new List<UIPanel>();
         if (GameManager.Instance.CurrentScene == SceneLevel.GameScene && fixedGuiPanels.IsNullOrEmpty()) {
-            D.WarnContext("{0}.fixedGuiPanels list is empty.".Inject(GetType().Name), gameObject);
+            D.WarnContext(gameObject, "{0}.fixedGuiPanels list is empty.", GetType().Name);
         }
         CheckDebugSettings();
         InitializeButtonClickSystem();
@@ -49,7 +49,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
     private void InitializeButtonClickSystem() {
         _buttonLookup = new Dictionary<GuiElementID, GameObject>();
-        var allButtons = gameObject.GetSafeMonoBehavioursInChildren<UIButton>(includeInactive: true);
+        var allButtons = gameObject.GetSafeComponentsInChildren<UIButton>(includeInactive: true);
         var buttonGuiElements = allButtons.Select(b => b.gameObject.GetComponent<AGuiElement>()).Where(ge => ge != null);
         buttonGuiElements.ForAll(bge => {
             _buttonLookup.Add(bge.ElementID, bge.gameObject);
@@ -93,7 +93,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
             GuiCameraControl.Instance.GuiCamera.enabled = false;
         }
         if (!debugSettings.EnableFpsReadout) {
-            gameObject.GetSafeFirstMonoBehaviourInChildren<FpsReadout>().gameObject.SetActive(false);
+            gameObject.GetSingleComponentInChildren<FpsReadout>().gameObject.SetActive(false);
         }
     }
 

@@ -72,7 +72,7 @@ public abstract class AGuiWindow : AMonoBase {
 
     protected virtual void AcquireReferences() {
         _gameTime = GameTime.Instance;
-        _panel = UnityUtility.ValidateMonoBehaviourPresence<UIPanel>(gameObject);
+        _panel = UnityUtility.ValidateComponentPresence<UIPanel>(gameObject);
     }
 
     protected override void Start() {

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Gets the transform of this IWidgetTrackable target.
         /// </summary>
-        Transform Transform { get; }
+        Transform transform { get; }
 
         /// <summary>
         /// Gets the offset used to place the widget, relative to this IWidgetTrackable target.

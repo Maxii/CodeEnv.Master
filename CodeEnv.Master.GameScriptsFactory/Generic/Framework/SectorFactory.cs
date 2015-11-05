@@ -40,10 +40,10 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
     public SectorItem MakeSectorInstance(Index3D sectorIndex, Vector3 worldLocation) {
         GameObject sectorGO = UnityUtility.AddChild(SectorsFolder.Instance.Folder.gameObject, _sectorPrefab);
         // sector.Awake() runs immediately here, then disables itself
-        SectorItem sector = sectorGO.GetSafeMonoBehaviour<SectorItem>();
+        SectorItem sector = sectorGO.GetSafeComponent<SectorItem>();
 
-        SectorData data = new SectorData(sector.Transform, sectorIndex) {
-            //Density = 1F
+        SectorData data = new SectorData(sector.transform, sectorIndex) {
+            //Density = 1F  the concept of space density is now attached to Topography, not Sectors. Density is relative and affects only drag
         };
         sector.Data = data;
         // IMPROVE use data values in place of sector values

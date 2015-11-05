@@ -142,7 +142,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void OnCurrentSectorIndexChanged() {
-        _transform.position = _sectorGrid.GetSector(CurrentSectorIndex).Position;
+        transform.position = _sectorGrid.GetSector(CurrentSectorIndex).Position;
         UpdateSectorIDLabel();
     }
 
@@ -212,7 +212,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             return;
         }
         if (_wireframe == null) {
-            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, width: 2F, color: TempGameValues.SectorHighlightColor);
+            _wireframe = new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F, color: TempGameValues.SectorHighlightColor);
         }
         if (_sectorIDLabel == null) {
             UpdateSectorIDLabel();
@@ -269,9 +269,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         }
     }
 
-    public Vector3 Position { get { return _transform.position; } }
-
-    public Transform Transform { get { return _transform; } }
+    public Vector3 Position { get { return transform.position; } }
 
     public string DisplayName { get { return GetType().Name; } }
 

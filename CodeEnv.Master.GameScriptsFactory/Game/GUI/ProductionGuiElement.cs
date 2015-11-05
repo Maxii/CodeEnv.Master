@@ -52,10 +52,10 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
     }
 
     private void InitializeValuesAndReferences() {
-        _imageNameLabel = gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UILabel>();
-        var sprites = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UISprite>();
+        _imageNameLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>();
+        var sprites = gameObject.GetSafeComponentsInImmediateChildren<UISprite>();
         var imageFrameSprite = sprites.Single(s => s.spriteName == TempGameValues.ImageFrameSpriteName);
-        _imageSprite = imageFrameSprite.gameObject.GetSafeFirstMonoBehaviourInChildrenOnly<UISprite>();
+        _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInChildren<UISprite>(excludeSelf: true);
         // UNDONE find constructionTime and buyoutCost labels
     }
 

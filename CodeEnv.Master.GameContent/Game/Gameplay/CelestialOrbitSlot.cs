@@ -54,12 +54,12 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public IOrbitSimulator AssumeOrbit(Transform orbitingObject, string orbitSimulatorName = "") {
             D.Log("{0}.AssumeOrbit({1}) called.", _orbitedObject.name, orbitingObject.name);
-            D.Assert(orbitingObject.GetInterface<IShipItem>() == null);
+            D.Assert(orbitingObject.GetComponent<IShipItem>() == null);
             if (_orbitSimulator != null) {
-                D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.".Inject(orbitingObject.name, _orbitedObject.name, _orbitSimulator.Transform.name));
+                D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.", orbitingObject.name, _orbitedObject.name, _orbitSimulator.transform.name);
             }
             _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(_orbitedObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbitSimulatorName);
-            UnityUtility.AttachChildToParent(orbitingObject.gameObject, _orbitSimulator.Transform.gameObject);
+            UnityUtility.AttachChildToParent(orbitingObject.gameObject, _orbitSimulator.transform.gameObject);
             orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
             return _orbitSimulator;
         }
@@ -76,11 +76,10 @@ namespace CodeEnv.Master.GameContent {
 
         private IEnumerator DestroyOrbitSimulatorWhenEmpty() {
             var cumTime = 0F;
-            while (_orbitSimulator.Transform.childCount > Constants.Zero) {
+            while (_orbitSimulator.transform.childCount > Constants.Zero) {
                 cumTime += Time.deltaTime;
                 if (cumTime > 6F) {
-                    D.WarnContext("{0} around {1} still waiting for destruction."
-                        .Inject(_orbitSimulator.Transform.name, _orbitedObject.name), _orbitSimulator.Transform);
+                    D.WarnContext(_orbitSimulator.transform, "{0} around {1} still waiting for destruction.", _orbitSimulator.transform.name, _orbitedObject.name);
                 }
                 yield return null;
             }

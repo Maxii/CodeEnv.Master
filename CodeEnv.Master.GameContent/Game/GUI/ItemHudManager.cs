@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region IDisposable
-        [DoNotSerialize]
+
         private bool alreadyDisposed = false;
 
         /// <summary>

@@ -33,12 +33,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="gridPoints">All the points in the grid.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public GridWireframe(string name, IList<Vector3> gridPoints, float width = 1F, GameColor color = GameColor.Gray)
+        public GridWireframe(string name, List<Vector3> gridPoints, float width = 1F, GameColor color = GameColor.Gray)
             : base(name, gridPoints, null, LineType.Discrete, width, color) {
         }
-        //public GridWireframe(string name, Vector3[] gridPoints, float width = 1F, GameColor color = GameColor.Gray)
-        //    : base(name, gridPoints, null, LineType.Discrete, width, color) {
-        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -41,9 +41,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var meshRenderers = itemGo.GetComponentsInImmediateChildrenOnly<MeshRenderer>();
-            var primaryMeshRenderer = meshRenderers.Single(mr => mr.gameObject.GetInterface<IRevolver>() != null);
-            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
+            var meshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>();
+            var primaryMeshRenderer = meshRenderers.Single(mr => mr.GetComponent<IRevolver>() != null);
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
             return primaryMeshRenderer;
@@ -51,11 +51,11 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void InitializeSecondaryMeshes(GameObject itemGo) {
             base.InitializeSecondaryMeshes(itemGo);
-            _secondaryMeshRenderers = itemGo.GetComponentsInImmediateChildrenOnly<MeshRenderer>().Except(_primaryMeshRenderer);
+            _secondaryMeshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {  // some planets may not have atmosphere or rings
                 _secondaryMeshRenderers.ForAll(r => {
                     r.gameObject.layer = (int)Layers.PlanetoidCull;  // layer automatically handles showing
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;   //r.castShadows = true;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                     r.receiveShadows = true;
                     r.enabled = false;
                 });
@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
-            _revolver = itemGo.GetSafeInterfaceInImmediateChildren<IRevolver>();
+            _revolver = itemGo.GetSingleInterfaceInImmediateChildren<IRevolver>();  // avoids moon revolvers
             _revolver.enabled = false;
             // TODO Revolver settings
         }

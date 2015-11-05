@@ -34,7 +34,7 @@ public class GuiUsernameInput : ATextTooltip {
     }
 
     private void InitializeValuesAndReferences() {
-        _inputField = gameObject.GetSafeMonoBehaviour<UIInput>();
+        _inputField = gameObject.GetSafeComponent<UIInput>();
         _inputField.value = PlayerPrefsManager.Instance.Username;
         EventDelegate.Add(_inputField.onSubmit, OnUsernameSubmitted);
     }

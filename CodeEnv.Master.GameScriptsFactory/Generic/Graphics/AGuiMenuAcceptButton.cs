@@ -40,7 +40,7 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        _panel = gameObject.GetSafeFirstMonoBehaviourInParents<UIPanel>();
+        _panel = gameObject.GetSafeFirstComponentInParents<UIPanel>();  // more than one panel in parents
         _checkboxes = _panel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         _popupLists = _panel.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         _sliders = _panel.gameObject.GetComponentsInChildren<UISlider>(includeInactive: true);
@@ -56,17 +56,17 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     /// </summary>
     private void CaptureState() {
         foreach (UIToggle checkbox in _checkboxes) {
-            var checkboxID = checkbox.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
+            var checkboxID = checkbox.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
             bool checkedState = checkbox.value;
             RecordCheckboxState(checkboxID, checkedState);
         }
         foreach (UIPopupList popupList in _popupLists) {
-            var popupListID = popupList.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
+            var popupListID = popupList.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
             string selection = popupList.value;
             RecordPopupListState(popupListID, selection);
         }
         foreach (UISlider slider in _sliders) {
-            var sliderID = slider.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>().ElementID;
+            var sliderID = slider.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
             float sliderValue = slider.value;
             RecordSliderState(sliderID, sliderValue);
         }

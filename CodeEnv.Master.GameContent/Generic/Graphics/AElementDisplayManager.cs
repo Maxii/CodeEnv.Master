@@ -50,22 +50,22 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject elementItemGo) {
             //D.Log("{0}.InitializePrimaryMesh({1}) called.", GetType().Name, elementItemGo.name);
-            IHull hull = elementItemGo.GetSafeInterfaceInChildren<IHull>();
+            IHull hull = elementItemGo.GetSingleInterfaceInChildren<IHull>();
             var primaryMeshRenderer = hull.HullMesh.gameObject.GetComponent<MeshRenderer>();
-            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             return primaryMeshRenderer;
         }
 
         protected override void InitializeSecondaryMeshes(GameObject elementItemGo) {
             base.InitializeSecondaryMeshes(elementItemGo);
-            var hullGo = elementItemGo.GetSafeInterfaceInChildren<IHull>().Transform.gameObject;
+            var hullGo = elementItemGo.GetSingleInterfaceInChildren<IHull>().transform.gameObject;
             _secondaryMeshRenderers = hullGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {
                 // Mounts
                 _secondaryMeshRenderers.ForAll(r => {
                     D.Assert((Layers)r.gameObject.layer == CullingLayer);
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;   //r.castShadows = true;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                     r.receiveShadows = true;
                     r.enabled = false;
                 });

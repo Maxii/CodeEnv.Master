@@ -86,9 +86,9 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject starPrefab = _starPrefabs.First(sGo => sGo.name == starStat.Category.GetValueName());
         GameObject starGo = UnityUtility.AddChild(systemParent.gameObject, starPrefab);
         starGo.layer = (int)starLayer;
-        StarItem item = starGo.GetSafeMonoBehaviour<StarItem>();
-        MakeInstance(starStat, systemParent.Data.Name, ref item);
-        return item;
+        StarItem starItem = starGo.GetSafeComponent<StarItem>();
+        MakeInstance(starStat, systemParent.Data.Name, ref starItem);
+        return starItem;
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetValueName(), star.category.GetValueName()));
 
         string starName = systemName + Constants.Space + CommonTerms.Star;
-        star.Data = new StarData(star.Transform, starStat) {
+        star.Data = new StarData(star.transform, starStat) {
             Name = starName,
             ParentName = systemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
@@ -122,7 +122,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
 
-        var planetItem = planetGo.GetSafeMonoBehaviour<PlanetItem>();
+        var planetItem = planetGo.GetSafeComponent<PlanetItem>();
         MakeInstance(planetStat, cmStats, parentSystem.Data.Name, ref planetItem);
         return planetItem;
     }
@@ -139,7 +139,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(!planet.enabled, "{0} should not be enabled.".Inject(planet.FullName));
         D.Assert(planet.transform.parent != null, "{0} should already have a parent.".Inject(planet.FullName));
         D.Assert(planetStat.Category == planet.category,
-            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName()));
+            "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
 
         Rigidbody planetRigidbody = planet.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
@@ -161,7 +161,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
-        var moonItem = moonGo.GetSafeMonoBehaviour<MoonItem>();
+        var moonItem = moonGo.GetSafeComponent<MoonItem>();
         MakeInstance(moonStat, cmStats, parentPlanet.Data.Name, ref moonItem);
         return moonItem;
     }
@@ -178,7 +178,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(!moon.enabled, "{0} should not be enabled.".Inject(moon.FullName));
         D.Assert(moon.transform.parent != null, "{0} should already have a parent.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
-            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName()));
+            "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName());
 
         Rigidbody moonRigidbody = moon.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
@@ -199,7 +199,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject systemGo = UnityUtility.AddChild(creatorParent.gameObject, systemPrefab);
         string systemName = creatorParent.SystemName;
         systemGo.name = systemName;
-        SystemItem item = systemGo.GetSafeMonoBehaviour<SystemItem>();
+        SystemItem item = systemGo.GetSafeComponent<SystemItem>();
         MakeSystemInstance(systemName, ref item);
         return item;
     }
@@ -211,8 +211,8 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="systemName">Name of the system.</param>
     /// <param name="system">The system item.</param>
     public void MakeSystemInstance(string systemName, ref SystemItem system) {
-        D.Assert(system.transform.parent != null, "{0} should already have a parent.".Inject(system.FullName));
-        SystemData data = new SystemData(system.Transform, systemName) {
+        D.Assert(system.transform.parent != null, "{0} should already have a parent.", system.FullName);
+        SystemData data = new SystemData(system.transform, systemName) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;

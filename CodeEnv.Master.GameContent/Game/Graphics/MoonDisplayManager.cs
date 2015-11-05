@@ -30,8 +30,8 @@ namespace CodeEnv.Master.GameContent {
         public MoonDisplayManager(GameObject itemGO) : base(itemGO) { }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
-            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
+            var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
             return primaryMeshRenderer;
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
-            _revolver = itemGo.GetSafeInterfaceInChildren<IRevolver>();
+            _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
             _revolver.enabled = false;
             // TODO Revolver settings
         }

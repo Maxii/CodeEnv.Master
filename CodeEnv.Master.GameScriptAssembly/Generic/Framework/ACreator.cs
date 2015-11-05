@@ -22,7 +22,6 @@ using CodeEnv.Master.Common;
 /// Abstract base class for Unit Creators. Primarily used as
 /// a non-generic constraint for CreatorEditors.
 /// </summary>
-[SerializeAll]
 public abstract class ACreator : AMonoBase {
 
     /// <summary>
@@ -52,7 +51,6 @@ public abstract class ACreator : AMonoBase {
     public int countermeasuresPerCmd = 2;
 
     public bool enableTrackingLabel = false;
-
 
     #region Nested Classes
 

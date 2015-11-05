@@ -108,7 +108,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void InitializeContextMenu(GameObject ctxObjectGO) {    // IMPROVE use of strings
-        _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(ctxObjectGO);
+        _ctxObject = UnityUtility.ValidateComponentPresence<CtxObject>(ctxObjectGO);
         _ctxObject.offsetMenu = true;
 
         // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
@@ -116,12 +116,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         // CtxObject hold the .menuItems that are set programmatically when Show is called. 
 
         if (_availableSubMenus.Count == Constants.Zero) {
-            _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>()
+            _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
                 .Where(menu => menu.gameObject.name.Equals("SubMenu")));
             D.Assert(UniqueSubmenuCountReqd <= _availableSubMenus.Count);
         }
         if (_generalCtxMenu == null) {
-            _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>()
+            _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
                 .Single(menu => menu.gameObject.name.Equals("GeneralMenu"));
         }
 
@@ -433,7 +433,6 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     #region IDisposable
 
-    [DoNotSerialize]
     private bool _alreadyDisposed = false;
     protected bool _isDisposing = false;
 

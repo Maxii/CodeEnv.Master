@@ -68,7 +68,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     public string FullName {
         get {
             if (Data == null) {
-                return _transform.name + "(from transform)";
+                return transform.name + "(from transform)";
             }
             return Data.FullName;
         }
@@ -77,8 +77,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     public string Name { get { return Data.Name; } }
 
     public Vector3 Position { get { return Data.Position; } }
-
-    public Transform Transform { get { return _transform; } }
 
     private float _radius;
     /// <summary>

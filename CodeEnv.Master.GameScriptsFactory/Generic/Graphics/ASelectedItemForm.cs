@@ -35,7 +35,7 @@ public abstract class ASelectedItemForm : AReportForm {
 
     protected override void InitializeNonGuiElementMembers() {
         base.InitializeNonGuiElementMembers();
-        var immediateChildLabels = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UILabel>();
+        var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _titleLabel = immediateChildLabels.Single(l => l != _nameLabel);
     }
 

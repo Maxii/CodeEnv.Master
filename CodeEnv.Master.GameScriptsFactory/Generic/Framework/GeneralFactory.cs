@@ -84,7 +84,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         explosionClone.layer = (int)Layers.TransparentFX;
         explosionClone.transform.position = itemPosition;
 
-        var explosionScaleControl = explosionClone.GetSafeMonoBehaviour<VisualEffectScale>();
+        var explosionScaleControl = explosionClone.GetSafeComponent<VisualEffectScale>();
         explosionScaleControl.ItemRadius = itemRadius;
         return explosionClone.GetComponent<ParticleSystem>();
     }
@@ -128,7 +128,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
                 prefab = RequiredPrefabs.Instance.missile;
                 ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
                 Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
-                Missile missile = ordnanceGo.GetSafeMonoBehaviour<Missile>();
+                Missile missile = ordnanceGo.GetSafeComponent<Missile>();
                 missile.ElementVelocityAtLaunch = firingElement.GetComponent<Rigidbody>().velocity;
                 ordnanceGo.layer = (int)Layers.Projectiles;
                 break;
@@ -144,7 +144,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         }
         ordnanceGo.transform.position = weapon.WeaponMount.MuzzleLocation;
         ordnanceGo.transform.rotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
-        return ordnanceGo.GetSafeMonoBehaviour<AOrdnance>();    //ordnanceGo.GetSafeInterface<IOrdnance>();
+        return ordnanceGo.GetSafeComponent<AOrdnance>();    //ordnanceGo.GetSafeInterface<IOrdnance>();
     }
 
     private void Cleanup() {
@@ -157,7 +157,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     }
 
     #region IDisposable
-    [DoNotSerialize]
+
     private bool _alreadyDisposed = false;
     protected bool _isDisposing = false;
 

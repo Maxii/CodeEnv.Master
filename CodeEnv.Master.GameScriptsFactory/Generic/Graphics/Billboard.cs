@@ -39,9 +39,9 @@ public class Billboard : AMonoBase, IBillboard {
     }
 
     private void CheckForUIPanelPresenceInParents() {
-        if (gameObject.GetFirstComponentInParents<UIPanel>() != null) {
+        if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
-            D.WarnContext("{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.".Inject(GetType().Name), this);
+            D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);
         }
     }
 
@@ -71,9 +71,9 @@ public class Billboard : AMonoBase, IBillboard {
         // Rotates the billboard t provided so its forward aligns with that of the provided camera's t, ie. the direction the camera is looking.
         // In effect, by adopting the camera's forward direction, the billboard is pointing at the camera's focal plane, not at the camera. 
         // It is the camera's focal plane whose image is projected onto the screen so that is what must be 'looked at'.
-        Vector3 targetPos = _transform.position + _cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);
+        Vector3 targetPos = transform.position + _cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);
         Vector3 targetOrientation = _cameraTransform.rotation * Vector3.up;
-        _transform.LookAt(targetPos, targetOrientation);
+        transform.LookAt(targetPos, targetOrientation);
     }
 
     protected override void Cleanup() { }

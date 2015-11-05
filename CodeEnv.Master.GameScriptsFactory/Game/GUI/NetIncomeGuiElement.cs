@@ -60,7 +60,7 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     protected override void Awake() {
         base.Awake();
         Validate();
-        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     private void OnIncomeSet() {

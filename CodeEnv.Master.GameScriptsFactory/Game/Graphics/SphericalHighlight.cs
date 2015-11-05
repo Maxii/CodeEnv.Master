@@ -110,7 +110,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     }
 
     private void UpdatePosition() {
-        _transform.position = _target.Position;
+        transform.position = _target.Position;
     }
 
     protected override void Cleanup() {

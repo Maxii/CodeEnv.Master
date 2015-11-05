@@ -41,8 +41,8 @@ public abstract class AGuiElement : ATextTooltip {
     public abstract void Reset();
 
     protected virtual void Validate() {
-        UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
-        D.WarnContext(ElementID == default(GuiElementID), "{0}.{1} not set.".Inject(gameObject.name, typeof(GuiElementID).Name), gameObject);
+        UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
+        D.WarnContext(ElementID == default(GuiElementID), this, "{0}.{1} not set.", gameObject.name, typeof(GuiElementID).Name);
     }
 
 }

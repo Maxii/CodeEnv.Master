@@ -60,7 +60,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var primaryMeshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
+        var primaryMeshRenderer = gameObject.GetSingleComponentInImmediateChildren<MeshRenderer>();
         //D.Log("Star renderer name = {0}, bounds size = {1}.", primaryMeshRenderer.name, primaryMeshRenderer.bounds.size);
         Radius = primaryMeshRenderer.bounds.size.x / 2F;    // half of the length, width or height, all the same surrounding a sphere
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
@@ -71,21 +71,10 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         InitializeShipOrbitSlot();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
     }
-    //protected override void InitializeLocalReferencesAndValues() {
-    //    base.InitializeLocalReferencesAndValues();
-    //    var primaryMeshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
-    //    //D.Log("Star renderer name = {0}, bounds size = {1}.", primaryMeshRenderer.name, primaryMeshRenderer.bounds.size);
-    //    Radius = primaryMeshRenderer.bounds.size.x / 2F;    // half of the length, width or height, all the same surrounding a sphere
-    //    collider.enabled = false;
-    //    collider.isTrigger = false;
-    //    (collider as SphereCollider).radius = Radius;
-    //    InitializeKeepoutZone();
-    //    InitializeShipOrbitSlot();
-    //    //D.Log("{0}.Radius set to {1}.", FullName, Radius);
-    //}
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
+        //SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -100,7 +89,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     protected override void InitializeModelMembers() {
         D.Assert(category == Data.Category);
-        System = gameObject.GetSafeFirstMonoBehaviourInParents<SystemItem>();
+        System = gameObject.GetSingleComponentInParents<SystemItem>();
         _detectionHandler = new DetectionHandler(this);
     }
 
@@ -139,10 +128,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         base.CommenceOperations();
         _collider.enabled = true;
     }
-    //public override void CommenceOperations() {
-    //    base.CommenceOperations();
-    //    collider.enabled = true;
-    //}
 
     public StarReport GetUserReport() { return Publisher.GetUserReport(); }
 

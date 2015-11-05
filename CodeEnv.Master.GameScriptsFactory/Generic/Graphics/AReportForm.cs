@@ -58,7 +58,7 @@ public abstract class AReportForm : AForm {
     private IDictionary<GuiElementID, AGuiElement> _guiElementsPresent;
 
     protected sealed override void InitializeValuesAndReferences() {
-        var guiElementsPresent = gameObject.GetSafeMonoBehavioursInChildren<AGuiElement>();
+        var guiElementsPresent = gameObject.GetSafeComponentsInChildren<AGuiElement>();
         _guiElementsPresent = guiElementsPresent.ToDictionary<AGuiElement, GuiElementID>(e => e.ElementID);
         _guiElementsPresent.Values.ForAll(e => InitializeGuiElement(e));
         InitializeNonGuiElementMembers();

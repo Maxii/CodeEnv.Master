@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using MoreLinq;
     using UnityEngine;
 
     /// <summary>
@@ -318,7 +319,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region IDisposable
-        [DoNotSerialize]
+
         private bool _alreadyDisposed = false;
         protected bool _isDisposing = false;
 

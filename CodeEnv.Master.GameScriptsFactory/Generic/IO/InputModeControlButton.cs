@@ -31,7 +31,7 @@ public class InputModeControlButton : AGuiButton {
     protected override void Awake() {
         base.Awake();
         if (inputModeOnClick == default(GameSceneInputMode)) {
-            D.WarnContext("{0} has not set {1}.".Inject(GetType().Name, typeof(GameSceneInputMode).Name), gameObject);
+            D.WarnContext(this, "{0} has not set {1}.", GetType().Name, typeof(GameSceneInputMode).Name);
         }
     }
 

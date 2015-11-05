@@ -23,6 +23,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using MoreLinq;
 using Pathfinding;
 using UnityEngine;
 
@@ -97,7 +98,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     private void InitializeNavigator() {
-        _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviour<Seeker>());
+        _navigator = new FleetNavigator(this, gameObject.GetSafeComponent<Seeker>());
     }
 
     protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
@@ -222,7 +223,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (_hqJoint == null) {
             InitializeHQAttachmentSystem();
         }
-        _transform.position = HQElement.Position;
+        transform.position = HQElement.Position;
         // Note: Assigning connectedBody links the two rigidbodies at their current relative positions. Therefore the Cmd must be
         // relocated to the HQElement before the joint is made. Making the joint does not itself relocate Cmd to the newly connectedBody
         _hqJoint.connectedBody = HQElement.gameObject.GetComponent<Rigidbody>();
@@ -291,17 +292,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (shipRigidbody.isKinematic) {
             // if kinematic, this ship came directly from the FleetCreator so it needs to get its initial position
             // instantly places the ship in its proper position before assigning it to a station so the station will find it 'onStation'
-            // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idlebase.PositionElementInFormation(element, stationOffset);
+            // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idle
+            base.PositionElementInFormation(element, stationOffset);
             shipRigidbody.isKinematic = false;
             // as ships were temporarily set to be immune to physics in FleetUnitCreator. Now that they are properly positioned, change them back
         }
-        //if (ship.transform.rigidbody.isKinematic) { // if kinematic, this ship came directly from the FleetCreator so it needs to get its initial position
-        //    // instantly places the ship in its proper position before assigning it to a station so the station will find it 'onStation'
-        //    // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idle
-        //    base.PositionElementInFormation(element, stationOffset);
-        //    // as ships were temporarily set to be immune to physics in FleetUnitCreator. Now that they are properly positioned, change them back
-        //    ship.Transform.rigidbody.isKinematic = false;
-        //}
 
         FormationStationMonitor shipStation = ship.FormationStation;
         if (shipStation == null) {
@@ -409,7 +404,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 if (!toShow) { return; }
                 Reference<float> fleetSpeed = new Reference<float>(() => Data.CurrentSpeed);
                 var name = DisplayName + " Velocity";
-                _velocityRay = new VelocityRay(name, _transform, fleetSpeed, width: 2F, color: GameColor.Green);
+                _velocityRay = new VelocityRay(name, transform, fleetSpeed, width: 2F, color: GameColor.Green);
             }
             _velocityRay.Show(toShow);
         }

@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         public IShipOrbitSimulator PrepareToAssumeOrbit(IShipItem ship) {
             if (_orbitSimulator == null) {
                 D.Assert(_orbitingShips.Count == Constants.Zero);
-                GameObject orbitedObjectGo = OrbitedObject.Transform.gameObject;
+                GameObject orbitedObjectGo = OrbitedObject.transform.gameObject;
                 _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbitSimulator") as IShipOrbitSimulator;
             }
             _orbitingShips.Add(ship);
@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
             if (_orbitingShips.Count == Constants.Zero) {
                 _orbitSimulator.IsActive = false;
                 D.Log("Destroying {0}'s {1}.", OrbitedObject.FullName, typeof(IOrbitSimulator).Name);
-                GameObject.Destroy(_orbitSimulator.Transform.gameObject);
+                GameObject.Destroy(_orbitSimulator.transform.gameObject);
                 // IMPROVE could also keep it around for future uses as rigidbody.isKinematic = true so not using up physics engine cycles
             }
         }
@@ -119,7 +119,7 @@ namespace CodeEnv.Master.GameContent {
             if (Contains(shipDistance)) {
                 return true;
             }
-            //D.Log("{0}'s distance {1:0.#} from {2} is not within {2}'s {3}.", ship.FullName, shipDistance, OrbitedObject.FullName, this);
+            D.Log("{0}'s distance {1:0.#} from {2} is not within {2}'s {3}.", ship.FullName, shipDistance, OrbitedObject.FullName, this);
             return false;
         }
 

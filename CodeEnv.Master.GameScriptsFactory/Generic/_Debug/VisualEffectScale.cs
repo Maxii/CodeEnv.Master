@@ -13,7 +13,7 @@
 #define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
-//#define UNITY_EDITOR
+#define UNITY_EDITOR
 
 // default namespace
 
@@ -109,10 +109,10 @@ public class VisualEffectScale : AMonoBase {
         base.Update();
 #if UNITY_EDITOR
         var currentScale = editorScale * ItemRadius * _radiusToScaleNormalizeFactor;
-        //D.Log("{0} currentScale on Update: {1}.", _transform.name, currentScale);
+        //D.Log("{0} currentScale on Update: {1}.", transform.name, currentScale);
         if (currentScale != _prevScale && currentScale > Constants.ZeroF) {
             if (toScaleGameObject) {
-                _transform.localScale = new Vector3(currentScale, currentScale, currentScale);
+                transform.localScale = new Vector3(currentScale, currentScale, currentScale);
             }
 
             float scaleFactor = currentScale / _prevScale;

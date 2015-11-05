@@ -35,7 +35,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <summary>
     /// Readonly. The location of the center of all sectors in world space.
     /// </summary>
-    //public IList<Vector3> SectorCenters { get { return _worldBoxLocations; } }
     public IEnumerable<Vector3> SectorCenters { get { return _sectorIndexToWorldBoxLocationLookup.Values; } }
 
     /// <summary>
@@ -52,7 +51,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private IList<Vector3> _worldVertexLocations;
     private IDictionary<Vector3, Index3D> _gridBoxToSectorIndexLookup;
     private IDictionary<Index3D, Vector3> _sectorIndexToGridBoxLookup;
-    //private IList<Vector3> _worldBoxLocations;
     private IDictionary<Index3D, Vector3> _sectorIndexToWorldBoxLocationLookup;
     private IDictionary<Index3D, SectorItem> _sectors;
 
@@ -78,13 +76,13 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void InitializeGrid() {
-        _grid = UnityUtility.ValidateMonoBehaviourPresence<GFRectGrid>(gameObject);
+        _grid = UnityUtility.ValidateComponentPresence<GFRectGrid>(gameObject);
         _grid.spacing = TempGameValues.SectorSize;
         _grid.relativeSize = true;
         _grid.renderGrid = false;
+        // No longer needed as MyAStarPointGraph now limits the number of sectors it will scan to 64
         //int sectorCount = Mathf.RoundToInt(Mathf.Pow(2F, 3F) * _grid.size.x * _grid.size.y * _grid.size.z);
         //D.Log("{0} will build {1} sectors.", GetType().Name, sectorCount);
-        // No longer needed as MyAStarPointGraph now limits the number of sectors it will scan to 64
         //if (sectorCount > 64) {
         //    D.Warn("Sector count is {0}. Currently, values over 64 can take a long time to scan.", sectorCount);
         //    // 2x2x2 < 1 sec, 3x3x3 < 5 secs, 5x5x5 > 90 secs
@@ -146,7 +144,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         if (_gridWireframe != null) {
             Vector3[] gridPoints;
             if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe.Points = gridPoints;
+                _gridWireframe.Points = new List<Vector3>(gridPoints);
             }
         }
         else {
@@ -157,8 +155,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private bool TryGenerateGridPoints(Index3D cameraSectorIndex, out Vector3[] gridPoints) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
-        Vector3 tempPosition = _transform.position;
-        _transform.position = Vector3.zero;
+        Vector3 tempPosition = transform.position;
+        transform.position = Vector3.zero;
         Vector3 gridLocOfCamera = GetGridVertexLocation(cameraSectorIndex);
 
         float xCameraGridLoc = gridLocOfCamera.x;
@@ -184,7 +182,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         //D.Log("CameraGridLoc {2}, RenderFrom {0}, RenderTo {1}.", renderFrom, renderTo, gridLocOfCamera);
 
         gridPoints = _grid.GetVectrosityPoints(renderFrom, renderTo);
-        _transform.position = tempPosition;
+        transform.position = tempPosition;
         bool hasPoints = !gridPoints.IsNullOrEmpty<Vector3>();
         if (!hasPoints) {
             D.Warn("No grid points to render.");
@@ -217,7 +215,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         _worldVertexLocations = new List<Vector3>();
         _gridBoxToSectorIndexLookup = new Dictionary<Vector3, Index3D>();
         _sectorIndexToGridBoxLookup = new Dictionary<Index3D, Vector3>();
-        //_worldBoxLocations = new List<Vector3>();
         _sectorIndexToWorldBoxLocationLookup = new Dictionary<Index3D, Vector3>();
         _sectors = new Dictionary<Index3D, SectorItem>();
 
@@ -242,7 +239,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                     _sectorIndexToGridBoxLookup.Add(index, gridBoxLocation);
 
                     Vector3 worldBoxLocation = _grid.GridToWorld(gridBoxLocation);
-                    //_worldBoxLocations.Add(worldBoxLocation);
                     _sectorIndexToWorldBoxLocationLookup.Add(index, worldBoxLocation);
 
                     __AddSector(index, worldBoxLocation);
@@ -250,7 +246,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             }
         }
         //D.Log("{0} grid and {1} world vertice found.", _gridVertexLocations.Count, _worldVertexLocations.Count);
-        //D.Log("{0} grid and {1} world boxes found.", _gridBoxToSectorIndexLookup.Count, _worldBoxLocations.Count);
         float elapsedTime = Time.time - __constructSectorsStartTime;
         D.Log("{0} spent {1:0.0000} seconds building {2} sectors.", GetType().Name, elapsedTime, _sectors.Keys.Count);
     }
@@ -468,7 +463,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         if (_gridWireframe == null) {
             Vector3[] gridPoints;
             if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
+                _gridWireframe = new GridWireframe("GridWireframe", new List<Vector3>(gridPoints));
             }
         }
 
@@ -476,18 +471,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             _gridWireframe.Show(toShow);
         }
     }
-    //public void ShowSectorGrid(bool toShow) {
-    //    if (_gridWireframe == null) {
-    //        Vector3[] gridPoints;
-    //        if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-    //            _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
-    //        }
-    //    }
-
-    //    if (_gridWireframe != null) {
-    //        _gridWireframe.Show(toShow);
-    //    }
-    //}
 
     protected override void Cleanup() {
         References.SectorGrid = null;

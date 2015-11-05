@@ -40,9 +40,11 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         base.Awake();
         _inputHelper = GameInputHelper.Instance;
         _inputMgr = InputManager.Instance;
-        _systemItemGo = gameObject.GetSafeFirstMonoBehaviourInParents<SystemItem>().gameObject;
+        _systemItemGo = gameObject.GetSingleComponentInParents<SystemItem>().gameObject;
         Subscribe();
     }
+
+    // MeshCollider is initialized by SystemItem
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();

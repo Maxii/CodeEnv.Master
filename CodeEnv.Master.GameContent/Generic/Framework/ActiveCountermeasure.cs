@@ -294,7 +294,7 @@ namespace CodeEnv.Master.GameContent {
         public sealed override string ToString() { return Stat.ToString(); }
 
         #region IDisposable
-        [DoNotSerialize]
+
         private bool _alreadyDisposed = false;
         protected bool _isDisposing = false;
 

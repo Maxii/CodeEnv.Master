@@ -43,8 +43,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetFirstComponentInImmediateChildrenOnly<MeshRenderer>();
-            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; //primaryMeshRenderer.castShadows = true;
+            var primaryMeshRenderer = itemGo.GetSingleComponentInImmediateChildren<MeshRenderer>();
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.StarCull);    // layer automatically handles showing
             return primaryMeshRenderer;
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
 
             var glowRenderers = itemGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             glowRenderers.ForAll(gr => {
-                gr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; //gr.castShadows = false;
+                gr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 gr.receiveShadows = false;
                 D.Assert((Layers)(gr.gameObject.layer) == Layers.StarCull); // layer automatically handles showing
                 gr.enabled = true;
@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
-            _glowBillboard = itemGo.GetSafeInterfaceInChildren<IBillboard>();
+            _glowBillboard = itemGo.GetSingleInterfaceInChildren<IBillboard>();
 
             var starLight = itemGo.GetComponentInChildren<Light>();
             starLight.range = References.GameManager.GameSettings.UniverseSize.Radius();

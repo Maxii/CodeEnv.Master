@@ -175,7 +175,7 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
     public override void LogEvent() {
         if (DebugSettings.Instance.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = _transform.name + "(from transform)";
+            string name = transform.name + "(from transform)";
             Debug.Log("{0}.{1}_{2}.{3}() called.".Inject(name, GetType().Name, InstanceCount, stackFrame.GetMethod().Name));
         }
     }

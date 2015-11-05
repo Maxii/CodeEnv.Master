@@ -30,8 +30,6 @@ public abstract class AHull : AMonoBase, IHull {
 
     public Transform HullMesh { get { return hullMesh; } }
 
-    public Transform Transform { get { return transform; } }
-
     protected abstract int MaxAllowedLosWeapons { get; }
 
     protected abstract int MaxAllowedMissileWeapons { get; }

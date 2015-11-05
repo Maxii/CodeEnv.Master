@@ -35,9 +35,7 @@ public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTar
 
     public bool IsCameraTargetEligible { get { return true; } }
 
-    public float MinimumCameraViewingDistance { get { return 50F; } }
-
-    public Transform Transform { get { return _transform; } }
+    public float MinimumCameraViewingDistance { get { return TempGameValues.MinimumCameraViewingDistance_UniverseEdge; } }
 
     #endregion
 

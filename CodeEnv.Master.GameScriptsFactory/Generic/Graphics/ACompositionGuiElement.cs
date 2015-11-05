@@ -42,8 +42,8 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
 
     protected override void Awake() {
         base.Awake();
-        _sprite = gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
-        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        _sprite = gameObject.GetSingleComponentInChildren<UISprite>();
+        _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     private void OnIconInfoChanged() {

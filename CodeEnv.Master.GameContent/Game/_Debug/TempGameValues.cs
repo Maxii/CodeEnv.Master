@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         public const float MinimumFramerate = 25F;
 
+        public const float MinimumCameraViewingDistance_UniverseEdge = 50F;
+
         public const int MinTrackingLabelShowDistance = 50;
         public const int MaxTrackingLabelShowDistance = 5000;
 

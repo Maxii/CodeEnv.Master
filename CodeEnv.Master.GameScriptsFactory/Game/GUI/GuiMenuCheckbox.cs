@@ -58,7 +58,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        _checkbox = gameObject.GetSafeMonoBehaviour<UIToggle>();
+        _checkbox = gameObject.GetSafeComponent<UIToggle>();
         EventDelegate.Add(_checkbox.onChange, OnCheckboxStateSet);
     }
 
@@ -79,7 +79,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
         if (prefsPropertyName != null) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
             if (propertyInfo == null) {
-                D.ErrorContext("No {0} property named {1} found!".Inject(typeof(PlayerPrefsManager).Name, prefsPropertyName), gameObject);
+                D.ErrorContext(this, "No {0} property named {1} found!", typeof(PlayerPrefsManager).Name, prefsPropertyName);
             }
             Func<bool> propertyGet = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
             isChecked = propertyGet();
@@ -87,7 +87,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
         }
         else {
             // no pref stored for this ElementID
-            D.WarnContext("{0} does not have a preference. Using default {1}.".Inject(ElementID.GetValueName(), DefaultValue), gameObject);
+            D.WarnContext(this, "{0} does not have a preference. Using default {1}.", ElementID.GetValueName(), DefaultValue);
             isChecked = DefaultValue;
         }
         _checkbox.value = isChecked;

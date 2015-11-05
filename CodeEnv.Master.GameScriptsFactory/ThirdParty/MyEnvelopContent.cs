@@ -56,10 +56,10 @@ public class MyEnvelopContent : AMonoBase {
     [ContextMenu("Execute")]
     public void Execute() {
         if (targetRoot == transform) {
-            D.ErrorContext("Target Root object cannot be the same object that has Envelop Content. Make it a sibling instead.", this);
+            D.ErrorContext(this, "Target Root object cannot be the same object that has Envelop Content. Make it a sibling instead.");
         }
         else if (NGUITools.IsChild(targetRoot, transform)) {
-            D.ErrorContext("Target Root object should not be a parent of Envelop Content. Make it a sibling instead.", this);
+            D.ErrorContext(this, "Target Root object should not be a parent of Envelop Content. Make it a sibling instead.");
         }
         else {
             Bounds b = NGUIMath.CalculateRelativeWidgetBounds(transform.parent, targetRoot, false, considerChildren: false);

@@ -38,7 +38,7 @@ public abstract class AWorldTrackingWidget_VariableSize : AWorldTrackingWidget {
                 result = max;
             }
             else {
-                D.WarnContext("{0} requested maxShowDistance {1} is too large to be legible. \nSetting reduced to {2}.".Inject(GetType().Name, max, result), this);
+                D.WarnContext(this, "{0} requested maxShowDistance {1} is too large to be legible. \nSetting reduced to {2}.", GetType().Name, max, result);
             }
         }
         return result;

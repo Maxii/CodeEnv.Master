@@ -28,7 +28,7 @@ public abstract class AGuiLabelReadout : ATextTooltip {
 
     protected override void Awake() {
         base.Awake();
-        _readoutLabel = gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<UILabel>();
+        _readoutLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>();
     }
 
     protected virtual void RefreshReadout(string text, GameColor color = GameColor.White) {

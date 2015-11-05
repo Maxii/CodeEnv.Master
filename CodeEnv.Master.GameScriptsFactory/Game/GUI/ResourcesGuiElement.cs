@@ -73,9 +73,9 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     }
 
     private void InitializeValuesAndReferences() {
-        _unknownLabel = gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UILabel>();
+        _unknownLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>();
 
-        var resourceContainers = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UIWidget>().Except(_unknownLabel);
+        var resourceContainers = gameObject.GetSafeComponentsInImmediateChildren<UIWidget>().Except(_unknownLabel);
         float avgLocalX = resourceContainers.Average(s => s.transform.localPosition.x);
         float avgLocalY = resourceContainers.Average(s => s.transform.localPosition.y);    // ~ 0F
 
@@ -163,13 +163,13 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             UIWidget container = _resourceContainerLookup[slot];
             NGUITools.SetActive(container.gameObject, true);
 
-            UISprite sprite = container.gameObject.GetSafeFirstMonoBehaviourInChildren<UISprite>();
+            UISprite sprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
             var resourceID = resourcesPresent[i];
             sprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
             sprite.spriteName = resourceID.GetIconFilename();
             _resourceIDLookup.Add(container.gameObject, resourceID);
 
-            var label = container.gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+            var label = container.gameObject.GetSingleComponentInChildren<UILabel>();
             label.text = _labelFormat.Inject(Resources.Value.GetYield(resourceID));
         }
     }

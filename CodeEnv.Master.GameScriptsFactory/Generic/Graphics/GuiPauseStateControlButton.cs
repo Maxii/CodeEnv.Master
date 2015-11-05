@@ -27,7 +27,7 @@ public class GuiPauseStateControlButton : AGuiButton {
 
     protected override void OnLeftClick() {
         if (pauseRequestOnClick == default(PauseRequest)) {
-            D.WarnContext("{0}.{1} not set.".Inject(GetType().Name, typeof(PauseRequest).Name), gameObject);
+            D.WarnContext(this, "{0}.{1} not set.", GetType().Name, typeof(PauseRequest).Name);
         }
         bool toPause = pauseRequestOnClick == PauseRequest.Pause;
         _gameMgr.RequestPauseStateChange(toPause);

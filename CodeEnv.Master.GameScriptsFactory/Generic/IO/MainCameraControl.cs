@@ -126,8 +126,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// The position of the camera in world space.
     /// </summary>
     public Vector3 Position {
-        get { return _transform.position; }
-        private set { _transform.position = value; }
+        get { return transform.position; }
+        private set { transform.position = value; }
     }
 
     /// <summary>
@@ -159,7 +159,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private bool _isZoomOutOnCursorEnabled;    // ScrollWheel always zooms IN on cursor, zooming OUT with the ScrollWheel is directly backwards by default
 
     // Cached references
-    [DoNotSerialize]    // Serializing this creates duplicates of this object on Save
+    //[DoNotSerialize]    // Serializing this creates duplicates of this object on Save
     private PlayerPrefsManager _playerPrefsMgr;
     private Camera _camera;
     private InputManager _inputMgr;
@@ -285,7 +285,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if ((edgeFocusTilt.activate && edgeFocusZoom.activate) || (edgeFreeTilt.activate && edgeFreeZoom.activate) || (edgeFollowTilt.activate && edgeFollowZoom.activate)) {
             isValid = false;
         }
-        D.Assert(isValid, "Incompatable Camera Configuration.", pauseOnFail: true);
+        D.Assert(isValid, "Incompatable Camera Configuration.");
     }
 
     private void InitializeMainCamera() {   // called from OnGameStateChanged()
@@ -344,7 +344,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
         _sectorIndex = _sectorGrid.GetSectorIndex(Position);
-        _transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
+        transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
 
         ResetAtCurrentLocation();
         // UNDONE whether starting or continuing saved game, camera position should be focused on the player's starting planet, no rotation
@@ -369,23 +369,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         universeEdgeCollider.radius = _universeRadius;
         universeEdge.layer = (int)Layers.UniverseEdge;
     }
-    //private void CreateUniverseEdge() {
-    //    GameObject universeEdge = null;
-    //    SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.universeEdge;
-    //    if (universeEdgePrefab == null) {
-    //        D.Warn("UniverseEdgePrefab on RequiredPrefabs is null.");
-    //        string universeEdgeName = Layers.UniverseEdge.GetValueName();
-    //        universeEdge = new GameObject(universeEdgeName);
-    //        universeEdge.AddComponent<SphereCollider>();
-    //        universeEdge.isStatic = true;
-    //        UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
-    //    }
-    //    else {
-    //        universeEdge = NGUITools.AddChild(UniverseFolder.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
-    //    }
-    //    (universeEdge.collider as SphereCollider).radius = _universeRadius;
-    //    universeEdge.layer = (int)Layers.UniverseEdge;
-    //}
 
     private void CreateDummyTarget() {
         Transform dummyTargetPrefab = RequiredPrefabs.Instance.cameraDummyTarget;
@@ -419,17 +402,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         SyncRotation();
         CurrentState = CameraState.Freeform;
     }
-    //private void ResetAtCurrentLocation() {
-    //    _dummyTarget.collider.enabled = false;
-    //    // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
-    //    PlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
-    //    _dummyTarget.collider.enabled = true;
-    //    SyncRotation();
-    //    CurrentState = CameraState.Freeform;
-    //}
 
     private void SyncRotation() {
-        Quaternion startingRotation = _transform.rotation;
+        Quaternion startingRotation = transform.rotation;
         Vector3 startingEulerRotation = startingRotation.eulerAngles;
         _xAxisRotation = startingEulerRotation.x;
         _yAxisRotation = startingEulerRotation.y;
@@ -452,7 +427,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         EnableCameraRoll(_playerPrefsMgr.IsCameraRollEnabled);
     }
 
-    [DoNotSerialize]
+    //[DoNotSerialize]
     private bool _restoredGameFlag = false;
 
     private void OnGameStateChanged() {
@@ -566,7 +541,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void OnCurrentFocusChanged() {
         if (CurrentFocus != null) {
-            Transform newFocus = CurrentFocus.Transform;
+            Transform newFocus = CurrentFocus.transform;
             D.Log("New Focus is now {0}.", newFocus.name);
             SetFocusAsTarget(newFocus);
         }
@@ -641,7 +616,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void UpdateCamera_Focusing() {
         // transition process to allow lookAt to complete. Only entered from OnFocusSelected, when !IsResetOnFocus
-        if (_targetDirection.IsSameDirection(_transform.forward, 1F)) {
+        if (_targetDirection.IsSameDirection(transform.forward, 1F)) {
             // exits when the lookAt rotation is complete
             CurrentState = CameraState.Focused;
             return;
@@ -837,7 +812,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         #endregion
 
         // this is the key to re-positioning the already rotated camera so that it is looking at the target
-        _targetDirection = _transform.forward;
+        _targetDirection = transform.forward;
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
 
         // OPTIMIZE lets me change the values on the fly in the inspector
@@ -916,13 +891,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
         if (dragFreeTruck.IsActivated()) {
             inputValue = _inputMgr.GetDragDelta().x;
-            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
+            PlaceDummyTargetAtUniverseEdgeInDirection(transform.right);
             distanceChange = inputValue * dragFreeTruck.InputTypeNormalizer * dragFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget += distanceChange;
         }
         if (dragFreePedestal.IsActivated()) {
             inputValue = _inputMgr.GetDragDelta().y;
-            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
+            PlaceDummyTargetAtUniverseEdgeInDirection(transform.up);
             distanceChange = inputValue * dragFreePedestal.InputTypeNormalizer * dragFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget += distanceChange;
         }
@@ -1038,13 +1013,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreeTruck.IsActivated()) {
-            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
+            PlaceDummyTargetAtUniverseEdgeInDirection(transform.right);
             inputValue = _inputMgr.GetArrowKeyEventValue(keyFreeTruck.keyboardAxis);
             distanceChange = inputValue * keyFreeTruck.InputTypeNormalizer * keyFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreePedestal.IsActivated()) {
-            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
+            PlaceDummyTargetAtUniverseEdgeInDirection(transform.up);
             inputValue = _inputMgr.GetArrowKeyEventValue(keyFreePedestal.keyboardAxis);
             distanceChange = inputValue * keyFreePedestal.InputTypeNormalizer * keyFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
@@ -1080,8 +1055,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         LogEvent();
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
-        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviour<ADiscernibleItem>().FullName);
-        ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
+        //D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviour<ADiscernibleItem>().FullName);
+        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeComponent<ADiscernibleItem>().FullName);
+        ICameraFollowable icfTarget = _target.gameObject.GetSafeInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraPositionDampener = icfTarget.FollowDistanceDampener;
 
@@ -1122,7 +1098,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // the distance change value used to modify _optimalDistanceToTarget as determined by inputValue and distanceChgAllowedPerUnitInput
         float distanceChange = 0F;
 
-        //bool isActivatedFound = false;
+        //bool isActivatedFound = false;    // debug help for detecting whether more than one config isActivated during a frame
 
         if (dragFollowOrbit.IsActivated()) {
             Vector2 dragDelta = _inputMgr.GetDragDelta();
@@ -1235,7 +1211,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
 
         // OPTIMIZE This continuous refresh process below lets me change the values on the fly in the inspector
-        ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
+        ICameraFollowable icfTarget = _target.gameObject.GetSafeInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraPositionDampener = icfTarget.FollowDistanceDampener;
 
@@ -1298,13 +1274,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // any object that can be focused on has the focus's position as the targetPoint
         ChangeTarget(focus, focus.position);
 
-        ICameraFocusable qualifiedCameraFocusTarget = focus.GetInterface<ICameraFollowable>();
+        ICameraFocusable qualifiedCameraFocusTarget = focus.GetComponent<ICameraFollowable>();
         if (qualifiedCameraFocusTarget != null) {
             CurrentState = CameraState.Follow;
             return;
         }
 
-        qualifiedCameraFocusTarget = focus.GetInterface<ICameraFocusable>();
+        qualifiedCameraFocusTarget = focus.GetComponent<ICameraFocusable>();
         if (qualifiedCameraFocusTarget != null) {
             if (!_isResetOnFocusEnabled) {
                 // if not resetting world coordinates on focus, the camera just turns to look at the focus
@@ -1347,7 +1323,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
         // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
         // I am requiring that the interface be present with the Rigidbody.
-        ICameraTargetable qualifiedCameraTarget = newTarget.GetInterface<ICameraTargetable>();
+        ICameraTargetable qualifiedCameraTarget = newTarget.GetComponent<ICameraTargetable>();
         if (qualifiedCameraTarget != null) {
             if (!qualifiedCameraTarget.IsCameraTargetEligible) {
                 return;
@@ -1355,7 +1331,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
             //D.Log("Target {0} _minimumDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
-            ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterface<ICameraFocusable>();
+            ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetComponent<ICameraFocusable>();
             if (qualifiedCameraFocusTarget != null) {
                 _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
                 //D.Log("Target {0} _optimalDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _optimalDistanceFromTarget));
@@ -1363,7 +1339,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             // no reason to know whether the Target is followable or not for these values for now
         }
         else {
-            D.ErrorContext("New Target {0} is not {1}.".Inject(newTarget.name, typeof(ICameraTargetable).Name), this);
+            D.ErrorContext(this, "New Target {0} is not {1}.", newTarget.name, typeof(ICameraTargetable).Name);
             return;
         }
         AssignTarget(newTarget, newTargetPoint);
@@ -1384,7 +1360,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     public void ResetToWorldspace() {
         // current and requested distance to Target already set
         Quaternion zeroRotation = Quaternion.identity;
-        _transform.rotation = zeroRotation;
+        transform.rotation = zeroRotation;
         Vector3 zeroRotationVector = zeroRotation.eulerAngles;
         _xAxisRotation = zeroRotationVector.x;
         _yAxisRotation = zeroRotationVector.y;
@@ -1404,25 +1380,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (toLockCursor) {
             // cursor locked to center of screen and disappears
             Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false; 
+            Cursor.visible = false;
         }
         else {
             // cursor reappears in the center of the screen
             Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;  
+            Cursor.visible = true;
         }
     }
-    //private void LockCursor(bool toLockCursor) {
-    //    if (toLockCursor && !Screen.lockCursor) {
-    //        Screen.lockCursor = true;   // cursor disappears
-    //    }
-    //    else if (Screen.lockCursor && !toLockCursor) {
-    //        Screen.lockCursor = false;  // cursor reappears in the center of the screen
-    //    }
-    //}
 
     private void ProcessChanges(float deltaTime) {
-        _transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
+        transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
         //_transform.localRotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
 
         //D.Log("RequestedDistanceFromTarget = {0}, MinimumDistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget));
@@ -1481,7 +1449,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </returns>
     private bool TrySetScrollZoomTarget(InputManager.ScrollEvent scrollEvent, Vector3 screenPoint) {
         if (scrollEvent.target != null) {
-            var proposedZoomTarget = scrollEvent.target.Transform;
+            var proposedZoomTarget = scrollEvent.target.transform;
             if (proposedZoomTarget == _dummyTarget) {
                 // the stationary, existing DummyTarget
                 return false;
@@ -1538,7 +1506,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 }
 
                 // there is only one hit so determine the proposedZoomPoint and done
-                if (proposedZoomTarget.GetInterface<IZoomToFurthest>() == null) {
+                if (proposedZoomTarget.GetComponent<IZoomToFurthest>() == null) {
                     proposedZoomPoint = proposedZoomTarget.position;
                 }
                 else {
@@ -1551,7 +1519,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             // involved will return the transform of the parent, not the child. 
 
             // there are multiple eligibleIctHits
-            var zoomToFurthestHits = from h in eligibleIctHits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
+            //var zoomToFurthestHits = from h in eligibleIctHits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
+            var zoomToFurthestHits = eligibleIctHits.Where(ictHit => ictHit.transform.GetComponent<IZoomToFurthest>() != null);
             var remainingHits = eligibleIctHits.Except(zoomToFurthestHits);
             if (remainingHits.Any()) {
                 // there is a hit that isn't a IZoomToFurthest, so pick the closest and done
@@ -1586,20 +1555,27 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         var eligibleIctHits = new List<SimpleRaycastHit>();
         foreach (var hit in hits) {
             SimpleRaycastHit eligibleIctHit = default(SimpleRaycastHit);
-            ICameraTargetable ict = hit.transform.GetInterface<ICameraTargetable>();
+            ICameraTargetable ict = hit.transform.GetComponent<ICameraTargetable>();
             if (ict != null) {
                 if (ict.IsCameraTargetEligible) {
                     eligibleIctHit = new SimpleRaycastHit(hit.transform, hit.point);
                 }
             }
             else {
-                Transform t = hit.transform.GetTransformWithInterfaceInParents<ICameraTargetable>(out ict);
-                if (t != null) {
-                    if (ict.IsCameraTargetEligible) {
-                        eligibleIctHit = new SimpleRaycastHit(t, hit.point);
-                    }
+                ict = hit.transform.gameObject.GetComponentInParent<ICameraTargetable>();
+                if (ict != null && ict.IsCameraTargetEligible) {
+                    Transform ictTransform = (ict as Component).transform;
+                    eligibleIctHit = new SimpleRaycastHit(ictTransform, hit.point);
                 }
             }
+            //else {
+            //    Transform t = hit.transform.GetTransformWithInterfaceInParents<ICameraTargetable>(out ict);
+            //    if (t != null) {
+            //        if (ict.IsCameraTargetEligible) {
+            //            eligibleIctHit = new SimpleRaycastHit(t, hit.point);
+            //        }
+            //    }
+            //}
 
             if (eligibleIctHit != default(SimpleRaycastHit)) {
                 eligibleIctHits.Add(eligibleIctHit);
@@ -1696,7 +1672,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         //D.Log("Desired Facing: {0}.", desiredFacingDirection);
 
-        Quaternion startingRotation = _transform.rotation;
+        Quaternion startingRotation = transform.rotation;
 
         // This approach DOES generate a desired local rotation from the angles BUT it continues to change,
         // always staying in front of the changes from the slerp. This is because .right, .up and .forward continuously 

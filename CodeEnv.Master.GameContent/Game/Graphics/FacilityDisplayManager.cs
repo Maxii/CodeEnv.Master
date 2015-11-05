@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
-            _revolver = itemGo.GetSafeInterfaceInChildren<IRevolver>();
+            _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
             _revolver.enabled = false;
             // TODO Revolver settings
         }

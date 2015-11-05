@@ -73,10 +73,26 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        _popupList = UnityUtility.ValidateMonoBehaviourPresence<UIPopupList>(gameObject);
-        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        _popupList = InitializePopupList();
+        //_label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSingleComponentInChildren<UILabel>();
         EventDelegate.Add(_popupList.onChange, _label.SetCurrentSelection);
         EventDelegate.Add(_popupList.onChange, OnPopupListSelection);
+    }
+
+    /// <summary>
+    /// Initializes the popup list prior to any content being added by this client. This includes validating that the popupList
+    /// has no initial content in the inspector text box. With no text box content, UIPopupList.Start() won't raise an onChange 
+    /// event before this client can populate the list with its own content.
+    /// </summary>
+    private UIPopupList InitializePopupList() {
+        //UIPopupList popupList = UnityUtility.ValidateMonoBehaviourPresence<UIPopupList>(gameObject);
+        UIPopupList popupList = UnityUtility.ValidateComponentPresence<UIPopupList>(gameObject);
+        // popupList.Clear();  // This just clears an initially empty items list and does nothing about what is showing in the editor.
+        // Unfortunately, the UIPopupListInspector reads what is in the editor's text box and adds it to the items list every time OnInspectorGui()
+        // is called. Accordingly, I have to manually clear the editor text box of content if I don't want the onChange event raised on Start().
+        D.Assert(!Utility.CheckForContent<string>(popupList.items), "{0}: UIPopupList Inspector content must be empty.".Inject(GetType().Name), this);
+        return popupList;
     }
 
     private void InitializeSelection() {
@@ -88,8 +104,8 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
     /// Assign the choices available for selection in the popupList from Choices.
     /// </summary>
     protected void AssignSelectionChoices() {
-        _popupList.items.Clear();
-        Choices.ForAll(n => _popupList.AddItem(n));
+        _popupList.Clear();
+        Choices.ForAll(choiceName => _popupList.AddItem(choiceName));
         Validate();
     }
 
@@ -109,7 +125,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
         if (prefsPropertyName != null) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
             if (propertyInfo == null) {
-                D.ErrorContext("No {0} property named {1} found!".Inject(typeof(PlayerPrefsManager).Name, prefsPropertyName), gameObject);
+                D.ErrorContext(this, "No {0} property named {1} found!", typeof(PlayerPrefsManager).Name, prefsPropertyName);
                 isPrefSelected = false;
             }
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
@@ -117,8 +133,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
             //D.Log("{0} is using preference value {1} as its selection.", ElementID.GetValueName(), valueName);
             if (!_popupList.items.Contains(valueName)) {
                 // the prefs value is not one of the available choices
-                //D.LogContext("{0} Prefs value {1} is not among choices available to select. Using default {2}."
-                //    .Inject(ElementID.GetValueName(), valueName, DefaultSelection), gameObject);
+                //D.LogContext(this, "{0} Prefs value {1} is not among choices available to select. Using default {2}.", ElementID.GetValueName(), valueName, DefaultSelection);
                 valueName = DefaultSelection;
                 isPrefSelected = false;
             }

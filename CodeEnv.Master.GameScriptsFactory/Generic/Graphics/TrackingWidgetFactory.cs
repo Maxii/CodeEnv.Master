@@ -49,7 +49,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layerForTrackingWidget = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
 
-        var trackingWidget = clone.GetSafeMonoBehaviour<UITrackingLabel>();
+        var trackingWidget = clone.GetSafeComponent<UITrackingLabel>();
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -74,7 +74,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers layerForTrackingWidget = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
 
-        var trackingWidget = clone.GetSafeMonoBehaviour<UITrackingSprite>();
+        var trackingWidget = clone.GetSafeComponent<UITrackingSprite>();
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
@@ -96,7 +96,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <returns></returns>
     public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, Vector2 size, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
-        GameObject clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
+        GameObject clone = NGUITools.AddChild(target.transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
@@ -120,7 +120,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <returns></returns>
     public ITrackingWidget MakeVariableSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingLabel;
-        var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
+        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
@@ -144,7 +144,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <returns></returns>
     public ITrackingWidget MakeVariableSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
-        var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
+        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
@@ -171,7 +171,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <returns></returns>
     public ITrackingWidget MakeConstantSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
-        var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
+        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
@@ -196,7 +196,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <returns></returns>
     public ITrackingWidget MakeConstantSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingLabel;
-        var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
+        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
@@ -210,10 +210,10 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     }
 
     private Layers CheckLayers(IWidgetTrackable target, GameObject trackingWidgetPrefab) {
-        Layers targetLayer = (Layers)target.Transform.gameObject.layer;
+        Layers targetLayer = (Layers)target.transform.gameObject.layer;
         Layers prefabLayer = (Layers)trackingWidgetPrefab.layer;
         if (prefabLayer != Layers.UI && prefabLayer != Layers.TransparentFX && prefabLayer != targetLayer) {
-            D.Warn("Target {0} of Layer {1} being assigned TrackingWidget of Layer {2}.", target.Transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
+            D.Warn("Target {0} of Layer {1} being assigned TrackingWidget of Layer {2}.", target.transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
         }
         return prefabLayer;
     }
@@ -227,7 +227,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     }
 
     #region IDisposable
-    [DoNotSerialize]
+
     private bool _alreadyDisposed = false;
     protected bool _isDisposing = false;
 

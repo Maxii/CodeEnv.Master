@@ -24,6 +24,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using MoreLinq;
 
 /// <summary>
 /// Class for AUnitElementItems that are Ships.
@@ -444,7 +445,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             if (_velocityRay == null) {
                 if (!toShow) { return; }
                 Reference<float> shipSpeed = new Reference<float>(() => Data.CurrentSpeed);
-                _velocityRay = new VelocityRay("ShipVelocity", _transform, shipSpeed, width: 1F, color: GameColor.Gray);
+                _velocityRay = new VelocityRay("ShipVelocity", transform, shipSpeed, width: 1F, color: GameColor.Gray);
             }
             _velocityRay.Show(toShow);
         }
@@ -604,7 +605,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         while (!Command.HQElement.IsHeadingConfirmed) {
             // wait here until Flagship has stopped turning
             cumWaitTime += _gameTime.DeltaTimeOrPaused;
-            D.Assert(cumWaitTime < 5F); // IMPROVE this could fail on GameSpeed.Slowest
+            D.Assert(cumWaitTime < 20F); // IMPROVE this could fail on GameSpeed.Slowest
             yield return null;
         }
 
@@ -1150,7 +1151,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     protected override void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
-                var repairLoc = Data.Position - _transform.forward * 10F;
+                var repairLoc = Data.Position - transform.forward * 10F;
                 INavigableTarget repairDestination = new StationaryLocation(repairLoc);
                 OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
@@ -1816,7 +1817,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTimeOrPaused * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
                 // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-                _ship._transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
+                _ship.transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
                 //D.Log("{0} actual heading after turn step: {1}.", ClientName, _ship.Data.CurrentHeading);
                 cumTime += _gameTime.DeltaTimeOrPaused; // WARNING: works only with yield return null;
                 D.Assert(cumTime < allowedTime, "{0}: CumTime {1:0.##} > AllowedTime {2:0.##}.".Inject(Name, cumTime, allowedTime));
@@ -2815,7 +2816,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
 
             #region IDisposable
-            [DoNotSerialize]
+
             private bool _alreadyDisposed = false;
             protected bool _isDisposing = false;
 
@@ -4792,7 +4793,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //}
 
     private void __CompareVelocity() {
-        Vector3 currentPosition = _transform.position;
+        Vector3 currentPosition = transform.position;
         float distanceTraveled = Vector3.Distance(currentPosition, __lastPosition);
         __lastPosition = currentPosition;
 

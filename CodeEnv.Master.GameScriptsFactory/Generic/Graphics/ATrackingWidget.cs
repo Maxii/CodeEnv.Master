@@ -108,10 +108,10 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        Widget = gameObject.GetSafeFirstMonoBehaviourInChildren<UIWidget>();
+        Widget = gameObject.GetSingleComponentInChildren<UIWidget>();
         Widget.color = Color.ToUnityColor();
         Widget.enabled = false;
-        _panel = gameObject.GetSafeFirstMonoBehaviourInChildren<UIPanel>();
+        _panel = gameObject.GetSingleComponentInChildren<UIPanel>();
         _panel.depth = DrawDepth;
         UpdateRate = FrameUpdateFrequency.Normal;
         enabled = false;
@@ -128,7 +128,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     protected void ValidateShowDistances() {
         if (_minShowDistance > _maxShowDistance) {
-            D.WarnContext("MinShowDistance {0} cannot be > MaxShowDistance {1}. Disabling ShowDistance checking.".Inject(_minShowDistance, _maxShowDistance), this);
+            D.WarnContext(this, "MinShowDistance {0} cannot be > MaxShowDistance {1}. Disabling ShowDistance checking.", _minShowDistance, _maxShowDistance);
             return;
         }
         if (_minShowDistance > Constants.ZeroF || _maxShowDistance < Mathf.Infinity) {
@@ -324,7 +324,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private void RenameGameObjects() {
         if (Target != null) {   // Target can be null if OptionalRootName is set before Target
             var rootName = OptionalRootName.IsNullOrEmpty() ? Target.DisplayName : OptionalRootName;
-            _transform.name = rootName + Constants.Space + GetType().Name;
+            transform.name = rootName + Constants.Space + GetType().Name;
             WidgetTransform.name = rootName + Constants.Space + Widget.GetType().Name;
         }
     }

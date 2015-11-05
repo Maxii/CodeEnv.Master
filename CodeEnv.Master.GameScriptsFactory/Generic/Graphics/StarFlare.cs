@@ -57,11 +57,9 @@ public class StarFlare : AMonoBase {
             // avoid getting the flareLight prefab with Resources.Load("Lights/FlareLight")
             GameObject flareLightGo = UnityUtility.AddChild(transform.gameObject, UsefulTools.Instance.flareLight.gameObject);
             _flareLight = flareLightGo.GetComponent<Light>();
-            //_flareLight = Instantiate<Light>(UsefulTools.Instance.flareLight);
-            //UnityUtility.AttachChildToParent(_flareLight.gameObject, _transform.gameObject);
-            float starRadius = gameObject.GetSafeFirstMonoBehaviourInParents<StarItem>().Radius;
+            float starRadius = gameObject.GetSingleComponentInParents<StarItem>().Radius;
             Vector3 flareLightLocationBehindStar = Vector3.forward * (starRadius + 2F);
-            _flareLight.transform.localPosition = flareLightLocationBehindStar;
+            flareLightGo.transform.localPosition = flareLightLocationBehindStar;
         }
         else if (lightCount == 2) {
             _flareLight = lights[1];
@@ -83,7 +81,7 @@ public class StarFlare : AMonoBase {
     }
 
     private void VaryFlareIntensityByCameraDistance() {
-        float flareIntensityFactor = Mathf.Pow(Mathf.Clamp01(-Vector3.Dot(_mainCamera.forward, _transform.forward)), Constants.OneHundredPercent / flareIntensity);
+        float flareIntensityFactor = Mathf.Pow(Mathf.Clamp01(-Vector3.Dot(_mainCamera.forward, transform.forward)), Constants.OneHundredPercent / flareIntensity);
         _flareLight.intensity = _originalIntensity * flareIntensityFactor;
     }
 

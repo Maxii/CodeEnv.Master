@@ -52,12 +52,13 @@ public class LoadGameMenuLaunchButton : AGuiMenuAcceptButton {
         _gameMgr.LoadSavedGame(_selectedGameCaption);
     }
 
-    private void LoadSavedGame() {
-        if (LevelSerializer.SavedGames.Count > 0) {
-            Arguments.ValidateForContent(_selectedGameCaption);
-            _gameMgr.LoadSavedGame(_selectedGameCaption);
-        }
-    }
+    //private void LoadSavedGame() {
+    //    if (LevelSerializer.SavedGames.Count > 0) {
+    //        Arguments.ValidateForContent(_selectedGameCaption);
+    //        _gameMgr.LoadSavedGame(_selectedGameCaption);
+    //    }
+    //}
+
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();
         // selectedGameCaption can be empty if there are no saved games

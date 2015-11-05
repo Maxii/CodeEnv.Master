@@ -114,7 +114,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeUIEventDispatcher() {
-        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSafeFirstMonoBehaviourInChildren<UICamera>();
+        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSingleComponentInChildren<UICamera>();
 
         //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
         UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
@@ -125,7 +125,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeWorldEventDispatcher() {
-        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeFirstMonoBehaviourInChildren<UICamera>();
+        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSingleComponentInChildren<UICamera>();
         WorldEventDispatcher.eventType = UICamera.EventType.World_3D;
         WorldEventDispatcher.useKeyboard = true;
         WorldEventDispatcher.useMouse = true;
@@ -280,7 +280,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         Vector3 hitPoint = Vector3.zero;
         if (go != UICamera.fallThrough) {
             // scroll event hit something so check in self and parents as some colliders are located on a child mesh or sprite
-            target = go.GetInterfaceInParents<ICameraTargetable>(excludeSelf: false);
+            target = go.GetComponentInParent<ICameraTargetable>();
 
             /****************************************************************************************************************
                          * UNDONE Below is code that makes a Sector the ICameraTargetable target (if so designated) using the collider of the
@@ -302,10 +302,10 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             if (!target.IsCameraTargetEligible) {
                 // Note: This is OK, albeit infrequent. Stars, Planetoids, Ships and Facilities all keep their collider on, even when not discernible. 
                 // All can lose discernibility <- distance culling
-                D.Log("InEligible {0} {1} found while scrolling.", typeof(ICameraTargetable).Name, target.Transform.name);
+                D.Log("InEligible {0} {1} found while scrolling.", typeof(ICameraTargetable).Name, target.transform.name);
                 return;
             }
-            hitPoint = (target is IZoomToFurthest) ? UICamera.lastHit.point : target.Transform.position;
+            hitPoint = (target is IZoomToFurthest) ? UICamera.lastHit.point : target.transform.position;
         }
         // even scroll events not over a gameObject (target = null) must be recorded so DummyTarget can be moved
         RecordScrollEvent(new ScrollEvent(target, delta, hitPoint));

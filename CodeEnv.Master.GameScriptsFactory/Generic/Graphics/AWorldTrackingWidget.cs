@@ -33,7 +33,7 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
         set {
             if (Target != null) {
                 // cannot change a target of a WorldTrackingWidget once set as it is parented to the target
-                throw new NotSupportedException("Attempted invalid change of Target {0} to {1}.".Inject(Target.Transform.name, value.Transform.name));
+                throw new NotSupportedException("Attempted invalid change of Target {0} to {1}.".Inject(Target.transform.name, value.transform.name));
             }
             base.Target = value;
         }
@@ -41,7 +41,7 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        _billboard = gameObject.GetSafeFirstMonoBehaviourInChildren<Billboard>();
+        _billboard = gameObject.GetSingleComponentInChildren<Billboard>();
     }
 
     protected override void Show() {
@@ -56,7 +56,7 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
 
     protected override void SetPosition() {
         //D.Log("Aligning position with target {0}. Offset is {1}.", Target.Transform.name, _offset);
-        _transform.localPosition = _offset;
+        transform.localPosition = _offset;
     }
 
     // No need to implement RefreshPositionOnUpdate() as this object is parented to a World gameObject that it automatically tracks

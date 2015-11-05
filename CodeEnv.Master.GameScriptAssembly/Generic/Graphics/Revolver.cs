@@ -81,7 +81,7 @@ public class Revolver : AMonoBase, IRevolver {
     /// <param name="deltaTimeSinceLastUpdate">The speed adjusted elapsed time since the last update.</param>
     private void UpdateRotation(float deltaTimeSinceLastUpdate) {
         var degreesToRotate = _rotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
-        _transform.Rotate(axisOfRotation, degreesToRotate, relativeTo: Space.Self);
+        transform.Rotate(axisOfRotation, degreesToRotate, relativeTo: Space.Self);
     }
 
     private void OnIsRunningChanged() {

@@ -35,7 +35,7 @@ public class TextForm : AForm {
     private UILabel _label;
 
     protected override void InitializeValuesAndReferences() {
-        _label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     private void OnTextChanged() {

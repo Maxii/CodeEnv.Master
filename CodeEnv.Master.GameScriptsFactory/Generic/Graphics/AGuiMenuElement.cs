@@ -35,7 +35,7 @@ public abstract class AGuiMenuElement : ATextTooltip {
     }
 
     private void Validate() {
-        UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
+        UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
         D.Assert(ElementID != default(GuiElementID), "ElementID not set.", gameObject);
     }
 

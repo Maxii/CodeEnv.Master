@@ -23,7 +23,6 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Singleton Event Manager.
     /// </summary>
-    [SerializeAll]
     [Obsolete]
     public sealed class GameEventManager {
 

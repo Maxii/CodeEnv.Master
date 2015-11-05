@@ -92,7 +92,6 @@ namespace CodeEnv.Master.GameContent {
         public PlanetoidData(Transform planetoidTransform, Rigidbody planetoidRigidbody, PlanetoidStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
             : base(planetoidTransform, stat.Category.GetValueName(), stat.MaxHitPoints, owner, passiveCMs) {
             Mass = stat.Mass;
-            //planetoidTransform.rigidbody.mass = stat.Mass;
             planetoidRigidbody.mass = stat.Mass;
             Category = stat.Category;
             Capacity = stat.Capacity;

@@ -48,7 +48,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
+        var meshRenderer = gameObject.GetSingleComponentInChildren<MeshRenderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
@@ -58,20 +58,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         InitializeKeepoutZone();
         InitializeShipOrbitSlot();
     }
-    //protected override void InitializeLocalReferencesAndValues() {
-    //    base.InitializeLocalReferencesAndValues();
-    //    var meshRenderer = gameObject.GetFirstComponentInImmediateChildrenOnly<Renderer>();
-    //    Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-    //    D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
-    //    collider.enabled = false;
-    //    collider.isTrigger = false;
-    //    (collider as SphereCollider).radius = Radius;
-    //    InitializeKeepoutZone();
-    //    InitializeShipOrbitSlot();
-    //}
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -113,10 +102,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         base.CommenceOperations();
         _collider.enabled = true;
     }
-    //public override void CommenceOperations() {
-    //    base.CommenceOperations();
-    //    collider.enabled = true;
-    //}
 
     public UniverseCenterReport GetUserReport() { return Publisher.GetUserReport(); }
 

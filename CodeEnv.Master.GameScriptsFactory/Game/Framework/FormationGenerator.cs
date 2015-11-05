@@ -88,7 +88,7 @@ public class FormationGenerator {
 
         Bounds hqElementBounds = new Bounds();
         bool toEncapsulateHqElement = false;
-        D.Assert(UnityUtility.GetBoundWithChildren(hqElement.Transform, ref hqElementBounds, ref toEncapsulateHqElement),
+        D.Assert(UnityUtility.GetBoundWithChildren(hqElement.transform, ref hqElementBounds, ref toEncapsulateHqElement),
             "{0} unable to construct a Bound for HQ Element {1}.".Inject(_unitCmd.FullName, hqElement.FullName));
         allElementBounds.Add(hqElementBounds);
 
@@ -99,7 +99,7 @@ public class FormationGenerator {
             Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
             Bounds elementBounds = new Bounds();
             AUnitElementItem element = elementsToPositionAroundHQ[i];
-            if (UnityUtility.GetBoundWithChildren(element.Transform, ref elementBounds, ref toEncapsulate)) {
+            if (UnityUtility.GetBoundWithChildren(element.transform, ref elementBounds, ref toEncapsulate)) {
                 elementBounds.center = candidateStationOffset;
                 //D.Log("Bounds = {0}.", elementBounds.ToString());
                 if (allElementBounds.All(eb => !eb.Intersects(elementBounds))) {

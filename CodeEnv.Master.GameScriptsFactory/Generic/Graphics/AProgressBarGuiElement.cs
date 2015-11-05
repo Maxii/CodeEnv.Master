@@ -47,20 +47,20 @@ public abstract class AProgressBarGuiElement : AGuiElement {
     }
 
     private void InitializeValuesAndReferences() {
-        var labels = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UILabel>();
+        var labels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _unknownLabel = labels.Single(l => l.gameObject.name == TempGameValues.UnknownLabelName);
         switch (widgetsPresent) {
             case WidgetsPresent.ProgressBar:
-                _slider = gameObject.GetSafeFirstMonoBehaviourInChildren<UISlider>();
-                _barForeground = _slider.gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UISprite>();
+                _slider = gameObject.GetSingleComponentInChildren<UISlider>();
+                _barForeground = _slider.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
                 NGUITools.AddWidgetCollider(gameObject);
                 break;
             case WidgetsPresent.Label:
                 _detailValuesLabel = labels.Except(_unknownLabel).Single();
                 break;
             case WidgetsPresent.Both:
-                _slider = gameObject.GetSafeFirstMonoBehaviourInChildren<UISlider>();
-                _barForeground = _slider.gameObject.GetSafeSingleMonoBehaviourInImmediateChildrenOnly<UISprite>();
+                _slider = gameObject.GetSingleComponentInChildren<UISlider>();
+                _barForeground = _slider.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
                 _detailValuesLabel = labels.Except(_unknownLabel).Single();
                 break;
             default:

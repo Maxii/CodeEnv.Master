@@ -19,6 +19,7 @@
 using System.Collections.Generic;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using MoreLinq;
 
 /// <summary>
 /// Extensions specific to this game.
@@ -50,7 +51,6 @@ public static class GameSpecificExtensions {
         where T : ADiscernibleItem {
         return unitTargets.MaxBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
-
 
 }
 

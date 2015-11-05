@@ -39,12 +39,12 @@ public class ResourceForm : AForm {
     private UISprite _imageSprite;
 
     protected override void InitializeValuesAndReferences() {
-        var immediateChildLabels = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<UILabel>();
+        var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _categoryLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ClampContent);
         _descriptionLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ResizeHeight);
-        var imageFrameSprite = gameObject.GetSafeMonoBehavioursInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameSpriteName);
-        _imageSprite = imageFrameSprite.gameObject.GetSafeFirstMonoBehaviourInImmediateChildrenOnly<UISprite>();
-        _imageNameLabel = imageFrameSprite.gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
+        var imageFrameSprite = gameObject.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameSpriteName);
+        _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+        _imageNameLabel = imageFrameSprite.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     private void OnResourceIDChanged() {

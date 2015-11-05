@@ -34,8 +34,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     public static bool IsApplicationQuiting { get; private set; }
 
-    protected Transform _transform;
-
     #region Debug
 
     /// <summary>
@@ -44,7 +42,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     public virtual void LogEvent() { // WARNING: KeyDuplication compile error in Unity with LogEvent(object parameter = null)
         if (DebugSettings.Instance.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = _transform.name + "(from transform)";
+            string name = transform.name + "(from transform)";
             Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
         }
     }
@@ -57,7 +55,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     protected virtual void Awake() {
         useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
-        _transform = transform;
         //LogEvent();
     }
 

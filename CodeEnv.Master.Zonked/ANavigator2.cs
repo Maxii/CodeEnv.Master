@@ -245,7 +245,7 @@ public abstract class ANavigator2 {
             float obstacleClearanceLeeway = 2F; // HACK
             var detourWorldSpaceLocation = ptOnSphere + (ptOnSphere - obstacleCenter).normalized * obstacleClearanceLeeway;
 
-            INavigableTarget obstacleParent = obstacle.gameObject.GetSafeInterfaceInParents<INavigableTarget>();
+            INavigableTarget obstacleParent = obstacle.gameObject.GetSafeFirstInterfaceInParents<INavigableTarget>();
             D.Assert(obstacleParent != null, "Obstacle {0} does not have a {1} parent.".Inject(obstacleName, typeof(INavigableTarget).Name));
 
             if (obstacleParent.IsMobile) {

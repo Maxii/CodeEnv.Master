@@ -59,7 +59,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     }
 
     private void InitializeValuesAndReferences() {
-        var labels = gameObject.GetSafeMonoBehavioursInChildren<UILabel>();
+        var labels = gameObject.GetSafeComponentsInChildren<UILabel>();
         switch (widgetsPresent) {
             case WidgetsPresent.SumLabel:
                 _combinedValueLabel = labels.Single();
@@ -119,7 +119,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     protected override void Validate() {
         base.Validate();
         D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength,
-            "{0} has illegal ElementID: {1}.".Inject(GetType().Name, ElementID.GetValueName()));
+            "{0} has illegal ElementID: {1}.", GetType().Name, ElementID.GetValueName());
     }
 
     protected override void Cleanup() { }

@@ -208,7 +208,7 @@ namespace CodeEnv.Master.Common {
         }
 
         #region IDisposable
-        [DoNotSerialize]
+
         private bool alreadyDisposed = false;
 
         /// <summary>
