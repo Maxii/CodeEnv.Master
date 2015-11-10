@@ -28,20 +28,29 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private static LayerMask _beamImpactLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.Shields);
 
-    public ParticleSystem muzzleEffect;
-    public ParticleSystem impactEffect;
+    [SerializeField]
+    private ParticleSystem _muzzleEffect = null;
+
+    [SerializeField]
+    private ParticleSystem _impactEffect = null;
 
     /// <summary>
     /// The relative visual scale of the animated beam.
     /// Adjust as necessary.
     /// </summary>
-    public float beamAnimationScale;
+    [Tooltip("Relative scale of the animation")]
+    [Range(1F, 5F)]
+    [SerializeField]
+    private float _beamAnimationScale = 4F;
 
     /// <summary>
     /// The relative visual speed of the beam animation.
     /// Adjust as necessary.
     /// </summary>
-    public float beamAnimationSpeed;
+    [Tooltip("Relative speed of the animation")]
+    [Range(-2F, 2F)]
+    [SerializeField]
+    private float _beamAnimationSpeed = -1F;
 
     protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
 
@@ -104,10 +113,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void ValidateEffects() {
-        D.Assert(impactEffect != null, "{0} has no impact effect.".Inject(Name));
-        D.Assert(!impactEffect.playOnAwake);
-        D.Assert(muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
-        D.Assert(!muzzleEffect.playOnAwake);
+        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
+        D.Assert(!_impactEffect.playOnAwake);
+        D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
+        D.Assert(!_muzzleEffect.playOnAwake);
     }
 
     public void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
@@ -125,7 +134,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _cumHoursOperating += deltaTimeInHours;
         if (_cumHoursOperating > Weapon.Duration) {
             AssessApplyDamage();
-            TerminateNow();
+            if (IsOperational) {
+                // ordnance has not already been terminated by other paths such as the death of the target
+                TerminateNow();
+            }
         }
     }
 
@@ -147,7 +159,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             // end the beam line at either the impact point or its range
             _operatingEffectRenderer.SetPosition(index: 1, position: new Vector3(0F, 0F, beamLength));
             // Set beam scaling based off its length?
-            float beamSizeMultiplier = beamLength * (beamAnimationScale / 10F);
+            float beamSizeMultiplier = beamLength * (_beamAnimationScale / 10F);
             _operatingEffectRenderer.material.SetTextureScale(UnityConstants.MainDiffuseTexture, new Vector2(beamSizeMultiplier, 1F));
         }
         AssessShowImpactEffects();
@@ -202,8 +214,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void OnWeaponIsOperationalChanged(AEquipment weapon) {
-        D.Assert(!weapon.IsOperational);
-        TerminateNow(); // a beam requires its firing weapon to be operational to operate
+        D.Assert(!weapon.IsOperational);    // no beam should exist when the weapon jsut becomes operational
+        if (IsOperational) {
+            // ordnance has not already been terminated by other paths such as the death of the target
+            TerminateNow(); // a beam requires its firing weapon to be operational to operate
+        }
     }
 
     private void RefreshImpactLocation(RaycastHit impactInfo) {
@@ -254,10 +269,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private void ShowMuzzleEffects(bool toShow) {
         if (toShow) {
-            muzzleEffect.Play();
+            _muzzleEffect.Play();
         }
         else {
-            muzzleEffect.Stop();
+            _muzzleEffect.Stop();
         }
         // TODO add Muzzle audio
     }
@@ -307,8 +322,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             ShowImpactEffects(_impactLocation);
         }
         else {
-            if (impactEffect.isPlaying) {
-                impactEffect.Stop();
+            if (_impactEffect.isPlaying) {
+                _impactEffect.Stop();
             }
         }
     }
@@ -316,13 +331,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
         //D.Log("{0}.ShowImpactEffects() called.", Name);
         D.Assert(ToShowEffects && _isCurrentImpact);
-        if (impactEffect.isPlaying) {
-            impactEffect.Stop();
+        if (_impactEffect.isPlaying) {
+            _impactEffect.Stop();
         }
         // beam impactEffects don't get destroyed when used so no reason to parent it someplace else
-        impactEffect.transform.position = position;
-        impactEffect.transform.rotation = rotation;
-        impactEffect.Play();
+        _impactEffect.transform.position = position;
+        _impactEffect.transform.rotation = rotation;
+        _impactEffect.Play();
 
         // TODO add ImpactAudioEffect
     }
@@ -332,7 +347,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// </summary>
     private IEnumerator AnimateBeam() {
         while (true) {
-            float offset = _initialBeamAnimationOffset + beamAnimationSpeed * _gameTime.CurrentUnitySessionTime;
+            float offset = _initialBeamAnimationOffset + _beamAnimationSpeed * _gameTime.CurrentUnitySessionTime;
             _operatingEffectRenderer.material.SetTextureOffset(UnityConstants.MainDiffuseTexture, new Vector2(offset, 0f));
             yield return null;
         }

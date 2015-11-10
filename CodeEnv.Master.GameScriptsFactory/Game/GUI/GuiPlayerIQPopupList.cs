@@ -18,15 +18,20 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Player IQ selection popup list in the NewGameMenu. 
 /// </summary>
 public class GuiPlayerIQPopupList : AGuiMenuPopupList<IQ> {
 
-    public GuiElementID elementID;
+    //[FormerlySerializedAs("elementID")]
+    [Tooltip("The unique ID of this PlayerIQPopupList GuiElement")]
+    [SerializeField]
+    private GuiElementID _elementID = GuiElementID.None;
 
-    public override GuiElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return _elementID; } }
 
     protected override string[] Choices { get { return Enums<IQ>.GetNames(excludeDefault: true); } }
 

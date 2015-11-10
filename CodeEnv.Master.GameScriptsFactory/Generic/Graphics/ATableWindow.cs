@@ -21,6 +21,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract base class for all Table-based Windows.
@@ -31,7 +32,7 @@ public abstract class ATableWindow : AGuiWindow {
     protected static string _unknown = Constants.QuestionMark;
     private static string _rowNameExtension = " Row";
 
-    public ATableRowForm rowPrefab;
+    public ATableRowForm rowPrefab; // Has Editor
 
     protected override Transform ContentHolder { get { return _contentHolder; } }
 

@@ -20,6 +20,7 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Resizes the widget it's attached to in order to envelop not just one widget, but all the widgets
@@ -30,11 +31,24 @@ using UnityEngine;
 [RequireComponent(typeof(UIWidget))]
 public class MyEnvelopContent : AMonoBase {
 
+    [Tooltip("The root object of the heirarchy of widgets you wish to envelop")]
     public Transform targetRoot;
-    public int padLeft = 0;
-    public int padRight = 0;
-    public int padBottom = 0;
-    public int padTop = 0;
+
+    //[FormerlySerializedAs("padLeft")]
+    [SerializeField]
+    private int _padLeft = Constants.Zero;
+
+    //[FormerlySerializedAs("padRight")]
+    [SerializeField]
+    private int _padRight = Constants.Zero;
+
+    //[FormerlySerializedAs("padBottom")]
+    [SerializeField]
+    private int _padBottom = Constants.Zero;
+
+    //[FormerlySerializedAs("padTop")]
+    [SerializeField]
+    private int _padTop = Constants.Zero;
 
     private bool _isStarted = false;
 
@@ -59,14 +73,14 @@ public class MyEnvelopContent : AMonoBase {
             D.ErrorContext(this, "Target Root object cannot be the same object that has Envelop Content. Make it a sibling instead.");
         }
         else if (NGUITools.IsChild(targetRoot, transform)) {
-            D.ErrorContext(this, "Target Root object should not be a parent of Envelop Content. Make it a sibling instead.");
+            D.ErrorContext(this, "Target Root object cannot be a parent of Envelop Content. Make it a sibling instead.");
         }
         else {
             Bounds b = NGUIMath.CalculateRelativeWidgetBounds(transform.parent, targetRoot, false, considerChildren: false);
-            float x0 = b.min.x + padLeft;
-            float y0 = b.min.y + padBottom;
-            float x1 = b.max.x + padRight;
-            float y1 = b.max.y + padTop;
+            float x0 = b.min.x + _padLeft;
+            float y0 = b.min.y + _padBottom;
+            float x1 = b.max.x + _padRight;
+            float y1 = b.max.y + _padTop;
 
             UIWidget w = GetComponent<UIWidget>();
             w.SetRect(x0, y0, x1 - x0, y1 - y0);

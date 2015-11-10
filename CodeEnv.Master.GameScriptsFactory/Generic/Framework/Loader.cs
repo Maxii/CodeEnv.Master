@@ -28,7 +28,8 @@ using Vectrosity;
 /// </summary>
 public class Loader : AMonoSingleton<Loader> {
 
-    public int TargetFPS = 25;
+    [SerializeField]
+    private int _targetFPS = 25;
 
     protected override bool IsPersistentAcrossScenes { get { return true; } }
 
@@ -93,7 +94,7 @@ public class Loader : AMonoSingleton<Loader> {
     private void CheckDebugSettings() {
         if (DebugSettings.Instance.ForceFpsToTarget) {
             QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = TargetFPS;
+            Application.targetFrameRate = _targetFPS;
         }
     }
 

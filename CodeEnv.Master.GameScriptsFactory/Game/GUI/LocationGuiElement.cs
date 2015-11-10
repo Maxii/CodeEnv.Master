@@ -31,7 +31,6 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     public override GuiElementID ElementID { get { return GuiElementID.Location; } }
 
-
     private Index3D _sectorIndex;
     public Index3D SectorIndex {
         get { return _sectorIndex; }

@@ -75,6 +75,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     protected virtual void OnDisable() {
         //LogEvent();
+        //D.Log("{0} now disabled.", GetType().Name);
     }
 
     #region Updating

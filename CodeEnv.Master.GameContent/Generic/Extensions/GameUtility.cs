@@ -232,7 +232,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private static IEnumerator WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren) {
-            while (particleSystem.IsAlive(includeChildren)) {
+            while (particleSystem != null && particleSystem.IsAlive(includeChildren)) {
                 yield return null;
             }
         }

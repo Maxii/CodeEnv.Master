@@ -21,18 +21,25 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Overall GuiManager that handles the showing state of the GUI's fixed panels.
 /// </summary>
 public class GuiManager : AMonoSingleton<GuiManager> {
 
+#pragma warning disable 0649
+
     /// <summary>
     /// The fixed panels of the GUI that should normally be hidden when a popup shows.
     /// Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.
     /// </summary>
+    //[FormerlySerializedAs("fixedGuiPanels")]
     [Tooltip("The fixed panels of the GUI that should be hidden when a popup shows.")]
-    public List<UIPanel> fixedGuiPanels;
+    [SerializeField]
+    private List<UIPanel> _fixedGuiPanels;
+
+#pragma warning restore 0649
 
     private IDictionary<GuiElementID, GameObject> _buttonLookup;
     private List<UIPanel> _hiddenPanels;
@@ -40,7 +47,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _hiddenPanels = new List<UIPanel>();
-        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene && fixedGuiPanels.IsNullOrEmpty()) {
+        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
             D.WarnContext(gameObject, "{0}.fixedGuiPanels list is empty.", GetType().Name);
         }
         CheckDebugSettings();
@@ -74,13 +81,13 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     public void HideFixedPanels(IList<UIPanel> exceptions) {
         D.Assert(!_hiddenPanels.Any(), "{0} attempting to hide panels that are already hidden.".Inject(GetType().Name));
         WarnIfExceptionNotNeeded(exceptions);
-        _hiddenPanels.AddRange(fixedGuiPanels.Except(exceptions));
+        _hiddenPanels.AddRange(_fixedGuiPanels.Except(exceptions));
         _hiddenPanels.ForAll(p => p.alpha = Constants.ZeroF);
     }
 
     private void WarnIfExceptionNotNeeded(IEnumerable<UIPanel> exceptions) {
         exceptions.ForAll(e => {
-            if (!fixedGuiPanels.Contains(e)) {
+            if (!_fixedGuiPanels.Contains(e)) {
                 D.Warn("{0}: UIPanel exception {1} not needed.", GetType().Name, e.name);
             }
         });

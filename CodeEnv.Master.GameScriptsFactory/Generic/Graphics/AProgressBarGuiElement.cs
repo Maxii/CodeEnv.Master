@@ -22,14 +22,17 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract GuiElement handling the display and tooltip content for Item attributes that use a Progress Bar.
 /// </summary>
 public abstract class AProgressBarGuiElement : AGuiElement {
 
+    //[FormerlySerializedAs("widgetsPresent")]
     [Tooltip("The widgets that are present to display the content of this GuiElement.")]
-    public WidgetsPresent widgetsPresent = WidgetsPresent.Both;
+    [SerializeField]
+    protected WidgetsPresent _widgetsPresent = WidgetsPresent.Both;
 
     protected string _tooltipContent;
     protected sealed override string TooltipContent { get { return _tooltipContent; } }
@@ -49,7 +52,7 @@ public abstract class AProgressBarGuiElement : AGuiElement {
     private void InitializeValuesAndReferences() {
         var labels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _unknownLabel = labels.Single(l => l.gameObject.name == TempGameValues.UnknownLabelName);
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.ProgressBar:
                 _slider = gameObject.GetSingleComponentInChildren<UISlider>();
                 _barForeground = _slider.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
@@ -64,7 +67,7 @@ public abstract class AProgressBarGuiElement : AGuiElement {
                 _detailValuesLabel = labels.Except(_unknownLabel).Single();
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
@@ -80,7 +83,7 @@ public abstract class AProgressBarGuiElement : AGuiElement {
 
     protected void OnValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.ProgressBar:
                 NGUITools.SetActive(_slider.gameObject, false);
                 break;
@@ -92,7 +95,7 @@ public abstract class AProgressBarGuiElement : AGuiElement {
                 NGUITools.SetActive(_detailValuesLabel.gameObject, false);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 

@@ -35,9 +35,11 @@ public class DrawTriggerCollider : AMonoBase {
 #pragma warning restore 0414
 
     [Tooltip("Draw only when selected")]
-    public bool drawSelected;
+    [SerializeField]
+    private bool _drawSelected = false;
 
-    public Color color = Color.white;
+    [SerializeField]
+    private Color _color = Color.white;
 
     private BoxCollider _boxCollider;
     public BoxCollider BoxCollider {
@@ -56,20 +58,20 @@ public class DrawTriggerCollider : AMonoBase {
     }
 
     void OnDrawGizmos() {
-        if (enabled && !drawSelected) {
+        if (enabled && !_drawSelected) {
             DrawGizmos();
         }
     }
 
     void OnDrawGizmosSelected() {
-        if (enabled && drawSelected) {
+        if (enabled && _drawSelected) {
             DrawGizmos();
         }
     }
 
     private void DrawGizmos() {
         Color oldColor = Gizmos.color;
-        Gizmos.color = color;
+        Gizmos.color = _color;
         if (BoxCollider != null) {
             var colliderCenter = transform.position + BoxCollider.center;   // can't use _transform as DrawGizmos called when not playing
             var colliderSize = new Vector3(BoxCollider.size.x, BoxCollider.size.y, BoxCollider.size.z);

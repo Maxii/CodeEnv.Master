@@ -17,6 +17,6 @@ using UnityEditor;
 /// <summary>
 /// Example Custom Editor using EditorBase class.
 /// </summary>
-[CustomEditor(typeof(UniverseCenterItem))]
-public class ExampleEditor : AEditorBase<UniverseCenterItem> { }
+[CustomEditor(typeof(ResponsiveTrackingSprite))]
+public class ExampleEditor : AEditorBase<ResponsiveTrackingSprite> { }
 

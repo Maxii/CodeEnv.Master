@@ -31,11 +31,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 0.9F;    // just inside Unit's highlight sphere
+    [SerializeField]
+    private float _minViewDistanceFactor = 0.9F;    // just inside Unit's highlight sphere
 
     [Range(1.5F, 5.0F)]
     [Tooltip("Optimal Camera View Distance Multiplier")]
-    public float optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
+    [SerializeField]
+    private float _optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
 
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
@@ -144,7 +146,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     protected override float InitializeOptimalCameraViewingDistance() {
-        return UnitRadius * optViewDistanceFactor;
+        return UnitRadius * _optViewDistanceFactor;
     }
 
     /// <summary>
@@ -518,7 +520,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

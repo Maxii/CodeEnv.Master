@@ -34,14 +34,24 @@ using UnityEditor;
 public class VisualEffectScale : AMonoBase {
 
 #pragma warning disable 0414
-    // editorScale of 1.0 is the right size for the largest planet of Radius 5.0
+    /// <summary>
+    /// The fixed factor that allows variation in the radius of an item to properly size
+    /// the effect (most common is explosion) for an editorScale of 1.0.
+    /// <remarks>editorScale of 1.0 is the right size for the largest planet of Radius 5.0.</remarks>
+    /// </summary>
     private static float _radiusToScaleNormalizeFactor = 0.2F;
 #pragma warning restore 0414
 
     /// <summary>
-    /// The manual scale control available in the editor.
+    /// Scale control available in the editor. Use this control to manually scale
+    /// the size of the effect. Typically, this control is used when the concept of ItemRadius
+    /// is N/A (e.g. weapon muzzle effect size does not change when a weapon is fired from
+    /// a large radius Dreadnaught or a small radius Frigate). 1.0F is the right value to use
+    /// when you want the effect to be sized to just encompass the radius of an item like a ship,
+    /// facility, planet or moon.
     /// </summary>
-    [Range(0F, 1F)]
+    [Range(0F, 2F)]
+    [Tooltip("Adjust to suit.")]
     public float editorScale = 1.0F;
 
     /// <summary>
@@ -63,19 +73,39 @@ public class VisualEffectScale : AMonoBase {
     protected override void Start() {
         base.Start();
         _prevScale = editorScale;
-        //D.Log("{0} previousScale on Start: {1}.", _transform.name, _prevScale);
+        //D.Log("{0} previousScale on Start: {1}.", transform.name, _prevScale);
+    }
+
+    protected override void Update() {
+        base.Update();
+#if UNITY_EDITOR
+        var currentScale = editorScale * ItemRadius * _radiusToScaleNormalizeFactor;
+        //D.Log("{0} currentScale on Update: {1}.", transform.name, currentScale);
+        if (currentScale != _prevScale && currentScale > Constants.ZeroF) {
+            if (toScaleGameObject) {
+                transform.localScale = new Vector3(currentScale, currentScale, currentScale);
+            }
+
+            float scaleFactor = currentScale / _prevScale;
+
+            ScaleShurikenParticleSystems(scaleFactor);
+            ScaleTrailRenderers(scaleFactor);
+
+            _prevScale = currentScale;
+        }
+#endif
     }
 
     private void ScaleShurikenParticleSystems(float scaleFactor) {
 #if UNITY_EDITOR
-        ParticleSystem[] systems = GetComponentsInChildren<ParticleSystem>();
+        ParticleSystem[] pSystems = GetComponentsInChildren<ParticleSystem>();
 
-        foreach (ParticleSystem system in systems) {
-            system.startSpeed *= scaleFactor;
-            system.startSize *= scaleFactor;
-            system.gravityModifier *= scaleFactor;
+        foreach (ParticleSystem pSystem in pSystems) {
+            pSystem.startSpeed *= scaleFactor;
+            pSystem.startSize *= scaleFactor;
+            pSystem.gravityModifier *= scaleFactor;
 
-            SerializedObject so = new SerializedObject(system);
+            SerializedObject so = new SerializedObject(pSystem);
 
             so.FindProperty("VelocityModule.x.scalar").floatValue *= scaleFactor;
             so.FindProperty("VelocityModule.y.scalar").floatValue *= scaleFactor;
@@ -103,26 +133,6 @@ public class VisualEffectScale : AMonoBase {
             trail.startWidth *= scaleFactor;
             trail.endWidth *= scaleFactor;
         }
-    }
-
-    protected override void Update() {
-        base.Update();
-#if UNITY_EDITOR
-        var currentScale = editorScale * ItemRadius * _radiusToScaleNormalizeFactor;
-        //D.Log("{0} currentScale on Update: {1}.", transform.name, currentScale);
-        if (currentScale != _prevScale && currentScale > Constants.ZeroF) {
-            if (toScaleGameObject) {
-                transform.localScale = new Vector3(currentScale, currentScale, currentScale);
-            }
-
-            float scaleFactor = currentScale / _prevScale;
-
-            ScaleShurikenParticleSystems(scaleFactor);
-            ScaleTrailRenderers(scaleFactor);
-
-            _prevScale = currentScale;
-        }
-#endif
     }
 
     protected override void Cleanup() { }

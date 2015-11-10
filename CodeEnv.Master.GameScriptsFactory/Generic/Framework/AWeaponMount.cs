@@ -19,13 +19,16 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract base class for a mount used for Weapons.
 /// </summary>
 public abstract class AWeaponMount : AMount, IWeaponMount {
 
-    public Transform muzzle;
+    [FormerlySerializedAs("muzzle")]
+    [SerializeField]
+    protected Transform _muzzle = null;
 
     public virtual string Name { get { return transform.name; } }
 
@@ -43,7 +46,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// The location of the weapon's muzzle in world space coordinates. 
     /// Should be used only for positioning fired ordnance and associated muzzle effect.
     /// </summary>
-    public Vector3 MuzzleLocation { get { return muzzle.position; } }
+    public Vector3 MuzzleLocation { get { return _muzzle.position; } }
 
     /// <summary>
     /// The current facing of the muzzle in world space coordinates.
@@ -54,7 +57,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(muzzle != null);
+        D.Assert(_muzzle != null);
     }
 
     /// <summary>

@@ -21,6 +21,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// A PopupList that handles the selection of player colors in the NewGameMenu.
@@ -33,9 +35,12 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     /// </summary>
     public event Action<GuiPlayerColorPopupList> onSelection;
 
-    public GuiElementID elementID;
+    //[FormerlySerializedAs("elementID")]
+    [Tooltip("The unique ID of this ColorPopupList GuiElement")]
+    [SerializeField]
+    private GuiElementID _elementID = GuiElementID.None;
 
-    public override GuiElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return _elementID; } }
 
     protected override bool SelfInitializeSelection { get { return false; } }
 

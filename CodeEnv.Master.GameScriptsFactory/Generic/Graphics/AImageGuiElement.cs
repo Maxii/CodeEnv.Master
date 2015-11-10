@@ -21,14 +21,17 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract GuiElement handling the display and tooltip content for image-based elements.
 /// </summary>
 public abstract class AImageGuiElement : AGuiElement {
 
+    //[FormerlySerializedAs("widgetsPresent")]
     [Tooltip("The widgets that are present to display the content of this GuiElement.")]
-    public WidgetsPresent widgetsPresent = WidgetsPresent.Both;
+    [SerializeField]
+    protected WidgetsPresent _widgetsPresent = WidgetsPresent.Both;
 
     protected string _tooltipContent;
     protected sealed override string TooltipContent { get { return _tooltipContent; } }
@@ -44,7 +47,7 @@ public abstract class AImageGuiElement : AGuiElement {
     }
 
     private void InitializeValuesAndReferences() {
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.Image:
                 var imageFrameSprite = gameObject.GetSingleComponentInImmediateChildren<UISprite>();
                 _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
@@ -59,7 +62,7 @@ public abstract class AImageGuiElement : AGuiElement {
                 _imageNameLabel = gameObject.GetSingleComponentInChildren<UILabel>(excludeSelf: true);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 
@@ -71,7 +74,7 @@ public abstract class AImageGuiElement : AGuiElement {
     }
 
     protected void OnValuesUnknown() {
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.Image:
                 _imageSprite.atlas = AtlasID.MyGui.GetAtlas();
                 _imageSprite.spriteName = TempGameValues.UnknownImageFilename;
@@ -86,7 +89,7 @@ public abstract class AImageGuiElement : AGuiElement {
                 _imageNameLabel.text = Constants.QuestionMark;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 

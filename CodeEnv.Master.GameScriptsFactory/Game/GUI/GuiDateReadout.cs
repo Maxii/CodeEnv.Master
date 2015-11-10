@@ -26,9 +26,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiDateReadout : AGuiLabelReadout {
 
-    protected override string TooltipContent {
-        get { return "The current date in the game."; }
-    }
+    protected override string TooltipContent { get { return "The current date in the game."; } }
 
     private GameTime _gameTime;
 

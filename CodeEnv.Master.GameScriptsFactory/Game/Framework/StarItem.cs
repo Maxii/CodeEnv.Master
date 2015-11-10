@@ -26,15 +26,17 @@ using UnityEngine;
 /// </summary>
 public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable {
 
-    public StarCategory category;
+    public StarCategory category = StarCategory.None;
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 2F;
+    [SerializeField]
+    private float _minViewDistanceFactor = 2F;
 
     [Range(3.0F, 15.0F)]
     [Tooltip("Optimal Camera View Distance Multiplier")]
-    public float optViewDistanceFactor = 8F;
+    [SerializeField]
+    private float _optViewDistanceFactor = 8F;
 
     public new StarData Data {
         get { return base.Data as StarData; }
@@ -134,7 +136,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override float InitializeOptimalCameraViewingDistance() {
-        return Radius * optViewDistanceFactor;
+        return Radius * _optViewDistanceFactor;
     }
 
     protected override void OnOwnerChanging(Player newOwner) {
@@ -243,7 +245,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

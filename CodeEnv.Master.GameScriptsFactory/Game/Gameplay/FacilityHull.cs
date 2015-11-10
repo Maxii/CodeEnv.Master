@@ -18,23 +18,26 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// The hull of a facility. 
 /// </summary>
 public class FacilityHull : AHull, IFacilityHull {
 
-    public FacilityHullCategory hullCategory;
+    [SerializeField]
+    private FacilityHullCategory _hullCategory = FacilityHullCategory.None;
 
-    public FacilityHullCategory HullCategory { get { return hullCategory; } }
+    public FacilityHullCategory HullCategory { get { return _hullCategory; } }
 
-    protected override int MaxAllowedLosWeapons { get { return hullCategory.__MaxLOSWeapons(); } }
+    protected override int MaxAllowedLosWeapons { get { return _hullCategory.__MaxLOSWeapons(); } }
 
-    protected override int MaxAllowedMissileWeapons { get { return hullCategory.__MaxMissileWeapons(); } }
+    protected override int MaxAllowedMissileWeapons { get { return _hullCategory.__MaxMissileWeapons(); } }
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(hullCategory != FacilityHullCategory.None);
+        D.Assert(_hullCategory != FacilityHullCategory.None);
     }
 
     protected override void Cleanup() { }

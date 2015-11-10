@@ -19,6 +19,7 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// A Weapon Mount for fire and forget Weapons like Missiles.
@@ -30,13 +31,15 @@ public class MissileTube : AWeaponMount {
     /// Note: The location of the muzzle should be directly over the mouth so the
     /// launch direction can always be determined.
     /// </summary>
-    public Transform tubeMouth;
+    //[FormerlySerializedAs("tubeMouth")]
+    [SerializeField]
+    private Transform _tubeMouth = null;
 
-    public override Vector3 MuzzleFacing { get { return (muzzle.position - tubeMouth.position).normalized; } }
+    public override Vector3 MuzzleFacing { get { return (_muzzle.position - _tubeMouth.position).normalized; } }
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(tubeMouth != null);
+        D.Assert(_tubeMouth != null);
     }
 
     /// <summary>

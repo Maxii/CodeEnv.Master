@@ -19,26 +19,31 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// The hull of a ship.
 /// </summary>
 public class ShipHull : AHull, IShipHull {
 
+    //[SerializeField]
     public Transform[] engineNozzles;
 
-    public ShipHullCategory hullCategory;
+    //[FormerlySerializedAs("hullCategory")]
+    [SerializeField]
+    private ShipHullCategory _hullCategory = ShipHullCategory.None;
 
-    public ShipHullCategory HullCategory { get { return hullCategory; } }
 
-    protected override int MaxAllowedLosWeapons { get { return hullCategory.__MaxLOSWeapons(); } }
+    public ShipHullCategory HullCategory { get { return _hullCategory; } }
 
-    protected override int MaxAllowedMissileWeapons { get { return hullCategory.__MaxMissileWeapons(); } }
+    protected override int MaxAllowedLosWeapons { get { return _hullCategory.__MaxLOSWeapons(); } }
+
+    protected override int MaxAllowedMissileWeapons { get { return _hullCategory.__MaxMissileWeapons(); } }
 
     protected override void Validate() {
         base.Validate();
-        //D.Assert(!engineNozzles.IsNullOrEmpty());
-        D.Assert(hullCategory != ShipHullCategory.None);
+        //D.Assert(!_engineNozzles.IsNullOrEmpty());
+        D.Assert(_hullCategory != ShipHullCategory.None);
     }
 
     protected override void Cleanup() { }

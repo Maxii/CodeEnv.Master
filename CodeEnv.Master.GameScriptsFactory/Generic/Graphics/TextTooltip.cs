@@ -19,6 +19,7 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 ///Standalone and extensible class for all Gui constructs that specify display of a simple text tooltip.
@@ -26,9 +27,12 @@ using UnityEngine;
 /// </summary>
 public class TextTooltip : ATextTooltip {
 
-    public string tooltip = string.Empty;
+    //[FormerlySerializedAs("tooltip")]
+    [Tooltip("The content to use in the tooltip")]
+    [SerializeField]
+    private string _tooltip = string.Empty;
 
-    protected override string TooltipContent { get { return tooltip; } }
+    protected override string TooltipContent { get { return _tooltip; } }
 
     protected override void Start() {
         base.Start();

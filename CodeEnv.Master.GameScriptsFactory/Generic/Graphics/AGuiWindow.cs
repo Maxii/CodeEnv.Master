@@ -49,11 +49,12 @@ public abstract class AGuiWindow : AMonoBase {
     /// </summary>
     public List<EventDelegate> onHideComplete = new List<EventDelegate>();
 
-    public bool IsShowing { get; private set; }
-
+    // Has Editor
     public bool startHidden = true;
     public bool useFading = true;
     public float fadeDuration = 0.2f;
+
+    public bool IsShowing { get; private set; }
 
     protected abstract Transform ContentHolder { get; }
 

@@ -35,13 +35,17 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// </summary>
     private static float _minSteeringInaccuracy = .01F;
 
-    public GameObject muzzleEffect;
+    [SerializeField]
+    private GameObject _muzzleEffect = null;
 
     /// <summary>
     /// The effect this Projectile will show while operating including when the game is paused.
     /// </summary>
-    public ParticleSystem operatingEffect;
-    public ParticleSystem impactEffect;
+    [SerializeField]
+    private ParticleSystem _operatingEffect = null;
+
+    [SerializeField]
+    private ParticleSystem _impactEffect = null;
 
     /// <summary>
     /// Arbitrary value to correct drift from momentum when a turn is attempted.
@@ -49,7 +53,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// </summary>
     [Range(0F, 5F)]
     [Tooltip("Higher values correct drift causing sharper turns. Zero means no correction.")]
-    public float driftCorrectionFactor = 1F;
+    [SerializeField]
+    private float _driftCorrectionFactor = 1F;
 
     /// <summary>
     /// The maximum speed of this missile in units per hour in Topography.OpenSpace.
@@ -59,7 +64,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// actual max speed reached to be lower than this MaxSpeed value.
     /// </summary>
     public override float MaxSpeed {
-        get { return maxSpeed > Constants.ZeroF ? maxSpeed : Weapon.OrdnanceMaxSpeed; }
+        get { return _maxSpeed > Constants.ZeroF ? _maxSpeed : Weapon.OrdnanceMaxSpeed; }
     }
 
     /// <summary>
@@ -121,40 +126,40 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected override void ValidateEffects() {
         base.ValidateEffects();
-        D.Assert(impactEffect != null, "{0} has no impact effect.".Inject(Name));
-        D.Assert(impactEffect.playOnAwake);
-        D.Assert(!impactEffect.gameObject.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, impactEffect.name));
-        D.Assert(operatingEffect != null, "{0} has no inFlight effect.".Inject(Name));
-        D.Assert(!operatingEffect.playOnAwake);
-        D.Assert(muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
-        D.Assert(!muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, muzzleEffect.name));
+        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
+        D.Assert(_impactEffect.playOnAwake);
+        D.Assert(!_impactEffect.gameObject.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _impactEffect.name));
+        D.Assert(_operatingEffect != null, "{0} has no inFlight effect.".Inject(Name));
+        D.Assert(!_operatingEffect.playOnAwake);
+        D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
+        D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _muzzleEffect.name));
     }
 
     protected override void AssessShowMuzzleEffects() {
-        if (muzzleEffect != null) { // muzzleEffect is detroyed once used
+        if (_muzzleEffect != null) { // muzzleEffect is detroyed once used
             var toShow = ToShowEffects && !_hasWeaponFired;
-            muzzleEffect.SetActive(toShow);    // effect will destroy itself when completed
+            _muzzleEffect.SetActive(toShow);    // effect will destroy itself when completed
         }
     }
 
     protected override void AssessShowOperatingEffects() {
         var toShow = ToShowEffects;
         if (toShow) {
-            operatingEffect.Play();
+            _operatingEffect.Play();
         }
         else {
-            operatingEffect.Stop();
+            _operatingEffect.Stop();
         }
     }
 
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
-        if (impactEffect != null) { // impactEffect is detroyed once used but method can be called after that
+        if (_impactEffect != null) { // impactEffect is detroyed once used but method can be called after that
             // relocate this impactEffect as this projectile could be destroyed before the effect is done playing
-            UnityUtility.AttachChildToParent(impactEffect.gameObject, DynamicObjectsFolder.Instance.gameObject);
-            impactEffect.gameObject.layer = (int)Layers.TransparentFX;
-            impactEffect.transform.position = position;
-            impactEffect.transform.rotation = rotation;
-            impactEffect.gameObject.SetActive(true);    // auto destroyed on completion
+            UnityUtility.AttachChildToParent(_impactEffect.gameObject, DynamicObjectsFolder.Instance.gameObject);
+            _impactEffect.gameObject.layer = (int)Layers.TransparentFX;
+            _impactEffect.transform.position = position;
+            _impactEffect.transform.rotation = rotation;
+            _impactEffect.gameObject.SetActive(true);    // auto destroyed on completion
 
             GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
             SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion
@@ -200,7 +205,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
-        if (driftCorrectionFactor > Constants.ZeroF) {
+        if (_driftCorrectionFactor > Constants.ZeroF) {
             ReduceDrift();
         }
     }
@@ -293,8 +298,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// </summary>
     private void ReduceDrift() {
         Vector3 relativeVelocity = transform.InverseTransformDirection(_rigidbody.velocity);
-        _rigidbody.AddRelativeForce(-relativeVelocity.x * driftCorrectionFactor * Vector3.right);
-        _rigidbody.AddRelativeForce(-relativeVelocity.y * driftCorrectionFactor * Vector3.up);
+        _rigidbody.AddRelativeForce(-relativeVelocity.x * _driftCorrectionFactor * Vector3.right);
+        _rigidbody.AddRelativeForce(-relativeVelocity.y * _driftCorrectionFactor * Vector3.up);
         //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
     }
 

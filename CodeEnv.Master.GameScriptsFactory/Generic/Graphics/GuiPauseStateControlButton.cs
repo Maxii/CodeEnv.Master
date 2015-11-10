@@ -17,19 +17,24 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Executes the selected PauseRequest on button LClk.
 /// </summary>
 public class GuiPauseStateControlButton : AGuiButton {
 
-    public PauseRequest pauseRequestOnClick;
+    //[FormerlySerializedAs("pauseRequestOnClick")]
+    [Tooltip("The Pause/Resume action to take when clicked")]
+    [SerializeField]
+    private PauseRequest _pauseRequestOnClick = PauseRequest.None;
 
     protected override void OnLeftClick() {
-        if (pauseRequestOnClick == default(PauseRequest)) {
+        if (_pauseRequestOnClick == default(PauseRequest)) {
             D.WarnContext(this, "{0}.{1} not set.", GetType().Name, typeof(PauseRequest).Name);
         }
-        bool toPause = pauseRequestOnClick == PauseRequest.Pause;
+        bool toPause = _pauseRequestOnClick == PauseRequest.Pause;
         _gameMgr.RequestPauseStateChange(toPause);
     }
 

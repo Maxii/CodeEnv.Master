@@ -30,7 +30,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     [Range(1.0F, 5.0F)]
     [Tooltip("Minimum Camera View Distance in Units")]
-    public float minViewDistance = 2F;    // 2 units from the orbital plane
+    [SerializeField]
+    private float _minViewDistance = 2F;    // 2 units from the orbital plane
 
     public bool IsTrackingLabelEnabled { private get; set; }
 
@@ -91,8 +92,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     private void __InitializeOrbitalPlaneMeshCollider() {
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
+        _orbitalPlaneCollider.convex = true;    // must preceed isTrigger = true as Trigger's aren't supported on concave meshColliders
         _orbitalPlaneCollider.isTrigger = true;
-        _orbitalPlaneCollider.convex = true;
         _orbitalPlaneCollider.enabled = true;
     }
 
@@ -314,7 +315,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return minViewDistance; } }
+    public override float MinimumCameraViewingDistance { get { return _minViewDistance; } }
 
     #endregion
 

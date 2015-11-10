@@ -124,7 +124,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         var detailValuesContent_Colored = _detailValuesFormat.Inject(healthValuePercentText.SurroundWith(healthColor),
             currentHitPtsValueText.SurroundWith(healthColor), maxHitPtsValueText.SurroundWith(GameColor.Green));
 
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.ProgressBar:
                 PopulateProgressBarValues(healthValue, healthColor);
                 _tooltipContent = detailValuesContent_Colored;
@@ -137,7 +137,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
                 _detailValuesLabel.text = detailValuesContent_Colored;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 

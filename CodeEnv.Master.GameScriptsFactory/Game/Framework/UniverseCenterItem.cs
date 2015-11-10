@@ -28,7 +28,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 2F;
+    [SerializeField]
+    private float _minViewDistanceFactor = 2F;
 
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
@@ -161,7 +162,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

@@ -30,7 +30,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// </summary>
     [Range(0F, 5F)]
     [Tooltip("MaxSpeed in Units/Hour. If Zero, MaxSpeed from WeaponStat will be used.")]
-    public float maxSpeed;
+    [SerializeField]
+    protected float _maxSpeed = Constants.ZeroF;
 
     /// <summary>
     /// The maximum speed of this projectile in units per hour in Topography.OpenSpace.
@@ -108,7 +109,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                 // reporting a miss after the target is dead will just muddy the combat report
                 ReportTargetMissed();
             }
-            TerminateNow();
+            if (IsOperational) {
+                // ordnance has not already been terminated by other paths such as the death of the target
+                TerminateNow();
+            }
         }
         return distanceTraveled;
     }
@@ -154,7 +158,11 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
             D.Assert(otherOrdnance == null);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
         }
-        TerminateNow();
+
+        if (IsOperational) {
+            // ordnance has not already been terminated by other paths such as the death of the target
+            TerminateNow();
+        }
     }
 
     /// <summary>
@@ -218,7 +226,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
             if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
                 ReportInterdiction();
-                TerminateNow();
+                if (IsOperational) {
+                    // ordnance has not already been terminated by other paths such as the death of the target
+                    TerminateNow();
+                }
             }
         }
     }

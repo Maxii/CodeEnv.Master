@@ -25,13 +25,17 @@ using UnityEngine;
 /// </summary>
 public class Bullet : AProjectileOrdnance {
 
-    public GameObject muzzleEffect;
+    [SerializeField]
+    private GameObject _muzzleEffect = null;
 
     /// <summary>
     /// The effect this Projectile will show while operating including when the game is paused.
     /// </summary>
-    public ParticleSystem operatingEffect;
-    public ParticleSystem impactEffect;
+    [SerializeField]
+    private ParticleSystem _operatingEffect = null;
+
+    [SerializeField]
+    private ParticleSystem _impactEffect = null;
 
     /// <summary>
     /// The maximum speed of this bullet in units per hour in Topography.OpenSpace.
@@ -40,7 +44,7 @@ public class Bullet : AProjectileOrdnance {
     /// in higher density Topography causing the bullet's actual speed to decline faster.
     /// </summary>
     public override float MaxSpeed {
-        get { return maxSpeed > Constants.ZeroF ? maxSpeed : Weapon.OrdnanceMaxSpeed; }
+        get { return _maxSpeed > Constants.ZeroF ? _maxSpeed : Weapon.OrdnanceMaxSpeed; }
     }
 
     /// <summary>
@@ -60,13 +64,13 @@ public class Bullet : AProjectileOrdnance {
 
     protected override void ValidateEffects() {
         base.ValidateEffects();
-        D.Assert(impactEffect != null, "{0} has no impact effect.".Inject(Name));
-        D.Assert(impactEffect.playOnAwake);
-        D.Assert(!impactEffect.gameObject.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, impactEffect.name));
-        D.Assert(operatingEffect != null, "{0} has no inFlight effect.".Inject(Name));
-        D.Assert(!operatingEffect.playOnAwake);
-        D.Assert(muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
-        D.Assert(!muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, muzzleEffect.name));
+        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
+        D.Assert(_impactEffect.playOnAwake);
+        D.Assert(!_impactEffect.gameObject.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _impactEffect.name));
+        D.Assert(_operatingEffect != null, "{0} has no inFlight effect.".Inject(Name));
+        D.Assert(!_operatingEffect.playOnAwake);
+        D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
+        D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _muzzleEffect.name));
     }
 
     /// <summary>
@@ -82,8 +86,8 @@ public class Bullet : AProjectileOrdnance {
     }
 
     private void ShowMuzzleEffects(bool toShow) {
-        if (muzzleEffect != null) { // muzzleEffect is detroyed once used
-            muzzleEffect.SetActive(toShow);    // effect will destroy itself when completed
+        if (_muzzleEffect != null) { // muzzleEffect is detroyed once used
+            _muzzleEffect.SetActive(toShow);    // effect will destroy itself when completed
         }
         // TODO add Audio
     }
@@ -95,21 +99,21 @@ public class Bullet : AProjectileOrdnance {
 
     private void ShowOperatingEffects(bool toShow) {
         if (toShow) {
-            operatingEffect.Play();
+            _operatingEffect.Play();
         }
         else {
-            operatingEffect.Stop();
+            _operatingEffect.Stop();
         }
     }
 
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
-        if (impactEffect != null) { // impactEffect is detroyed once used but method can be called after that
+        if (_impactEffect != null) { // impactEffect is detroyed once used but method can be called after that
             // relocate this impactEffect as this projectile could be destroyed before the effect is done playing
-            UnityUtility.AttachChildToParent(impactEffect.gameObject, DynamicObjectsFolder.Instance.gameObject);
-            impactEffect.gameObject.layer = (int)Layers.TransparentFX;
-            impactEffect.transform.position = position;
-            impactEffect.transform.rotation = rotation;
-            impactEffect.gameObject.SetActive(true);    // auto destroyed on completion
+            UnityUtility.AttachChildToParent(_impactEffect.gameObject, DynamicObjectsFolder.Instance.gameObject);
+            _impactEffect.gameObject.layer = (int)Layers.TransparentFX;
+            _impactEffect.transform.position = position;
+            _impactEffect.transform.rotation = rotation;
+            _impactEffect.gameObject.SetActive(true);    // auto destroyed on completion
 
             GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
             SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion

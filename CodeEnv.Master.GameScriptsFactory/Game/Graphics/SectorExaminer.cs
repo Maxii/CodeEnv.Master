@@ -25,6 +25,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
@@ -32,7 +33,14 @@ using UnityEngine;
 /// </summary>
 public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
-    public int distanceInSectorsFromCamera = 2;
+    /// <summary>
+    /// The distance from the front of the camera (in sectors) this examiner uses to determine which sector to highlight.
+    /// </summary>
+    //[FormerlySerializedAs("distanceInSectorsFromCamera")]
+    [Range(1, 3)]
+    [Tooltip("The distance from the front of the camera (in sectors) this examiner uses to determine which sector to highlight.")]
+    [SerializeField]
+    private int _distanceInSectorsFromCamera = 2;
 
     private Index3D _currentSectorIndex = new Index3D();
     /// <summary>
@@ -65,7 +73,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _sectorGrid = SectorGrid.Instance;
-        _distanceToHighlightedSector = distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
+        _distanceToHighlightedSector = _distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
         InitializeCenterCollider();
         Subscribe();
     }
@@ -196,8 +204,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 bool toShow;
                 SectorItem notUsed;
                 if (toShow = _sectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
-                    if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {
-                        CurrentSectorIndex = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
+                    if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {    // avoid the SetProperty equivalent warnings
+                        CurrentSectorIndex = sectorIndexUnderMouse;
                     }
                 }
                 ShowSector(toShow);

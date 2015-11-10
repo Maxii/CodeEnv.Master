@@ -20,17 +20,25 @@ using System;
 using System.Reflection;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Standalone but extensible class for Checkboxes that are elements of a menu with an Accept button.
 /// </summary>
 public class GuiMenuCheckbox : AGuiMenuElement {
 
-    public string tooltip = string.Empty;
+    //[FormerlySerializedAs("tooltip")]
+    [Tooltip("Optional tooltip")]
+    [SerializeField]
+    private string _tooltip = string.Empty;
 
-    public GuiElementID elementID;
+    //[FormerlySerializedAs("elementID")]
+    [Tooltip("The unique ID of this Checkbox GuiElement")]
+    [SerializeField]
+    private GuiElementID _elementID = GuiElementID.None;
 
-    public override GuiElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return _elementID; } }
 
     /// <summary>
     /// The default value to use if there is no stored preference for this Checkbox.
@@ -38,7 +46,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     /// </summary>
     protected bool DefaultValue { get; set; }
 
-    protected sealed override string TooltipContent { get { return tooltip; } }
+    protected sealed override string TooltipContent { get { return _tooltip; } }
 
     /// <summary>
     /// Flag indicates whether this checkbox should initialize its selection itself.

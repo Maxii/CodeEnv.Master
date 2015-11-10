@@ -20,17 +20,22 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Changes the InputMode to that selected on Button LeftClick.
 /// </summary>
 public class InputModeControlButton : AGuiButton {
 
-    public GameSceneInputMode inputModeOnClick;
+    //[FormerlySerializedAs("inputModeOnClick")]
+    [Tooltip("The GameSceneInputMode to use when clicked")]
+    [SerializeField]
+    private GameSceneInputMode _inputModeOnClick = GameSceneInputMode.None;
 
     protected override void Awake() {
         base.Awake();
-        if (inputModeOnClick == default(GameSceneInputMode)) {
+        if (_inputModeOnClick == default(GameSceneInputMode)) {
             D.WarnContext(this, "{0} has not set {1}.", GetType().Name, typeof(GameSceneInputMode).Name);
         }
     }
@@ -38,7 +43,7 @@ public class InputModeControlButton : AGuiButton {
     protected override void OnLeftClick() {
         D.Assert(_gameMgr.CurrentScene != SceneLevel.LobbyScene);
         GameInputMode gameInputMode;
-        switch (inputModeOnClick) {
+        switch (_inputModeOnClick) {
             case GameSceneInputMode.PartialPopup:
                 gameInputMode = GameInputMode.PartialPopup;
                 break;
@@ -50,7 +55,7 @@ public class InputModeControlButton : AGuiButton {
                 break;
             case GameSceneInputMode.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputModeOnClick));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_inputModeOnClick));
         }
         //D.Log("{0} is about to set InputMode to {1}.", GetType().Name, gameInputMode.GetValueName());
         InputManager.Instance.InputMode = gameInputMode;

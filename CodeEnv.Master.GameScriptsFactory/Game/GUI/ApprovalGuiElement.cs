@@ -81,7 +81,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         _detailValuesContent = _detailValuesFormat.Inject(approvalValuePercentText);
         var detailValuesContent_Colored = _detailValuesFormat.Inject(approvalValuePercentText.SurroundWith(approvalColor));
 
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.ProgressBar:
                 PopulateProgressBarValues(approvalValue, approvalColor);
                 _tooltipContent = detailValuesContent_Colored;
@@ -94,7 +94,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
                 _detailValuesLabel.text = detailValuesContent_Colored;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 

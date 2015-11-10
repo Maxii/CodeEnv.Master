@@ -33,7 +33,7 @@ using MoreLinq;
 /// </summary>
 public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
-    public bool move;
+    public bool move;   // Has Editor
     public bool attack;
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
@@ -129,9 +129,9 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         return true;
     }
 
-    protected override void __IssueFirstUnitCommand() {
+    protected override void __IssueFirstUnitCommand(Action onCompleted) {
         LogEvent();
-        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {    // makes sure all targets are present in scene if they are suppossed to be
+        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {    // makes sure all targets are present in scene if they are supposed to be
             if (move) {                                             // avoids script execution order issue when this creator receives IsRunning before other creators
                 if (attack) {
                     __GetFleetAttackUnderway();
@@ -140,6 +140,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                     __GetFleetUnderway();
                 }
             }
+            onCompleted();
         });
     }
 
@@ -173,7 +174,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             }
         }
         INavigableTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
-        //INavigableTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        //INavigableTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
         D.Log("{0} destination is {1}.", UnitName, destination.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, destination, Speed.FleetStandard);
     }
@@ -201,7 +202,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             }
         }
         IUnitAttackableTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
-        //IUnitAttackableTarget attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
+        //IUnitAttackableTarget attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
         D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);
     }

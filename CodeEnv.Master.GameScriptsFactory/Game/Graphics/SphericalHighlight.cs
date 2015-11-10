@@ -27,8 +27,12 @@ using UnityEngine;
 /// </summary>
 public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISphericalHighlight {
 
-    public bool enableTrackingLabel = false;
-    public float alphaValueWhenShowing = 0.5F;
+    [SerializeField]
+    private bool _enableTrackingLabel = false;
+
+    [Range(0.1F, 1.0F)]
+    [SerializeField]
+    private float _alphaValueWhenShowing = 0.5F;
 
     private IWidgetTrackable _target;
     private Renderer _renderer;
@@ -59,7 +63,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
 
     public void SetTarget(IWidgetTrackable target, float sphereRadius, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
         _target = target;
-        if (enableTrackingLabel && _trackingLabel == null) {
+        if (_enableTrackingLabel && _trackingLabel == null) {
             _trackingLabel = InitializeTrackingLabel();
         }
 
@@ -97,7 +101,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
 
     public void Show(bool toShow) {
         enabled = toShow;
-        float alpha = toShow ? alphaValueWhenShowing : Constants.ZeroF;
+        float alpha = toShow ? _alphaValueWhenShowing : Constants.ZeroF;
         _renderer.material.SetAlpha(alpha);
         if (_trackingLabel != null) {
             _trackingLabel.Show(toShow);

@@ -103,8 +103,9 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         _command.HQElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
     }
 
-    protected override void __IssueFirstUnitCommand() {
+    protected override void __IssueFirstUnitCommand(Action onCompleted) {
         LogEvent();
+        onCompleted();
     }
 
     protected override int GetMaxLosWeaponsAllowed(FacilityHullCategory hullCategory) {

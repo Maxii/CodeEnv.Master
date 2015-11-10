@@ -23,6 +23,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Immutable location struct holding 3 ints.
     /// </summary>
+    [Serializable]
     public struct Index3D : IEquatable<Index3D>, IComparable<Index3D> {
 
         #region Comparison Operators Override

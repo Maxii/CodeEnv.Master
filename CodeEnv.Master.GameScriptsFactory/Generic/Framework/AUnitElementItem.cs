@@ -32,11 +32,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 2.0F;
+    [SerializeField]
+    private float _minViewDistanceFactor = 2.0F;
 
     [Range(1.5F, 5.0F)]
     [Tooltip("Optimal Camera View Distance Multiplier")]
-    public float optViewDistanceFactor = 2.4F;
+    [SerializeField]
+    private float _optViewDistanceFactor = 2.4F;
 
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
@@ -114,7 +116,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     protected override float InitializeOptimalCameraViewingDistance() {
-        return Radius * optViewDistanceFactor;
+        return Radius * _optViewDistanceFactor;
     }
 
     /// <summary>
@@ -501,7 +503,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        //var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
         var equipmentDamageChance = damageSeverity;
 
         var undamagedWeapons = Data.Weapons.Where(w => !w.IsDamaged);
@@ -509,44 +510,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             w.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
             //D.Log(w.IsDamaged, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
         });
-        //var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
-        //operationalWeapons.ForAll(w => {
-        //    w.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-        //    //D.Log(!w.IsOperational, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
-        //});
 
         var undamagedSensors = Data.Sensors.Where(s => !s.IsDamaged);
-        undamagedWeapons.ForAll(s => {
+        undamagedSensors.ForAll(s => {
             s.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
             //D.Log(s.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
         });
-        //var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
-        //operationalSensors.ForAll(s => {
-        //    s.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-        //    //D.Log(!s.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
-        //});
 
         var undamagedActiveCMs = Data.ActiveCountermeasures.Where(cm => !cm.IsDamaged);
-        undamagedWeapons.ForAll(cm => {
+        undamagedActiveCMs.ForAll(cm => {
             cm.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
-            //D.Log(cm.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, cm.Name);
+            //D.Log(cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", FullName, cm.Name);
         });
-        //var operationalActiveCMs = Data.ActiveCountermeasures.Where(cm => cm.IsOperational);
-        //operationalActiveCMs.ForAll(cm => {
-        //    cm.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-        //    //D.Log(!cm.IsOperational, "{0}'s sensor {1} has been damaged.", FullName, cm.Name);
-        //});
 
         var undamagedGenerators = Data.ShieldGenerators.Where(gen => !gen.IsDamaged);
         undamagedGenerators.ForAll(gen => {
             gen.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
             //D.Log(gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
         });
-        //var operationalGenerators = Data.ShieldGenerators.Where(gen => gen.IsOperational);
-        //operationalGenerators.ForAll(gen => {
-        //    gen.IsOperational = RandomExtended.Chance(equipmentSurvivalChance);
-        //    D.Log(!gen.IsOperational, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
-        //});
     }
 
     #endregion
@@ -642,7 +623,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

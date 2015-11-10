@@ -24,9 +24,7 @@ using UnityEngine;
 /// </summary>
 public class GuiExitButton : AGuiButton {
 
-    protected override string TooltipContent {
-        get { return "Exit the Game."; }
-    }
+    protected override string TooltipContent { get { return "Exit the Game."; } }
 
     protected override void OnLeftClick() {
         _gameMgr.ExitGame();

@@ -88,7 +88,7 @@ public class SystemCreator : AMonoBase {
     /// </summary>
     private static bool _isStaticallySubscribed;
 
-    public bool isCompositionPreset;
+    public bool isCompositionPreset;    // Has Editor
     public int maxPlanetsInRandomSystem = 3;
     public int maxMoonsInRandomSystem = 3;
     public int countermeasuresPerPlanetoid = 1;

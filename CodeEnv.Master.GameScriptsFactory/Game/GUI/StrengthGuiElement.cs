@@ -22,18 +22,24 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for OffensiveStrength and DefensiveStrength.   
 /// </summary>
 public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
+    //[FormerlySerializedAs("widgetsPresent")]
     [Tooltip("The widgets that are present to display the content of this GuiElement.")]
-    public WidgetsPresent widgetsPresent = WidgetsPresent.SumLabel;
+    [SerializeField]
+    private WidgetsPresent _widgetsPresent = WidgetsPresent.SumLabel;
 
-    public GuiElementID elementID;
+    //[FormerlySerializedAs("elementID")]
+    [Tooltip("The unique ID of this Strength GuiElement")]
+    [SerializeField]
+    private GuiElementID _elementID = GuiElementID.None;
 
-    public override GuiElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return _elementID; } }
 
     private bool _isStrengthSet;
     private CombatStrength? _strength;
@@ -60,7 +66,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
     private void InitializeValuesAndReferences() {
         var labels = gameObject.GetSafeComponentsInChildren<UILabel>();
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.SumLabel:
                 _combinedValueLabel = labels.Single();
                 NGUITools.AddWidgetCollider(gameObject);
@@ -73,7 +79,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
                 _combinedValueLabel = labels.Single(l => l != _detailValuesLabel);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 
@@ -95,13 +101,13 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
             tooltipText = detailValuesLabelText;
         }
 
-        if (widgetsPresent != WidgetsPresent.DetailsLabel) {
+        if (_widgetsPresent != WidgetsPresent.DetailsLabel) {
             _combinedValueLabel.text = combinedValueLabelText;
         }
-        if (widgetsPresent != WidgetsPresent.SumLabel) {
+        if (_widgetsPresent != WidgetsPresent.SumLabel) {
             _detailValuesLabel.text = detailValuesLabelText;
         }
-        if (widgetsPresent == WidgetsPresent.SumLabel) {
+        if (_widgetsPresent == WidgetsPresent.SumLabel) {
             _tooltipContent = tooltipText;
         }
     }
@@ -131,7 +137,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     #region IComparable<StrengthGuiElement> Members
 
     public int CompareTo(StrengthGuiElement other) {
-        D.Assert(elementID == other.elementID);
+        D.Assert(_elementID == other._elementID);
 
         int result;
         if (!Strength.HasValue) {

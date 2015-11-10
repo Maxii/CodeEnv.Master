@@ -1255,7 +1255,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     #region ITopographyChangeListener Members
 
     public void OnTopographyChanged(Topography newTopography) {
-        D.Log("{0}.OnTopographyChanged({1}).", FullName, newTopography.GetValueName());
+        //D.Log("{0}.OnTopographyChanged({1}).", FullName, newTopography.GetValueName());
         Data.Topography = newTopography;
     }
 
@@ -1360,7 +1360,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             : base() {
             _ship = ship;
             _shipRigidbody = shipRigidbody;
-            //_shipRigidbody.useGravity = false;
+            //_shipRigidbody.useGravity = false;    // set in AElementItem
             _shipRigidbody.freezeRotation = true;
             _gameTime = GameTime.Instance;
             _engineRoom = new EngineRoom(ship.Data, shipRigidbody);
@@ -2649,9 +2649,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
 
             private void OnIsTurnUnderwayChanged() {
-                Vector3 relativeVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
-                string turnStateMsg = IsTurnUnderway ? "turn has begun" : "turn has ended";
-                D.Log("{0} {1}, relativeVelocity = {2}.", _shipData.FullName, turnStateMsg, relativeVelocity.ToPreciseString());
+                if (!IsTurnUnderway) {  // most interested in residual velocity after turn has ended
+                    Vector3 relativeVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
+                    string turnStateMsg = IsTurnUnderway ? "turn has begun" : "turn has ended";
+                    D.Log("{0} {1}, relativeVelocity = {2}.", _shipData.FullName, turnStateMsg, relativeVelocity.ToPreciseString());
+                }
             }
 
             private void OnGameSpeedChanged() {
@@ -2664,12 +2666,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             private void OnIsPausedChanged() {
                 if (_gameMgr.IsPaused) {
                     _velocityOnPause = _shipRigidbody.velocity;
-                    _shipRigidbody.isKinematic = true;  // immediately stops rigidbody and puts it to sleep, but rigidbody.velocity value remains
+                    //D.Log("{0}.Rigidbody.velocity = {1}, .isKinematic changing to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
+                    _shipRigidbody.isKinematic = true;  // immediately stops rigidbody (rigidbody.velocity = 0) and puts it to sleep. Data.CurrentSpeed reports speed correctly when paused
+                    //D.Log("{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
+                    //D.Log("{0}.Rigidbody.isSleeping = {1}.", _shipData.FullName, _shipRigidbody.IsSleeping());
                 }
                 else {
                     _shipRigidbody.isKinematic = false;
                     _shipRigidbody.velocity = _velocityOnPause;
-                    _shipRigidbody.WakeUp();
+                    _shipRigidbody.WakeUp();    // OPTIMIZE superfluous?
                 }
             }
 
@@ -2759,7 +2764,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             private void ApplyForwardThrust() {
                 Vector3 adjustedFwdThrust = _localSpaceForward * _forwardPropulsionPowerOutput * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 _shipRigidbody.AddRelativeForce(adjustedFwdThrust, ForceMode.Force);
-                //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
+                //D.Log("{0}.Speed is now {1:0.####}.", _shipData.FullName, _shipData.CurrentSpeed);
             }
 
             private void ApplyReverseThrust() {

@@ -17,6 +17,7 @@
 
 using CodeEnv.Master.Common;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Scales an object relative to the distance to the camera. Gives the appearance of the object size being the same
@@ -27,10 +28,16 @@ using UnityEngine;
 /// </summary>
 public class ScaleRelativeToCamera : AMonoBase {
 
-    public Vector3 Scale { get; private set; }
+    //[FormerlySerializedAs("updateRate")]
+    [SerializeField]
+    private FrameUpdateFrequency _updateRate = FrameUpdateFrequency.Continuous;
 
-    public FrameUpdateFrequency updateRate = FrameUpdateFrequency.Continuous;
-    public float scaleFactor = .001F;
+    //[FormerlySerializedAs("scaleFactor")]
+    [Tooltip("The relative scale factor to use. Adjust as needed.")]
+    [SerializeField]
+    private float _relativeScaleFactor = .001F;
+
+    public Vector3 Scale { get; private set; }
 
     private Vector3 _initialScale;
 
@@ -38,7 +45,7 @@ public class ScaleRelativeToCamera : AMonoBase {
         base.Awake();
         // record initial scale of the GO and use it as a basis
         _initialScale = transform.localScale;
-        UpdateRate = updateRate;
+        UpdateRate = _updateRate;
         CheckForUIPanelPresenceInParents();
         enabled = false;
     }
@@ -52,7 +59,7 @@ public class ScaleRelativeToCamera : AMonoBase {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        Scale = _initialScale * transform.DistanceToCamera() * scaleFactor;
+        Scale = _initialScale * transform.DistanceToCamera() * _relativeScaleFactor;
         transform.localScale = Scale;
     }
 

@@ -18,17 +18,23 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract base class for a mount placeholder.
 /// </summary>
 public abstract class AMountPlaceholder : AMount {
 
-    public MountSlotID slotID;
+    //[FormerlySerializedAs("slotID")]
+    [SerializeField]
+    private MountSlotID _slotID = MountSlotID.None;
+
+    public MountSlotID SlotID { get { return _slotID; } }
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(slotID != MountSlotID.None);
+        D.Assert(_slotID != MountSlotID.None);
     }
 
 }

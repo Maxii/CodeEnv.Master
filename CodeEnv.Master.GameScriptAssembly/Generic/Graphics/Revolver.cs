@@ -30,13 +30,15 @@ public class Revolver : AMonoBase, IRevolver {
     /// <summary>
     /// The axis of self rotation in local space.
     /// </summary>
-    public Vector3 axisOfRotation = Vector3.up;
+    [SerializeField]
+    private Vector3 _axisOfRotation = Vector3.up;
 
     /// <summary>
     /// The self rotation rate of the object on its own axis. A value of 1 means
     /// a single rotation will take one Day.
     /// </summary>
-    public float relativeRotationRate = 0.1F;
+    [SerializeField]
+    public float _relativeRotationRate = 0.1F;
 
     /// <summary>
     /// The duration of one rotation of the object on its own axis.
@@ -54,7 +56,7 @@ public class Revolver : AMonoBase, IRevolver {
         base.Awake();
         _gameTime = GameTime.Instance;
         _rotationPeriod = GameTimeDuration.OneDay;
-        _rotationRate = relativeRotationRate * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;
+        _rotationRate = _relativeRotationRate * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;
         UpdateRate = FrameUpdateFrequency.Frequent;
         Subscribe();
         enabled = false;
@@ -81,7 +83,7 @@ public class Revolver : AMonoBase, IRevolver {
     /// <param name="deltaTimeSinceLastUpdate">The speed adjusted elapsed time since the last update.</param>
     private void UpdateRotation(float deltaTimeSinceLastUpdate) {
         var degreesToRotate = _rotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
-        transform.Rotate(axisOfRotation, degreesToRotate, relativeTo: Space.Self);
+        transform.Rotate(_axisOfRotation, degreesToRotate, relativeTo: Space.Self);
     }
 
     private void OnIsRunningChanged() {

@@ -20,15 +20,18 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract base class for an element hull.
 /// </summary>
 public abstract class AHull : AMonoBase, IHull {
 
-    public Transform hullMesh;
+    //[FormerlySerializedAs("hullMesh")]
+    [SerializeField]
+    private Transform _hullMesh = null;
 
-    public Transform HullMesh { get { return hullMesh; } }
+    public Transform HullMesh { get { return _hullMesh; } }
 
     protected abstract int MaxAllowedLosWeapons { get; }
 
@@ -40,7 +43,7 @@ public abstract class AHull : AMonoBase, IHull {
     }
 
     protected virtual void Validate() {
-        D.Assert(hullMesh != null);
+        D.Assert(_hullMesh != null);
         /*****************************************************************************************************************************
                     * TODO Can't do this test now as multiple HullCategories use the same hull mesh. To avoid excess work positioning
                     * mount placeholders on hull meshes, I've only made one version of each hull with prepositioned mount placeholders.

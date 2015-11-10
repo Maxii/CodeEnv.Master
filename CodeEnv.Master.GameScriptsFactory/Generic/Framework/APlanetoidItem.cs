@@ -34,15 +34,28 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     public static float MaxOrbitalSpeed { get { return SystemCreator.AllPlanets.Max(p => p.Data.OrbitalSpeed) + SystemCreator.AllMoons.Max(m => m.Data.OrbitalSpeed); } }
 
     [Tooltip("The type of planetoid")]
-    public PlanetoidCategory category;
+    public PlanetoidCategory category = PlanetoidCategory.None;
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 2F;
+    [SerializeField]
+    private float _minViewDistanceFactor = 2F;
 
     [Range(3.0F, 15.0F)]
     [Tooltip("Optimal Camera View Distance Multiplier")]
-    public float optViewDistanceFactor = 8F;
+    [SerializeField]
+    private float _optViewDistanceFactor = 8F;
+
+    [Range(0.1F, 5F)]
+    [Tooltip("Camera Follow Distance Dampener")]
+    [SerializeField]
+    private float _cameraFollowDistanceDampener = 3.0F;
+
+    [Range(0.1F, 3.0F)]
+    [Tooltip("Camera Follow Rotation Dampener")]
+    [SerializeField]
+    private float _cameraFollowRotationDampener = 1.0F;
+
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
@@ -129,7 +142,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override float InitializeOptimalCameraViewingDistance() {
-        return Radius * optViewDistanceFactor;
+        return Radius * _optViewDistanceFactor;
     }
 
     protected override void SetDeadState() {
@@ -277,22 +290,18 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 
     #region ICameraFollowable Members
 
-    [SerializeField]
-    private float cameraFollowDistanceDampener = 3.0F;
     public virtual float FollowDistanceDampener {
-        get { return cameraFollowDistanceDampener; }
+        get { return _cameraFollowDistanceDampener; }
     }
 
-    [SerializeField]
-    private float cameraFollowRotationDampener = 1.0F;
     public virtual float FollowRotationDampener {
-        get { return cameraFollowRotationDampener; }
+        get { return _cameraFollowRotationDampener; }
     }
 
     #endregion

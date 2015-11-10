@@ -27,7 +27,7 @@ public class AnimateOnHover : AMonoBase {
     /// <summary>
     /// The sprite to change when moving between hovered and not hovered.
     /// </summary>
-    public UISprite targetSprite;
+    public UISprite targetSprite;   // Has Editor
 
     /// <summary>
     /// The name of the sprite to use when hovered.
@@ -45,7 +45,7 @@ public class AnimateOnHover : AMonoBase {
     protected override void Start() {
         base.Start();
         if (targetSprite != null) {
-            D.WarnContext(targetSprite.spriteName.IsNullOrEmpty(), gameObject, "{0}.{1}.targetSprite has no sprite name selected.", gameObject.name, GetType().Name);
+            //D.WarnContext(targetSprite.spriteName.IsNullOrEmpty(), gameObject, "{0}.{1}.targetSprite has no sprite name.", gameObject.name, GetType().Name); // sprite without a name?
             _normalSpriteName = targetSprite.spriteName;
         }
     }

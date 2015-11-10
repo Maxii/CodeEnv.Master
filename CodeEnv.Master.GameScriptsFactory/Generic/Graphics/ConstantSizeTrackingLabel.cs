@@ -28,7 +28,7 @@ public class ConstantSizeTrackingLabel : AWorldTrackingWidget_ConstantSize {
     /// <summary>
     /// Temporary. The desired size in pixels of this font. 
     /// TODO: As I have only a couple of font sizes available now, this setting will change the size 
-    /// of the UILable font to reflect this desired size. The longer term solution is to have my fonts be the 
+    /// of the UILabel font to reflect this desired size. The longer term solution is to have my fonts be the 
     /// desired size to begin with, eliminating any change requirement. 
     /// </summary>
     public int desiredFontSize = 6;

@@ -61,7 +61,7 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
         string imageFilename = __HeroName;   // should result in a null (no image) sprite
         string heroName_Colored = __HeroName;
 
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.Image:
                 PopulateImageValues(imageFilename, imageAtlasID);
                 _tooltipContent = "Hero custom tooltip placeholder";
@@ -74,7 +74,7 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
                 _imageNameLabel.text = heroName_Colored;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 

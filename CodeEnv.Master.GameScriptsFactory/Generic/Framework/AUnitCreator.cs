@@ -287,8 +287,11 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         UnityUtility.WaitOneToExecute(() => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             RecordCommandInStaticCollections();
-            __IssueFirstUnitCommand();
-            RemoveCreatorScript();
+            //__IssueFirstUnitCommand();
+            __IssueFirstUnitCommand(onCompleted: delegate {
+                RemoveCreatorScript();
+            });
+            //RemoveCreatorScript();
         });
     }
 
@@ -531,7 +534,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private IList<ElementHullStatType> CreateRandomElementHullStats() {
         LogEvent();
-        var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
         int elementCount = RandomExtended.Range(1, maxElementsInRandomUnit);
         //D.Log("{0} Element count is {1}.", UnitName, elementCount);
         var elementHullStats = new List<ElementHullStatType>(elementCount);
@@ -733,7 +735,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract int GetMaxLosWeaponsAllowed(ElementCategoryType hullCategory);
 
-    protected abstract void __IssueFirstUnitCommand();
+    protected abstract void __IssueFirstUnitCommand(Action onCompleted);
 
     private Player ValidateAndInitializeOwner() {
         Player userPlayer = _gameMgr.UserPlayer;

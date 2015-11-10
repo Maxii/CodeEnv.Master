@@ -27,9 +27,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiGameSpeedReadout : AGuiLabelReadout {
 
-    protected override string TooltipContent {
-        get { return "Game Speed relative to Normal."; }
-    }
+    protected override string TooltipContent { get { return "Game Speed relative to Normal."; } }
 
     private IList<IDisposable> _subscriptions;
 

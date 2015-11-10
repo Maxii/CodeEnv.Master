@@ -27,12 +27,12 @@ using UnityEngine;
 /// </summary>
 public class DestroyEffectOnCompletion : AMonoBase {
 
-    public EffectType effectType;
+    public EffectType effectType;   // Has Editor
 
     /// <summary>
     /// The duration of the EffectType.Mesh effect in seconds.
     /// </summary>
-    [Tooltip("The duration of the mesh effect in seconds.")]
+    //[Tooltip("The duration of the mesh effect in seconds.")]  // Has Editor
     public float meshEffectDuration;
 
     private float _cumTimeShowingMeshEffect;

@@ -46,7 +46,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        //D.Log("{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
+        D.Log("{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log("{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
             return;
@@ -59,6 +59,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
                 return;
             }
+            //if (__itemsDetectedViaWorkaround.Contains(detectedItem)) {
+            //    D.Log("{0}.OnTriggerEnter() detected {1} after workaround detected it.", Name, detectedItem.FullName);
+            //}
             AddDetectedItem(detectedItem);
         }
     }
@@ -144,14 +147,14 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             D.Log("{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
             OnDetectedItemAdded(detectedItem);
         }
-        else {
-            if (!__itemsDetectedViaWorkaround.Contains(detectedItem)) {
-                D.Warn("{0} improperly attempted to add duplicate {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
-            }
-            else {
-                D.Log("{0} properly avoided adding duplicate {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
-            }
-        }
+        //else {
+        //    if (__itemsDetectedViaWorkaround.Contains(detectedItem)) {
+        //        D.Warn("{0} attempted to add duplicate {1} {2} from workaround.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
+        //    }
+        //    else {
+        //        D.Warn("{0} attempted to add duplicate {1} {2}, but not from workaround.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
+        //    }
+        //}
     }
 
     /// <summary>
@@ -200,14 +203,44 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// Throws an exception if any items are already present in the ItemsDetected list.
     /// </summary>
     private void AcquireAllDetectableItemsInRange() {
-        __WorkaroundToDetectAllCollidersInRange();
+        BulkDetectAllCollidersInRange();
     }
+
+    /// <summary>
+    /// Detects all colliders in range in one step, including those that might not otherwise generate
+    /// an OnTriggerEnter() event. The docs http://docs.unity3d.com/410/Documentation/Manual/Physics.html
+    /// say there are no colliders that a Kinematic Rigidbody Trigger Collider (like these monitors) will 
+    /// not detect but I haven't been able to prove that, especially within one frame. 
+    /// This technique finds all colliders in range, then finds those IDetectableTypes among them and adds them. 
+    /// This method is used when the monitor first starts up, and when something changes in the monitor
+    /// (like its range) requiring a clear and re-acquire. OnTriggerEnter() will be relied on to add individual 
+    /// colliders as they come into range.
+    /// </summary>
+    private void BulkDetectAllCollidersInRange() {
+        D.Assert(_itemsDetected.Count == Constants.Zero);
+        __itemsDetectedViaWorkaround.Clear();
+
+        D.Log("{0}.BulkDetectAllCollidersInRange() called.", Name);
+        var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
+        var allDetectableItemsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
+        foreach (var detectableItem in allDetectableItemsInRange) {
+            if (!detectableItem.IsOperational) {
+                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectableItem.FullName);
+                continue;
+            }
+            D.Log("{0}'s bulk detection method is adding {1}.", Name, detectableItem.FullName);
+            __itemsDetectedViaWorkaround.Add(detectableItem);
+            AddDetectedItem(detectableItem);
+        }
+    }
+
+    #region Acquire Colliders Workaround
 
     /// <summary>
     /// Detects all colliders in range, including those that would otherwise not generate
     /// an OnTriggerEnter() event. The later includes static colliders and any 
     /// rigidbody colliders that are currently asleep (unmoving). This is necessary as some
-    /// versions of this monitor don't move, keeping its rigidbody perpetually asleep. When
+    /// instances of this monitor don't move (e.g. SensorRangeMonitor on StarbaseCmd), keeping its rigidbody perpetually asleep. When
     /// the monitor's rigidbody is asleep, it will only detect other rigidbody colliders that are
     /// currently awake (moving). This technique finds all colliders in range, then finds those
     /// IDetectable items among them that haven't been added and adds them. The 1 frame
@@ -215,33 +248,40 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// and add only those that aren't already present, avoiding duplication warnings.
     /// 
     /// <remarks>Using WakeUp() doesn't work on kinematic rigidbodies. This makes 
-    /// sense as they are always asleep, being that they don't interact with the physics system.
+    /// sense as they are always sleeping, being that they don't interact with the physics system.
     /// </remarks>
     /// </summary>
-    private void __WorkaroundToDetectAllCollidersInRange() {
-        D.Assert(_itemsDetected.Count == Constants.Zero);
-        __itemsDetectedViaWorkaround.Clear();
+    //private void __WorkaroundToDetectAllCollidersInRange() {
+    //    D.Assert(_itemsDetected.Count == Constants.Zero);
+    //    __itemsDetectedViaWorkaround.Clear();
 
-        //D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
-        UnityUtility.WaitOneFixedUpdateToExecute(() => {    // delay to allow monitor 1 fixed update to record items that it detects
-            if (transform == null) { return; } // client (and thus monitor) can be destroyed during this 1 frame delay
-            var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
-            var allDetectableItemsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
-            D.Log("{0} has detected the following items prior to attempting workaround: {1}.", Name, _itemsDetected.Select(i => i.FullName).Concatenate());
-            var undetectedDetectableItems = allDetectableItemsInRange.Except(_itemsDetected);
-            if (undetectedDetectableItems.Any()) {
-                foreach (var undetectedItem in undetectedDetectableItems) {
-                    if (!undetectedItem.IsOperational) {
-                        D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, undetectedItem.FullName);
-                        continue;
-                    }
-                    D.Log("{0}'s detection workaround is adding {1}.", Name, undetectedItem.FullName);
-                    __itemsDetectedViaWorkaround.Add(undetectedItem);
-                    AddDetectedItem(undetectedItem);
-                }
-            }
-        });
-    }
+    //    //D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
+    //    UnityUtility.WaitOneFixedUpdateToExecute(() => {
+    //        // delay to allow monitor 1 fixed update to record items that it detects. In my observation, it takes more than one frame
+    //        // for OnTriggerEnter() to reacquire colliders in range and it doesn't necessarily get them all. In addition, some of them are
+    //        // reacquired more than once. As a result, I'm going to rely on a new version of this method to bulk acquire colliders without delay 
+    //        // when the monitor starts up and when something changes in the monitor requiring a clear and re-acquire. OnTriggerEnter() will 
+    //        // be relied on to add individual colliders as they come into range.
+    //        if (transform == null) { return; } // client (and thus monitor) can be destroyed during this 1 frame delay
+    //        var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
+    //        var allDetectableItemsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
+    //        D.Warn("{0} has detected the following items prior to attempting workaround: {1}.", Name, _itemsDetected.Select(i => i.FullName).Concatenate());
+    //        var undetectedDetectableItems = allDetectableItemsInRange.Except(_itemsDetected);
+    //        if (undetectedDetectableItems.Any()) {
+    //            foreach (var undetectedItem in undetectedDetectableItems) {
+    //                if (!undetectedItem.IsOperational) {
+    //                    D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, undetectedItem.FullName);
+    //                    continue;
+    //                }
+    //                D.Warn("{0}'s detection workaround is adding {1}.", Name, undetectedItem.FullName);
+    //                __itemsDetectedViaWorkaround.Add(undetectedItem);
+    //                AddDetectedItem(undetectedItem);
+    //            }
+    //        }
+    //    });
+    //}
+
+    #endregion
 
     protected override void ResetForReuse() {
         base.ResetForReuse();

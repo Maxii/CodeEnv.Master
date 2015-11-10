@@ -22,6 +22,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Resources available to an Item. 
@@ -36,7 +37,10 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     /// The category of resources to be displayed.
     /// This will cause these resources to be acquired from the provided ResourceYield.
     /// </summary>
-    public ResourceCategory resourceCategory;
+    //[FormerlySerializedAs("resourceCategory")]
+    [Tooltip("The category of resources to be displayed")]
+    [SerializeField]
+    private ResourceCategory _resourceCategory = ResourceCategory.None;
 
     private bool _isResourcesSet = false;
     private ResourceYield? _resources;
@@ -155,7 +159,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             return;
         }
 
-        var resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == resourceCategory).ToList();
+        var resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
         _resourcesCount = resourcesPresent.Count;
         D.Assert(_resourcesCount <= _maxResourcesAllowed);
         for (int i = Constants.Zero; i < _resourcesCount; i++) {
@@ -192,7 +196,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(resourceCategory != ResourceCategory.None, "{0}.{1} has not been set.".Inject(GetType().Name, typeof(ResourceCategory).Name));
+        D.Assert(_resourceCategory != ResourceCategory.None, "{0}.{1} has not been set.".Inject(GetType().Name, typeof(ResourceCategory).Name));
     }
 
     protected override void Cleanup() {

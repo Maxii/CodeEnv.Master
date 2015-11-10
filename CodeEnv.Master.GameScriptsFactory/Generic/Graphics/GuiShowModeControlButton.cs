@@ -18,6 +18,8 @@
 
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Button that  determines whether the fixed panels of the Gui should be hidden or shown.
@@ -27,12 +29,12 @@ public class GuiShowModeControlButton : AGuiButton {
     /// <summary>
     /// Indicates whether to show or hide the fixed panels of the Gui when this button is clicked.
     /// </summary>
-    public ShowMode showModeOnClick;
+    public ShowMode showModeOnClick = ShowMode.None;    // Has Editor
 
     /// <summary>
-    /// The list of UIPanels that should not be hidden.
+    /// The UIPanels that should not be hidden.
     /// </summary>
-    public List<UIPanel> hideExceptions;
+    public List<UIPanel> hideExceptions;    // Has Editor
 
     protected override void Awake() {
         base.Awake();

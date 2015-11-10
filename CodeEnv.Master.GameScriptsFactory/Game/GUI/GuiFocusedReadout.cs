@@ -27,9 +27,7 @@ using UnityEngine;
 /// </summary>
 public class GuiFocusedReadout : AGuiLabelReadout {
 
-    protected override string TooltipContent {
-        get { return "The last game object in focus."; }
-    }
+    protected override string TooltipContent { get { return "The last game object in focus."; } }
 
     private ICameraFocusable _retainedFocus;
     private IList<IDisposable> _subscriptions;

@@ -63,7 +63,7 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
         string imageFilename = Owner.LeaderImageFilename;
         string leaderName_Colored = Owner.LeaderName.SurroundWith(Owner.Color);
 
-        switch (widgetsPresent) {
+        switch (_widgetsPresent) {
             case WidgetsPresent.Image:
                 PopulateImageValues(imageFilename, imageAtlasID);
                 _tooltipContent = "Owner custom tooltip placeholder";
@@ -76,7 +76,7 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
                 _imageNameLabel.text = leaderName_Colored;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(widgetsPresent));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
 

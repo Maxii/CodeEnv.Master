@@ -484,11 +484,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AWeaponMount weaponMountPrefab;
         var losWeapon = weapon as ALOSWeapon;
         if (losWeapon != null) {
-            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.SlotID == mountSlotID);
             weaponMountPrefab = _losTurretPrefab;
         }
         else {
-            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.slotID == mountSlotID);
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.SlotID == mountSlotID);
             weaponMountPrefab = _missileTubePrefab;
         }
         D.Assert(weaponMountPrefab.SlotID == MountSlotID.None); // mount prefabs won't yet have a slotID
@@ -510,7 +510,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             // LOS weapon
             var losMountPlaceholder = mountPlaceholder as LOSMountPlaceholder;
             var losWeaponMount = weaponMount as LOSTurret;
-            losWeaponMount.InitializeBarrelElevationSettings(losMountPlaceholder.minimumBarrelElevation);
+            losWeaponMount.InitializeBarrelElevationSettings(losMountPlaceholder.MinimumBarrelElevation);
         }
         UnityUtility.Destroy(mountPlaceholder.gameObject);
         weapon.WeaponMount = weaponMount;
@@ -564,13 +564,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         foreach (var stat in weapStats) {
             if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
                 var placeholder = RandomExtended.Choice(missileMountPlaceholders);
-                placeholderSlotID = placeholder.slotID;
+                placeholderSlotID = placeholder.SlotID;
                 missileMountPlaceholders.Remove(placeholder);
             }
             else {
                 // LOSWeapon
                 var placeholder = RandomExtended.Choice(losMountPlaceholders);
-                placeholderSlotID = placeholder.slotID;
+                placeholderSlotID = placeholder.SlotID;
                 losMountPlaceholders.Remove(placeholder);
             }
             var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
@@ -599,13 +599,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         foreach (var stat in weapStats) {
             if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
                 var placeholder = RandomExtended.Choice(missileMountPlaceholders);
-                placeholderSlotID = placeholder.slotID;
+                placeholderSlotID = placeholder.SlotID;
                 missileMountPlaceholders.Remove(placeholder);
             }
             else {
                 // LOSWeapon
                 var placeholder = RandomExtended.Choice(losMountPlaceholders);
-                placeholderSlotID = placeholder.slotID;
+                placeholderSlotID = placeholder.SlotID;
                 losMountPlaceholders.Remove(placeholder);
             }
             var weaponDesign = new WeaponDesign(stat, placeholderSlotID);

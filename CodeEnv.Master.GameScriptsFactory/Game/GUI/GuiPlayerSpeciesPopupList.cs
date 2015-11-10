@@ -19,15 +19,20 @@
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Player Species selection popup list in the NewGameMenu.
 /// </summary>
 public class GuiPlayerSpeciesPopupList : AGuiMenuPopupList<SpeciesGuiSelection> {
 
-    public GuiElementID elementID;
+    //[FormerlySerializedAs("elementID")]
+    [Tooltip("The unique ID of this PlayerSpeciesPopupList GuiElement")]
+    [SerializeField]
+    private GuiElementID _elementID = GuiElementID.None;
 
-    public override GuiElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return _elementID; } }
 
     /// <summary>
     /// The SpeciesGuiSelection currently selected. Can be 'Random".

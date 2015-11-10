@@ -18,6 +18,8 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Instantiable version of AGuiElement that is uniquely identifiable by its GuiElementID. Also has
@@ -26,9 +28,12 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public sealed class GuiElement : AGuiElement {
 
-    public GuiElementID elementID;
+    //[FormerlySerializedAs("elementID")]
+    [Tooltip("The unique ID of this GuiElement")]
+    [SerializeField]
+    private GuiElementID _elementID = GuiElementID.None;
 
-    public override GuiElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return _elementID; } }
 
     public override void Reset() { }
 

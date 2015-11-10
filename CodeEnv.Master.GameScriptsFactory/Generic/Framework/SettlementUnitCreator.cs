@@ -29,7 +29,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCategory, FacilityData, FacilityHullStat, SettlementCmdItem> {
 
-    public bool orbitMoves;
+    public bool orbitMoves; // Has Editor
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
@@ -111,8 +111,9 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
         _command.HQElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
     }
 
-    protected override void __IssueFirstUnitCommand() {
+    protected override void __IssueFirstUnitCommand(Action onCompleted) {
         LogEvent();
+        onCompleted();
     }
 
     protected override int GetMaxLosWeaponsAllowed(FacilityHullCategory hullCategory) {

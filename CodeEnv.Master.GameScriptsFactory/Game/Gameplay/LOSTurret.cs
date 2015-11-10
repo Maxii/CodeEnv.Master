@@ -20,6 +20,7 @@ using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// A Turret Weapon Mount for Line Of Sight Weapons like Beams and Projectiles.
@@ -59,9 +60,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     private static float _minTraverseInaccuracy = .01F;
 
-    public Transform hub;
+    //[FormerlySerializedAs("hub")]
+    [SerializeField]
+    private Transform _hub = null;
 
-    public Transform barrel;
+    //[FormerlySerializedAs("barrel")]
+    [SerializeField]
+    private Transform _barrel = null;
 
     public override string Name {
         get {
@@ -72,7 +77,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         }
     }
 
-    public override Vector3 MuzzleFacing { get { return (muzzle.position - barrel.position).normalized; } }
+    public override Vector3 MuzzleFacing { get { return (_muzzle.position - _barrel.position).normalized; } }
 
     /// <summary>
     /// The inaccuracy of this Turret when traversing in degrees.
@@ -80,7 +85,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     public float TraverseInaccuracy { get; private set; }
 
-    public GameObject Muzzle { get { return muzzle.gameObject; } }
+    public GameObject Muzzle { get { return _muzzle.gameObject; } }
 
     public new ALOSWeapon Weapon {
         get { return base.Weapon as ALOSWeapon; }
@@ -118,13 +123,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _gameTime = GameTime.Instance;
-        _barrelRestElevation = barrel.localRotation;
+        _barrelRestElevation = _barrel.localRotation;
     }
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(hub != null);
-        D.Assert(barrel != null);
+        D.Assert(_hub != null);
+        D.Assert(_barrel != null);
     }
 
     /// <summary>
@@ -174,7 +179,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
     public override bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
-        return Vector3.Distance(enemyTarget.Position, hub.position) < Weapon.RangeDistance;
+        return Vector3.Distance(enemyTarget.Position, _hub.position) < Weapon.RangeDistance;
     }
 
     /// <summary>
@@ -184,7 +189,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="enemyTarget">The enemy target.</param>
     /// <returns></returns>
     private bool CheckLineOfSight(IElementAttackableTarget enemyTarget) {
-        Vector3 turretPosition = hub.position;
+        Vector3 turretPosition = _hub.position;
         Vector3 vectorToTarget = enemyTarget.Position - turretPosition;
         Vector3 targetDirection = vectorToTarget.normalized;
         float targetDistance = vectorToTarget.magnitude;
@@ -225,8 +230,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
     /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
     private void Traverse(LosWeaponFiringSolution firingSolution, float allowedTime) {
-        IElementAttackableTarget target = firingSolution.EnemyTarget;
-        string targetName = target.FullName;
+        //IElementAttackableTarget target = firingSolution.EnemyTarget;
+        //string targetName = target.FullName;
         //D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
 
         Quaternion reqdHubRotation = firingSolution.TurretRotation;
@@ -264,8 +269,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, float allowedTime) {
         //D.Log("Initiating {0} traversal. HubRotationRate: {1:0.}, BarrelElevationRate: {2:0.} degrees/hour.", Name, _hubRotationRate, _barrelElevationRate);
         float cumTime = Constants.ZeroF;
-        bool isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
-        bool isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
+        bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
+        bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
         while (!isTraverseCompleted) {
             float deltaTime = _gameTime.DeltaTimeOrPaused;
@@ -273,17 +278,17 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 //Quaternion previousHubRotation = hub.rotation;
                 float hubRotationRateInDegreesPerSecond = _hubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 float allowedHubRotationChange = hubRotationRateInDegreesPerSecond * deltaTime;
-                hub.rotation = Quaternion.RotateTowards(hub.rotation, reqdHubRotation, allowedHubRotationChange);
+                _hub.rotation = Quaternion.RotateTowards(_hub.rotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, hub.rotation);
                 //D.Log("{0}: AllowedHabRotationChange = {1}, ActualHabRotationChange = {2}.", Name, allowedHabRotationChange, rotationChangeInDegrees);
-                isHubRotationCompleted = hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
+                isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
             }
 
             if (!isBarrelElevationCompleted) {
                 float barrelElevationRateInDegreesPerSecond = _barrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 float allowedBarrelElevationChange = barrelElevationRateInDegreesPerSecond * deltaTime;
-                barrel.localRotation = Quaternion.RotateTowards(barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
-                isBarrelElevationCompleted = barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
+                _barrel.localRotation = Quaternion.RotateTowards(_barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
+                isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
@@ -308,22 +313,22 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     private bool TryCalcTraverse(Vector3 targetPosition, out Quaternion reqdHubRotation, out Quaternion reqdBarrelElevation) {
         // hub rotates within a plane defined by the contour of the hull it resides on. That plane is defined by the position of the hub and the hub's normal. 
         // This distance is to a parallel plane that contains the target.
-        float signedDistanceToPlaneParallelToHubContainingTarget = Vector3.Dot(hub.up, targetPosition - hub.position);
+        float signedDistanceToPlaneParallelToHubContainingTarget = Vector3.Dot(_hub.up, targetPosition - _hub.position);
         //D.Log("{0}: DistanceToPlaneParallelToHubContainingTarget = {1}.", Name, signedDistanceToPlaneParallelToHubContainingTarget);
 
-        Vector3 targetPositionProjectedOntoHubPlane = targetPosition - hub.up * signedDistanceToPlaneParallelToHubContainingTarget;
+        Vector3 targetPositionProjectedOntoHubPlane = targetPosition - _hub.up * signedDistanceToPlaneParallelToHubContainingTarget;
         //D.Log("{0}: TargetPositionProjectedOntoHubPlane = {1}.", Name, targetPositionProjectedOntoHubPlane);
 
-        __vectorToTargetPositionProjectedOntoHubPlane = targetPositionProjectedOntoHubPlane - hub.position;
+        __vectorToTargetPositionProjectedOntoHubPlane = targetPositionProjectedOntoHubPlane - _hub.position;
         //D.Log("{0}: VectorToTargetPositionProjectedOntoHubPlane = {1}.", Name, __vectorToTargetPositionProjectedOntoHubPlane);
 
         if (!__vectorToTargetPositionProjectedOntoHubPlane.IsSameAs(Vector3.zero)) {
             // LookRotation throws an error if the vector to the target is zero, aka directly above the hub
-            reqdHubRotation = Quaternion.LookRotation(__vectorToTargetPositionProjectedOntoHubPlane, hub.up);
+            reqdHubRotation = Quaternion.LookRotation(__vectorToTargetPositionProjectedOntoHubPlane, _hub.up);
         }
         else {
             // target is directly above turret so any rotation will work
-            reqdHubRotation = hub.rotation;
+            reqdHubRotation = _hub.rotation;
         }
 
         // assumes barrel local Z plane is same as hub plane which is true when the hub and barrels positions are the same, aka they pivot around the same point in space

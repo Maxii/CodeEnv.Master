@@ -21,14 +21,15 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Gui Window with fading ability able to handle a single content root.
 /// </summary>
 public class GuiWindow : AGuiWindow {
 
-    [Tooltip("The content to be shown.")]
-    public Transform contentHolder;
+    //[SerializeField] 
+    public Transform contentHolder = null; // Has Editor
 
     protected override Transform ContentHolder { get { return contentHolder; } }
 
