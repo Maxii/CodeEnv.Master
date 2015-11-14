@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AProgressBarGuiElement.cs
-//  Abstract GuiElement handling the display and tooltip content for Item attributes that use a Progress Bar.
+// Abstract GuiElement handling the display and tooltip content for Item attributes that use a Progress Bar.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 

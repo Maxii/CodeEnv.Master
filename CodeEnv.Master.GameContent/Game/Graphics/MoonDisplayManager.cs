@@ -34,7 +34,17 @@ namespace CodeEnv.Master.GameContent {
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
+
+            var material = primaryMeshRenderer.material;
+            InitializePrimaryMeshMaterial(material);
             return primaryMeshRenderer;
+        }
+
+        private void InitializePrimaryMeshMaterial(Material material) {
+            // IMPROVE Smoothness settings should vary by Moon.Category with some random variation embedded
+            // no need to enable RenderingMode.Opaque as it is the default
+            material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Normal);
+            material.SetFloat(UnityConstants.StdShader_MapKeyword_Metallic, 0.20F);
         }
 
         protected override void InitializeOther(GameObject itemGo) {
@@ -48,6 +58,9 @@ namespace CodeEnv.Master.GameContent {
             base.AssessComponentsToShowOrOperate();
             _revolver.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
         }
+
+        // Once showing (aka DisplayMgr instance created when first discerned) a Planet/Moon never has to 
+        // become invisible again so there is no need for the ability to change to an invisible color
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

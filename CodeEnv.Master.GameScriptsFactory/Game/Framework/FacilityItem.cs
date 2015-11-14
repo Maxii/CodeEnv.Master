@@ -74,7 +74,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     }
 
     protected override AIconDisplayManager MakeDisplayManager() {
-        return new FacilityDisplayManager(this);
+        return new FacilityDisplayManager(this, Owner.Color);
     }
 
     #endregion

@@ -103,7 +103,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         _command.HQElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
     }
 
-    protected override void __IssueFirstUnitCommand(Action onCompleted) {
+    protected override void __IssueFirstUnitOrder(Action onCompleted) {
         LogEvent();
         onCompleted();
     }

@@ -287,11 +287,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         UnityUtility.WaitOneToExecute(() => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             RecordCommandInStaticCollections();
-            //__IssueFirstUnitCommand();
-            __IssueFirstUnitCommand(onCompleted: delegate {
+            __IssueFirstUnitOrder(onCompleted: delegate {
+                // issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
                 RemoveCreatorScript();
             });
-            //RemoveCreatorScript();
         });
     }
 
@@ -735,7 +734,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract int GetMaxLosWeaponsAllowed(ElementCategoryType hullCategory);
 
-    protected abstract void __IssueFirstUnitCommand(Action onCompleted);
+    protected abstract void __IssueFirstUnitOrder(Action onCompleted);
 
     private Player ValidateAndInitializeOwner() {
         Player userPlayer = _gameMgr.UserPlayer;

@@ -26,7 +26,7 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable {
 
-    [Range(0.5F, 3.0F)]
+    [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     [SerializeField]
     private float _minViewDistanceFactor = 2F;

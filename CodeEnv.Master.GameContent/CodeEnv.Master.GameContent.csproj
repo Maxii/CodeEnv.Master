@@ -298,6 +298,7 @@
     <Compile Include="Generic\IO\MissileWeaponStat.cs" />
     <Compile Include="Game\Gameplay\PlayersKnowledge.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
+    <Compile Include="ItemCameraSettings.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />

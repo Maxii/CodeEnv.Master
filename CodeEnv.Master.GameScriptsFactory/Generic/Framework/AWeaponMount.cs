@@ -26,7 +26,7 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class AWeaponMount : AMount, IWeaponMount {
 
-    [FormerlySerializedAs("muzzle")]
+    //[FormerlySerializedAs("muzzle")]
     [SerializeField]
     protected Transform _muzzle = null;
 

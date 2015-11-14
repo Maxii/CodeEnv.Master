@@ -23,6 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Varies a Star's flare style and intensity as a function of distance from the camera.
 /// </summary>
+[System.Obsolete]
 public class StarFlare : AMonoBase {
 
     private static System.Random rng = new System.Random(); // IMPROVE convert to RandomExtensions

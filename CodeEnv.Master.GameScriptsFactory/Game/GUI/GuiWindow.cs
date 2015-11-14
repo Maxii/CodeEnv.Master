@@ -28,7 +28,6 @@ using UnityEngine.Serialization;
 /// </summary>
 public class GuiWindow : AGuiWindow {
 
-    //[SerializeField] 
     public Transform contentHolder = null; // Has Editor
 
     protected override Transform ContentHolder { get { return contentHolder; } }

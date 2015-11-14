@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         private static Vector2 _starIconSize = new Vector2(16F, 16F);
 
         private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-            Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.Projectiles);
+            Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.Projectiles, Layers.Shields, Layers.SystemOrbitalPlane);
 
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Over; } }
 
@@ -44,8 +44,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetSingleComponentInImmediateChildren<MeshRenderer>();
-            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-            primaryMeshRenderer.receiveShadows = true;
+            primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;    // A star can't possibly cast a shadow of itself on another object
+            primaryMeshRenderer.receiveShadows = false; // A star can't possibly display a shadow from another object on its surface
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.StarCull);    // layer automatically handles showing
             return primaryMeshRenderer;
         }
@@ -67,8 +67,13 @@ namespace CodeEnv.Master.GameContent {
             _glowBillboard = itemGo.GetSingleInterfaceInChildren<IBillboard>();
 
             var starLight = itemGo.GetComponentInChildren<Light>();
+            // UNCLEAR no runtime assessible option to set Baking = Realtime
+            starLight.type = LightType.Point;
             starLight.range = References.GameManager.GameSettings.UniverseSize.Radius();
-            starLight.intensity = 0.5F;
+            starLight.intensity = 1F;
+            //starLight.bounceIntensity = 1F; // bounce light shadowing not currently supported for point lights
+            starLight.shadows = LightShadows.None;  // point light shadows are expensive
+            starLight.renderMode = LightRenderMode.Auto;
             starLight.cullingMask = _starLightCullingMask;
             starLight.enabled = true;
 

@@ -28,10 +28,20 @@ namespace CodeEnv.Master.GameContent {
 
         private static Vector2 _elementIconSize = new Vector2(12F, 12F);
 
-        private Color _originalMeshColor_Main;
-        private Color _originalMeshColor_Specular;
-
-        private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
+        private GameColor _color;
+        /// <summary>
+        /// The GameColor to use on the element's primary mesh. Typically 
+        /// the color of the owner.
+        /// </summary>
+        public GameColor Color {
+            get { return _color; }
+            set {
+                if (_color != value) {
+                    _color = value;
+                    OnColorChanged();
+                }
+            }
+        }
 
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Below; } }
 
@@ -42,19 +52,42 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected abstract Layers CullingLayer { get; }
 
-        public AElementDisplayManager(IWidgetTrackable trackedElement)
+        private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
+        private Color _primaryMeshColor;
+
+        public AElementDisplayManager(IWidgetTrackable trackedElement, GameColor color)
             : base(trackedElement) {
-            _originalMeshColor_Main = _primaryMeshRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
-            _originalMeshColor_Specular = _primaryMeshRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
+            _color = color;
+            _primaryMeshColor = color.ToUnityColor();
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject elementItemGo) {
             //D.Log("{0}.InitializePrimaryMesh({1}) called.", GetType().Name, elementItemGo.name);
             IHull hull = elementItemGo.GetSingleInterfaceInChildren<IHull>();
-            var primaryMeshRenderer = hull.HullMesh.gameObject.GetComponent<MeshRenderer>();
+            var primaryMeshRenderer = hull.HullMesh.GetComponent<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
+            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == CullingLayer);    // layer automatically handles showing
+
+            var material = primaryMeshRenderer.material;
+            InitializePrimaryMeshMaterial(material);
             return primaryMeshRenderer;
+        }
+
+        private void InitializePrimaryMeshMaterial(Material material) {
+            if (!material.IsKeywordEnabled(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency)) {
+                material.EnableKeyword(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency);
+            }
+            if (!material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Metallic)) {
+                material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Metallic);
+            }
+            material.SetFloat(UnityConstants.StdShader_Property_MetallicFloat, 0.25F);
+            material.SetFloat(UnityConstants.StdShader_Property_SmoothnessFloat, 0.4F);
+
+            if (!material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Normal)) {
+                material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Normal);
+            }
+            material.SetFloat(UnityConstants.StdShader_Property_NormalScaleFloat, 1.25F);
         }
 
         protected override void InitializeSecondaryMeshes(GameObject elementItemGo) {
@@ -74,20 +107,25 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
-            _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
-            _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
+            _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
         }
 
         protected override void HidePrimaryMesh() {
             base.HidePrimaryMesh();
-            _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
-            _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
+            _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
         }
 
         protected override void AssessComponentsToShowOrOperate() {
             base.AssessComponentsToShowOrOperate();
             if (_secondaryMeshRenderers.Any()) {
                 _secondaryMeshRenderers.ForAll(r => r.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
+            }
+        }
+
+        private void OnColorChanged() {
+            _primaryMeshColor = Color.ToUnityColor();
+            if (IsDisplayEnabled) {
+                _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
             }
         }
 

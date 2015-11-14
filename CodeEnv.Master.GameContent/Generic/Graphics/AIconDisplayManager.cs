@@ -30,6 +30,13 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
         }
 
+        public string Name {
+            get {
+                if (_trackedItem == null) { return GetType().Name; }
+                return "{0}.{1}".Inject(_trackedItem.DisplayName, GetType().Name);
+            }
+        }
+
         public IResponsiveTrackingSprite Icon { get; private set; }
 
         protected abstract Vector2 IconSize { get; }

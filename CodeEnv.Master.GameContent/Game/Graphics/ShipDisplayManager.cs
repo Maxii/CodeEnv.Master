@@ -26,13 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override Layers CullingLayer { get { return Layers.ShipCull; } }
 
-        public ShipDisplayManager(IWidgetTrackable trackedShip) : base(trackedShip) { }
-
-        protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = base.InitializePrimaryMesh(itemGo);
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.ShipCull);    // layer automatically handles showing
-            return primaryMeshRenderer;
-        }
+        public ShipDisplayManager(IWidgetTrackable trackedShip, GameColor color)
+            : base(trackedShip, color) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

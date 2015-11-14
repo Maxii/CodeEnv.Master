@@ -114,7 +114,6 @@ namespace CodeEnv.Master.GameContent {
         public float RequestedSpeed {
             get { return _requestedSpeed; }
             set {
-                //D.Assert(value <= FullFtlSpeed, "{0} RequestedSpeed {1} > FullFtlSpeed {2}.".Inject(FullName, RequestedSpeed, FullFtlSpeed));
                 D.Assert(value <= FullSpeed, "{0} RequestedSpeed {1} > FullSpeed {2}.".Inject(FullName, value, FullSpeed));
                 SetProperty<float>(ref _requestedSpeed, value, "RequestedSpeed");
             }

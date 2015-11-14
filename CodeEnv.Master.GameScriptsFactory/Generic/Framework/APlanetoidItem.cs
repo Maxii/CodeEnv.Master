@@ -33,10 +33,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     /// </summary>
     public static float MaxOrbitalSpeed { get { return SystemCreator.AllPlanets.Max(p => p.Data.OrbitalSpeed) + SystemCreator.AllMoons.Max(m => m.Data.OrbitalSpeed); } }
 
-    [Tooltip("The type of planetoid")]
+    [Tooltip("The category of planetoid")]
     public PlanetoidCategory category = PlanetoidCategory.None;
 
-    [Range(0.5F, 3.0F)]
+    [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     [SerializeField]
     private float _minViewDistanceFactor = 2F;
@@ -55,7 +55,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     [Tooltip("Camera Follow Rotation Dampener")]
     [SerializeField]
     private float _cameraFollowRotationDampener = 1.0F;
-
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }

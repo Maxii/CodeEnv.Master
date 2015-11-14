@@ -230,40 +230,68 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private static Color _teal = new Color(0F, 0.5F, 0.5F, 1F);
 
-        public static Color ToUnityColor(this GameColor color) {    // OPTIMIZE use Color32 
-            switch (color) {
+        /// <summary>
+        /// Converts the provided GameColor to the UnityEngine.Color equivalent with
+        /// the alpha channel value set to alpha. If gameColor is GameColor.Clear, the alpha
+        /// value is ignored as Clear, by definition, has an alpha of 0.
+        /// </summary>
+        /// <param name="gameColor">Color of the game.</param>
+        /// <param name="alpha">The optional alpha channel value.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static Color ToUnityColor(this GameColor gameColor, float alpha = 1F) {    // OPTIMIZE use Color32 
+            Arguments.ValidateForRange(alpha, Constants.ZeroF, Constants.OneF);
+            Color color;
+            switch (gameColor) {
                 case GameColor.Black:
-                    return Color.black;
+                    color = Color.black;
+                    break;
                 case GameColor.Blue:
-                    return Color.blue;
+                    color = Color.blue;
+                    break;
                 case GameColor.Cyan:
-                    return Color.cyan;
+                    color = Color.cyan;
+                    break;
                 case GameColor.Green:
-                    return Color.green;
+                    color = Color.green;
+                    break;
                 case GameColor.Gray:
-                    return Color.gray;
+                    color = Color.gray;
+                    break;
                 case GameColor.Clear:
-                    return Color.clear;
+                    return Color.clear; // simply return as Color.clear has alpha = 0
                 case GameColor.Magenta:
-                    return Color.magenta;
+                    color = Color.magenta;
+                    break;
                 case GameColor.Red:
-                    return Color.red;
+                    color = Color.red;
+                    break;
                 case GameColor.White:
-                    return Color.white;
+                    color = Color.white;
+                    break;
                 case GameColor.Yellow:
-                    return Color.yellow;
+                    color = Color.yellow;
+                    break;
                 case GameColor.Brown:
-                    return _brown;
+                    color = _brown;
+                    break;
                 case GameColor.Purple:
-                    return _purple;
+                    color = _purple;
+                    break;
                 case GameColor.DarkGreen:
-                    return _darkGreen;
+                    color = _darkGreen;
+                    break;
                 case GameColor.Teal:
-                    return _teal;
+                    color = _teal;
+                    break;
                 case GameColor.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(color));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameColor));
             }
+            if (alpha < Constants.OneF) {
+                color.a = alpha;
+            }
+            return color;
         }
 
         /// <summary>

@@ -33,7 +33,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     [SerializeField]
-    private float _minViewDistanceFactor = 2.0F;
+    private float _minViewDistanceFactor = 1.0F;
 
     [Range(1.5F, 5.0F)]
     [Tooltip("Optimal Camera View Distance Multiplier")]
@@ -138,7 +138,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
-        AssessIcon();
+        if (DisplayMgr != null) {
+            DisplayMgr.Color = Owner.Color;
+            AssessIcon();
+        }
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
@@ -441,11 +444,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     private void OnElementIconsEnabledOptionChanged() {
-        AssessIcon();
+        if (DisplayMgr != null) {
+            AssessIcon();
+        }
     }
 
     private void AssessIcon() {
-        if (DisplayMgr == null) { return; }
+        //if (DisplayMgr == null) { return; }
+        D.Assert(DisplayMgr != null);
 
         if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
             var iconInfo = RefreshIconInfo();

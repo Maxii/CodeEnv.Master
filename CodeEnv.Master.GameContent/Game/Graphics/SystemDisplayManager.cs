@@ -35,19 +35,23 @@ namespace CodeEnv.Master.GameContent {
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.SystemOrbitalPlane);
+
+            var material = primaryMeshRenderer.material;
+            InitializePrimaryMeshMaterial(material);
             return primaryMeshRenderer;
         }
 
-        protected override void InitializeSecondaryMeshes(GameObject itemGo) {
-            base.InitializeSecondaryMeshes(itemGo);
-            var orbitalPlaneLineRenderers = _primaryMeshRenderer.gameObject.GetComponentsInChildren<LineRenderer>();
-            orbitalPlaneLineRenderers.ForAll(lr => {
-                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                lr.receiveShadows = false;
-                D.Assert((Layers)(lr.gameObject.layer) == Layers.SystemOrbitalPlane);
-                lr.enabled = true;
-            });
+        private void InitializePrimaryMeshMaterial(Material material) {
+            if (!material.IsKeywordEnabled(UnityConstants.StdShader_RenderModeKeyword_CutoutTransparency)) {
+                material.EnableKeyword(UnityConstants.StdShader_RenderModeKeyword_CutoutTransparency);
+            }
+            material.SetFloat(UnityConstants.StdShader_Property_AlphaCutoffFloat, 0.2F);
         }
+
+        // Line Renderers removed and replaced by Stevie's grid texture using StdShader in CutoutTransparency Rendering Mode
+
+        // Once showing (aka DisplayMgr instance created when first discerned) a OrbitalPlane never has to 
+        // become invisible again so there is no need for the ability to change to an invisible color
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

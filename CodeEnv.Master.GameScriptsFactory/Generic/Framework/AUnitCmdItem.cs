@@ -29,10 +29,10 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISelectable, IUnitAttackableTarget {
 
-    [Range(0.5F, 3.0F)]
+    [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     [SerializeField]
-    private float _minViewDistanceFactor = 0.9F;    // just inside Unit's highlight sphere
+    private float _minViewDistanceFactor = 1.0F;    // at boundary of Unit's highlight sphere around HQElement
 
     [Range(1.5F, 5.0F)]
     [Tooltip("Optimal Camera View Distance Multiplier")]
@@ -119,7 +119,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     protected override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = new UnitCmdDisplayManager(this, MakeIconInfo());
+        var displayMgr = new UnitCmdDisplayManager(this, MakeIconInfo(), Owner.Color);
         SubscribeToIconEvents(displayMgr.Icon);
         return displayMgr;
     }
@@ -280,6 +280,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         base.OnOwnerChanged();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
+        }
+        if (DisplayMgr != null) {
+            DisplayMgr.Color = Owner.Color;
         }
         AssessIcon();
     }

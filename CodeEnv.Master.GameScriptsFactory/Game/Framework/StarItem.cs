@@ -28,7 +28,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     public StarCategory category = StarCategory.None;
 
-    [Range(0.5F, 3.0F)]
+    [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     [SerializeField]
     private float _minViewDistanceFactor = 2F;
@@ -75,7 +75,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     }
 
     private void InitializeKeepoutZone() {
-        //SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
         SphereCollider keepoutZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;

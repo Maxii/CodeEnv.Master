@@ -38,7 +38,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// The relative visual scale of the animated beam.
     /// Adjust as necessary.
     /// </summary>
-    [Tooltip("Relative scale of the animation")]
+    [Tooltip("Relative scale of the operating animation")]
     [Range(1F, 5F)]
     [SerializeField]
     private float _beamAnimationScale = 4F;
@@ -47,7 +47,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// The relative visual speed of the beam animation.
     /// Adjust as necessary.
     /// </summary>
-    [Tooltip("Relative speed of the animation")]
+    [Tooltip("Relative speed of the operating animation")]
     [Range(-2F, 2F)]
     [SerializeField]
     private float _beamAnimationSpeed = -1F;

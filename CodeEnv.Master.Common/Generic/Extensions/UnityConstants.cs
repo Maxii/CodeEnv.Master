@@ -21,6 +21,7 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class UnityConstants {        // the @ in @"string" means that the string between " is to be interpreted as a string literal requiring no escape characters
 
+        [Obsolete]
         public static string UnityInstallPath {
             get {
                 using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(@"Software\Unity Technologies\Unity Editor 3.x\Location")) {
@@ -60,6 +61,65 @@ namespace CodeEnv.Master.Common {
         public const string KeyboardAxisName_Vertical = "Vertical";
 
         public const string Key_Escape = "escape";
+
+        #region Standard Shader Feature Keywords
+
+        // Usage: Material.EnableKeyword(keyword) to enable this variant of the Standard Shader during runtime
+        // Note: One would expect a keyword for OpaqueRenderingMode too, but it is not needed as it is the default
+
+        public const string StdShader_RenderModeKeyword_CutoutTransparency = "_ALPHATEST_ON";
+
+        public const string StdShader_RenderModeKeyword_FadeTransparency = "_ALPHABLEND_ON";
+
+        public const string StdShader_RenderModeKeyword_TransparentTransparency = "_ALPHAPREMULTIPLY_ON";
+
+        public const string StdShader_MapKeyword_Normal = "_NORMALMAP";
+
+        public const string StdShader_MapKeyword_Emission = "_EMISSION";
+
+        public const string StdShader_MapKeyword_Height = "_PARALLAXMAP";
+
+        public const string StdShader_MapKeyword_SecondaryDetail = "_DETAIL_MULX2";
+
+        public const string StdShader_MapKeyword_Metallic = "_METALLICGLOSSMAP";
+
+        public const string StdShader_MapKeyword_Specular = "_SPECCGLOSSMAP";
+
+        #endregion
+
+        #region Standard Shader Property Names
+
+        // Usage: Material.SetXXX(PropertyName, value)  during runtime.
+        // SetXXX: SetFloat(string, float), SetInt(string, int), SetColor(string, Color), SetTexture(string, Texture)
+
+        public const string StdShader_Property_AlbedoTexture = "_MainTex";
+        public const string StdShader_Property_AlbedoColor = "_Color";
+        public const string StdShader_Property_AlphaCutoffFloat = "_Cutoff";
+
+        public const string StdShader_Property_MetallicTexture = "_MetallicGlossMap";
+        public const string StdShader_Property_MetallicFloat = "_Metallic";
+        public const string StdShader_Property_SmoothnessFloat = "_Glossiness";
+
+        public const string StdShader_Property_NormalTexture = "_BumpMap";
+        public const string StdShader_Property_NormalScaleFloat = "_BumpScale";
+
+        public const string StdShader_Property_HeightTexture = "_ParallaxMap";
+        public const string StdShader_Property_HeightScaleFloat = "_Parallax";
+
+        public const string StdShader_Property_OcclusionTexture = "_OcclusionMap";
+        public const string StdShader_Property_OcclusionStrengthFloat = "_OcclusionStrength";
+
+        public const string StdShader_Property_EmissionTexture = "_EmissionMap";
+        public const string StdShader_Property_EmissionColor = "_EmissionColor";
+        // StdShader_Property_EmissionBrightnessFloat = ??? UNCLEAR
+
+        public const string StdShader_Property_DetailMaskTexture = "_DetailMask";
+
+        public const string StdShader_Property_SecondaryDetailAlbedoTexture = "_DetailAlbedoMap";
+        public const string StdShader_Property_SecondaryDetailNormalTexture = "_DetailNormalMap";
+        public const string StdShader_Property_SecondaryDetailNormalScaleFloat = "_DetailNormalMapScale";
+
+        #endregion
 
         // Common Texture names used by Unity's builtin shaders
         public const string MainDiffuseTexture = "_MainTex";

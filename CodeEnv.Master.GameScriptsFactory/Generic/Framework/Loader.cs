@@ -28,6 +28,7 @@ using Vectrosity;
 /// </summary>
 public class Loader : AMonoSingleton<Loader> {
 
+    [Tooltip("FramesPerSecond goal. Used when DebugSettings enables its usage.")]
     [SerializeField]
     private int _targetFPS = 25;
 

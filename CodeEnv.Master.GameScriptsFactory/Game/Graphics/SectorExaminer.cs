@@ -25,7 +25,6 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands

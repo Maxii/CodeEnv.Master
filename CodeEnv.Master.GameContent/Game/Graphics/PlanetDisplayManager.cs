@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
+            // Note: using custom SpaceUnity Shaders for now
             return primaryMeshRenderer;
         }
 
@@ -58,6 +59,7 @@ namespace CodeEnv.Master.GameContent {
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                     r.receiveShadows = true;
                     r.enabled = false;
+                    // Note: using custom SpaceUnity Shaders for now
                 });
             }
         }
@@ -77,11 +79,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Hide Primary Mesh Archive
+
+        // Once showing (aka DisplayMgr instance created when first discerned) a Planet/Moon never has to 
+        // become invisible again so there is no need for the ability to change to an invisible color
 
         //private Color _originalMeshColor_AtmosNear;
         //private Color _originalMeshColor_AtmosFar;
@@ -105,6 +106,11 @@ namespace CodeEnv.Master.GameContent {
         //}
 
         #endregion
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
 
     }
 

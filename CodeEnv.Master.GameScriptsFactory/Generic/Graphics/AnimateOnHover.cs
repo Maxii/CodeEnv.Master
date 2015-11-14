@@ -45,7 +45,7 @@ public class AnimateOnHover : AMonoBase {
     protected override void Start() {
         base.Start();
         if (targetSprite != null) {
-            //D.WarnContext(targetSprite.spriteName.IsNullOrEmpty(), gameObject, "{0}.{1}.targetSprite has no sprite name.", gameObject.name, GetType().Name); // sprite without a name?
+            D.WarnContext(targetSprite.spriteName.IsNullOrEmpty(), this, "{0}.{1}.targetSprite has no sprite name.", gameObject.name, GetType().Name);
             _normalSpriteName = targetSprite.spriteName;
         }
     }

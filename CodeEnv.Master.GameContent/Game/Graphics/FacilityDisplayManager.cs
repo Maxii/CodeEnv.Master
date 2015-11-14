@@ -28,13 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         private IRevolver _revolver;
 
-        public FacilityDisplayManager(IWidgetTrackable trackedFacility) : base(trackedFacility) { }
-
-        protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = base.InitializePrimaryMesh(itemGo);
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.FacilityCull);    // layer automatically handles showing
-            return primaryMeshRenderer;
-        }
+        public FacilityDisplayManager(IWidgetTrackable trackedFacility, GameColor color)
+            : base(trackedFacility, color) { }
 
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);

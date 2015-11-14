@@ -28,26 +28,66 @@ namespace CodeEnv.Master.GameContent {
 
         private static Vector2 _cmdIconSize = new Vector2(24F, 24F);
 
+        private static float _primaryMeshAlpha = 0.1F;
+
+        private GameColor _color;
+        /// <summary>
+        /// The GameColor to use on the Cmd's primary mesh, aka HQ Element highlight mesh.
+        /// Typically the color of the owner.
+        /// </summary>
+        public GameColor Color {
+            get { return _color; }
+            set {
+                if (_color != value) {
+                    _color = value;
+                    OnColorChanged();
+                }
+            }
+        }
+
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Above; } }
 
         protected override Vector2 IconSize { get { return _cmdIconSize; } }
 
-        private Color _originalMeshColor_Main;
+        private Color _primaryMeshColor;
         private float _currentPrimaryMeshRadius;
 
-        public UnitCmdDisplayManager(IWidgetTrackable trackedCmd, IconInfo iconInfo)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UnitCmdDisplayManager"/> class.
+        /// </summary>
+        /// <param name="trackedCmd">The tracked command.</param>
+        /// <param name="iconInfo">The icon information.</param>
+        /// <param name="color">The color of the owner.</param>
+        public UnitCmdDisplayManager(IWidgetTrackable trackedCmd, IconInfo iconInfo, GameColor color)
             : base(trackedCmd) {
             IconInfo = iconInfo;
-            _originalMeshColor_Main = _primaryMeshRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
+            _color = color;
+            _primaryMeshColor = color.ToUnityColor(_primaryMeshAlpha);
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
+            // The primary mesh of a UnitCmd is the sphere highlight that surrounds the HQ Element
             var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
             _currentPrimaryMeshRadius = primaryMeshRenderer.bounds.size.x / 2F;
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) != Layers.Default); // HACK    // layer automatically handles showing
+
+            var material = primaryMeshRenderer.material;
+            InitializePrimaryMeshMaterial(material);
+
             return primaryMeshRenderer;
+        }
+
+        private void InitializePrimaryMeshMaterial(Material material) {
+            if (material.IsKeywordEnabled(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency)) {
+                material.EnableKeyword(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency);
+            }
+            if (!material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Metallic)) {
+                material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Metallic);
+            }
+            material.SetFloat(UnityConstants.StdShader_Property_MetallicFloat, Constants.ZeroF);
+            material.SetFloat(UnityConstants.StdShader_Property_SmoothnessFloat, Constants.ZeroF);
         }
 
         /// <summary>
@@ -63,12 +103,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
-            _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
+            _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
         }
 
         protected override void HidePrimaryMesh() {
             base.HidePrimaryMesh();
-            _primaryMeshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
+            _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
         }
 
         /// <summary>
@@ -78,6 +118,13 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         protected override bool ShouldIconShow() {
             return IsDisplayEnabled && _isIconInMainCameraLOS;
+        }
+
+        private void OnColorChanged() {
+            _primaryMeshColor = Color.ToUnityColor(_primaryMeshAlpha);
+            if (IsDisplayEnabled) {
+                _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
+            }
         }
 
         protected override void DestroyIcon() {

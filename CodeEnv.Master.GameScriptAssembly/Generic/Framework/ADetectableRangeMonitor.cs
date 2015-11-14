@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ADetectableRangeMonitor.cs
-// Abstract base class for a ColliderMonitor that detects <c>DetectableType</c> gameObjects at a set distance (range).
+// Abstract base class for a ColliderMonitor that detects <c>IDetectableType</c> colliders at a set distance (range).
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for a ColliderMonitor that detects <c>DetectableType</c> gameObjects at a set distance (range).
+/// Abstract base class for a ColliderMonitor that detects <c>IDetectableType</c> colliders at a set distance (range).
 /// Examples include interceptable ordnance, unit elements and celestial objects.
 /// </summary>
 /// <typeparam name="IDetectableType">The Type of gameObject interfaces to detect.</typeparam>
@@ -59,9 +59,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
                 return;
             }
-            //if (__itemsDetectedViaWorkaround.Contains(detectedItem)) {
-            //    D.Log("{0}.OnTriggerEnter() detected {1} after workaround detected it.", Name, detectedItem.FullName);
-            //}
             AddDetectedItem(detectedItem);
         }
     }
@@ -147,14 +144,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             D.Log("{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
             OnDetectedItemAdded(detectedItem);
         }
-        //else {
-        //    if (__itemsDetectedViaWorkaround.Contains(detectedItem)) {
-        //        D.Warn("{0} attempted to add duplicate {1} {2} from workaround.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
-        //    }
-        //    else {
-        //        D.Warn("{0} attempted to add duplicate {1} {2}, but not from workaround.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
-        //    }
-        //}
     }
 
     /// <summary>
@@ -279,6 +268,27 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     //            }
     //        }
     //    });
+    //}
+
+    /// <summary>
+    /// Adds the indicated item to the list of ItemsDetected.
+    /// </summary>
+    /// <param name="detectedItem">The detected item.</param>
+    //protected void AddDetectedItem(IDetectableType detectedItem) {
+    //    D.Assert(detectedItem.IsOperational);
+    //    if (!_itemsDetected.Contains(detectedItem)) {
+    //        _itemsDetected.Add(detectedItem);
+    //        D.Log("{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
+    //        OnDetectedItemAdded(detectedItem);
+    //    }
+    //    else {
+    //        if (__itemsDetectedViaWorkaround.Contains(detectedItem)) {
+    //            D.Warn("{0} attempted to add duplicate {1} {2} from workaround.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
+    //        }
+    //        else {
+    //            D.Warn("{0} attempted to add duplicate {1} {2}, but not from workaround.", Name, typeof(IDetectableType).Name, detectedItem.FullName);
+    //        }
+    //    }
     //}
 
     #endregion

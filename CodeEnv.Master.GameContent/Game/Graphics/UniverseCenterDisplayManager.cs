@@ -32,7 +32,23 @@ namespace CodeEnv.Master.GameContent {
             var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
+            var material = primaryMeshRenderer.material;
+            InitializePrimaryMeshMaterial(material);
             return primaryMeshRenderer;
+        }
+
+        private void InitializePrimaryMeshMaterial(Material material) {
+            // no need to enable RenderingMode.Opaque as it is the default            // for now, color is green
+            if (material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Metallic)) {
+                material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Metallic);
+            }
+            material.SetFloat(UnityConstants.StdShader_Property_MetallicFloat, Constants.ZeroF);
+            material.SetFloat(UnityConstants.StdShader_Property_SmoothnessFloat, 0.20F);
+
+            if (!material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Normal)) {
+                material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Normal);
+            }
+            material.SetFloat(UnityConstants.StdShader_Property_NormalScaleFloat, 1F);
         }
 
         protected override void InitializeOther(GameObject itemGo) {
@@ -46,6 +62,9 @@ namespace CodeEnv.Master.GameContent {
             base.AssessComponentsToShowOrOperate();
             _revolver.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
         }
+
+        // Once showing (aka DisplayMgr instance created when first discerned) a UniverseCenter never has to 
+        // become invisible again so there is no need for the ability to change to an invisible color
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

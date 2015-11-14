@@ -105,7 +105,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     }
 
     protected override AIconDisplayManager MakeDisplayManager() {
-        return new ShipDisplayManager(this);
+        return new ShipDisplayManager(this, Owner.Color);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -136,7 +136,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     public void SetSize(Vector3 boxSize) {
         BoxCollider boxCollider = _collider as BoxCollider;
         boxCollider.size = boxSize;
-        Radius = boxSize.magnitude;
+        Radius = boxSize.magnitude / 2F;
     }
 
     public void OnFleetFullSpeedChanged() { _helm.OnFleetFullSpeedChanged(); }

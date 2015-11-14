@@ -129,7 +129,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         return true;
     }
 
-    protected override void __IssueFirstUnitCommand(Action onCompleted) {
+    protected override void __IssueFirstUnitOrder(Action onCompleted) {
         LogEvent();
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {    // makes sure all targets are present in scene if they are supposed to be
             if (move) {                                             // avoids script execution order issue when this creator receives IsRunning before other creators

@@ -32,7 +32,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
 
     [Range(0.1F, 1.0F)]
     [SerializeField]
-    private float _alphaValueWhenShowing = 0.5F;
+    private float _alphaValueWhenShowing = 0.20F;
 
     private IWidgetTrackable _target;
     private Renderer _renderer;
@@ -50,6 +50,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         InitializeValuesAndReferences();
+        InitializeMeshRendererMaterial();
         Show(false);
     }
 
@@ -59,6 +60,14 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         _baseSphereRadius = _renderer.bounds.size.x / 2F;
         //D.Log("{0} base sphere radius = {1}.", GetType().Name, _baseSphereRadius);
         UpdateRate = FrameUpdateFrequency.Normal;
+    }
+
+    private void InitializeMeshRendererMaterial() {
+        var material = _renderer.material;
+        if (!material.IsKeywordEnabled(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency)) {
+            material.EnableKeyword(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency);
+        }
+        material.SetAlpha(_alphaValueWhenShowing);
     }
 
     public void SetTarget(IWidgetTrackable target, float sphereRadius, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
@@ -100,9 +109,8 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     }
 
     public void Show(bool toShow) {
+        _renderer.enabled = toShow; // no CameraLosChangedListener to get in the way!
         enabled = toShow;
-        float alpha = toShow ? _alphaValueWhenShowing : Constants.ZeroF;
-        _renderer.material.SetAlpha(alpha);
         if (_trackingLabel != null) {
             _trackingLabel.Show(toShow);
         }
