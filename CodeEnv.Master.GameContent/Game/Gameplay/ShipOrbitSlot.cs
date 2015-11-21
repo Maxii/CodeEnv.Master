@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipOrbitSlot.cs
-// Class for Ship orbit slots around other bodies that knows how to place
-// and remove a ship into/from orbit.
+// A Ship orbit slot around orbitable bodies that knows how to place and remove a ship into/from orbit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,8 +23,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Class for Ship orbit slots around other bodies that knows how to place
-    /// and remove a ship into/from orbit.
+    /// A Ship orbit slot around orbitable bodies that knows how to place and remove a ship into/from orbit.
     /// </summary>
     public class ShipOrbitSlot : AOrbitSlot {
 
@@ -38,26 +36,25 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ShipOrbitSlot"/> class. 
         /// The OrbitPeriod defaults to OneYear.
         /// </summary>
-        /// <param name="innerRadius">The inner radius.</param>
-        /// <param name="outerRadius">The outer radius.</param>
+        /// <param name="lowOrbitRadius">The radius at this slot's lowest orbit.</param>
+        /// <param name="highOrbitRadius">The radius at this slot's highest orbit.</param>
         /// <param name="orbitedObject">The orbited object.</param>
-        public ShipOrbitSlot(float innerRadius, float outerRadius, IShipOrbitable orbitedObject)
-            : this(innerRadius, outerRadius, orbitedObject, GameTimeDuration.OneYear) {
+        public ShipOrbitSlot(float lowOrbitRadius, float highOrbitRadius, IShipOrbitable orbitedObject)
+            : this(lowOrbitRadius, highOrbitRadius, orbitedObject, GameTimeDuration.OneYear) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipOrbitSlot" /> class.
         /// </summary>
-        /// <param name="innerRadius">The closest distance to the body orbited.</param>
-        /// <param name="outerRadius">The furthest distance from the body orbited.</param>
+        /// <param name="lowOrbitRadius">The radius at this slot's lowest orbit.</param>
+        /// <param name="highOrbitRadius">The radius at this slot's highest orbit.</param>
         /// <param name="orbitedObject">The object being orbited.</param>
         /// <param name="orbitPeriod">The orbit period.</param>
-        public ShipOrbitSlot(float innerRadius, float outerRadius, IShipOrbitable orbitedObject, GameTimeDuration orbitPeriod)
-            : base(innerRadius, outerRadius, orbitedObject.IsMobile, orbitPeriod) {
+        public ShipOrbitSlot(float lowOrbitRadius, float highOrbitRadius, IShipOrbitable orbitedObject, GameTimeDuration orbitPeriod)
+            : base(lowOrbitRadius, highOrbitRadius, orbitedObject.IsMobile, orbitPeriod) {
             OrbitedObject = orbitedObject;
             _orbitingShips = new List<IShipItem>();
         }
-
 
         /// <summary>
         /// Notifies the ShipOrbitSlot that the provided ship is preparing to assume orbit around <c>OrbitedObject</c>.

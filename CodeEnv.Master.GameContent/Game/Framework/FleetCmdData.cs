@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : AUnitCmdItemData {
 
+        public new CameraFleetCmdStat CameraStat { get { return base.CameraStat as CameraFleetCmdStat; } }
+
         private INavigableTarget _target;
         public INavigableTarget Target {
             get { return _target; }
@@ -73,24 +75,6 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _unitFullSpeed, value, "UnitFullSpeed"); }
         }
 
-        //private float _unitFullStlSpeed;
-        ///// <summary>
-        ///// The maximum sustainable STL speed of the fleet in units per hour.
-        ///// </summary>
-        //public float UnitFullStlSpeed {
-        //    get { return _unitFullStlSpeed; }
-        //    private set { SetProperty<float>(ref _unitFullStlSpeed, value, "UnitFullStlSpeed"); }
-        //}
-
-        //private float _unitFullFtlSpeed;
-        ///// <summary>
-        ///// The maximum sustainable FTL speed of the fleet in units per hour.
-        ///// </summary>
-        //public float UnitFullFtlSpeed {
-        //    get { return _unitFullFtlSpeed; }
-        //    private set { SetProperty<float>(ref _unitFullFtlSpeed, value, "UnitFullFtlSpeed"); }
-        //}
-
         private float _unitMaxTurnRate;
         /// <summary>
         /// Gets the maximum turn rate of the fleet in radians per day.
@@ -109,27 +93,27 @@ namespace CodeEnv.Master.GameContent {
         public override Index3D SectorIndex { get { return HQElementData.SectorIndex; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetCmdData"/> class
+        /// Initializes a new instance of the <see cref="FleetCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public FleetCmdData(Transform cmdTransform, FleetCmdStat stat, Player owner)
-            : this(cmdTransform, stat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        public FleetCmdData(Transform cmdTransform, UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, Player owner)
+            : this(cmdTransform, cmdStat, cameraStat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
+        /// Initializes a new instance of the <see cref="FleetCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public FleetCmdData(Transform cmdTransform, FleetCmdStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner, passiveCMs) {
-            MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
-            UnitFormation = stat.UnitFormation;
+        public FleetCmdData(Transform cmdTransform, UnitCmdStat cmdStat, CameraFollowableStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
         }
 
         public override void AddElement(AUnitElementItemData elementData) {
@@ -156,8 +140,6 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshFullSpeed() {
             if (ElementsData.Any()) {
                 //D.Log("{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
-                //UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
-                //UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
                 UnitFullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
             }
         }
@@ -172,15 +154,8 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             ShipData shipData = elementData as ShipData;
-            //anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullStlSpeed, OnShipFullSpeedChanged));
-            //anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullFtlSpeed, OnShipFullSpeedChanged));
-            //anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlOperational, OnShipIsFtlOperationalChanged));
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, OnShipFullSpeedChanged));
         }
-
-        //private void OnShipIsFtlOperationalChanged() {
-        //    RefreshFullSpeed();
-        //}
 
         private void OnShipFullSpeedChanged() {
             RefreshFullSpeed();

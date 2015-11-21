@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetCmdStat.cs
-// Immutable struct containing externally acquirable values for FleetCmds.
+// File: SettlementCmdStat.cs
+// Immutable stat containing externally acquirable values for SettlementCmds.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,28 +19,24 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable struct containing externally acquirable values for FleetCmds.
+    /// Immutable stat containing externally acquirable values for SettlementCmds.
     /// </summary>
-    public struct FleetCmdStat {
+    public class SettlementCmdStat : UnitBaseCmdStat {
 
-        public string Name { get; private set; }
-        public float MaxHitPoints { get; private set; }
-        public int MaxCmdEffectiveness { get; private set; }
-        public Formation UnitFormation { get; private set; }
+        public int Population { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetCmdStat" /> struct.
+        /// Initializes a new instance of the <see cref="SettlementCmdStat"/> class.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="unitName">Name of the unit.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdEffect">The maximum command effect.</param>
         /// <param name="formation">The formation.</param>
-        public FleetCmdStat(string name, float maxHitPts, int maxCmdEffect, Formation formation)
-            : this() {
-            Name = name;
-            MaxHitPoints = maxHitPts;
-            MaxCmdEffectiveness = maxCmdEffect;
-            UnitFormation = formation;
+        /// <param name="lowOrbitRadius">The low orbit radius.</param>
+        /// <param name="population">The population.</param>
+        public SettlementCmdStat(string unitName, float maxHitPts, int maxCmdEffect, Formation formation, float lowOrbitRadius, int population)
+            : base(unitName, maxHitPts, maxCmdEffect, formation, lowOrbitRadius) {
+            Population = population;
         }
 
         public override string ToString() {

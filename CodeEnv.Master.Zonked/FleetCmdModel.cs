@@ -58,7 +58,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
         public float DistanceToDestination { get { return Vector3.Distance(Destination, _fleet.Data.Position); } }
 
-        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
 
         /// <summary>
         /// Returns true if the fleet's target has moved far enough to require a new waypoint course to find it.

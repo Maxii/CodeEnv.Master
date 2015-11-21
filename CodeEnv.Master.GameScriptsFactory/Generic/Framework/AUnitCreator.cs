@@ -29,13 +29,13 @@ using UnityEngine;
 /// Abstract, generic base class for Unit Creators.
 /// </summary>
 /// <typeparam name="ElementType">The Type of Element contained in the Command.</typeparam>
-/// <typeparam name="ElementCategoryType">The Type holding the Element's Categories.</typeparam>
+/// <typeparam name="ElementHullCategoryType">The Type holding the Element's HullCategories.</typeparam>
 /// <typeparam name="ElementDataType">The Type of the Element's Data.</typeparam>
 /// <typeparam name="ElementHullStatType">The Type of the Element's hull stat.</typeparam>
 /// <typeparam name="CommandType">The Type of the Command.</typeparam>
-public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementHullStatType, CommandType> : ACreator
+public abstract class AUnitCreator<ElementType, ElementHullCategoryType, ElementDataType, ElementHullStatType, CommandType> : ACreator
     where ElementType : AUnitElementItem
-    where ElementCategoryType : struct
+    where ElementHullCategoryType : struct
     where ElementDataType : AUnitElementItemData
     where ElementHullStatType : AHullStat
     where CommandType : AUnitCmdItem {
@@ -53,7 +53,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// </summary>
     /// <param name="hullCategory">The hull category.</param>
     /// <returns></returns>
-    private static string GetUniqueDesignName(ElementCategoryType hullCategory) {
+    private static string GetUniqueDesignName(ElementHullCategoryType hullCategory) {
         return _designNameFormat.Inject(hullCategory.ToString(), UnityEngine.Random.Range(Constants.Zero, int.MaxValue).ToString());
     }
 
@@ -67,7 +67,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// Local list of design names keyed by hull category. Each Creator needs their own local list
     /// to make sure the designs used comply with this creator's settings for weapon count, etc.
     /// </summary>
-    protected IDictionary<ElementCategoryType, IList<string>> _designNamesByHullCategory;
+    protected IDictionary<ElementHullCategoryType, IList<string>> _designNamesByHullCategory;
 
     protected IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
     protected IList<ActiveCountermeasureStat> _availableActiveCountermeasureStats;
@@ -522,7 +522,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         var elementHullStats = new List<ElementHullStatType>(elements.Count());
         foreach (var element in elements) {
             AHull hull = element.gameObject.GetSingleComponentInChildren<AHull>();
-            ElementCategoryType category = GetCategory(hull);
+            ElementHullCategoryType category = GetCategory(hull);
             int elementInstanceID = _elementInstanceIDCounter;
             _elementInstanceIDCounter++;
             string uniqueElementName = category.ToString() + Constants.Underscore + elementInstanceID;
@@ -537,7 +537,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         //D.Log("{0} Element count is {1}.", UnitName, elementCount);
         var elementHullStats = new List<ElementHullStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {
-            ElementCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
+            ElementHullCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
             int elementInstanceID = _elementInstanceIDCounter;
             _elementInstanceIDCounter++;
             string uniqueElementName = category.ToString() + Constants.Underscore + elementInstanceID;
@@ -546,18 +546,18 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         return elementHullStats;
     }
 
-    protected abstract ElementHullStatType CreateElementHullStat(ElementCategoryType hullCat, string elementName);
+    protected abstract ElementHullStatType CreateElementHullStat(ElementHullCategoryType hullCat, string elementName);
 
     #endregion
 
-    protected abstract ElementCategoryType[] HQElementCategories { get; }
+    protected abstract ElementHullCategoryType[] HQElementCategories { get; }
 
-    protected abstract ElementCategoryType[] ElementCategories { get; }
+    protected abstract ElementHullCategoryType[] ElementCategories { get; }
 
     private void MakeAndRecordDesigns() {
-        _designNamesByHullCategory = new Dictionary<ElementCategoryType, IList<string>>();
+        _designNamesByHullCategory = new Dictionary<ElementHullCategoryType, IList<string>>();
         foreach (var hullStat in _elementHullStats) {
-            ElementCategoryType hullCategory = GetCategory(hullStat);
+            ElementHullCategoryType hullCategory = GetCategory(hullStat);
             int losWeaponsPerElement = GetLosWeaponQtyToInstall(hullCategory);
             var weaponStats = _availableLosWeaponStats.Shuffle().Take(losWeaponsPerElement).ToList();
             int missileWeaponsPerElement = GetMissileWeaponQtyToInstall(hullCategory);
@@ -574,7 +574,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    private void RecordDesignName(ElementCategoryType hullCategory, string designName) {
+    private void RecordDesignName(ElementHullCategoryType hullCategory, string designName) {
         if (!_designNamesByHullCategory.ContainsKey(hullCategory)) {
             _designNamesByHullCategory.Add(hullCategory, new List<string>());
         }
@@ -589,7 +589,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         LogEvent();
         var elements = new List<ElementType>();
         foreach (var hullStat in _elementHullStats) {
-            ElementCategoryType hullCategory = GetCategory(hullStat);
+            ElementHullCategoryType hullCategory = GetCategory(hullStat);
             string designName = _designNamesByHullCategory[hullCategory].Shuffle().First();
             ElementType element = null;
             if (isCompositionPreset) {
@@ -617,9 +617,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         return elements;
     }
 
-    protected abstract ElementCategoryType GetCategory(ElementHullStatType hullStat);
+    protected abstract ElementHullCategoryType GetCategory(ElementHullStatType hullStat);
 
-    protected abstract ElementCategoryType GetCategory(AHull hull);
+    protected abstract ElementHullCategoryType GetCategory(AHull hull);
 
     /// <summary>
     /// Populates the provided element with data and mounts derived from the stats
@@ -698,7 +698,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _allUnitCommands.Add(_command);
     }
 
-    private int GetMissileWeaponQtyToInstall(ElementCategoryType hullCategory) {
+    private int GetMissileWeaponQtyToInstall(ElementHullCategoryType hullCategory) {
         int maxMissilesAllowed = GetMaxMissileWeaponsAllowed(hullCategory);
         switch (missileWeaponsPerElement) {
             case WeaponLoadout.None:
@@ -714,7 +714,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    private int GetLosWeaponQtyToInstall(ElementCategoryType hullCategory) {
+    private int GetLosWeaponQtyToInstall(ElementHullCategoryType hullCategory) {
         int maxLosWeaponsAllowed = GetMaxLosWeaponsAllowed(hullCategory);
         switch (losWeaponsPerElement) {
             case WeaponLoadout.None:
@@ -730,9 +730,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    protected abstract int GetMaxMissileWeaponsAllowed(ElementCategoryType hullCategory);
+    protected abstract int GetMaxMissileWeaponsAllowed(ElementHullCategoryType hullCategory);
 
-    protected abstract int GetMaxLosWeaponsAllowed(ElementCategoryType hullCategory);
+    protected abstract int GetMaxLosWeaponsAllowed(ElementHullCategoryType hullCategory);
 
     protected abstract void __IssueFirstUnitOrder(Action onCompleted);
 

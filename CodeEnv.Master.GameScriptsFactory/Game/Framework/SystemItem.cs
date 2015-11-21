@@ -28,11 +28,6 @@ using UnityEngine;
 /// </summary>
 public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelectable {
 
-    [Range(1.0F, 5.0F)]
-    [Tooltip("Minimum Camera View Distance in Units")]
-    [SerializeField]
-    private float _minViewDistance = 2F;    // 2 units from the orbital plane
-
     public bool IsTrackingLabelEnabled { private get; set; }
 
     public new SystemData Data {
@@ -56,7 +51,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         get { return _star; }
         set {
             D.Assert(_star == null, "{0}'s Star can only be set once.".Inject(FullName));
-            SetProperty<StarItem>(ref _star, value, "Star", OnStarChanged);
+            _star = value;
+            OnStarSet();
         }
     }
 
@@ -66,6 +62,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     public SystemPublisher Publisher {
         get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
     }
+
+    public override float Radius { get { return Data.Radius; } }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
@@ -77,10 +75,11 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        Radius = TempGameValues.SystemRadius;
         Planetoids = new List<APlanetoidItem>();
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
+
+    protected override void InitializeOnData() { }  // no primary collider that needs data, no keepoutzone, no shiporbitslots
 
     protected override void InitializeModelMembers() { }
 
@@ -154,11 +153,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         return Settlement != null ? Settlement.GetReport(player) : null;
     }
 
-    protected override float InitializeOptimalCameraViewingDistance() {
-        return gameObject.DistanceToCamera();
-    }
-
-    private void OnStarChanged() {
+    private void OnStarSet() {
         Data.StarData = Star.Data;
     }
 
@@ -312,12 +307,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region ICameraTargetable Members
-
-    public override float MinimumCameraViewingDistance { get { return _minViewDistance; } }
-
-    #endregion
 
     #region ICameraFocusable Members
 

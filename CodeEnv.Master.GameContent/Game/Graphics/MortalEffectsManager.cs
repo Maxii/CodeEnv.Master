@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
                 var explosion = _generalFactory.MakeExplosionInstance(_effectsClient.Radius, _effectsClient.Position);
                 explosion.Play(withChildren: true);
-                GameUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, onWaitFinished: delegate {
+                WaitJobUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, onWaitFinished: delegate {
                     _effectsClient.OnEffectFinished(effectID);
                 });
                 return;

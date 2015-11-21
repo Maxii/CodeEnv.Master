@@ -206,13 +206,19 @@ public class SystemCreator : AMonoBase {
     private StarStat CreateStarStatFromChildren() {
         D.Assert(isCompositionPreset);
         StarCategory category = gameObject.GetSingleComponentInChildren<StarItem>().category;
-        return new StarStat(category, 100, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
+        float radius = TempGameValues.StarRadius;
+        float lowOrbitRadius = radius + 2F;
+        int capacity = 100;
+        return new StarStat(category, radius, lowOrbitRadius, capacity, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
     }
 
     private StarStat CreateRandomStarStat() {
         D.Assert(!isCompositionPreset);
         StarCategory category = Enums<StarCategory>.GetRandom(excludeDefault: true);
-        return new StarStat(category, 100, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
+        float radius = TempGameValues.StarRadius;
+        float lowOrbitRadius = radius + 2F;
+        int capacity = 100;
+        return new StarStat(category, radius, lowOrbitRadius, capacity, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
     }
 
     private IList<PlanetoidStat> CreatePlanetStatsFromChildren() {
@@ -221,7 +227,9 @@ public class SystemCreator : AMonoBase {
         var planets = gameObject.GetSafeComponentsInChildren<PlanetItem>();
         foreach (var planet in planets) {
             PlanetoidCategory pCategory = planet.category;
-            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
+            float radius = __GetRadius(pCategory);
+            float lowOrbitDistance = radius + 1F;
+            PlanetoidStat stat = new PlanetoidStat(radius, lowOrbitDistance, 1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
             planetStats.Add(stat);
         }
         return planetStats;
@@ -234,7 +242,9 @@ public class SystemCreator : AMonoBase {
         //D.Log("{0} random planet count = {1}.", SystemName, planetCount);
         for (int i = 0; i < planetCount; i++) {
             PlanetoidCategory pCategory = RandomExtended.Choice(_acceptablePlanetCategories);
-            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
+            float radius = __GetRadius(pCategory);
+            float lowOrbitDistance = radius + 1F;
+            PlanetoidStat stat = new PlanetoidStat(radius, lowOrbitDistance, 1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
             planetStats.Add(stat);
         }
         return planetStats;
@@ -246,7 +256,9 @@ public class SystemCreator : AMonoBase {
         var moons = gameObject.GetComponentsInChildren<MoonItem>();
         foreach (var moon in moons) {
             var mCategory = moon.category;
-            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
+            float radius = __GetRadius(mCategory);
+            float lowOrbitDistance = radius + 2F;
+            PlanetoidStat stat = new PlanetoidStat(radius, lowOrbitDistance, 10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
             moonStats.Add(stat);
         }
         return moonStats;
@@ -259,7 +271,9 @@ public class SystemCreator : AMonoBase {
         //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
         for (int i = 0; i < moonCount; i++) {
             PlanetoidCategory mCategory = RandomExtended.Choice(_acceptableMoonCategories);
-            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
+            float radius = __GetRadius(mCategory);
+            float lowOrbitDistance = radius + 1F;
+            PlanetoidStat stat = new PlanetoidStat(radius, lowOrbitDistance, 10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
             moonStats.Add(stat);
         }
         return moonStats;
@@ -319,24 +333,26 @@ public class SystemCreator : AMonoBase {
 
     private void MakeSystem() {
         LogEvent();
+        CameraFocusableStat cameraStat = __MakeSystemCameraStat();
         if (isCompositionPreset) {
             _system = gameObject.GetSingleComponentInChildren<SystemItem>();
-            _factory.MakeSystemInstance(SystemName, ref _system);
+            _factory.MakeSystemInstance(SystemName, cameraStat, ref _system);
         }
         else {
-            _system = _factory.MakeSystemInstance(this);
+            _system = _factory.MakeSystemInstance(SystemName, gameObject, cameraStat);
         }
         _system.IsTrackingLabelEnabled = enableTrackingLabel;
     }
 
     private void MakeStar() {
         LogEvent();
+        CameraFocusableStat cameraStat = __MakeStarCameraStat(_starStat.Radius, _starStat.LowOrbitRadius);
         if (isCompositionPreset) {
             _star = gameObject.GetSingleComponentInChildren<StarItem>();
-            _factory.MakeInstance(_starStat, SystemName, ref _star);
+            _factory.MakeInstance(_starStat, cameraStat, SystemName, ref _star);
         }
         else {
-            _star = _factory.MakeInstance(_starStat, _system);
+            _star = _factory.MakeInstance(_starStat, cameraStat, _system.gameObject, SystemName);
         }
     }
 
@@ -356,8 +372,9 @@ public class SystemCreator : AMonoBase {
                     if (planetsOfStatCategoryStillAvailable.Any()) {    // IEnumerable.First() does not like empty IEnumerables
                         var planet = planetsOfStatCategoryStillAvailable.First();
                         var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                        CameraFollowableStat cameraStat = __MakePlanetoidCameraStat(planetStat);
                         planetsAlreadyUsed.Add(planet);
-                        _factory.MakeInstance(planetStat, countermeasureStats, SystemName, ref planet);
+                        _factory.MakeInstance(planetStat, cameraStat, countermeasureStats, SystemName, ref planet);
                     }
                 }
             }
@@ -366,7 +383,8 @@ public class SystemCreator : AMonoBase {
             _planets = new List<PlanetItem>(maxPlanetsInRandomSystem);
             foreach (var planetStat in _planetStats) {
                 var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
-                var planet = _factory.MakeInstance(planetStat, countermeasureStats, _system);
+                CameraFollowableStat cameraStat = __MakePlanetoidCameraStat(planetStat);
+                var planet = _factory.MakeInstance(planetStat, cameraStat, countermeasureStats, _system);
                 _planets.Add(planet);
             }
         }
@@ -480,7 +498,8 @@ public class SystemCreator : AMonoBase {
                                 var moon = moonsOfStatCategoryStillAvailable.First();
                                 moonsAlreadyUsed.Add(moon);
                                 var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
-                                _factory.MakeInstance(moonStat, countermeasureStats, planet.Data.Name, ref moon);
+                                CameraFollowableStat cameraStat = __MakePlanetoidCameraStat(moonStat);
+                                _factory.MakeInstance(moonStat, cameraStat, countermeasureStats, planet.Data.Name, ref moon);
                             }
                         }
                     }
@@ -492,7 +511,8 @@ public class SystemCreator : AMonoBase {
             foreach (var moonStat in _moonStats) {
                 var chosenPlanet = RandomExtended.Choice(_planets);
                 var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
-                var moon = _factory.MakeInstance(moonStat, countermeasureStats, chosenPlanet);
+                CameraFollowableStat cameraStat = __MakePlanetoidCameraStat(moonStat);
+                var moon = _factory.MakeInstance(moonStat, cameraStat, countermeasureStats, chosenPlanet);
                 _moons.Add(moon);
             }
         }
@@ -704,6 +724,78 @@ public class SystemCreator : AMonoBase {
         });
         return new ResourceYield(resValuePairs.ToArray());
     }
+
+    private CameraFocusableStat __MakeSystemCameraStat() {
+        float minViewDistance = 2F;   // 2 units from the orbital plane
+        float optViewDistance = TempGameValues.SystemRadius;
+        return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 70F);
+    }
+
+    private CameraFocusableStat __MakeStarCameraStat(float radius, float lowOrbitRadius) {
+        float minViewDistance = radius + 1F;
+        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
+        float optViewDistance = highOrbitRadius + 1F;
+        return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 70F);
+    }
+
+    private CameraFollowableStat __MakePlanetoidCameraStat(PlanetoidStat planetoidStat) {
+        float fov;
+        PlanetoidCategory pCat = planetoidStat.Category;
+        switch (pCat) {
+            case PlanetoidCategory.GasGiant:
+                fov = 70F;
+                break;
+            case PlanetoidCategory.Ice:
+            case PlanetoidCategory.Terrestrial:
+                fov = 65F;
+                break;
+            case PlanetoidCategory.Volcanic:
+            case PlanetoidCategory.Moon_005:
+                fov = 60F;
+                break;
+            case PlanetoidCategory.Moon_001:
+            case PlanetoidCategory.Moon_002:
+            case PlanetoidCategory.Moon_003:
+            case PlanetoidCategory.Moon_004:
+                fov = 50F;
+                break;
+            case PlanetoidCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(pCat));
+        }
+        float radius = planetoidStat.Radius;
+        float minViewDistance = radius + 1F;
+        float highOrbitRadius = planetoidStat.LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
+        float optViewDistance = highOrbitRadius + 1F;
+        return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
+    }
+
+    private float __GetRadius(PlanetoidCategory cat) {
+        switch (cat) {
+            case PlanetoidCategory.GasGiant:
+                return 5F;
+            case PlanetoidCategory.Ice:
+                return 2F;
+            case PlanetoidCategory.Moon_001:
+                return 0.2F;
+            case PlanetoidCategory.Moon_002:
+                return 0.2F;
+            case PlanetoidCategory.Moon_003:
+                return 0.2F;
+            case PlanetoidCategory.Moon_004:
+                return 0.5F;
+            case PlanetoidCategory.Moon_005:
+                return 1F;
+            case PlanetoidCategory.Terrestrial:
+                return 2F;
+            case PlanetoidCategory.Volcanic:
+                return 1F;
+            case PlanetoidCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+        }
+    }
+
 
     protected override void Cleanup() {
         Unsubscribe();

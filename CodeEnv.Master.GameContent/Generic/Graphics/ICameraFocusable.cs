@@ -35,6 +35,11 @@ namespace CodeEnv.Master.GameContent {
 
         float OptimalCameraViewingDistance { get; set; }
 
+        /// <summary>
+        /// The field of view setting that the cameras should adopt.
+        /// </summary>
+        float FieldOfView { get; }
+
         string DisplayName { get; }
 
     }

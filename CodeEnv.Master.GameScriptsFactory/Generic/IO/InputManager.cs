@@ -43,7 +43,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
     private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
-    Layers.DeepSpace, Layers.UI, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast, Layers.Water);
+    Layers.DeepSpace, Layers.UI, Layers.TransitBan, Layers.Shields, Layers.IgnoreRaycast, Layers.Water);
 
     /// <summary>
     /// The EventDispatcher (World or UI) mask that does not allow any events to be raised.
@@ -67,11 +67,11 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     public UICamera UIEventDispatcher { get; private set; }
 
     /// <summary>
-    /// The event dispatcher that sends events to world objects.
+    /// The 2 event dispatchers that send events to world objects.
     /// WARNING: This value is purposely null during scene transitions as otherwise,
     /// the instance provided would be from the previous scene with no warnings of such.
     /// </summary>
-    public UICamera WorldEventDispatcher { get; private set; }
+    public UICamera[] WorldEventDispatchers { get; private set; }
 
     protected override bool IsPersistentAcrossScenes { get { return true; } }
 
@@ -109,7 +109,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         InitializeUIEventDispatcher();
         if (_currentScene == SceneLevel.GameScene) {
             _playerViews = PlayerViews.Instance;
-            InitializeWorldEventDispatcher();
+            InitializeWorldEventDispatchers();
         }
     }
 
@@ -124,12 +124,14 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         UIEventDispatcher.eventsGoToColliders = true;
     }
 
-    private void InitializeWorldEventDispatcher() {
-        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSingleComponentInChildren<UICamera>();
-        WorldEventDispatcher.eventType = UICamera.EventType.World_3D;
-        WorldEventDispatcher.useKeyboard = true;
-        WorldEventDispatcher.useMouse = true;
-        WorldEventDispatcher.eventsGoToColliders = true;
+    private void InitializeWorldEventDispatchers() {
+        WorldEventDispatchers = MainCameraControl.Instance.gameObject.GetComponentsInChildren<UICamera>();
+        WorldEventDispatchers.ForAll(wed => {
+            wed.eventType = UICamera.EventType.World_3D;
+            wed.useKeyboard = true;
+            wed.useMouse = true;
+            wed.eventsGoToColliders = true;
+        });
         /*
                   * Ngui 3.7.1 workaround that makes sure all UICamera event delegates are raised.
                   * Note: 3.7.1 introduced these event delegates, deprecating genericEventHandler. Unfortunately, the delegate
@@ -206,7 +208,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 _enableScreenEdge = false;
                 UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
                 if (_currentScene == SceneLevel.GameScene) {
-                    WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
+                    WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                     UnsubscribeToWorldMouseEvents();
                 }
                 break;
@@ -223,7 +225,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
                 UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
-                WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
+                WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.FullPopup:
@@ -232,7 +234,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
                 UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
-                WorldEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
+                WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.Normal:
@@ -241,7 +243,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
                 SubscribeToViewModeKeyEvents(); //_enableViewModeKeys = true;
-                WorldEventDispatcher.eventReceiverMask = WorldEventDispatcherMask_NormalInput;
+                WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = WorldEventDispatcherMask_NormalInput);
                 SubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.None:
@@ -615,7 +617,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     /// <summary>
-    ///Validates the two event dispatcher instances we currently have have not been destroyed.
+    ///Validates the 3 event dispatcher instances we currently have have not been destroyed.
     ///This is accomplished by trying to access their gameObject. If they are destroyed, Unity will 
     ///throw an error.
     /// </summary>
@@ -623,7 +625,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 #pragma warning disable 0168
         var dummy = UIEventDispatcher.gameObject;
         if (_currentScene == SceneLevel.GameScene) {
-            dummy = WorldEventDispatcher.gameObject;
+            //dummy = WorldEventDispatcher.gameObject;
+            WorldEventDispatchers.ForAll(wed => dummy = wed.gameObject);
         }
 #pragma warning restore 0168
     }
@@ -641,7 +644,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         if (_currentScene == SceneLevel.GameScene) {
             _playerViews.Dispose();
             _playerViews = null;
-            WorldEventDispatcher = null;
+            WorldEventDispatchers.ForAll(wed => wed = null);    // UNCLEAR is this needed with the collection set to null?
+            WorldEventDispatchers = null;
         }
     }
 

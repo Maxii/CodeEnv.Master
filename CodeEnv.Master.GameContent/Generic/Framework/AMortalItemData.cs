@@ -71,15 +71,16 @@ namespace CodeEnv.Master.GameContent {
         public abstract Index3D SectorIndex { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AMortalItemData"/> class.
+        /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
         /// </summary>
         /// <param name="itemTransform">The item transform.</param>
         /// <param name="name">The name.</param>
         /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The item's passive Countermeasures.</param>
-        public AMortalItemData(Transform itemTransform, string name, float maxHitPts, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(itemTransform, name, owner) {
+        public AMortalItemData(Transform itemTransform, string name, float maxHitPts, Player owner, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(itemTransform, name, owner, cameraStat) {
             Initialize(passiveCMs);
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;

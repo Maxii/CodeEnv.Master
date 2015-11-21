@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseCmdStat.cs
-// Immutable struct containing externally acquirable values for StarbaseCmds.
+// File: AUnitCmdStat.cs
+// Immutable stat containing externally acquirable values for UnitCmds.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,25 +19,25 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable struct containing externally acquirable values for StarbaseCmds.
+    /// Immutable stat containing externally acquirable values for UnitCmds.
+    /// This version is sufficient by itself for FleetCmds.
     /// </summary>
-    public struct StarbaseCmdStat {
+    public class UnitCmdStat {
 
-        public string Name { get; private set; }
+        public string UnitName { get; private set; }
         public float MaxHitPoints { get; private set; }
         public int MaxCmdEffectiveness { get; private set; }
         public Formation UnitFormation { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdStat" /> struct.
+        /// Initializes a new instance of the <see cref="UnitCmdStat" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="unitName">The Unit's name.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
-        /// <param name="maxCmdEffect">The maximum command effect.</param>
+        /// <param name="maxCmdEffect">The maximum command effectiveness.</param>
         /// <param name="formation">The formation.</param>
-        public StarbaseCmdStat(string name, float maxHitPts, int maxCmdEffect, Formation formation)
-            : this() {
-            Name = name;
+        public UnitCmdStat(string unitName, float maxHitPts, int maxCmdEffect, Formation formation) {
+            UnitName = unitName;
             MaxHitPoints = maxHitPts;
             MaxCmdEffectiveness = maxCmdEffect;
             UnitFormation = formation;

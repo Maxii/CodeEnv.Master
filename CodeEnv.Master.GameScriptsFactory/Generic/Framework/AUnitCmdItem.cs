@@ -29,16 +29,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISelectable, IUnitAttackableTarget {
 
-    [Range(1.0F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _minViewDistanceFactor = 1.0F;    // at boundary of Unit's highlight sphere around HQElement
-
-    [Range(1.5F, 5.0F)]
-    [Tooltip("Optimal Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
-
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
     /// </summary>
@@ -55,6 +45,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
             return DisplayMgr.IconInfo;
         }
     }
+
+    public override float Radius { get { return Data.Radius; } }
 
     /// <summary>
     /// The radius of the entire Unit. 
@@ -92,17 +84,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         _formationGenerator = new FormationGenerator(this);
     }
 
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
+    }
+
     protected override void InitializeModelMembers() {
         // the only collider is for player interaction with the item's CmdIcon
         UnitContainer = transform.parent;
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
-
-    protected override void SubscribeToDataValueChanges() {
-        base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
-    }
 
     private ITrackingWidget InitializeTrackingLabel() {
         D.Assert(HQElement != null);
@@ -124,16 +116,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         return displayMgr;
     }
 
+    protected override EffectsManager InitializeEffectsManager() {
+        return new UnitCmdEffectsManager(this);
+    }
+
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover += (go, isOver) => OnHover(isOver);
         iconEventListener.onClick += (go) => OnClick();
         iconEventListener.onDoubleClick += (go) => OnDoubleClick();
         iconEventListener.onPress += (go, isDown) => OnPress(isDown);
-    }
-
-    protected override EffectsManager InitializeEffectsManager() {
-        return new UnitCmdEffectsManager(this);
     }
 
     #endregion
@@ -143,10 +135,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     public override void CommenceOperations() {
         base.CommenceOperations();
         AssessIcon();
-    }
-
-    protected override float InitializeOptimalCameraViewingDistance() {
-        return UnitRadius * _optViewDistanceFactor;
     }
 
     /// <summary>
@@ -264,9 +252,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     private void OnHQElementChanged() {
         HQElement.Data.IsHQ = true;
-        Data.HQElementData = HQElement.Data;
-        Radius = HQElement.Radius;
-        //D.Log("{0}'s HQElement is now {1}. Radius = {2}.", Data.ParentName, HQElement.Data.Name, Radius);
+        Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
+        //D.Log("{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         _formationGenerator.RegenerateFormation();
         if (DisplayMgr != null) {
@@ -518,12 +505,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     // override reqd as AMortalItem base version accesses AItemData, not ACommandData
     // since ACommandData.Topography must use new rather than override
     public override Topography Topography { get { return Data.Topography; } }
-
-    #endregion
-
-    #region ICameraTargetable Members
-
-    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

@@ -141,6 +141,7 @@
     <Compile Include="CameraControl.cs" />
     <Compile Include="CameraControl_1.cs" />
     <Compile Include="CameraLOSChangedRelay.cs" />
+    <Compile Include="CameraUnitBaseCmdStat.cs" />
     <Compile Include="CmdHudManager.cs" />
     <Compile Include="ColliderExtensions.cs" />
     <Compile Include="ColliderRelay.cs" />
@@ -182,6 +183,7 @@
     <Compile Include="FleetCmdPresenter.cs" />
     <Compile Include="FleetCmdPresenter_AI.cs" />
     <Compile Include="FleetCmdPresenter_Player.cs" />
+    <Compile Include="FleetCmdStat.cs" />
     <Compile Include="FleetCmdStats.cs" />
     <Compile Include="FleetCmdView.cs" />
     <Compile Include="FleetCmdView_AI.cs" />
@@ -438,6 +440,7 @@
     <Compile Include="SettlementCmdPresenter.cs" />
     <Compile Include="SettlementCmdPresenter_AI.cs" />
     <Compile Include="SettlementCmdPresenter_Player.cs" />
+    <Compile Include="SettlementCmdStat.cs" />
     <Compile Include="SettlementCmdStats.cs" />
     <Compile Include="SettlementCmdView.cs" />
     <Compile Include="SettlementCmdView_AI.cs" />
@@ -481,6 +484,7 @@
     <Compile Include="StarbaseCmdPresenter.cs" />
     <Compile Include="StarbaseCmdPresenter_AI.cs" />
     <Compile Include="StarbaseCmdPresenter_Player.cs" />
+    <Compile Include="StarbaseCmdStat.cs" />
     <Compile Include="StarbaseCmdStats.cs" />
     <Compile Include="StarbaseCmdView.cs" />
     <Compile Include="StarbaseCmdView_AI.cs" />

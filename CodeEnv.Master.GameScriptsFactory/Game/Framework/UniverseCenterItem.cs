@@ -26,15 +26,12 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable {
 
-    [Range(1.0F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _minViewDistanceFactor = 2F;
-
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
         set { base.Data = value; }
     }
+
+    public override float Radius { get { return Data.Radius; } }
 
     private UniverseCenterPublisher _publisher;
     public UniverseCenterPublisher Publisher {
@@ -47,31 +44,28 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        var meshRenderer = gameObject.GetSingleComponentInChildren<MeshRenderer>();
-        Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
+    protected override void InitializeOnData() {
+        InitializePrimaryCollider();
+        InitializeShipOrbitSlot();
+        InitializeTransitBanZone();
+    }
+
+    private void InitializePrimaryCollider() {
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.enabled = false;
         _collider.isTrigger = false;
-        _collider.radius = Radius;
-        InitializeKeepoutZone();
-        InitializeShipOrbitSlot();
-    }
-
-    private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        KeepoutRadius = keepoutZoneCollider.radius;
+        _collider.radius = Data.Radius;
     }
 
     private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = KeepoutRadius;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
+
+    private void InitializeTransitBanZone() {
+        SphereCollider transitBanZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
+        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        transitBanZoneCollider.isTrigger = true;
+        transitBanZoneCollider.radius = Data.HighOrbitRadius;
     }
 
     protected override void InitializeModelMembers() {
@@ -107,10 +101,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     public UniverseCenterReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    protected override float InitializeOptimalCameraViewingDistance() {
-        return gameObject.DistanceToCamera();
-    }
 
     protected override void OnOwnerChanged() {
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
@@ -154,15 +144,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IShipOrbitable Members
 
-    public float KeepoutRadius { get; private set; }
+    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
-
-    #endregion
-
-    #region ICameraTargetable Members
-
-    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

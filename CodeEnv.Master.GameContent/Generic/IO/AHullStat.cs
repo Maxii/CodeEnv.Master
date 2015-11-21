@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using UnityEngine;
+
     /// <summary>
     /// Immutable abstract base stat containing externally acquirable hull values for Elements.
     /// </summary>
@@ -23,6 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float MaxHitPoints { get; private set; }
         public DamageStrength DamageMitigation { get; private set; }
+        public Vector3 HullDimensions { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AHullStat" /> struct.
@@ -37,11 +40,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="expense">The expense consumed by this hull.</param>
         /// <param name="maxHitPts">The maximum hit points of this hull.</param>
         /// <param name="damageMitigation">The resistance to damage of this hull.</param>
+        /// <param name="hullDimensions">The hull dimensions.</param>
         public AHullStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, float maxHitPts, DamageStrength damageMitigation)
+            float pwrRqmt, float expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense) {
             MaxHitPoints = maxHitPts;
             DamageMitigation = damageMitigation;
+            HullDimensions = hullDimensions;
         }
 
     }

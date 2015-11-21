@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a StarbaseCmdItem.
     /// </summary>
-    public class StarbaseCmdData : AUnitCmdItemData {
+    public class StarbaseCmdData : AUnitBaseCmdItemData {   //: AUnitCmdItemData {
 
         private StarbaseCategory _category;
         public StarbaseCategory Category {
@@ -44,43 +44,28 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        public new FacilityData HQElementData {
-            get { return base.HQElementData as FacilityData; }
-            set { base.HQElementData = value; }
-        }
-
-        private BaseComposition _unitComposition;
-        public BaseComposition UnitComposition {
-            get { return _unitComposition; }
-            set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
-        }
-
-        private Index3D _sectorIndex;
-        public override Index3D SectorIndex { get { return _sectorIndex; } }
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdData"/> class
+        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public StarbaseCmdData(Transform cmdTransform, StarbaseCmdStat stat, Player owner)
-            : this(cmdTransform, stat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        public StarbaseCmdData(Transform cmdTransform, UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner)
+            : this(cmdTransform, cmdStat, cameraStat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdData"/> class.
+        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public StarbaseCmdData(Transform cmdTransform, StarbaseCmdStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner, passiveCMs) {
-            MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
-            UnitFormation = stat.UnitFormation;
-            _sectorIndex = References.SectorGrid.GetSectorIndex(Position);
+        public StarbaseCmdData(Transform cmdTransform, UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
             __PopulateResourcesFromSector();
         }
 
@@ -92,11 +77,6 @@ namespace CodeEnv.Master.GameContent {
         public override void RemoveElement(AUnitElementItemData elementData) {
             base.RemoveElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
-        }
-
-        protected override void RefreshComposition() {
-            var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
-            UnitComposition = new BaseComposition(elementCategories);
         }
 
         public StarbaseCategory GenerateCmdCategory(BaseComposition unitComposition) {

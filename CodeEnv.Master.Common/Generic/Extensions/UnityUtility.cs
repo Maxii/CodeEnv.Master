@@ -436,6 +436,8 @@ namespace CodeEnv.Master.Common {
 
         #region WaitFor Coroutines
 
+        // IMPROVE These methods can execute their callback after the Game Instance has been terminated.
+
         /// <summary>
         /// Waits for the designated number of seconds, then executes the provided delegate.
         /// Usage:
@@ -510,7 +512,9 @@ namespace CodeEnv.Master.Common {
         /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
         public static Job WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
             Arguments.ValidateNotNegative(framesToWait);
-            return new Job(WaitForFrames(framesToWait), toStart: true, onJobComplete: onWaitFinished);
+            return new Job(WaitForFrames(framesToWait), toStart: true, onJobComplete: (wasKilled) => {
+                onWaitFinished(wasKilled);
+            });
         }
 
         /// <summary>
@@ -518,7 +522,7 @@ namespace CodeEnv.Master.Common {
         /// new Job(UnityUtility.WaitFrames(1), toStart: true, onJobCompletion: (jobWasKilled) =&gt; {
         /// Code to execute after the wait;
         /// });
-        /// WARNING: the code in this location will execute immediately after the Job starts
+        /// WARNING: the code in this location will execute immediately after the Job starts.
         /// </summary>
         /// <param name="framesToWait">The frames to wait.</param>
         /// <returns></returns>

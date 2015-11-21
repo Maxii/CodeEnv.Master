@@ -45,7 +45,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         set {
             D.Assert(_data == null, "{0}.{1}.Data can only be set once.".Inject(FullName, GetType().Name));
             _data = value;
-            OnDataSet();
+            InitializeOnData();
             SubscribeToDataValueChanges();
         }
     }
@@ -78,17 +78,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     public Vector3 Position { get { return Data.Position; } }
 
-    private float _radius;
     /// <summary>
     /// The radius of the conceptual 'globe' that encompasses this Item.
     /// </summary>
-    public virtual float Radius {
-        get {
-            D.Assert(_radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(FullName));
-            return _radius;
-        }
-        protected set { _radius = value; }
-    }
+    public abstract float Radius { get; }
 
     public Player Owner { get { return Data.Owner; } }
 
@@ -107,7 +100,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     }
 
     /// <summary>
-    /// Called from Awake, initializes local references and values including Radius-related components.
+    /// Called from Awake, initializes local references and values.
+    /// Note: Radius-related values and components should be initialized when Radius
+    /// is valid which occurs when Data is added.
     /// </summary>
     protected virtual void InitializeLocalReferencesAndValues() {
         _inputMgr = References.InputManager;
@@ -120,7 +115,21 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
     }
 
-    protected override void Start() {
+    /// <summary>
+    /// Called once when Data is set, clients should initialize values that require the availability of Data.
+    /// </summary>
+    protected abstract void InitializeOnData();
+
+    /// <summary>
+    ///  Subscribes to changes to values contained in Data. Called when Data is set.
+    /// </summary>
+    protected virtual void SubscribeToDataValueChanges() {
+        D.Assert(_subscriptions != null);
+        _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
+    }
+
+    protected sealed override void Start() {
         base.Start();
         InitializeModelMembers();
         InitializeViewMembers();
@@ -141,32 +150,15 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     protected abstract ItemHudManager InitializeHudManager();
 
-    /// <summary>
-    ///  Subscribes to changes to values contained in Data. Called when Data first set.
-    /// </summary>
-    protected virtual void SubscribeToDataValueChanges() {
-        D.Assert(_subscriptions != null);
-        _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
-    }
-
     #endregion
 
     #region Model Methods
 
     /// <summary>
-    /// Called when the Item should start operations, typically once
-    /// the game is running.
+    /// Called when the Item should start operations, typically once the game is running.
     /// </summary>
     public virtual void CommenceOperations() {
         IsOperational = true;
-    }
-
-    /// <summary>
-    /// Called once and only once when Data has been assigned to this item.
-    /// </summary>
-    protected virtual void OnDataSet() {
-        D.Assert(!IsOperational);
     }
 
     protected virtual void OnOwnerChanging(Player newOwner) {

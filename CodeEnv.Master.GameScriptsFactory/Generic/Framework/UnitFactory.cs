@@ -80,13 +80,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Makes an unparented, unenabled FleetCommand instance for the owner.
     /// </summary>
     /// <param name="cmdStat">The stat for this Cmd.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
+    public FleetCmdItem MakeInstance(UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _fleetCmdPrefab);
         var cmd = cmdGo.GetSafeComponent<FleetCmdItem>();
-        MakeInstance(cmdStat, passiveCmStats, owner, ref cmd);
+        MakeInstance(cmdStat, cameraStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
 
@@ -94,13 +95,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided item instance with data from the stat object.  The Item  will not be enabled.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref FleetCmdItem item) {
+    public void MakeInstance(UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref FleetCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new FleetCmdData(item.transform, cmdStat, owner, passiveCMs);
+        item.Data = new FleetCmdData(item.transform, cmdStat, cameraStat, owner, passiveCMs);
     }
 
     /// <summary>
@@ -112,9 +114,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="element">The ship which is designated the HQ Element.</param>
     /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
     public void MakeFleetInstance(string fleetName, ShipItem element, Action<FleetCmdItem> onCompletion) {
-        FleetCmdStat cmdStat = new FleetCmdStat(fleetName, 10F, 100, Formation.Globe);
+        UnitCmdStat cmdStat = new UnitCmdStat(fleetName, 10F, 100, Formation.Globe);
+        CameraFleetCmdStat cameraStat = new CameraFleetCmdStat(minViewDistance: 1F, optViewDistanceAdder: 2F, fov: 60F);
         var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
-        MakeFleetInstance(cmdStat, countermeasureStats, element, onCompletion);
+        MakeFleetInstance(cmdStat, cameraStat, countermeasureStats, element, onCompletion);
     }
 
     /// <summary>
@@ -123,12 +126,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// the Scene's Fleets folder. The fleetCmd and ship (if not already enabled) are all enabled when returned.
     /// </summary>
     /// <param name="cmdStat">The stat for this fleetCmd.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="element">The ship which is designated the HQ Element.</param>
     /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
-    public void MakeFleetInstance(FleetCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> cmStats, ShipItem element, Action<FleetCmdItem> onCompletion) {
-        FleetCmdItem cmd = MakeInstance(cmdStat, cmStats, element.Owner);
-        GameObject unitGo = new GameObject(cmdStat.Name);
+    public void MakeFleetInstance(UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, ShipItem element, Action<FleetCmdItem> onCompletion) {
+        FleetCmdItem cmd = MakeInstance(cmdStat, cameraStat, cmStats, element.Owner);
+        GameObject unitGo = new GameObject(cmdStat.UnitName);
         UnityUtility.AttachChildToParent(unitGo, FleetsFolder.Instance.Folder.gameObject);
         UnityUtility.AttachChildToParent(cmd.gameObject, unitGo);
 
@@ -147,12 +151,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // return cmd   // this non-delegate approach returned the cmd immediately after the Job started
     }
 
-    public ShipItem MakeShipInstance(Player owner, string designName) {
+    public ShipItem MakeShipInstance(Player owner, CameraFollowableStat cameraStat, string designName) {
         ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
-        return MakeInstance(owner, design);
+        return MakeInstance(owner, cameraStat, design);
     }
 
-    public ShipItem MakeInstance(Player owner, ShipDesign design) {
+    public ShipItem MakeInstance(Player owner, CameraFollowableStat cameraStat, ShipDesign design) {
         ShipHullCategory hullCategory = design.HullCategory;
 
         GameObject hullPrefabGo = _shipHullPrefabs.Single(sHull => sHull.HullCategory == hullCategory).gameObject;
@@ -161,24 +165,22 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         hullGoClone.layer = (int)Layers.ShipCull;   // hull layer gets set to item layer by AddChild
 
         ShipItem element = elementGoClone.GetSafeComponent<ShipItem>();
-        PopulateInstance(owner, design, ref element);
+        PopulateInstance(owner, cameraStat, design, ref element);
         return element;
     }
 
-    public void PopulateInstance(Player owner, string designName, ref ShipItem element) {
+    public void PopulateInstance(Player owner, CameraFollowableStat cameraStat, string designName, ref ShipItem element) {
         ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
-        PopulateInstance(owner, design, ref element);
+        PopulateInstance(owner, cameraStat, design, ref element);
     }
 
-    public void PopulateInstance(Player owner, ShipDesign design, ref ShipItem element) {
+    public void PopulateInstance(Player owner, CameraFollowableStat cameraStat, ShipDesign design, ref ShipItem element) {
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         ShipHull hull = element.gameObject.GetSingleComponentInChildren<ShipHull>();
         var hullCategory = design.HullCategory;
         D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
         ShipHullEquipment hullEquipment = new ShipHullEquipment(design.HullStat);
         hullEquipment.Hull = hull;
-
-        element.SetSize(hullCategory.__HullDimensions());  // IMPROVE  size should eventually come with the hullStat
 
         // Make the weapons along with their already selected mounts and add the weapon to the hullEquipment
         var weapons = MakeWeapons(design.WeaponDesigns, element, hull);
@@ -193,7 +195,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
 
-        ShipData data = new ShipData(element.transform, elementRigidbody, hullEquipment, design.EngineStat, design.CombatStance, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
+        ShipData data = new ShipData(element.transform, elementRigidbody, hullEquipment, design.EngineStat, cameraStat, design.CombatStance, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
         element.Data = data;
     }
 
@@ -201,13 +203,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Makes an unparented, unenabled StarbaseCmd instance for the owner.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
+    public StarbaseCmdItem MakeInstance(UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
-        PopulateInstance(cmdStat, passiveCmStats, owner, ref cmd);
+        PopulateInstance(cmdStat, cameraStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
 
@@ -215,26 +218,28 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided StarbaseCmd instance with data from the stat object. The item will not be enabled.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
+    public void PopulateInstance(UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new StarbaseCmdData(item.transform, cmdStat, owner, passiveCMs);
+        item.Data = new StarbaseCmdData(item.transform, cmdStat, cameraStat, owner, passiveCMs);
     }
 
     /// <summary>
     /// Makes an unparented, unenabled SettlementCmd instance for the owner.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
+    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _settlementCmdPrefab);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
-        PopulateInstance(cmdStat, passiveCmStats, owner, ref cmd);
+        PopulateInstance(cmdStat, cameraStat, passiveCmStats, owner, ref cmd);
         return cmd;
     }
 
@@ -242,23 +247,24 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided SettlementCmd instance with data from the stat object. The item will not be enabled.
     /// </summary>
     /// <param name="cmdStat">The stat.</param>
+    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
+    public void PopulateInstance(SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new SettlementCmdData(item.transform, cmdStat, owner, passiveCMs) {
-            Approval = UnityEngine.Random.Range(.01F, 1.0F)
+        item.Data = new SettlementCmdData(item.transform, cmdStat, cameraStat, owner, passiveCMs) {
+            Approval = UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent)
         };
     }
 
-    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, string designName) {
+    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, CameraFollowableStat cameraStat, string designName) {
         FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
-        return MakeInstance(owner, topography, design);
+        return MakeInstance(owner, topography, cameraStat, design);
     }
 
-    public FacilityItem MakeInstance(Player owner, Topography topography, FacilityDesign design) {
+    public FacilityItem MakeInstance(Player owner, Topography topography, CameraFollowableStat cameraStat, FacilityDesign design) {
         FacilityHullCategory hullCategory = design.HullCategory;
 
         GameObject hullPrefabGo = _facilityHullPrefabs.Single(fHull => fHull.HullCategory == hullCategory).gameObject;
@@ -267,24 +273,22 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         hullGoClone.layer = (int)Layers.FacilityCull;   // hull layer gets set to item layer by AddChild
 
         FacilityItem element = elementGoClone.GetSafeComponent<FacilityItem>();
-        PopulateInstance(owner, topography, design, ref element);
+        PopulateInstance(owner, topography, cameraStat, design, ref element);
         return element;
     }
 
-    public void PopulateInstance(Player owner, Topography topography, string designName, ref FacilityItem element) {
+    public void PopulateInstance(Player owner, Topography topography, CameraFollowableStat cameraStat, string designName, ref FacilityItem element) {
         FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
-        PopulateInstance(owner, topography, design, ref element);
+        PopulateInstance(owner, topography, cameraStat, design, ref element);
     }
 
-    public void PopulateInstance(Player owner, Topography topography, FacilityDesign design, ref FacilityItem element) {
+    public void PopulateInstance(Player owner, Topography topography, CameraFollowableStat cameraStat, FacilityDesign design, ref FacilityItem element) {
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         FacilityHull hull = element.gameObject.GetSingleComponentInChildren<FacilityHull>();
         var hullCategory = design.HullCategory;
         D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
         FacilityHullEquipment hullEquipment = new FacilityHullEquipment(design.HullStat);
         hullEquipment.Hull = hull;
-
-        element.SetSize(hullCategory.__HullDimensions());   // IMPROVE  size should eventually come with the hullStat
 
         // Make the weapons along with their already selected mounts and add the weapon to the hullEquipment
         var weapons = MakeWeapons(design.WeaponDesigns, element, hull);
@@ -299,7 +303,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
 
-        FacilityData data = new FacilityData(element.transform, elementRigidbody, hullEquipment, topography, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
+        FacilityData data = new FacilityData(element.transform, elementRigidbody, hullEquipment, cameraStat, topography, owner, activeCMs, sensors, passiveCMs, shieldGenerators);
         element.Data = data;
     }
 

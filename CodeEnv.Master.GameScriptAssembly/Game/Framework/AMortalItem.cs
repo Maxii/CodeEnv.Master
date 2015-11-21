@@ -38,13 +38,17 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #region Initialization
 
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnData() {
+        Data.PassiveCountermeasures.ForAll(cm => Attach(cm));
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+    }
+
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
     }
 
     protected override EffectsManager InitializeEffectsManager() {
@@ -58,11 +62,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     public override void CommenceOperations() {
         base.CommenceOperations();
         Data.CommenceOperations();
-    }
-
-    protected override void OnDataSet() {
-        base.OnDataSet();
-        Data.PassiveCountermeasures.ForAll(cm => Attach(cm));
     }
 
     /// <summary>

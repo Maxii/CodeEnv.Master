@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdItemData : AMortalItemData {
 
+        public float Radius { get { return HQElementData.HullDimensions.magnitude / 2F; } }
+
         private string _parentName;
         public string ParentName {
             get { return _parentName; }
@@ -171,16 +173,19 @@ namespace CodeEnv.Master.GameContent {
         protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscriptions;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AUnitCmdItemData"/> class.
+        /// Initializes a new instance of the <see cref="AUnitCmdItemData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
-        /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
+        /// <param name="cmdMaxHitPts">The command maximum hit PTS.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
-        public AUnitCmdItemData(Transform cmdTransform, string unitName, float cmdMaxHitPts, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, CommonTerms.Command, cmdMaxHitPts, owner, passiveCMs) {
-            ParentName = unitName;
+        public AUnitCmdItemData(Transform cmdTransform, UnitCmdStat cmdStat, Player owner, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, CommonTerms.Command, cmdStat.MaxHitPoints, owner, cameraStat, passiveCMs) {
+            ParentName = cmdStat.UnitName;
+            UnitFormation = cmdStat.UnitFormation;
+            MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
         }

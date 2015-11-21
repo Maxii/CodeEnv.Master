@@ -185,10 +185,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
+    /// <summary>
+    /// Refreshes the static fields of References.
+    /// </summary>
     private void RefreshStaticReferences() {
-        // MonoBehaviour Singletons set their References field themselves
+        // MonoBehaviour Singletons set their References field themselves when they are first called
 #pragma warning disable 0168
-        // HACK this sets the References field as it gets called first
+        // HACK these two MonoBehaviour Singleton References fields get called immediately so make sure they are set
         var dummy1 = InputManager.Instance;
         var dummy2 = SFXManager.Instance;
 #pragma warning restore 0168
@@ -209,6 +212,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void InitializeValuesAndReferences() {
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _gameTime = GameTime.Instance;
+#pragma warning disable 0168
+        // HACK initialize this utility so its static methods are ready when accessed
+        var dummy3 = WaitJobUtility.Instance;
+#pragma warning restore 0168
         UpdateRate = FrameUpdateFrequency.Infrequent;
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
     }
@@ -902,6 +909,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void DisposeOfGlobals() {
         _gameTime.Dispose();
         PlayersKnowledge.Dispose();
+        WaitJobUtility.Instance.Dispose();
         GameInputHelper.Instance.Dispose();
 
         if (CurrentScene == SceneLevel.GameScene) {

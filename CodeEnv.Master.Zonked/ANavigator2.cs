@@ -46,7 +46,7 @@ public abstract class ANavigator2 {
 
     public abstract class AAutoPilot : IDisposable {
 
-        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
 
 
         private bool _isEngaged;

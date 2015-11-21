@@ -238,8 +238,10 @@ namespace CodeEnv.Master.GameContent {
                 // UNCLEAR can this happen?
                 D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
             }
-            _reloadJob = GameUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
-                OnReloaded();
+            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
+                if (!jobWasKilled) {
+                    OnReloaded();
+                }
             });
         }
 

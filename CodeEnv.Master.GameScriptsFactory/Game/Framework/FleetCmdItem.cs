@@ -58,10 +58,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     public override float UnitRadius {
         get {
-            var result = 1F;
+            var result = Data.Radius;
             if (Elements.Count >= 2) {
                 var meanDistanceToFleetShips = Position.FindMeanDistance(Elements.Except(HQElement).Select(e => e.Position));
-                result = meanDistanceToFleetShips > 1F ? meanDistanceToFleetShips : 1F;
+                result = Mathf.Max(result, meanDistanceToFleetShips);
             }
             //D.Log("{0}.UnitRadius is {1}.", FullName, result);
             return result;
@@ -88,7 +88,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         _formationStations = new List<FormationStationMonitor>();
-        // the radius of a FleetCommand is in flux, currently it reflects the distribution of ships around it
     }
 
     protected override void InitializeModelMembers() {
@@ -210,9 +209,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         return Elements.MaxBy(e => e.Data.Health) as ShipItem;
     }
 
-    // A fleetCmd causes heading and speed changes to occur by issuing orders to
-    // ships, not by directly telling ships to modify their speed or heading. As such,
-    // the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
+    // A fleetCmd causes heading and speed changes to occur by issuing orders to ships, not by directly telling ships to modify 
+    // their speed or heading. As such, the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
 
     protected override void OnHQElementChanging(AUnitElementItem newHQElement) {
         base.OnHQElementChanging(newHQElement);
@@ -226,7 +224,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         transform.position = HQElement.Position;
         // Note: Assigning connectedBody links the two rigidbodies at their current relative positions. Therefore the Cmd must be
         // relocated to the HQElement before the joint is made. Making the joint does not itself relocate Cmd to the newly connectedBody
-        _hqJoint.connectedBody = HQElement.gameObject.GetComponent<Rigidbody>();
+        _hqJoint.connectedBody = HQElement.gameObject.GetSafeComponent<Rigidbody>();
         //D.Log("{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, _transform.position);
     }
 
@@ -786,23 +784,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region ICameraFocusable Members
+
+    public override float OptimalCameraViewingDistance {
+        get {
+            if (_optimalCameraViewingDistance != Constants.ZeroF) {
+                // the user has set the value manually
+                return _optimalCameraViewingDistance;
+            }
+            D.Assert(UnitRadius >= Data.Radius);
+            return UnitRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+        }
+        set { base.OptimalCameraViewingDistance = value; }
+    }
+
+    #endregion
+
     #region ICameraFollowable Members
 
-    [SerializeField]
-    [Range(1.0F, 10F)]
-    [Tooltip("Dampens Camera Follow Distance Behaviour")]
-    private float _followDistanceDampener = 3.0F;
-    public virtual float FollowDistanceDampener {
-        get { return _followDistanceDampener; }
-    }
+    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
 
-    [SerializeField]
-    [Range(0.5F, 3.0F)]
-    [Tooltip("Dampens Camera Follow Rotation Behaviour")]
-    private float _followRotationDampener = 1.0F;
-    public virtual float FollowRotationDampener {
-        get { return _followRotationDampener; }
-    }
+    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
 
     #endregion
 
@@ -840,7 +842,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
         }
 
-        private bool _targetHasKeepoutZone;
+        private bool _targetHasTransitBanZone;
         private bool _isCourseReplot;
         private Vector3 _targetPointAtLastCoursePlot;
         private float _targetMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
@@ -869,7 +871,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         internal void PlotCourse(INavigableTarget target, Speed speed) {
             RecordAutoPilotCourseValues(speed, OrderSource.UnitCommand);
             _target = target;
-            _targetHasKeepoutZone = target is IShipOrbitable;
+            _targetHasTransitBanZone = target is IShipOrbitable;
             ResetCourseReplotValues();
             GenerateCourse();
         }
@@ -920,8 +922,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
             INavigableTarget detour;
             float obstacleHitDistance;
-            float castingKeepoutRadius = GetCastingKeepoutRadius(currentWaypoint);
-            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingKeepoutRadius, out detour, out obstacleHitDistance)) {
+            float castingTransitBanRadius = GetCastingTransitBanRadius(currentWaypoint);
+            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingTransitBanRadius, out detour, out obstacleHitDistance)) {
                 // but there is an obstacle, so add a waypoint
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 currentWaypoint = detour;
@@ -940,8 +942,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, Course[_currentWaypointIndex].FullName);
 
                     currentWaypoint = Course[_currentWaypointIndex];
-                    castingKeepoutRadius = GetCastingKeepoutRadius(currentWaypoint);
-                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingKeepoutRadius, out detour, out obstacleHitDistance)) {
+                    castingTransitBanRadius = GetCastingTransitBanRadius(currentWaypoint);
+                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingTransitBanRadius, out detour, out obstacleHitDistance)) {
                         // there is an obstacle enroute to the next waypoint, so use the detour provided instead
                         RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                         currentWaypoint = detour;
@@ -1086,16 +1088,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
 
         /// <summary>
-        /// Gets the keepout radius to avoid casting into for the provided waypoint.
-        /// Targets may have a KeepoutZone and therefore a keepout radius. AStar-generated 
-        /// waypoints and obstacle avoidance detour waypoints have no keepout radius.
+        /// Gets the TransitBanRadius to avoid casting into for the provided waypoint.
+        /// Targets may have a TransitBanZone and therefore a TransitBanRadius. AStar-generated 
+        /// waypoints and obstacle avoidance detour waypoints have no TransitBanZone.
         /// </summary>
         /// <param name="waypoint">The waypoint.</param>
         /// <returns></returns>
-        private float GetCastingKeepoutRadius(INavigableTarget waypoint) {
+        private float GetCastingTransitBanRadius(INavigableTarget waypoint) {
             var result = Constants.ZeroF;
-            if (waypoint == Target && _targetHasKeepoutZone) {
-                result = (Target as IShipOrbitable).KeepoutRadius + 1F;
+            if (waypoint == Target && _targetHasTransitBanZone) {
+                result = (Target as IShipOrbitable).TransitBanRadius + 1F;
             }
             return result;
         }

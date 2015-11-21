@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTargetable {
 
+    private const float CameraMinViewingDistance_DummyTarget = 50F;
+
     protected override void Cleanup() { }
 
     public override string ToString() {
@@ -35,7 +37,7 @@ public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTar
 
     public bool IsCameraTargetEligible { get { return true; } }
 
-    public float MinimumCameraViewingDistance { get { return TempGameValues.MinimumCameraViewingDistance_UniverseEdge; } }
+    public float MinimumCameraViewingDistance { get { return CameraMinViewingDistance_DummyTarget; } }
 
     #endregion
 

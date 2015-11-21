@@ -97,6 +97,7 @@ namespace CodeEnv.Master.GameContent {
             return value;
         }
 
+        [System.Obsolete]
         public static Vector3 __HullDimensions(this ShipHullCategory cat) {
             switch (cat) {
                 case ShipHullCategory.Frigate:  // 10.28.15 Hull collider dimensions increased to encompass turrets
@@ -170,29 +171,6 @@ namespace CodeEnv.Master.GameContent {
             return value;
         }
 
-        /// <summary>
-        /// The dimensions of the facility (capsule) with this Category. 
-        /// x is Radius, y is height. The Axis Direction is assumed to be the Y-Axis, aka 1.
-        /// </summary>
-        /// <param name="cat">The category.</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public static Vector2 __HullDimensions(this FacilityHullCategory cat) {
-            switch (cat) {
-                case FacilityHullCategory.CentralHub:
-                case FacilityHullCategory.Defense:
-                    return new Vector2(.10F, .40F);
-                case FacilityHullCategory.Economic:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Laboratory:
-                case FacilityHullCategory.ColonyHab:
-                case FacilityHullCategory.Barracks:
-                    return new Vector2(.05F, .20F);
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-            }
-        }
 
     }
 }

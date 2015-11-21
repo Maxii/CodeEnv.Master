@@ -18,6 +18,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
@@ -158,10 +159,11 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         //}
         //eventDispatcher.eventReceiverMask = savedMask;
 
+        D.Assert(InputManager.Instance.InputMode == GameInputMode.Normal);  // Occlusion check should only occur during Normal InputMode
+        var maskWithoutOrbitalPlaneLayer = InputManager.WorldEventDispatcherMask_NormalInput.RemoveFromMask(orbitalPlaneLayer);
+
         bool isObjectOccluded = false;
         occludedObject = null;
-        UICamera worldEventDispatcher = InputManager.Instance.WorldEventDispatcher;
-        var maskWithoutOrbitalPlaneLayer = worldEventDispatcher.eventReceiverMask.RemoveFromMask(orbitalPlaneLayer);
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);    // using UICamera.currentRay doesn't always get a hit over Star when it should
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, maskWithoutOrbitalPlaneLayer)) {

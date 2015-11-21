@@ -53,6 +53,14 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ADiscernibleItemData.cs" />
+    <Compile Include="AUnitBaseCmdItemData.cs" />
+    <Compile Include="CameraFleetCmdStat.cs" />
+    <Compile Include="SettlementCmdStat.cs" />
+    <Compile Include="UnitBaseCmdStat.cs" />
+    <Compile Include="UnitCmdStat.cs" />
+    <Compile Include="CameraFocusableStat.cs" />
+    <Compile Include="CameraFollowableStat.cs" />
     <Compile Include="Generic\_Debug\CombatResult.cs" />
     <Compile Include="Generic\IO\AWeaponStat.cs" />
     <Compile Include="Generic\IO\BeamWeaponStat.cs" />
@@ -143,7 +151,6 @@
     <Compile Include="Generic\Framework\BaseOrder.cs" />
     <Compile Include="Generic\Framework\AOrbitSlot.cs" />
     <Compile Include="Generic\Graphics\ITrackingWidget.cs" />
-    <Compile Include="Generic\IO\FleetCmdStat.cs" />
     <Compile Include="Game\Framework\GameTimeDuration.cs" />
     <Compile Include="Generic\Framework\FacilityOrder.cs" />
     <Compile Include="Generic\Framework\FleetOrder.cs" />
@@ -298,7 +305,6 @@
     <Compile Include="Generic\IO\MissileWeaponStat.cs" />
     <Compile Include="Game\Gameplay\PlayersKnowledge.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
-    <Compile Include="ItemCameraSettings.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />
@@ -308,8 +314,6 @@
     <Compile Include="Game\Graphics\EffectID.cs" />
     <Compile Include="Generic\Framework\WDVCategory.cs" />
     <Compile Include="Generic\Framework\ShipOrder.cs" />
-    <Compile Include="Generic\IO\SettlementCmdStat.cs" />
-    <Compile Include="Generic\IO\StarbaseCmdStat.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
     <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />
@@ -352,6 +356,7 @@
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />
     <Compile Include="Game\GUI\UniverseCenterDisplayInfoFactory.cs" />
     <Compile Include="Generic\Extensions\TopographyExtensions.cs" />
+    <Compile Include="WaitJobUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

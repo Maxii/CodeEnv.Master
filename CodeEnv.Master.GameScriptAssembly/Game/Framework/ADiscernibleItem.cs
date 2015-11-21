@@ -41,6 +41,11 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         get { return DisplayMgr != null ? IsDiscernibleToUser && DisplayMgr.IsPrimaryMeshInMainCameraLOS : IsDiscernibleToUser; }
     }
 
+    public new ADiscernibleItemData Data {
+        get { return base.Data as ADiscernibleItemData; }
+        set { base.Data = value; }
+    }
+
     public ADisplayManager DisplayMgr { get; private set; }
 
     protected EffectsManager EffectsMgr { get; private set; }
@@ -52,7 +57,9 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     #region Initialization
 
     /// <summary>
-    /// Called from Awake, initializes local references and values including Radius-related components.
+    /// Called from Awake, initializes local references and values.
+    /// Note: Radius-related values and components should be initialized when Radius
+    /// is valid which occurs when Data is added.
     /// </summary>
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
@@ -105,21 +112,13 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        OptimalCameraViewingDistance = InitializeOptimalCameraViewingDistance();
         AssessIsDiscernibleToUser();
     }
-
-    /// <summary>
-    /// Initializes the optimal camera viewing distance value. Called by CommenceOperations
-    /// so Radius is properly set. Note: UnitRadius in particular is not established until after its
-    /// Elements have been added.
-    /// </summary>
-    /// <returns></returns>
-    protected abstract float InitializeOptimalCameraViewingDistance();
 
     #endregion
 
     #region View Methods
+
 
     protected virtual void OnIsFocusChanged() {
         if (IsFocus) {
@@ -266,22 +265,36 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     /// <summary>
     /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.
-    /// e.g. - the camera should not know the object exists when it is not discernible to the human player.
+    /// e.g. - the camera should not react to the object when it is not discernible to the user.
     /// </summary>
     public virtual bool IsCameraTargetEligible { get { return IsDiscernibleToUser; } }
 
-    public abstract float MinimumCameraViewingDistance { get; }
+    public float MinimumCameraViewingDistance { get { return Data.CameraStat.MinimumViewingDistance; } }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public float OptimalCameraViewingDistance { get; set; }
+    public float FieldOfView { get { return Data.CameraStat.FieldOfView; } }
+
+    //Note: protected and virtual so FleetCmdItems can override using UnitRadius
+    protected float _optimalCameraViewingDistance;
+    public virtual float OptimalCameraViewingDistance {
+        get {
+            if (_optimalCameraViewingDistance != Constants.ZeroF) {
+                // the user has set the value manually
+                return _optimalCameraViewingDistance;
+            }
+            return Data.CameraStat.OptimalViewingDistance;
+        }
+        set { _optimalCameraViewingDistance = value; }  // TODO public but not currently used until implement option to right click set
+        // Camera auto setting value commented out for now
+    }
 
     public virtual bool IsRetainedFocusEligible { get { return false; } }
 
     private bool _isFocus;
-    public virtual bool IsFocus {
+    public bool IsFocus {
         get { return _isFocus; }
         set { SetProperty<bool>(ref _isFocus, value, "IsFocus", OnIsFocusChanged); }
     }

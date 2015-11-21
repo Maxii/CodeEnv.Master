@@ -36,26 +36,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     [Tooltip("The category of planetoid")]
     public PlanetoidCategory category = PlanetoidCategory.None;
 
-    [Range(1.0F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _minViewDistanceFactor = 2F;
-
-    [Range(3.0F, 15.0F)]
-    [Tooltip("Optimal Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _optViewDistanceFactor = 8F;
-
-    [Range(0.1F, 5F)]
-    [Tooltip("Camera Follow Distance Dampener")]
-    [SerializeField]
-    private float _cameraFollowDistanceDampener = 3.0F;
-
-    [Range(0.1F, 3.0F)]
-    [Tooltip("Camera Follow Rotation Dampener")]
-    [SerializeField]
-    private float _cameraFollowRotationDampener = 1.0F;
-
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
         set { base.Data = value; }
@@ -66,6 +46,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         get { return _publisher = _publisher ?? new PlanetoidPublisher(Data, this); }
     }
 
+    public override float Radius { get { return Data.Radius; } }
+
     public ISystemItem System { get; private set; }
 
     private DetectionHandler _detectionHandler;
@@ -74,31 +56,34 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
-        Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
+        InitializePrimaryCollider();
+        InitializeShipOrbitSlot();
+        InitializeTransitBanZone();
+    }
+
+    private void InitializePrimaryCollider() {
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.enabled = false;
         _collider.isTrigger = false;
-        _collider.radius = Radius;
-
-        InitializeKeepoutZone();
-        InitializeShipOrbitSlot();
-    }
-
-    private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        KeepoutRadius = keepoutZoneCollider.radius;
+        _collider.radius = Data.Radius;
     }
 
     private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = KeepoutRadius;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
+    //private void InitializeShipOrbitSlot() {
+    //    float innerOrbitRadius = Data.LowOrbitRadius;
+    //    float outerOrbitRadius = innerOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
+    //    ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+    //}
+
+    private void InitializeTransitBanZone() {
+        SphereCollider transitBanZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        transitBanZoneCollider.isTrigger = true;
+        transitBanZoneCollider.radius = Data.HighOrbitRadius;  //Data.LowOrbitRadius;
     }
 
     protected override void InitializeModelMembers() {
@@ -140,18 +125,13 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override float InitializeOptimalCameraViewingDistance() {
-        return Radius * _optViewDistanceFactor;
-    }
-
     protected override void SetDeadState() {
         CurrentState = PlanetoidState.Dead;
     }
 
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
-        // _collider.enabled = false;   // keep the collider on until destroyed or returned to the pool
-        // this allows in-route ordnance to show its impact effect while the item is showing its death
+        // Note: Keep the collider enabled until destroyed or returned to the pool. This allows in-route ordnance to show its impact effect while the item is showing its death
         PlaceParentOrbiterInMotion(false);
     }
 
@@ -281,27 +261,17 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IShipOrbitable Members
 
-    public float KeepoutRadius { get; private set; }
+    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
     #endregion
 
-    #region ICameraTargetable Members
-
-    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
-
-    #endregion
-
     #region ICameraFollowable Members
 
-    public virtual float FollowDistanceDampener {
-        get { return _cameraFollowDistanceDampener; }
-    }
+    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
 
-    public virtual float FollowRotationDampener {
-        get { return _cameraFollowRotationDampener; }
-    }
+    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
 
     #endregion
 

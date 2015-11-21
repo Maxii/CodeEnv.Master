@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable struct containing externally acquirable values for SettlementCmds.
     /// </summary>
+    [System.Obsolete]
     public struct SettlementCmdStat {
 
         public string Name { get; private set; }
@@ -28,19 +29,22 @@ namespace CodeEnv.Master.GameContent {
         public int MaxCmdEffectiveness { get; private set; }
         public Formation UnitFormation { get; private set; }
         public int Population { get; private set; }
+        public float LowOrbitDistance { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdStat" /> struct.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
+        /// <param name="lowOrbitDistance">The low orbit distance.</param>
         /// <param name="maxCmdEffect">The maximum command effect.</param>
         /// <param name="formation">The formation.</param>
         /// <param name="population">The population.</param>
-        public SettlementCmdStat(string name, float maxHitPts, int maxCmdEffect, Formation formation, int population)
+        public SettlementCmdStat(string name, float maxHitPts, float lowOrbitDistance, int maxCmdEffect, Formation formation, int population)
             : this() {
             Name = name;
             MaxHitPoints = maxHitPts;
+            LowOrbitDistance = lowOrbitDistance;
             MaxCmdEffectiveness = maxCmdEffect;
             UnitFormation = formation;
             Population = population;

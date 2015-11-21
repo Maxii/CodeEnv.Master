@@ -24,12 +24,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterData : AIntelItemData {
 
+        public float Radius { get; private set; }
+
+        public float LowOrbitRadius { get; private set; }
+
+        public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
 
-        public UniverseCenterData(Transform ucTransform, string name)
-            : base(ucTransform, name, TempGameValues.NoPlayer) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UniverseCenterData"/> class.
+        /// </summary>
+        /// <param name="ucTransform">The uc transform.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="lowOrbitRadius">The low orbit radius.</param>
+        /// <param name="cameraStat">The camera stat.</param>
+        /// <param name="name">The name.</param>
+        public UniverseCenterData(Transform ucTransform, float radius, float lowOrbitRadius, CameraFocusableStat cameraStat, string name)
+            : base(ucTransform, name, TempGameValues.NoPlayer, cameraStat) {
+            Radius = radius;
+            LowOrbitRadius = lowOrbitRadius;
             Topography = Topography.OpenSpace;
         }
 

@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract class for Data associated with an AIntelItem.
     /// </summary>
-    public abstract class AIntelItemData : AItemData {
+    public abstract class AIntelItemData : ADiscernibleItemData { //AItemData {
 
         public event Action onUserIntelCoverageChanged;
 
@@ -35,8 +35,15 @@ namespace CodeEnv.Master.GameContent {
         protected IGameManager _gameMgr;
         private IDictionary<Player, AIntel> _playerIntelLookup;
 
-        public AIntelItemData(Transform itemTransform, string name, Player owner)
-            : base(itemTransform, name, owner) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AIntelItemData"/> class.
+        /// </summary>
+        /// <param name="itemTransform">The item transform.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
+        public AIntelItemData(Transform itemTransform, string name, Player owner, CameraFocusableStat cameraStat)
+            : base(itemTransform, name, owner, cameraStat) {
             _gameMgr = References.GameManager;
             InitializePlayersIntel();
         }

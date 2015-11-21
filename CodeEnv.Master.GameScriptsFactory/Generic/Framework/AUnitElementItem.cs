@@ -30,20 +30,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     public event Action<IUnitElementItem> onIsHQChanged;
 
-    [Range(1.0F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _minViewDistanceFactor = 1.0F;
-
-    [Range(1.5F, 5.0F)]
-    [Tooltip("Optimal Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _optViewDistanceFactor = 2.4F;
-
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
     }
+
+    public override float Radius { get { return Data.HullDimensions.magnitude / 2F; } }
 
     public bool IsHQ { get { return Data.IsHQ; } }
 
@@ -54,36 +46,52 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
     protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
     protected IList<IShield> _shields = new List<IShield>();
-
-    private DetectionHandler _detectionHandler;
-    protected Collider _collider;
     protected Rigidbody _rigidbody;
 
-    #region Initialization
+    private DetectionHandler _detectionHandler;
+    private BoxCollider _collider;
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        // Note: Radius is set in derived classes due to the difference in meshes
-        _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        _collider.isTrigger = false;
-        _collider.enabled = false;
-        _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _rigidbody.useGravity = false;
-    }
+    #region Initialization
 
     protected override void Subscribe() {
         base.Subscribe();
         _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, OnElementIconsEnabledOptionChanged));
     }
 
-    protected override void InitializeModelMembers() {
-        _detectionHandler = new DetectionHandler(this);
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
+        InitializePrimaryCollider();
+        InitializePrimaryRigidbody();
+        AttachEquipment();
+    }
+
+    private void InitializePrimaryCollider() {
+        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        _collider.isTrigger = false;
+        _collider.enabled = false;
+        _collider.size = Data.HullDimensions;
+    }
+
+    private void InitializePrimaryRigidbody() {
+        _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        _rigidbody.useGravity = false;
+    }
+
+    private void AttachEquipment() {
+        Data.ActiveCountermeasures.ForAll(cm => Attach(cm));
+        Data.Weapons.ForAll(w => Attach(w));
+        Data.ShieldGenerators.ForAll(gen => Attach(gen));
+        Data.Sensors.ForAll(s => Attach(s));
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitElementItemData, bool>(data => data.IsHQ, OnIsHQChanged));
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
+    }
+
+    protected override void InitializeModelMembers() {
+        _detectionHandler = new DetectionHandler(this);
     }
 
     protected sealed override ADisplayManager InitializeDisplayManager() {
@@ -115,10 +123,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         // AMortalItem.CommenceOperations() calls Data.CommenceOperations for all derived Items
     }
 
-    protected override float InitializeOptimalCameraViewingDistance() {
-        return Radius * _optViewDistanceFactor;
-    }
-
     /// <summary>
     /// Parents this element to the provided container that holds the entire Unit.
     /// Local position, rotation and scale auto adjust to keep element unchanged in worldspace.
@@ -126,14 +130,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// <param name="unitContainer">The unit container.</param>
     protected internal virtual void AttachAsChildOf(Transform unitContainer) {
         transform.parent = unitContainer;
-    }
-
-    protected override void OnDataSet() {
-        base.OnDataSet();
-        Data.ActiveCountermeasures.ForAll(cm => Attach(cm));
-        Data.Weapons.ForAll(w => Attach(w));
-        Data.ShieldGenerators.ForAll(gen => Attach(gen));
-        Data.Sensors.ForAll(s => Attach(s));
     }
 
     protected override void OnOwnerChanged() {
@@ -153,8 +149,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
-        // _collider.enabled = false;   // keep the collider on until destroyed or returned to the pool
-        // this allows in-route ordnance to show its impact effect while the item is showing its death
+        // Note: Keep the collider enabled until destroyed or returned to the pool. This allows in-route ordnance to show its impact effect while the item is showing its death
         Data.Weapons.ForAll(w => {
             w.onReadyToFire -= OnWeaponReadyToFire;
             w.IsActivated = false;
@@ -450,8 +445,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     private void AssessIcon() {
-        //if (DisplayMgr == null) { return; }
-        D.Assert(DisplayMgr != null);
+        D.Assert(DisplayMgr != null);   //if (DisplayMgr == null) { return; }
 
         if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
             var iconInfo = RefreshIconInfo();
@@ -567,9 +561,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
-    // subscriptions contained completely within this gameobject (both subscriber
-    // and subscribee) donot have to be cleaned up as all instances are destroyed
-
     #region IElementAttackableTarget Members
 
     /// <summary>
@@ -627,29 +618,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
-    #region ICameraTargetable Members
-
-    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
-
-    #endregion
-
     #region ICameraFollowable Members
 
-    [SerializeField]
-    [Range(1.0F, 10F)]
-    [Tooltip("Dampens Camera Follow Distance Behaviour")]
-    private float _followDistanceDampener = 3.0F;
-    public virtual float FollowDistanceDampener {
-        get { return _followDistanceDampener; }
-    }
+    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
 
-    [SerializeField]
-    [Range(0.5F, 3.0F)]
-    [Tooltip("Dampens Camera Follow Rotation Behaviour")]
-    private float _followRotationDampener = 1.0F;
-    public virtual float FollowRotationDampener {
-        get { return _followRotationDampener; }
-    }
+    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
 
     #endregion
 

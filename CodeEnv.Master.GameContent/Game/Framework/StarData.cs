@@ -26,6 +26,12 @@ namespace CodeEnv.Master.GameContent {
 
         public StarCategory Category { get; private set; }
 
+        public float Radius { get; private set; }
+
+        public float LowOrbitRadius { get; private set; }
+
+        public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
+
         private string _parentName;
         public string ParentName {
             get { return _parentName; }
@@ -57,21 +63,25 @@ namespace CodeEnv.Master.GameContent {
         /// with the owner initialized to NoPlayer.
         /// </summary>
         /// <param name="starTransform">The star transform.</param>
-        /// <param name="stat">The stat.</param>
-        public StarData(Transform starTransform, StarStat stat)
-            : this(starTransform, stat, TempGameValues.NoPlayer) { }
+        /// <param name="starStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
+        public StarData(Transform starTransform, StarStat starStat, CameraFocusableStat cameraStat)
+            : this(starTransform, starStat, cameraStat, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData" /> class.
         /// </summary>
         /// <param name="starTransform">The star transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="starStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public StarData(Transform starTransform, StarStat stat, Player owner)
-            : base(starTransform, stat.Category.GetValueName(), owner) {
-            Category = stat.Category;
-            Capacity = stat.Capacity;
-            Resources = stat.Resources;
+        public StarData(Transform starTransform, StarStat starStat, CameraFocusableStat cameraStat, Player owner)
+            : base(starTransform, starStat.Category.GetValueName(), owner, cameraStat) {
+            Category = starStat.Category;
+            Radius = starStat.Radius;
+            LowOrbitRadius = starStat.LowOrbitRadius;
+            Capacity = starStat.Capacity;
+            Resources = starStat.Resources;
             Topography = Topography.System;
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }

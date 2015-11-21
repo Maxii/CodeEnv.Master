@@ -28,7 +28,7 @@ using UnityEngine;
 /// </summary>
 internal abstract class ANavigator : IDisposable {
 
-    private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+    private static LayerMask _transitBanOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
 
     private static IList<Speed> _inValidAutoPilotSpeeds = new List<Speed>() {
         Speed.None,
@@ -174,27 +174,27 @@ internal abstract class ANavigator : IDisposable {
     /// is found and provides the detour around it.
     /// </summary>
     /// <param name="destination">The current destination.</param>
-    /// <param name="destinationCastingKeepoutRadius">The distance around the destination to avoid casting into.</param>
+    /// <param name="destinationCastingTransitBanRadius">The distance around the destination to avoid casting into.</param>
     /// <param name="detour">The obstacle detour.</param>
     /// <param name="obstacleHitDistance">The obstacle hit distance.</param>
     /// <returns>
     ///   <c>true</c> if an obstacle was found, false if the way is clear.
     /// </returns>
-    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float destinationCastingKeepoutRadius, out INavigableTarget detour, out float obstacleHitDistance) {
+    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float destinationCastingTransitBanRadius, out INavigableTarget detour, out float obstacleHitDistance) {
         detour = null;
         obstacleHitDistance = Mathf.Infinity;
         Vector3 vectorToDestination = destination.Position - Position;
         float destinationDistance = vectorToDestination.magnitude;
-        if (destinationDistance <= destinationCastingKeepoutRadius) {
+        if (destinationDistance <= destinationCastingTransitBanRadius) {
             return false;
         }
         Vector3 destinationBearing = vectorToDestination.normalized;
-        float rayLength = destinationDistance - destinationCastingKeepoutRadius;
+        float rayLength = destinationDistance - destinationCastingTransitBanRadius;
         Ray entryRay = new Ray(Position, destinationBearing);
 
         RaycastHit entryHit;
-        if (Physics.Raycast(entryRay, out entryHit, rayLength, _keepoutOnlyLayerMask.value)) {
-            // there is a keepout zone obstacle in the way 
+        if (Physics.Raycast(entryRay, out entryHit, rayLength, _transitBanOnlyLayerMask.value)) {
+            // there is a TransitBanZone obstacle in the way 
             var obstacle = entryHit.transform;
             string obstacleName = obstacle.parent.name + "." + obstacle.name;
             obstacleHitDistance = entryHit.distance;
@@ -204,7 +204,8 @@ internal abstract class ANavigator : IDisposable {
 
             INavigableTarget newDetour;
             float newObstacleHitDistance;
-            if (TryCheckForObstacleEnrouteTo(detour, 0F, out newDetour, out newObstacleHitDistance)) {
+            float detourCastingTransitBanRadius = Constants.ZeroF;  // obstacle detour waypoints don't have keepout zones
+            if (TryCheckForObstacleEnrouteTo(detour, detourCastingTransitBanRadius, out newDetour, out newObstacleHitDistance)) {
                 D.Warn("{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
                 detour = newDetour;
                 obstacleHitDistance = newObstacleHitDistance;
@@ -228,8 +229,8 @@ internal abstract class ANavigator : IDisposable {
         SphereCollider obstacleCollider = entryHit.collider as SphereCollider;
         float obstacleRadius = obstacleCollider.radius;
         float rayLength = (2F * obstacleRadius) + 1F;
-        Vector3 pointBeyondKeepoutZone = entryRay.GetPoint(entryHit.distance + rayLength);
-        Vector3 rayExitPoint = FindRayExitPoint(entryRay, entryHit, pointBeyondKeepoutZone, 0);
+        Vector3 pointBeyondTransitBanZone = entryRay.GetPoint(entryHit.distance + rayLength);
+        Vector3 rayExitPoint = FindRayExitPoint(entryRay, entryHit, pointBeyondTransitBanZone, 0);
 
         //D.Log("{0} found RayExitPoint. EntryPt to exitPt distance = {1}.", Name, Vector3.Distance(rayEntryPoint, rayExitPoint));
         Vector3 obstacleCenter = obstacle.position;
@@ -249,7 +250,7 @@ internal abstract class ANavigator : IDisposable {
             detour = new StationaryLocation(detourWorldSpaceLocation);
         }
 
-        //D.Log("{0} found detour {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4:0.#}. Obstacle keepout radius = {5:0.##}. Detour is {6:0.#} from obstacle center.",
+        //D.Log("{0} found detour {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4:0.#}. Obstacle transitBan radius = {5:0.##}. Detour is {6:0.#} from obstacle center.",
         //Name, detour.FullName, obstacleName, obstacleCenter, Vector3.Distance(Position, detour.Position), obstacleRadius, Vector3.Distance(obstacleCenter, detour.Position));
         return detour;
     }
@@ -275,7 +276,7 @@ internal abstract class ANavigator : IDisposable {
         Vector3 exitHitPt = Vector3.zero;
         float exitRayLength = Vector3.Distance(exitRayStartPt, entryHit.point);
         RaycastHit exitHit;
-        if (Physics.Raycast(exitRayStartPt, -entryRay.direction, out exitHit, exitRayLength, _keepoutOnlyLayerMask.value)) {
+        if (Physics.Raycast(exitRayStartPt, -entryRay.direction, out exitHit, exitRayLength, _transitBanOnlyLayerMask.value)) {
             SphereCollider exitObstacleCollider = exitHit.collider as SphereCollider;
             if (entryObstacleCollider != exitObstacleCollider) {
                 string exitObstacleName = exitHit.transform.parent.name + "." + exitObstacleCollider.name;
@@ -290,7 +291,7 @@ internal abstract class ANavigator : IDisposable {
             }
         }
         else {
-            D.Error("{0} Raycast found no KeepoutZoneCollider.", Name);
+            D.Error("{0} Raycast found no TransitBanZone Collider.", Name);
         }
         //D.Log("{0} found RayExitPoint. EntryPt to exitPt distance = {1}.", Name, Vector3.Distance(entryHit.point, exitHitPt));
         return exitHitPt;

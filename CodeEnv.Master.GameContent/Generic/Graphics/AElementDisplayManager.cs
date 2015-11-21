@@ -30,8 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         private GameColor _color;
         /// <summary>
-        /// The GameColor to use on the element's primary mesh. Typically 
-        /// the color of the owner.
+        /// The GameColor to use on the element's primary mesh. Typically the color of the owner.
         /// </summary>
         public GameColor Color {
             get { return _color; }
@@ -107,11 +106,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
+            //D.Log("{0} showing primary mesh, color = {1}.", Name, _primaryMeshColor);
             _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
         }
 
         protected override void HidePrimaryMesh() {
             base.HidePrimaryMesh();
+            //D.Log("{0} hiding primary mesh, color = {1}.", Name, _hiddenMeshColor);
             _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
         }
 

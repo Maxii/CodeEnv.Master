@@ -28,20 +28,12 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     public StarCategory category = StarCategory.None;
 
-    [Range(1.0F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _minViewDistanceFactor = 2F;
-
-    [Range(3.0F, 15.0F)]
-    [Tooltip("Optimal Camera View Distance Multiplier")]
-    [SerializeField]
-    private float _optViewDistanceFactor = 8F;
-
     public new StarData Data {
         get { return base.Data as StarData; }
         set { base.Data = value; }
     }
+
+    public override float Radius { get { return Data.Radius; } }
 
     private StarPublisher _publisher;
     public StarPublisher Publisher {
@@ -60,32 +52,28 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        var primaryMeshRenderer = gameObject.GetSingleComponentInImmediateChildren<MeshRenderer>();
-        //D.Log("Star renderer name = {0}, bounds size = {1}.", primaryMeshRenderer.name, primaryMeshRenderer.bounds.size);
-        Radius = primaryMeshRenderer.bounds.size.x / 2F;    // half of the length, width or height, all the same surrounding a sphere
+    protected override void InitializeOnData() {
+        InitializePrimaryCollider();
+        InitializeShipOrbitSlot();
+        InitializeTransitBanZone();
+    }
+
+    private void InitializePrimaryCollider() {
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.enabled = false;
         _collider.isTrigger = false;
-        _collider.radius = Radius;
-        InitializeKeepoutZone();
-        InitializeShipOrbitSlot();
-        //D.Log("{0}.Radius set to {1}.", FullName, Radius);
-    }
-
-    private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        KeepoutRadius = keepoutZoneCollider.radius;
+        _collider.radius = Data.Radius;
     }
 
     private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = KeepoutRadius;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
+
+    private void InitializeTransitBanZone() {
+        SphereCollider transitBanZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
+        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        transitBanZoneCollider.isTrigger = true;
+        transitBanZoneCollider.radius = Data.HighOrbitRadius;
     }
 
     protected override void InitializeModelMembers() {
@@ -133,10 +121,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public StarReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    protected override float InitializeOptimalCameraViewingDistance() {
-        return Radius * _optViewDistanceFactor;
-    }
 
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
@@ -236,15 +220,9 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #region IShipOrbitable Members
 
-    public float KeepoutRadius { get; private set; }
+    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
-
-    #endregion
-
-    #region ICameraTargetable Members
-
-    public override float MinimumCameraViewingDistance { get { return Radius * _minViewDistanceFactor; } }
 
     #endregion
 

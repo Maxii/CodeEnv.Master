@@ -89,7 +89,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
 
     private void SetKeepoutZoneRadius() {
         SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.TransitBan);
         keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
     }
 

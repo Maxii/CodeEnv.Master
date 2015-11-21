@@ -34,7 +34,11 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
     private SystemItem _system;
     public SystemItem System {
         get { return _system; }
-        set { SetProperty<SystemItem>(ref _system, value, "System", OnSystemChanged, OnSystemChanging); }
+        set {
+            D.Assert(_system == null);  // only happens once
+            _system = value;
+            OnSystemSet();
+        }
     }
 
     /// <summary>
@@ -68,11 +72,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
-    private void OnSystemChanging(SystemItem newSystem) {
-        D.Assert(System == null); // should only happen once. No reason to remove on death
-    }
-
-    private void OnSystemChanged() {
+    private void OnSystemSet() {
         Data.SystemData = System.Data;
     }
 
@@ -117,22 +117,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
     #region INavigableTarget Members
 
     public override bool IsMobile { get { return __OrbitSimulatorMoves; } }
-
-    #endregion
-
-    #region ICameraFollowable Members
-
-    //[SerializeField]
-    //private float cameraFollowDistanceDampener = 3.0F;
-    //public virtual float CameraFollowDistanceDampener {
-    //    get { return cameraFollowDistanceDampener; }
-    //}
-
-    //[SerializeField]
-    //private float cameraFollowRotationDampener = 1.0F;
-    //public virtual float CameraFollowRotationDampener {
-    //    get { return cameraFollowRotationDampener; }
-    //}
 
     #endregion
 

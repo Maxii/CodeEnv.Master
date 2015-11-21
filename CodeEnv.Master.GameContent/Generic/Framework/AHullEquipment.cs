@@ -19,6 +19,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Abstract base class which holds a hull reference, values associated with that hull along with any
@@ -41,6 +42,8 @@ namespace CodeEnv.Master.GameContent {
         public float MaxHitPoints { get { return Stat.MaxHitPoints; } }
 
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
+
+        public Vector3 HullDimensions { get { return Stat.HullDimensions; } }
 
         protected new AHullStat Stat { get { return base.Stat as AHullStat; } }
 

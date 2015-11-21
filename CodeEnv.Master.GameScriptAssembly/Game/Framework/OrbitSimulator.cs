@@ -102,7 +102,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// Updates the rotation of this object around its axis of orbit (it is coincident with the position of the object being orbited)
     /// to simulate the orbit of this object's child around the object orbited. The visual speed of the orbit varies with game speed.
     /// </summary>
-    /// <param name="deltaTimeSinceLastUpdate">The delta time since last update.</param>
+    /// <param name="deltaTimeSinceLastUpdate">The delta time (zero if paused) since last update.</param>
     protected virtual void UpdateOrbit(float deltaTimeSinceLastUpdate) {
         float degreesToRotate = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
         transform.Rotate(axisOfOrbit, degreesToRotate, relativeTo: Space.Self);

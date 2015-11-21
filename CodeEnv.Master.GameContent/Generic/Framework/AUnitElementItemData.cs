@@ -33,6 +33,10 @@ namespace CodeEnv.Master.GameContent {
         public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
         public IList<ShieldGenerator> ShieldGenerators { get; private set; }
 
+        public Vector3 HullDimensions { get { return HullEquipment.HullDimensions; } }
+
+        public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
+
         private bool _isHQ;
         public virtual bool IsHQ {
             get { return _isHQ; }
@@ -110,50 +114,28 @@ namespace CodeEnv.Master.GameContent {
 
         protected AHullEquipment HullEquipment { get; private set; }
 
-        //protected Rigidbody _rigidbody;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitElementItemData" /> class.
         /// </summary>
         /// <param name="elementTransform">The element transform.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, Player owner, IEnumerable<ActiveCountermeasure> activeCMs,
+        public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, CameraFollowableStat cameraStat, Player owner, IEnumerable<ActiveCountermeasure> activeCMs,
             IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, passiveCMs) {
-            //_rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(elementTransform.gameObject);
-            //Initialize(hullEquipment, activeCMs, sensors, passiveCMs, shieldGenerators);
+            : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, cameraStat, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
-            //Mass = mass;
-            //_rigidbody.mass = mass;
-
             Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
-
             InitializeWeapons();
             Initialize(sensors);
             Initialize(activeCMs);
             Initialize(shieldGenerators);
         }
-
-        //private void Initialize(AHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
-        //    IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators) {
-        //    HullEquipment = hullEquipment;
-        //    Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
-        //    //Mass = mass;
-        //    //_rigidbody.mass = mass;
-
-        //    Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
-
-        //    InitializeWeapons();
-        //    Initialize(sensors);
-        //    Initialize(activeCMs);
-        //    Initialize(shieldGenerators);
-        //}
 
         public override void CommenceOperations() {
             base.CommenceOperations();

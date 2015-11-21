@@ -32,8 +32,6 @@ namespace CodeEnv.Master.GameContent {
 
         public const float MinimumFramerate = 25F;
 
-        public const float MinimumCameraViewingDistance_UniverseEdge = 50F;
-
         public const int MinTrackingLabelShowDistance = 50;
         public const int MaxTrackingLabelShowDistance = 5000;
 
@@ -52,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float __FtlMultiplier = 10F;
 
-        public const float DefaultShipOrbitSlotDepth = 2F;
+        public const float ShipOrbitSlotDepth = 2F;
 
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.
@@ -60,10 +58,14 @@ namespace CodeEnv.Master.GameContent {
         public const int MaxFacilitiesPerBase = 25;
 
         /// <summary>
-        /// The radius of a Settlement or Starbase, including all of the base's facilities.
+        /// The UnitRadius of a Settlement or Starbase Cmd, including all of the base's facilities.
+        /// Note: Unlike FleetCmd's dynamically calculated UnitRadius, a BaseCmd's UnitRadius must
+        /// be fixed as ships can orbit around the Base. If this UnitRadius was dynamically calculated, 
+        /// then ships that were already orbiting could find themselves inside or outside of the ShipOrbitSlot
+        /// when the UnitRadius changed.
         /// TODO MaxFacilitiesPerBase and [Max]BaseRadius should be tied together.
         /// </summary>
-        public const float BaseRadius = 3F;
+        public const float BaseCmdUnitRadius = 3F;
 
         public const int MaxShipsPerFleet = 25;
 
@@ -96,13 +98,13 @@ namespace CodeEnv.Master.GameContent {
         // when a item is built. Some items like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
         // needs these values during startup to set the layer culling distances, I had to return to these values for now.
 
-        public const float StarMaxRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)
+        public const float StarRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)
 
         public const float PlanetoidMaxRadius = 5.0F;  // Moons are 0.2 - 1.0, Planets 1.0 - 5.0   // 5 x 200(factor) = 1000(cullingDistance)
 
-        public const float FacilityMaxRadius = 0.25F;  // range is 0.125 - 0.25  // .25 x 50(factor) = 12.5(cullingDistance)
+        public const float FacilityMaxRadius = 0.35F;  // range is 0.175 - 0.35  // .35 x 50(factor) = 17.5(cullingDistance)
 
-        public const float ShipMaxRadius = 0.2F;   // range is 0.04 - 0.2      // 0.2 x 25(factor) = 5(cullingDistance)
+        public const float ShipMaxRadius = 0.35F;   // range is 0.08- 0.35      // 0.35 x 25(factor) = 7.5(cullingDistance)
 
         #endregion
 
@@ -113,13 +115,6 @@ namespace CodeEnv.Master.GameContent {
         /// 1.0 represents a box whose side is <c>SectorSideLength</c> from the center of the obstacle.
         /// </summary>
         public const float PathGraphPointPercentDistanceAroundObstacles = 0.1F;
-
-        /// <summary>
-        /// The multiplier used to determine the radius of the keepoutZone around objects. 
-        /// Note: This could also be called the MinOrbitDistanceMultiplier since the radius of the
-        /// keepoutzone is the same as the minimumShipOrbitDistance.
-        /// </summary>
-        public const float KeepoutRadiusMultiplier = 1.5F;
 
         /// <summary>
         /// The total number of orbit slots in a System available for planets and

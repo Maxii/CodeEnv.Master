@@ -45,15 +45,15 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         float culture = hullCat == ShipHullCategory.Support || hullCat == ShipHullCategory.Colonizer ? 2F : Constants.ZeroF;
         float income = __GetIncome(hullCat);
         float expense = __GetExpense(hullCat);
-
+        Vector3 hullDimensions = __GetHullDimensions(hullCat);
         return new ShipHullStat(hullCat, elementName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, drag, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
+            hullMass, drag, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income);
     }
 
     protected override void MakeAndRecordDesign(string designName, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
         ShipHullCategory hullCategory = hullStat.HullCategory;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-        var engineStat = MakeEngineStat(hullCategory);
+        var engineStat = __MakeEngineStat(hullCategory);
 
         var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
         var design = new ShipDesign(_owner, designName, hullStat, engineStat, combatStance, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
@@ -63,14 +63,15 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     protected override FleetCmdItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
-        FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
+        UnitCmdStat cmdStat = __MakeCmdStat();
+        CameraFleetCmdStat cameraStat = __MakeCmdCameraStat(TempGameValues.ShipMaxRadius);   //__MakeCmdCameraStat();
         FleetCmdItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSingleComponentInChildren<FleetCmdItem>();
-            _factory.MakeInstance(cmdStat, countermeasures, owner, ref cmd);
+            _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
+            cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner);
             //D.Log("{0} Position prior to attach to creator = {1}.", cmd.FullName, cmd.Position);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
             //D.Log("{0} Position after attach to creator = {1}.", cmd.FullName, cmd.Position);
@@ -80,21 +81,15 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     }
 
     protected override ShipItem MakeElement(string designName) {
-        return _factory.MakeShipInstance(_owner, designName);
+        ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(_owner, designName);
+        CameraFollowableStat cameraStat = __MakeElementCameraStat(design.HullStat);
+        return _factory.MakeInstance(_owner, cameraStat, design);
     }
 
     protected override void PopulateElement(string designName, ref ShipItem element) {
-        _factory.PopulateInstance(_owner, designName, ref element);
-    }
-
-    private EngineStat MakeEngineStat(ShipHullCategory hullCategory) {
-        float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
-        float engineMass = __GetEngineMass(hullCategory);
-
-        float fullStlPower = __GetFullStlPower(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
-        float fullFtlPower = fullStlPower * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
-        return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPower, fullFtlPower,
-            maxTurnRate, 0F, engineMass, 0F, 0F);
+        ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(_owner, designName);
+        CameraFollowableStat cameraStat = __MakeElementCameraStat(design.HullStat);
+        _factory.PopulateInstance(_owner, cameraStat, design, ref element);
     }
 
     protected override ShipHullCategory GetCategory(ShipHullStat hullStat) { return hullStat.HullCategory; }
@@ -213,6 +208,63 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     protected override int GetMaxMissileWeaponsAllowed(ShipHullCategory hullCategory) {
         return hullCategory.__MaxMissileWeapons();
+    }
+
+    private UnitCmdStat __MakeCmdStat() {
+        float maxHitPts = 10F;
+        int maxCmdEffect = 100;
+        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle);
+    }
+
+    private CameraFleetCmdStat __MakeCmdCameraStat(float maxElementRadius) {
+        float minViewDistance = maxElementRadius + 1F;
+        float optViewDistanceAdder = 1F;    // the additional distance outside of the UnitRadius of the fleet
+        // there is no optViewDistance value for a FleetCmd CameraStat
+        return new CameraFleetCmdStat(minViewDistance, optViewDistanceAdder, fov: 60F);
+    }
+
+    private CameraFollowableStat __MakeElementCameraStat(ShipHullStat hullStat) {
+        ShipHullCategory hullCat = hullStat.HullCategory;
+        float fov;
+        switch (hullCat) {
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Carrier:
+            case ShipHullCategory.Troop:
+                fov = 70F;
+                break;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Colonizer:
+            case ShipHullCategory.Science:
+                fov = 65F;
+                break;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                fov = 60F;
+                break;
+            case ShipHullCategory.Frigate:
+                fov = 55F;
+                break;
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = hullStat.HullDimensions.magnitude / 2F;
+        //D.Log("Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        float minViewDistance = radius * 2F;
+        float optViewDistance = radius * 3F;
+        return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
+    }
+
+    private EngineStat __MakeEngineStat(ShipHullCategory hullCategory) {
+        float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
+        float engineMass = __GetEngineMass(hullCategory);
+
+        float fullStlPower = __GetFullStlPower(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
+        float fullFtlPower = fullStlPower * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
+        return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPower, fullFtlPower,
+            maxTurnRate, 0F, engineMass, 0F, 0F);
     }
 
     private float __GetIncome(ShipHullCategory category) {
@@ -337,6 +389,39 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
         }
+    }
+
+    private Vector3 __GetHullDimensions(ShipHullCategory hullCat) {
+        Vector3 dimensions;
+        switch (hullCat) {  // 10.28.15 Hull collider dimensions increased to encompass turrets, 11.20.15 reduced mesh scale from 2 to 1
+            case ShipHullCategory.Frigate:
+                dimensions = new Vector3(.02F, .03F, .05F); //new Vector3(.04F, .035F, .10F);
+                break;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                dimensions = new Vector3(.06F, .035F, .10F);    //new Vector3(.08F, .05F, .18F);
+                break;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Science:
+            case ShipHullCategory.Colonizer:
+                dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
+                break;
+            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Troop:
+                dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
+                break;
+            case ShipHullCategory.Carrier:
+                dimensions = new Vector3(.10F, .06F, .32F); // new Vector3(.20F, .10F, .60F); 
+                break;
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = dimensions.magnitude / 2F;
+        D.Warn(radius > TempGameValues.ShipMaxRadius, "Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
+        return dimensions;
     }
 
     public override string ToString() {

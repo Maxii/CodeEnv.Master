@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a SettlementCmdItem.
     /// </summary>
-    public class SettlementCmdData : AUnitCmdItemData {
+    public class SettlementCmdData : AUnitBaseCmdItemData { //: AUnitCmdItemData {
 
         private SettlementCategory _category;
         public SettlementCategory Category {
@@ -38,9 +38,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _population, value, "Population"); }
         }
 
-        public int Capacity { get { return SystemData.Capacity; } } // TODO need SetProperty to properly keep isChanged updated?
+        public int Capacity { get { return SystemData.Capacity; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
 
-        public ResourceYield Resources { get { return SystemData.Resources; } } // TODO need SetProperty to properly keep isChanged updated?
+        public ResourceYield Resources { get { return SystemData.Resources; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
 
         private float _approval;
         public float Approval {
@@ -50,42 +50,29 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemData SystemData { private get; set; }
 
-        public new FacilityData HQElementData {
-            get { return base.HQElementData as FacilityData; }
-            set { base.HQElementData = value; }
-        }
-
-        private BaseComposition _unitComposition;
-        public BaseComposition UnitComposition {
-            get { return _unitComposition; }
-            set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
-        }
-
-        public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdData"/> class
+        /// Initializes a new instance of the <see cref="SettlementCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat stat, Player owner)
-            : this(cmdTransform, stat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner)
+            : this(cmdTransform, cmdStat, cameraStat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdData"/> class.
+        /// Initializes a new instance of the <see cref="SettlementCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="stat">The stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat stat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner, passiveCMs) {
-            MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
-            Population = stat.Population;
-            UnitFormation = stat.UnitFormation;
+        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
+            Population = cmdStat.Population;
         }
 
         public override void AddElement(AUnitElementItemData elementData) {
@@ -96,11 +83,6 @@ namespace CodeEnv.Master.GameContent {
         public override void RemoveElement(AUnitElementItemData elementData) {
             base.RemoveElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
-        }
-
-        protected override void RefreshComposition() {
-            var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
-            UnitComposition = new BaseComposition(elementCategories);
         }
 
         public SettlementCategory GenerateCmdCategory(BaseComposition unitComposition) {

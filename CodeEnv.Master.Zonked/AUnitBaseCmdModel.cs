@@ -29,20 +29,20 @@ public abstract class AUnitBaseCmdModel : AUnitCommandModel, IShipOrbitable {
     protected override void InitializeRadiiComponents() {
         base.InitializeRadiiComponents();
         // the radius of a BaseCommand is fixed to include all of its elements
-        Radius = TempGameValues.BaseRadius;
+        Radius = TempGameValues.BaseCmdUnitRadius;
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
     }
 
     private void InitializeShipOrbitSlot() {
         float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
         ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
     }
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.TransitBan);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }

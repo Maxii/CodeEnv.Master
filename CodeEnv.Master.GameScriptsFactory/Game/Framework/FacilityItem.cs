@@ -59,11 +59,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        // Collider Size and Element Radius now set by UnitFactory using SetSize()
-    }
-
     protected override void InitializeModelMembers() {
         base.InitializeModelMembers();
         CurrentState = FacilityState.None;
@@ -89,20 +84,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     public FacilityReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    /// <summary>
-    /// Sets the size of the element's collider and the element's Radius.
-    /// </summary>
-    /// <param name="capsuleSize">Size of the capsule. x holds the radius
-    /// of the capsule, y the height of the capsule.</param>
-    public void SetSize(Vector2 capsuleSize) {
-        CapsuleCollider capsuleCollider = _collider as CapsuleCollider;
-        capsuleCollider.radius = capsuleSize.x;
-        capsuleCollider.height = capsuleSize.y;
-        capsuleCollider.direction = Constants.One;  // Y    // IMPROVE
-        Radius = capsuleCollider.height / 2F;
-        //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
-    }
 
     private void OnCurrentOrderChanged() {
         // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated

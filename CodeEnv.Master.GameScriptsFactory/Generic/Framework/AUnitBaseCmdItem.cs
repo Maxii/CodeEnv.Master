@@ -35,32 +35,32 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-    public override float UnitRadius { get { return TempGameValues.BaseRadius; } }
+    public override float UnitRadius { get { return TempGameValues.BaseCmdUnitRadius; } }
+
+    public new AUnitBaseCmdItemData Data {
+        get { return base.Data as AUnitBaseCmdItemData; }
+        set { base.Data = value; }
+    }
 
     private ICtxControl _ctxControl;
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        // radius of the command is the same as the radius of the HQElement
-        // BaseCmds and HQElements don't move, so no reason to have method of tracking it
-        InitializeKeepoutZone();
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
         InitializeShipOrbitSlot();
-    }
-
-    private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = UnitRadius * TempGameValues.KeepoutRadiusMultiplier;
-        KeepoutRadius = keepoutZoneCollider.radius;
+        InitializeTransitBanZone();
     }
 
     private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = KeepoutRadius;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
+
+    private void InitializeTransitBanZone() {
+        SphereCollider transitBanZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        transitBanZoneCollider.isTrigger = true;
+        transitBanZoneCollider.radius = Data.HighOrbitRadius;
     }
 
     protected override void InitializeModelMembers() {
@@ -321,7 +321,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #region IShipOrbitable Members
 
-    public float KeepoutRadius { get; private set; }
+    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 

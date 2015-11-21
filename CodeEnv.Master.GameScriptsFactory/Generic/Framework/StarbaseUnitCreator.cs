@@ -37,8 +37,9 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         float income = __GetIncome(hullCat);
         float expense = __GetExpense(hullCat);
         float hullMass = __GetHullMass(hullCat);
+        Vector3 hullDimensions = __GetHullDimensions(hullCat);
         return new FacilityHullStat(hullCat, elementName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), science, culture, income);
+            hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income);
     }
 
     protected override void MakeAndRecordDesign(string designName, FacilityHullStat hullStat, IEnumerable<AWeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
@@ -49,11 +50,15 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
     }
 
     protected override FacilityItem MakeElement(string designName) {
-        return _factory.MakeFacilityInstance(_owner, Topography.OpenSpace, designName);
+        FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(_owner, designName);
+        CameraFollowableStat cameraStat = __MakeElementCameraStat(design.HullStat);
+        return _factory.MakeInstance(_owner, Topography.OpenSpace, cameraStat, design);
     }
 
     protected override void PopulateElement(string designName, ref FacilityItem element) {
-        _factory.PopulateInstance(_owner, Topography.OpenSpace, designName, ref element);
+        FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(_owner, designName);
+        var cameraStat = __MakeElementCameraStat(design.HullStat);
+        _factory.PopulateInstance(_owner, Topography.OpenSpace, cameraStat, design, ref element);
     }
 
     protected override FacilityHullCategory GetCategory(FacilityHullStat hullStat) { return hullStat.HullCategory; }
@@ -74,15 +79,15 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
     protected override StarbaseCmdItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
-        StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle);
-
+        UnitBaseCmdStat cmdStat = __MakeCmdStat();
+        CameraFocusableStat cameraStat = __MakeCmdCameraStat(TempGameValues.FacilityMaxRadius, cmdStat.LowOrbitRadius);
         StarbaseCmdItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSingleComponentInChildren<StarbaseCmdItem>();
-            _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
+            _factory.PopulateInstance(cmdStat, cameraStat, countermeasures, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
+            cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         cmd.IsTrackingLabelEnabled = enableTrackingLabel;
@@ -116,8 +121,48 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         return hullCategory.__MaxMissileWeapons();
     }
 
-    private float __GetIncome(FacilityHullCategory category) {
-        switch (category) {
+    private UnitBaseCmdStat __MakeCmdStat() {
+        float maxHitPts = 10F;
+        float lowOrbitDistance = TempGameValues.BaseCmdUnitRadius;
+        int maxCmdEffect = 100;
+        return new UnitBaseCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle, lowOrbitDistance);
+    }
+
+    private CameraFocusableStat __MakeCmdCameraStat(float maxElementRadius, float lowOrbitRadius) {
+        float minViewDistance = maxElementRadius + 1F; // close to the HQ Facility
+        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
+        float optViewDistance = highOrbitRadius + 1F;
+        return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 60F);
+    }
+
+    private CameraFollowableStat __MakeElementCameraStat(FacilityHullStat hullStat) {
+        FacilityHullCategory hullCat = hullStat.HullCategory;
+        float fov;
+        switch (hullCat) {
+            case FacilityHullCategory.CentralHub:
+            case FacilityHullCategory.Defense:
+                fov = 70F;
+                break;
+            case FacilityHullCategory.Economic:
+            case FacilityHullCategory.Factory:
+            case FacilityHullCategory.Laboratory:
+            case FacilityHullCategory.ColonyHab:
+            case FacilityHullCategory.Barracks:
+                fov = 60F;
+                break;
+            case FacilityHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = hullStat.HullDimensions.magnitude / 2F;
+        //D.Log("Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        float minViewDistance = radius * 2F;
+        float optViewDistance = radius * 3F;
+        return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
+    }
+
+    private float __GetIncome(FacilityHullCategory hullCat) {
+        switch (hullCat) {
             case FacilityHullCategory.CentralHub:
                 return 5F;
             case FacilityHullCategory.Economic:
@@ -129,12 +174,12 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
             case FacilityHullCategory.Laboratory:
                 return Constants.ZeroF;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
     }
 
-    private float __GetExpense(FacilityHullCategory category) {
-        switch (category) {
+    private float __GetExpense(FacilityHullCategory hullCat) {
+        switch (hullCat) {
             case FacilityHullCategory.CentralHub:
             case FacilityHullCategory.Economic:
                 return Constants.ZeroF;
@@ -146,7 +191,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
             case FacilityHullCategory.Laboratory:
                 return 5F;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
     }
 
@@ -166,6 +211,35 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
+    }
+
+    /// <summary>
+    /// The dimensions of the facility with this Category. 
+    /// </summary>
+    /// <param name="hullCat">The category.</param>
+    /// <returns></returns>
+    /// <exception cref="System.NotImplementedException"></exception>
+    private Vector3 __GetHullDimensions(FacilityHullCategory hullCat) {
+        Vector3 dimensions;
+        switch (hullCat) {
+            case FacilityHullCategory.CentralHub:
+            case FacilityHullCategory.Defense:
+                dimensions = new Vector3(.4F, .4F, .4F);
+                break;
+            case FacilityHullCategory.Economic:
+            case FacilityHullCategory.Factory:
+            case FacilityHullCategory.Laboratory:
+            case FacilityHullCategory.ColonyHab:
+            case FacilityHullCategory.Barracks:
+                dimensions = new Vector3(.2F, .2F, .2F);
+                break;
+            case FacilityHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = dimensions.magnitude / 2F;
+        D.Warn(radius > TempGameValues.FacilityMaxRadius, "Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.FacilityMaxRadius);
+        return dimensions;
     }
 
     public override string ToString() {

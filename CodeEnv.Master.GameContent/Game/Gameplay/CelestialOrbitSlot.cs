@@ -22,8 +22,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Class for orbit slots that know how to place an object into orbit around a Celestial object.
-    /// These orbit slots are currently used to create orbits in Systems (aka 'around' a star) and 
-    /// around planets.
+    /// These orbit slots are currently used to create orbits in Systems (aka 'around' a star) and around planets.
     /// </summary>
     public class CelestialOrbitSlot : AOrbitSlot {
 

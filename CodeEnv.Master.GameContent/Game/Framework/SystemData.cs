@@ -25,12 +25,16 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a SystemItem.
     /// </summary>
-    public class SystemData : AItemData, IDisposable {
+    public class SystemData : ADiscernibleItemData, IDisposable {   //AItemData, IDisposable {
 
         /// <summary>
         ///  The orbit slot within this system that any current or future settlement can occupy. 
         /// </summary>
         public CelestialOrbitSlot SettlementOrbitSlot { get; set; }
+
+        //public CameraFocusableStat CameraStat { get; private set; }
+
+        public float Radius { get { return TempGameValues.SystemRadius; } }
 
         private int _capacity;
         public int Capacity {
@@ -69,18 +73,21 @@ namespace CodeEnv.Master.GameContent {
         /// with the owner initialized to NoPlayer.
         /// </summary>
         /// <param name="systemTransform">The system transform.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="systemName">Name of the system.</param>
-        public SystemData(Transform systemTransform, string systemName)
-            : this(systemTransform, systemName, TempGameValues.NoPlayer) { }
+        public SystemData(Transform systemTransform, CameraFocusableStat cameraStat, string systemName)
+            : this(systemTransform, cameraStat, systemName, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class.
         /// </summary>
         /// <param name="systemTransform">The system transform.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="systemName">Name of the system.</param>
         /// <param name="owner">The owner.</param>
-        public SystemData(Transform systemTransform, string systemName, Player owner)
-            : base(systemTransform, systemName, owner) {
+        public SystemData(Transform systemTransform, CameraFocusableStat cameraStat, string systemName, Player owner)
+            : base(systemTransform, systemName, owner, cameraStat) {
+            //CameraStat = cameraStat;
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
             Topography = Topography.System;
             Subscribe();

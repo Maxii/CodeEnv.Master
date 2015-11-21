@@ -28,8 +28,19 @@ using UnityEditor;
 /// <summary>
 /// Singleton. Main Camera movement control.
 /// </summary>
-//public class MainCameraControl : AMonoStateMachineSingleton<MainCameraControl, MainCameraControl.CameraState>, ICameraControl {
 public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCameraControl.CameraState>, ICameraControl {
+
+    /// <summary>
+    /// The camera's default field of view in degrees.
+    /// </summary>
+    private const float CameraFieldOfView_Default = 50F;
+
+    private const float CameraMaxClippingPlaneRatio = 10000F;  // OPTIMIZE up to 30000? http://forum.unity3d.com/threads/how-to-avoid-z-fighting.56418/
+
+    /// <summary>
+    /// 360 degrees in one rotation.
+    /// </summary>
+    private static int _degreesPerRotation = Constants.DegreesPerRotation;
 
     #region Camera Control Configurations
     // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
@@ -108,11 +119,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     #region Fields
 
-    /// <summary>
-    /// 360 degrees in one rotation.
-    /// </summary>
-    private static int _degreesPerRotation = Constants.DegreesPerRotation;
-
     private Index3D _sectorIndex;
     /// <summary>
     /// Readonly. The location of the camera in sector space.
@@ -160,10 +166,22 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // Cached references
     //[DoNotSerialize]    // Serializing this creates duplicates of this object on Save
     private PlayerPrefsManager _playerPrefsMgr;
-    private Camera _camera;
     private InputManager _inputMgr;
     private SectorGrid _sectorGrid;
     private GameManager _gameMgr;
+
+    /// <summary>
+    /// The MainCamera for objects that are close.
+    /// NearClipPlane = .01, FarClipPlane = 100.
+    /// </summary>
+    private Camera _mainCamera_Near;
+
+    /// <summary>
+    /// The MainCamera for objects that are far.
+    /// NearClipPlane = 100, FarClipPlane = UniverseDiameter, up to ~ 100K
+    /// </summary>
+    private Camera _mainCamera_Far;
+    private Camera[] _mainCameras;
 
     private IList<IDisposable> _subscriptions;
 
@@ -177,9 +195,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     //private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
 
     /// <summary>
-    /// The layers the main 3DCamera is allowed to render.
+    /// The layers the main 3DCameras are allowed to render.
     /// </summary>
-    private LayerMask _mainCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
+    private LayerMask _mainCamerasCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull,
         Layers.SystemOrbitalPlane, Layers.Projectiles, Layers.Shields); // UNCLEAR is DummyTarget and UniverseEdge needed here for a Raycast?
 
@@ -262,7 +280,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void InitializeReferences() {
         //if (LevelSerializer.IsDeserializing) { return; }
-        _camera = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
+        _mainCamera_Near = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
+        _mainCamera_Far = gameObject.GetSingleComponentInChildren<Camera>(excludeSelf: true);
+        _mainCameras = new Camera[] { _mainCamera_Near, _mainCamera_Far };
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _inputMgr = InputManager.Instance;
         _sectorGrid = SectorGrid.Instance;
@@ -300,23 +320,59 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void SetCameraSettings() {
-        // assumes radius of universe is twice that of the galaxy so the furthest system in the galaxy should be at a distance1.5 times the radius of the universe
-        _camera.orthographic = false;
-        _camera.fieldOfView = 50F;
-        _camera.nearClipPlane = 1F; // 0.02F;
-        _camera.farClipPlane = 10000F;  // _universeRadius * 2F;
-        _camera.depth = -1F;    // important as this determines which camera is the UICamera.eventHandler, uiCamera = 1F
+        // Note: multiple camera system to eliminate Z fighting  http://www.davenewson.com/dev/unity-notes-on-rendering-the-big-and-the-small
 
-        _camera.cullingMask = _mainCameraCullingMask;
+        // DEPTH IS IMPORTANT Camera with lower depth draws first
+        // Ngui GuiCamera depth = 1
+        _mainCamera_Near.depth = -1F;
+        _mainCamera_Far.depth = -2F;
+        // SpaceUnity skybox camera depth = -3F
+
+        // MainCamera_Near will always be set to depth only. 
+        _mainCamera_Near.clearFlags = CameraClearFlags.Depth;
+        // MainCamera_Far must be set manually during development. Set it to Depth also if SpaceUnity skybox is active, otherwise Skybox or SolidColor if not
+
+        // IMPORTANT Max far to near clip plane ratio <= 10,000
+        _mainCamera_Near.nearClipPlane = 0.01F;
+        _mainCamera_Near.farClipPlane = _mainCamera_Near.nearClipPlane * CameraMaxClippingPlaneRatio;
+        _mainCamera_Far.nearClipPlane = _mainCamera_Near.farClipPlane;
+        _mainCamera_Far.farClipPlane = Mathf.Min(_mainCamera_Far.nearClipPlane * CameraMaxClippingPlaneRatio, _universeRadius * 2F);
+
+        RefreshCamerasFOV();
 
         //_camera.layerCullSpherical = true;
         float[] cullDistances = new float[32];
         cullDistances[(int)Layers.ShipCull] = TempGameValues.ShipMaxRadius * GraphicsSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
         cullDistances[(int)Layers.FacilityCull] = TempGameValues.FacilityMaxRadius * GraphicsSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
         cullDistances[(int)Layers.PlanetoidCull] = TempGameValues.PlanetoidMaxRadius * GraphicsSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
-        cullDistances[(int)Layers.StarCull] = TempGameValues.StarMaxRadius * GraphicsSettings.Instance.StarLayerCullingDistanceFactor; // 3000   // temp commented to always see
-        _camera.layerCullDistances = cullDistances;
+        cullDistances[(int)Layers.StarCull] = TempGameValues.StarRadius * GraphicsSettings.Instance.StarLayerCullingDistanceFactor; // 3000   // temp commented to always see
+
+        _mainCameras.ForAll(cam => {
+            cam.orthographic = false;
+            cam.cullingMask = _mainCamerasCullingMask;
+            cam.layerCullDistances = cullDistances;
+        });
     }
+
+    /// <summary>
+    /// Refreshes the MainCameras FieldOfView to the provided value in degrees.
+    /// Default is 50 degrees if not provided.
+    /// </summary>
+    /// <param name="fov">The fov.</param>
+    private void RefreshCamerasFOV(float fov = CameraFieldOfView_Default) {
+        if (!_mainCamera_Near.fieldOfView.ApproxEquals(fov)) {
+            _mainCameras.ForAll(cam => cam.fieldOfView = fov);
+        }
+    }
+    //private void RefreshCameraSettings(float nearClipPlaneDistance = TempGameValues.CameraNearClippingPlaneDistance_Default, float fov = TempGameValues.CameraFieldOfView_Default) {
+    //    if (!_camera.nearClipPlane.ApproxEquals(nearClipPlaneDistance)) {
+    //        _camera.nearClipPlane = nearClipPlaneDistance;
+    //        _camera.farClipPlane = Mathf.Min(nearClipPlaneDistance * TempGameValues.CameraMaxClippingPlaneRatio, _universeRadius * 2F);
+    //    }
+    //    if (!_camera.fieldOfView.ApproxEquals(fov)) {
+    //        _camera.fieldOfView = fov;
+    //    }
+    //}
 
     private void InitializeCameraPreferences() {
         // the initial Camera preference changed events occur earlier than we can subscribe so do it manually
@@ -534,7 +590,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void OnCurrentFocusChanging(ICameraFocusable newFocus) {
         if (CurrentFocus != null) {
             CurrentFocus.IsFocus = false;
-            CurrentFocus.OptimalCameraViewingDistance = _optimalDistanceFromTarget;
+            //CurrentFocus.OptimalCameraViewingDistance = _optimalDistanceFromTarget;
         }
     }
 
@@ -849,6 +905,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         _cameraRotationDampener = settings.freeformRotationDampener;
         _cameraPositionDampener = settings.freeformPositionDampener;
+
+        RefreshCamerasFOV();
 
         CurrentFocus = null;    // will tell the previous focus it is no longer in focus
     }
@@ -1309,24 +1367,49 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         ICameraFocusable qualifiedCameraFocusTarget = focus.GetComponent<ICameraFollowable>();
         if (qualifiedCameraFocusTarget != null) {
             CurrentState = CameraState.Follow;
-            return;
-        }
-
-        qualifiedCameraFocusTarget = focus.GetComponent<ICameraFocusable>();
-        if (qualifiedCameraFocusTarget != null) {
-            if (!_isResetOnFocusEnabled) {
-                // if not resetting world coordinates on focus, the camera just turns to look at the focus
-                CurrentState = CameraState.Focusing;
-                return;
-            }
-
-            ResetToWorldspace();
-            CurrentState = CameraState.Focused;
         }
         else {
-            D.Error("Attempting to SetFocus on object that does not implement either ICameraFollowable or ICameraFocusable.");
+            qualifiedCameraFocusTarget = focus.GetComponent<ICameraFocusable>();
+            D.Assert(qualifiedCameraFocusTarget != null, "Attempting to SetFocus on object that does not implement either ICameraFollowable or ICameraFocusable.");
+
+            if (_isResetOnFocusEnabled) {
+                ResetToWorldspace();
+                CurrentState = CameraState.Focused;
+            }
+            else {
+                // if not resetting world coordinates on focus, the camera just turns to look at the focus
+                CurrentState = CameraState.Focusing;
+            }
         }
+
+        float fov = qualifiedCameraFocusTarget.FieldOfView;
+        RefreshCamerasFOV(fov);
     }
+    //private void SetFocusAsTarget(Transform focus) {
+    //    // any object that can be focused on has the focus's position as the targetPoint
+    //    ChangeTarget(focus, focus.position);
+
+    //    ICameraFollowable qualifiedCameraFollowTarget = focus.GetComponent<ICameraFollowable>();
+    //    if (qualifiedCameraFollowTarget != null) {
+    //        CurrentState = CameraState.Follow;
+    //        return;
+    //    }
+
+    //    ICameraFocusable qualifiedCameraFocusTarget = focus.GetComponent<ICameraFocusable>();
+    //    if (qualifiedCameraFocusTarget != null) {
+    //        if (!_isResetOnFocusEnabled) {
+    //            // if not resetting world coordinates on focus, the camera just turns to look at the focus
+    //            CurrentState = CameraState.Focusing;
+    //            return;
+    //        }
+
+    //        ResetToWorldspace();
+    //        CurrentState = CameraState.Focused;
+    //    }
+    //    else {
+    //        D.Error("Attempting to SetFocus on object that does not implement either ICameraFollowable or ICameraFocusable.");
+    //    }
+    //}
 
     /// <summary>
     /// Changes the current Target and targetPoint to the provided newTarget and newTargetPoint.
@@ -1495,11 +1578,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             }
             // scrollEvent.target is not IZoomToFurthest so it is the zoom target
             var proposedZoomPoint = scrollEvent.hitPoint;
-            return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+            return TryChangeZoomTarget(proposedZoomTarget, proposedZoomPoint);
         }
 
         // scroll event with a null target so position the dummyTarget
-        return PlaceDummyTargetAtUniverseEdgeInDirection(_camera.ScreenPointToRay(screenPoint).direction);
+        return PlaceDummyTargetAtUniverseEdgeInDirection(_mainCamera_Near.ScreenPointToRay(screenPoint).direction);
     }
 
 
@@ -1514,7 +1597,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <c>false</c> if the Target remains the same (or if the dummyTarget, its location remains the same).
     /// </returns>
     private bool TrySetZoomTargetAt(Vector3 screenPoint) {
-        Ray ray = _camera.ScreenPointToRay(screenPoint);
+        Ray ray = _mainCamera_Near.ScreenPointToRay(screenPoint);   // Use _mainCamera_Near as ray is cast starting at camera's nearClipPlane
         RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, InputManager.WorldEventDispatcherMask_NormalInput);
 
         var eligibleIctHits = ConvertToEligibleICameraTargetableHits(hits);
@@ -1546,7 +1629,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 else {
                     proposedZoomPoint = hit.point;
                 }
-                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+                return TryChangeZoomTarget(proposedZoomTarget, proposedZoomPoint);
             }
 
             // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
@@ -1563,7 +1646,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 proposedZoomPoint = proposedZoomTarget.position;
                 if (proposedZoomTarget != _dummyTarget) {
                     // rare case where the dummyTarget is hit along with a IZoomToFurthest so not filtered out at top
-                    return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+                    return TryChangeZoomTarget(proposedZoomTarget, proposedZoomPoint);
                 }
             }
             // otherwise, all hits are IZoomToFurthest, so pick the furthest and done
@@ -1571,7 +1654,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             proposedZoomTarget = furthestHit.transform;
             proposedZoomPoint = furthestHit.point;
             //D.Log("IZoomToFurthest furthest hit at {0}.", proposedZoomPoint);
-            return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+            return TryChangeZoomTarget(proposedZoomTarget, proposedZoomPoint);
         }
 
         // no eligibleIctHits encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
@@ -1619,20 +1702,21 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     /// <summary>
-    /// Attempts to change the Target to the proposedTarget. If the existing Target is the same
+    /// Attempts to change the Target to the proposedZoomTarget. If the existing Target is the same
     /// Target but the target point is different, then the change is made to the target point but 
     /// the method returns false as the Target itself wasn't changed.
     /// </summary>
-    /// <param name="proposedZoomTarget">The proposed Target. Logs an error if the DummyTarget.</param>
-    /// <param name="proposedZoomPoint">The proposed Target point.</param>
+    /// <param name="proposedZoomTarget">The proposed Zoom Target. Logs an error if the DummyTarget.</param>
+    /// <param name="proposedZoomPoint">The proposed Zoom Target point.</param>
     /// <returns>
     /// true if the Target itself is changed, otherwise false.
     /// </returns>
-    private bool TryChangeTarget(Transform proposedZoomTarget, Vector3 proposedZoomPoint) {
-        if (proposedZoomTarget == _dummyTarget) {
-            D.Error("TryChangeTarget must not be used to change to the DummyTarget.");
-            return false;
-        }
+    private bool TryChangeZoomTarget(Transform proposedZoomTarget, Vector3 proposedZoomPoint) {
+        //if (proposedZoomTarget == _dummyTarget) {
+        //    D.Error("TryChangeZoomTarget must not be used to change to the DummyTarget.");
+        //    return false;
+        //}
+        D.Assert(proposedZoomTarget != _dummyTarget, "TryChangeZoomTarget must not be used to change to the DummyTarget.");
 
         if (proposedZoomTarget == _target) {
             //D.Log("Proposed Target {0} is already the existing Target.".Inject(proposedZoomTarget.name));

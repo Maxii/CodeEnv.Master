@@ -24,6 +24,9 @@ namespace CodeEnv.Master.GameContent {
     public struct PlanetoidStat {
 
         // A Planetoid's name is assigned once its parent's name and its orbit are known
+        public float Radius { get; private set; }
+        public float LowOrbitRadius { get; private set; }
+
         public float Mass { get; private set; }
         public float MaxHitPoints { get; private set; }
         public PlanetoidCategory Category { get; private set; }
@@ -33,13 +36,17 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidStat" /> struct.
         /// </summary>
+        /// <param name="radius">The radius.</param>
+        /// <param name="lowOrbitRadius">The low orbit radius.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public PlanetoidStat(float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources)
+        public PlanetoidStat(float radius, float lowOrbitRadius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources)
             : this() {
+            Radius = radius;
+            LowOrbitRadius = lowOrbitRadius;
             Mass = mass;
             MaxHitPoints = maxHitPts;
             Category = category;

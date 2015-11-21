@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected AMortalItemData Data { get; private set; }
 
-        protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+        protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
 
         /// <summary>
         /// The duration in seconds between course progress assessments. The default is

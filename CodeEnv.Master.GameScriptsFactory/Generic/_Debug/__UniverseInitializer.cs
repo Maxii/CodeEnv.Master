@@ -56,7 +56,10 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
     private void InitializeUniverseCenter() {
         UniverseCenter = gameObject.GetSingleComponentInChildren<UniverseCenterItem>();
         if (UniverseCenter != null) {
-            UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, "UniverseCenter");
+            float radius = TempGameValues.UniverseCenterRadius;
+            float lowOrbitRadius = radius + 5F;
+            CameraFocusableStat cameraStat = __MakeCameraStat(radius, lowOrbitRadius);
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, radius, lowOrbitRadius, cameraStat, "UniverseCenter");
             UniverseCenter.Data = data;
             UniverseCenter.enabled = true;
         }
@@ -75,6 +78,13 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
         if (UniverseCenter != null) {
             UniverseCenter.CommenceOperations();
         }
+    }
+
+    private CameraFocusableStat __MakeCameraStat(float radius, float lowOrbitRadius) {
+        float minViewDistance = radius + 1F;
+        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
+        float optViewDistance = highOrbitRadius + 1F;
+        return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 80F);
     }
 
     protected override void Cleanup() {

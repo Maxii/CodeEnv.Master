@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         /// The radius of the KeepoutZone surrounding this IShipOrbitable object.
         /// The ShipOrbitSlot.InnerRadius has the same value.
         /// </summary>
-        float KeepoutRadius { get; }
+        float TransitBanRadius { get; }
 
         string FullName { get; }
 

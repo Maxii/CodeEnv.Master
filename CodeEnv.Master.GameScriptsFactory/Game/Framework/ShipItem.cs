@@ -86,7 +86,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         _gameTime = GameTime.Instance;
-        // Collider Size and Element Radius now set by UnitFactory using SetSize()
     }
 
     protected override void InitializeModelMembers() {
@@ -128,16 +127,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     public ShipReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    /// <summary>
-    /// Sets the size of the element's collider and the element's Radius.
-    /// </summary>
-    /// <param name="boxSize">Size of the box.</param>
-    public void SetSize(Vector3 boxSize) {
-        BoxCollider boxCollider = _collider as BoxCollider;
-        boxCollider.size = boxSize;
-        Radius = boxSize.magnitude / 2F;
-    }
 
     public void OnFleetFullSpeedChanged() { _helm.OnFleetFullSpeedChanged(); }
 
@@ -250,7 +239,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
-        //_helm.DisengageAutoPilot();   // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
+        // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
         TryBreakOrbit();
         if (IsSelected) { SelectionManager.Instance.CurrentSelection = null; }
     }
@@ -362,6 +351,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     }
 
     private void OnOrbitedObjectDeath(IMortalItem orbitedObject) {
+        // no need to disconnect event that called this as the event is a oneShot
         BreakOrbit(_currentOrIntendedOrbitSlot);
     }
 
@@ -495,18 +485,21 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        if (other.gameObject.layer == (int)Layers.CelestialObjectKeepout) {
-            SphereCollider keepoutCollider = other as SphereCollider;
+        if (other.gameObject.layer == (int)Layers.TransitBan) {
+            if (CurrentState == ShipState.AssumingOrbit || _isInOrbit) {
+                return; // OK to enter TransitBanZone to assume orbit
+            }
+            SphereCollider transitBanCollider = other as SphereCollider;
             string obstacleName = other.transform.parent.parent.name + other.transform.parent.name + "." + other.name;
-            float keepoutZoneRadius = keepoutCollider.radius;
+            float transitBanRadius = transitBanCollider.radius;
             float shipDistanceFromCenter = Vector3.Distance(other.transform.position, Position);
-            D.Warn("{0} entered {1}. Radius: {2}, ShipDistanceFromCenter: {3}.", FullName, obstacleName, keepoutZoneRadius, shipDistanceFromCenter);
+            D.Warn("{0} entered {1}. Radius: {2:0.##}, ShipDistanceFromCenter: {3:0.##}.", FullName, obstacleName, transitBanRadius, shipDistanceFromCenter);
         }
     }
 
     protected override void OnTriggerExit(Collider other) {
-        base.OnTriggerEnter(other);
-        if (other.gameObject.layer == (int)Layers.CelestialObjectKeepout) {
+        base.OnTriggerExit(other);
+        if (other.gameObject.layer == (int)Layers.TransitBan) {
             string obstacleName = other.transform.parent.name + "." + other.name;
             D.Log("{0} exited {1}.", FullName, obstacleName);
         }
@@ -657,7 +650,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             // wait until we are inside the orbit slot
             cumWaitTime += _gameTime.DeltaTimeOrPaused;
             if (cumWaitTime > 15F) {    // IMPROVE this could trip on GameSpeed.Slowest
-                D.Warn("{0}.AssumeOrbit taking a long time. DistanceToMeanOrbit = {1:0.0000}.", FullName, distanceToMeanOrbit);
+                D.Warn("{0}.AssumingOrbit taking a long time. DistanceToMeanOrbit = {1:0.0000}.", FullName, distanceToMeanOrbit);
             }
             yield return null;
         }
@@ -1366,16 +1359,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             _engineRoom = new EngineRoom(ship.Data, shipRigidbody);
             Subscribe();
         }
-        //internal ShipHelm(ShipItem ship)
-        //    : base() {
-        //    _ship = ship;
-        //    _shipRigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(ship.gameObject);
-        //    _shipRigidbody.useGravity = false;
-        //    _shipRigidbody.freezeRotation = true;
-        //    _gameTime = GameTime.Instance;
-        //    _engineRoom = new EngineRoom(ship.Data, _shipRigidbody);
-        //    Subscribe();
-        //}
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
@@ -1392,7 +1375,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         /// <param name="orderSource">The source of this move order.</param>
         internal void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
             RecordAutoPilotCourseValues(speed, orderSource);
-            //RecordAutoPilotCourseValues(target, speed, orderSource);
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
             // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone

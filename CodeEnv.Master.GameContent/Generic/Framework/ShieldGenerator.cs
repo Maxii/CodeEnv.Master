@@ -231,7 +231,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!_isReloading);
             _isReloading = true;
             D.Log("{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.Name, Name, ReloadPeriod);
-            _reloadJob = GameUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
+            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 _isReloading = false;
                 if (!jobWasKilled) {
                     D.Log("{0}.{1} completed reload.", Shield.Name, Name);

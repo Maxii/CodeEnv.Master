@@ -38,16 +38,16 @@ public class SectorItem : AItem, ISectorItem {
         get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
     }
 
+    public override float Radius { get { return TempGameValues.SectorSideLength / 2F; } }   // the radius of the sphere inscribed inside a sector box
+
     #region Initialization
 
-    /// <summary>
-    /// Called from Awake, initializes local references and values including Radius-related components.
-    /// </summary>
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        Radius = TempGameValues.SectorSideLength / 2F;  // the radius of the sphere inscribed inside a sector box
         // there is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
     }
+
+    protected override void InitializeOnData() { }
 
     protected override void InitializeModelMembers() { }
 
