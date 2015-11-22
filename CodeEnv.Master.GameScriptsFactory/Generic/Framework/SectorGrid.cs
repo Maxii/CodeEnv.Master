@@ -118,7 +118,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             _gameMgr.RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
         }
         if (gameState == GameState.RunningCountdown_1) {
-            AllSectors.ForAll(s => s.CommenceOperations()); // UNDONE does nothing for now
+            AllSectors.ForAll(s => s.CommenceOperations());
         }
     }
 

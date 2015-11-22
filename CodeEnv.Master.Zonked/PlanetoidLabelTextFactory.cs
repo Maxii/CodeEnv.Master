@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// LabelText factory for Planetoids.
     /// </summary>
     [System.Obsolete]
-    public class PlanetoidLabelTextFactory : AIntelItemLabelTextFactory<PlanetoidReport, PlanetoidData> {
+    public class PlanetoidLabelTextFactory : AIntelItemLabelTextFactory<PlanetoidReport, APlanetoidData> {
 
         private static IDictionary<DisplayTargetID, IList<LabelContentID>> _includedContentLookup = new Dictionary<DisplayTargetID, IList<LabelContentID>>() {
             {DisplayTargetID.CursorHud, new List<LabelContentID>() {
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
 
         public PlanetoidLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(DisplayTargetID displayTgtID, LabelContentID contentID, PlanetoidReport report, PlanetoidData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(DisplayTargetID displayTgtID, LabelContentID contentID, PlanetoidReport report, APlanetoidData data, out IColoredTextList content) {
             content = _includeUnknownLookup[displayTgtID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:

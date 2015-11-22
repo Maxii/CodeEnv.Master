@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarItem.cs
-// Class for AIntelItems that are Stars.
+// AIntelItems that are Stars.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,9 +22,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class for AIntelItems that are Stars.
+/// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable {
+public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IShipTransitBanned {
 
     public StarCategory category = StarCategory.None;
 
@@ -55,7 +55,10 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     protected override void InitializeOnData() {
         InitializePrimaryCollider();
         InitializeShipOrbitSlot();
-        InitializeTransitBanZone();
+        InitializeTransitBanCollider();
+        D.Assert(category == Data.Category);
+        System = gameObject.GetSingleComponentInParents<SystemItem>();
+        _detectionHandler = new DetectionHandler(this);
     }
 
     private void InitializePrimaryCollider() {
@@ -69,21 +72,15 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
-    private void InitializeTransitBanZone() {
-        SphereCollider transitBanZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
-        transitBanZoneCollider.isTrigger = true;
-        transitBanZoneCollider.radius = Data.HighOrbitRadius;
+    private void InitializeTransitBanCollider() {
+        SphereCollider shipTransitBanCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
+        D.Assert(shipTransitBanCollider.gameObject.layer == (int)Layers.ShipTransitBan);
+        shipTransitBanCollider.isTrigger = true;
+        shipTransitBanCollider.radius = ShipTransitBanRadius;
     }
 
-    protected override void InitializeModelMembers() {
-        D.Assert(category == Data.Category);
-        System = gameObject.GetSingleComponentInParents<SystemItem>();
-        _detectionHandler = new DetectionHandler(this);
-    }
-
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
     }
 
@@ -220,9 +217,13 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #region IShipOrbitable Members
 
-    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
-
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+
+    #endregion
+
+    #region IShipTransitBanned Members
+
+    public float ShipTransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     #endregion
 

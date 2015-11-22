@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public IOrbitSimulator AssumeOrbit(Transform orbitingObject, string orbitSimulatorName = "") {
             D.Log("{0}.AssumeOrbit({1}) called.", _orbitedObject.name, orbitingObject.name);
-            D.Assert(orbitingObject.GetComponent<IShipItem>() == null);
+            D.Assert(orbitingObject.GetComponent<IShipItem>() == null, "OrbitingObject {0} can't be a ship.", orbitingObject.name);
             if (_orbitSimulator != null) {
                 D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.", orbitingObject.name, _orbitedObject.name, _orbitSimulator.transform.name);
             }

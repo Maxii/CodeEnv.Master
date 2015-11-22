@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IPlanetoidModel.cs
-//  Interface for PlanetoidModels.
+// File: IShipTransitBanned.cs
+// Interface for Items that implement a surrounding zone where ships cannot transit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,16 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for PlanetoidModels.
+    /// Interface for Items that implement a surrounding zone where ships cannot transit.
     /// </summary>
-    public interface IPlanetoidModel : IMortalModel {
+    public interface IShipTransitBanned {
 
-        new APlanetoidData Data { get; set; }
+        /// <summary>
+        /// The radius of the Ship TransitBan around this Item.
+        /// </summary>
+        float ShipTransitBanRadius { get; }
+
+        string FullName { get; }
 
     }
 }

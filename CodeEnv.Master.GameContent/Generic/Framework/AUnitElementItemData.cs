@@ -119,13 +119,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="elementTransform">The element transform.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, CameraFollowableStat cameraStat, Player owner, IEnumerable<ActiveCountermeasure> activeCMs,
+        public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, Player owner, CameraFollowableStat cameraStat, IEnumerable<ActiveCountermeasure> activeCMs,
             IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
             : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, cameraStat, passiveCMs) {
             HullEquipment = hullEquipment;

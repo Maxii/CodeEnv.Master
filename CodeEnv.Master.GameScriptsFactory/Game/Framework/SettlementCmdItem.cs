@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SettlementCommandItem.cs
-// Class for AUnitBaseCmdItems that are Settlements.
+// AUnitBaseCmdItems that are Settlements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class for AUnitBaseCmdItems that are Settlements.
+/// AUnitBaseCmdItems that are Settlements.
 /// </summary>
 public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICameraFollowable  [not currently in motion]*/ {
 

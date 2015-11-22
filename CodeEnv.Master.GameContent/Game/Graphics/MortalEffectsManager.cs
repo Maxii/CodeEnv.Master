@@ -24,7 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MortalEffectsManager : EffectsManager {
 
-        public MortalEffectsManager(IEffectsClient effectsClient) : base(effectsClient) { }
+        public MortalEffectsManager(IEffectsClient effectsClient) // IMPROVE this could be IMortalEffectsClient w/Position, Radius and DisplayMgr
+            : base(effectsClient) { }
 
         public override void StartEffect(EffectID effectID) {
             if (effectID == EffectID.Dying) {

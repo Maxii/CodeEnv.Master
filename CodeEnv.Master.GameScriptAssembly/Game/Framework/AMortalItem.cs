@@ -47,10 +47,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
     }
 
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
-    }
-
     protected override EffectsManager InitializeEffectsManager() {
         return new MortalEffectsManager(this);
     }
@@ -70,35 +66,33 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     /// <param name="cm">The cm.</param>
     private void Attach(PassiveCountermeasure cm) {
-        // IsActivated = true is set when item operations commences
+        // cm.IsActivated = true is set when item operations commences
     }
+
+    /*******************************************************************************************************************************
+           * HOW TO INITIATE DEATH: Set IsOperational to false. Do not use OnDeath or set a state of Dead. The primary reason is 
+           * to make sure IsOperational immediately reflects the death and can be used right away to check for it. 
+           * Use of a state of Dead can also work as it is changed immediately too. 
+           * The previous implementation had IsOperational being set when the Dead EnterState ran, which could be a whole 
+           * frame later, given the way the state machine works. This approach keeps IsOperational and Dead in sync.
+            ********************************************************************************************************************************/
 
     /// <summary>
     /// Called when the item's health has changed. 
-    /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItemModels as damage is taken which
-    /// makes the logic behind dieing more visible and understandable. In the case of a UnitCommandModel, death occurs
+    /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItems as damage is taken which
+    /// makes the logic behind dieing more visible and understandable. In the case of a UnitCommand, death occurs
     /// when the last Element has been removed from the Unit.
     /// </summary>
     protected virtual void OnHealthChanged() { }
 
-    /// <summary>
-    /// Initiates the death sequence of this MortalItem. This is the primary method
-    /// to call to initiate death. Donot use OnDeath or set IsOperational or set a state of Dead.
-    /// Note: the primary reason is to make sure IsOperational immediately reflects the death
-    /// and can be used right away to check for it. Use of a state of Dead for the filter 
-    /// can also work as it is changed immediately too. 
-    /// <remarks>The previous implementation had IsOperational being set when the Dead 
-    /// EnterState ran, which could be a whole frame later, given the way the state machine works. 
-    /// This approach keeps IsOperational and Dead in sync.
-    /// </remarks>
-    /// </summary>
-    protected void InitiateDeath() {
-        D.Log("{0} is initiating death sequence.", FullName);
-        IsOperational = false;
-        SetDeadState();
-        PrepareForOnDeathNotification();
-        OnDeath();
-        CleanupAfterOnDeathNotification();
+    protected override void OnIsOperationalChanged() {
+        if (!IsOperational) {
+            D.Log("{0} is initiating death sequence.", FullName);
+            SetDeadState();
+            PrepareForOnDeathNotification();
+            OnDeath();
+            CleanupAfterOnDeathNotification();
+        }
     }
 
     /// <summary>

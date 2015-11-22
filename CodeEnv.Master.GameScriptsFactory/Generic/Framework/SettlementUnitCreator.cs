@@ -90,8 +90,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
             _factory.PopulateInstance(cmdStat, cameraStat, countermeasures, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner);
-            UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
+            cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner, gameObject);
         }
         cmd.__OrbitSimulatorMoves = orbitMoves;
         cmd.IsTrackingLabelEnabled = enableTrackingLabel;

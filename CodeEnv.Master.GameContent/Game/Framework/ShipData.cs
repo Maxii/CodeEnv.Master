@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipData.cs
-// Class for Data associated with a ShipItem.
+// Data associated with a ShipItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Class for Data associated with a ShipItem.
+    /// Data associated with a ShipItem.
     /// </summary>
     public class ShipData : AUnitElementItemData {
 
@@ -193,16 +193,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipRigidbody">The ship rigidbody.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="engineStat">The engine stat.</param>
+        /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="combatStance">The combat stance.</param>
-        /// <param name="owner">The owner.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public ShipData(Transform shipTransform, Rigidbody shipRigidbody, ShipHullEquipment hullEquipment, EngineStat engineStat, CameraFollowableStat cameraStat, ShipCombatStance combatStance, Player owner,
+        public ShipData(Transform shipTransform, Rigidbody shipRigidbody, ShipHullEquipment hullEquipment, EngineStat engineStat, Player owner, CameraFollowableStat cameraStat, ShipCombatStance combatStance,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(shipTransform, hullEquipment, cameraStat, owner, activeCMs, sensors, passiveCMs, shieldGenerators) {
+            : base(shipTransform, hullEquipment, owner, cameraStat, activeCMs, sensors, passiveCMs, shieldGenerators) {
             _shipRigidbody = shipRigidbody;
             _shipRigidbody.mass = Mass;
             // _shipRigidbody.drag gets set when Topography gets set/changed

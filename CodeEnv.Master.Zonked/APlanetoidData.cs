@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="APlanetoidData"/> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        public APlanetoidData(PlanetoidStat stat)
+        public APlanetoidData(APlanetoidStat stat)
             : base(stat.Category.GetValueName(), stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             Capacity = stat.Capacity;

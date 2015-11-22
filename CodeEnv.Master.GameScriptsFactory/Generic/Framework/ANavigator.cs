@@ -28,7 +28,7 @@ using UnityEngine;
 /// </summary>
 internal abstract class ANavigator : IDisposable {
 
-    private static LayerMask _transitBanOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
+    private static LayerMask _transitBanOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.ShipTransitBan);
 
     private static IList<Speed> _inValidAutoPilotSpeeds = new List<Speed>() {
         Speed.None,

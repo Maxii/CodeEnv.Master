@@ -80,7 +80,7 @@ namespace CodeEnv.Master.Common {
         /// Layer that allows Fleets and Ships to raycast without interference from 
         /// other colliders, for the purpose of detecting transit ban zones to avoid.
         /// </summary>
-        TransitBan = 21,    // CelestialObjectKeepout = 21, // Name changed 11.20.15
+        ShipTransitBan = 21,    // CelestialObjectKeepout = 21, // Name changed 11.20.15
 
         /// <summary>
         /// Layer for shields so a shield collision can be tested for by a Beam RayCast. 

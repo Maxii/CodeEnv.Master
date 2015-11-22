@@ -77,21 +77,23 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         Elements = new List<AUnitElementItem>();
         SensorRangeMonitors = new List<ISensorRangeMonitor>();
         _formationGenerator = new FormationGenerator(this);
     }
 
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
+        D.Assert(transform.parent != null);
+        UnitContainer = transform.parent;
+        // the only collider is for player interaction with the item's CmdIcon
+    }
+
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
-    }
-
-    protected override void InitializeModelMembers() {
-        // the only collider is for player interaction with the item's CmdIcon
-        UnitContainer = transform.parent;
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -144,8 +146,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     public virtual void AddElement(AUnitElementItem element) {
         D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
         D.Assert(!element.IsHQ, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
-        // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
-        D.Assert(element.enabled, "{0} is not yet enabled.".Inject(element.FullName));
+        // elements should already be operational when added to a Cmd as that is commonly their state when transferred during runtime
+        D.Assert(element.IsOperational, "{0} should be operational.", element.FullName);
         Elements.Add(element);
         Data.AddElement(element.Data);
         element.AttachAsChildOf(UnitContainer);
@@ -217,7 +219,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
             }
             else {
                 D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
-                InitiateDeath();
+                IsOperational = false;
             }
         }
     }

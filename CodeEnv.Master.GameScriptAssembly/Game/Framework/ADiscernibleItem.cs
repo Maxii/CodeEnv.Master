@@ -56,33 +56,17 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     #region Initialization
 
-    /// <summary>
-    /// Called from Awake, initializes local references and values.
-    /// Note: Radius-related values and components should be initialized when Radius
-    /// is valid which occurs when Data is added.
-    /// </summary>
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         _inputHelper = References.InputHelper;
     }
-
-    /// <summary>
-    /// Called from Start, initializes View-related members of this item 
-    /// that aren't initialized in some other manner.
-    /// </summary>
-    /// <remarks> 
-    /// Overrides AItem.InitializeViewMembers() without calling base method as AItem
-    /// initializes the HudManager in the base method. Discernible Items wish to defer this
-    /// initialization until first discernible.
-    /// </remarks>
-    protected override void InitializeViewMembers() { }
 
     /// <summary>
     /// Called when the Item first becomes discernible to the user, this method initializes the 
     /// View-related members of this item that are not needed until the item is discernible to the user.
     /// </summary>
-    protected virtual void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        //D.Log("{0}.InitializeViewMembersWhenFirstDiscernibleToUser() called.", FullName);
+    protected virtual void InitializeOnFirstDiscernibleToUser() {
+        D.Assert(IsOperational, "{0}.InitializeOnFirstDiscernibleToUser() called when not operational.", FullName);
         _hudManager = InitializeHudManager();
 
         DisplayMgr = InitializeDisplayManager();
@@ -95,6 +79,8 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         EffectsMgr = InitializeEffectsManager();
         _highlighter = InitializeHighlighter();
     }
+
+    protected abstract ItemHudManager InitializeHudManager();
 
     protected abstract ADisplayManager InitializeDisplayManager();
 
@@ -138,7 +124,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         }
         if (!_isViewMembersInitialized) {
             D.Assert(IsDiscernibleToUser);    // first time change should always be true
-            InitializeViewMembersWhenFirstDiscernibleToUser();
+            InitializeOnFirstDiscernibleToUser();
             _isViewMembersInitialized = true;
         }
         AssessHighlighting();

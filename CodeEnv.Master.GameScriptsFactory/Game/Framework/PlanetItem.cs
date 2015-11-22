@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetItem.cs
-// Class for APlanetoidItems that are Planets.
+// APlanetoidItems that are Planets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,13 +22,27 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class for APlanetoidItems that are Planets.
+/// APlanetoidItems that are Planets.
 /// </summary>
-public class PlanetItem : APlanetoidItem {
+public class PlanetItem : APlanetoidItem, IShipOrbitable {
+
+    public new PlanetData Data {
+        get { return base.Data as PlanetData; }
+        set { base.Data = value; }
+    }
 
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
     #region Initialization
+
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
+        InitializeShipOrbitSlot();
+    }
+
+    private void InitializeShipOrbitSlot() {
+        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
 
     protected override ADisplayManager InitializeDisplayManager() {
         var displayMgr = new PlanetDisplayManager(this, MakeIconInfo());
@@ -119,6 +133,18 @@ public class PlanetItem : APlanetoidItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IShipOrbitable Members
+
+    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+
+    #endregion
+
+    #region IShipTransitBanned Members
+
+    public override float ShipTransitBanRadius { get { return Data.HighOrbitRadius; } }
+
+    #endregion
 
 }
 

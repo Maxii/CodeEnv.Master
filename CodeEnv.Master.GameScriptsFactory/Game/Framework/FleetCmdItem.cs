@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetCommandItem.cs
-// Class for AUnitCmdItems that are Fleets.
+// AUnitCmdItems that are Fleets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -28,7 +28,7 @@ using Pathfinding;
 using UnityEngine;
 
 /// <summary>
-/// Class for AUnitCmdItems that are Fleets.
+/// AUnitCmdItems that are Fleets.
 /// </summary>
 public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
@@ -85,13 +85,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         _formationStations = new List<FormationStationMonitor>();
     }
 
-    protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
         InitializeNavigator();
         CurrentState = FleetState.None;
     }
@@ -100,8 +100,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         _navigator = new FleetNavigator(this, gameObject.GetSafeComponent<Seeker>());
     }
 
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
+    }
+
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu();
     }
 
@@ -125,10 +130,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         _hqJoint = gameObject.AddComponent<FixedJoint>();
     }
 
-    protected override void SubscribeToDataValueChanges() {
-        base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
-    }
 
     #endregion
 
@@ -871,7 +872,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         internal void PlotCourse(INavigableTarget target, Speed speed) {
             RecordAutoPilotCourseValues(speed, OrderSource.UnitCommand);
             _target = target;
-            _targetHasTransitBanZone = target is IShipOrbitable;
+            _targetHasTransitBanZone = target is IShipTransitBanned;
             ResetCourseReplotValues();
             GenerateCourse();
         }
@@ -1097,7 +1098,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private float GetCastingTransitBanRadius(INavigableTarget waypoint) {
             var result = Constants.ZeroF;
             if (waypoint == Target && _targetHasTransitBanZone) {
-                result = (Target as IShipOrbitable).TransitBanRadius + 1F;
+                result = (Target as IShipTransitBanned).ShipTransitBanRadius + 1F;
             }
             return result;
         }

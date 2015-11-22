@@ -64,17 +64,14 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         LogEvent();
         var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         UnitCmdStat cmdStat = __MakeCmdStat();
-        CameraFleetCmdStat cameraStat = __MakeCmdCameraStat(TempGameValues.ShipMaxRadius);   //__MakeCmdCameraStat();
+        CameraFleetCmdStat cameraStat = __MakeCmdCameraStat(TempGameValues.ShipMaxRadius);
         FleetCmdItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSingleComponentInChildren<FleetCmdItem>();
-            _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner, ref cmd);
+            _factory.PopulateInstance(cmdStat, cameraStat, countermeasures, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner);
-            //D.Log("{0} Position prior to attach to creator = {1}.", cmd.FullName, cmd.Position);
-            UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
-            //D.Log("{0} Position after attach to creator = {1}.", cmd.FullName, cmd.Position);
+            cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner, gameObject);
         }
         cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: MoonItem.cs
-// Class for APlanetoidItems that are Moons.
+// APlanetoidItems that are Moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,17 +22,21 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Class for APlanetoidItems that are Moons.
+/// APlanetoidItems that are Moons.
 /// </summary>
 public class MoonItem : APlanetoidItem {
+
+    public new MoonData Data {
+        get { return base.Data as MoonData; }
+        set { base.Data = value; }
+    }
 
     private bool _isParentPlanetDying;
 
     #region Initialization
 
     protected override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = new MoonDisplayManager(gameObject);
-        return displayMgr;
+        return new MoonDisplayManager(gameObject);
     }
 
     #endregion
@@ -51,7 +55,7 @@ public class MoonItem : APlanetoidItem {
     /// </summary>
     public void OnPlanetDying() {
         _isParentPlanetDying = true;
-        InitiateDeath();
+        IsOperational = false;
     }
 
     public override void OnEffectFinished(EffectID effectID) {
@@ -82,6 +86,12 @@ public class MoonItem : APlanetoidItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IShipTransitBanned Members
+
+    public override float ShipTransitBanRadius { get { return Data.ShipTransitBanRadius; } }
+
+    #endregion
 
     #region IHighlightable Members
 

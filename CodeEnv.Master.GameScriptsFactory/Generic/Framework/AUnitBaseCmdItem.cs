@@ -49,27 +49,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     protected override void InitializeOnData() {
         base.InitializeOnData();
         InitializeShipOrbitSlot();
-        InitializeTransitBanZone();
+        CurrentState = BaseState.None;
     }
 
     private void InitializeShipOrbitSlot() {
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
-    private void InitializeTransitBanZone() {
-        SphereCollider transitBanZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
-        transitBanZoneCollider.isTrigger = true;
-        transitBanZoneCollider.radius = Data.HighOrbitRadius;
-    }
-
-    protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
-        CurrentState = BaseState.None;
-    }
-
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
         // revolvers control their own enabled state
     }
@@ -320,8 +308,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #endregion
 
     #region IShipOrbitable Members
-
-    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 

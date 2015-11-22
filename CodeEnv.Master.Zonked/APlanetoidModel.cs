@@ -53,7 +53,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.ShipTransitBan);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }

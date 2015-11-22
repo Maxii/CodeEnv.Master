@@ -162,9 +162,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         }
     }
 
-    protected sealed override void Awake() {
-        base.Awake();
-        //Create the interruptable coroutines
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         enterStateCoroutine = new InterruptableCoroutine("EnterStateCoroutine", this);
         exitStateCoroutine = new InterruptableCoroutine("ExitStateCoroutine", this);
     }

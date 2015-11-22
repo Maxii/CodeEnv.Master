@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable {
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IShipTransitBanned {
 
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
@@ -47,7 +47,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     protected override void InitializeOnData() {
         InitializePrimaryCollider();
         InitializeShipOrbitSlot();
-        InitializeTransitBanZone();
+        InitializeTransitBanCollider();
+        _detectionHandler = new DetectionHandler(this);
     }
 
     private void InitializePrimaryCollider() {
@@ -61,19 +62,15 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
-    private void InitializeTransitBanZone() {
-        SphereCollider transitBanZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
-        transitBanZoneCollider.isTrigger = true;
-        transitBanZoneCollider.radius = Data.HighOrbitRadius;
+    private void InitializeTransitBanCollider() {
+        SphereCollider shipTransitBanCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
+        D.Assert(shipTransitBanCollider.gameObject.layer == (int)Layers.ShipTransitBan);
+        shipTransitBanCollider.isTrigger = true;
+        shipTransitBanCollider.radius = ShipTransitBanRadius;
     }
 
-    protected override void InitializeModelMembers() {
-        _detectionHandler = new DetectionHandler(this);
-    }
-
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
     }
 
@@ -144,9 +141,13 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IShipOrbitable Members
 
-    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
-
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+
+    #endregion
+
+    #region IShipTransitBanned Members
+
+    public float ShipTransitBanRadius { get { return Data.HighOrbitRadius; } }
 
     #endregion
 

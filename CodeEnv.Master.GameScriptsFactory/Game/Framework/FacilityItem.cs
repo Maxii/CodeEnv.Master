@@ -59,8 +59,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #region Initialization
 
-    protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
         CurrentState = FacilityState.None;
     }
 
@@ -114,8 +114,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
                     CurrentState = FacilityState.Disbanding;
                     break;
                 case FacilityDirective.Scuttle:
-                    InitiateDeath();
-                    //CurrentState = FacilityState.Dead;
+                    IsOperational = false;
                     break;
                 case FacilityDirective.None:
                 default:

@@ -23,7 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UnitCmdEffectsManager : MortalEffectsManager {
 
-        public UnitCmdEffectsManager(IEffectsClient effectsClient) : base(effectsClient) { }
+        public UnitCmdEffectsManager(IEffectsClient effectsClient)
+            : base(effectsClient) { }
 
         public override void StartEffect(EffectID effectID) {
             if (effectID == EffectID.Dying) {

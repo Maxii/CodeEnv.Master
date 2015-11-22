@@ -76,7 +76,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
 
     private StarStat _starStat;
-    private IList<PlanetoidStat> _planetStats;
+    private IList<APlanetoidStat> _planetStats;
     private SystemModel _system;
     private StarModel _star;
     private IList<PlanetoidModel> _planets;
@@ -159,9 +159,9 @@ public class SystemCreator : AMonoBase, IDisposable {
         return Enums<StarCategory>.GetRandom(excludeDefault: true);
     }
 
-    private IList<PlanetoidStat> CreatePlanetStats() {
+    private IList<APlanetoidStat> CreatePlanetStats() {
         LogEvent();
-        var planetStats = new List<PlanetoidStat>();
+        var planetStats = new List<APlanetoidStat>();
         if (isCompositionPreset) {
             IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehavioursInChildren<PlanetoidModel>();
             // exclude moons
@@ -170,7 +170,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                 Transform transformCarryingPlanetCategory = planet.transform.parent.parent;
                 PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetCategory);
                 string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit
-                PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
+                APlanetoidStat stat = new APlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
                 planetStats.Add(stat);
             }
         }
@@ -180,7 +180,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             for (int i = 0; i < planetCount; i++) {
                 PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
                 string planetName = "{0} [but no orbit was assigned]".Inject(pCategory.GetValueName());
-                PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
+                APlanetoidStat stat = new APlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
                 planetStats.Add(stat);
             }
         }
@@ -344,9 +344,9 @@ public class SystemCreator : AMonoBase, IDisposable {
                     string planetName = planet.Data.Name;
                     string moonName = planetName + _moonLetters[letterIndex];
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
-                    PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeResourceYield(0.1F, 1F, 0.8F));
+                    APlanetoidStat stat = new APlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeResourceYield(0.1F, 1F, 0.8F));
 
-                    PlanetoidData data = new PlanetoidData(stat) {
+                    APlanetoidData data = new APlanetoidData(stat) {
                         ParentName = SystemName
                         // Owners are all initialized to TempGameValues.NoPlayer by AItemData
                         // CombatStrength is default(CombatStrength), aka all values zero'd out

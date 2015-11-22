@@ -30,8 +30,8 @@ using UnityEngine;
 public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable {
     //public class PlanetoidModel : AMortalItemModelStateMachine {
 
-    public new PlanetoidData Data {
-        get { return base.Data as PlanetoidData; }
+    public new APlanetoidData Data {
+        get { return base.Data as APlanetoidData; }
         set { base.Data = value; }
     }
 
@@ -89,7 +89,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
 
     private void SetKeepoutZoneRadius() {
         SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.ShipTransitBan);
         keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
     }
 

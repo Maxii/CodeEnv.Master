@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipItem.cs
-// Class for AUnitElementItems that are Ships.
+// AUnitElementItems that are Ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -27,7 +27,7 @@ using UnityEngine;
 using MoreLinq;
 
 /// <summary>
-/// Class for AUnitElementItems that are Ships.
+/// AUnitElementItems that are Ships.
 /// </summary>
 public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyChangeListener {
 
@@ -83,19 +83,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         _gameTime = GameTime.Instance;
     }
 
-    protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
         _helm = new ShipHelm(this, _rigidbody);
         CurrentState = ShipState.None;
     }
 
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
     }
 
@@ -212,7 +212,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     CurrentState = ShipState.ExecuteAssumeStationOrder;
                     break;
                 case ShipDirective.Scuttle:
-                    InitiateDeath();
+                    IsOperational = false;  //InitiateDeath();
                     break;
                 case ShipDirective.Disband:
                 case ShipDirective.Refit:
@@ -485,13 +485,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        if (other.gameObject.layer == (int)Layers.TransitBan) {
+        if (other.gameObject.layer == (int)Layers.ShipTransitBan) {
             if (CurrentState == ShipState.AssumingOrbit || _isInOrbit) {
                 return; // OK to enter TransitBanZone to assume orbit
             }
-            SphereCollider transitBanCollider = other as SphereCollider;
+            SphereCollider shipTransitBanCollider = other as SphereCollider;
             string obstacleName = other.transform.parent.parent.name + other.transform.parent.name + "." + other.name;
-            float transitBanRadius = transitBanCollider.radius;
+            float transitBanRadius = shipTransitBanCollider.radius;
             float shipDistanceFromCenter = Vector3.Distance(other.transform.position, Position);
             D.Warn("{0} entered {1}. Radius: {2:0.##}, ShipDistanceFromCenter: {3:0.##}.", FullName, obstacleName, transitBanRadius, shipDistanceFromCenter);
         }
@@ -499,7 +499,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     protected override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        if (other.gameObject.layer == (int)Layers.TransitBan) {
+        if (other.gameObject.layer == (int)Layers.ShipTransitBan) {
             string obstacleName = other.transform.parent.name + "." + other.name;
             D.Log("{0} exited {1}.", FullName, obstacleName);
         }
@@ -892,10 +892,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
         string transferFleetName = "TransferTo_" + fleetToJoin.DisplayName;
+        FleetCmdItem transferFleetCmd;
         if (Command.Elements.Count > 1) {
             // detach from fleet and create the transferFleet
             Command.RemoveElement(this);
-            UnitFactory.Instance.MakeFleetInstance(transferFleetName, this, OnMakeFleetCompleted);
+            transferFleetCmd = UnitFactory.Instance.MakeFleetInstance(transferFleetName, this);
+            transferFleetCmd.CommenceOperations();
             // 2 scenarios concerning PlayerKnowledge
             //  - ship is HQ of current fleet
             //      -> ship will lose isHQ and another will gain it. Handled by PK due to onIsHQChanged event
@@ -906,20 +908,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         else {
             // this ship's current fleet only has this ship so simply make it the transferFleet
             D.Assert(Command.Elements.Single().Equals(this));
-            var transferFleetCmd = Command as FleetCmdItem;
+            transferFleetCmd = Command as FleetCmdItem;
             transferFleetCmd.Data.ParentName = transferFleetName;
-            OnMakeFleetCompleted(transferFleetCmd);
             // no changes needed for PlayerKnowledge. Fleet name will be correct on next access
         }
-    }
-
-    void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCmdItem transferFleetCmd) {
-        LogEvent();
         // issue a JoinFleet order to our transferFleet
-        var fleetCmdToJoin = CurrentOrder.Target as FleetCmdItem;
-        FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetCmdToJoin);
+        FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetToJoin);
         transferFleetCmd.CurrentOrder = joinFleetOrder;
-        //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
+        // once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
     }
 
     void ExecuteJoinFleetOrder_ExitState() {
@@ -1138,8 +1134,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     }
 
     void OnDestinationUnreachable() { RelayToCurrentState(); }
-
-    void OnMakeFleetCompleted(FleetCmdItem fleet) { RelayToCurrentState(fleet); }
 
     protected override void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {

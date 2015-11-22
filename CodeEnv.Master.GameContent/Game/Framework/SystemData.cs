@@ -62,9 +62,9 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        private IList<PlanetoidData> _allPlanetoidData = new List<PlanetoidData>();
+        private IList<APlanetoidData> _allPlanetoidData = new List<APlanetoidData>();
 
-        private IDictionary<PlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
+        private IDictionary<APlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
         private IList<IDisposable> _starSubscriptions;
         private IList<IDisposable> _settlementSubscribers;
 
@@ -94,20 +94,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            _planetoidSubscriptions = new Dictionary<PlanetoidData, IList<IDisposable>>();
+            _planetoidSubscriptions = new Dictionary<APlanetoidData, IList<IDisposable>>();
             _starSubscriptions = new List<IDisposable>();
         }
 
-        public void AddPlanetoid(PlanetoidData data) {
+        public void AddPlanetoid(APlanetoidData data) {
             _allPlanetoidData.Add(data);
             SubscribeToPlanetoidDataValueChanges(data);
             RecalcAllProperties();
         }
 
-        public bool RemovePlanetoid(PlanetoidData data) {
+        public bool RemovePlanetoid(APlanetoidData data) {
             bool isRemoved = _allPlanetoidData.Remove(data);
             if (!isRemoved) {
-                D.Warn("Attempting to remove {0}.{1} that is not present.", data.FullName, typeof(PlanetoidData));
+                D.Warn("Attempting to remove {0}.{1} that is not present.", data.FullName, typeof(APlanetoidData));
                 return false;
             }
             UnsubscribeToPlanetoidDataValueChanges(data);
@@ -178,13 +178,13 @@ namespace CodeEnv.Master.GameContent {
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 
-        private void SubscribeToPlanetoidDataValueChanges(PlanetoidData data) {
+        private void SubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
             if (!_planetoidSubscriptions.ContainsKey(data)) {
                 _planetoidSubscriptions.Add(data, new List<IDisposable>());
             }
             var planetSubscriber = _planetoidSubscriptions[data];
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, OnSystemMemberCapacityChanged));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, ResourceYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, int>(pd => pd.Capacity, OnSystemMemberCapacityChanged));
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, ResourceYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
         }
 
         private void SubscribeToStarDataValueChanges() {
@@ -199,7 +199,7 @@ namespace CodeEnv.Master.GameContent {
             _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, OnSettlementOwnerChanged));
         }
 
-        private void UnsubscribeToPlanetoidDataValueChanges(PlanetoidData data) {
+        private void UnsubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
             _planetoidSubscriptions[data].ForAll<IDisposable>(d => d.Dispose());
             _planetoidSubscriptions.Remove(data);
         }
@@ -221,9 +221,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            IList<PlanetoidData> pSubscriptionKeys = new List<PlanetoidData>(_planetoidSubscriptions.Keys);
+            IList<APlanetoidData> pSubscriptionKeys = new List<APlanetoidData>(_planetoidSubscriptions.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
-            foreach (PlanetoidData pData in pSubscriptionKeys) {
+            foreach (APlanetoidData pData in pSubscriptionKeys) {
                 UnsubscribeToPlanetoidDataValueChanges(pData);
             }
             _planetoidSubscriptions.Clear();

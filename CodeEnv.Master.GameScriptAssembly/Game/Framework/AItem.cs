@@ -56,9 +56,17 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     /// <summary>
     /// Indicates whether this item has commenced operations, and if
-    /// it is a MortalItem, that it is not dead.
+    /// it is a MortalItem, that it is not dead. Set to false to initiate death.
     /// </summary>
-    public bool IsOperational { get; protected set; }
+    public bool IsOperational {
+        get { return (this == null) ? false : enabled; }  // if monoBehaviour is destroyed, accessing enabled throws an error
+        protected set {
+            if (enabled != value) {
+                enabled = value;
+                OnIsOperationalChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// The name to use for display in the UI.
@@ -92,19 +100,14 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     #region Initialization
 
-    protected override void Awake() {
+    protected sealed override void Awake() {
         base.Awake();
-        InitializeLocalReferencesAndValues();
+        InitializeOnAwake();
         Subscribe();
-        enabled = false;
+        enabled = false;    // IsOperational = false;   would trigger OnIsOperationalChanged()
     }
 
-    /// <summary>
-    /// Called from Awake, initializes local references and values.
-    /// Note: Radius-related values and components should be initialized when Radius
-    /// is valid which occurs when Data is added.
-    /// </summary>
-    protected virtual void InitializeLocalReferencesAndValues() {
+    protected virtual void InitializeOnAwake() {
         _inputMgr = References.InputManager;
         _gameMgr = References.GameManager;
     }
@@ -131,24 +134,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     protected sealed override void Start() {
         base.Start();
-        InitializeModelMembers();
-        InitializeViewMembers();
     }
-
-    /// <summary>
-    /// Called from Start, initializes Model-related members of this Item.
-    /// </summary>
-    protected abstract void InitializeModelMembers();
-
-    /// <summary>
-    /// Called from Start, initializes View-related members of this item that aren't
-    /// initialized in some other manner. Default implementation initializes the HudManager.
-    /// </summary>
-    protected virtual void InitializeViewMembers() {
-        _hudManager = InitializeHudManager();
-    }
-
-    protected abstract ItemHudManager InitializeHudManager();
 
     #endregion
 
@@ -158,7 +144,12 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// Called when the Item should start operations, typically once the game is running.
     /// </summary>
     public virtual void CommenceOperations() {
+        D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
         IsOperational = true;
+    }
+
+    protected virtual void OnIsOperationalChanged() {
+        D.Assert(IsOperational);    // only MortalItems should ever see a change to false
     }
 
     protected virtual void OnOwnerChanging(Player newOwner) {

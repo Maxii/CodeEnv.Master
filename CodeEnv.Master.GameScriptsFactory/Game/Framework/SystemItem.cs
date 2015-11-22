@@ -73,18 +73,18 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         Planetoids = new List<APlanetoidItem>();
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
-    protected override void InitializeOnData() { }  // no primary collider that needs data, no keepoutzone, no shiporbitslots
+    protected override void InitializeOnData() {
+        // no primary collider that needs data, no ship transit ban zone, no ship orbit slot
+    }
 
-    protected override void InitializeModelMembers() { }
-
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
         __InitializeOrbitalPlaneMeshCollider();
     }

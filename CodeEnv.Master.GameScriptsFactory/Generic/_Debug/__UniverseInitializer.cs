@@ -54,23 +54,21 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
     }
 
     private void InitializeUniverseCenter() {
-        UniverseCenter = gameObject.GetSingleComponentInChildren<UniverseCenterItem>();
+        UniverseCenter = GetComponentInChildren<UniverseCenterItem>();
         if (UniverseCenter != null) {
             float radius = TempGameValues.UniverseCenterRadius;
             float lowOrbitRadius = radius + 5F;
             CameraFocusableStat cameraStat = __MakeCameraStat(radius, lowOrbitRadius);
             UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, radius, lowOrbitRadius, cameraStat, "UniverseCenter");
             UniverseCenter.Data = data;
-            UniverseCenter.enabled = true;
+            // UC will be enabled when CommenceOperations() called
         }
-        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: true);
-        });
+        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: true);
     }
 
     private void EnableOtherWhenRunning() {
         if (UniverseCenter != null) {
-            // CameraLosChangedListener is enabled in Item.InitializeViewMembersOnDiscernible
+            // CameraLosChangedListener is enabled in Item.InitializeOnFirstDiscernibleToUser()
         }
     }
 

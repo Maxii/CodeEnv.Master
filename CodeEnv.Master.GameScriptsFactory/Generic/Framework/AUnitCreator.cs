@@ -164,9 +164,8 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
             CreateElementHullStats();
             MakeAndRecordDesigns();
-            PrepareUnitForOperations(onCompleted: delegate {
-                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
-            });
+            PrepareUnitForOperations();
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
         }
 
         if (gameState == GameState.DeployingUnits) {
@@ -183,6 +182,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         }
     }
 
+
     #region Delay into Runtime System
 
     private GameDate _delayedDateInRuntime;
@@ -193,9 +193,8 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
             CreateElementHullStats();
             MakeAndRecordDesigns();
-            PrepareUnitForOperations(onCompleted: delegate {
-                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
-            });
+            PrepareUnitForOperations();
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
         }
 
         if (gameState == GameState.DeployingUnits) {
@@ -245,11 +244,11 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                 D.Warn("{0} for {1} recorded current date {2} beyond target date {3}.", GetType().Name, UnitName, currentDate, _delayedDateInRuntime);
             }
             if (toDelayBuild) {
-                D.Log("{0} is about to build, deploy and begin ops on {1}.", UnitName, _delayedDateInRuntime);
+                D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
                 BuildDeployAndBeginUnitOperations();
             }
             else {
-                D.Log("{0} has already been built and deployed. It is about to begin ops on {1}.", UnitName, _delayedDateInRuntime);
+                D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
                 BeginUnitOperations();
             }
             //D.Log("{0} for {1} is unsubscribing from GameTime.onDateChanged.", GetType().Name, UnitName);
@@ -259,17 +258,12 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
 
     #endregion
 
-    private void PrepareUnitForOperations(Action onCompleted = null) {
+    private void PrepareUnitForOperations() {
         LogEvent();
         _elements = MakeElements();
         _command = MakeCommand(_owner);
-        EnableUnit(onCompletion: delegate {
-            AddElements();
-            AssignHQElement();
-            if (onCompleted != null) {
-                onCompleted();
-            }
-        });
+        AddElements();
+        AssignHQElement();
     }
 
     /// <summary>
@@ -297,14 +291,13 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     private void BuildDeployAndBeginUnitOperations() {
         CreateElementHullStats();
         MakeAndRecordDesigns();
-        PrepareUnitForOperations(onCompleted: delegate {
-            _isUnitDeployed = DeployUnit();
-            if (!_isUnitDeployed) {
-                Destroy(gameObject);
-                return;
-            }
-            BeginUnitOperations();
-        });
+        PrepareUnitForOperations();
+        _isUnitDeployed = DeployUnit();
+        if (!_isUnitDeployed) {
+            Destroy(gameObject);
+            return;
+        }
+        BeginUnitOperations();
     }
 
     #region Create Stats
@@ -638,21 +631,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     protected abstract ElementType MakeElement(string designName);
 
     protected abstract CommandType MakeCommand(Player owner);
-
-    #region Enablement
-
-    private void EnableUnit(Action onCompletion = null) {
-        LogEvent();
-        _elements.ForAll(e => e.enabled = true);
-        _command.enabled = true;
-        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-            if (onCompletion != null) {
-                onCompletion();
-            }
-        });
-    }
-
-    #endregion
 
     private void AddElements() {
         LogEvent();

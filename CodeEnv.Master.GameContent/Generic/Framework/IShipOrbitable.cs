@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IShipOrbitable.cs
-// Interface for objects that can be orbited by ships.
+// Interface for Items that can be orbited by ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,17 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for objects that can be orbited by ships.
+    /// Interface for Items that can be orbited by ships.
     /// </summary>
     public interface IShipOrbitable {
 
         ShipOrbitSlot ShipOrbitSlot { get; }
-
-        /// <summary>
-        /// The radius of the KeepoutZone surrounding this IShipOrbitable object.
-        /// The ShipOrbitSlot.InnerRadius has the same value.
-        /// </summary>
-        float TransitBanRadius { get; }
 
         string FullName { get; }
 

@@ -93,7 +93,7 @@ public class FleetNavigator : IDisposable {
         }
     }
 
-    private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
+    private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.ShipTransitBan);
 
     /// <summary>
     /// The duration in seconds between course progress assessments. The default is

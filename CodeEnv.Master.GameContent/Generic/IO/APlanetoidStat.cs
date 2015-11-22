@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PlanetoidStat.cs
-// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
+// File: APlanetoidStat.cs
+// Immutable abstract stat containing externally acquirable values for Planetoids, aka Planets and Moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,12 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
+    /// Immutable abstract stat containing externally acquirable values for Planetoids, aka Planets and Moons.
     /// </summary>
-    public struct PlanetoidStat {
+    public abstract class APlanetoidStat {
 
         // A Planetoid's name is assigned once its parent's name and its orbit are known
         public float Radius { get; private set; }
-        public float LowOrbitRadius { get; private set; }
-
         public float Mass { get; private set; }
         public float MaxHitPoints { get; private set; }
         public PlanetoidCategory Category { get; private set; }
@@ -34,28 +32,21 @@ namespace CodeEnv.Master.GameContent {
         public ResourceYield Resources { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlanetoidStat" /> struct.
+        /// Initializes a new instance of the <see cref="APlanetoidStat" /> struct.
         /// </summary>
         /// <param name="radius">The radius.</param>
-        /// <param name="lowOrbitRadius">The low orbit radius.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public PlanetoidStat(float radius, float lowOrbitRadius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources)
-            : this() {
+        public APlanetoidStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources) {
             Radius = radius;
-            LowOrbitRadius = lowOrbitRadius;
             Mass = mass;
             MaxHitPoints = maxHitPts;
             Category = category;
             Capacity = capacity;
             Resources = resources;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

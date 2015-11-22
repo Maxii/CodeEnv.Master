@@ -84,25 +84,26 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="systemName">Name of the system.</param>
     /// <returns></returns>
     public StarItem MakeInstance(StarStat starStat, CameraFocusableStat cameraStat, GameObject systemParent, string systemName) {
+        D.Assert(systemParent != null);
         StarItem starPrefab = _starPrefabs.Single(star => star.category == starStat.Category);
         GameObject starGo = UnityUtility.AddChild(systemParent, starPrefab.gameObject);
         starGo.layer = (int)Layers.Default;
         StarItem starItem = starGo.GetSafeComponent<StarItem>();
-        MakeInstance(starStat, cameraStat, systemName, ref starItem);
+        PopulateInstance(starStat, cameraStat, systemName, ref starItem);
         return starItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Star from the stat and item provided. The Item (with its Data)  will not be enabled.
+    /// Populates the item instance provided from the stats provided. The Item (with its Data)  will not be enabled.
     /// The item's transform will have the same layer and same parent it arrived with.
     /// </summary>
     /// <param name="starStat">The star stat.</param>
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="systemName">Name of the system.</param>
     /// <param name="star">The star item.</param>
-    public void MakeInstance(StarStat starStat, CameraFocusableStat cameraStat, string systemName, ref StarItem star) {
-        D.Assert(!star.enabled, "{0} should not be enabled.".Inject(star.FullName));
-        D.Assert(star.transform.parent != null, "{0} should already have a parent.".Inject(star.FullName));
+    public void PopulateInstance(StarStat starStat, CameraFocusableStat cameraStat, string systemName, ref StarItem star) {
+        D.Assert(!star.IsOperational, "{0} should not be operational.", star.FullName);
+        D.Assert(star.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(star.FullName));
         D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetValueName(), star.category.GetValueName()));
 
         string starName = systemName + Constants.Space + CommonTerms.Star;
@@ -122,17 +123,17 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentSystem">The parent system.</param>
     /// <returns></returns>
-    public PlanetItem MakeInstance(PlanetoidStat planetStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, SystemItem parentSystem) {
+    public PlanetItem MakeInstance(PlanetStat planetStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, SystemItem parentSystem) {
         GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
 
         var planetItem = planetGo.GetSafeComponent<PlanetItem>();
-        MakeInstance(planetStat, cameraStat, cmStats, parentSystem.Data.Name, ref planetItem);
+        PopulateInstance(planetStat, cameraStat, cmStats, parentSystem.Data.Name, ref planetItem);
         return planetItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Planet from the stat and item provided.
+    /// Populates the item instance provided from the stats provided.
     /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
     /// <param name="planetStat">The planet stat.</param>
@@ -140,19 +141,18 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentSystemName">Name of the parent system.</param>
     /// <param name="planet">The planet item.</param>
-    public void MakeInstance(PlanetoidStat planetStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentSystemName, ref PlanetItem planet) {
-        D.Assert(!planet.enabled, "{0} should not be enabled.".Inject(planet.FullName));
-        D.Assert(planet.transform.parent != null, "{0} should already have a parent.".Inject(planet.FullName));
+    public void PopulateInstance(PlanetStat planetStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentSystemName, ref PlanetItem planet) {
+        D.Assert(!planet.IsOperational, "{0} should not be operational.", planet.FullName);
+        D.Assert(planet.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(planet.FullName));
         D.Assert(planetStat.Category == planet.category,
             "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
 
         Rigidbody planetRigidbody = planet.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
-        planet.Data = new PlanetoidData(planet.transform, planetRigidbody, planetStat, cameraStat, passiveCMs) {
+        planet.Data = new PlanetData(planet.transform, planetRigidbody, planetStat, cameraStat, passiveCMs) {
             ParentName = parentSystemName
         };
     }
-
 
     /// <summary>
     /// Makes an instance of a Moon based on the stat provided. The returned
@@ -163,17 +163,17 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanet">The parent planet.</param>
     /// <returns></returns>
-    public MoonItem MakeInstance(PlanetoidStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, PlanetItem parentPlanet) {
+    public MoonItem MakeInstance(MoonStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, PlanetItem parentPlanet) {
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
         var moonItem = moonGo.GetSafeComponent<MoonItem>();
-        MakeInstance(moonStat, cameraStat, cmStats, parentPlanet.Data.Name, ref moonItem);
+        PopulateInstance(moonStat, cameraStat, cmStats, parentPlanet.Data.Name, ref moonItem);
         return moonItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Moon from the stat and item provided.
+    /// Populates the item instance provided from the stats provided.
     /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
     /// <param name="moonStat">The planet stat.</param>
@@ -181,15 +181,15 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanetName">Name of the parent planet.</param>
     /// <param name="moon">The item.</param>
-    public void MakeInstance(PlanetoidStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
-        D.Assert(!moon.enabled, "{0} should not be enabled.".Inject(moon.FullName));
-        D.Assert(moon.transform.parent != null, "{0} should already have a parent.".Inject(moon.FullName));
+    public void PopulateInstance(MoonStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
+        D.Assert(!moon.IsOperational, "{0} should not be operational.", moon.FullName);
+        D.Assert(moon.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
             "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName());
 
         Rigidbody moonRigidbody = moon.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
-        moon.Data = new PlanetoidData(moon.transform, moonRigidbody, moonStat, cameraStat, passiveCMs) {
+        moon.Data = new MoonData(moon.transform, moonRigidbody, moonStat, cameraStat, passiveCMs) {
             ParentName = parentPlanetName
         };
     }
@@ -208,17 +208,18 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject systemGo = UnityUtility.AddChild(parent, systemPrefab);
         systemGo.name = systemName;
         SystemItem item = systemGo.GetSafeComponent<SystemItem>();
-        MakeSystemInstance(systemName, cameraStat, ref item);
+        PopulateSystemInstance(systemName, cameraStat, ref item);
         return item;
     }
 
     /// <summary>
-    /// Makes an instance of a System from the name and item provided. The Item (with its Data) 
+    /// Populates the item instance provided from the stat provided. The Item (with its Data) 
     /// will not be enabled. The item's transform will have the same parent and children it arrived with.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
     /// <param name="system">The system item.</param>
-    public void MakeSystemInstance(string systemName, CameraFocusableStat cameraStat, ref SystemItem system) {
+    public void PopulateSystemInstance(string systemName, CameraFocusableStat cameraStat, ref SystemItem system) {
+        D.Assert(!system.IsOperational, "{0} should not be operational.", system.FullName);
         D.Assert(system.transform.parent != null, "{0} should already have a parent.", system.FullName);
         SystemData data = new SystemData(system.transform, cameraStat, systemName) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData

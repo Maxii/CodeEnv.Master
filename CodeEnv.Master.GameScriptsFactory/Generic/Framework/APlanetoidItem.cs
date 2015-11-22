@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, ISensorDetectable {
+public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IShipTransitBanned, IUnitAttackableTarget, IElementAttackableTarget, ISensorDetectable {
 
     /// <summary>
     /// Gets the maximum possible orbital speed of a planetoid in Units per hour, aka the max speed of any planet plus the max speed of any moon.
@@ -36,8 +36,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     [Tooltip("The category of planetoid")]
     public PlanetoidCategory category = PlanetoidCategory.None;
 
-    public new PlanetoidData Data {
-        get { return base.Data as PlanetoidData; }
+    public new APlanetoidData Data {
+        get { return base.Data as APlanetoidData; }
         set { base.Data = value; }
     }
 
@@ -59,8 +59,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     protected override void InitializeOnData() {
         base.InitializeOnData();
         InitializePrimaryCollider();
-        InitializeShipOrbitSlot();
-        InitializeTransitBanZone();
+        InitializeTransitBanCollider();
+        D.Assert(category == Data.Category);
+        System = gameObject.GetComponentInParent<SystemItem>();
+        _detectionHandler = new DetectionHandler(this);
+        CurrentState = PlanetoidState.None;
     }
 
     private void InitializePrimaryCollider() {
@@ -70,31 +73,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         _collider.radius = Data.Radius;
     }
 
-    private void InitializeShipOrbitSlot() {
-        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
-    }
-    //private void InitializeShipOrbitSlot() {
-    //    float innerOrbitRadius = Data.LowOrbitRadius;
-    //    float outerOrbitRadius = innerOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
-    //    ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
-    //}
-
-    private void InitializeTransitBanZone() {
-        SphereCollider transitBanZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(transitBanZoneCollider.gameObject.layer == (int)Layers.TransitBan);
-        transitBanZoneCollider.isTrigger = true;
-        transitBanZoneCollider.radius = Data.HighOrbitRadius;  //Data.LowOrbitRadius;
+    private void InitializeTransitBanCollider() {
+        SphereCollider shipTransitBanCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        D.Assert(shipTransitBanCollider.gameObject.layer == (int)Layers.ShipTransitBan);
+        shipTransitBanCollider.isTrigger = true;
+        shipTransitBanCollider.radius = ShipTransitBanRadius;
     }
 
-    protected override void InitializeModelMembers() {
-        D.Assert(category == Data.Category);
-        System = gameObject.GetComponentInParent<SystemItem>();
-        _detectionHandler = new DetectionHandler(this);
-        CurrentState = PlanetoidState.None;
-    }
-
-    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
-        base.InitializeViewMembersWhenFirstDiscernibleToUser();
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
 
         float orbitalRadius = transform.localPosition.magnitude;
@@ -217,6 +204,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IElementAttackableTarget Members
 
+    [System.Obsolete]
     public void OnFiredUponBy(IInterceptableOrdnance ordnanceFired) {
         // does nothing as planetoids have no activeCMs to attempt to intercept
     }
@@ -238,7 +226,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
         if (!isAlive) {
             //__GenerateExplosionMedia();
-            InitiateDeath();
+            IsOperational = false;
             return;
         }
         StartEffect(EffectID.Hit);
@@ -259,11 +247,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #endregion
 
-    #region IShipOrbitable Members
+    #region IShipTransitBanned Members
 
-    public float TransitBanRadius { get { return Data.HighOrbitRadius; } }
-
-    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+    public abstract float ShipTransitBanRadius { get; }
 
     #endregion
 

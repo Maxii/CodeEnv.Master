@@ -95,6 +95,7 @@ namespace CodeEnv.Master.GameContent {
             _secondaryMeshRenderers = hullGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {
                 // Mounts
+                //D.Log("{0} is initializing Mount Renderers.", Name);
                 _secondaryMeshRenderers.ForAll(r => {
                     D.Assert((Layers)r.gameObject.layer == CullingLayer);
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;

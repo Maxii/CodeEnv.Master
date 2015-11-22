@@ -49,7 +49,7 @@ public class UniverseCenterModel : AItemModel, INavigableTarget, IShipOrbitable 
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetFirstComponentInImmediateChildrenOnly<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.TransitBan);
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.ShipTransitBan);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }

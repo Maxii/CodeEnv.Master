@@ -63,6 +63,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         InitializePrimaryCollider();
         InitializePrimaryRigidbody();
         AttachEquipment();
+        _detectionHandler = new DetectionHandler(this);
     }
 
     private void InitializePrimaryCollider() {
@@ -88,10 +89,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitElementItemData, bool>(data => data.IsHQ, OnIsHQChanged));
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
-    }
-
-    protected override void InitializeModelMembers() {
-        _detectionHandler = new DetectionHandler(this);
     }
 
     protected sealed override ADisplayManager InitializeDisplayManager() {
@@ -603,7 +600,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         float damageSeverity;
         bool isElementAlive = ApplyDamage(damage, out damageSeverity);
         if (!isElementAlive) {
-            InitiateDeath();    // should immediately propogate thru to Cmd's alive status
+            IsOperational = false;  // InitiateDeath();    // should immediately propogate thru to Cmd's alive status
         }
         if (IsHQ && Command.IsOperational) {
             isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);

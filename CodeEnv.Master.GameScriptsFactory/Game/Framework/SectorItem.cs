@@ -42,17 +42,9 @@ public class SectorItem : AItem, ISectorItem {
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        // there is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
-    }
-
-    protected override void InitializeOnData() { }
-
-    protected override void InitializeModelMembers() { }
-
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override void InitializeOnData() {
+        _hudManager = new ItemHudManager(Publisher);
+        // Note: There is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
     }
 
     #endregion

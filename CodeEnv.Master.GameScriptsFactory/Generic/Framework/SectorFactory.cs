@@ -49,7 +49,7 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
         // IMPROVE use data values in place of sector values
 
         sectorGO.transform.position = worldLocation;
-        sector.enabled = true;
+        // sector will be enabled when Sector.CommenceOperations() called
         return sector;
     }
 

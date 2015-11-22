@@ -326,7 +326,7 @@ namespace Pathfinding {
         /// The method determines which based on whether the starbase has previously been recorded.
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
-        public void UpdateGraph(StarbaseCmdItem baseCmd) {
+        public void UpdateGraph(StarbaseCmdItem baseCmd) {  // TODO Call from StarbaseUnitCreator.DeployUnit()
             throw new System.NotImplementedException("{0}.UpdateGraph(StarbaseCommandItem) is awaiting upgrade to AstarPath.Pro.".Inject(GetType().Name));
             // *****************************************************************************
             // TODO Aren: "PointGraphs implement GraphUpdateObject.Apply() only in Pro"

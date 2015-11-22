@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MoonData : APlanetoidData {
 
-        public MoonData(PlanetoidStat stat) : base(stat) { }
+        public MoonData(APlanetoidStat stat) : base(stat) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

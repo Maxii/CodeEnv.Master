@@ -489,7 +489,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
-        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.TransitBan);
+        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.ShipTransitBan);
 
         /// <summary>
         /// The number of course progress assessments allowed between course correction checks 

@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<PlanetoidData>(Model.Data);
+            var publisher = new GuiHudPublisher<APlanetoidData>(Model.Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }

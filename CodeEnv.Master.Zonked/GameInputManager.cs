@@ -44,7 +44,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
     private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
-        Layers.DeepSpace, Layers.UI, Layers.UIPopup, Layers.Vectrosity2D, Layers.TransitBan, Layers.IgnoreRaycast);
+        Layers.DeepSpace, Layers.UI, Layers.UIPopup, Layers.Vectrosity2D, Layers.ShipTransitBan, Layers.IgnoreRaycast);
 
     /// <summary>
     /// The EventDispatcher (World or UI) mask that does not allow any events to be raised.

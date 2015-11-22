@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PlanetoidPublisher.cs
-// Report and HudContent Publisher for Planetoids.
+// File: PlanetStat.cs
+// Immutable stat containing externally acquirable values for Planets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,20 +19,15 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and HudContent Publisher for Planetoids.
+    /// Immutable stat containing externally acquirable values for Planets.
     /// </summary>
-    public class PlanetoidPublisher : AIntelItemPublisher<PlanetoidReport, APlanetoidData> {
+    public class PlanetStat : APlanetoidStat {
 
-        public override ColoredStringBuilder ItemHudText {
-            get { return PlanetoidDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
-        }
+        public float LowOrbitRadius { get; private set; }
 
-        private IPlanetoidItem _item;
-
-        public PlanetoidPublisher(APlanetoidData data, IPlanetoidItem item) : base(data) { _item = item; }
-
-        protected override PlanetoidReport GenerateReport(Player player) {
-            return new PlanetoidReport(_data, player, _item);
+        public PlanetStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources, float lowOrbitRadius)
+            : base(radius, mass, maxHitPts, category, capacity, resources) {
+            LowOrbitRadius = lowOrbitRadius;
         }
 
         public override string ToString() {

@@ -53,14 +53,14 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="ADiscernibleItemData.cs" />
-    <Compile Include="AUnitBaseCmdItemData.cs" />
-    <Compile Include="CameraFleetCmdStat.cs" />
-    <Compile Include="SettlementCmdStat.cs" />
-    <Compile Include="UnitBaseCmdStat.cs" />
-    <Compile Include="UnitCmdStat.cs" />
-    <Compile Include="CameraFocusableStat.cs" />
-    <Compile Include="CameraFollowableStat.cs" />
+    <Compile Include="Generic\Framework\ADiscernibleItemData.cs" />
+    <Compile Include="Generic\Framework\AUnitBaseCmdItemData.cs" />
+    <Compile Include="Generic\IO\CameraFleetCmdStat.cs" />
+    <Compile Include="Generic\IO\SettlementCmdStat.cs" />
+    <Compile Include="Generic\IO\UnitBaseCmdStat.cs" />
+    <Compile Include="Generic\IO\UnitCmdStat.cs" />
+    <Compile Include="Generic\IO\CameraFocusableStat.cs" />
+    <Compile Include="Generic\IO\CameraFollowableStat.cs" />
     <Compile Include="Generic\_Debug\CombatResult.cs" />
     <Compile Include="Generic\IO\AWeaponStat.cs" />
     <Compile Include="Generic\IO\BeamWeaponStat.cs" />
@@ -130,7 +130,7 @@
     <Compile Include="Game\Framework\FacilityData.cs" />
     <Compile Include="Game\Framework\FleetCmdData.cs" />
     <Compile Include="Generic\Framework\ISensorDetectable.cs" />
-    <Compile Include="Game\Framework\PlanetoidData.cs" />
+    <Compile Include="Generic\Framework\APlanetoidData.cs" />
     <Compile Include="Game\GUI\BaseComposition.cs" />
     <Compile Include="Game\GUI\FleetComposition.cs" />
     <Compile Include="Generic\Framework\ACmdPublisher.cs" />
@@ -203,7 +203,7 @@
     <Compile Include="Generic\Framework\OrderSource.cs" />
     <Compile Include="Generic\Deferred\ShipCombatStance.cs" />
     <Compile Include="Generic\Framework\NoPlayer.cs" />
-    <Compile Include="Generic\IO\PlanetoidStat.cs" />
+    <Compile Include="Generic\IO\APlanetoidStat.cs" />
     <Compile Include="Generic\Framework\IShipOrbitable.cs" />
     <Compile Include="Generic\Framework\IOrbitSimulator.cs" />
     <Compile Include="Generic\Framework\IShipOrbitSimulator.cs" />
@@ -305,6 +305,11 @@
     <Compile Include="Generic\IO\MissileWeaponStat.cs" />
     <Compile Include="Game\Gameplay\PlayersKnowledge.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
+    <Compile Include="Generic\Framework\IShipTransitBanned.cs" />
+    <Compile Include="Game\Framework\MoonData.cs" />
+    <Compile Include="Generic\IO\MoonStat.cs" />
+    <Compile Include="Game\Framework\PlanetData.cs" />
+    <Compile Include="Generic\IO\PlanetStat.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />
@@ -356,7 +361,7 @@
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />
     <Compile Include="Game\GUI\UniverseCenterDisplayInfoFactory.cs" />
     <Compile Include="Generic\Extensions\TopographyExtensions.cs" />
-    <Compile Include="WaitJobUtility.cs" />
+    <Compile Include="Generic\Extensions\WaitJobUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />
