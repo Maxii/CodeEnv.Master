@@ -38,48 +38,49 @@ namespace CodeEnv.Master.GameContent {
         public static float GetUnitsPerHour(this Speed speed, FleetCmdData fleetData, ShipData shipData = null) {
             D.Assert(fleetData != null || shipData != null);
 
+            // Note: see Flight.txt in GameDev Notes for analysis
+
             float fleetFullSpeed = Constants.ZeroF;
             if (fleetData != null) {
-                fleetFullSpeed = fleetData.UnitFullSpeed;
+                fleetFullSpeed = fleetData.UnitFullSpeed;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                 //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fleetFullSpeed);
             }
 
             float shipFullSpeed = Constants.ZeroF;
             if (shipData != null) {
-                shipFullSpeed = shipData.FullSpeed;
+                shipFullSpeed = shipData.FullSpeed; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                 //D.Log("{0}.FullSpeed = {1} units/hour. FtlAvailable = {2}.", shipData.FullName, shipFullSpeed, shipData.IsFtlAvailableForUse);
             }
 
             float result;
-
             switch (speed) {
                 case Speed.EmergencyStop:
                     return Constants.ZeroF;
                 case Speed.Stop:
                     return Constants.ZeroF;
                 case Speed.Docking:
-                    result = 0.04F; // TODO
+                    result = 0.04F;
                     break;
                 case Speed.StationaryOrbit:
-                    result = 0.1F;  // TODO
+                    result = 0.1F;
                     break;
-                case Speed.MovingOrbit: // UNCLEAR limit moving orbits to planets in Systems?
-                    result = 0.2F;      // TODO How fast can planets move? ignore moons, slow down planet orbits?
+                case Speed.MovingOrbit: // Typical Planet Orbital Speed ~ 0.1, Moons are no longer IShipOrbitable
+                    result = 0.2F;
                     break;
                 case Speed.Slow:
                     result = 0.3F;
                     break;
                 case Speed.OneThird:
-                    result = 0.25F * shipFullSpeed;
+                    result = 0.25F * shipFullSpeed; // 11.24.15 InSystem, STL = 0.4, OpenSpace, FTL = 10
                     break;
                 case Speed.TwoThirds:
-                    result = 0.5F * shipFullSpeed;
+                    result = 0.5F * shipFullSpeed;  // 11.24.15 InSystem, STL = 0.8, OpenSpace, FTL = 20
                     break;
                 case Speed.Standard:
-                    result = 0.75F * shipFullSpeed;
+                    result = 0.75F * shipFullSpeed; // 11.24.15 InSystem, STL = 1.2, OpenSpace, FTL = 30
                     break;
                 case Speed.Full:
-                    result = 1.0F * shipFullSpeed;
+                    result = 1.0F * shipFullSpeed;  // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                     break;
 
                 case Speed.FleetSlow:

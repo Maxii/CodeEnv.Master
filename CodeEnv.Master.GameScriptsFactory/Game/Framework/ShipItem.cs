@@ -898,7 +898,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             Command.RemoveElement(this);
             transferFleetCmd = UnitFactory.Instance.MakeFleetInstance(transferFleetName, this);
             transferFleetCmd.CommenceOperations();
-            // 2 scenarios concerning PlayerKnowledge
+            // 2 scenarios concerning PlayerKnowledge tracking these changes
             //  - ship is HQ of current fleet
             //      -> ship will lose isHQ and another will gain it. Handled by PK due to onIsHQChanged event
             //  - ship is not HQ
@@ -910,7 +910,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             D.Assert(Command.Elements.Single().Equals(this));
             transferFleetCmd = Command as FleetCmdItem;
             transferFleetCmd.Data.ParentName = transferFleetName;
-            // no changes needed for PlayerKnowledge. Fleet name will be correct on next access
+            // no changes needed for PlayerKnowledge. Fleet name will be correct on next PK access
         }
         // issue a JoinFleet order to our transferFleet
         FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetToJoin);
@@ -1809,6 +1809,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             D.Assert(IsAutoPilotEngaged);
             //D.Log("{0} autoPilot is engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
             _engineRoom.ChangeSpeed(TravelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
+            __TryReportSpeedProgression(TravelSpeed);
         }
 
         /// <summary>
@@ -1826,7 +1827,49 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 D.Assert(!_shipRigidbody.isKinematic);
                 _shipRigidbody.velocity = Vector3.zero;
             }
+            __TryReportSpeedProgression(newSpeed);
         }
+
+        #region Constant Speed Progression Reporting
+
+        private static Speed[] __constantValueSpeeds = new Speed[] { Speed.Stop, Speed.Docking, Speed.StationaryOrbit, Speed.MovingOrbit, Speed.Slow };
+
+        private Job __speedProgressionReportingJob;
+
+        private void __TryReportSpeedProgression(Speed newSpeed) {
+            if (__constantValueSpeeds.Contains(newSpeed)) {
+                __ReportSpeedProgression(newSpeed);
+            }
+            else {
+                __KillSpeedProgressionReportingJob();
+            }
+        }
+
+        private void __ReportSpeedProgression(Speed constantSpeed) {
+            D.Assert(__constantValueSpeeds.Contains(constantSpeed), "{0} speed {1} is not a constant.", _ship.FullName, constantSpeed.GetValueName());
+            __KillSpeedProgressionReportingJob();
+            if (constantSpeed == Speed.Stop && _ship.Data.CurrentSpeed == Constants.ZeroF) {
+                return; // don't bother reporting if not moving and Speed setting is Stop
+            }
+            __speedProgressionReportingJob = new Job(__ContinuouslyReportSpeedProgression(constantSpeed), toStart: true);
+        }
+
+        private IEnumerator __ContinuouslyReportSpeedProgression(Speed constantSpeed) {
+            string desiredSpeedText = "{0}: {1}({2:0.###})".Inject(_ship.FullName, constantSpeed.GetValueName(), constantSpeed.GetUnitsPerHour(null, _ship.Data));
+            float currentSpeed;
+            while ((currentSpeed = _ship.Data.CurrentSpeed) > Constants.ZeroF) {
+                D.Log(desiredSpeedText + " Actual = {0:0.###}.", currentSpeed);
+                yield return new WaitForSeconds(3);
+            }
+        }
+
+        private void __KillSpeedProgressionReportingJob() {
+            if (__speedProgressionReportingJob != null && __speedProgressionReportingJob.IsRunning) {
+                __speedProgressionReportingJob.Kill();
+            }
+        }
+
+        #endregion
 
         #region AdjustSpeedForTurn Archive
 
@@ -2307,6 +2350,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         protected override void Cleanup() {
             base.Cleanup();
             if (_headingJob != null) { _headingJob.Dispose(); }
+            if (__speedProgressionReportingJob != null) { __speedProgressionReportingJob.Dispose(); }
             _engineRoom.Dispose();
             Unsubscribe();
         }

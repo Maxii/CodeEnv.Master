@@ -26,8 +26,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UnitCmdDisplayManager : AIconDisplayManager {
 
-        private static Vector2 _cmdIconSize = new Vector2(24F, 24F);
+        /******************************************************************************************
+                    * For detail on this color change system, see AElementDisplayManager
+                    ******************************************************************************************/
 
+        private static Vector2 _cmdIconSize = new Vector2(24F, 24F);
         private static float _primaryMeshAlpha = 0.1F;
 
         private GameColor _color;
@@ -49,8 +52,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override Vector2 IconSize { get { return _cmdIconSize; } }
 
-        private Color _primaryMeshColor;
         private float _currentPrimaryMeshRadius;
+        private MaterialPropertyBlock _primaryMeshMPB;
+        private MaterialPropertyBlock _hiddenMeshMPB;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnitCmdDisplayManager"/> class.
@@ -61,8 +65,7 @@ namespace CodeEnv.Master.GameContent {
         public UnitCmdDisplayManager(IWidgetTrackable trackedCmd, IconInfo iconInfo, GameColor color)
             : base(trackedCmd) {
             IconInfo = iconInfo;
-            _color = color;
-            _primaryMeshColor = color.ToUnityColor(_primaryMeshAlpha);
+            Color = color;  // will result in OnColorChanged() which will initialize the ColorChangeSystem
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
@@ -73,9 +76,7 @@ namespace CodeEnv.Master.GameContent {
             primaryMeshRenderer.receiveShadows = false;
             D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) != Layers.Default); // HACK    // layer automatically handles showing
 
-            var material = primaryMeshRenderer.material;
-            InitializePrimaryMeshMaterial(material);
-
+            InitializePrimaryMeshMaterial(primaryMeshRenderer.material);
             return primaryMeshRenderer;
         }
 
@@ -86,8 +87,27 @@ namespace CodeEnv.Master.GameContent {
             if (!material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Metallic)) {
                 material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Metallic);
             }
-            material.SetFloat(UnityConstants.StdShader_Property_MetallicFloat, Constants.ZeroF);
-            material.SetFloat(UnityConstants.StdShader_Property_SmoothnessFloat, Constants.ZeroF);
+            if (material.GetFloat(UnityConstants.StdShader_Property_MetallicFloat) != Constants.ZeroF) {
+                material.SetFloat(UnityConstants.StdShader_Property_MetallicFloat, Constants.ZeroF);
+            }
+            if (material.GetFloat(UnityConstants.StdShader_Property_SmoothnessFloat) != Constants.ZeroF) {
+                material.SetFloat(UnityConstants.StdShader_Property_SmoothnessFloat, Constants.ZeroF);
+            }
+        }
+
+        private void InitializeColorChangeSystem(GameColor color) {
+            Color primaryMeshColor = color.ToUnityColor(_primaryMeshAlpha);
+            _primaryMeshMPB = new MaterialPropertyBlock();  // default color is black
+            _primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
+            // renderer's existing MaterialPropertyBlock color is also black, implying that the existing property block is the default, at least wrt color
+            _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, primaryMeshColor);
+            //D.Log("{0}.PrimaryMeshMPB color after init = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
+
+            if (_hiddenMeshMPB == null) {
+                _hiddenMeshMPB = new MaterialPropertyBlock();
+                _primaryMeshRenderer.GetPropertyBlock(_hiddenMeshMPB);
+                _hiddenMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
+            }
         }
 
         /// <summary>
@@ -103,12 +123,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
-            _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
+            _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
         }
 
         protected override void HidePrimaryMesh() {
             base.HidePrimaryMesh();
-            _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
+            _primaryMeshRenderer.SetPropertyBlock(_hiddenMeshMPB);
         }
 
         /// <summary>
@@ -121,9 +141,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnColorChanged() {
-            _primaryMeshColor = Color.ToUnityColor(_primaryMeshAlpha);
-            if (IsDisplayEnabled) {
-                _primaryMeshRenderer.material.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
+            InitializeColorChangeSystem(Color);
+            if (IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS) {
+                // change the renderer's color using the updated _primaryMeshMPB
+                ShowPrimaryMesh();
             }
         }
 

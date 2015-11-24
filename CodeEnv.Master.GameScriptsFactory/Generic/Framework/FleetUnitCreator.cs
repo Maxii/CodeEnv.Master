@@ -30,11 +30,29 @@ using MoreLinq;
 /// Initialization class that deploys a fleet at the location of this FleetCreator. The fleet
 /// deployed will simply be initialized if already present in the scene. If it is not present, then
 /// it will be built and then initialized.
-/// </summary>
+/// </summary>  // Has Editor
 public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
-    public bool move;   // Has Editor
+    /// <summary>
+    /// Indicates whether this Fleet should move to a destination.
+    /// </summary>
+    public bool move;
+
+    /// <summary>
+    /// If fleet is to move to a destination, should it pick the farthest or the closest?
+    /// </summary>
+    public bool findFarthest;
+
+    /// <summary>
+    /// The fleet is to move to a destination, should it attack it?
+    /// </summary>
     public bool attack;
+
+    /// <summary>
+    /// Indicates whether the FTL drive of all the ships in the fleet should start damaged, aka not operational.
+    /// They can still repair themselves.
+    /// </summary>
+    public bool ftlStartsDamaged;
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
@@ -80,13 +98,16 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     protected override ShipItem MakeElement(string designName) {
         ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(_owner, designName);
         CameraFollowableStat cameraStat = __MakeElementCameraStat(design.HullStat);
-        return _factory.MakeInstance(_owner, cameraStat, design);
+        var ship = _factory.MakeInstance(_owner, cameraStat, design);
+        ship.Data.IsFtlDamaged = ftlStartsDamaged;
+        return ship;
     }
 
     protected override void PopulateElement(string designName, ref ShipItem element) {
         ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(_owner, designName);
         CameraFollowableStat cameraStat = __MakeElementCameraStat(design.HullStat);
         _factory.PopulateInstance(_owner, cameraStat, design, ref element);
+        element.Data.IsFtlDamaged = ftlStartsDamaged;
     }
 
     protected override ShipHullCategory GetCategory(ShipHullStat hullStat) { return hullStat.HullCategory; }
@@ -165,8 +186,13 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                 }
             }
         }
-        INavigableTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
-        //INavigableTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+        INavigableTarget destination;
+        if (findFarthest) {
+            destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+        }
+        else {
+            destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+        }
         D.Log("{0} destination is {1}.", UnitName, destination.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, destination, Speed.FleetStandard);
     }
@@ -193,8 +219,13 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                 }
             }
         }
-        IUnitAttackableTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
-        //IUnitAttackableTarget attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+        IUnitAttackableTarget attackTgt;
+        if (findFarthest) {
+            attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+        }
+        else {
+            attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+        }
         D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);
     }
@@ -258,8 +289,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
         float engineMass = __GetEngineMass(hullCategory);
 
-        float fullStlPower = __GetFullStlPower(hullCategory);  // FullStlSpeed ~ 1.5 - 3 units/hour
-        float fullFtlPower = fullStlPower * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
+        float fullFtlPower = __GetFullFtlPower(hullCategory);  // FullFtlOpenSpaceSpeed ~ 30-40 units/hour
+        float fullStlPower = fullFtlPower / TempGameValues.FtlToStlPowerRatio;   // FullStlSystemSpeed ~ 1.2 - 1.6 units/hour
         return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPower, fullFtlPower,
             maxTurnRate, 0F, engineMass, 0F, 0F);
     }
@@ -364,28 +395,20 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         return __GetHullMass(hull) * 0.10F;
     }
 
-    private float __GetFullStlPower(ShipHullCategory hull) { // generates StlSpeed ~ 1.5 - 3 units/hr;  planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hr
-        switch (hull) {
-            case ShipHullCategory.Frigate:
-                return UnityEngine.Random.Range(5F, 15F);
-            case ShipHullCategory.Destroyer:
-            case ShipHullCategory.Support:
-                return UnityEngine.Random.Range(10F, 30F);
-            case ShipHullCategory.Cruiser:
-            case ShipHullCategory.Colonizer:
-            case ShipHullCategory.Science:
-                return UnityEngine.Random.Range(20F, 60F);
-            case ShipHullCategory.Dreadnaught:
-            case ShipHullCategory.Troop:
-                return UnityEngine.Random.Range(40F, 120F);
-            case ShipHullCategory.Carrier:
-                return UnityEngine.Random.Range(50F, 150F);
-            case ShipHullCategory.Scout:
-            case ShipHullCategory.Fighter:
-            case ShipHullCategory.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
-        }
+    /// <summary>
+    /// Gets the power generated by the FTL engines when operating at Full capacity.
+    /// </summary>
+    /// <param name="hull">The ship hull.</param>
+    /// <returns></returns>
+    private float __GetFullFtlPower(ShipHullCategory hull) {
+        float fastestFullSpeedTgt = TempGameValues.TargetFtlOpenSpaceFullSpeed; // 40F
+        float slowestFullSpeedTgt = fastestFullSpeedTgt * 0.75F;   // this way, the slowest Speed.OneThird speed >= Speed.Slow
+        float fullSpeedTgt = UnityEngine.Random.Range(slowestFullSpeedTgt, fastestFullSpeedTgt);
+        float hullMass = __GetHullMass(hull);   // most but not all of the mass of the ship
+        float hullOpenSpaceDrag = __GetHullDrag(hull);
+
+        // reqdFullPower = fullSpeedTgt x Mass x Drag(OpenSpace);
+        return fullSpeedTgt * hullMass * hullOpenSpaceDrag;
     }
 
     private Vector3 __GetHullDimensions(ShipHullCategory hullCat) {

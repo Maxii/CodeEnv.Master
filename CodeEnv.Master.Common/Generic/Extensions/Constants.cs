@@ -57,6 +57,18 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public const string FormatFloat_2DpMax = "{0:0.##}";    // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = up to 2
         /// <summary>
+        /// Three decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_3Dp = "{0:0.000}";
+        /// <summary>
+        /// Up to three decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_3DpMax = "{0:0.###}";
+        /// <summary>
+        /// Four decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_4Dp = "{0:0.0000}";
+        /// <summary>
         /// Up to four decimal places, rounded.
         /// </summary>
         public const string FormatFloat_4DpMax = "{0:0.####}";

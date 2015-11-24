@@ -38,9 +38,8 @@ namespace CodeEnv.Master.GameContent {
                     return 1F;
                 case Topography.System:
                 case Topography.Nebula:
-                    return 10F;
-                case Topography.DeepNebula:
-                    return 20F;  // TODO 
+                    return 5F;
+                case Topography.DeepNebula: // TODO
                 case Topography.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(topography));

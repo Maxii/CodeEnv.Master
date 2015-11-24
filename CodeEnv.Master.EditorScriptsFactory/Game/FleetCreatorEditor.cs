@@ -33,9 +33,11 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
         fleetCreator.move = GUILayout.Toggle(fleetCreator.move, "Get Fleet Underway");
         if (fleetCreator.move) {
             EditorGUI.indentLevel++;
+            fleetCreator.findFarthest = GUILayout.Toggle(fleetCreator.findFarthest, "Find Farthest Target");
             fleetCreator.attack = GUILayout.Toggle(fleetCreator.attack, "Attack Targets");
             EditorGUI.indentLevel--;
         }
+        fleetCreator.ftlStartsDamaged = GUILayout.Toggle(fleetCreator.ftlStartsDamaged, "FTL Starts Damaged");
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

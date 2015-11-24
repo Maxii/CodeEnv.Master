@@ -5,9 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DebugSettingsWindow.cs
-// Editor window that holds my toggle for changing my unity project
-// Conditional Compilation Symbols, in particular DEBUG_LOG.
+// File: DefinesWindow.cs
+// Editor window that holds the Conditional Compilation DEFINE Symbols I wish to include in this UnityProject.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +18,21 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using CodeEnv.Master.Common;
-// WARNING: As this script causes an immediate recompile whenever the toggle
-// value is changed, I should not add any usings from the rest of the project! 
+// WARNING: This script causes an immediate recompile whenever the toggle value is changed.
 
 /// <summary>
-/// Editor window that holds my toggle for changing my unity project
-/// Conditional Compilation Symbols, in particular DEBUG_LOG.
+/// Editor window that holds the Conditional Compilation DEFINE Symbols I wish to include in this UnityProject.
 /// </summary>
-public class DebugSettingsWindow : EditorWindow {
+public class DefinesWindow : EditorWindow {
+
+    private static string Define_DebugLog = "DEBUG_LOG";
+    private static string Define_DebugWarn = "DEBUG_WARN";
+    private static string Define_DebugError = "DEBUG_ERROR";
+
+    /// <summary>
+    /// The DEFINE that enables Vectrosity functionality in GridFramework.
+    /// </summary>
+    private static string Define_GridFramework = "GRID_FRAMEWORK_VECTROSITY";
 
     public bool _isDebugLogEnabled;
 
@@ -34,9 +40,9 @@ public class DebugSettingsWindow : EditorWindow {
     private bool _previousDebugLogEnabledValue;
     private bool _isGuiEnabled = true;
 
-    [MenuItem("My Tools/Debug Settings")]
-    public static void ShowDebugSettingsWindow() {
-        var window = GetWindow<DebugSettingsWindow>();
+    [MenuItem("My Tools/DEFINEs to Include")]
+    public static void ShowDefinesWindow() {
+        var window = GetWindow<DefinesWindow>();
         window.Show();
     }
 
@@ -55,7 +61,7 @@ public class DebugSettingsWindow : EditorWindow {
         //EditorGUIUtility.LookLikeInspector();
         //EditorGUIUtility.LookLikeControls();    // the default as Toggle is a control
         GUI.enabled = _isGuiEnabled;
-        _isDebugLogEnabled = EditorGUILayout.Toggle("Enable Debug Log", _isDebugLogEnabled);
+        _isDebugLogEnabled = EditorGUILayout.Toggle("Enable Scripts Debug Log", _isDebugLogEnabled);
         //_enableDebugLog = EditorGUI.Toggle(new Rect(0, 5, position.width, 20), "Enable Debug Log", _enableDebugLog);
         GUI.enabled = true;
         if (_isGuiEnabled && _isDebugLogEnabled != _previousDebugLogEnabledValue) {
@@ -71,8 +77,7 @@ public class DebugSettingsWindow : EditorWindow {
             // Unity has recompiled
             _recompileCheck = new RecompileChecker();
             IEnumerable<string> activeSymbols = EditorUserBuildSettings.activeScriptCompilationDefines;
-            //string[] debugSymbols = { "DEBUG_LOG", "DEBUG_WARN", "DEBUG_ERROR" };
-            activeSymbols = activeSymbols.OrderBy(sym => sym, new DebugStringComparer(StringComparer.CurrentCulture));
+            activeSymbols = activeSymbols.OrderBy(sym => sym, new DefineStringComparer(StringComparer.CurrentCulture));
             string activeSymbolText = string.Empty;
             bool isFirstSymbol = true;
             foreach (var symbol in activeSymbols) {
@@ -83,7 +88,7 @@ public class DebugSettingsWindow : EditorWindow {
                 }
                 activeSymbolText += (", " + symbol);
             }
-            Debug.Log(string.Format("Recompile Completed. Active Symbols: {0}.", activeSymbolText));
+            Debug.LogFormat("Recompile Completed. Active #Define Symbols: {0}.", activeSymbolText);
         }
     }
 
@@ -93,17 +98,17 @@ public class DebugSettingsWindow : EditorWindow {
 
     private void CheckConditionalCompilationSettings() {
         BuildTargetGroup[] platformTargets = new BuildTargetGroup[1] { BuildTargetGroup.Standalone };
-        IList<string> definesToInclude = new List<string>() { "DEBUG_ERROR", "DEBUG_WARN" };
+        IList<string> definesToInclude = new List<string>() { Define_DebugError, Define_DebugWarn, Define_GridFramework };
         if (_isDebugLogEnabled) {
-            definesToInclude.Add("DEBUG_LOG");
+            definesToInclude.Add(Define_DebugLog);
         }
         UnityEditorUtility.ResetConditionalCompilation(platformTargets, definesToInclude.ToArray<string>());
     }
 
-    private class DebugStringComparer : IComparer<string> {
+    private class DefineStringComparer : IComparer<string> {
 
         private readonly IComparer<string> _baseComparer;
-        public DebugStringComparer(IComparer<string> baseComparer) {
+        public DefineStringComparer(IComparer<string> baseComparer) {
             _baseComparer = baseComparer;
         }
         public int Compare(string x, string y) {
@@ -111,26 +116,34 @@ public class DebugSettingsWindow : EditorWindow {
                 return 0;
             }
             // DEBUG_LOG comes before everything else
-            if (_baseComparer.Compare(x, "DEBUG_LOG") == 0) {
+            if (_baseComparer.Compare(x, DefinesWindow.Define_DebugLog) == 0) {
                 return -1;
             }
-            if (_baseComparer.Compare(y, "DEBUG_LOG") == 0) {
+            if (_baseComparer.Compare(y, DefinesWindow.Define_DebugLog) == 0) {
                 return 1;
             }
 
             // DEBUG_WARN comes next
-            if (_baseComparer.Compare(x, "DEBUG_WARN") == 0) {
+            if (_baseComparer.Compare(x, DefinesWindow.Define_DebugWarn) == 0) {
                 return -1;
             }
-            if (_baseComparer.Compare(y, "DEBUG_WARN") == 0) {
+            if (_baseComparer.Compare(y, DefinesWindow.Define_DebugWarn) == 0) {
                 return 1;
             }
 
             // DEBUG_ERROR comes next
-            if (_baseComparer.Compare(x, "DEBUG_ERROR") == 0) {
+            if (_baseComparer.Compare(x, DefinesWindow.Define_DebugError) == 0) {
                 return -1;
             }
-            if (_baseComparer.Compare(y, "DEBUG_ERROR") == 0) {
+            if (_baseComparer.Compare(y, DefinesWindow.Define_DebugError) == 0) {
+                return 1;
+            }
+
+            // GRID_FRAMEWORK_VECTROSITY comes next
+            if (_baseComparer.Compare(x, DefinesWindow.Define_GridFramework) == 0) {
+                return -1;
+            }
+            if (_baseComparer.Compare(y, DefinesWindow.Define_GridFramework) == 0) {
                 return 1;
             }
 

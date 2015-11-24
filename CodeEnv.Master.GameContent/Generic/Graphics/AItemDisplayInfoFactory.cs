@@ -94,12 +94,12 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.CurrentCmdEffectiveness, Constants.FormatInt_1DMin},
                 {ContentID.UnitCurrentHitPts, Constants.FormatFloat_0Dp},
                 {ContentID.UnitMaxHitPts, Constants.FormatFloat_0Dp},
-                {ContentID.UnitFullSpeed, Constants.FormatFloat_0Dp},
+                {ContentID.UnitFullSpeed, Constants.FormatFloat_2Dp},
                 {ContentID.UnitMaxTurnRate, Constants.FormatFloat_0Dp},
 
                 {ContentID.TargetDistance, Constants.FormatFloat_0Dp},
-                {ContentID.CurrentSpeed, Constants.FormatFloat_1DpMax},
-                {ContentID.FullSpeed, Constants.FormatFloat_1DpMax}, 
+                {ContentID.CurrentSpeed, Constants.FormatFloat_2DpMax},
+                {ContentID.FullSpeed, Constants.FormatFloat_2DpMax}, 
                 {ContentID.MaxTurnRate, Constants.FormatFloat_0Dp},
 
                 {ContentID.Population, Constants.FormatInt_1DMin},
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.MaxHitPoints, Constants.FormatFloat_0Dp},
                 {ContentID.Mass, Constants.FormatInt_1DMin},
 
-                {ContentID.OrbitalSpeed, Constants.FormatFloat_2DpMax},
+                {ContentID.OrbitalSpeed, Constants.FormatFloat_3DpMax},
                 {ContentID.CameraDistance, Constants.FormatFloat_1DpMax}
         };
 

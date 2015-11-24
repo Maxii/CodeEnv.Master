@@ -75,7 +75,8 @@ namespace CodeEnv.Master.GameContent {
 
             InitializeSecondaryMeshes(itemGO);
             InitializeOther(itemGO);
-            //AssessComponentsToShow(); no need to call here as IsDisplayEnabled is called immediately after initialization
+            //AssessComponentsToShow(); no need to call here as EnableDisplay(true) is called immediately after initialization
+            // Warning: if called here, derived class constructors will not have completed yet
         }
 
         protected abstract MeshRenderer InitializePrimaryMesh(GameObject itemGO);
@@ -110,7 +111,7 @@ namespace CodeEnv.Master.GameContent {
         private void ShowPrimaryMesh(bool toShow) {
             // can't disable meshRenderer as lose OnMeshInCameraLOSChanged events
             if (__isPrimaryMeshShowing == toShow) {
-                //D.Log("{0} recording duplicate call to ShowMesh({1}).", GetType().Name, toShow);
+                //D.Log("{0} recording duplicate call to ShowPrimaryMesh({1}).", GetType().Name, toShow);
                 return;
             }
             if (toShow) {

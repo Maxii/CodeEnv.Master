@@ -142,9 +142,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void OnCameraSectorIndexChanged() {
         // Note: not subscribed unless in SectorViewMode so no need to test for it
         if (_gridWireframe != null) {
-            Vector3[] gridPoints;
+            List<Vector3> gridPoints;
             if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe.Points = new List<Vector3>(gridPoints);
+                _gridWireframe.Points = gridPoints;
             }
         }
         else {
@@ -153,7 +153,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
     }
 
-    private bool TryGenerateGridPoints(Index3D cameraSectorIndex, out Vector3[] gridPoints) {
+    private bool TryGenerateGridPoints(Index3D cameraSectorIndex, out List<Vector3> gridPoints) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
         Vector3 tempPosition = transform.position;
         transform.position = Vector3.zero;
@@ -461,9 +461,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     public void ShowSectorGrid(bool toShow) {
         if (_gridWireframe == null) {
-            Vector3[] gridPoints;
+            List<Vector3> gridPoints;
             if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe = new GridWireframe("GridWireframe", new List<Vector3>(gridPoints));
+                _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
             }
         }
 

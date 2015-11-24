@@ -71,7 +71,7 @@
     <Compile Include="ThirdParty\RotateMesh.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />
     <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />
-    <Compile Include="Generic\DebugSettingsWindow.cs" />
+    <Compile Include="Generic\DefinesWindow.cs" />
     <Compile Include="Generic\NoteEditor.cs" />
     <Compile Include="Game\ExampleEditor.cs" />
     <Compile Include="ThirdParty\BoxColliderToFit.cs" />
