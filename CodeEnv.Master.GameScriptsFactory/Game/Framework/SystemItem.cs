@@ -334,5 +334,13 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     #endregion
 
+    #region INavigableTarget Members
+
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        return Radius;  // 120
+    }
+
+    #endregion
+
 }
 

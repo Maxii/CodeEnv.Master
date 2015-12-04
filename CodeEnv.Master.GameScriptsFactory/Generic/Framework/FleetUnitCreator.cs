@@ -177,7 +177,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                             // in case no fleets qualify
                             moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                             if (!moveTgts.Any()) {
-                                D.Warn("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
+                                D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
                                 return;
                             }
                             D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);

@@ -190,7 +190,12 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     public new FacilityState CurrentState {
         get { return (FacilityState)base.CurrentState; }
-        protected set { base.CurrentState = value; }
+        protected set {
+            if (CurrentState == value) {
+                D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
+            }
+            base.CurrentState = value;
+        }
     }
 
     #region None
@@ -406,6 +411,32 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region INavigableTarget Members
+
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        bool isEnemy = navigatingItem.Owner.IsEnemyOf(Owner);
+        if (isEnemy) {
+            if (navigatingItem.WeaponsRange.Max > Constants.ZeroF) {
+                // got weapons so get close enough and attack
+                return navigatingItem.WeaponsRange.Max / 2F;
+            }
+            else {
+                // no weapons so stay just out of range
+                return Command.Data.UnitWeaponsRange.Max + 1F;
+            }
+        }
+        else {
+            // friendly
+            var baseShipOrbitSlot = (Command as IShipOrbitable).ShipOrbitSlot;
+            var baseOrbitSlotDistanceFromFacility = baseShipOrbitSlot.OuterRadius - Command.UnitRadius;
+            D.Warn(baseOrbitSlotDistanceFromFacility == Constants.ZeroF, "{0}.CloseEnoughDistance is zero.", FullName);
+            return baseOrbitSlotDistanceFromFacility;
+        }
+    }
+
+    #endregion
+
 
     #region Nested Classes
 

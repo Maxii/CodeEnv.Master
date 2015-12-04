@@ -169,5 +169,13 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #endregion
 
+    #region INavigableTarget Members
+
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        return ShipTransitBanRadius + 1F;   // ~ 60
+    }
+
+    #endregion
+
 }
 

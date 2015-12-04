@@ -371,6 +371,7 @@
     <Compile Include="MortalItemDeathEvent.cs" />
     <Compile Include="MyCtxPickHandler.cs" />
     <Compile Include="MyNguiButtonPlayAnimation.cs" />
+    <Compile Include="NavigationValues.cs" />
     <Compile Include="Navigator.cs" />
     <Compile Include="NguiGenericEventHandler.cs" />
     <Compile Include="OpeResourceID.cs" />

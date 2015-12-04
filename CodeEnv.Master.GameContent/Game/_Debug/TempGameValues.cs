@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
 
     public static class TempGameValues {
 
+        public const float WaypointCloseEnoughDistance = 2F;
+
         public const float __ReqdMissileTravelDistanceBeforePushover = 0.2F;
 
         public const int MaxLosWeaponsForAnyElement = 12;

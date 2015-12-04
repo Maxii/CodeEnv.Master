@@ -167,7 +167,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     public new BaseState CurrentState {
         get { return (BaseState)base.CurrentState; }
-        protected set { base.CurrentState = value; }
+        protected set {
+            if (CurrentState == value) {
+                D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
+            }
+            base.CurrentState = value;
+        }
     }
 
     #region None
@@ -310,6 +315,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region IShipOrbitable Members
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+
+    #endregion
+
+    #region INavigableTarget Members
+
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        bool isEnemy = navigatingItem.Owner.IsEnemyOf(Owner);
+        if (isEnemy) {
+            float enemyMaxWeapRange = Data.UnitWeaponsRange.Max;
+            if (enemyMaxWeapRange > Constants.ZeroF) {
+                // just outside the range of the closest facility's weapons
+                return UnitRadius + enemyMaxWeapRange;
+            }
+        }
+        return ShipOrbitSlot.OuterRadius + 0.5F;
+    }
 
     #endregion
 

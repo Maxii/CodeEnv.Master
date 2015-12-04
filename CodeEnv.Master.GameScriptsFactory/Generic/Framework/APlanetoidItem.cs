@@ -277,6 +277,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public override bool IsMobile { get { return true; } }
 
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        return ShipTransitBanRadius + 1F;
+    }
+
     #endregion
 
     #region Nested Classes

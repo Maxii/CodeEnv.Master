@@ -68,7 +68,7 @@ internal abstract class ANavigator : IDisposable {
     /// The current or last target this AutoPilot is/was engaged to reach.
     /// The AutoPilot does not have to be engaged for this Target to be valid.
     /// </summary>
-    internal abstract INavigableTarget Target { get; }
+    internal INavigableTarget Target { get; private set; }
 
     /// <summary>
     /// The current position of this Navigator client in world space.
@@ -85,7 +85,7 @@ internal abstract class ANavigator : IDisposable {
     /// </summary>
     protected virtual Vector3 TargetPoint { get { return Target.Position; } }
 
-    protected bool ArePilotJobsRunning { get { return _pilotJob != null && _pilotJob.IsRunning; } }
+    protected bool IsPilotNavigationJobRunning { get { return _pilotNavigationJob != null && _pilotNavigationJob.IsRunning; } }
 
     /// <summary>
     /// Distance from this Navigator's client to the TargetPoint.
@@ -98,7 +98,7 @@ internal abstract class ANavigator : IDisposable {
     protected Speed TravelSpeed { get; private set; }
 
     protected OrderSource _orderSource;
-    protected Job _pilotJob;
+    protected Job _pilotNavigationJob;
 
     internal ANavigator() {
         Course = new List<INavigableTarget>();
@@ -110,9 +110,10 @@ internal abstract class ANavigator : IDisposable {
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed to travel at.</param>
     /// <param name="orderSource">The source of this move order.</param>
-    protected void RecordAutoPilotCourseValues(Speed speed, OrderSource orderSource) {
+    protected void RecordAutoPilotCourseValues(INavigableTarget target, Speed speed, OrderSource orderSource) {
         D.Assert(!_inValidAutoPilotSpeeds.Contains(speed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, speed.GetValueName()));
         orderSource.ValidateSpeed(speed);
+        Target = target;
         TravelSpeed = speed;
         _orderSource = orderSource;
     }
@@ -129,22 +130,18 @@ internal abstract class ANavigator : IDisposable {
     /// </summary>
     protected virtual void RunPilotJobs() {
         D.Assert(Course.Count != Constants.Zero, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(Name));
-        KillPilotJobs();
+        KillAllPilotJobs();
     }
 
     /// <summary>
-    /// Internal control for killing any existing pilot Job(s).
-    /// Returns <c>true</c> if the pilot Job(s) were running and are now killed,
-    /// <c>false</c> if the pilot Job(s) weren't running to begin with.
+    /// Internal control for killing all existing pilot Job(s).
     /// </summary>
     /// <returns></returns>
-    protected virtual bool KillPilotJobs() {
-        if (ArePilotJobsRunning) {
+    protected virtual void KillAllPilotJobs() {
+        if (IsPilotNavigationJobRunning) {
             //D.Log("{0} AutoPilot disengaging.", Name);
-            _pilotJob.Kill();
-            return true;
+            _pilotNavigationJob.Kill();
         }
-        return false;
     }
 
     protected virtual void OnAutoPilotEngaged() {
@@ -152,7 +149,7 @@ internal abstract class ANavigator : IDisposable {
     }
 
     private void OnAutoPilotDisengaged() {
-        KillPilotJobs();
+        KillAllPilotJobs();
         RefreshCourse(CourseRefreshMode.ClearCourse);
         _orderSource = OrderSource.None;
         TravelSpeed = Speed.None;
@@ -170,27 +167,27 @@ internal abstract class ANavigator : IDisposable {
     }
 
     /// <summary>
-    /// Checks for an obstacle enroute to the designated <c>navTarget</c>. Returns true if one
+    /// Checks for an obstacle enroute to the provided <c>currentDestination</c>. Returns true if one
     /// is found and provides the detour around it.
     /// </summary>
-    /// <param name="destination">The current destination.</param>
-    /// <param name="destinationCastingTransitBanRadius">The distance around the destination to avoid casting into.</param>
+    /// <param name="currentDestination">The current destination. May be the Target, waypoint or an obstacle detour.</param>
+    /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid detecting any TransitBanCollider around the currentDestination.</param>
     /// <param name="detour">The obstacle detour.</param>
     /// <param name="obstacleHitDistance">The obstacle hit distance.</param>
     /// <returns>
     ///   <c>true</c> if an obstacle was found, false if the way is clear.
     /// </returns>
-    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float destinationCastingTransitBanRadius, out INavigableTarget detour, out float obstacleHitDistance) {
+    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget currentDestination, float castingDistanceSubtractor, out INavigableTarget detour, out float obstacleHitDistance) {
         detour = null;
         obstacleHitDistance = Mathf.Infinity;
-        Vector3 vectorToDestination = destination.Position - Position;
-        float destinationDistance = vectorToDestination.magnitude;
-        if (destinationDistance <= destinationCastingTransitBanRadius) {
+        Vector3 vectorToCurrentDest = currentDestination.Position - Position;
+        float currentDestDistance = vectorToCurrentDest.magnitude;
+        if (currentDestDistance <= castingDistanceSubtractor) {
             return false;
         }
-        Vector3 destinationBearing = vectorToDestination.normalized;
-        float rayLength = destinationDistance - destinationCastingTransitBanRadius;
-        Ray entryRay = new Ray(Position, destinationBearing);
+        Vector3 currentDestBearing = vectorToCurrentDest.normalized;
+        float rayLength = currentDestDistance - castingDistanceSubtractor;
+        Ray entryRay = new Ray(Position, currentDestBearing);
 
         RaycastHit entryHit;
         if (Physics.Raycast(entryRay, out entryHit, rayLength, _transitBanOnlyLayerMask.value)) {
@@ -199,7 +196,7 @@ internal abstract class ANavigator : IDisposable {
             string obstacleName = obstacle.parent.name + "." + obstacle.name;
             obstacleHitDistance = entryHit.distance;
             D.Log("{0} encountered obstacle {1} centered at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
-            Name, obstacleName, obstacle.position, destination.FullName, rayLength, obstacleHitDistance);
+            Name, obstacleName, obstacle.position, currentDestination.FullName, rayLength, obstacleHitDistance);
             detour = GenerateDetourAroundObstacle(entryRay, entryHit);
 
             INavigableTarget newDetour;
@@ -305,8 +302,8 @@ internal abstract class ANavigator : IDisposable {
     protected abstract void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null);
 
     protected virtual void Cleanup() {
-        if (_pilotJob != null) {
-            _pilotJob.Dispose();
+        if (_pilotNavigationJob != null) {
+            _pilotNavigationJob.Dispose();
         }
     }
 

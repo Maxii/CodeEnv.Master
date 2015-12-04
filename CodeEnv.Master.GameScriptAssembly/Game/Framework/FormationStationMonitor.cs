@@ -140,6 +140,9 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
 
     public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
 
+    public float GetCloseEnoughDistance(ICanNavigate navigatingItem) { return RangeDistance; }
+
+
     #endregion
 
 }

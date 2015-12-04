@@ -46,6 +46,13 @@ namespace CodeEnv.Master.GameContent {
 
         Topography Topography { get; }
 
+        /// <summary>
+        /// Gets the CloseEnoughDistance value required by <c>navigatingItem</c> for this INavigableTarget.
+        /// </summary>
+        /// <param name="navigatingItem">The navigating item, a ship or fleetCmd.</param>
+        /// <returns></returns>
+        float GetCloseEnoughDistance(ICanNavigate navigatingItem);
+
     }
 }
 

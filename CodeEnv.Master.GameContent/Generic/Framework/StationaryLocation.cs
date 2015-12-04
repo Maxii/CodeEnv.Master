@@ -95,7 +95,12 @@ namespace CodeEnv.Master.GameContent {
 
         public Topography Topography { get; private set; }
 
+        public float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+            return TempGameValues.WaypointCloseEnoughDistance;
+        }
+
         #endregion
+
     }
 }
 

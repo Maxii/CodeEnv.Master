@@ -238,6 +238,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     public virtual bool IsMobile { get { return false; } }
 
+    public abstract float GetCloseEnoughDistance(ICanNavigate navigatingItem);
+
     #endregion
 
 }

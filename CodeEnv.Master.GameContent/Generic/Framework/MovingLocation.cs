@@ -48,6 +48,10 @@ namespace CodeEnv.Master.GameContent {
 
         public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
 
+        public float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+            return TempGameValues.WaypointCloseEnoughDistance;
+        }
+
         #endregion
 
     }

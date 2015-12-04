@@ -245,5 +245,13 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #endregion
 
+    #region INavigableTarget Members
+
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        return ShipTransitBanRadius + 1F;
+    }
+
+    #endregion
+
 }
 

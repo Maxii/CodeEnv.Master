@@ -69,5 +69,14 @@ public class SectorItem : AItem, ISectorItem {
         return _toStringFormat.Inject(GetType().Name, SectorIndex);
     }
 
+    #region INavigableTarget Members
+
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        return Radius / 2F; // 600
+    }
+
+    #endregion
+
+
 }
 

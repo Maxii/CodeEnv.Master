@@ -30,7 +30,7 @@ using UnityEngine;
 /// <summary>
 /// AUnitCmdItems that are Fleets.
 /// </summary>
-public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
+public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICanNavigate {
 
     public new FleetCmdData Data {
         get { return base.Data as FleetCmdData; }
@@ -451,7 +451,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     public new FleetState CurrentState {
         get { return (FleetState)base.CurrentState; }
-        protected set { base.CurrentState = value; }
+        protected set {
+            if (CurrentState == value) {
+                D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
+            }
+            base.CurrentState = value;
+        }
     }
 
     #region None
@@ -813,6 +818,22 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     public override bool IsMobile { get { return true; } }
 
+    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        bool isEnemy = navigatingItem.Owner.IsEnemyOf(Owner);
+        if (isEnemy) {
+            return UnitRadius + Data.UnitWeaponsRange.Max;
+        }
+        else {
+            return UnitRadius;
+        }
+    }
+
+    #endregion
+
+    #region ICanNavigate Members
+
+    public RangeDistance WeaponsRange { get { return Data.UnitWeaponsRange; } }
+
     #endregion
 
     #region Nested Classes
@@ -821,9 +842,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// Navigator for a fleet.
     /// </summary>
     internal class FleetNavigator : ANavigator {
-
-        private INavigableTarget _target;
-        internal override INavigableTarget Target { get { return _target; } }
 
         protected override string Name { get { return _fleet.DisplayName; } }
 
@@ -843,14 +861,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
         }
 
-        private bool _targetHasTransitBanZone;
+        /// <summary>
+        /// If <c>true </c> the flagship has reached its current destination. In most cases, this
+        /// "destination" is an interum waypoint provided by this fleet navigator, but it can also be the
+        /// 'final' destination, aka Target.
+        /// </summary>
+        private bool _hasFlagshipReachedDestination;
+        private float _targetCloseEnoughDistance;
         private bool _isCourseReplot;
         private Vector3 _targetPointAtLastCoursePlot;
         private float _targetMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
         private int _currentWaypointIndex;
         private Seeker _seeker;
         private FleetCmdItem _fleet;
-        private bool _hasFlagshipReachedDestination;
 
         internal FleetNavigator(FleetCmdItem fleet, Seeker seeker)
             : base() {
@@ -870,9 +893,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed to travel at.</param>
         internal void PlotCourse(INavigableTarget target, Speed speed) {
-            RecordAutoPilotCourseValues(speed, OrderSource.UnitCommand);
-            _target = target;
-            _targetHasTransitBanZone = target is IShipTransitBanned;
+            D.Assert(!(target is StationaryLocation) && !(target is MovingLocation) && !(target is FormationStationMonitor) && !(target is AUnitElementItem));
+            RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
+            //_targetNavValues = target.GetNavigationValues(_fleet);
+            _targetCloseEnoughDistance = target.GetCloseEnoughDistance(_fleet);
             ResetCourseReplotValues();
             GenerateCourse();
         }
@@ -899,10 +923,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
 
         private void InitiateCourseToTarget() {
-            D.Assert(!ArePilotJobsRunning);
+            D.Assert(!IsPilotNavigationJobRunning);
             D.Assert(!_hasFlagshipReachedDestination);
             D.Log("{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
-            _pilotJob = new Job(EngageCourse(), toStart: true, onJobComplete: (wasKilled) => {
+            _pilotNavigationJob = new Job(EngageCourse(), toStart: true, onJobComplete: (wasKilled) => {
                 if (!wasKilled) {
                     OnDestinationReached();
                 }
@@ -918,37 +942,46 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageCourse() {
+            int targetDestinationIndex = Course.Count - 1;
             _currentWaypointIndex = 1;  // skip the course start position as the fleet is already there
             INavigableTarget currentWaypoint = Course[_currentWaypointIndex];
 
+            float castingDistanceSubtractor = Constants.ZeroF;  // all waypoints except the final Target is a StationaryLocation
+            if (_currentWaypointIndex == targetDestinationIndex) {
+                castingDistanceSubtractor = _targetCloseEnoughDistance;
+            }
+
             INavigableTarget detour;
             float obstacleHitDistance;
-            float castingTransitBanRadius = GetCastingTransitBanRadius(currentWaypoint);
-            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingTransitBanRadius, out detour, out obstacleHitDistance)) {
+            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour, out obstacleHitDistance)) {
                 // but there is an obstacle, so add a waypoint
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 currentWaypoint = detour;
+                targetDestinationIndex = Course.Count - 1;
+                castingDistanceSubtractor = Constants.ZeroF;
             }
             _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
 
-            int targetDestinationIndex = Course.Count - 1;
             while (_currentWaypointIndex <= targetDestinationIndex) {
                 if (_hasFlagshipReachedDestination) {
                     _hasFlagshipReachedDestination = false;
                     _currentWaypointIndex++;
-                    if (_currentWaypointIndex > targetDestinationIndex) {
+                    if (_currentWaypointIndex == targetDestinationIndex) {
+                        castingDistanceSubtractor = _targetCloseEnoughDistance;
+                    }
+                    else if (_currentWaypointIndex > targetDestinationIndex) {
                         continue;   // conclude coroutine
                     }
                     D.Log("{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
                         _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, Course[_currentWaypointIndex].FullName);
 
                     currentWaypoint = Course[_currentWaypointIndex];
-                    castingTransitBanRadius = GetCastingTransitBanRadius(currentWaypoint);
-                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingTransitBanRadius, out detour, out obstacleHitDistance)) {
+                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour, out obstacleHitDistance)) {
                         // there is an obstacle enroute to the next waypoint, so use the detour provided instead
                         RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                         currentWaypoint = detour;
                         targetDestinationIndex = Course.Count - 1;
+                        castingDistanceSubtractor = Constants.ZeroF;
                         // IMPROVE validate that the detour provided does not itself leave us with another obstacle to encounter
                     }
                     _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
@@ -957,7 +990,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     RegenerateCourse();
                 }
                 yield return null;  // OPTIMIZE checking not currently expensive here so don't wait to check
-                //yield return new WaitForSeconds(_courseProgressCheckPeriod);
+                //yield return new WaitForSeconds(_courseProgressCheckPeriod);  // IMPROVE use ProgressCheckDistance to derive
             }
             // we've reached the target
         }
@@ -980,7 +1013,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 return;
             }
             ConstructCourse(path.vectorPath);
-            //Course = ConstructCourse(path.vectorPath);
             OnCourseChanged();
             //D.Log("{0}'s waypoint course to {1} is: {2}.", ClientName, Target.FullName, Course.Concatenate());
             //PrintNonOpenSpaceNodes(path);
@@ -998,7 +1030,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             if (oldHQElement != null) {
                 oldHQElement.onDestinationReached -= OnFlagshipReachedDestination;
             }
-            if (ArePilotJobsRunning) {   // if not engaged, this connection will be established when next engaged
+            if (IsPilotNavigationJobRunning) {   // if not engaged, this connection will be established when next engaged
                 newHQElement.onDestinationReached += OnFlagshipReachedDestination;
             }
         }
@@ -1056,7 +1088,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
             SystemItem targetSystem = null;
             if (Target.Topography == Topography.System) {
-                var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(Target.Position);
+                var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(TargetPoint);
                 var isSystemFound = SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem);
                 D.Assert(isSystemFound);
                 ValidateItemWithinSystem(targetSystem, Target);
@@ -1074,7 +1106,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
             if (targetSystem != null) {
                 Vector3 targetSystemEntryPt;
-                if (Target.Position.IsSameAs(targetSystem.Position)) {
+                if (TargetPoint.IsSameAs(targetSystem.Position)) {
                     // Can't use FindClosestPointOnSphereTo(Point, SphereCenter, SphereRadius) as Point is the same as SphereCenter,
                     // so use point on System periphery that is closest to the final course waypoint (can be course start) prior to the target.
                     var finalCourseWaypointPosition = Course[Course.Count - 2].Position;
@@ -1082,25 +1114,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     targetSystemEntryPt = targetSystem.Position + systemToWaypointDirection * targetSystem.Radius;
                 }
                 else {
-                    targetSystemEntryPt = UnityUtility.FindClosestPointOnSphereTo(Target.Position, targetSystem.Position, targetSystem.Radius);
+                    targetSystemEntryPt = UnityUtility.FindClosestPointOnSphereTo(TargetPoint, targetSystem.Position, targetSystem.Radius);
                 }
                 Course.Insert(Course.Count - 1, new StationaryLocation(targetSystemEntryPt));
             }
-        }
-
-        /// <summary>
-        /// Gets the TransitBanRadius to avoid casting into for the provided waypoint.
-        /// Targets may have a TransitBanZone and therefore a TransitBanRadius. AStar-generated 
-        /// waypoints and obstacle avoidance detour waypoints have no TransitBanZone.
-        /// </summary>
-        /// <param name="waypoint">The waypoint.</param>
-        /// <returns></returns>
-        private float GetCastingTransitBanRadius(INavigableTarget waypoint) {
-            var result = Constants.ZeroF;
-            if (waypoint == Target && _targetHasTransitBanZone) {
-                result = (Target as IShipTransitBanned).ShipTransitBanRadius + 1F;
-            }
-            return result;
         }
 
         /// <summary>
