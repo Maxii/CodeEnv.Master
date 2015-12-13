@@ -38,7 +38,7 @@ public class TopographyMonitor : AColliderMonitor {
         //ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
-            listener.OnTopographyChanged(ParentItem.Topography);
+            listener.HandleTopographyChanged(ParentItem.Topography);
         }
     }
 
@@ -51,17 +51,17 @@ public class TopographyMonitor : AColliderMonitor {
         //  ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
-            listener.OnTopographyChanged(SurroundingTopography);
+            listener.HandleTopographyChanged(SurroundingTopography);
         }
     }
 
-    protected override void OnParentItemChanged() {
-        base.OnParentItemChanged();
+    protected override void ParentItemPropSetHandler() {
+        base.ParentItemPropSetHandler();
         RangeDistance = ParentItem.Radius;
         IsOperational = true;
     }
 
-    protected override void OnIsOperationalChanged() { }
+    protected override void IsOperationalPropChangedHandler() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Occurs when this weapon is ready to fire using one of the included firing solutions.
         /// </summary>
-        public event Action<IList<WeaponFiringSolution>> onReadyToFire;
+        public event EventHandler<WeaponFiringSolutionEventArgs> readytoFire;
 
         private bool _isReady;
         /// <summary>
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private bool IsReady {
             get { return _isReady; }
-            set { SetProperty<bool>(ref _isReady, value, "IsReady", OnIsReadyChanged); }
+            set { SetProperty<bool>(ref _isReady, value, "IsReady", IsReadyPropChangedHandler); }
         }
 
         private bool _isAnyEnemyInRange;
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private bool IsAnyEnemyInRange {
             get { return _isAnyEnemyInRange; }
-            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
+            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", IsAnyEnemyInRangePropChangedHandler); }
         }
 
         private bool _toShowEffects;
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool ToShowEffects {
             get { return _toShowEffects; }
-            set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
+            set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", ToShowEffectsPropChangedHandler); }
         }
 
         public IWeaponRangeMonitor RangeMonitor { get; set; }
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
             set {
                 D.Assert(_weaponMount == null); // should only happen once
                 _weaponMount = value;
-                OnWeaponMountChanged();
+                WeaponMountPropSetHandler();
             }
         }
 
@@ -130,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
                     * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance via CheckActiveOrdnanceTargeting().
                     * When the owner of an item detected by this weapon changes, the Monitor recategorizes the detectedItem into the right list - 
                     * enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to CheckActiveOrdnanceTargeting(), 
-                    * calls OnEnemyTargetInRangeChanged(), niether or both.
+                    * calls HandleEnemyTargetInRangeChanged(), niether or both.
                     *******************************************************************************************************************************/
 
         /***********************************************************************************************************************************************
@@ -143,17 +143,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public abstract void CheckActiveOrdnanceTargeting();
 
-        private void OnWeaponMountChanged() {
-            WeaponMount.Weapon = this;
-        }
-
         /// <summary>
         /// Called by this weapon's RangeMonitor when an enemy target enters or exits the weapon's range.
         /// </summary>
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
-        public void OnEnemyTargetInRangeChanged(IElementAttackableTarget enemyTarget, bool isInRange) {
-            //D.Log("{0} received OnEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+        public void HandleEnemyTargetInRangeChanged(IElementAttackableTarget enemyTarget, bool isInRange) {
+            //D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(enemyTarget)) {
                     D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget));
@@ -182,13 +178,6 @@ namespace CodeEnv.Master.GameContent {
             return WeaponMount.ConfirmInRange(enemyTarget);
         }
 
-        private void OnIsAnyEnemyInRangeChanged() {
-            if (!IsAnyEnemyInRange) {
-                KillFiringSolutionsCheckJob();
-            }
-            AssessReadinessToFire();
-        }
-
         /// <summary>
         /// Called when the element this weapon is attached too declines to fire
         /// the weapon. This can occur when the target dies while the aiming process
@@ -198,15 +187,8 @@ namespace CodeEnv.Master.GameContent {
         /// can begin looking for other firing solutions which would otherwise only occur once
         /// the weapon was fired.</remarks>
         /// </summary>
-        public void OnElementDeclinedToFire() {
+        public void HandleElementDeclinedToFire() {
             LaunchFiringSolutionsCheckJob();
-        }
-
-        private void OnReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-            D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to generate the event
-            if (onReadyToFire != null) {
-                onReadyToFire(firingSolutions);
-            }
         }
 
         /// <summary>
@@ -214,13 +196,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="targetFiredOn">The target fired on.</param>
         /// <param name="ordnanceFired">The ordnance fired.</param>
-        public virtual void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+        public virtual void HandleFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
             D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.".Inject(Name, targetFiredOn.FullName));
 
-            //D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
+            //D.Log("{0}.HandleFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
-            ordnanceFired.onDeathOneShot += OnOrdnanceDeath;
+            ordnanceFired.deathOneShot += OrdnanceDeathEventHandler;
 
             RecordShotFired(targetFiredOn);
 
@@ -234,9 +216,9 @@ namespace CodeEnv.Master.GameContent {
         /// don't complete the firing process until their Beam is terminated.
         /// </summary>
         /// <param name="ordnanceFired">The ordnance fired.</param>
-        public virtual void OnFiringComplete(IOrdnance ordnanceFired) {
+        public virtual void HandleFiringComplete(IOrdnance ordnanceFired) {
             D.Assert(!_isLoaded);
-            //D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
+            //D.Log("{0}.HandleFiringComplete({1}) called.", Name, ordnanceFired.Name);
 
             UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
@@ -244,12 +226,25 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        private void OnOrdnanceDeath(IOrdnance terminatedOrdnance) {
-            //D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, terminatedOrdnance.Name);
+        #region Event and Property Change Handlers
+
+        private void IsAnyEnemyInRangePropChangedHandler() {
+            if (!IsAnyEnemyInRange) {
+                KillFiringSolutionsCheckJob();
+            }
+            AssessReadinessToFire();
+        }
+
+        private void WeaponMountPropSetHandler() {
+            WeaponMount.Weapon = this;
+        }
+
+        private void OrdnanceDeathEventHandler(object sender, EventArgs e) {
+            IOrdnance terminatedOrdnance = sender as IOrdnance;
             RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
         }
 
-        protected override void OnIsOperationalChanged() {
+        protected override void IsOperationalPropChangedHandler() {
             //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
@@ -264,23 +259,32 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             AssessReadiness();
-            NotifyIsOperationalChanged();
+            OnIsOperationalChanged();
         }
 
-        private void OnIsReadyChanged() {
+        private void IsReadyPropChangedHandler() {
             if (!IsReady) {
                 KillFiringSolutionsCheckJob();
             }
             AssessReadinessToFire();
         }
 
-        private void OnReloaded() {
+        private void OnReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+            D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to generate the event
+            if (readytoFire != null) {
+                readytoFire(this, new WeaponFiringSolutionEventArgs(firingSolutions));
+            }
+        }
+
+        #endregion
+
+        private void HandleReloaded() {
             //D.Log("{0} completed reload.", Name);
             _isLoaded = true;
             AssessReadiness();
         }
 
-        protected abstract void OnToShowEffectsChanged();
+        protected abstract void ToShowEffectsPropChangedHandler();
 
         /// <summary>
         /// Records the provided ordnance as having been fired.
@@ -306,7 +310,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
-                    OnReloaded();
+                    HandleReloaded();
                 }
             });
         }
@@ -347,8 +351,8 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsReady);
             D.Assert(IsAnyEnemyInRange);
             //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
-            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
-                // TODO
+            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, jobCompleted: (jobWasKilled) => {
+                //TODO
             });
         }
 
@@ -412,7 +416,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called by fired ordnance when it hits its intended target.
         /// </summary>
         /// <param name="target">The target.</param>
-        public void OnTargetHit(IElementAttackableTarget target) {
+        public void HandleTargetHit(IElementAttackableTarget target) {
             var combatResult = _combatResults[target.Name];
             combatResult.Hits++;
         }
@@ -421,7 +425,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called by fired ordnance when it misses its intended target without being fatally interdicted.
         /// </summary>
         /// <param name="target">The target.</param>
-        public void OnTargetMissed(IElementAttackableTarget target) {
+        public void HandleTargetMissed(IElementAttackableTarget target) {
             var combatResult = _combatResults[target.Name];
             combatResult.Misses++;
         }
@@ -431,7 +435,7 @@ namespace CodeEnv.Master.GameContent {
         /// (ActiveCM or Shield) or some other obstacle that was not its target.
         /// </summary>
         /// <param name="target">The target.</param>
-        public void OnOrdnanceInterdicted(IElementAttackableTarget target) {
+        public void HandleOrdnanceInterdicted(IElementAttackableTarget target) {
             var combatResult = _combatResults[target.Name];
             combatResult.Interdictions++;
         }
@@ -455,6 +459,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public sealed override string ToString() { return Stat.ToString(); }
+
+        #region Nested Classes
+
+        public class WeaponFiringSolutionEventArgs : EventArgs {
+
+            public IList<WeaponFiringSolution> FiringSolutions { get; private set; }
+
+            public WeaponFiringSolutionEventArgs(IList<WeaponFiringSolution> firingSolutions) {
+                FiringSolutions = firingSolutions;
+            }
+        }
+
+
+        #endregion
 
         #region Archive
 

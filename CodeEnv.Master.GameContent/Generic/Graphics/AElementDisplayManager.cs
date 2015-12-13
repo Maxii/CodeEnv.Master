@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
             set {
                 if (_color != value) {
                     _color = value;
-                    OnColorChanged();
+                    ColorPropChangedHandler();
                 }
             }
         }
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         public AElementDisplayManager(IWidgetTrackable trackedElement, GameColor color)
             : base(trackedElement) {
-            Color = color;  // will result in OnColorChanged() which will initialize the ColorChangeSystem
+            Color = color;  // will result in ColorPropChangedHandler() which will initialize the ColorChangeSystem
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject elementItemGo) {
@@ -133,11 +133,11 @@ namespace CodeEnv.Master.GameContent {
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
             /*******************************************************************************************************************
-                             * Legacy expensive material color change approach making a copy of renderer.material.
-                             * var materialCopy = _primaryMeshRenderer.material; 
-                             * materialCopy.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
-                             * Note: no need for _primaryMeshRenderer.material = materialCopy as this happens automatically when the copy is made
-                             ************************************************************************************************************************/
+             * Legacy expensive material color change approach making a copy of renderer.material.
+             * var materialCopy = _primaryMeshRenderer.material; 
+             * materialCopy.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
+             * Note: no need for _primaryMeshRenderer.material = materialCopy as this happens automatically when the copy is made
+             ************************************************************************************************************************/
             _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
             // Note: using a MaterialPropertyBlock containing a color changes the color the renderer shows, but does not change the color contained in the material
         }
@@ -154,13 +154,17 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnColorChanged() {
+        #region Event and Property Change Handlers
+
+        private void ColorPropChangedHandler() {
             InitializeColorChangeSystem(Color);
             if (IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS) {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();
             }
         }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

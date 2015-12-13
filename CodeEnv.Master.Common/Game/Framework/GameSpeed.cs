@@ -23,7 +23,7 @@ namespace CodeEnv.Master.Common {
         [EnumAttribute("Error! No Game Speed.")]
         None,
 
-        [EnumAttribute("Quarter Speed")]    // TODO figure way to localize
+        [EnumAttribute("Quarter Speed")]    //TODO figure way to localize
         Slowest,
 
         [EnumAttribute("Half Speed")]

@@ -32,15 +32,15 @@ namespace CodeEnv.Master.GameContent {
         private float _maxHitPoints;
         public float MaxHitPoints {
             get { return _maxHitPoints; }
-            set { SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", OnMaxHitPointsChanged, OnMaxHitPointsChanging); }
+            set { SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", MaxHitPtsPropChangedHandler, MaxHitPtsPropChangingHandler); }
         }
 
         private float _currentHitPoints;
-        public virtual float CurrentHitPoints {
+        public float CurrentHitPoints {
             get { return _currentHitPoints; }
             set {
                 value = Mathf.Clamp(value, Constants.ZeroF, MaxHitPoints);
-                SetProperty<float>(ref _currentHitPoints, value, "CurrentHitPoints", OnCurrentHitPointsChanged);
+                SetProperty<float>(ref _currentHitPoints, value, "CurrentHitPoints", CurrentHitPtsPropChangedHandler);
             }
         }
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _health; }
             private set {
                 value = Mathf.Clamp01(value);
-                SetProperty<float>(ref _health, value, "Health", OnHealthChanged);
+                SetProperty<float>(ref _health, value, "Health", HealthPropChangedHandler);
             }
         }
 
@@ -90,7 +90,7 @@ namespace CodeEnv.Master.GameContent {
             PassiveCountermeasures = cms.ToList();
             PassiveCountermeasures.ForAll(cm => {
                 D.Assert(!cm.IsActivated);  // items activate equipment when the item commences operation
-                cm.onIsDamagedChanged += OnCountermeasureIsDamagedChanged;
+                cm.isDamagedChanged += CountermeasureIsDamagedChangedEventHandler;
             });
         }
 
@@ -106,12 +106,15 @@ namespace CodeEnv.Master.GameContent {
             DefensiveStrength = new CombatStrength(undamagedCMs.Cast<ICountermeasure>());
         }
 
-        protected void OnCountermeasureIsDamagedChanged(AEquipment cm) {
+        #region Event and Property Change Handlers
+
+        protected void CountermeasureIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            var cm = sender as AEquipment;
             D.Log("{0}'s {1}.IsDamaged is now {2}.", FullName, cm.Name, cm.IsDamaged);
             RecalcDefensiveValues();
         }
 
-        private void OnMaxHitPointsChanging(float newMaxHitPoints) {
+        private void MaxHitPtsPropChangingHandler(float newMaxHitPoints) {
             D.Assert(newMaxHitPoints >= Constants.ZeroF);
             if (newMaxHitPoints < MaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
@@ -120,17 +123,19 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnMaxHitPointsChanged() {
+        private void MaxHitPtsPropChangedHandler() {
             Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
         }
 
-        private void OnCurrentHitPointsChanged() {
+        private void CurrentHitPtsPropChangedHandler() {
             Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
         }
 
-        protected virtual void OnHealthChanged() {
+        protected virtual void HealthPropChangedHandler() {
             D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
         }
+
+        #endregion
 
         #region Cleanup
 
@@ -139,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void Unsubscribe() {
-            PassiveCountermeasures.ForAll(cm => cm.onIsDamagedChanged -= OnCountermeasureIsDamagedChanged);
+            PassiveCountermeasures.ForAll(cm => cm.isDamagedChanged -= CountermeasureIsDamagedChangedEventHandler);
         }
 
         #endregion

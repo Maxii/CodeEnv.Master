@@ -45,7 +45,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     private FleetOrder _currentOrder;
     public FleetOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+        set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, FullSpeedPropChangedHandler));
     }
 
     protected override void InitializeOnFirstDiscernibleToUser() {
@@ -130,10 +130,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         _hqJoint = gameObject.AddComponent<FixedJoint>();
     }
 
-
     #endregion
-
-    #region Model Methods
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -160,7 +157,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             }
             else {
                 // there are no empty formation stations so regenerate the whole formation
-                _formationGenerator.RegenerateFormation();    // TODO instead, create a new one at the rear of the formation
+                _formationGenerator.RegenerateFormation();    //TODO instead, create a new one at the rear of the formation
             }
         }
     }
@@ -213,11 +210,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     // A fleetCmd causes heading and speed changes to occur by issuing orders to ships, not by directly telling ships to modify 
     // their speed or heading. As such, the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
 
-    protected override void OnHQElementChanging(AUnitElementItem newHQElement) {
-        base.OnHQElementChanging(newHQElement);
-        _navigator.OnHQElementChanging(HQElement, newHQElement as ShipItem);
-    }
-
     protected override void AttachCmdToHQElement() {
         if (_hqJoint == null) {
             InitializeHQAttachmentSystem();
@@ -228,62 +220,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         _hqJoint.connectedBody = HQElement.gameObject.GetSafeComponent<Rigidbody>();
         //D.Log("{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, _transform.position);
     }
-
-    private void OnCurrentOrderChanged() {
-        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
-            Return();
-        }
-
-        if (CurrentOrder != null) {
-            Data.Target = CurrentOrder.Target;  // can be null
-
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
-            FleetDirective order = CurrentOrder.Directive;
-            switch (order) {
-                case FleetDirective.Attack:
-                    CurrentState = FleetState.ExecuteAttackOrder;
-                    break;
-                case FleetDirective.Join:
-                    CurrentState = FleetState.ExecuteJoinFleetOrder;
-                    break;
-                case FleetDirective.Move:
-                    CurrentState = FleetState.ExecuteMoveOrder;
-                    break;
-                case FleetDirective.Scuttle:
-                    KillUnit();
-                    break;
-                case FleetDirective.Explore:
-                case FleetDirective.StopAttack:
-                case FleetDirective.Disband:
-                case FleetDirective.Guard:
-                case FleetDirective.Patrol:
-                case FleetDirective.Refit:
-                case FleetDirective.Repair:
-                case FleetDirective.Retreat:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetValueName());
-                    break;
-                case FleetDirective.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
-    }
-
-    protected override void OnOwnerChanging(Player newOwner) {
-        base.OnOwnerChanging(newOwner);
-        if (_isViewMembersInitialized) {
-            // _ctxControl has already been initialized
-            if (Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI and Player so generate a new ctxControl
-                InitializeContextMenu();
-            }
-        }
-    }
-
-    private void OnFullSpeedChanged() {
-        Elements.ForAll(e => (e as ShipItem).OnFleetFullSpeedChanged());
-    }
-
     protected internal override void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
         ShipItem ship = element as ShipItem;
 
@@ -358,31 +294,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = elementScuttleOrder);
     }
 
-    public void __OnHQElementEmergency() {
+    public void __HandleHQElementEmergency() {
         CurrentState = FleetState.Idling;   // temp to cause Nav disengage if currently engaged
         D.Warn("{0} needs to retreat!!!", FullName);
-        // TODO issue fleet order retreat
+        //TODO issue fleet order retreat
     }
-
-    #endregion
-
-    #region View Methods
 
     internal void AssessShowCoursePlot() {
         // Note: left out IsDiscernible ... as I want these lines to show up whether the fleet is on screen or not
         var coursePlot = _navigator.Course;
         bool toShow = (DebugSettings.Instance.EnableFleetCourseDisplay || IsSelected) && coursePlot.Count > Constants.Zero;
         ShowCoursePlot(toShow, coursePlot);
-    }
-
-    protected override void OnIsDiscernibleToUserChanged() {
-        base.OnIsDiscernibleToUserChanged();
-        ShowVelocityRay(IsDiscernibleToUser);
-    }
-
-    protected override void OnIsSelectedChanged() {
-        base.OnIsSelectedChanged();
-        AssessShowCoursePlot();
     }
 
     protected override void ShowSelectedItemHud() {
@@ -433,15 +355,83 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         }
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    protected override void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
+        base.HQElementPropChangingHandler(newHQElement);
+        _navigator.HandleHQElementChanging(HQElement, newHQElement as ShipItem);
+    }
 
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (!isDown && !_inputMgr.IsDragging) {
+    private void CurrentOrderPropChangedHandler() {
+        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
+            Return();
+        }
+
+        if (CurrentOrder != null) {
+            Data.Target = CurrentOrder.Target;  // can be null
+
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            FleetDirective order = CurrentOrder.Directive;
+            switch (order) {
+                case FleetDirective.Attack:
+                    CurrentState = FleetState.ExecuteAttackOrder;
+                    break;
+                case FleetDirective.Join:
+                    CurrentState = FleetState.ExecuteJoinFleetOrder;
+                    break;
+                case FleetDirective.Move:
+                    CurrentState = FleetState.ExecuteMoveOrder;
+                    break;
+                case FleetDirective.Scuttle:
+                    KillUnit();
+                    break;
+                case FleetDirective.Explore:
+                case FleetDirective.StopAttack:
+                case FleetDirective.Disband:
+                case FleetDirective.Guard:
+                case FleetDirective.Patrol:
+                case FleetDirective.Refit:
+                case FleetDirective.Repair:
+                case FleetDirective.Retreat:
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetValueName());
+                    break;
+                case FleetDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+        }
+    }
+
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
+        if (_hasInitOnFirstDiscernibleToUserRun) {
+            // _ctxControl has already been initialized
+            if (Owner.IsUser != newOwner.IsUser) {
+                // Kind of owner has changed between AI and Player so generate a new ctxControl
+                InitializeContextMenu();
+            }
+        }
+    }
+
+    private void FullSpeedPropChangedHandler() {
+        Elements.ForAll(e => (e as ShipItem).HandleFleetFullSpeedChanged());
+    }
+
+    protected override void IsDiscernibleToUserPropChangedHandler() {
+        base.IsDiscernibleToUserPropChangedHandler();
+        ShowVelocityRay(IsDiscernibleToUser);
+    }
+
+    protected override void IsSelectedPropChangedHandler() {
+        base.IsSelectedPropChangedHandler();
+        AssessShowCoursePlot();
+    }
+
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -452,7 +442,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     public new FleetState CurrentState {
         get { return (FleetState)base.CurrentState; }
         protected set {
-            if (CurrentState == value) {
+            if (base.CurrentState != null && CurrentState == value) {
                 D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
             }
             base.CurrentState = value;
@@ -479,8 +469,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         // register as available
     }
 
-    void Idling_OnDetectedEnemy() { }
-
     void Idling_ExitState() {
         LogEvent();
         // register as unavailable
@@ -499,7 +487,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         // Return()s here - move error or not, we idle
 
         if (_isDestinationUnreachable) {
-            // TODO how to handle move errors?
+            //TODO how to handle move errors?
             D.Error("{0} move order to {1} is unreachable.", FullName, CurrentOrder.Target.FullName);
         }
         CurrentState = FleetState.Idling;
@@ -527,23 +515,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         LogEvent();
         var mortalMoveTarget = _moveTarget as AMortalItem;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onDeathOneShot += OnTargetDeath;
+            mortalMoveTarget.deathOneShot += TargetDeathEventHandler;
         }
         _navigator.PlotCourse(_moveTarget, _moveSpeed);
     }
 
-    void Moving_OnCoursePlotSuccess() {
+    void Moving_UponCoursePlotSuccess() {
         LogEvent();
         _navigator.EngageAutoPilot();
     }
 
-    void Moving_OnCoursePlotFailure() {
+    void Moving_UponCoursePlotFailure() {
         LogEvent();
         _isDestinationUnreachable = true;
         Return();
     }
 
-    void Moving_OnDestinationUnreachable() {
+    void Moving_UponDestinationUnreachable() {
         LogEvent();
         _isDestinationUnreachable = true;
         Return();
@@ -555,7 +543,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         Return();
     }
 
-    void Moving_OnDestinationReached() {
+    void Moving_UponDestinationReached() {
         LogEvent();
         Return();
     }
@@ -564,7 +552,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         LogEvent();
         var mortalMoveTarget = _moveTarget as AMortalItem;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onDeathOneShot -= OnTargetDeath;
+            mortalMoveTarget.deathOneShot -= TargetDeathEventHandler;
         }
         _moveTarget = null;
         _navigator.DisengageAutoPilot();
@@ -576,8 +564,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     void Exploring_EnterState() { }
 
-    void Exploring_OnDetectedEnemy() { }
-
     void Exploring_ExitState() { }
 
     #endregion
@@ -586,11 +572,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     void GoPatrol_EnterState() { }
 
-    void GoPatrol_OnDetectedEnemy() { }
-
     void Patrolling_EnterState() { }
-
-    void Patrolling_OnDetectedEnemy() { }
 
     #endregion
 
@@ -645,7 +627,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
-        _attackTarget.onDeathOneShot += OnTargetDeath;
+        _attackTarget.deathOneShot += TargetDeathEventHandler;
         var shipAttackOrder = new ShipOrder(ShipDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipAttackOrder);
     }
@@ -658,7 +640,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.onDeathOneShot -= OnTargetDeath;
+        _attackTarget.deathOneShot -= TargetDeathEventHandler;
         _attackTarget = null;
     }
 
@@ -738,7 +720,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         StartEffect(EffectID.Dying);
     }
 
-    void Dead_OnEffectFinished(EffectID effectID) {
+    void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         D.Assert(effectID == EffectID.Dying);
         __DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // long wait so last element can play death effect
@@ -748,20 +730,20 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     #region StateMachine Support Methods
 
-    public override void OnEffectFinished(EffectID effectID) {
-        base.OnEffectFinished(effectID);
+    public override void HandleEffectFinished(EffectID effectID) {
+        base.HandleEffectFinished(effectID);
         if (CurrentState == FleetState.Dead) {   // TEMP avoids 'method not found' warning spam
-            RelayToCurrentState(effectID);
+            UponEffectFinished(effectID);
         }
     }
 
-    void OnCoursePlotFailure() { RelayToCurrentState(); }
+    private void UponCoursePlotFailure() { RelayToCurrentState(); }
 
-    void OnCoursePlotSuccess() { RelayToCurrentState(); }
+    private void UponCoursePlotSuccess() { RelayToCurrentState(); }
 
-    void OnDestinationReached() { RelayToCurrentState(); }
+    private void UponDestinationReached() { RelayToCurrentState(); }
 
-    void OnDestinationUnreachable() {
+    private void UponDestinationUnreachable() {
         // the final waypoint is not close enough and we can't directly approach the Destination
         RelayToCurrentState();
     }
@@ -883,7 +865,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         }
 
         private void Subscribe() {
-            _seeker.pathCallback += OnCoursePlotCompleted;
+            _seeker.pathCallback += CoursePlotCompletedEventHandler;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
 
@@ -895,7 +877,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         internal void PlotCourse(INavigableTarget target, Speed speed) {
             D.Assert(!(target is StationaryLocation) && !(target is MovingLocation) && !(target is FormationStationMonitor) && !(target is AUnitElementItem));
             RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
-            //_targetNavValues = target.GetNavigationValues(_fleet);
             _targetCloseEnoughDistance = target.GetCloseEnoughDistance(_fleet);
             ResetCourseReplotValues();
             GenerateCourse();
@@ -905,7 +886,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
         /// </summary>
         internal override void EngageAutoPilot() {
-            _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
+            _fleet.HQElement.destinationReached += FlagshipReachedDestinationHandler;
             base.EngageAutoPilot();
         }
 
@@ -918,7 +899,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         /// Primary exposed control for disengaging the AutoPilot from handling movement.
         /// </summary>
         internal void DisengageAutoPilot() {
-            _fleet.HQElement.onDestinationReached -= OnFlagshipReachedDestination;
+            _fleet.HQElement.destinationReached -= FlagshipReachedDestinationHandler;
             IsAutoPilotEngaged = false;
         }
 
@@ -926,9 +907,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             D.Assert(!IsPilotNavigationJobRunning);
             D.Assert(!_hasFlagshipReachedDestination);
             D.Log("{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
-            _pilotNavigationJob = new Job(EngageCourse(), toStart: true, onJobComplete: (wasKilled) => {
+            _pilotNavigationJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
                 if (!wasKilled) {
-                    OnDestinationReached();
+                    HandleDestinationReached();
                 }
             });
         }
@@ -997,23 +978,25 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
         #endregion
 
-        private void OnCourseChanged() {
+        private void HandleCourseChanged() {
             _fleet.AssessShowCoursePlot();
         }
 
-        private void OnFlagshipReachedDestination() {
+        #region Event and Property Change Handlers
+
+        private void FlagshipReachedDestinationHandler(object sender, EventArgs e) {
             D.Log("{0} reporting that Flagship {1} has reached destination.", Name, _fleet.HQElement.FullName);
             _hasFlagshipReachedDestination = true;
         }
 
-        private void OnCoursePlotCompleted(Path path) {
+        private void CoursePlotCompletedEventHandler(Path path) {
             if (path.error) {
                 D.Error("{0} generated an error plotting a course to {1}.", Name, Target.FullName);
-                OnCoursePlotFailure();
+                HandleCoursePlotFailure();
                 return;
             }
             ConstructCourse(path.vectorPath);
-            OnCourseChanged();
+            HandleCourseChanged();
             //D.Log("{0}'s waypoint course to {1} is: {2}.", ClientName, Target.FullName, Course.Concatenate());
             //PrintNonOpenSpaceNodes(path);
 
@@ -1022,40 +1005,42 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                 RunPilotJobs();
             }
             else {
-                OnCoursePlotSuccess();
+                HandleCoursePlotSuccess();
             }
         }
 
-        internal void OnHQElementChanging(ShipItem oldHQElement, ShipItem newHQElement) {
+        #endregion
+
+        internal void HandleHQElementChanging(ShipItem oldHQElement, ShipItem newHQElement) {
             if (oldHQElement != null) {
-                oldHQElement.onDestinationReached -= OnFlagshipReachedDestination;
+                oldHQElement.destinationReached -= FlagshipReachedDestinationHandler;
             }
             if (IsPilotNavigationJobRunning) {   // if not engaged, this connection will be established when next engaged
-                newHQElement.onDestinationReached += OnFlagshipReachedDestination;
+                newHQElement.destinationReached += FlagshipReachedDestinationHandler;
             }
         }
 
-        private void OnCoursePlotFailure() {
+        private void HandleCoursePlotFailure() {
             if (_isCourseReplot) {
                 D.Warn("{0}'s course to {1} couldn't be replotted.", Name, Target.FullName);
             }
-            _fleet.OnCoursePlotFailure();
+            _fleet.UponCoursePlotFailure();
         }
 
-        private void OnCoursePlotSuccess() {
-            _fleet.OnCoursePlotSuccess();
+        private void HandleCoursePlotSuccess() {
+            _fleet.UponCoursePlotSuccess();
         }
 
-        protected override void OnDestinationReached() {
-            base.OnDestinationReached();
+        protected override void HandleDestinationReached() {
+            base.HandleDestinationReached();
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
-            _fleet.OnDestinationReached();
+            _fleet.UponDestinationReached();
         }
 
-        protected override void OnDestinationUnreachable() {
-            base.OnDestinationUnreachable();
+        protected override void HandleDestinationUnreachable() {
+            base.HandleDestinationUnreachable();
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
-            _fleet.OnDestinationUnreachable();
+            _fleet.UponDestinationUnreachable();
         }
 
         /// <summary>
@@ -1157,7 +1142,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
             }
             //D.Log("CourseCountAfter = {0}.", Course.Count);
-            OnCourseChanged();
+            HandleCourseChanged();
         }
 
         private void GenerateCourse() {
@@ -1224,7 +1209,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         }
 
         private void Unsubscribe() {
-            _seeker.pathCallback -= OnCoursePlotCompleted;
+            _seeker.pathCallback -= CoursePlotCompletedEventHandler;
             // subscriptions contained completely within this gameobject (both subscriber
             // and subscribee) donot have to be cleaned up as all instances are destroyed
         }
@@ -1414,7 +1399,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         Dead
 
         // ShowHit no longer applicable to Cmds as there is no mesh
-        // TODO Docking, Embarking, etc.
+        //TODO Docking, Embarking, etc.
     }
 
     #region FleetNavigator Archive
@@ -1492,8 +1477,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     //    private void Subscribe() {
     //        _subscriptions = new List<IDisposable>();
-    //        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-    //        _seeker.pathCallback += OnCoursePlotCompleted;
+    //        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
+    //        _seeker.pathCallback += CoursePlotCompletedHandler;
     //        // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
     //    }
 
@@ -1545,7 +1530,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //        D.Assert(!IsAutoPilotEngaged);
     //        D.Assert(!_hasFlagshipReachedDestination);
     //        D.Log("{0} initiating course to target {1}. Distance: {2}.", _fleet.DisplayName, Target.FullName, TargetPointDistance);
-    //        _pilotJob = new Job(EngageCourse(), toStart: true, onJobComplete: (wasKilled) => {
+    //        _pilotJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
     //            if (!wasKilled) {
     //                OnDestinationReached();
     //            }
@@ -1606,7 +1591,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     //    #endregion
 
-    //    private void OnCourseChanged() {
+    //    private void HandleCourseChanged() {
     //        _fleet.AssessShowCoursePlot();
     //    }
 
@@ -1615,14 +1600,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //        _hasFlagshipReachedDestination = true;
     //    }
 
-    //    private void OnCoursePlotCompleted(Path path) {
+    //    private void CoursePlotCompletedHandler(Path path) {
     //        if (path.error) {
     //            D.Error("{0} generated an error plotting a course to {1}.", _fleet.DisplayName, Target.FullName);
     //            OnCoursePlotFailure();
     //            return;
     //        }
     //        Course = ConstructCourse(path.vectorPath);
-    //        OnCourseChanged();
+    //        HandleCourseChanged();
     //        //D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, Target.FullName, Course.Concatenate());
     //        //PrintNonOpenSpaceNodes(path);
 
@@ -1631,11 +1616,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //            EngageAutoPilot();
     //        }
     //        else {
-    //            OnCoursePlotSuccess();
+    //            UponCoursePlotSuccess();
     //        }
     //    }
 
-    //    internal void OnHQElementChanging(ShipItem oldHQElement, ShipItem newHQElement) {
+    //    internal void HandleHQElementChanging(ShipItem oldHQElement, ShipItem newHQElement) {
     //        if (oldHQElement != null) {
     //            oldHQElement.onDestinationReached -= OnFlagshipReachedDestination;
     //        }
@@ -1648,7 +1633,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //        RefreshNavigationalValues();
     //    }
 
-    //    private void OnGameSpeedChanged() {
+    //    private void GameSpeedPropChangedHandler() {
     //        _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
     //        RefreshNavigationalValues();
     //    }
@@ -1660,8 +1645,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //        _fleet.OnCoursePlotFailure();
     //    }
 
-    //    private void OnCoursePlotSuccess() {
-    //        _fleet.OnCoursePlotSuccess();
+    //    private void UponCoursePlotSuccess() {
+    //        _fleet.UponCoursePlotSuccess();
     //    }
 
     //    private void OnDestinationReached() {
@@ -1917,7 +1902,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
     //        }
     //        //D.Log("CourseCountAfter = {0}.", Course.Count);
-    //        OnCourseChanged();
+    //        HandleCourseChanged();
     //    }
 
     //    private void GenerateCourse() {

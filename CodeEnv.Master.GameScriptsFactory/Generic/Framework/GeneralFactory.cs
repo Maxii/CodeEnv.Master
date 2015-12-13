@@ -148,7 +148,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     }
 
     private void Cleanup() {
-        OnDispose();
+        CallOnDispose();
         // other cleanup here including any tracking Gui2D elements
     }
 

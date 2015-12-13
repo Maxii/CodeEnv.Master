@@ -51,7 +51,7 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(SelectionManager.Instance.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, OnCurrentSelectionChanged));
+        _subscriptions.Add(SelectionManager.Instance.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, CurrentSelectionPropChangedHandler));
     }
 
     public void Show(string text) {
@@ -82,12 +82,16 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
         transform.localPosition = intendedLocalPosition;
     }
 
-    private void OnCurrentSelectionChanged() {
-        //D.Log("{0}.OnCurrentSelectionChanged() called.", GetType().Name);
+    #region Event and Property Change Handlers
+
+    private void CurrentSelectionPropChangedHandler() {
+        //D.Log("{0}.CurrentSelectionPropChangedHandler() called.", GetType().Name);
         if (IsShowing) {
             PositionWindow();
         }
     }
+
+    #endregion
 
     protected override void Cleanup() {
         base.Cleanup();

@@ -128,6 +128,10 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //LogEvent();
     }
 
+    protected virtual void LateUpdate() {
+        //LogEvent();
+    }
+
     protected virtual void FixedUpdate() {
         //LogEvent();
     }
@@ -171,17 +175,17 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     #endregion
 
-    #region UnitySerializer Event Methods
+    #region UnitySerializer Archive
 
-    /// <summary>
-    /// Called by UnitySerializer the same way normal Unity methods (above) are called,
-    /// it occurs after the level has been loaded but before it starts to run.
-    /// It is used to do any final initialization.
-    /// </summary>
-    protected virtual void OnDeserialized() {
-        D.Log("{0}.OnDeserialized().", this.GetType().Name);
+    ///// <summary>
+    ///// Called by UnitySerializer the same way normal Unity methods (above) are called,
+    ///// it occurs after the level has been loaded but before it starts to run.
+    ///// It is used to do any final initialization.
+    ///// </summary>
+    //protected virtual void OnDeserialized() {
+    //    D.Log("{0}.OnDeserialized().", this.GetType().Name);
 
-    }
+    //}
 
     #endregion
 

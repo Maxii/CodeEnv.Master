@@ -67,6 +67,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
     protected override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
+        Subscribe();
         if (SelfInitializeSelection) {
             InitializeSelection();
         }
@@ -74,10 +75,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
 
     protected virtual void InitializeValuesAndReferences() {
         _popupList = InitializePopupList();
-        //_label = gameObject.GetSafeFirstMonoBehaviourInChildren<UILabel>();
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
-        EventDelegate.Add(_popupList.onChange, _label.SetCurrentSelection);
-        EventDelegate.Add(_popupList.onChange, OnPopupListSelection);
     }
 
     /// <summary>
@@ -86,13 +84,16 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
     /// event before this client can populate the list with its own content.
     /// </summary>
     private UIPopupList InitializePopupList() {
-        //UIPopupList popupList = UnityUtility.ValidateMonoBehaviourPresence<UIPopupList>(gameObject);
         UIPopupList popupList = UnityUtility.ValidateComponentPresence<UIPopupList>(gameObject);
         // popupList.Clear();  // This just clears an initially empty items list and does nothing about what is showing in the editor.
         // Unfortunately, the UIPopupListInspector reads what is in the editor's text box and adds it to the items list every time OnInspectorGui()
         // is called. Accordingly, I have to manually clear the editor text box of content if I don't want the onChange event raised on Start().
         D.Assert(!Utility.CheckForContent<string>(popupList.items), "{0}: UIPopupList Inspector content must be empty.".Inject(GetType().Name), this);
         return popupList;
+    }
+
+    private void Subscribe() {
+        EventDelegate.Add(_popupList.onChange, PopupListSelectionChangedEventHandler);
     }
 
     private void InitializeSelection() {
@@ -149,11 +150,18 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
         return isPrefSelected;
     }
 
+    #region Event and Property Change Handlers
+
+
     /// <summary>
-    /// Called when a selection has been made. Default does nothing.
+    /// Called when a selection has been made.
     /// Note: Called when any selection is made, even a selection that is the same as the previous selection.
     /// </summary>
-    protected virtual void OnPopupListSelection() { }
+    protected virtual void PopupListSelectionChangedEventHandler() {
+        _label.SetCurrentSelection();
+    }
+
+    #endregion
 
     protected virtual void Validate() {
         if (IncludesRandom) {
@@ -169,8 +177,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
     }
 
     protected virtual void Unsubscribe() {
-        EventDelegate.Remove(_popupList.onChange, _label.SetCurrentSelection);
-        EventDelegate.Remove(_popupList.onChange, OnPopupListSelection);
+        EventDelegate.Remove(_popupList.onChange, PopupListSelectionChangedEventHandler);
     }
 
 }

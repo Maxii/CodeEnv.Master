@@ -363,7 +363,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
 
     private static void DoNothingCollision(Collision other) { }
 
-    private static void DoNothingBoolean(bool b) { }
+    ////private static void DoNothingBoolean(bool b) { }
 
     #endregion
 
@@ -388,10 +388,10 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         public IEnumerator enterStateEnumerator = null;
         public IEnumerator exitStateEnumerator = null;
 
-        public Action<bool> DoOnHover = DoNothingBoolean;
-        public Action<bool> DoOnPress = DoNothingBoolean;
-        public Action DoOnClick = DoNothing;
-        public Action DoOnDoubleClick = DoNothing;
+        ////public Action<bool> DoOnHover = DoNothingBoolean;
+        ////public Action<bool> DoOnPress = DoNothingBoolean;
+        ////public Action DoOnClick = DoNothing;
+        ////public Action DoOnDoubleClick = DoNothing;
 
         public E currentState;
 
@@ -417,7 +417,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// 
     /// NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
     /// 1. the state we are changing from is recorded as lastState
-    /// 2. the event OnCurrentStateChanging(newState) is sent to subscribers
+    /// 2. the event CurrentStatePropChangingHandler(newState) is sent to subscribers
     /// 3. the value of the CurrentState enum is changed to newState
     /// 4. the lastState_ExitState() method is called 
     ///          - while in this method, realize that the CurrentState enum has already changed to newState
@@ -428,7 +428,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     ///              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
     ///              - you also can't just use a coroutine to wait then change it as the event is still held up
     ///          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
-    /// 7. the event OnCurrentStateChanged() is sent to subscribers
+    /// 7. the event CurrentStatePropChangedHandler() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
     /// </summary>
     public virtual E CurrentState {
@@ -565,10 +565,10 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
         state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
-        state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
-        state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
-        state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
-        state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
+        ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
+        ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
+        ////state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
+        ////state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
 
         state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
         state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
@@ -633,7 +633,8 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoOccasionalUpdate();
     }
 
-    void LateUpdate() {
+    protected override void LateUpdate() {
+        base.LateUpdate();
         state.DoLateUpdate();
     }
 
@@ -670,21 +671,21 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoOnCollisionStay(collision);
     }
 
-    void OnHover(bool isOver) {
-        state.DoOnHover(isOver);
-    }
+    ////void OnHover(bool isOver) {
+    ////    state.DoOnHover(isOver);
+    ////}
 
-    void OnPress(bool isDown) {
-        state.DoOnPress(isDown);
-    }
+    ////void OnPress(bool isDown) {
+    ////    state.DoOnPress(isDown);
+    ////}
 
-    void OnClick() {
-        state.DoOnClick();
-    }
+    ////void OnClick() {
+    ////    state.DoOnClick();
+    ////}
 
-    void OnDoubleClick() {
-        state.DoOnDoubleClick();
-    }
+    ////void OnDoubleClick() {
+    ////    state.DoOnDoubleClick();
+    ////}
 
     #endregion
 

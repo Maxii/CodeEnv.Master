@@ -60,6 +60,11 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
+        public sealed override Topography Topography {  // avoids CA2214
+            get { return base.Topography; }
+            set { base.Topography = value; }
+        }
+
         private Index3D _sectorIndex;
         public override Index3D SectorIndex { get { return _sectorIndex; } }
 

@@ -37,10 +37,12 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
     }
 
     private void Subscribe() {
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
     }
 
-    private void OnGameStateChanged() {
+    #region Event and Property Change Handlers
+
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         GameState gameState = _gameMgr.CurrentState;
         if (gameState == GameState.BuildAndDeploySystems) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: false);
@@ -52,6 +54,8 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
             BeginOperations();
         }
     }
+
+    #endregion
 
     private void InitializeUniverseCenter() {
         UniverseCenter = GetComponentInChildren<UniverseCenterItem>();
@@ -90,7 +94,7 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
     }
 
     private void Unsubscribe() {
-        _gameMgr.onGameStateChanged -= OnGameStateChanged;
+        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
     }
 
     public override string ToString() {

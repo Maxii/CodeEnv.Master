@@ -42,14 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanging));
-        }
-
-        private void OnGameSpeedChanging(GameSpeed newSpeed) { // OPTIMIZE use static event?
-            //D.Log("{0}.OnGameSpeedChanging() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
-            float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
-            float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
-            _hudRefreshRate *= speedChangeRatio;
+            _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangingHandler));
         }
 
         public void ShowHud() {
@@ -63,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         private void Show(bool toShow) {
             if (toShow) {
                 if (_hudJob == null || !_hudJob.IsRunning) {
-                    _hudJob = new Job(RefreshHudContent(), toStart: true, onJobComplete: (wasKilled) => {
+                    _hudJob = new Job(RefreshHudContent(), toStart: true, jobCompleted: (wasKilled) => {
                         //D.Log("{0} ShowHUD Job {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
                     });
                 }
@@ -76,6 +69,17 @@ namespace CodeEnv.Master.GameContent {
                 References.HoveredItemHudWindow.Hide();
             }
         }
+
+        #region Event and Property Change Handlers
+
+        private void GameSpeedPropChangingHandler(GameSpeed newSpeed) { // OPTIMIZE use static event?
+            //D.Log("{0}.GameSpeedPropChangingHandler() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
+            float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
+            float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
+            _hudRefreshRate *= speedChangeRatio;
+        }
+
+        #endregion
 
         private IEnumerator RefreshHudContent() {
             var itemHud = References.HoveredItemHudWindow;

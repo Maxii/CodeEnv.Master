@@ -56,8 +56,8 @@ namespace CodeEnv.Master.Common {
         /// Clients should call this if and when they Dispose of T. 
         /// WARNING: T should be disposed of when it holds any reference to an object that does not persist across scenes
         /// </summary>
-        protected void OnDispose() {
-            //D.Log("{0}.OnDispose() called.", GetType().Name);
+        protected void CallOnDispose() {
+            //D.Log("{0}.CallOnDispose() called.", GetType().Name);
             _instance = null;
         }
 

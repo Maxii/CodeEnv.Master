@@ -24,11 +24,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISensorDetectable : IDetectable {
 
-        event Action<IItem> onOwnerChanged;
+        event EventHandler ownerChanged;
 
-        void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
 
-        void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
     }
 }
 

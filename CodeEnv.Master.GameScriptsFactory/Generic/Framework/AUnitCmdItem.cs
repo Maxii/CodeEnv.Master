@@ -62,7 +62,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     private AUnitElementItem _hqElement;
     public AUnitElementItem HQElement {
         get { return _hqElement; }
-        set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
+        set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", HQElementPropChangedHandler, HQElementPropChangingHandler); }
     }
 
     public IList<AUnitElementItem> Elements { get; private set; }
@@ -93,7 +93,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, UnitFormationPropChangedHandler));
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -124,15 +124,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick += (go) => OnClick();
-        iconEventListener.onDoubleClick += (go) => OnDoubleClick();
-        iconEventListener.onPress += (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick += (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
+        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion
 
-    #region Model Methods
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -152,7 +151,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         Data.AddElement(element.Data);
         element.AttachAsChildOf(UnitContainer);
         Subscribe(element);
-        // TODO consider changing HQElement
+        //TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
             //D.Log("{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
@@ -225,60 +224,21 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     private void Subscribe(AUnitElementItem element) {
-        element.Data.onUserIntelCoverageChanged += OnElementUserIntelCoverageChanged;
-        //element.onDeathOneShot += OnSubordinateElementDeath;  // element now informs command AFTER it broadcasts its onDeathEvent
+        element.Data.userIntelCoverageChanged += ElementUserIntelCoverageChangedEventHandler;
+        //element.onDeathOneShot += HandleSubordinateElementDeath;  // element now informs command AFTER it broadcasts its onDeathEvent
         // previously, sequencing issues surfaced, depending on the order in which subscribers signed up for the event
     }
 
     private void Unsubscribe(AUnitElementItem element) {
-        element.Data.onUserIntelCoverageChanged -= OnElementUserIntelCoverageChanged;
+        element.Data.userIntelCoverageChanged -= ElementUserIntelCoverageChangedEventHandler;
     }
 
-    public void OnSubordinateElementDeath(IUnitElementItem deadSubordinateElement) {
+    public void HandleSubordinateElementDeath(IUnitElementItem deadSubordinateElement) {
         D.Log("{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
         RemoveElement(deadSubordinateElement as AUnitElementItem);
     }
 
-    protected virtual void OnHQElementChanging(AUnitElementItem newHQElement) {
-        Arguments.ValidateNotNull(newHQElement);
-        var previousHQElement = HQElement;
-        if (previousHQElement != null) {
-            previousHQElement.Data.IsHQ = false;
-        }
-        if (!Elements.Contains(newHQElement)) {
-            // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
-            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", FullName, newHQElement.FullName);
-            AddElement(newHQElement);
-        }
-    }
-
-    private void OnHQElementChanged() {
-        HQElement.Data.IsHQ = true;
-        Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
-        //D.Log("{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
-        AttachCmdToHQElement(); // needs to occur before formation changed
-        _formationGenerator.RegenerateFormation();
-        if (DisplayMgr != null) {
-            DisplayMgr.ResizePrimaryMesh(Radius);
-        }
-    }
-
     protected abstract void AttachCmdToHQElement();
-
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
-        if (_trackingLabel != null) {
-            _trackingLabel.Color = Owner.Color;
-        }
-        if (DisplayMgr != null) {
-            DisplayMgr.Color = Owner.Color;
-        }
-        AssessIcon();
-    }
-
-    private void OnFormationChanged() {
-        _formationGenerator.RegenerateFormation();
-    }
 
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
@@ -299,24 +259,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
 
-    #endregion
-
-    #region View Methods
-
-    protected override void OnIsDiscernibleToUserChanged() {
-        base.OnIsDiscernibleToUserChanged();
-        ShowTrackingLabel(IsDiscernibleToUser);
-    }
-
-    protected virtual void OnIsSelectedChanged() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessHighlighting();
-        Elements.ForAll(e => e.AssessHighlighting());
-    }
-
     /// <summary>
     /// Shows the SelectedItemHudWindow for this item.
     /// </summary>
@@ -326,15 +268,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     /// handled by the SelectionMgr when there is no longer an item selected.
     /// </remarks>
     protected abstract void ShowSelectedItemHud();
-
-    protected override void OnUserIntelCoverageChanged() {
-        base.OnUserIntelCoverageChanged();
-        AssessIcon();    // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
-    }
-
-    private void OnElementUserIntelCoverageChanged() {
-        AssessIcon();
-    }
 
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -380,12 +313,78 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         }
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    protected virtual void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
+        Arguments.ValidateNotNull(newHQElement);
+        var previousHQElement = HQElement;
+        if (previousHQElement != null) {
+            previousHQElement.Data.IsHQ = false;
+        }
+        if (!Elements.Contains(newHQElement)) {
+            // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
+            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", FullName, newHQElement.FullName);
+            AddElement(newHQElement);
+        }
+    }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    private void HQElementPropChangedHandler() {
+        HQElement.Data.IsHQ = true;
+        Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
+        //D.Log("{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
+        AttachCmdToHQElement(); // needs to occur before formation changed
+        _formationGenerator.RegenerateFormation();
+        if (DisplayMgr != null) {
+            DisplayMgr.ResizePrimaryMesh(Radius);
+        }
+    }
+
+    protected void TargetDeathEventHandler(object sender, EventArgs e) {
+        IMortalItem deadTarget = sender as IMortalItem;
+        UponTargetDeath(deadTarget);
+    }
+
+
+    protected override void OwnerPropChangedHandler() {
+        base.OwnerPropChangedHandler();
+        if (_trackingLabel != null) {
+            _trackingLabel.Color = Owner.Color;
+        }
+        if (DisplayMgr != null) {
+            DisplayMgr.Color = Owner.Color;
+        }
+        AssessIcon();
+    }
+
+    private void UnitFormationPropChangedHandler() {
+        _formationGenerator.RegenerateFormation();
+    }
+
+    protected override void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
+        base.UserIntelCoverageChangedEventHandler(sender, e);
+        AssessIcon();   // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
+    }
+
+    private void ElementUserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
+        AssessIcon();
+    }
+
+    protected override void IsDiscernibleToUserPropChangedHandler() {
+        base.IsDiscernibleToUserPropChangedHandler();
+        ShowTrackingLabel(IsDiscernibleToUser);
+    }
+
+    protected virtual void IsSelectedPropChangedHandler() {
+        if (IsSelected) {
+            ShowSelectedItemHud();
+            SelectionManager.Instance.CurrentSelection = this;
+        }
+        AssessHighlighting();
+        Elements.ForAll(e => e.AssessHighlighting());
+    }
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         IsSelected = true;
     }
 
@@ -397,9 +396,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected void OnTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
+    private void UponTargetDeath(IMortalItem deadTarget) {
+        RelayToCurrentState(deadTarget);
+    }
 
-    void OnDetectedEnemy() { RelayToCurrentState(); }   // TODO connect to sensors when I get them
+    protected void UponEffectFinished(EffectID effectID) { RelayToCurrentState(effectID); }
 
     #endregion
 
@@ -487,12 +488,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         }
     }
 
+    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick -= (go) => OnClick();
+    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
+    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick -= (go) => OnClick();
-        iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-        iconEventListener.onPress -= (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick -= (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
+        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
     }
 
     // subscriptions contained completely within this gameobject (both subscriber
@@ -521,7 +529,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     private bool _isSelected;
     public bool IsSelected {
         get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
+        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
     }
 
     #endregion

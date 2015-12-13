@@ -26,7 +26,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AVectrosityBase : APropertyChangeTracking, IDisposable {
 
-        //public Material material;
         public Texture texture;
 
         public bool IsShowing {
@@ -42,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         private string _lineName;
         public string LineName {
             get { return _lineName; }
-            set { SetProperty<string>(ref _lineName, value, "LineName", OnLineNameChanged); }
+            set { SetProperty<string>(ref _lineName, value, "LineName", LineNamePropChangedHandler); }
         }
 
         protected Job _drawJob;
@@ -58,11 +57,15 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract void Initialize();
 
-        private void OnLineNameChanged() {
+        #region Event and Property Change Handlers
+
+        private void LineNamePropChangedHandler() {
             if (_line != null) {
                 _line.name = LineName;
             }
         }
+
+        #endregion
 
         protected virtual void Cleanup() {
             VectorLine.Destroy(ref _line);

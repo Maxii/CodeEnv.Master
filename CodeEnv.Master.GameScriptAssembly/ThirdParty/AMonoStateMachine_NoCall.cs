@@ -35,15 +35,15 @@ using UnityEngine;
 [Obsolete]  // still current, just not used
 public abstract class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E : struct {
 
-    public event Action onCurrentStateChanged;
-    public event Action<E> onCurrentStateChanging;
+    public event Action currentStateChanged;
+    public event Action<E> currentStateChanging;
 
     /// <summary>
     /// Gets or sets the current State.
     /// 
     /// NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
     /// 1. the state we are changing from is recorded as lastState
-    /// 2. the event OnCurrentStateChanging(newState) is sent to subscribers
+    /// 2. the event CurrentStatePropChangingHandler(newState) is sent to subscribers
     /// 3. the value of the CurrentState enum is changed to newState
     /// 4. the lastState_ExitState() method is called 
     ///          - while in this method, realize that the CurrentState enum has already changed to newState
@@ -54,25 +54,33 @@ public abstract class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E
     ///              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
     ///              - you also can't just use a coroutine to wait then change it as the event is still held up
     ///          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
-    /// 7. the event OnCurrentStateChanged() is sent to subscribers
+    /// 7. the event CurrentStatePropChangedHandler() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
     /// </summary>
     public override E CurrentState {
         get { return state.currentState; }
-        protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
+        protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", CurrentStatePropChangedHandler, CurrentStatePropChangingHandler); }
     }
 
-    protected virtual void OnCurrentStateChanging(E incomingState) {
+    protected virtual void CurrentStatePropChangingHandler(E incomingState) {
         ChangingState();
-        if (onCurrentStateChanging != null) {
-            onCurrentStateChanging(incomingState);
+        OnCurrentStateChanging(incomingState);
+    }
+
+    private void OnCurrentStateChanging(E incomingState) {
+        if (currentStateChanging != null) {
+            currentStateChanging(incomingState);
         }
     }
 
-    protected virtual void OnCurrentStateChanged() {
+    protected virtual void CurrentStatePropChangedHandler() {
         ConfigureCurrentState();
-        if (onCurrentStateChanged != null) {
-            onCurrentStateChanged();
+        OnCurrentStateChanged();
+    }
+
+    private void OnCurrentStateChanged() {
+        if (currentStateChanged != null) {
+            currentStateChanged();
         }
     }
 

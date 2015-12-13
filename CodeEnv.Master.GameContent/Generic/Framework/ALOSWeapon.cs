@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ALOSWeapon : AWeapon {
 
-        public event Action<LosWeaponFiringSolution> onWeaponAimed;
+        public event EventHandler<LosWeaponFiringSolutionEventArgs> weaponAimed;
 
         public new ILOSWeaponMount WeaponMount {
             get { return base.WeaponMount as ILOSWeaponMount; }
@@ -42,13 +42,21 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public ALOSWeapon(AWeaponStat stat, string name = null) : base(stat, name) { }
 
-        public void OnWeaponAimed(LosWeaponFiringSolution firingSolution) {
-            if (onWeaponAimed != null) {
-                onWeaponAimed(firingSolution);
+        public void HandleWeaponAimed(LosWeaponFiringSolution firingSolution) {
+            OnWeaponAimed(firingSolution);
+        }
+
+        #region Event and Property Change Handlers
+
+        private void OnWeaponAimed(LosWeaponFiringSolution firingSolution) {
+            if (weaponAimed != null) {
+                weaponAimed(this, new LosWeaponFiringSolutionEventArgs(firingSolution));
             }
         }
 
-        // TODO what happens when the traverse fails aka job is killed? onTraverseFailed? why would it ever fail?
+        #endregion
+
+        //TODO what happens when the traverse fails aka job is killed? onTraverseFailed? why would it ever fail?
 
         /// <summary>
         /// Aims this LOS Weapon using the provided firing solution.
@@ -57,6 +65,20 @@ namespace CodeEnv.Master.GameContent {
         public void AimAt(LosWeaponFiringSolution firingSolution) {
             WeaponMount.TraverseTo(firingSolution);
         }
+
+        #region Nested Classes
+
+        public class LosWeaponFiringSolutionEventArgs : EventArgs {
+
+            public LosWeaponFiringSolution FiringSolution { get; private set; }
+
+            public LosWeaponFiringSolutionEventArgs(LosWeaponFiringSolution firingSolution) {
+                FiringSolution = firingSolution;
+            }
+
+        }
+
+        #endregion
 
         #region Archive
 

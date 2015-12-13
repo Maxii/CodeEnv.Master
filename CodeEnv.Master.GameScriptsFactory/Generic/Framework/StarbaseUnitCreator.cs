@@ -67,7 +67,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
 
     protected override FacilityHullCategory[] ElementCategories {
         get {
-            return new FacilityHullCategory[] { FacilityHullCategory.Factory, FacilityHullCategory.Defense, FacilityHullCategory.Economic, 
+            return new FacilityHullCategory[] { FacilityHullCategory.Factory, FacilityHullCategory.Defense, FacilityHullCategory.Economic,
                          FacilityHullCategory.Laboratory, FacilityHullCategory.Barracks, FacilityHullCategory.ColonyHab };
         }
     }
@@ -96,7 +96,8 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
     protected override bool DeployUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
-        //PathfindingManager.Instance.Graph.UpdateGraph(_command);  // TODO Not yet implemented
+        //PathfindingManager.Instance.Graph.UpdateGraph(_command); 
+        //TODO Not yet implemented
         return true;
     }
 

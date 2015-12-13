@@ -323,7 +323,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             case ShipHullCategory.Colonizer:
                 return 5F;
             case ShipHullCategory.Cruiser:
-            case ShipHullCategory.Support:  // TODO need Trader
+            case ShipHullCategory.Support:  //TODO need Trader
             case ShipHullCategory.Science:
                 return 3F;
             case ShipHullCategory.Destroyer:

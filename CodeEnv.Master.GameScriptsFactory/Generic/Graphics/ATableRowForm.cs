@@ -25,18 +25,43 @@ using UnityEngine;
 /// </summary>
 public abstract class ATableRowForm : AReportForm {
 
-    public event Action<ICameraFocusable> onFocusOnItem;
+    /// <summary>
+    /// Occurs when the user takes an action requesting that an Item (represented by a TableRow) should become the Focus.
+    /// </summary>
+    public event EventHandler<TableRowFocusUserActionEventArgs> itemFocusUserAction;
 
     protected override void InitializeNameGuiElement(AGuiElement e) {
         base.InitializeNameGuiElement(e);
-        MyNguiEventListener.Get(e.gameObject).onDoubleClick += OnFocusOnItem;
+        MyNguiEventListener.Get(e.gameObject).onDoubleClick += (go) => NameDoubleClickEventHandler();
     }
 
-    protected void OnFocusOnItem(GameObject go) {
-        if (onFocusOnItem != null) {
-            onFocusOnItem(Report.Item as ICameraFocusable);
+    #region Event and Property Change Handlers
+
+    private void NameDoubleClickEventHandler() {
+        OnItemFocusUserAction();
+    }
+
+    private void OnItemFocusUserAction() {
+        if(itemFocusUserAction != null) {
+            itemFocusUserAction(this, new TableRowFocusUserActionEventArgs(Report.Item as ICameraFocusable));
         }
     }
+
+    #endregion
+
+    #region Nested Classes
+
+    public class TableRowFocusUserActionEventArgs : EventArgs {
+
+        public ICameraFocusable ItemToFocusOn { get; private set; }
+
+        public TableRowFocusUserActionEventArgs(ICameraFocusable itemToFocusOn) {
+            ItemToFocusOn = itemToFocusOn;
+        }
+
+    }
+
+    #endregion
 
 }
 

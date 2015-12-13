@@ -33,7 +33,7 @@ namespace CodeEnv.Master.Common {
         /// Action delegate executed when the job is completed. Contains a
         /// boolean indicating whether the job was killed or completed normally.
         /// </summary>
-        public event Action<bool> onJobComplete;
+        public event Action<bool> jobCompleted;    // using EventHandler<JobArgs> just complicates usage of the class
 
         public bool IsRunning { get; private set; }
 
@@ -53,9 +53,9 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         private bool _hasBeenPreviouslyRun;
 
-        public Job(IEnumerator coroutine, bool toStart = false, Action<bool> onJobComplete = null) {
+        public Job(IEnumerator coroutine, bool toStart = false, Action<bool> jobCompleted = null) {
             _coroutine = coroutine;
-            this.onJobComplete = onJobComplete;
+             this.jobCompleted = jobCompleted; 
             if (toStart) { Start(); }
         }
 
@@ -74,9 +74,7 @@ namespace CodeEnv.Master.Common {
                     }
                     else {
                         // ************** My Addition **************
-                        if (onJobComplete != null) {
-                            onJobComplete(_jobWasKilled);
-                        }
+                        OnJobCompleted();
                         // ******************************************
 
                         // run our child jobs if we have any
@@ -84,7 +82,7 @@ namespace CodeEnv.Master.Common {
                             Job childJob = _childJobStack.Pop();
                             _coroutine = childJob._coroutine;
                             // ************** My Addition **************
-                            onJobComplete = childJob.onJobComplete;
+                             jobCompleted = childJob.jobCompleted;  
                             // ******************************************
                         }
                         else {
@@ -96,8 +94,8 @@ namespace CodeEnv.Master.Common {
 
             // ************** My Deletion **************
             // fire off a complete event
-            //if (onJobComplete != null) {
-            //    onJobComplete(_jobWasKilled);
+            //if (jobCompleted != null) {
+            //    jobCompleted(_jobWasKilled);
             //}
             // ******************************************
 
@@ -195,6 +193,12 @@ namespace CodeEnv.Master.Common {
 
 
         #endregion
+
+        private void OnJobCompleted() {
+            if (jobCompleted != null) {
+                jobCompleted(_jobWasKilled);
+            }
+        }
 
         private void Cleanup() {
             if (IsRunning) {

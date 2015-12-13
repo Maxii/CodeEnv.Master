@@ -31,13 +31,13 @@ using UnityEngine;
 /// </summary>
 public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
-    private bool _isActive;
+    private bool _isActivelyOrbiting;
     /// <summary>
-    /// Flag indicating whether the OrbitSimulator is orbiting (moving) around its orbited object.
+    /// Flag indicating whether the OrbitSimulator is actively moving around its orbited object.
     /// </summary>
-    public bool IsActive {
-        get { return _isActive; }
-        set { SetProperty<bool>(ref _isActive, value, "IsActive", OnIsActiveChanged); }
+    public bool IsActivelyOrbiting {
+        get { return _isActivelyOrbiting; }
+        set { SetProperty<bool>(ref _isActivelyOrbiting, value, "IsActivelyOrbiting", IsActivelyOrbitingPropChangedHandler); }
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
     protected override void Start() {
@@ -108,16 +108,20 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         transform.Rotate(axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
     }
 
-    private void OnIsActiveChanged() {
+    #region Event and Property Change Handlers
+
+    private void IsActivelyOrbitingPropChangedHandler() {
         AssessEnabled();
     }
 
-    private void OnIsPausedChanged() {
+    private void IsPausedPropChangedHandler() {
         AssessEnabled();
     }
+
+    #endregion
 
     private void AssessEnabled() {
-        enabled = IsActive && !_gameMgr.IsPaused;
+        enabled = IsActivelyOrbiting && !_gameMgr.IsPaused;
     }
 
     protected override void Cleanup() {

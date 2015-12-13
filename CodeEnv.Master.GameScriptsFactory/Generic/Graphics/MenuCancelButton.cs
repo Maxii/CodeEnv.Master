@@ -48,19 +48,31 @@ public class MenuCancelButton : AGuiButton {
         _popupLists = _window.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         _popupListsSelectionOnShow = new string[_popupLists.Length];
 
-        SubscribeToParentWindowToCaptureMenuState();
+        SubscribeToParentWindowShowBeginEvent();
     }
 
-    protected virtual void SubscribeToParentWindowToCaptureMenuState() {
-        EventDelegate.Add(_window.onShowBegin, CaptureMenuState);
+    protected virtual void SubscribeToParentWindowShowBeginEvent() {
+        EventDelegate.Add(_window.onShowBegin, WindowShowBeginEventHandler);
     }
+
+    #region Event and Property Change Handlers
+
+    protected void WindowShowBeginEventHandler() {
+        CaptureMenuState();
+    }
+
+    protected sealed override void HandleLeftClick() {
+        RestoreMenuState();
+    }
+
+    #endregion
 
     /// <summary>
     /// Captures the state of the elements in the menu when called.
     /// This is typically called when the menu has just started or completed its showing
     /// transition process and is now ready for user interaction.
     /// </summary>
-    protected void CaptureMenuState() {
+    private void CaptureMenuState() {
         //D.Log("{0}.CaptureMenuState() called.", GetType().Name);
         for (int i = 0; i < _checkboxes.Length; i++) {
             _checkboxesStateOnShow[i] = _checkboxes[i].value;
@@ -68,10 +80,6 @@ public class MenuCancelButton : AGuiButton {
         for (int i = 0; i < _popupLists.Length; i++) {
             _popupListsSelectionOnShow[i] = _popupLists[i].value;
         }
-    }
-
-    protected sealed override void OnLeftClick() {
-        RestoreMenuState();
     }
 
     private void RestoreMenuState() {
@@ -103,7 +111,7 @@ public class MenuCancelButton : AGuiButton {
     }
 
     private void Unsubscribe() {
-        EventDelegate.Remove(_window.onShowBegin, CaptureMenuState);
+        EventDelegate.Remove(_window.onShowBegin, WindowShowBeginEventHandler);
     }
 
     public override string ToString() {

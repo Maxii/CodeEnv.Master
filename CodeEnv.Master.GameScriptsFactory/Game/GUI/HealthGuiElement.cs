@@ -37,8 +37,9 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
     public float? CurrentHitPts {
         get { return _currentHitPts; }
         set {
+            D.Assert(!_isCurrentHitPtsSet); // happens only once between Resets
             _currentHitPts = value;
-            OnCurrentHitPtsSet();
+            CurrentHitPtsPropSetHandler();
         }
     }
 
@@ -47,8 +48,9 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
     public float? MaxHitPts {
         get { return _maxHitPts; }
         set {
+            D.Assert(!_isMaxHitPtsSet);  // happens only once between Resets
             _maxHitPts = value;
-            OnMaxHitPtsSet();
+            MaxHitPtsPropSetHandler();
         }
     }
 
@@ -57,8 +59,9 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
     public float? Health {
         get { return _health; }
         set {
+            D.Assert(!_isHealthSet);    // happens only once between Resets
             _health = value;
-            OnHealthSet();
+            HealthPropSetHandler();
         }
     }
 
@@ -66,21 +69,23 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
 
     protected override bool AreAllValuesSet { get { return _isCurrentHitPtsSet && _isMaxHitPtsSet && _isHealthSet; } }
 
-    private void OnCurrentHitPtsSet() {
+    #region Event and Property Change Handlers
+
+    private void CurrentHitPtsPropSetHandler() {
         _isCurrentHitPtsSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
-    private void OnMaxHitPtsSet() {
+    private void MaxHitPtsPropSetHandler() {
         _isMaxHitPtsSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
-    private void OnHealthSet() {
+    private void HealthPropSetHandler() {
         if (Health.HasValue) {
             Arguments.ValidateForRange(Health.Value, Constants.ZeroF, Constants.OneF);
         }
@@ -90,9 +95,11 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         }
     }
 
+    #endregion
+
     protected override void PopulateElementWidgets() {
         if (!Health.HasValue) {
-            OnValuesUnknown();
+            HandleValuesUnknown();
             return;
         }
 

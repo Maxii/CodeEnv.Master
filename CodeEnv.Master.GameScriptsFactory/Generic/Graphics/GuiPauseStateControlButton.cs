@@ -30,13 +30,17 @@ public class GuiPauseStateControlButton : AGuiButton {
     [SerializeField]
     private PauseRequest _pauseRequestOnClick = PauseRequest.None;
 
-    protected override void OnLeftClick() {
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
         if (_pauseRequestOnClick == default(PauseRequest)) {
             D.WarnContext(this, "{0}.{1} not set.", GetType().Name, typeof(PauseRequest).Name);
         }
         bool toPause = _pauseRequestOnClick == PauseRequest.Pause;
         _gameMgr.RequestPauseStateChange(toPause);
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

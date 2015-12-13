@@ -27,19 +27,26 @@ public class SettlementCompositionGuiElement : ACompositionGuiElement {
     private SettlementCategory _category;
     public SettlementCategory Category {
         get { return _category; }
-        set { SetProperty<SettlementCategory>(ref _category, value, "Category", OnCategoryChanged); }
+        set {
+            D.Assert(_category == default(SettlementCategory)); // only occurs once between Resets
+            SetProperty<SettlementCategory>(ref _category, value, "Category", CategoryPropSetHandler);
+        }
         // Note: Once a cmd is detected, an estimation of its category is always available based on the elements that have been detected
     }
 
-    protected override string TooltipContent { get { return base.TooltipContent; } }    // TODO
+    protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
 
     protected override bool AreAllValuesSet { get { return IconInfo != default(IconInfo) && Category != default(SettlementCategory); } }
 
-    private void OnCategoryChanged() {
+    #region Event and Property Change Handlers
+
+    private void CategoryPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     protected override string GetCategoryName() { return Category.GetValueName(); }
 

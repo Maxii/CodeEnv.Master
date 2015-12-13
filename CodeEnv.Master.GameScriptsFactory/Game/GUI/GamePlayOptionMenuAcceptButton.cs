@@ -65,8 +65,10 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         GamePlayOptionSettings settings = new GamePlayOptionSettings() {
             IsCameraRollEnabled = _isCameraRollEnabled,
             IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled,
@@ -76,6 +78,8 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
         };
         _playerPrefsMgr.RecordGamePlayOptions(settings);
     }
+
+    #endregion
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();

@@ -66,8 +66,8 @@ public class PlanetoidCtxControl : ACtxControl {
         }
     }
 
-    protected override void OnMenuSelection_RemoteFleetAccess(int itemID) {
-        base.OnMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
+        base.HandleMenuSelection_RemoteFleetAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _planetoidMenuOperator;

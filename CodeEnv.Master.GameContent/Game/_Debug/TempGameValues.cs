@@ -77,9 +77,8 @@ namespace CodeEnv.Master.GameContent {
         /// be fixed as ships can orbit around the Base. If this UnitRadius was dynamically calculated, 
         /// then ships that were already orbiting could find themselves inside or outside of the ShipOrbitSlot
         /// when the UnitRadius changed.
-        /// TODO MaxFacilitiesPerBase and [Max]BaseRadius should be tied together.
         /// </summary>
-        public const float BaseCmdUnitRadius = 3F;
+        public const float BaseCmdUnitRadius = 3F;  //TODO MaxFacilitiesPerBase and [Max]BaseRadius should be tied together.
 
         public const int MaxShipsPerFleet = 25;
 
@@ -147,12 +146,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public static readonly GameColor[] AllPlayerColors = new GameColor[] {
             GameColor.Blue,
-            GameColor.Red, 
+            GameColor.Red,
             GameColor.Cyan,
             GameColor.Green,
             GameColor.Magenta,
             GameColor.Yellow,
-            GameColor.Brown, 
+            GameColor.Brown,
             GameColor.Purple,
             GameColor.Teal,
             GameColor.DarkGreen

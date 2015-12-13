@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsFtlOperational {
             get { return _isFtlOperational; }
-            private set { SetProperty<bool>(ref _isFtlOperational, value, "IsFtlOperational", OnIsFtlOperationalChanged); }
+            private set { SetProperty<bool>(ref _isFtlOperational, value, "IsFtlOperational", IsFtlOperationalPropChangedHandler); }
         }
 
         private bool _isFtlDamaged;
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsFtlDamaged {
             get { return _isFtlDamaged; }
-            set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged", OnIsFtlDamagedChanged); }
+            set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged", IsFtlDamagedPropChangedHandler); }
         }
 
         private bool _isFtlActivated;
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsFtlActivated {
             get { return _isFtlActivated; }
-            set { SetProperty<bool>(ref _isFtlActivated, value, "IsFtlActivated", OnIsFtlActivatedChanged); }
+            set { SetProperty<bool>(ref _isFtlActivated, value, "IsFtlActivated", IsFtlActivatedPropChangedHandler); }
         }
 
         private bool _isFtlDampedByField;
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsFtlDampedByField {
             get { return _isFtlDampedByField; }
-            set { SetProperty<bool>(ref _isFtlDampedByField, value, "IsFtlDampedByField", OnIsFtlDampedByFieldChanged); }
+            set { SetProperty<bool>(ref _isFtlDampedByField, value, "IsFtlDampedByField", IsFtlDampedByFieldPropChangedHandler); }
         }
 
         #endregion
@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
 
         // FormationStation moved to ShipItem as it had no apparent value residing in data
 
-        private ShipCombatStance _combatStance; // TODO not currently used
+        private ShipCombatStance _combatStance; //TODO not currently used
         public ShipCombatStance CombatStance {
             get { return _combatStance; }
             set { SetProperty<ShipCombatStance>(ref _combatStance, value, "CombatStance"); }
@@ -173,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
 
-        protected new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
+        private new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
         private EngineStat _engineStat;
 
@@ -224,8 +224,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gs => gs.IsPaused, OnIsPausedChanging));
-            _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gs => gs.IsPaused, IsPausedPropChangingHandler));
+            _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
         }
 
         public override void CommenceOperations() {
@@ -235,39 +235,43 @@ namespace CodeEnv.Master.GameContent {
             IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
         }
 
-        private void OnIsFtlOperationalChanged() {
+        #region Event and Property Change Handlers
+
+        private void IsFtlOperationalPropChangedHandler() {
             string msg = IsFtlOperational ? "now" : "no longer";
             D.Log("{0} FTL is {1} operational.", FullName, msg);
             RefreshFullSpeedValue();
         }
 
-        private void OnIsFtlDampedByFieldChanged() {
+        private void IsFtlDampedByFieldPropChangedHandler() {
             AssessIsFtlOperational();
         }
 
-        private void OnIsFtlDamagedChanged() {
+        private void IsFtlDamagedPropChangedHandler() {
             AssessIsFtlOperational();
         }
 
-        private void OnIsFtlActivatedChanged() {
+        private void IsFtlActivatedPropChangedHandler() {
             AssessIsFtlOperational();
         }
 
-        protected override void OnTopographyChanged() {
-            base.OnTopographyChanged();
+        protected override void TopographyPropChangedHandler() {
+            base.TopographyPropChangedHandler();
             _shipRigidbody.drag = Drag * Topography.GetRelativeDensity();
             RefreshFullSpeedValue();
         }
 
-        private void OnIsPausedChanging(bool isPausing) {
+        private void IsPausedPropChangingHandler(bool isPausing) {
             if (isPausing) {
                 _currentSpeedOnPause = CurrentSpeed;
             }
         }
 
-        private void OnGameSpeedChanged() {
+        private void GameSpeedPropChangedHandler() {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
         }
+
+        #endregion
 
         /// <summary>
         /// Refreshes the full speed value the ship is capable of achieving.

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -24,7 +25,7 @@ using UnityEngine;
 
 /// <summary>
 /// Detects IElementAttackableTargets that enter/exit the range of its weapons and notifies each weapon of such.
-/// TODO Account for a diploRelations change with an owner.
+///TODO Account for a diploRelations change with an owner.
 /// <remarks>This WeaponRangeMonitor assumes that Short, Medium and LongRange weapons all detect
 /// items using the element's "Proximity Detectors" that are always operational. They do not rely on Sensors.</remarks>
 /// </summary>
@@ -49,32 +50,37 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         weapon.RangeMonitor = this;
     }
 
-    protected override void OnDetectedItemAdded(IElementAttackableTarget newlyDetectedItem) {
-        newlyDetectedItem.onOwnerChanged += OnDetectedItemOwnerChanged;
-        newlyDetectedItem.onDeathOneShot += OnDetectedItemDeath;
+    protected override void HandleDetectedObjectAdded(IElementAttackableTarget newlyDetectedItem) {
+        newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
+        newlyDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
         if (newlyDetectedItem.Owner.IsEnemyOf(Owner)) {
             AddEnemy(newlyDetectedItem);
         }
     }
 
-    protected override void OnDetectedItemRemoved(IElementAttackableTarget lostDetectionItem) {
-        lostDetectionItem.onOwnerChanged -= OnDetectedItemOwnerChanged;
-        lostDetectionItem.onDeathOneShot -= OnDetectedItemDeath;
-        D.Log("{0} removed {1} OnDeath subscription.", Name, lostDetectionItem.FullName);
+    protected override void HandleDetectedObjectRemoved(IElementAttackableTarget lostDetectionItem) {
+        lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
+        lostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
+        D.Log("{0} removed {1} death subscription.", Name, lostDetectionItem.FullName);
         if (lostDetectionItem.Owner.IsEnemyOf(Owner)) {
             RemoveEnemy(lostDetectionItem);
         }
     }
 
+    #region Event and Property Change Handlers
+
     /// <summary>
-    /// Called when a tracked IElementAttackableTarget item dies. It is necessary to track each item's onDeath
+    /// Called when a tracked IElementAttackableTarget item dies. It is necessary to track each item's death
     /// event as OnTriggerExit() is not called when an item inside the collider is destroyed.
     /// </summary>
-    /// <param name="deadDetectedItem">The detected item that has died.</param>
-    private void OnDetectedItemDeath(IMortalItem deadDetectedItem) {
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void DetectedItemDeathEventHandler(object sender, EventArgs e) {
+        IElementAttackableTarget deadDetectedItem = sender as IElementAttackableTarget;
         D.Assert(!deadDetectedItem.IsOperational);
-        RemoveDetectedItem(deadDetectedItem as IElementAttackableTarget);
+        RemoveDetectedObject(deadDetectedItem as IElementAttackableTarget);
     }
+
 
     /// <summary>
     /// Called when the owner of a detectedItem changes.
@@ -83,9 +89,10 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
     /// its owner changes. With weapons, WeaponRangeMonitor overrides OnTargetBecomesNonEnemy()
     /// and checks the targets of all active ordnance of each weapon.</remarks>
     /// </summary>
-    /// <param name="item">The item.</param>
-    private void OnDetectedItemOwnerChanged(IItem item) {
-        var target = item as IElementAttackableTarget;
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void DetectedItemOwnerChangedEventHandler(object sender, EventArgs e) {
+        IElementAttackableTarget target = sender as IElementAttackableTarget;
         if (target != null) {
             // an attackable target with an owner
             if (target.Owner.IsEnemyOf(Owner)) {
@@ -107,35 +114,37 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         // else item is a Star or UniverseCenter as its detectable but not an attackable item
     }
 
-    private void OnEnemyTargetInRange(IElementAttackableTarget enemyTarget) {
+    protected override void ParentOwnerChangedEventHandler(object sender, EventArgs e) {
+        base.ParentOwnerChangedEventHandler(sender, e);
+        _equipmentList.ForAll(weap => weap.CheckActiveOrdnanceTargeting());
+    }
+
+    #endregion
+
+    private void HandleEnemyTargetInRange(IElementAttackableTarget enemyTarget) {
         _equipmentList.ForAll(weap => {
             // GOTCHA!! As each Weapon receives this inRange notice, it can attack and destroy the target
             // before the next EnemyTargetInRange notice is sent to the next Weapon. 
             // As a result, IsOperational must be checked after each notice.
             if (enemyTarget.IsOperational) {
-                weap.OnEnemyTargetInRangeChanged(enemyTarget, isInRange: true);
+                weap.HandleEnemyTargetInRangeChanged(enemyTarget, isInRange: true);
             }
         });
     }
 
-    private void OnEnemyTargetOutOfRange(IElementAttackableTarget previousEnemyTarget) {
-        _equipmentList.ForAll(weap => weap.OnEnemyTargetInRangeChanged(previousEnemyTarget, isInRange: false));
+    private void HandleEnemyTargetOutOfRange(IElementAttackableTarget previousEnemyTarget) {
+        _equipmentList.ForAll(weap => weap.HandleEnemyTargetInRangeChanged(previousEnemyTarget, isInRange: false));
     }
 
     private void AddEnemy(IElementAttackableTarget enemyTarget) {
         _attackableEnemyTargetsDetected.Add(enemyTarget);
-        OnEnemyTargetInRange(enemyTarget);
+        HandleEnemyTargetInRange(enemyTarget);
     }
 
     private void RemoveEnemy(IElementAttackableTarget enemyTarget) {
         var isRemoved = _attackableEnemyTargetsDetected.Remove(enemyTarget);
         D.Assert(isRemoved);
-        OnEnemyTargetOutOfRange(enemyTarget);
-    }
-
-    protected override void OnParentOwnerChanged(IItem parentItem) {
-        base.OnParentOwnerChanged(parentItem);
-        _equipmentList.ForAll(weap => weap.CheckActiveOrdnanceTargeting());
+        HandleEnemyTargetOutOfRange(enemyTarget);
     }
 
     protected override float RefreshRangeDistance() {

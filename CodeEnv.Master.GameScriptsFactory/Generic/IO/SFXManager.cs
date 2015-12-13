@@ -44,7 +44,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        // TODO
+        //TODO
     }
 
     #endregion
@@ -57,7 +57,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <param name="clipID">The ID for the 2D AudioClip.</param>
     /// <returns></returns>
     public AudioSource PlaySFX(SfxClipID clipID) {
-        // TODO verify clip is coded as 2D - need AudioImporter???
+        //TODO verify clip is coded as 2D - need AudioImporter???
         return SoundManager.PlaySFX(clipID.GetValueName());
     }
 
@@ -69,7 +69,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <param name="toLoop">if set to <c>true</c> [to loop].</param>
     /// <returns></returns>
     public AudioSource PlaySFX(GameObject go, SfxClipID clipID, bool toLoop = false) {
-        // TODO verify clip is coded as 3D - need AudioImporter???
+        //TODO verify clip is coded as 3D - need AudioImporter???
         return SoundManager.PlaySFX(go, clipID.GetValueName(), toLoop);
     }
 
@@ -81,7 +81,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <param name="toLoop">if set to <c>true</c> [to loop].</param>
     /// <returns></returns>
     public AudioSource PlaySFX(GameObject go, SfxGroupID groupID, bool toLoop = false) {
-        // TODO verify clip is coded as 3D - need AudioImporter???
+        //TODO verify clip is coded as 3D - need AudioImporter???
         var clip = SoundManager.LoadFromGroup(groupID.GetValueName());
         return SoundManager.PlaySFX(go, clip, toLoop);
     }
@@ -96,20 +96,20 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <param name="capID">The ID for the cap.</param>
     /// <returns></returns>
     public AudioSource PlayCappedSFX(GameObject go, SfxClipID clipID, SfxCapID capID) {
-        // TODO verify clip is coded as 3D - need AudioImporter???
+        //TODO verify clip is coded as 3D - need AudioImporter???
         var aS = go.AddMissingComponent<AudioSource>();
         return SoundManager.PlayCappedSFX(aS, clipID.GetValueName(), capID.GetValueName());
     }
 
     protected override void ExecutePriorToDestroy() {
         base.ExecutePriorToDestroy();
-        // TODO tasks to execute before this extra copy of this persistent singleton is destroyed. Default does nothing
+        //TODO tasks to execute before this extra copy of this persistent singleton is destroyed. Default does nothing
     }
 
     #region Cleanup
 
     protected override void Cleanup() {
-        // TODO
+        //TODO
     }
 
     #endregion

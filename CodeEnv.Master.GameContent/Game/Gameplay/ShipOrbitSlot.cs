@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
                 _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbitSimulator") as IShipOrbitSimulator;
             }
             _orbitingShips.Add(ship);
-            _orbitSimulator.IsActive = true;
+            _orbitSimulator.IsActivelyOrbiting = true;
             D.Log("{0} is preparing to assume orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
         /// Notifys the orbit slot that the provided ship has left orbit. If this is the last ship in orbit, the orbitSimulator is deactiveated/destroyed.
         /// </summary>
         /// <param name="ship">The ship that just left orbit.</param>
-        public void OnLeftOrbit(IShipItem ship) {
+        public void HandleLeftOrbit(IShipItem ship) {
             D.Assert(_orbitSimulator != null);
             var isRemoved = _orbitingShips.Remove(ship);
             D.Assert(isRemoved);
@@ -93,7 +93,7 @@ namespace CodeEnv.Master.GameContent {
                     ship.FullName, OrbitedObject.FullName, shipOrbitRadius, this);
             }
             if (_orbitingShips.Count == Constants.Zero) {
-                _orbitSimulator.IsActive = false;
+                _orbitSimulator.IsActivelyOrbiting = false;
                 D.Log("Destroying {0}'s {1}.", OrbitedObject.FullName, typeof(IOrbitSimulator).Name);
                 GameObject.Destroy(_orbitSimulator.transform.gameObject);
                 // IMPROVE could also keep it around for future uses as rigidbody.isKinematic = true so not using up physics engine cycles

@@ -30,7 +30,9 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
     private IconInfo _iconInfo;
     public IconInfo IconInfo {
         get { return _iconInfo; }
-        set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
+        set {
+            D.Assert(_iconInfo == default(IconInfo));   // only occurs once between Resets
+            SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropSetHandler); }
     }
 
     protected override string TooltipContent { get { return "Composition custom tooltip placeholder"; } }
@@ -46,18 +48,23 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    private void OnIconInfoChanged() {
+    #region Event and Property Change Handlers
+
+
+    private void IconInfoPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     protected void PopulateElementWidgets() {
         _sprite.atlas = IconInfo.AtlasID.GetAtlas();
         _sprite.spriteName = IconInfo.Filename;
         _sprite.color = IconInfo.Color.ToUnityColor();
         //D.Log("{0}.PopulateElementWidgets() called. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetName());
-        // sprite size and placement are preset
+        //sprite size and placement are preset
         _label.text = GetCategoryName();
     }
 

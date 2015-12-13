@@ -310,7 +310,9 @@
     <Compile Include="Generic\IO\MoonStat.cs" />
     <Compile Include="Game\Framework\PlanetData.cs" />
     <Compile Include="Generic\IO\PlanetStat.cs" />
-    <Compile Include="ICanNavigate.cs" />
+    <Compile Include="Generic\Framework\ICanNavigate.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Generic\IO\OwnerChangingEventArgs.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />

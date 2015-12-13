@@ -27,19 +27,26 @@ public class StarbaseCompositionGuiElement : ACompositionGuiElement {
     private StarbaseCategory _category;
     public StarbaseCategory Category {
         get { return _category; }
-        set { SetProperty<StarbaseCategory>(ref _category, value, "Category", OnCategoryChanged); }
+        set {
+            D.Assert(_category == default(StarbaseCategory));   // occurs only once between Resets
+            SetProperty<StarbaseCategory>(ref _category, value, "Category", CategoryPropSetHandler);
+        }
         // Note: Once a cmd is detected, an estimation of its category is always available based on the elements that have been detected
     }
 
-    protected override string TooltipContent { get { return base.TooltipContent; } }    // TODO
+    protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
 
     protected override bool AreAllValuesSet { get { return IconInfo != default(IconInfo) && Category != default(StarbaseCategory); } }
 
-    private void OnCategoryChanged() {
+    #region Event and Property Change Handlers
+
+    private void CategoryPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     protected override string GetCategoryName() { return Category.GetValueName(); }
 

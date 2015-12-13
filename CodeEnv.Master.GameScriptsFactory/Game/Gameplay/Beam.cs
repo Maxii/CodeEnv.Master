@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -122,9 +123,9 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     public void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
-        weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+        weapon.isOperationalChanged += WeaponIsOperationalChangedEventHandler;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
-        enabled = true; // enables Update()
+        enabled = true;
     }
 
     protected override void Update() {
@@ -147,7 +148,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         Ray ray = new Ray(transform.position, Heading); // ray in direction beam is pointing
         if (Physics.Raycast(ray, out impactInfo, _range, _beamImpactLayerMask)) {
             _isCurrentImpact = true;
-            OnImpact(impactInfo, deltaTimeInHours);
+            HandleImpact(impactInfo, deltaTimeInHours);
         }
         else {
             // we missed so apply damage to the target previously hit, if any
@@ -165,7 +166,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         AssessShowImpactEffects();
     }
 
-    private void OnImpact(RaycastHit impactInfo, float deltaTimeInHours) {
+    private void HandleImpact(RaycastHit impactInfo, float deltaTimeInHours) {
         //D.Log("{0} impacted on {1}.", Name, impactInfo.collider.name);
         RefreshImpactLocation(impactInfo);
 
@@ -174,7 +175,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             var shield = impactedGo.GetComponent<Shield>();
             D.Assert(shield != null);
             AssessApplyDamage();    // hit a shield so apply cumDamage to previous valid target, if any
-            OnShieldImpact(shield, deltaTimeInHours);
+            HandleShieldImpact(shield, deltaTimeInHours);
             // for now, no impact force will be applied to the shield's parentElement
             return;
         }
@@ -207,19 +208,29 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
-    private void OnShieldImpact(Shield shield, float deltaTimeInHours) {
+    private void HandleShieldImpact(Shield shield, float deltaTimeInHours) {
         var incrementalShieldImpact = DeliveryVehicleStrength * (deltaTimeInHours / Weapon.Duration);
         shield.AbsorbImpact(incrementalShieldImpact);
         _isInterdicted = true;
     }
 
-    private void OnWeaponIsOperationalChanged(AEquipment weapon) {
-        D.Assert(!weapon.IsOperational);    // no beam should exist when the weapon jsut becomes operational
+    #region Event and Property Change Handlers
+
+    private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
+        var weapon = sender as AEquipment;
+        D.Assert(!weapon.IsOperational);    // no beam should exist when the weapon just becomes operational
         if (IsOperational) {
             // ordnance has not already been terminated by other paths such as the death of the target
             TerminateNow(); // a beam requires its firing weapon to be operational to operate
         }
     }
+
+    protected override void ToShowEffectsPropChangedHandler() {
+        base.ToShowEffectsPropChangedHandler();
+        AssessShowImpactEffects();
+    }
+
+    #endregion
 
     private void RefreshImpactLocation(RaycastHit impactInfo) {
         _impactLocation = impactInfo.point + impactInfo.normal * 0.05F; // HACK
@@ -256,11 +267,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _impactedTarget = null;
     }
 
-    protected override void OnToShowEffectsChanged() {
-        base.OnToShowEffectsChanged();
-        AssessShowImpactEffects();
-    }
-
     protected override void AssessShowMuzzleEffects() {
         // beam muzzleEffects are not destroyed when used
         var toShow = ToShowEffects;
@@ -274,7 +280,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         else {
             _muzzleEffect.Stop();
         }
-        // TODO add Muzzle audio
+        //TODO add Muzzle audio
     }
 
     /// <summary>
@@ -339,7 +345,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _impactEffect.transform.rotation = rotation;
         _impactEffect.Play();
 
-        // TODO add ImpactAudioEffect
+        //TODO add ImpactAudioEffect
     }
 
     /// <summary>
@@ -360,8 +366,9 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _operatingAudioSource.Stop();
         }
         AssessCombatResults();
-        Weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
-        Weapon.OnFiringComplete(this);
+        //Weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
+        Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
+        Weapon.HandleFiringComplete(this);
     }
 
     private void AssessCombatResults() {

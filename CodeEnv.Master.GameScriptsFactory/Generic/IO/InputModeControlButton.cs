@@ -40,7 +40,7 @@ public class InputModeControlButton : AGuiButton {
         }
     }
 
-    protected override void OnLeftClick() {
+    protected override void HandleLeftClick() {
         D.Assert(_gameMgr.CurrentScene != SceneLevel.LobbyScene);
         GameInputMode gameInputMode;
         switch (_inputModeOnClick) {

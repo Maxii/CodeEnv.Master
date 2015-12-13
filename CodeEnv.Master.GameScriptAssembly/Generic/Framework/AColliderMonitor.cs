@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -35,7 +36,7 @@ public abstract class AColliderMonitor : AMonoBase {
         set {
             if (_collider.enabled != value) {
                 _collider.enabled = value;
-                OnIsOperationalChanged();
+                IsOperationalPropChangedHandler();
             }
         }
     }
@@ -48,7 +49,7 @@ public abstract class AColliderMonitor : AMonoBase {
     /// </summary>
     public float RangeDistance {
         get { return _rangeDistance; }
-        protected set { SetProperty<float>(ref _rangeDistance, value, "RangeDistance", OnRangeDistanceChanged); }
+        protected set { SetProperty<float>(ref _rangeDistance, value, "RangeDistance", RangeDistancePropChangedHandler); }
     }
 
     private AItem _parentItem;
@@ -56,7 +57,7 @@ public abstract class AColliderMonitor : AMonoBase {
         get { return _parentItem; }
         set {
             D.Assert(_parentItem == null);   // should only happen once
-            SetProperty<AItem>(ref _parentItem, value, "ParentItem", OnParentItemChanged);
+            SetProperty<AItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
         }
     }
 
@@ -91,21 +92,25 @@ public abstract class AColliderMonitor : AMonoBase {
         _collider.enabled = false;
     }
 
-    protected abstract void OnIsOperationalChanged();
+    #region Event and Property Change Handlers
 
-    protected virtual void OnRangeDistanceChanged() {
+    protected abstract void IsOperationalPropChangedHandler();
+
+    protected virtual void RangeDistancePropChangedHandler() {
         D.Log("{0} had its RangeDistance changed to {1:0.}.", Name, RangeDistance);
         _collider.radius = RangeDistance;
     }
 
-    protected virtual void OnParentItemChanged() {
-        ParentItem.onOwnerChanging += OnParentOwnerChanging;
-        ParentItem.onOwnerChanged += OnParentOwnerChanged;
+    protected virtual void ParentItemPropSetHandler() {
+        ParentItem.ownerChanging += ParentOwnerChangingEventHandler;
+        ParentItem.ownerChanged += ParentOwnerChangedEventHandler;
     }
 
-    protected virtual void OnParentOwnerChanging(IItem parentItem, Player newOwner) { }
+    protected virtual void ParentOwnerChangedEventHandler(object sender, EventArgs e) { }
 
-    protected virtual void OnParentOwnerChanged(IItem parentItem) { }
+    protected virtual void ParentOwnerChangingEventHandler(object sender, OwnerChangingEventArgs e) { }
+
+    #endregion
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
@@ -118,9 +123,13 @@ public abstract class AColliderMonitor : AMonoBase {
     }
 
     protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    protected virtual void Unsubscribe() {
         if (ParentItem != null) {
-            ParentItem.onOwnerChanging -= OnParentOwnerChanging;
-            ParentItem.onOwnerChanged -= OnParentOwnerChanged;
+            ParentItem.ownerChanging -= ParentOwnerChangingEventHandler;
+            ParentItem.ownerChanged -= ParentOwnerChangedEventHandler;
         }
     }
 

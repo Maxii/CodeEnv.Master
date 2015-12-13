@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         private Vector3 _size;
         public Vector3 Size {
             get { return _size; }
-            set { SetProperty<Vector3>(ref _size, value, "Size", OnSizeChanged); }
+            set { SetProperty<Vector3>(ref _size, value, "Size", SizePropChangedHandler); }
         }
 
         /// <summary>
@@ -72,11 +72,15 @@ namespace CodeEnv.Master.GameContent {
             _centerPoint.Draw3D();    // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
-        private void OnSizeChanged() {
+        #region Event and Property Change Handlers
+
+        private void SizePropChangedHandler() {
             if (_line != null) {
                 _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
             }
         }
+
+        #endregion
 
         protected override void Cleanup() {
             base.Cleanup();

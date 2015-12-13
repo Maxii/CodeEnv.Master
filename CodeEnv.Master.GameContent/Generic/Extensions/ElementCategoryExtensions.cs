@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class ElementCategoryExtensions {
 
-        // TODO MaxMountPoints and Dimensions are temporary until I determine whether I want either value
+        //TODO MaxMountPoints and Dimensions are temporary until I determine whether I want either value
         // to be independant of the element category. If independant, the values would then be placed
         // in the HullStat.
 

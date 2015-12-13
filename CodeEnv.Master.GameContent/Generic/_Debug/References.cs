@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
     ///         - all need to refresh the reference on instantiation in InitializeOnInstance
     ///         - all should null the reference in Cleanup
     ///     - Non-persistent StdGenericSingletons: 
-    ///         - all should implement IDisposable and call OnDispose from Cleanup to null _instance
+    ///         - all should implement IDisposable and call CallOnDispose from Cleanup to null _instance
     ///         - all should be disposed of and re-instantiated in GameManager.RefreshStaticReferences()
     /// 
     /// WARNING: These references should not be accessed from the using class's Awake()

@@ -38,13 +38,13 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl> {
         D.Assert((Layers)gameObject.layer == Layers.UI);
         var guiCamera = gameObject.GetComponent<Camera>();
         guiCamera.cullingMask = _guiCameraCullingMask;
-        // camera.clearFlags = CameraClearFlags.Depth; // TODO will need to vary by deployment
+        // camera.clearFlags = CameraClearFlags.Depth; //TODO will need to vary by deployment
         guiCamera.orthographic = true;
         guiCamera.orthographicSize = 1.0F;
         guiCamera.nearClipPlane = -2F;
         guiCamera.farClipPlane = 500F;
         guiCamera.depth = 1F;  // important as this determines which camera is the UICamera.eventHandler, mainCamera = -1F
-        // TODO other
+        //TODO other
         return guiCamera;
     }
 

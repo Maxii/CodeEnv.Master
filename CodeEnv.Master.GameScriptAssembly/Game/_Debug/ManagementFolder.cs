@@ -62,13 +62,21 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     }
 
     private void Subscribe() {
-        _gameMgr.onSceneLoading += OnSceneLoading;
-        _gameMgr.onSceneLoaded += OnSceneLoaded;
+        _gameMgr.sceneLoading += SceneLoadingEventHandler;
+        _gameMgr.sceneLoaded += SceneLoadedEventHandler;
     }
 
-    private void OnSceneLoading(SceneLevel newScene) {
+    #region Event and Property Change Handlers
+
+    private void SceneLoadingEventHandler(object sender, EventArgs e) {
         RecordAndDetachChildren();
     }
+
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+        ReattachPersistentChildren();
+    }
+
+    #endregion
 
     /// <summary>
     /// The instance that is persisting has this called before the new scene starts loading. 
@@ -79,10 +87,6 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     private void RecordAndDetachChildren() {
         _formerChildren = gameObject.GetComponentsInImmediateChildren<Transform>();
         Instance.transform.DetachChildren();
-    }
-
-    private void OnSceneLoaded() {
-        ReattachPersistentChildren();
     }
 
     private void ReattachPersistentChildren() {
@@ -98,8 +102,8 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     }
 
     private void Unsubscribe() {
-        _gameMgr.onSceneLoading -= OnSceneLoading;
-        _gameMgr.onSceneLoaded -= OnSceneLoaded;
+        _gameMgr.sceneLoading -= SceneLoadingEventHandler;
+        _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
     }
 
     public override string ToString() {

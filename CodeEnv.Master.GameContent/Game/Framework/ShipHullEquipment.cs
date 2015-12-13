@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public ShipHullEquipment(ShipHullStat stat, string name = null) : base(stat, name) { }
 
-        protected override void OnHullChanged() {
+        protected override void HullPropSetHandler() {
             D.Assert(Hull.HullCategory == HullCategory);
         }
 

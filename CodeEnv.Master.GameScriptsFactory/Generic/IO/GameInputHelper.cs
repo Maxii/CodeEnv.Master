@@ -213,7 +213,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     }
 
     private void Cleanup() {
-        OnDispose();
+        CallOnDispose();
         // other cleanup here including any tracking Gui2D elements
     }
 

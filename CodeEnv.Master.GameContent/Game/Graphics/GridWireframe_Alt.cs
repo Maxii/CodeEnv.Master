@@ -30,31 +30,22 @@ namespace CodeEnv.Master.GameContent {
 
         private Transform _target;
 
-        //private Transform _parent;
-        ///// <summary>
-        ///// The parent transform where you want the wireframe line object to reside in the scene.
-        ///// </summary>
-        //public Transform Parent {
-        //    get { return _parent; }
-        //    set { SetProperty<Transform>(ref _parent, value, "Parent", OnParentChanged); }
-        //}
-
         private GameColor _color;
         public GameColor Color {
             get { return _color; }
-            set { SetProperty<GameColor>(ref _color, value, "Color", OnColorChanged); }
+            set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedHandler); }
         }
 
         private float _lineWidth;
         public float LineWidth {
             get { return _lineWidth; }
-            set { SetProperty<float>(ref _lineWidth, value, "LineWidth", OnLineWidthChanged); }
+            set { SetProperty<float>(ref _lineWidth, value, "LineWidth", LineWidthPropChangedHandler); }
         }
 
         private string _lineName;
         public string LineName {
             get { return _lineName; }
-            set { SetProperty<string>(ref _lineName, value, "LineName", OnLineNameChanged); }
+            set { SetProperty<string>(ref _lineName, value, "LineName", LineNamePropChangedHandler); }
         }
 
         private VectorLine _line;
@@ -90,23 +81,27 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} line.active = {1}.", this.GetType().Name, toShow);
         }
 
-        private void OnColorChanged() {
+        #region Event and Property Change Handlers
+
+        private void ColorPropChangedHandler() {
             if (_line != null) {
                 _line.SetColor(Color.ToUnityColor());
             }
         }
 
-        private void OnLineWidthChanged() {
+        private void LineWidthPropChangedHandler() {
             if (_line != null) {
                 _line.lineWidth = LineWidth;
             }
         }
 
-        private void OnLineNameChanged() {
+        private void LineNamePropChangedHandler() {
             if (_line != null) {
                 _line.name = LineName;
             }
         }
+
+        #endregion
 
         // to Cleanup the VectorLine, just destroy the target GameObject ObjectSetup
         // is using. This is the proper way to destroy this type of VectorLine.

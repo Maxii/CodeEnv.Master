@@ -40,12 +40,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            _item.onOwnerChanging += OnOwnerChanging;
-            _item.onOwnerChanged += OnOwnerChanged;
+            _item.ownerChanging += OwnerChangingEventHandler;
+            _item.ownerChanged += OwnerChangedEventHandler;
         }
 
-        public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-            D.Log("{0}.{1}.OnDetection called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
+        public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+            D.Log("{0}.{1}.HandleDetectionBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
             Player detectingPlayer = cmdItem.Owner;
 
             IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
@@ -66,9 +66,9 @@ namespace CodeEnv.Master.GameContent {
             UpdatePlayerKnowledge(detectingPlayer);
         }
 
-        public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
             D.Assert(sensorRange != RangeCategory.None);
-            D.Log("{0}.{1}.OnDetectionLost called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
+            D.Log("{0}.{1}.HandleDetectionLostBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
             Player detectingPlayer = cmdItem.Owner;
 
             IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
@@ -153,39 +153,43 @@ namespace CodeEnv.Master.GameContent {
             var playerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(player);
             if (rangeLookup.Keys.Count > Constants.Zero) {
                 // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
-                playerKnowledge.OnItemDetected(_item);
+                playerKnowledge.HandleItemDetection(_item);
             }
             else {
                 // there are no DistanceRange keys so player has no Cmds in sensor range of this item
-                playerKnowledge.OnItemDetectionLost(_item);
+                playerKnowledge.HandleItemDetectionLost(_item);
             }
         }
 
-        private void OnOwnerChanging(IItem item, Player newOwner) {
-            var outgoingOwner = item.Owner;
+        #region Event and Property Change Handlers
+
+        private void OwnerChangingEventHandler(object sender, OwnerChangingEventArgs e) {
+            var outgoingOwner = (sender as IItem).Owner;
             D.Assert(outgoingOwner != null);    // default should be NoPlayer rather than null
             if (outgoingOwner == TempGameValues.NoPlayer) {
                 return; // NoPlayer is not a player in the game with IntelCoverage to track
             }
+            Player newOwner = e.IncomingOwner;
             AssignIntelCoverage(outgoingOwner, newOwner);
         }
 
-        private void OnOwnerChanged(IItem item) {
-            var newOwner = item.Owner;
+        private void OwnerChangedEventHandler(object sender, EventArgs e) {
+            var newOwner = (sender as IItem).Owner;
             if (newOwner == TempGameValues.NoPlayer) {
                 return; // NoPlayer is not a player in the game with IntelCoverage to track
             }
             AssignIntelCoverage(newOwner, newOwner);
         }
 
+        #endregion
+
         private void Cleanup() {
             Unsubscribe();
-            // other cleanup here including any tracking Gui2D elements
         }
 
         private void Unsubscribe() {
-            _item.onOwnerChanging -= OnOwnerChanging;
-            _item.onOwnerChanged -= OnOwnerChanged;
+            _item.ownerChanging -= OwnerChangingEventHandler;
+            _item.ownerChanged -= OwnerChangedEventHandler;
         }
 
         public override string ToString() {

@@ -30,7 +30,7 @@ public abstract class ASelectedItemForm : AReportForm {
 
     protected override void InitializeNameGuiElement(AGuiElement e) {
         base.InitializeNameGuiElement(e);
-        MyNguiEventListener.Get(e.gameObject).onDoubleClick += OnNameDoubleClick;
+        MyNguiEventListener.Get(e.gameObject).onDoubleClick += (go) => NameDoubleClickEventHandler();
     }
 
     protected override void InitializeNonGuiElementMembers() {
@@ -44,9 +44,13 @@ public abstract class ASelectedItemForm : AReportForm {
         _titleLabel.text = FormID.GetValueName();
     }
 
-    private void OnNameDoubleClick(GameObject go) {
+    #region Event and Property Change Handlers
+
+    private void NameDoubleClickEventHandler() {
         (Report.Item as ICameraFocusable).IsFocus = true;
     }
+
+    #endregion
 
 }
 

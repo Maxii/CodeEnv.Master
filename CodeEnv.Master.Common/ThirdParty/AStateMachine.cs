@@ -29,6 +29,7 @@ namespace CodeEnv.Master.Common {
     ///  notified if Call() or Return() are used as these make state changes without going through SetProperty.
     /// </summary>
     /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
+    [Obsolete]  // still current, just not used
     public abstract class AStateMachine<E> : APropertyChangeTracking where E : struct {
 
         /// <summary>
@@ -370,7 +371,7 @@ namespace CodeEnv.Master.Common {
 
         protected static void DoNothingCollision(Collision other) { }
 
-        protected static void DoNothingBoolean(bool b) { }
+        ////protected static void DoNothingBoolean(bool b) { }
 
         #endregion
 
@@ -395,10 +396,10 @@ namespace CodeEnv.Master.Common {
             public IEnumerator enterStateEnumerator = null;
             public IEnumerator exitStateEnumerator = null;
 
-            public Action<bool> DoOnHover = DoNothingBoolean;
-            public Action<bool> DoOnPress = DoNothingBoolean;
-            public Action DoOnClick = DoNothing;
-            public Action DoOnDoubleClick = DoNothing;
+            ////public Action<bool> DoOnHover = DoNothingBoolean;
+            ////public Action<bool> DoOnPress = DoNothingBoolean;
+            ////public Action DoOnClick = DoNothing;
+            ////public Action DoOnDoubleClick = DoNothing;
 
             public E currentState;
 
@@ -423,7 +424,7 @@ namespace CodeEnv.Master.Common {
         /// 
         /// NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
         /// 1. the state we are changing from is recorded as lastState
-        /// 2. the event OnCurrentStateChanging(newState) is sent to subscribers
+        /// 2. the event CurrentStatePropChangingHandler(newState) is sent to subscribers
         /// 3. the value of the CurrentState enum is changed to newState
         /// 4. the lastState_ExitState() method is called 
         ///          - while in this method, realize that the CurrentState enum has already changed to newState
@@ -434,19 +435,19 @@ namespace CodeEnv.Master.Common {
         ///              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
         ///              - you also can't just use a coroutine to wait then change it as the event is still held up
         ///          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
-        /// 7. the event OnCurrentStateChanged() is sent to subscribers
+        /// 7. the event CurrentStatePropChangedHandler() is sent to subscribers
         ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
         /// </summary>
         public E CurrentState {
             get { return state.currentState; }
-            set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
+            set { SetProperty<E>(ref state.currentState, value, "CurrentState", CurrentStatePropChangedHandler, CurrentStatePropChangingHandler); }
         }
 
-        protected virtual void OnCurrentStateChanging(E incomingState) {
+        protected virtual void CurrentStatePropChangingHandler(E incomingState) {
             ChangingState();
         }
 
-        protected virtual void OnCurrentStateChanged() {
+        protected virtual void CurrentStatePropChangedHandler() {
             D.Log("{0} {1} changed to {2}.", _behaviour.gameObject.name, typeof(E), CurrentState);
             ConfigureCurrentState();
         }
@@ -559,10 +560,10 @@ namespace CodeEnv.Master.Common {
             state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
             state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
-            state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
-            state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
-            state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
-            state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
+            ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
+            ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
+            ////state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
+            ////state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
 
             state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
             state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
@@ -667,21 +668,21 @@ namespace CodeEnv.Master.Common {
             state.DoOnCollisionStay(other);
         }
 
-        public void OnHover(bool isOver) {
-            state.DoOnHover(isOver);
-        }
+        ////public void OnHover(bool isOver) {
+        ////    state.DoOnHover(isOver);
+        ////}
 
-        public void OnPress(bool isDown) {
-            state.DoOnPress(isDown);
-        }
+        ////public void OnPress(bool isDown) {
+        ////    state.DoOnPress(isDown);
+        ////}
 
-        public void OnClick() {
-            state.DoOnClick();
-        }
+        ////public void OnClick() {
+        ////    state.DoOnClick();
+        ////}
 
-        public void OnDoubleClick() {
-            state.DoOnDoubleClick();
-        }
+        ////public void OnDoubleClick() {
+        ////    state.DoOnDoubleClick();
+        ////}
 
         #endregion
 

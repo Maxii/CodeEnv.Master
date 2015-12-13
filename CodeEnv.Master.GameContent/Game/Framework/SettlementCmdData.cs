@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         private float _approval;
         public float Approval {
             get { return _approval; }
-            set { SetProperty<float>(ref _approval, value, "Approval", OnApprovalChanged); }
+            set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
         }
 
         public SystemData SystemData { private get; set; }
@@ -106,9 +106,13 @@ namespace CodeEnv.Master.GameContent {
             return SettlementCategory.None;
         }
 
-        private void OnApprovalChanged() {
+        #region Event and Property Change Handlers
+
+        private void ApprovalPropChangedHandler() {
             Arguments.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

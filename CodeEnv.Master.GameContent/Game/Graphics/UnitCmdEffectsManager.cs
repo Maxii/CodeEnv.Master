@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
                 // no effects for now 
             }
-            base.StartEffect(effectID); // currently just returns OnEffectFinished
+            base.StartEffect(effectID); // currently just calls HandleEffectFinished
         }
 
         public override string ToString() {

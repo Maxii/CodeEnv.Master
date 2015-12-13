@@ -147,7 +147,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     public ICameraFocusable CurrentFocus {
         get { return _currentFocus; }
-        set { SetProperty<ICameraFocusable>(ref _currentFocus, value, "CurrentFocus", OnCurrentFocusChanged, OnCurrentFocusChanging); }
+        set { SetProperty<ICameraFocusable>(ref _currentFocus, value, "CurrentFocus", CurrentFocusPropChangedHandler, CurrentFocusPropChangingHandler); }
     }
 
     public Settings settings = new Settings {
@@ -291,12 +291,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsCameraRollEnabled, OnCameraRollEnabledChanged));
-        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
-        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, OnIsRunningChanged));
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
-        _inputMgr.onUnconsumedPressDown += OnUnconsumedPressDown;
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsCameraRollEnabled, IsCameraRollEnabledPropChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, IsResetOnFocusEnabledPropChangedHandler));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, IsZoomOutOnCursorEnabledPropChangedHandler));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, IsRunningPropChangedHandler));
+        //_gameMgr.onGameStateChanged += OnGameStateChanged;
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
+        //_inputMgr.onUnconsumedPressDown += UnconsumedPressDownHandler;
+        _inputMgr.unconsumedPress += UnconsumedPressEventHandler;
     }
 
     private void ValidateActiveConfigurations() {
@@ -376,9 +378,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void InitializeCameraPreferences() {
         // the initial Camera preference changed events occur earlier than we can subscribe so do it manually
-        OnResetOnFocusEnabledChanged();
-        OnCameraRollEnabledChanged();
-        OnZoomOutOnCursorEnabledChanged();
+        IsResetOnFocusEnabledPropChangedHandler();
+        IsCameraRollEnabledPropChangedHandler();
+        IsZoomOutOnCursorEnabledPropChangedHandler();
     }
 
     private void EnableCameraRoll(bool toEnable) {
@@ -468,36 +470,36 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     #endregion
 
-    #region Event Handlers
+    #region Events and Property Change Handlers
 
-    private void OnZoomOutOnCursorEnabledChanged() {
+    private void IsZoomOutOnCursorEnabledPropChangedHandler() {
         _isZoomOutOnCursorEnabled = _playerPrefsMgr.IsZoomOutOnCursorEnabled;
     }
 
-    private void OnResetOnFocusEnabledChanged() {
+    private void IsResetOnFocusEnabledPropChangedHandler() {
         _isResetOnFocusEnabled = _playerPrefsMgr.IsResetOnFocusEnabled;
     }
 
-    private void OnCameraRollEnabledChanged() {
+    private void IsCameraRollEnabledPropChangedHandler() {
         EnableCameraRoll(_playerPrefsMgr.IsCameraRollEnabled);
     }
 
     //[DoNotSerialize]
-    private bool _restoredGameFlag = false;
+    private bool __restoredGameFlag = false;
 
-    private void OnGameStateChanged() {
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         GameState state = _gameMgr.CurrentState;
         //D.Log("{0}{1} received GameState changed to {2}.", GetType().Name, InstanceCount, state.GetName());
         switch (state) {
             case GameState.Restoring:
                 // only saved games that are being restored enter Restoring state
-                _restoredGameFlag = true;
+                __restoredGameFlag = true;
                 break;
             case GameState.Waiting:
                 _gameMgr.RecordGameStateProgressionReadiness(this, GameState.Waiting, isReady: false);
-                if (_restoredGameFlag) {
+                if (__restoredGameFlag) {
                     // for a restored game, Waiting state is guaranteed to occur after OnDeserialized so we must be ready to proceed
-                    _restoredGameFlag = false;
+                    __restoredGameFlag = false;
                 }
                 else {
                     InitializeMainCamera(); // deferred init until clear game is new
@@ -521,12 +523,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
     }
 
-    private void OnIsRunningChanged() {
+    private void IsRunningPropChangedHandler() {
         __AssessEnabled();
     }
 
     // Not currently used. Keep this for now as I expect there will be other reasons to modify camera behaviour during special modes.
-    private void OnViewModeChanged() {
+    private void ViewModePropChangedHandler() {
         bool toActivateDragging;
         switch (PlayerViews.Instance.ViewMode) {
             case PlayerViewMode.SectorView:
@@ -580,21 +582,21 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // keyFollowRoll keep true
     }
 
-    private void OnUnconsumedPressDown(NguiMouseButton button) {
-        if (button == NguiMouseButton.Middle) {
+    private void UnconsumedPressEventHandler(object sender, EventArgs e) {
+        if (GameInputHelper.Instance.IsMiddleMouseButton) {
             // pressing the middle mouse button over nothing is the primary way of exiting focused or follow mode
             CurrentFocus = null;
         }
     }
 
-    private void OnCurrentFocusChanging(ICameraFocusable newFocus) {
+    private void CurrentFocusPropChangingHandler(ICameraFocusable newFocus) {
         if (CurrentFocus != null) {
             CurrentFocus.IsFocus = false;
             //CurrentFocus.OptimalCameraViewingDistance = _optimalDistanceFromTarget;
         }
     }
 
-    private void OnCurrentFocusChanged() {
+    private void CurrentFocusPropChangedHandler() {
         if (CurrentFocus != null) {
             Transform newFocus = CurrentFocus.transform;
             D.Log("New Focus is now {0}.", newFocus.name);
@@ -606,10 +608,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
     }
 
-    #endregion
-
-    #region Standard MonoBehaviour Events
-
     /// <summary>
     /// Called when application goes in/out of focus, this method controls the
     /// enabled state of edge pan and tilt so the camera doesn't respond to edge 
@@ -617,7 +615,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     /// <arg item="isFocus">if set to <c>true</c> [is focusTarget].</arg>
     void OnApplicationFocus(bool isFocus) {
-        D.Log("Camera OnApplicationFocus({0}) called.", isFocus);
+        D.Log("Camera ApplicationFocusEventHandler({0}) called.", isFocus);
         __EnableEdgePanTiltInEditor(isFocus);
     }
 
@@ -627,7 +625,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     /// <param name="isPaused">if set to <c>true</c> [is paused].</param>
     void OnApplicationPause(bool isPaused) {
-        //D.Log("Camera OnApplicationPause(" + isPaused + ") called.");
+        //D.Log("Camera ApplicationPauseEventHandler({0}) called.", isPaused);
         __AssessEnabled();
     }
 
@@ -1856,8 +1854,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(s => s.Dispose());
         _subscriptions.Clear();
-        _gameMgr.onGameStateChanged -= OnGameStateChanged;
-        _inputMgr.onUnconsumedPressDown -= OnUnconsumedPressDown;
+        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
+        _inputMgr.unconsumedPress -= UnconsumedPressEventHandler;
     }
 
     public override string ToString() {
@@ -2090,7 +2088,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     ///// <summary>
     ///// Tries to show the context menu. 
-    ///// NOTE: This is a preprocess method for ContextMenuPickHandler.OnPress(isDown) which is designed to show
+    ///// NOTE: This is a preprocess method for ContextMenuPickHandler.PressEventHandler(isDown) which is designed to show
     ///// the context menu if the method is called both times (isDown = true, then isDown = false) over the same object.
     ///// Unfortunately, that also means the context menu will show if a drag starts and ends over the same 
     ///// ISelectable object. Therefore, this preprocess method is here to detect whether a drag is occurring before 
@@ -2099,7 +2097,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     ///// <param name="isDown">if set to <c>true</c> [is down].</param>
     //public void ShowContextMenuOnPress(bool isDown) {
     //    if (!_gameInput.IsDragging) {
-    //        _contextMenuPickHandler.OnPress(isDown);
+    //        _contextMenuPickHandler.PressEventHandler(isDown);
     //        //D.Log("ContextMenu requested.");
     //    }
     //}

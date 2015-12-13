@@ -49,10 +49,12 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, OnInputModeChanged));
+        _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
     }
 
-    private void OnInputModeChanged() {
+    #region Event and Property Change Handlers
+
+    private void InputModePropChangedHandler() {
         var inputMode = _inputMgr.InputMode;
         if (_spawnOccludedObjectChecksJob != null && _spawnOccludedObjectChecksJob.IsRunning) {
             // currently checking for occluded objects while hovering over orbitalPlane
@@ -72,20 +74,18 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         }
     }
 
-    #region Mouse Events
-
     // Note: No need to filter occlusion checking with IsDiscernible within these events 
     // as turning the collider on and off accomplishes the same thing. In the case of 
     // OnHover, if hovering and IsDiscernible changes to false, the Ngui event system
     // will send out an OnHover(false) when it sees the collider disappear.
 
-    protected void OnHover(bool isOver) {
+    private void HoverEventHandler(bool isOver) {
         if (AssessOnHoverEvent(isOver)) {
             _inputHelper.Notify(_systemItemGo, "OnHover", isOver);
         }
     }
 
-    protected void OnClick() {
+    private void ClickEventHandler() {
         GameObject occludedObject;
         if (TryCheckForOccludedObject(out occludedObject)) {
             _inputHelper.Notify(occludedObject, "OnClick");
@@ -94,16 +94,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         _inputHelper.Notify(_systemItemGo, "OnClick");
     }
 
-    protected void OnPress(bool isDown) {
-        GameObject occludedObject;
-        if (TryCheckForOccludedObject(out occludedObject)) {
-            _inputHelper.Notify(occludedObject, "OnPress", isDown);
-            return;
-        }
-        _inputHelper.Notify(_systemItemGo, "OnPress", isDown);
-    }
-
-    protected void OnDoubleClick() {
+    private void DoubleClickEventHandler() {
         GameObject occludedObject;
         if (TryCheckForOccludedObject(out occludedObject)) {
             _inputHelper.Notify(occludedObject, "OnDoubleClick");
@@ -111,6 +102,33 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         }
         _inputHelper.Notify(_systemItemGo, "OnDoubleClick");
     }
+
+    private void PressEventHandler(bool isDown) {
+        GameObject occludedObject;
+        if (TryCheckForOccludedObject(out occludedObject)) {
+            _inputHelper.Notify(occludedObject, "PressEventHandler", isDown);
+            return;
+        }
+        _inputHelper.Notify(_systemItemGo, "PressEventHandler", isDown);
+    }
+
+    void OnHover(bool isOver) {
+        HoverEventHandler(isOver);
+    }
+
+    void OnClick() {
+        ClickEventHandler();
+    }
+
+    void OnPress(bool isDown) {
+        PressEventHandler(isDown);
+    }
+
+    void OnDoubleClick() {
+        DoubleClickEventHandler();
+    }
+
+    #endregion
 
     #region Occluded Object Checking
 
@@ -311,7 +329,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             CheckForOccludedObjectAndProcessOnHoverNotifications();
 
             _spawnOccludedObjectChecksJob = new Job(SpawnOnHoverOccludedObjectChecks(), toStart: true);
-            UICamera.onMouseMove += OnMouseMoveWhileOnHoverCheckingForOccludedObjects;
+            UICamera.onMouseMove += (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
             //D.Log("Occluded Object Checking begun.");
         }
         else {
@@ -319,7 +337,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 _spawnOccludedObjectChecksJob.Kill();
                 _spawnOccludedObjectChecksJob = null;
             }
-            UICamera.onMouseMove -= OnMouseMoveWhileOnHoverCheckingForOccludedObjects;
+            UICamera.onMouseMove -= (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
             //D.Log("Occluded Object Checking ended.");
         }
     }
@@ -335,11 +353,13 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         }
     }
 
-    private void OnMouseMoveWhileOnHoverCheckingForOccludedObjects(Vector2 delta) {
+    private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler() {
         CheckForOccludedObjectAndProcessOnHoverNotifications();
     }
 
-    #endregion
+    //private void OnMouseMoveWhileOnHoverCheckingForOccludedObjects(Vector2 delta) {
+    //    CheckForOccludedObjectAndProcessOnHoverNotifications();
+    //}
 
     #endregion
 

@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Flag indicating whether the IOrbitSimulator is actively orbiting around its orbited object.
         /// </summary>
-        bool IsActive { get; set; }
+        bool IsActivelyOrbiting { get; set; }
 
     }
 }

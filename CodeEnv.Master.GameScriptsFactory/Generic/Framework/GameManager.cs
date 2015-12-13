@@ -56,35 +56,34 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// <remarks>
     /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
     /// </remarks>
-    public event Action onIsRunningOneShot;
+    public event EventHandler isRunningOneShot;
 
     /// <summary>
     /// Occurs just before a scene starts loading.
     /// Note: Event is not fired when the first scene is about to start loading as a result of the Application starting.
     /// </summary>
-    public event Action<SceneLevel> onSceneLoading;
+    public event EventHandler sceneLoading;
 
     /// <summary>
     /// Occurs just after a scene finishes loading, aka immediately after OnLevelWasLoaded is received.
     /// Note: Event is not fired when the first scene is loaded as a result of the Application starting.
     /// </summary>
-    public event Action onSceneLoaded;
+    public event EventHandler sceneLoaded;
 
     /// <summary>
-    /// Occurs when GameState is about to change. The parameter is
-    /// the GameState the game is about to change too.
+    /// Occurs when GameState is about to change.
     /// </summary>
-    public event Action<GameState> onGameStateChanging;
+    public event EventHandler gameStateChanging;
 
     /// <summary>
     /// Occurs when the GameState has just changed. 
     /// </summary>
-    public event Action onGameStateChanged;
+    public event EventHandler gameStateChanged;
 
     /// <summary>
     /// Occurs when a new game enters its Building state.
     /// </summary>
-    public event Action onNewGameBuilding;
+    public event EventHandler newGameBuilding;
 
     public GameSettings GameSettings { get; private set; }
 
@@ -110,7 +109,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public bool IsRunning {
         get { return _isRunning; }
-        private set { SetProperty<bool>(ref _isRunning, value, "IsRunning", OnIsRunningChanged); }
+        private set { SetProperty<bool>(ref _isRunning, value, "IsRunning", IsRunningPropChangedHandler); }
     }
 
     private PauseState _pauseState;
@@ -121,7 +120,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     public PauseState PauseState {
         get { return _pauseState; }
         private set {   // to set use ProcessPauseRequest
-            SetProperty<PauseState>(ref _pauseState, value, "PauseState", OnPauseStateChanged);
+            SetProperty<PauseState>(ref _pauseState, value, "PauseState", PauseStatePropChangedHandler);
         }
     }
 
@@ -168,7 +167,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         base.InitializeOnAwake();
         InitializeValuesAndReferences();
         InitializeGameStateProgressionReadinessSystem();
-        // TODO add choose language GUI
+        //TODO add choose language GUI
         //string language = "fr-FR";
         // ChangeLanguage(language);
     }
@@ -303,7 +302,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void StartGameStateProgressionReadinessChecks() {
         //D.Log("{0}_{1} is preparing to start GameState Progression System Readiness Checks.", GetType().Name, InstanceCount);
         __ValidateGameStateProgressionReadinessSystemState();
-        __progressCheckJob = new Job(AssessReadinessToProgressGameState(), toStart: true, onJobComplete: (wasJobKilled) => {
+        __progressCheckJob = new Job(AssessReadinessToProgressGameState(), toStart: true, jobCompleted: (wasJobKilled) => {
             if (wasJobKilled) {
                 D.Error("{0}'s GameState Progression Readiness System has timed out.", GetType().Name);
             }
@@ -423,6 +422,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
+    #region Event and Property Change Handlers
+
     /// <summary>
     /// This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
     /// NOTE: Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
@@ -435,35 +436,64 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Assert(CurrentScene == (SceneLevel)level);
         //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneLevel)level).GetName(), CurrentState.GetName());
         RefreshStaticReferences();
-        RelayToCurrentState(level);
+        UponLevelLoaded(level);
     }
 
-    private void OnIsRunningChanged() {
+    private void IsRunningPropChangedHandler() {
         D.Log("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
         if (IsRunning) {
-            if (onIsRunningOneShot != null) {
-                //var targetNames = onIsRunningOneShot.GetInvocationList().Select(d => d.Target.GetType().Name);
-                //D.Log("{0} is sending onIsRunning event to {1}.", GetType().Name, targetNames.Concatenate());
-                onIsRunningOneShot();
-                onIsRunningOneShot = null;
-            }
+            OnIsRunning();
+        }
+    }
+
+    private void OnIsRunning() {
+        D.Assert(IsRunning);
+        if (isRunningOneShot != null) {
+            //var targetNames = isRunningOneShot.GetInvocationList().Select(d => d.Target.GetType().Name);
+            //D.Log("{0} is sending onIsRunning event to {1}.", GetType().Name, targetNames.Concatenate());
+            isRunningOneShot(this, new EventArgs());
+            isRunningOneShot = null;
         }
     }
 
     private void OnSceneLoading() {
-        IsSceneLoading = true;
-        if (onSceneLoading != null) {
-            onSceneLoading(SceneLevel.GameScene);
+        D.Assert(IsSceneLoading);
+        if (sceneLoading != null) {
+            sceneLoading(this, new EventArgs());
         }
     }
 
     private void OnSceneLoaded() {
-        IsSceneLoading = false;
-        if (onSceneLoaded != null) {
-            //D.Log("{0}.onSceneLoaded event dispatched.", GetType().Name);
-            onSceneLoaded();
+        D.Assert(!IsSceneLoading);
+        if (sceneLoaded != null) {
+            //D.Log("{0}.sceneLoaded event dispatched.", GetType().Name);
+            sceneLoaded(this, new EventArgs());
         }
     }
+
+    private void OnGameStateChanging() {
+        if (gameStateChanging != null) {
+            //var targetNames = gameStateChanging.GetInvocationList().Select(d => d.Target.GetType().Name);
+            //D.Log("{0} is sending gameStateChanging event to {1}.", GetType().Name, targetNames.Concatenate());
+            gameStateChanging(this, new EventArgs());
+        }
+    }
+
+    private void OnGameStateChanged() {
+        if (gameStateChanged != null) {
+            //var targetNames = gameStateChanged.GetInvocationList().Select(d => d.Target.GetType().Name);
+            //D.Log("{0} is sending gameStateChanged event to {1}.", GetType().Name, targetNames.Concatenate());
+            gameStateChanged(this, new EventArgs());
+        }
+    }
+
+    private void OnNewGameBuilding() {
+        if (newGameBuilding != null) {
+            newGameBuilding(this, new EventArgs());
+        }
+    }
+
+    #endregion
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -573,7 +603,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
     }
 
-    private void OnPauseStateChanged() {
+    private void PauseStatePropChangedHandler() {
         switch (PauseState) {
             case PauseState.NotPaused:
                 IsPaused = false;
@@ -590,24 +620,15 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
-    #region GameState System
+    #region GameState State Machine
 
-    protected override void OnCurrentStateChanging(GameState incomingState) {
-        base.OnCurrentStateChanging(incomingState);
-        if (onGameStateChanging != null) {
-            //var targetNames = onGameStateChanging.GetInvocationList().Select(d => d.Target.GetType().Name);
-            //D.Log("{0} is sending onGameStateChanging event to {1}.", GetType().Name, targetNames.Concatenate());
-            onGameStateChanging(incomingState);
-        }
+    protected override void CurrentStatePropChangingHandler(GameState incomingState) {
+        base.CurrentStatePropChangingHandler(incomingState);
+        OnGameStateChanging();
     }
-
-    protected override void OnCurrentStateChanged() {
-        base.OnCurrentStateChanged();
-        if (onGameStateChanged != null) {
-            //var targetNames = onGameStateChanged.GetInvocationList().Select(d => d.Target.GetType().Name);
-            //D.Log("{0} is sending onGameStateChanged event to {1}.", GetType().Name, targetNames.Concatenate());
-            onGameStateChanged();
-        }
+    protected override void CurrentStatePropChangedHandler() {
+        base.CurrentStatePropChangedHandler();
+        OnGameStateChanged();
     }
 
     // ************************************************************************************************************
@@ -665,22 +686,25 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
+        IsSceneLoading = true;
         OnSceneLoading();
     }
 
-    void Loading_OnLevelWasLoaded(int level) {
+    void Loading_UponLevelLoaded(int level) {
         D.Assert(!GameSettings.__IsStartupSimulation);
         LogEvent();
 
         D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetValueName()));
+        IsSceneLoading = false;
         OnSceneLoaded();
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: true);
     }
 
-    void Loading_ProgressState() {
+    void Loading_UponProgressState() {
         LogEvent();
-        CurrentState = GameState.Building;  //CurrentState = (LevelSerializer.IsDeserializing || GameSettings.IsSavedGame) ? GameState.Restoring : GameState.Building;
+        ////CurrentState = (LevelSerializer.IsDeserializing || GameSettings.IsSavedGame) ? GameState.Restoring : GameState.Building;
+        CurrentState = GameState.Building;
     }
 
     void Loading_ExitState() {
@@ -700,10 +724,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         // Building is only for new or simulated games
         D.Assert(!GameSettings.IsSavedGame);
-
-        if (onNewGameBuilding != null) {
-            onNewGameBuilding();
-        }
+        OnNewGameBuilding();
         ResetConditionsForGameStartup();
         _gameTime.PrepareToBeginNewGame();
 
@@ -712,7 +733,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
     }
 
-    void Building_ProgressState() {
+    void Building_UponProgressState() {
         LogEvent();
         CurrentState = GameState.Waiting;
     }
@@ -732,17 +753,21 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         RecordGameStateProgressionReadiness(Instance, GameState.Restoring, isReady: false);
     }
 
-    void Restoring_OnDeserialized() {
-        LogEvent();
-        D.Assert(GameSettings.IsSavedGame && !GameSettings.__IsStartupSimulation);
+    #region WhyDoIDoIt.UnitySerializer Restore Archive
 
-        ResetConditionsForGameStartup();
-        _gameTime.PrepareToResumeSavedGame();
+    //void Restoring_OnDeserialized() {
+    //    LogEvent();
+    //    D.Assert(GameSettings.IsSavedGame && !GameSettings.__IsStartupSimulation);
 
-        RecordGameStateProgressionReadiness(Instance, GameState.Restoring, isReady: true);
-    }
+    //    ResetConditionsForGameStartup();
+    //    _gameTime.PrepareToResumeSavedGame();
 
-    void Restoring_ProgressState() {
+    //    RecordGameStateProgressionReadiness(Instance, GameState.Restoring, isReady: true);
+    //}
+
+    #endregion
+
+    void Restoring_UponProgressState() {
         LogEvent();
         CurrentState = GameState.Waiting;
     }
@@ -760,7 +785,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
     }
 
-    void Waiting_ProgressState() {
+    void Waiting_UponProgressState() {
         CurrentState = GameState.BuildAndDeploySystems;
     }
 
@@ -777,7 +802,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
     }
 
-    void BuildAndDeploySystems_ProgressState() {
+    void BuildAndDeploySystems_UponProgressState() {
         LogEvent();
         CurrentState = GameState.GeneratingPathGraphs;
     }
@@ -796,7 +821,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
     }
 
-    void GeneratingPathGraphs_ProgressState() {
+    void GeneratingPathGraphs_UponProgressState() {
         LogEvent();
         CurrentState = GameState.PrepareUnitsForDeployment;
     }
@@ -814,7 +839,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
     }
 
-    void PrepareUnitsForDeployment_ProgressState() {
+    void PrepareUnitsForDeployment_UponProgressState() {
         LogEvent();
         CurrentState = GameState.DeployingUnits;
     }
@@ -832,7 +857,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
     }
 
-    void DeployingUnits_ProgressState() {
+    void DeployingUnits_UponProgressState() {
         LogEvent();
         CurrentState = GameState.RunningCountdown_1;
     }
@@ -850,7 +875,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
     }
 
-    void RunningCountdown_1_ProgressState() {
+    void RunningCountdown_1_UponProgressState() {
         LogEvent();
         CurrentState = GameState.Running;
     }
@@ -882,13 +907,17 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #region State Machine Support Methods
 
-    private void ProgressState() { RelayToCurrentState(); }
+    private void ProgressState() { UponProgressState(); }
+
+    private void UponProgressState() { RelayToCurrentState(); }
+
+    private void UponLevelLoaded(int level) { RelayToCurrentState(level); }
 
     #endregion
 
     #endregion
 
-    public void ExitGame() { Shutdown(); }  // TODO Confirmation Dialog
+    public void ExitGame() { Shutdown(); }  //TODO Confirmation Dialog
 
     private void Shutdown() {
         _playerPrefsMgr.Store();

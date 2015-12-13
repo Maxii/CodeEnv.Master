@@ -29,7 +29,8 @@ using UnityEngine;
 public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IShipTransitBanned, IUnitAttackableTarget, IElementAttackableTarget, ISensorDetectable {
 
     /// <summary>
-    /// Gets the maximum possible orbital speed of a planetoid in Units per hour, aka the max speed of any planet plus the max speed of any moon.
+    /// Gets the maximum possible orbital speed of a planetoid in Units per hour, 
+    /// aka the max speed of any planet plus the max speed of any moon.
     /// </summary>
     public static float MaxOrbitalSpeed { get { return SystemCreator.AllPlanets.Max(p => p.Data.OrbitalSpeed) + SystemCreator.AllMoons.Max(m => m.Data.OrbitalSpeed); } }
 
@@ -99,8 +100,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #endregion
 
-    #region Model Methods
-
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collider.enabled = true;
@@ -123,27 +122,21 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     private void PlaceParentOrbiterInMotion(bool toOrbit) {
-        transform.parent.GetComponent<IOrbitSimulator>().IsActive = toOrbit;
+        transform.parent.GetComponent<IOrbitSimulator>().IsActivelyOrbiting = toOrbit;
     }
 
-    protected override void OnOwnerChanging(Player newOwner) {
-        base.OnOwnerChanging(newOwner);
+    #region Event and Property Change Handlers
+
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
         // there is only 1 type of ContextMenu for Planetoids so no need to generate a new one
     }
 
-    #endregion
-
-    #region View Methods
-
-    #endregion
-
-    #region Events
-
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (!isDown && !_inputMgr.IsDragging) {
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -154,10 +147,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
         get { return _currentState; }
-        protected set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
+        protected set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", CurrentStatePropChangedHandler); }
     }
 
-    private void OnCurrentStateChanged() {
+    private void CurrentStatePropChangedHandler() {
         //D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetName());
         switch (CurrentState) {
             case PlanetoidState.Idling:
@@ -171,8 +164,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         }
     }
 
-    public override void OnEffectFinished(EffectID effectID) {
-        base.OnEffectFinished(effectID);
+    public override void HandleEffectFinished(EffectID effectID) {
+        base.HandleEffectFinished(effectID);
         switch (CurrentState) {
             case PlanetoidState.Dead:
                 __DestroyMe(3F);
@@ -205,7 +198,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     #region IElementAttackableTarget Members
 
     [System.Obsolete]
-    public void OnFiredUponBy(IInterceptableOrdnance ordnanceFired) {
+    public void HandleFiredUponBy(IInterceptableOrdnance ordnanceFired) {
         // does nothing as planetoids have no activeCMs to attempt to intercept
     }
 
@@ -263,12 +256,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.OnDetection(cmdItem, sensorRange);
+    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
+    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
     }
 
     #endregion

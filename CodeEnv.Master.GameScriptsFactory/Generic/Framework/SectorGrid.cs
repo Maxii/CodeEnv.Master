@@ -81,18 +81,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         _grid.relativeSize = true;
         _grid.renderGrid = false;
         // No longer needed as MyAStarPointGraph now limits the number of sectors it will scan to 64
-        //int sectorCount = Mathf.RoundToInt(Mathf.Pow(2F, 3F) * _grid.size.x * _grid.size.y * _grid.size.z);
-        //D.Log("{0} will build {1} sectors.", GetType().Name, sectorCount);
-        //if (sectorCount > 64) {
-        //    D.Warn("Sector count is {0}. Currently, values over 64 can take a long time to scan.", sectorCount);
-        //    // 2x2x2 < 1 sec, 3x3x3 < 5 secs, 5x5x5 > 90 secs
-        //}
+        ////int sectorCount = Mathf.RoundToInt(Mathf.Pow(2F, 3F) * _grid.size.x * _grid.size.y * _grid.size.z);
+        ////D.Log("{0} will build {1} sectors.", GetType().Name, sectorCount);
+        ////if (sectorCount > 64) {
+        ////    D.Warn("Sector count is {0}. Currently, values over 64 can take a long time to scan.", sectorCount);
+        ////    // 2x2x2 < 1 sec, 3x3x3 < 5 secs, 5x5x5 > 90 secs
+        ////}
     }
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
+        _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
     }
 
     protected override void Start() {
@@ -102,7 +102,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
         }
         else {
             IDisposable d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
@@ -111,7 +111,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
     }
 
-    private void OnGameStateChanged() {
+    #region Event and Property Change Handlers
+
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         var gameState = _gameMgr.CurrentState;
         if (gameState == GameState.Building) {
             ConstructSectors();
@@ -122,7 +124,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
     }
 
-    private void OnPlayerViewModeChanged() {
+    private void PlayerViewModePropChangedHandler() {
         PlayerViewMode viewMode = PlayerViews.Instance.ViewMode;
         switch (viewMode) {
             case PlayerViewMode.SectorView:
@@ -139,7 +141,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
     }
 
-    private void OnCameraSectorIndexChanged() {
+    private void CameraSectorIndexPropChangedHandler() {
         // Note: not subscribed unless in SectorViewMode so no need to test for it
         if (_gridWireframe != null) {
             List<Vector3> gridPoints;
@@ -152,6 +154,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             ShowSectorGrid(true);
         }
     }
+
+    #endregion
 
     private bool TryGenerateGridPoints(Index3D cameraSectorIndex, out List<Vector3> gridPoints) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
@@ -391,7 +395,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                 return Topography.System;
             }
         }
-        // TODO add Nebula and DeepNebula
+        //TODO add Nebula and DeepNebula
         return Topography.OpenSpace;
     }
 
@@ -483,7 +487,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void Unsubscribe() {
         _subscriptions.ForAll(s => s.Dispose());
         _subscriptions.Clear();
-        _gameMgr.onGameStateChanged -= OnGameStateChanged;
+        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
     }
 
     public override string ToString() {

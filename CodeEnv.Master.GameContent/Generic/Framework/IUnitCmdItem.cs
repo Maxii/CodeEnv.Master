@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool __CheckForDamage(bool isHQElementAlive, DamageStrength elementDamageSustained, float elementDamageSeverity);
 
-        void OnSubordinateElementDeath(IUnitElementItem deadSubordinateElement);
+        void HandleSubordinateElementDeath(IUnitElementItem deadSubordinateElement);
 
     }
 }

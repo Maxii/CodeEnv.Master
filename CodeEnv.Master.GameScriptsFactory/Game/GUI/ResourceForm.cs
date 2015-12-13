@@ -28,7 +28,9 @@ public class ResourceForm : AForm {
     private ResourceID _resourceID;
     public ResourceID ResourceID {
         get { return _resourceID; }
-        set { SetProperty<ResourceID>(ref _resourceID, value, "ResourceID", OnResourceIDChanged); }
+        set {
+            D.Assert(_resourceID == default(ResourceID));   // occurs only once between Resets
+            SetProperty<ResourceID>(ref _resourceID, value, "ResourceID", ResourceIDPropSetHandler); }
     }
 
     public override FormID FormID { get { return FormID.ResourceHud; } }
@@ -40,16 +42,20 @@ public class ResourceForm : AForm {
 
     protected override void InitializeValuesAndReferences() {
         var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
-        _categoryLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ClampContent);
-        _descriptionLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ResizeHeight);
+        _categoryLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ClampContent);   // HACK
+        _descriptionLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ResizeHeight);    // HACK
         var imageFrameSprite = gameObject.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameSpriteName);
         _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
         _imageNameLabel = imageFrameSprite.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    private void OnResourceIDChanged() {
+    #region Event and Property Change Handlers
+
+    private void ResourceIDPropSetHandler() {
         AssignValuesToMembers();
     }
+
+    #endregion
 
     protected override void AssignValuesToMembers() {
         _categoryLabel.text = ResourceID.GetResourceCategory().GetValueName();
@@ -60,7 +66,7 @@ public class ResourceForm : AForm {
     }
 
     public override void Reset() {
-        _resourceID = ResourceID.None;
+        _resourceID = default(ResourceID);
     }
 
     protected override void Cleanup() { }

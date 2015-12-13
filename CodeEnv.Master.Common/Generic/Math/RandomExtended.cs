@@ -207,7 +207,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="radius">The radius.</param>
         /// <returns></returns>
-        public static Vector2 OnCircle(float radius) {
+        public static Vector2 PointOnCircle(float radius) {
             float randomAngle = Random.Range(0F, 360F);
             float angleRadians = randomAngle * Mathf.PI / 180F;
             float x = radius * Mathf.Cos(angleRadians);

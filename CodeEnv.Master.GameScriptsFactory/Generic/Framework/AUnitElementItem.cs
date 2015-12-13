@@ -28,7 +28,7 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IElementAttackableTarget, ISensorDetectable {
 
-    public event Action<IUnitElementItem> onIsHQChanged;
+    public event EventHandler isHQChanged;
 
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
@@ -55,7 +55,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, OnElementIconsEnabledOptionChanged));
+        _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, IsElementIconsEnabledPropChangedHandler));
     }
 
     protected override void InitializeOnData() {
@@ -87,7 +87,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitElementItemData, bool>(data => data.IsHQ, OnIsHQChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitElementItemData, bool>(data => data.IsHQ, IsHQPropChangedHandler));
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
     }
 
@@ -102,17 +102,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected abstract AIconDisplayManager MakeDisplayManager();
 
+    //private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover += (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick += (go) => OnClick();
+    //    iconEventListener.onDoubleClick += (go) => OnDoubleClick();
+    //    iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+    //}
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick += (go) => OnClick();
-        iconEventListener.onDoubleClick += (go) => OnDoubleClick();
-        iconEventListener.onPress += (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick += (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
+        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion
-
-    #region Model Methods
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -129,8 +134,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         transform.parent = unitContainer;
     }
 
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
+    protected override void OwnerPropChangedHandler() {
+        base.OwnerPropChangedHandler();
         if (DisplayMgr != null) {
             DisplayMgr.Color = Owner.Color;
             AssessIcon();
@@ -138,17 +143,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
-    private void OnIsHQChanged() {
-        if (onIsHQChanged != null) {
-            onIsHQChanged(this);
-        }
-    }
-
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
         // Note: Keep the collider enabled until destroyed or returned to the pool. This allows in-route ordnance to show its impact effect while the item is showing its death
         Data.Weapons.ForAll(w => {
-            w.onReadyToFire -= OnWeaponReadyToFire;
+            w.readytoFire -= WeaponReadyToFireEventHandler;
             w.IsActivated = false;
         });
         Data.ActiveCountermeasures.ForAll(cm => cm.IsActivated = false);
@@ -158,22 +157,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void CleanupAfterOnDeathNotification() {
         base.CleanupAfterOnDeathNotification();
-        Command.OnSubordinateElementDeath(this);
+        Command.HandleSubordinateElementDeath(this);
     }
 
     /********************************************************************************************************************************************
-           * Equipment (Weapons, Sensors and Countermeasures) no longer added or removed while the item is operating. 
-           * Changes in an item's equipment can only occur during a refit where a new item is created to replace the item being refitted.
-           ********************************************************************************************************************************************/
+     * Equipment (Weapons, Sensors and Countermeasures) no longer added or removed while the item is operating. 
+     * Changes in an item's equipment can only occur during a refit where a new item is created to replace the item being refitted.
+     ********************************************************************************************************************************************/
 
     #region Weapons
 
     /*******************************************************************************************************************************************
-           * This implementation attempts to calculate a firing solution against every target thought to be in range and leaves it up to the 
-           * element to determine which one to use, if any. If the element declines to fire (would be ineffective, not proper state (ie. refitting), target 
-           * died or diplo relations changed while weapon being aimed, etc.), then the weapon continues to look for firing solutions to put forward.
-           * This approach works best where many weapons or countermeasures may not bear even when the target is in range.
-           ********************************************************************************************************************************************/
+     * This implementation attempts to calculate a firing solution against every target thought to be in range and leaves it up to the 
+     * element to determine which one to use, if any. If the element declines to fire (would be ineffective, not proper state (ie. refitting), target 
+     * died or diplo relations changed while weapon being aimed, etc.), then the weapon continues to look for firing solutions to put forward.
+     * This approach works best where many weapons or countermeasures may not bear even when the target is in range.
+     ********************************************************************************************************************************************/
 
     /// <summary>
     /// Attaches the weapon and its monitor to this item.
@@ -186,8 +185,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _weaponRangeMonitors.Add(monitor);
         }
-        weapon.onReadyToFire += OnWeaponReadyToFire;
-        // IsOperational = true is set when item operations commences
+        weapon.readytoFire += WeaponReadyToFireEventHandler;
     }
 
     protected WeaponFiringSolution PickBestFiringSolution(IList<WeaponFiringSolution> firingSolutions, IElementAttackableTarget tgtHint = null) {
@@ -212,7 +210,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         LosWeaponFiringSolution losFiringSolution = firingSolution as LosWeaponFiringSolution;
         if (losFiringSolution != null) {
             var losWeapon = losFiringSolution.Weapon;
-            losWeapon.onWeaponAimed += OnLosWeaponAimedAtTarget;
+            //losWeapon.onWeaponAimed += OnLosWeaponAimedAtTarget;
+            losWeapon.weaponAimed += LosWeaponAimedEventHandler;
             losWeapon.AimAt(losFiringSolution);
         }
         else {
@@ -221,23 +220,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             var target = firingSolution.EnemyTarget;
             LaunchOrdnance(weapon, target);
         }
-    }
-
-    /// <summary>
-    /// Called when a LOS Weapon has completed its aiming process at a target.
-    /// </summary>
-    /// <param name="firingSolution">The firing solution.</param>
-    private void OnLosWeaponAimedAtTarget(LosWeaponFiringSolution firingSolution) {
-        var target = firingSolution.EnemyTarget;
-        var losWeapon = firingSolution.Weapon;
-        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRange(target)) {
-            LaunchOrdnance(losWeapon, target);
-        }
-        else {
-            // target moved out of range, died or changed diplo during aiming process
-            losWeapon.OnElementDeclinedToFire();
-        }
-        losWeapon.onWeaponAimed -= OnLosWeaponAimedAtTarget;
     }
 
     private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
@@ -253,20 +235,20 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
         //D.Log("{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
-               * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
-               * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
-               * death cinematic plays out. Once the target is destroyed, its collider becomes disabled, allowing ordnance to pass through and potentially
-               * collide with other items until it runs out of range and self terminates. This behaviour holds for both projectile and beam ordnance. In the
-               * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
-               **************************************************************************************************************************************************/
+         * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
+         * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
+         * death cinematic plays out. Once the target is destroyed, its collider becomes disabled, allowing ordnance to pass through and potentially
+         * collide with other items until it runs out of range and self terminates. This behaviour holds for both projectile and beam ordnance. In the
+         * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
+         **************************************************************************************************************************************************/
     }
 
-    private void OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        bool isMsgReceived = RelayToCurrentState(firingSolutions);
+    private void HandleWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        bool isMsgReceived = UponWeaponReadyToFire(firingSolutions);
         if (!isMsgReceived) {
             // element in state that doesn't deal with firing weapons
             var weapon = firingSolutions.First().Weapon;
-            weapon.OnElementDeclinedToFire();
+            weapon.HandleElementDeclinedToFire();
         }
     }
 
@@ -369,9 +351,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     #region Active Countermeasures
 
     /********************************************************************************************************************
-           * ActiveCountermeasure target selection and firing handled automatically within ActiveCountermeasure class
-           * Note: For previous approach to firing ActiveCountermeasures, see Weapons Firing Archive above
-           *******************************************************************************************************************/
+     * ActiveCountermeasure target selection and firing handled automatically within ActiveCountermeasure class
+     * Note: For previous approach to firing ActiveCountermeasures, see Weapons Firing Archive above
+     *******************************************************************************************************************/
 
     /// <summary>
     /// Attaches this active countermeasure and its monitor to this item.
@@ -401,7 +383,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _shields.Add(shield);
         }
-        // IsOperational = true is set when item operations commences
     }
 
     #endregion
@@ -409,40 +390,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     #region Sensors
 
     private void Attach(Sensor sensor) {
-        D.Assert(Command == null);  // Sensors are only attached to elements when an element is being created so there is no Command yet
-        //if (Command != null) {
-        //    // Command exists so the new sensor can be attached to the Command's SensorRangeMonitor now
-        //    Command.AttachSensorsToMonitors(sensor);
-        //}
-        //else {
-        //    // Note: During startup and ingame building, sensors are added to Elements by Creators before the element has been assigned to a Command.
-        //    // As a result, the sensors are initially present without an attached RangeMonitor as SensorRangeMonitors go with Commands not elements.
-        //    // When the element is added to a command, unattached sensors are then attached to a RangeMonitor. Weapons and Countermeasures don't
-        //    // have this problem as their RangeMonitors can be attached when they are added since the RangeMonitor goes with the element, not the Cmd.
-        //    // D.Warn("{0}.Command not yet set. Sensor {1} not attached to monitor.", FullName, sensor.Name);
-        //}
-        // IsOperational = true is set when item operations commences
+        D.Assert(Command == null);  // OPTIMIZE Sensors are only attached to elements when an element is being created so there is no Command yet
     }
 
     #endregion
-
-    #endregion
-
-    #region View Methods
-
-    protected override void OnIsVisualDetailDiscernibleToUserChanged() {
-        base.OnIsVisualDetailDiscernibleToUserChanged();
-        Data.Weapons.ForAll(w => w.ToShowEffects = IsVisualDetailDiscernibleToUser);
-    }
-
-    private void OnElementIconsEnabledOptionChanged() {
-        if (DisplayMgr != null) {
-            AssessIcon();
-        }
-    }
 
     private void AssessIcon() {
-        D.Assert(DisplayMgr != null);   //if (DisplayMgr == null) { return; }
+        D.Assert(DisplayMgr != null);
 
         if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
             var iconInfo = RefreshIconInfo();
@@ -467,12 +421,49 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected abstract IconInfo MakeIconInfo();
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    private void IsHQPropChangedHandler() {
+        OnIsHQChanged();
+    }
 
-    protected override void OnLeftDoubleClick() {
-        base.OnLeftDoubleClick();
+    private void OnIsHQChanged() {
+        if (isHQChanged != null) {
+            isHQChanged(this, new EventArgs());
+        }
+    }
+
+    private void WeaponReadyToFireEventHandler(object sender, AWeapon.WeaponFiringSolutionEventArgs e) {
+        HandleWeaponReadyToFire(e.FiringSolutions);
+    }
+
+    private void LosWeaponAimedEventHandler(object sender, ALOSWeapon.LosWeaponFiringSolutionEventArgs e) {
+        var firingSolution = e.FiringSolution;
+        var target = firingSolution.EnemyTarget;
+        var losWeapon = firingSolution.Weapon;
+        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRange(target)) {
+            LaunchOrdnance(losWeapon, target);
+        }
+        else {
+            // target moved out of range, died or changed diplo during aiming process
+            losWeapon.HandleElementDeclinedToFire();
+        }
+        losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
+    }
+
+    protected override void IsVisualDetailDiscernibleToUserPropChangedHandler() {
+        base.IsVisualDetailDiscernibleToUserPropChangedHandler();
+        Data.Weapons.ForAll(w => w.ToShowEffects = IsVisualDetailDiscernibleToUser);
+    }
+
+    private void IsElementIconsEnabledPropChangedHandler() {
+        if (DisplayMgr != null) {
+            AssessIcon();
+        }
+    }
+
+    protected override void HandleLeftDoubleClick() {
+        base.HandleLeftDoubleClick();
         Command.IsSelected = true;
     }
 
@@ -490,9 +481,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    void OnDetectedEnemy() { RelayToCurrentState(); }   // TODO connect to sensors when I get them
+    protected void UponEffectFinished(EffectID effectID) { RelayToCurrentState(effectID); }
 
-    protected abstract void AssessNeedForRepair();
+    protected void UponTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
+
+    private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        return RelayToCurrentState(firingSolutions);
+    }
+
 
     #endregion
 
@@ -527,6 +523,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         });
     }
 
+    protected abstract void AssessNeedForRepair();
+
     #endregion
 
     #region Cleanup
@@ -548,12 +546,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
+    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick -= (go) => OnClick();
+    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
+    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick -= (go) => OnClick();
-        iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-        iconEventListener.onPress -= (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick -= (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
+        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion
@@ -573,7 +578,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     /// <param name="ordnanceFired">The ordnance fired.</param>
     [Obsolete]
-    public void OnFiredUponBy(IInterceptableOrdnance ordnanceFired) {
+    public void HandleFiredUponBy(IInterceptableOrdnance ordnanceFired) {
         float ordnanceDistanceFromElement = Vector3.Distance(ordnanceFired.Position, Position);
         _countermeasureRangeMonitors.ForAll(rm => {
             if (rm.RangeDistance > ordnanceDistanceFromElement) {
@@ -625,12 +630,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.OnDetection(cmdItem, sensorRange);
+    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
+    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
     }
 
     #endregion

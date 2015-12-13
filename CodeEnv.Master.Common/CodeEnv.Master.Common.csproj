@@ -55,6 +55,7 @@
     <Compile Include="Game\Framework\Topography.cs" />
     <Compile Include="Generic\Graphics\WidgetPlacement.cs" />
     <Compile Include="Generic\Math\Math3D.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="ThirdParty\AStateMachine.cs" />
     <Compile Include="ThirdParty\ABackgroundTask.cs" />
     <Compile Include="ThirdParty\ATask.cs" />

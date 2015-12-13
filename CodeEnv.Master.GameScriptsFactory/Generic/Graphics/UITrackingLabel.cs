@@ -42,7 +42,7 @@ public class UITrackingLabel : AUITrackingWidget {
     public override void Set(string text) {
         if (Widget.text == text) { return; }
         Widget.text = text;
-        OnTextChanged();
+        Widget.MakePixelPerfect();
     }
 
     protected override void AlignWidgetOtherTo(WidgetPlacement placement) {
@@ -69,10 +69,6 @@ public class UITrackingLabel : AUITrackingWidget {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
         }
         Widget.alignment = alignment;
-    }
-
-    private void OnTextChanged() {
-        Widget.MakePixelPerfect();
     }
 
     private void __AdjustFontSize() {

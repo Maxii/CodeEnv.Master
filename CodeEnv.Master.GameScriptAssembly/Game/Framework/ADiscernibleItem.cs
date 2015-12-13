@@ -30,7 +30,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     private bool _isDiscernibleToUser;
     public bool IsDiscernibleToUser {
         get { return _isDiscernibleToUser; }
-        protected set { SetProperty<bool>(ref _isDiscernibleToUser, value, "IsDiscernibleToUser", OnIsDiscernibleToUserChanged); }
+        protected set { SetProperty<bool>(ref _isDiscernibleToUser, value, "IsDiscernibleToUser", IsDiscernibleToUserPropChangedHandler); }
     }
 
     /// <summary>
@@ -49,7 +49,11 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     public ADisplayManager DisplayMgr { get; private set; }
 
     protected EffectsManager EffectsMgr { get; private set; }
-    protected bool _isViewMembersInitialized;
+
+    /// <summary>
+    /// Flag indicating whether InitializeOnFirstDiscernibleToUser() has run.
+    /// </summary>
+    protected bool _hasInitOnFirstDiscernibleToUserRun;
 
     private IGameInputHelper _inputHelper;
     private IHighlighter _highlighter;
@@ -66,18 +70,20 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     /// View-related members of this item that are not needed until the item is discernible to the user.
     /// </summary>
     protected virtual void InitializeOnFirstDiscernibleToUser() {
+        D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         D.Assert(IsOperational, "{0}.InitializeOnFirstDiscernibleToUser() called when not operational.", FullName);
         _hudManager = InitializeHudManager();
 
         DisplayMgr = InitializeDisplayManager();
-        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, OnIsInMainCameraLosChanged));
-        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, OnIsVisualDetailDiscernibleToUserChanged));
+        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, IsInMainCameraLosPropChangedHandler));
+        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, IsVisualDetailDiscernibleToUserPropChangedHandler));
         // always start enabled as UserPlayerIntelCoverage must be > None for this method to be called,
         // or, in the case of SystemItem, its members coverage must be > their starting coverage
         DisplayMgr.EnableDisplay(true);
 
         EffectsMgr = InitializeEffectsManager();
         _highlighter = InitializeHighlighter();
+        _hasInitOnFirstDiscernibleToUserRun = true;
     }
 
     protected abstract ItemHudManager InitializeHudManager();
@@ -94,44 +100,11 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     #endregion
 
-    #region Model Methods
 
     public override void CommenceOperations() {
         base.CommenceOperations();
         AssessIsDiscernibleToUser();
     }
-
-    #endregion
-
-    #region View Methods
-
-
-    protected virtual void OnIsFocusChanged() {
-        if (IsFocus) {
-            References.MainCameraControl.CurrentFocus = this;
-        }
-        AssessHighlighting();
-    }
-
-    protected virtual void OnIsInMainCameraLosChanged() {
-        AssessIsDiscernibleToUser();
-    }
-
-    protected virtual void OnIsDiscernibleToUserChanged() {
-        if (!IsDiscernibleToUser && IsHudShowing) {
-            // lost ability to discern this object while showing the HUD so stop showing
-            ShowHud(false);
-        }
-        if (!_isViewMembersInitialized) {
-            D.Assert(IsDiscernibleToUser);    // first time change should always be true
-            InitializeOnFirstDiscernibleToUser();
-            _isViewMembersInitialized = true;
-        }
-        AssessHighlighting();
-        //D.Log("{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
-    }
-
-    protected virtual void OnIsVisualDetailDiscernibleToUserChanged() { }
 
     /// <summary>
     /// Assesses the discernability of this item to the user.
@@ -158,7 +131,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         }
     }
 
-    public virtual void OnEffectFinished(EffectID effectID) { }
+    public virtual void HandleEffectFinished(EffectID effectID) { }
 
     protected void StartEffect(EffectID effectID) {
         if (IsVisualDetailDiscernibleToUser) {
@@ -167,7 +140,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         }
         else {
             // Not going to show the effect. Complete the handshake so any dependancies can continue
-            OnEffectFinished(effectID);
+            HandleEffectFinished(effectID);
         }
     }
 
@@ -175,41 +148,87 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         if (EffectsMgr != null) {
             EffectsMgr.StopEffect(effectID);
         }
-        // if EffectsMgr never initialized, then caller of StartEffect already got its OnEffectFinished callback
+        // if EffectsMgr never initialized, then caller of StartEffect already got its HandleEffectFinished callback
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
-
-    protected virtual void OnHover(bool isOver) {
-        //D.Log("{0}.OnHover({1}) called.", FullName, isOver);
-        if (IsDiscernibleToUser && isOver) {
-            ShowHud(true);
-            ShowHoverHighlight(true);
-            return;
+    protected virtual void IsFocusPropChangedHandler() {
+        if (IsFocus) {
+            References.MainCameraControl.CurrentFocus = this;
         }
+        AssessHighlighting();
+    }
+
+    protected virtual void IsInMainCameraLosPropChangedHandler() {
+        AssessIsDiscernibleToUser();
+    }
+
+    protected virtual void IsDiscernibleToUserPropChangedHandler() {
+        if (!IsDiscernibleToUser && IsHudShowing) {
+            // lost ability to discern this object while showing the HUD so stop showing
+            ShowHud(false);
+        }
+        if (!_hasInitOnFirstDiscernibleToUserRun) {
+            D.Assert(IsDiscernibleToUser);    // first time change should always be true
+            InitializeOnFirstDiscernibleToUser();
+        }
+        AssessHighlighting();
+        //D.Log("{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
+    }
+
+    // IMPROVE deal with losing IsDiscernible while hovered or pressed
+
+    protected virtual void IsVisualDetailDiscernibleToUserPropChangedHandler() { }
+
+    protected virtual void HandleHoverOver() {
+        ShowHud(true);
+        ShowHoverHighlight(true);
+    }
+
+    protected virtual void HandleHoverOff() {
         ShowHud(false);
         ShowHoverHighlight(false);
     }
 
-    protected virtual void OnClick() {
-        //D.Log("{0}.OnClick() called.", FullName);
+    protected void HoverEventHandler(bool isOver) {
+        //D.Log("{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
+        if (IsDiscernibleToUser) {
+            if (isOver) {
+                HandleHoverOver();
+            }
+            else {
+                HandleHoverOff();
+            }
+        }
+    }
+
+    void OnHover(bool isOver) {
+        HoverEventHandler(isOver);
+    }
+
+    protected virtual void HandleLeftClick() { }
+    protected virtual void HandleAltLeftClick() { }
+    protected virtual void HandleMiddleClick() { IsFocus = true; }
+    protected virtual void HandleRightClick() { }
+
+    protected void ClickEventHandler() {
+        //D.Log("{0} is handling an OnClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 KeyCode notUsed;
                 if (_inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                    OnAltLeftClick();
+                    HandleAltLeftClick();
                 }
                 else {
-                    OnLeftClick();
+                    HandleLeftClick();
                 }
             }
             else if (_inputHelper.IsMiddleMouseButton) {
-                OnMiddleClick();
+                HandleMiddleClick();
             }
             else if (_inputHelper.IsRightMouseButton) {
-                OnRightClick();
+                HandleRightClick();
             }
             else {
                 D.Error("{0}.OnClick() without a mouse button found.", GetType().Name);
@@ -217,29 +236,80 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         }
     }
 
-    protected virtual void OnLeftClick() { }
+    void OnClick() {
+        ClickEventHandler();
+    }
 
-    protected virtual void OnAltLeftClick() { }
+    protected virtual void HandleLeftPress() { }
+    protected virtual void HandleMiddlePress() { }
+    protected virtual void HandleRightPress() { }
 
-    protected virtual void OnMiddleClick() { IsFocus = true; }
-
-    protected virtual void OnRightClick() { }
-
-    protected virtual void OnDoubleClick() {
-        if (IsDiscernibleToUser && _inputHelper.IsLeftMouseButton) {
-            OnLeftDoubleClick();
+    protected void PressEventHandler(bool isDown) {
+        //D.Log("{0} is handling an OnPress event. IsDown = {1}.", FullName, isDown);
+        if (IsDiscernibleToUser) {
+            if (_inputHelper.IsLeftMouseButton) {
+                if (isDown) {
+                    HandleLeftPress();
+                }
+                else {
+                    HandleLeftPressRelease();
+                }
+            }
+            else if (_inputHelper.IsMiddleMouseButton) {
+                if (isDown) {
+                    HandleMiddlePress();
+                }
+                else {
+                    HandleMiddlePressRelease();
+                }
+            }
+            else if (_inputHelper.IsRightMouseButton) {
+                if (isDown) {
+                    HandleRightPress();
+                }
+                else {
+                    HandleRightPressRelease();
+                }
+            }
+            else {
+                D.Error("{0}.OnPress() without a mouse button found.", GetType().Name);
+            }
         }
     }
 
-    protected virtual void OnLeftDoubleClick() { }
+    void OnPress(bool isDown) {
+        PressEventHandler(isDown);
+    }
 
-    protected virtual void OnPress(bool isDown) {
-        if (IsDiscernibleToUser && _inputHelper.IsRightMouseButton) {
-            OnRightPress(isDown);
+    protected virtual void HandleLeftPressRelease() { }
+    protected virtual void HandleMiddlePressRelease() { }
+    protected virtual void HandleRightPressRelease() { }
+
+    protected virtual void HandleLeftDoubleClick() { }
+    protected virtual void HandleMiddleDoubleClick() { }
+    protected virtual void HandleRightDoubleClick() { }
+
+    protected void DoubleClickEventHandler() {
+        //D.Log("{0} is handling an OnDoubleClick event.", FullName);
+        if (IsDiscernibleToUser) {
+            if (_inputHelper.IsLeftMouseButton) {
+                HandleLeftDoubleClick();
+            }
+            else if (_inputHelper.IsMiddleMouseButton) {
+                HandleMiddleDoubleClick();
+            }
+            else if (_inputHelper.IsRightMouseButton) {
+                HandleRightDoubleClick();
+            }
+            else {
+                D.Error("{0}.OnDoubleClick() without a mouse button found.", GetType().Name);
+            }
         }
     }
 
-    protected virtual void OnRightPress(bool isDown) { }
+    void OnDoubleClick() {
+        DoubleClickEventHandler();
+    }
 
     #endregion
 
@@ -273,7 +343,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
             }
             return Data.CameraStat.OptimalViewingDistance;
         }
-        set { _optimalCameraViewingDistance = value; }  // TODO public but not currently used until implement option to right click set
+        set { _optimalCameraViewingDistance = value; }  //TODO public but not currently used until implement option to right click set
         // Camera auto setting value commented out for now
     }
 
@@ -282,7 +352,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     private bool _isFocus;
     public bool IsFocus {
         get { return _isFocus; }
-        set { SetProperty<bool>(ref _isFocus, value, "IsFocus", OnIsFocusChanged); }
+        set { SetProperty<bool>(ref _isFocus, value, "IsFocus", IsFocusPropChangedHandler); }
     }
 
     #endregion

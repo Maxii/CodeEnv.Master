@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -56,7 +57,7 @@ public class PlayerColorManager : AMonoBase {
             else {
                 _aiPlayerColorPopupLists.Add(cpl);
             }
-            cpl.onSelection += OnColorSelection;
+            cpl.userSelectedColor += ColorSelectedEventHandler;
         });
     }
 
@@ -101,37 +102,50 @@ public class PlayerColorManager : AMonoBase {
         _aiPlayerColorPopupLists.ForAll(pList => _aiPlayerColorsInUse.Add(pList.SelectedColor));
     }
 
-    private void OnColorSelection(GuiPlayerColorPopupList colorPopup) {
-        //D.Log("{0}.OnColorSelection event received from {1}, color selected = {2}.", 
-        //    GetType().Name, colorPopup.ElementID.GetValueName(), colorPopup.SelectedColor.GetValueName());
+    #region Event and Property Change Handlers
+
+    private void ColorSelectedEventHandler(object sender, EventArgs e) {
+        GuiPlayerColorPopupList colorPopup = sender as GuiPlayerColorPopupList;
+        //D.Log("{0}.userSelectedColor event received from {1}, color selected = {2}.", 
+        //GetType().Name, colorPopup.ElementID.GetValueName(), colorPopup.SelectedColor.GetValueName());
         if (colorPopup == _userPlayerColorPopupList) {
-            OnUserPlayerColorSelection();
+            HandleUserPlayerColorSelection();
         }
         else {
-            OnAIPlayerColorSelection(colorPopup);
+            HandleAIPlayerColorSelection(colorPopup);
         }
     }
 
-    private void OnUserPlayerColorSelection() {
+    #endregion
+
+    /// <summary>
+    /// The UserPlayer's color has been selected. Determine what it is and
+    /// if it has changed, process the change.
+    /// </summary>
+    private void HandleUserPlayerColorSelection() {
         var userPlayerColorSelected = _userPlayerColorPopupList.SelectedColor;
         if (userPlayerColorSelected == _userPlayerColorSelected) {
             // ignore, as the user selected the same color that was already selected
             return;
         }
-        OnUserPlayerColorSelectionChanged(userPlayerColorSelected);
+        ProcessUserPlayerColorSelectionChange(userPlayerColorSelected);
     }
 
-    private void OnUserPlayerColorSelectionChanged(GameColor userPlayerColorSelected) {
-        _userPlayerColorSelected = userPlayerColorSelected;
+    /// <summary>
+    /// Processes the UserPlayer's color selection change. 
+    /// </summary>
+    /// <param name="changedUserPlayerColorSelected">The changed user player color.</param>
+    private void ProcessUserPlayerColorSelectionChange(GameColor changedUserPlayerColorSelected) {
+        _userPlayerColorSelected = changedUserPlayerColorSelected;
 
         // remove the newly selected user color from all aiPlayer's choices
-        var aiColorChoices = _allPlayerColors.Except(userPlayerColorSelected);
+        var aiColorChoices = _allPlayerColors.Except(changedUserPlayerColorSelected);
         _aiPlayerColorPopupLists.ForAll(aiPopup => aiPopup.AssignColorSelectionChoices(aiColorChoices));
 
         // find the aiPlayer that is currently using this color, if any
         GuiPlayerColorPopupList aiPopupListAlreadyUsingColor;
-        if (_aiPlayerPopupLookupByColor.TryGetValue(userPlayerColorSelected, out aiPopupListAlreadyUsingColor)) {
-            var unusedColors = _allPlayerColors.Except(_aiPlayerColorsInUse.ToArray());   // aiPlayerColorsInUse already includes userPlayerColorSelected
+        if (_aiPlayerPopupLookupByColor.TryGetValue(changedUserPlayerColorSelected, out aiPopupListAlreadyUsingColor)) {
+            var unusedColors = _allPlayerColors.Except(_aiPlayerColorsInUse.ToArray());   // aiPlayerColorsInUse already includes changedUserPlayerColorSelected
             ChangeAIPlayerColorSelection(aiPopupListAlreadyUsingColor, unusedColors);
         }
     }
@@ -153,22 +167,27 @@ public class PlayerColorManager : AMonoBase {
         UpdateAIPlayerCollections(aiPopupList);
     }
 
-    private void OnAIPlayerColorSelection(GuiPlayerColorPopupList aiPlayerColorPopupList) {
+    private void HandleAIPlayerColorSelection(GuiPlayerColorPopupList aiPlayerColorPopupList) {
         var aiPlayerColorSelected = aiPlayerColorPopupList.SelectedColor;
         if (aiPlayerColorSelected == _aiPlayerColorSelectedLookup[aiPlayerColorPopupList]) {
             // ignore, as the user selected the same color that was already selected
             return;
         }
-        OnAIPlayerColorSelectionChanged(aiPlayerColorPopupList, aiPlayerColorSelected);
+        ProcessAIPlayerColorSelectionChange(aiPlayerColorPopupList, aiPlayerColorSelected);
     }
 
-    private void OnAIPlayerColorSelectionChanged(GuiPlayerColorPopupList aiPlayerColorPopupList, GameColor aiPlayerColorSelected) {
+    /// <summary>
+    /// Processes the AiPlayer's color selection change.
+    /// </summary>
+    /// <param name="aiPlayerColorPopupList">The ai player color popup list.</param>
+    /// <param name="aiPlayerColorSelected">The changed AiPlayer color selected.</param>
+    private void ProcessAIPlayerColorSelectionChange(GuiPlayerColorPopupList aiPlayerColorPopupList, GameColor changedAiPlayerColorSelected) {
         // the user has selected a color for an aiPlayer so refresh the colors in use
         RefreshAIPlayerColorsInUse();
 
         // find the aiPlayer PopupList that is currently using this color, if any
         GuiPlayerColorPopupList aiPlayerPopupListAlreadyUsingColor;
-        if (_aiPlayerPopupLookupByColor.TryGetValue(aiPlayerColorSelected, out aiPlayerPopupListAlreadyUsingColor)) {
+        if (_aiPlayerPopupLookupByColor.TryGetValue(changedAiPlayerColorSelected, out aiPlayerPopupListAlreadyUsingColor)) {
             var allColorsInUse = new List<GameColor>(_aiPlayerColorsInUse) {
                 _userPlayerColorSelected
             }.ToArray();
@@ -184,8 +203,8 @@ public class PlayerColorManager : AMonoBase {
     }
 
     private void Unsubscribe() {
-        _userPlayerColorPopupList.onSelection -= OnColorSelection;
-        _aiPlayerColorPopupLists.ForAll(cpl => cpl.onSelection -= OnColorSelection);
+        _userPlayerColorPopupList.userSelectedColor -= ColorSelectedEventHandler;
+        _aiPlayerColorPopupLists.ForAll(cpl => cpl.userSelectedColor -= ColorSelectedEventHandler);
     }
 
     public override string ToString() {

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -47,11 +48,11 @@ public class FpsReadout : AGuiLabelReadout {
             enabled = false;
             Subscribe();
         }
-        // if LobbyScene enabled = true from beginning
+        // if LobbyScene enabled is true from beginning
     }
 
     private void Subscribe() {
-        GameManager.Instance.onIsRunningOneShot += OnIsRunning;
+        GameManager.Instance.isRunningOneShot += IsRunningEventHandler;
     }
 
     protected override void Update() {
@@ -84,9 +85,13 @@ public class FpsReadout : AGuiLabelReadout {
         RefreshReadout(_formattedFpsText.Inject(_lastFpsValue), color);
     }
 
-    private void OnIsRunning() {
+    #region Event and Property Change Handlers
+
+    private void IsRunningEventHandler(object sender, EventArgs e) {
         enabled = true;
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

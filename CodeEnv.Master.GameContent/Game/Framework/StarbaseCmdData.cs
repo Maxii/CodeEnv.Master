@@ -100,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
             return StarbaseCategory.None;
         }
 
-        // TODO Acquire resource values this starbase has access too, ala SettlementCmdData approach
+        //TODO Acquire resource values this starbase has access too, ala SettlementCmdData approach
         private void __PopulateResourcesFromSector() {
             Capacity = 10;
             var resources = new ResourceYield.ResourceValuePair[] {

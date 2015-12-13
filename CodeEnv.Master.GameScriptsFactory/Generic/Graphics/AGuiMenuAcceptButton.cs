@@ -46,9 +46,13 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
         _sliders = _panel.gameObject.GetComponentsInChildren<UISlider>(includeInactive: true);
     }
 
-    protected override void OnLeftClick() {
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
         CaptureState();
     }
+
+    #endregion
 
     /// <summary>
     /// Captures the state of all GuiElements via the 

@@ -154,11 +154,7 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             ShipData shipData = elementData as ShipData;
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, OnShipFullSpeedChanged));
-        }
-
-        private void OnShipFullSpeedChanged() {
-            RefreshFullSpeed();
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, ShipFullSpeedPropChangedHandler));
         }
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
@@ -181,6 +177,14 @@ namespace CodeEnv.Master.GameContent {
             }
             return FleetCategory.None;
         }
+
+        #region Event and Property Change Handlers
+
+        private void ShipFullSpeedPropChangedHandler() {
+            RefreshFullSpeed();
+        }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

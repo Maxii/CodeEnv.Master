@@ -36,8 +36,9 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
     public float? Approval {
         get { return _approval; }
         set {
+            D.Assert(!_isApprovalSet); // should only happen once between Resets
             _approval = value;
-            OnApprovalSet();
+            ApprovalPropSetHandler();
         }
     }
 
@@ -45,9 +46,11 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
 
     protected override bool AreAllValuesSet { get { return _isApprovalSet; } }
 
-    private void OnApprovalSet() {
+    #region Event and Property Change Handlers
+
+    private void ApprovalPropSetHandler() {
         if (Approval.HasValue) {
-            Arguments.ValidateForRange(Approval.Value, Constants.ZeroF, Constants.OneF);
+            Arguments.ValidateForRange(Approval.Value, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
         _isApprovalSet = true;
         if (AreAllValuesSet) {
@@ -55,9 +58,11 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         }
     }
 
+    #endregion
+
     protected override void PopulateElementWidgets() {
         if (!Approval.HasValue) {
-            OnValuesUnknown();
+            HandleValuesUnknown();
             return;
         }
 

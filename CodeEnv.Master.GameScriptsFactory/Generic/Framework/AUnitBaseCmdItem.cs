@@ -32,7 +32,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+        set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
     public override float UnitRadius { get { return TempGameValues.BaseCmdUnitRadius; } }
@@ -73,8 +73,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #endregion
 
-    #region Model Methods
-
     public override void CommenceOperations() {
         base.CommenceOperations();
         CurrentState = BaseState.Idling;
@@ -88,7 +86,27 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
-    protected void OnCurrentOrderChanged() {
+    protected override void AttachCmdToHQElement() {
+        // does nothing as BaseCmds and HQElements don't change or move
+    }
+
+    protected override void SetDeadState() {
+        CurrentState = BaseState.Dead;
+    }
+
+    /// <summary>
+    /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
+    /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
+    /// </summary>
+    protected void KillUnit() {
+        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.UnitCommand);
+        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
+    }
+
+
+    #region Event and Property Change Handlers
+
+    protected void CurrentOrderPropChangedHandler() {
         if (CurrentState == BaseState.Attacking) {
             Return();
         }
@@ -117,9 +135,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
-    protected override void OnOwnerChanging(Player newOwner) {
-        base.OnOwnerChanging(newOwner);
-        if (_isViewMembersInitialized) {
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
+        if (_hasInitOnFirstDiscernibleToUserRun) {
             // _ctxControl has already been initialized
             if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
                 // Kind of owner has changed between AI and Player so generate a new ctxControl
@@ -128,36 +146,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
-    protected override void AttachCmdToHQElement() {
-        // does nothing as BaseCmds and HQElements don't change or move
-    }
-
-    protected override void SetDeadState() {
-        CurrentState = BaseState.Dead;
-    }
-
-    /// <summary>
-    /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
-    /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
-    /// </summary>
-    protected void KillUnit() {
-        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.UnitCommand);
-        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
-    }
-
-    #endregion
-
-    #region View Methods
-
-    #endregion
-
-    #region Events
-
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (!isDown && !_inputMgr.IsDragging) {
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if(!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -168,7 +161,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     public new BaseState CurrentState {
         get { return (BaseState)base.CurrentState; }
         protected set {
-            if (CurrentState == value) {
+            if (base.CurrentState != null && CurrentState == value) {
                 D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
             }
             base.CurrentState = value;
@@ -193,8 +186,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         LogEvent();
         // register as available
     }
-
-    protected void Idling_OnDetectedEnemy() { }
 
     protected void Idling_ExitState() {
         LogEvent();
@@ -225,12 +216,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     protected void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
-        _attackTarget.onDeathOneShot += OnTargetDeath;
+        _attackTarget.deathOneShot += TargetDeathEventHandler;
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
-    protected void Attacking_OnTargetDeath(IMortalItem deadTarget) {
+    protected void Attacking_UponTargetDeath(IMortalItem deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _attackTarget.FullName, deadTarget.FullName));
         Return();
@@ -238,7 +229,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.onDeathOneShot -= OnTargetDeath;
+        _attackTarget.deathOneShot -= TargetDeathEventHandler;
         _attackTarget = null;
     }
 
@@ -271,16 +262,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region Dead
 
     /*********************************************************************************
-        * UNCLEAR whether Cmd will show a death effect or not. For now, I'm not going
-        *  to use an effect. Instead, the DisplayMgr will just shut off the Icon and HQ highlight.
-        ************************************************************************************/
+     * UNCLEAR whether Cmd will show a death effect or not. For now, I'm not going
+     *  to use an effect. Instead, the DisplayMgr will just shut off the Icon and HQ highlight.
+     ***********************************************************************************/
 
     protected void Dead_EnterState() {
         LogEvent();
         StartEffect(EffectID.Dying);
     }
 
-    protected void Dead_OnEffectFinished(EffectID effectID) {
+    protected void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         D.Assert(effectID == EffectID.Dying);
         __DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // long wait so last element can play death effect
@@ -290,10 +281,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #region StateMachine Support Methods
 
-    public override void OnEffectFinished(EffectID effectID) {
-        base.OnEffectFinished(effectID);
+    public override void HandleEffectFinished(EffectID effectID) {
+        base.HandleEffectFinished(effectID);
         if (CurrentState == BaseState.Dead) {   // TEMP avoids 'method not found' warning spam
-            RelayToCurrentState(effectID);
+            UponEffectFinished(effectID);
         }
     }
 

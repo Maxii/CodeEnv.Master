@@ -27,8 +27,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SystemCtxControl_AI : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Attack, 
-                                                                                                FleetDirective.Move, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Attack,
+                                                                                                FleetDirective.Move,
                                                                                                 FleetDirective.Guard,
                                                                                                 FleetDirective.Explore };
 
@@ -58,7 +58,7 @@ public class SystemCtxControl_AI : ACtxControl {
             case FleetDirective.Attack:
                 return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
             case FleetDirective.Explore:
-                return false; // TODO //_systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+                return false; //TODO _systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
@@ -67,8 +67,8 @@ public class SystemCtxControl_AI : ACtxControl {
         }
     }
 
-    protected override void OnMenuSelection_RemoteFleetAccess(int itemID) {
-        base.OnMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
+        base.HandleMenuSelection_RemoteFleetAccess(itemID);
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = directive == FleetDirective.Attack ? _settlement as INavigableTarget : _systemMenuOperator;

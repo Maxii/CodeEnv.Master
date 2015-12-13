@@ -46,33 +46,47 @@ public class Loader : AMonoSingleton<Loader> {
         base.InitializeOnAwake();
         AssignAudioListener();
         InitializeQualitySettings();
-        InitializeVectrosity();
+        ////InitializeVectrosity();
         Subscribe();
     }
 
     private void InitializeQualitySettings() {
         // the initial QualitySettingChanged event occurs earlier than we can subscribe so do it manually
-        OnQualitySettingChanged();
+        QualitySettingPropChangedHandler();
     }
 
-    private void InitializeVectrosity() {
-        // Note: not necessary to use VectorLine.SetCamera3D(mainCamera) as the default camera for 3D lines Vectrosity finds is mainCamera
+    ////private void InitializeVectrosity() {
+    ////    // Note: not necessary to use VectorLine.SetCamera3D(mainCamera) as the default camera for 3D lines Vectrosity finds is mainCamera
 
-        //VectorLine.useMeshLines = true; // removed in Vectrosity 4.0
-        //VectorLine.useMeshPoints = true;    // removed in Vectrosity 4.0
-        //VectorLine.useMeshQuads = true;       // removed in Vectrosity 3.0 as no advantages to using it
-    }
+    ////    VectorLine.useMeshLines = true; // removed in Vectrosity 4.0
+    ////    VectorLine.useMeshPoints = true;    // removed in Vectrosity 4.0
+    ////    VectorLine.useMeshQuads = true;       // removed in Vectrosity 3.0 as no advantages to using it
+    ////}
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
-        GameManager.Instance.onSceneLoaded += OnSceneLoaded;
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
+        GameManager.Instance.sceneLoaded += SceneLoadedEventHandler;
     }
 
-    private void OnSceneLoaded() {
+    #region Event and Property Change Handlers
+
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
         D.Assert(GameManager.Instance.CurrentScene == SceneLevel.GameScene);
         AssignAudioListener();
     }
+
+    private void QualitySettingPropChangedHandler() {
+        string newQualitySetting = _playerPrefsMgr.QualitySetting;
+        if (newQualitySetting != QualitySettings.names[QualitySettings.GetQualityLevel()]) {
+            // EDITOR Quality Level Changes will not be saved while in Editor play mode
+            int newQualitySettingIndex = QualitySettings.names.IndexOf(newQualitySetting);
+            QualitySettings.SetQualityLevel(newQualitySettingIndex, applyExpensiveChanges: true);
+        }
+        CheckDebugSettings();
+    }
+
+    #endregion
 
     private void AssignAudioListener() {
         if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
@@ -98,17 +112,6 @@ public class Loader : AMonoSingleton<Loader> {
             Application.targetFrameRate = _targetFPS;
         }
     }
-
-    private void OnQualitySettingChanged() {
-        string newQualitySetting = _playerPrefsMgr.QualitySetting;
-        if (newQualitySetting != QualitySettings.names[QualitySettings.GetQualityLevel()]) {
-            // EDITOR Quality Level Changes will not be saved while in Editor play mode
-            int newQualitySettingIndex = QualitySettings.names.IndexOf(newQualitySetting);
-            QualitySettings.SetQualityLevel(newQualitySettingIndex, applyExpensiveChanges: true);
-        }
-        CheckDebugSettings();
-    }
-
     protected override void Cleanup() {
         Unsubscribe();
     }
@@ -116,7 +119,9 @@ public class Loader : AMonoSingleton<Loader> {
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(s => s.Dispose());
         _subscriptions.Clear();
-        //GameManager.Instance.onSceneLoaded -= OnSceneLoaded;
+        // GameManager gets destroyed first due to ScriptExecutionOrder
+        ////GameManager.Instance.sceneLoaded -= SceneLoadedEventHandler;
+
     }
 
     public override string ToString() {

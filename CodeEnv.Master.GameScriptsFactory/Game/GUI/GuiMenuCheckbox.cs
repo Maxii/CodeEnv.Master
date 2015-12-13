@@ -60,6 +60,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     protected override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
+        Subscribe();
         if (SelfInitializeSelection) {
             InitializeSelection();
         }
@@ -67,7 +68,10 @@ public class GuiMenuCheckbox : AGuiMenuElement {
 
     protected virtual void InitializeValuesAndReferences() {
         _checkbox = gameObject.GetSafeComponent<UIToggle>();
-        EventDelegate.Add(_checkbox.onChange, OnCheckboxStateSet);
+    }
+
+    private void Subscribe() {
+        EventDelegate.Add(_checkbox.onChange, CheckboxStateSetEventHandler);
     }
 
     private void InitializeSelection() {
@@ -102,17 +106,23 @@ public class GuiMenuCheckbox : AGuiMenuElement {
         return isPreferenceUsed;
     }
 
+    #region Event and Property Change Handlers
+
     /// <summary>
     /// Called when the state of the UIToggle is set. Default does nothing.
+    /// <remarks>Called Set rather than Changed as I think the onChange event gets raised
+    /// by Ngui's UIToggle when first set, even if not changed. TODO Needs verification.</remarks>
     /// </summary>
-    protected virtual void OnCheckboxStateSet() { }
+    protected virtual void CheckboxStateSetEventHandler() { }
+
+    #endregion
 
     protected override void Cleanup() {
         Unsubscribe();
     }
 
     protected virtual void Unsubscribe() {
-        EventDelegate.Remove(_checkbox.onChange, OnCheckboxStateSet);
+        EventDelegate.Remove(_checkbox.onChange, CheckboxStateSetEventHandler);
     }
 
     public override string ToString() {

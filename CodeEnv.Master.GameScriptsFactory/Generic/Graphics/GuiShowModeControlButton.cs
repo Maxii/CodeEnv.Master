@@ -41,7 +41,9 @@ public class GuiShowModeControlButton : AGuiButton {
         D.Assert(showModeOnClick != ShowMode.None, "{0} has illegal {1} setting.".Inject(GetType().Name, typeof(ShowMode).Name), gameObject);
     }
 
-    protected override void OnLeftClick() {
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
         if (showModeOnClick == ShowMode.Show) {
             GuiManager.Instance.ShowFixedPanels();
         }
@@ -49,6 +51,8 @@ public class GuiShowModeControlButton : AGuiButton {
             GuiManager.Instance.HideFixedPanels(hideExceptions);
         }
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

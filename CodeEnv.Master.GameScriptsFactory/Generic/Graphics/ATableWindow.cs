@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -54,7 +55,7 @@ public abstract class ATableWindow : AGuiWindow {
         base.InitializeOnAwake();
         Arguments.ValidateNotNull(rowPrefab);
         InitializeContentHolder();
-        WireDelegates();
+        Subscribe();
     }
 
     protected override void AcquireReferences() {
@@ -69,10 +70,32 @@ public abstract class ATableWindow : AGuiWindow {
         _contentHolder = gameObject.GetSingleComponentInImmediateChildren<UISprite>().transform;    // background sprite
     }
 
-    private void WireDelegates() {
-        onShowBegin.Add(new EventDelegate(BuildTable));
-        onHideComplete.Add(new EventDelegate(Reset));
+    private void Subscribe() {
+        EventDelegate.Add(onShowBegin, ShowBeginEventHandler);
+        EventDelegate.Add(onHideComplete, HideCompleteEventHandler);
     }
+
+    #region Event and Property Change Handlers
+
+    /// <summary>
+    /// Event handler called when the GuiWindow begins showing.
+    /// </summary>
+    private void ShowBeginEventHandler() {
+        BuildTable();
+    }
+
+    /// <summary>
+    /// Event handler called when the GuiWindow completes hiding.
+    /// </summary>
+    private void HideCompleteEventHandler() {
+        Reset();
+    }
+
+    private void ItemFocusUserActionEventHandler(object sender, ATableRowForm.TableRowFocusUserActionEventArgs e) {
+        CloseScreenAndFocusOnItem(e.ItemToFocusOn);
+    }
+
+    #endregion
 
     /// <summary>
     /// Show the Window.
@@ -133,8 +156,9 @@ public abstract class ATableWindow : AGuiWindow {
 
     private void ConfigureRow(ATableRowForm rowForm, AItem item) {
         rowForm.Report = GetUserReportFor(item);
-        rowForm.onFocusOnItem += CloseScreenAndFocusOnItem;
+        rowForm.itemFocusUserAction += ItemFocusUserActionEventHandler;
     }
+
 
     /// <summary>
     /// The derived class returns the UserReport for the provided item.
@@ -392,7 +416,9 @@ public abstract class ATableWindow : AGuiWindow {
         ResetRows();
         ResetSortDirectionState();
         ClearTable();
+        // UNCLEAR detach GuiWindowEvents?
     }
+
 
     private void ResetRows() {
         _rowForms.ForAll(rf => rf.Reset());
@@ -405,7 +431,13 @@ public abstract class ATableWindow : AGuiWindow {
     }
 
     protected override void Cleanup() {
-        _rowForms.ForAll(rf => rf.onFocusOnItem -= CloseScreenAndFocusOnItem);
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _rowForms.ForAll(rf => rf.itemFocusUserAction -= ItemFocusUserActionEventHandler);
+        EventDelegate.Remove(onShowBegin, ShowBeginEventHandler);
+        EventDelegate.Remove(onHideComplete, HideCompleteEventHandler);
     }
 
     #region Nested Classes

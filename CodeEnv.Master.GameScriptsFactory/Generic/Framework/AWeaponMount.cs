@@ -38,7 +38,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
         set {
             D.Assert(_weapon == null);  // only happens once
             _weapon = value;
-            OnWeaponSet();
+            WeaponPropSetHandler();
         }
     }
 
@@ -76,7 +76,11 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// <returns></returns>
     public abstract bool ConfirmInRange(IElementAttackableTarget enemyTarget);
 
-    protected virtual void OnWeaponSet() { }
+    #region Event and Property Change Handlers
+
+    protected virtual void WeaponPropSetHandler() { }
+
+    #endregion
 
 }
 

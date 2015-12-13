@@ -26,9 +26,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntelItemData : ADiscernibleItemData { //AItemData {
 
-        public event Action onUserIntelCoverageChanged;
+        public event EventHandler userIntelCoverageChanged;
 
-        public event Action<Player> onIntelCoverageChanged;
+        public event EventHandler<IntelEventArgs> intelCoverageChanged;
 
         protected virtual IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
 
@@ -132,14 +132,32 @@ namespace CodeEnv.Master.GameContent {
             return _playerIntelLookup[player];
         }
 
+        #region Event and Property Change Handlers
+
         private void OnIntelCoverageChanged(Player player) {
-            if (onIntelCoverageChanged != null) {
-                onIntelCoverageChanged(player);
+            if (intelCoverageChanged != null) {
+                intelCoverageChanged(this, new IntelEventArgs(player));
             }
-            if (onUserIntelCoverageChanged != null && player.IsUser) {
-                onUserIntelCoverageChanged();
+            if (player.IsUser && userIntelCoverageChanged != null) {
+                userIntelCoverageChanged(this, new EventArgs());
             }
         }
+
+        #endregion
+
+        #region Nested Classes
+
+        public class IntelEventArgs : EventArgs {
+
+            public Player Player { get; private set; }
+
+            public IntelEventArgs(Player player) {
+                Player = player;
+            }
+
+        }
+
+        #endregion
 
     }
 }

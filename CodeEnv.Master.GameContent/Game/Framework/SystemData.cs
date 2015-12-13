@@ -32,8 +32,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public CelestialOrbitSlot SettlementOrbitSlot { get; set; }
 
-        //public CameraFocusableStat CameraStat { get; private set; }
-
         public float Radius { get { return TempGameValues.SystemRadius; } }
 
         private int _capacity;
@@ -51,22 +49,27 @@ namespace CodeEnv.Master.GameContent {
         private SettlementCmdData _settlementData;
         public SettlementCmdData SettlementData {
             get { return _settlementData; }
-            set { SetProperty<SettlementCmdData>(ref _settlementData, value, "SettlementData", OnSettlementDataChanged); }
+            set { SetProperty<SettlementCmdData>(ref _settlementData, value, "SettlementData", SettlementDataPropChangedHandler); }
         }
 
         private StarData _starData;
         public StarData StarData {
             get { return _starData; }
-            set { SetProperty<StarData>(ref _starData, value, "StarData", OnStarDataChanged, OnStarDataChanging); }
+            set { SetProperty<StarData>(ref _starData, value, "StarData", StarDataPropChangedHandler, StarDataPropChangingHandler); }
         }
 
         public Index3D SectorIndex { get; private set; }
+
+        public sealed override Topography Topography {  // avoids CA2214
+            get { return base.Topography; }
+            set { base.Topography = value; }
+        }
 
         private IList<APlanetoidData> _allPlanetoidData = new List<APlanetoidData>();
 
         private IDictionary<APlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
         private IList<IDisposable> _starSubscriptions;
-        private IList<IDisposable> _settlementSubscribers;
+        private IList<IDisposable> _settlementSubscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class
@@ -87,7 +90,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public SystemData(Transform systemTransform, CameraFocusableStat cameraStat, string systemName, Player owner)
             : base(systemTransform, systemName, owner, cameraStat) {
-            //CameraStat = cameraStat;
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
             Topography = Topography.System;
             Subscribe();
@@ -96,6 +98,27 @@ namespace CodeEnv.Master.GameContent {
         private void Subscribe() {
             _planetoidSubscriptions = new Dictionary<APlanetoidData, IList<IDisposable>>();
             _starSubscriptions = new List<IDisposable>();
+        }
+
+        private void SubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
+            if (!_planetoidSubscriptions.ContainsKey(data)) {
+                _planetoidSubscriptions.Add(data, new List<IDisposable>());
+            }
+            var planetSubscriber = _planetoidSubscriptions[data];
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, int>(pd => pd.Capacity, PlanetoidCapacityPropChangedHandler));
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, ResourceYield>(pd => pd.Resources, PlanetoidResourceYieldPropChangedHandler));
+        }
+
+        private void SubscribeToStarDataValueChanges() {
+            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, StarCapacityPropChangedHandler));
+            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, ResourceYield>(sd => sd.Resources, StarResourceYieldPropChangedHandler));
+        }
+
+        private void SubscribeToSettlementDataValueChanges() {
+            if (_settlementSubscriptions == null) {
+                _settlementSubscriptions = new List<IDisposable>();
+            }
+            _settlementSubscriptions.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, SettlementOwnerPropChangedHandler));
         }
 
         public void AddPlanetoid(APlanetoidData data) {
@@ -115,19 +138,29 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        private void OnSystemMemberCapacityChanged() {
+        #region Event and Property Change Handlers
+
+        private void PlanetoidCapacityPropChangedHandler() {
             UpdateCapacity();
         }
 
-        private void OnSystemMemberResourceValueChanged() {
+        private void StarCapacityPropChangedHandler() {
+            UpdateCapacity();
+        }
+
+        private void PlanetoidResourceYieldPropChangedHandler() {
             UpdateResources();
         }
 
-        private void OnSettlementDataChanged() {
+        private void StarResourceYieldPropChangedHandler() {
+            UpdateResources();
+        }
+
+        private void SettlementDataPropChangedHandler() {
             // Existing settlements will always be destroyed (data = null) before changing to a new settlement
             if (SettlementData != null) {
                 SubscribeToSettlementDataValueChanges();
-                OnSettlementOwnerChanged();
+                SettlementOwnerPropChangedHandler();
             }
             else {
                 Owner = TempGameValues.NoPlayer;
@@ -136,26 +169,28 @@ namespace CodeEnv.Master.GameContent {
             RecalcAllProperties();
         }
 
-        private void OnStarDataChanging(StarData newData) {
+        private void StarDataPropChangingHandler(StarData newData) {
             // Existing stars will simply be swapped for another if they change so unsubscribe from the previous first
             if (StarData != null) {
                 UnsubscribeToStarDataValueChanges();
             }
         }
 
-        private void OnStarDataChanged() {
+        private void StarDataPropChangedHandler() {
             SubscribeToStarDataValueChanges();
             RecalcAllProperties();
         }
 
-        private void OnSettlementOwnerChanged() {
+        private void SettlementOwnerPropChangedHandler() {
             Owner = SettlementData.Owner;
         }
 
-        protected override void OnOwnerChanged() {
-            base.OnOwnerChanged();
+        protected override void OwnerPropChangedHandler() {
+            base.OwnerPropChangedHandler();
             PropogateOwnerChange();
         }
+
+        #endregion
 
         private void PropogateOwnerChange() {
             _allPlanetoidData.ForAll(pd => pd.Owner = Owner);
@@ -178,27 +213,6 @@ namespace CodeEnv.Master.GameContent {
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 
-        private void SubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
-            if (!_planetoidSubscriptions.ContainsKey(data)) {
-                _planetoidSubscriptions.Add(data, new List<IDisposable>());
-            }
-            var planetSubscriber = _planetoidSubscriptions[data];
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, int>(pd => pd.Capacity, OnSystemMemberCapacityChanged));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, ResourceYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
-        }
-
-        private void SubscribeToStarDataValueChanges() {
-            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, OnSystemMemberCapacityChanged));
-            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, ResourceYield>(sd => sd.Resources, OnSystemMemberResourceValueChanged));
-        }
-
-        private void SubscribeToSettlementDataValueChanges() {
-            if (_settlementSubscribers == null) {
-                _settlementSubscribers = new List<IDisposable>();
-            }
-            _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, OnSettlementOwnerChanged));
-        }
-
         private void UnsubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
             _planetoidSubscriptions[data].ForAll<IDisposable>(d => d.Dispose());
             _planetoidSubscriptions.Remove(data);
@@ -210,9 +224,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UnsubscribeToSettlementDataValueChanges() {
-            if (_settlementSubscribers != null) {
-                _settlementSubscribers.ForAll(d => d.Dispose());
-                _settlementSubscribers.Clear();
+            if (_settlementSubscriptions != null) {
+                _settlementSubscriptions.ForAll(d => d.Dispose());
+                _settlementSubscriptions.Clear();
             }
         }
 

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -37,34 +38,34 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     public void AddOrdnanceLaunchedFromInsideMonitor(IInterceptableOrdnance ordnance) {
         D.Assert(ordnance.IsOperational);
         D.Log("{0} is adding {1} to detected items as it was fired from inside this monitor's collider.", Name, ordnance.Name);
-        AddDetectedItem(ordnance);
+        AddDetectedObject(ordnance);
     }
 
     protected override void AssignMonitorTo(ActiveCountermeasure activeCM) {
         activeCM.RangeMonitor = this;
     }
 
-    protected override void OnDetectedItemAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
+    protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
         var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
         D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
         if (newlyDetectedOrdnance.Owner == Owner) {
             // its one of ours
             if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
                 // ... and its not a danger so ignore it
-                RemoveDetectedItem(newlyDetectedOrdnance);
+                RemoveDetectedObject(newlyDetectedOrdnance);
                 D.Log("{0} removed detected item {1} owned by us moving away.", Name, newlyDetectedOrdnance.FullName);
                 return;
             }
         }
         IInterceptableOrdnance threat = newlyDetectedOrdnance;
-        threat.onDeathOneShot += OnThreatDeath;
-        OnThreatInRange(threat);
+        threat.deathOneShot += ThreatDeathEventHandler;
+        HandleThreatInRange(threat);
     }
 
-    protected override void OnDetectedItemRemoved(IInterceptableOrdnance lostDetectionItem) {
+    protected override void HandleDetectedObjectRemoved(IInterceptableOrdnance lostDetectionItem) {
         IInterceptableOrdnance previousThreat = lostDetectionItem;
-        previousThreat.onDeathOneShot -= OnThreatDeath;
-        OnThreatOutOfRange(previousThreat);
+        previousThreat.deathOneShot -= ThreatDeathEventHandler;
+        HandleThreatOutOfRange(previousThreat);
     }
 
     /// <summary>
@@ -72,13 +73,13 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// the owner of this monitor as ordnance doesn't care who owns it.
     /// </summary>
     /// <param name="newThreat">The IInterceptableOrdnance threat.</param>
-    private void OnThreatInRange(IInterceptableOrdnance newThreat) {
+    private void HandleThreatInRange(IInterceptableOrdnance newThreat) {
         _equipmentList.ForAll(cm => {
             // GOTCHA!! As each CM receives this inRange notice, it can attack and destroy the threat
             // before the next ThreatInRange notice is sent to the next CM. As a result, IsOperational must
             // be checked after each notice.
             if (newThreat.IsOperational) {
-                cm.OnThreatInRangeChanged(newThreat, isInRange: true);
+                cm.HandleThreatInRangeChanged(newThreat, isInRange: true);
             }
         });
     }
@@ -88,19 +89,25 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// the owner of this monitor as ordnance doesn't care who owns it.
     /// </summary>
     /// <param name="previousThreat">The previous threat.</param>
-    private void OnThreatOutOfRange(IInterceptableOrdnance previousThreat) {
-        _equipmentList.ForAll(cm => cm.OnThreatInRangeChanged(previousThreat, isInRange: false));
+    private void HandleThreatOutOfRange(IInterceptableOrdnance previousThreat) {
+        _equipmentList.ForAll(cm => cm.HandleThreatInRangeChanged(previousThreat, isInRange: false));
     }
+
+    #region Event and Property Change Handlers
 
     /// <summary>
     /// Called when a detected and tracked threat dies. It is necessary to track each threat's onDeath
     /// event as OnTriggerExit() is not called when a threat inside the collider is destroyed.
     /// </summary>
-    /// <param name="deadThreat">The dead threat.</param>
-    private void OnThreatDeath(IOrdnance deadThreat) {
-        D.Log("{0} received OnThreatDeath event for {1}.", Name, deadThreat.Name);
-        RemoveDetectedItem(deadThreat as IInterceptableOrdnance);
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void ThreatDeathEventHandler(object sender, EventArgs e) {
+        IOrdnance deadThreat = sender as IOrdnance;
+        //D.Log("{0} received threatDeath event for {1}.", Name, deadThreat.Name);
+        RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
     }
+
+    #endregion
 
     private bool ConfirmNotIncoming(IInterceptableOrdnance detectedOrdnance) {
         var ordnanceHeading = detectedOrdnance.Heading;

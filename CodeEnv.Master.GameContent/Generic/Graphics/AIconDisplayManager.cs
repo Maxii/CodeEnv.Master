@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         private IconInfo _iconInfo;
         public IconInfo IconInfo {
             get { return _iconInfo; }
-            set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
+            set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
         }
 
         public string Name {
@@ -63,7 +63,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnIconInfoChanged() {
+        #region Event and Property Change Handlers
+
+        private void IconInfoPropChangedHandler() {
             if (Icon != null) {
                 // icon already present
                 if (IconInfo != null) {
@@ -81,19 +83,20 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private void IconInCameraLosChangedEventHandler(object sender, EventArgs e) {
+            _isIconInMainCameraLOS = (sender as ICameraLosChangedListener).InCameraLOS;
+            AssessInMainCameraLOS();
+            AssessComponentsToShowOrOperate();
+        }
+
+        #endregion
+
         private IResponsiveTrackingSprite MakeIcon() {
             var icon = References.TrackingWidgetFactory.MakeResponsiveTrackingSprite(_trackedItem, IconInfo, IconSize, IconPlacement);
             var iconCameraLosChgdListener = icon.CameraLosChangedListener;
-            iconCameraLosChgdListener.onCameraLosChanged += (iconGo, isIconInCameraLOS) => OnIconInMainCameraLosChanged(isIconInCameraLOS);
+            iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;
             iconCameraLosChgdListener.enabled = true;
             return icon;
-        }
-
-        private void OnIconInMainCameraLosChanged(bool isIconInMainCameraLOS) {
-            //D.Log("{0}.OnIconInMainCameraLosChanged({1}) called.", GetType().Name, isIconInMainCameraLOS);
-            _isIconInMainCameraLOS = isIconInMainCameraLOS;
-            AssessInMainCameraLOS();
-            AssessComponentsToShowOrOperate();
         }
 
         protected override void AssessInMainCameraLOS() {
@@ -127,9 +130,9 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(Icon != null);
             ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
             var iconCameraLosChgdListener = Icon.CameraLosChangedListener;
-            iconCameraLosChgdListener.onCameraLosChanged -= (iconGo, isIconInCameraLOS) => OnIconInMainCameraLosChanged(isIconInCameraLOS);
+            iconCameraLosChgdListener.inCameraLosChanged -= IconInCameraLosChangedEventHandler;
             // event subscriptions already removed by Item before Icon changed
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IResponsiveTrackingSprite>(Icon);
+            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(Icon);
         }
     }
 

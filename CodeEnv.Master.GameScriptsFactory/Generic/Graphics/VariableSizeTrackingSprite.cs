@@ -28,16 +28,14 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
     private AtlasID _atlasID;
     public AtlasID AtlasID {
         get { return _atlasID; }
-        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", OnAtlasIDChanged); }
+        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", AtlasIDPropChangedHandler); }
     }
 
     /// <summary>
     /// Temporary. The desired dimensions in pixels of this sprite. 
-    /// TODO: As I have only one sprite size available now (32, 32), this setting will change the dimensions
-    /// of UISprite to reflect this desired size. The longer term solution is to have my sprites be the 
-    /// desired size to begin with, eliminating any dimension change requirement. 
     /// </summary>
-    public Vector2 desiredSpriteDimensions = new Vector2(16, 16);
+    public Vector2 desiredSpriteDimensions = new Vector2(16, 16);    //TODO: Use properly sized sprite
+
 
     protected new UISprite Widget { get { return base.Widget as UISprite; } }
 
@@ -66,9 +64,13 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
         Widget.SetDimensions(spriteWidth, spriteHeight);
     }
 
-    private void OnAtlasIDChanged() {
+    #region Event and Property Change Handlers
+
+    private void AtlasIDPropChangedHandler() {
         Widget.atlas = AtlasID.GetAtlas();
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

@@ -48,7 +48,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// <returns>true if a method in the current state was invoked, false if no method is present.</returns>
     protected bool RelayToCurrentState(params object[] param) {
         if (CurrentState == null) { return false; }
-        var message = CurrentState.ToString() + Constants.Underscore + new System.Diagnostics.StackFrame(1).GetMethod().Name;
+        string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
+        D.Warn(!callingMethodName.StartsWith("Upon"), "Calling method name: {0) should start with 'Upon'.", callingMethodName);
+        var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
         //D.Log("{0} looking for method signature {1}.", Data.Name, message);
         return SendMessageEx(message, param);
     }
@@ -180,7 +182,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     private static void DoNothingCollision(Collision other) { }
 
-    private static void DoNothingBoolean(bool b) { }
+    ////private static void DoNothingBoolean(bool b) { }
 
     #endregion
 
@@ -205,10 +207,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         public IEnumerator enterStateEnumerator = null;
         public IEnumerator exitStateEnumerator = null;
 
-        public Action<bool> DoOnHover = DoNothingBoolean;
-        public Action<bool> DoOnPress = DoNothingBoolean;
-        public Action DoOnClick = DoNothing;
-        public Action DoOnDoubleClick = DoNothing;
+        ////public Action<bool> DoOnHover = DoNothingBoolean;
+        ////public Action<bool> DoOnPress = DoNothingBoolean;
+        ////public Action DoOnClick = DoNothing;
+        ////public Action DoOnDoubleClick = DoNothing;
 
         public object currentState;
 
@@ -400,10 +402,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
         state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
-        state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
-        state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
-        state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
-        state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
+        ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
+        ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
+        ////state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
+        ////state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
 
         state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
         state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
@@ -480,7 +482,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoOccasionalUpdate();
     }
 
-    void LateUpdate() {
+    protected override void LateUpdate() {
+        base.LateUpdate();
         state.DoLateUpdate();
     }
 
@@ -517,25 +520,25 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoOnCollisionExit(collision);
     }
 
-    protected override void OnHover(bool isOver) {
-        base.OnHover(isOver);
-        state.DoOnHover(isOver);
-    }
+    ////protected override void OnHover(bool isOver) {
+    ////    base.OnHover(isOver);
+    ////    state.DoOnHover(isOver);
+    ////}
 
-    protected override void OnPress(bool isDown) {
-        base.OnPress(isDown);
-        state.DoOnPress(isDown);
-    }
+    ////protected override void OnPress(bool isDown) {
+    ////    base.OnPress(isDown);
+    ////    state.DoOnPress(isDown);
+    ////}
 
-    protected override void OnClick() {
-        base.OnClick();
-        state.DoOnClick();
-    }
+    ////protected override void OnClick() {
+    ////    base.OnClick();
+    ////    state.DoOnClick();
+    ////}
 
-    protected override void OnDoubleClick() {
-        base.OnDoubleClick();
-        state.DoOnDoubleClick();
-    }
+    ////protected override void OnDoubleClick() {
+    ////    base.OnDoubleClick();
+    ////    state.DoOnDoubleClick();
+    ////}
 
     #endregion
 

@@ -42,7 +42,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
             if (_settlement != null && value != null) {
                 D.Error("{0} cannot assign {1} when {2} is already present.", FullName, value.FullName, _settlement.FullName);
             }
-            SetProperty<SettlementCmdItem>(ref _settlement, value, "Settlement", OnSettlementChanged);
+            SetProperty<SettlementCmdItem>(ref _settlement, value, "Settlement", SettlementPropChangedHandler);
         }
     }
 
@@ -52,7 +52,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         set {
             D.Assert(_star == null, "{0}'s Star can only be set once.".Inject(FullName));
             _star = value;
-            OnStarSet();
+            StarPropSetHandler();
         }
     }
 
@@ -127,8 +127,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     #endregion
 
-    #region Model Methods
-
     public void AddPlanetoid(APlanetoidItem planetoid) {
         Planetoids.Add(planetoid);
         Data.AddPlanetoid(planetoid.Data);
@@ -153,54 +151,13 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         return Settlement != null ? Settlement.GetReport(player) : null;
     }
 
-    private void OnStarSet() {
-        Data.StarData = Star.Data;
-    }
-
-    private void OnSettlementChanged() {
-        SettlementCmdData settlementData = null;
-        if (Settlement != null) {
-            Settlement.System = this;
-            settlementData = Settlement.Data;
-            AttachSettlement(Settlement);
-        }
-        else {
-            // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
-            Data.SettlementOrbitSlot.DestroyOrbitSimulator();
-        }
-        Data.SettlementData = settlementData;
-        // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
-    }
-
     private void AttachSettlement(SettlementCmdItem settlementCmd) {
         Transform settlementUnit = settlementCmd.UnitContainer;
         var orbitSimulator = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement OrbitSimulator"); // IMPROVE the only remaining OrbitSlot held in Data
-        orbitSimulator.IsActive = settlementCmd.__OrbitSimulatorMoves;
+        orbitSimulator.IsActivelyOrbiting = settlementCmd.__OrbitSimulatorMoves;
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
-
-    protected override void OnOwnerChanging(Player newOwner) {
-        base.OnOwnerChanging(newOwner);
-        if (_isViewMembersInitialized) {
-            // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI, Player and NoPlayer so generate a new ctxControl
-                InitializeContextMenu(newOwner);
-            }
-        }
-    }
-
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
-        if (_trackingLabel != null) {
-            _trackingLabel.Color = Owner.Color;
-        }
-    }
-
-    #endregion
-
-    #region View Methods
 
     protected override void AssessIsDiscernibleToUser() {
         // a System is not discernible to the User unless it is visible to the camera AND the User has discovered it
@@ -228,20 +185,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         ShowHighlights(HighlightID.None);
     }
 
-    protected override void OnIsDiscernibleToUserChanged() {
-        base.OnIsDiscernibleToUserChanged();
-        ShowTrackingLabel(IsDiscernibleToUser);
-        _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
-    }
-
-    private void OnIsSelectedChanged() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessHighlighting();
-    }
-
     /// <summary>
     /// Shows the SelectedItemHudWindow for this system.
     /// </summary>
@@ -256,13 +199,13 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     /// <summary>
     /// Called by User's PlayerKnowledge when the User first discovers this system.
-    /// Note: This is the replacement for ADiscernibleItem.OnUserIntelCoverageChanged() calling 
+    /// Note: This is the replacement for ADiscernibleItem.UserIntelCoveragePropChangedHandler() calling 
     /// AssessDiscernibleToUser() since SystemItem is not an ADiscernibleItem.
     /// </summary>
-    public void OnUserDiscoveredSystem() {
-        D.Assert(!_isViewMembersInitialized);
+    public void HandleUserDiscoveryOfSystem() {
+        D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         AssessIsDiscernibleToUser();
-        D.Assert(_isViewMembersInitialized);
+        D.Assert(_hasInitOnFirstDiscernibleToUserRun);
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -272,20 +215,69 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         }
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    private void StarPropSetHandler() {
+        Data.StarData = Star.Data;
+    }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    private void SettlementPropChangedHandler() {
+        SettlementCmdData settlementData = null;
+        if (Settlement != null) {
+            Settlement.System = this;
+            settlementData = Settlement.Data;
+            AttachSettlement(Settlement);
+        }
+        else {
+            // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
+            Data.SettlementOrbitSlot.DestroyOrbitSimulator();
+        }
+        Data.SettlementData = settlementData;
+        // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
+    }
+
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
+        if (_hasInitOnFirstDiscernibleToUserRun) {
+            // _ctxControl has already been initialized
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
+                // Kind of owner has changed between AI, Player and NoPlayer so generate a new ctxControl
+                InitializeContextMenu(newOwner);
+            }
+        }
+    }
+
+    protected override void OwnerPropChangedHandler() {
+        base.OwnerPropChangedHandler();
+        if (_trackingLabel != null) {
+            _trackingLabel.Color = Owner.Color;
+        }
+    }
+
+    protected override void IsDiscernibleToUserPropChangedHandler() {
+        base.IsDiscernibleToUserPropChangedHandler();
+        ShowTrackingLabel(IsDiscernibleToUser);
+        _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
+    }
+
+    private void IsSelectedPropChangedHandler() {
+        if (IsSelected) {
+            ShowSelectedItemHud();
+            SelectionManager.Instance.CurrentSelection = this;
+        }
+        AssessHighlighting();
+    }
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         IsSelected = true;
     }
 
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (!isDown && !_inputMgr.IsDragging) {
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -319,7 +311,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     private bool _isSelected;
     public bool IsSelected {
         get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
+        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
     }
 
     //public ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }

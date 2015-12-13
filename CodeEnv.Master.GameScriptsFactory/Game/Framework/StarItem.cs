@@ -98,17 +98,22 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         return displayMgr;
     }
 
+    //private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover += (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick += (go) => OnClick();
+    //    iconEventListener.onDoubleClick += (go) => OnDoubleClick();
+    //    iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+    //}
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick += (go) => OnClick();
-        iconEventListener.onDoubleClick += (go) => OnDoubleClick();
-        iconEventListener.onPress += (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick += (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
+        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion
-
-    #region Model Methods
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -118,22 +123,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public StarReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    protected override void OnOwnerChanging(Player newOwner) {
-        base.OnOwnerChanging(newOwner);
-        // there is only 1 type of ContextMenu for Stars so no need to generate a new one
-    }
-
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
-        if (DisplayMgr != null && DisplayMgr.Icon != null) {
-            DisplayMgr.Icon.Color = Owner.Color;
-        }
-    }
-
-    #endregion
-
-    #region View Methods
 
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -157,23 +146,33 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         return new IconInfo("Icon01", AtlasID.Contextual, iconColor);
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
+        // there is only 1 type of ContextMenu for Stars so no need to generate a new one
+    }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
-        if (System.IsDiscernibleToUser) {
-            (System as ISelectable).IsSelected = true;
-            //System.IsSelected = true;
+    protected override void OwnerPropChangedHandler() {
+        base.OwnerPropChangedHandler();
+        if (DisplayMgr != null && DisplayMgr.Icon != null) {
+            DisplayMgr.Icon.Color = Owner.Color;
         }
     }
 
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (!isDown && !_inputMgr.IsDragging) {
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
+        // Stars are always discernible to the user when on screen so this method will be called
+        if(System.IsDiscernibleToUser) {    // Systems are not always initially discernible even though the star is
+            (System as ISelectable).IsSelected = true;
+        }
+    }
+
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if(!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -201,12 +200,19 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         }
     }
 
+    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick -= (go) => OnClick();
+    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
+    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick -= (go) => OnClick();
-        iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-        iconEventListener.onPress -= (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick -= (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
+        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion
@@ -229,12 +235,12 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.OnDetection(cmdItem, sensorRangeCat);
+    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionBy(cmdItem, sensorRangeCat);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.OnDetectionLost(cmdItem, sensorRangeCat);
+    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRangeCat);
     }
 
     #endregion

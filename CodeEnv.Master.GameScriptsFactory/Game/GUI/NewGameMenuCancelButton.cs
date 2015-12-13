@@ -34,9 +34,9 @@ public class NewGameMenuCancelButton : MenuCancelButton {
         _playerColorMgr = newGameWindow.gameObject.GetSingleComponentInChildren<PlayerColorManager>();  // moved PlayerColorManager to Players Container    
     }
 
-    protected override void SubscribeToParentWindowToCaptureMenuState() {
+    protected override void SubscribeToParentWindowShowBeginEvent() {
         // capturing the state of the new game menu is only needed one time since the Launch button destroys this instance
-        EventDelegate.Add(_window.onShowBegin, CaptureMenuState, oneShot: true);
+        EventDelegate.Add(_window.onShowBegin, WindowShowBeginEventHandler, oneShot: true); // OPTIMIZE isOneShot of any value?
     }
 
     protected override void RestorePopupListsState() {

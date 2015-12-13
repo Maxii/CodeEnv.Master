@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IOrdnance {
 
-        event Action<IOrdnance> onDeathOneShot;
+        event EventHandler deathOneShot;
 
         bool ToShowEffects { get; set; }
 

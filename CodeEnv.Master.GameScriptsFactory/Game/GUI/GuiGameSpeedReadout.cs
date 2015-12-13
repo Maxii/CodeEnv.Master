@@ -39,12 +39,16 @@ public class GuiGameSpeedReadout : AGuiLabelReadout {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
     }
 
-    private void OnGameSpeedChanged() {
+    #region Event and Property Change Handlers
+
+    private void GameSpeedPropChangedHandler() {
         RefreshReadout(GameTime.Instance.GameSpeed);
     }
+
+    #endregion
 
     private void RefreshReadout(GameSpeed clockSpeed) {
         RefreshReadout(CommonTerms.MultiplySign + clockSpeed.SpeedMultiplier().ToString());

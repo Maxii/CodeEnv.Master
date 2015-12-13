@@ -49,12 +49,7 @@ internal abstract class ANavigator : IDisposable {
         protected set {
             if (_isAutoPilotEngaged != value) {
                 _isAutoPilotEngaged = value;
-                if (_isAutoPilotEngaged) {
-                    OnAutoPilotEngaged();
-                }
-                else {
-                    OnAutoPilotDisengaged();
-                }
+                IsAutoPilotEngagedPropChangedHandler();
             }
         }
     }
@@ -144,11 +139,24 @@ internal abstract class ANavigator : IDisposable {
         }
     }
 
-    protected virtual void OnAutoPilotEngaged() {
+    #region Event and Property Change Handlers
+
+    private void IsAutoPilotEngagedPropChangedHandler() {
+        if (_isAutoPilotEngaged) {
+            HandleAutoPilotEngaged();
+        }
+        else {
+            HandleAutoPilotDisengaged();
+        }
+    }
+
+    #endregion
+
+    protected virtual void HandleAutoPilotEngaged() {
         RunPilotJobs();
     }
 
-    private void OnAutoPilotDisengaged() {
+    private void HandleAutoPilotDisengaged() {
         KillAllPilotJobs();
         RefreshCourse(CourseRefreshMode.ClearCourse);
         _orderSource = OrderSource.None;
@@ -157,12 +165,12 @@ internal abstract class ANavigator : IDisposable {
         // of where I am currently located when the autoPilot arrives and disengages
     }
 
-    protected virtual void OnDestinationReached() {
+    protected virtual void HandleDestinationReached() {
         //D.Log("{0} at {1} reached Destination {2} \nat {3}. Actual proximity: {4:0.0000} units.", Name, Position, Target.FullName, TargetPoint, TargetPointDistance);
         RefreshCourse(CourseRefreshMode.ClearCourse);
     }
 
-    protected virtual void OnDestinationUnreachable() {
+    protected virtual void HandleDestinationUnreachable() {
         RefreshCourse(CourseRefreshMode.ClearCourse);
     }
 

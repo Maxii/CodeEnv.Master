@@ -149,11 +149,15 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         RecordPreferences();
         InitiateNewGame();
     }
+
+    #endregion
 
     private void RecordPreferences() {
         var settings = new NewGamePreferenceSettings() {
@@ -196,7 +200,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         D.Assert(_universeSize != UniverseSize.None, "UniverseSize has not been set!");
         D.Assert(_playerCount > Constants.One, "Player count {0} is illegal!".Inject(_playerCount));
         D.Assert(_userPlayerSpecies != Species.None, "User Player Species has not been set!");
-        // TODO
+        //TODO
     }
 
     protected override void Cleanup() { }

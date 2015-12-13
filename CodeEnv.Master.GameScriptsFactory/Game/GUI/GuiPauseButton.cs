@@ -44,17 +44,21 @@ public class GuiPauseButton : AGuiButton {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
     }
 
-    private void OnIsPausedChanged() {
+    #region Event and Property Change Handlers
+
+    private void IsPausedPropChangedHandler() {
         UpdateButtonLabel();
     }
 
-    protected override void OnLeftClick() {
+    protected override void HandleLeftClick() {
         bool toPause = !_gameMgr.IsPaused;
         _gameMgr.RequestPauseStateChange(toPause, toOverride: true);
     }
+
+    #endregion
 
     private void UpdateButtonLabel() {
         string labelContent = _gameMgr.IsPaused ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;

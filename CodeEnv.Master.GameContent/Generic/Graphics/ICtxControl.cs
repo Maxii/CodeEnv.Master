@@ -26,9 +26,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool IsShowing { get; }
 
-        void OnRightPressRelease();
+        /// <summary>
+        /// Tries to show this Item's context menu appropriate to the Item that is 
+        /// currently selected, if any. Returns <c>true</c> if the context menu was shown.
+        /// </summary>
+        /// <returns></returns>
+        bool TryShowContextMenu();
 
-        void Show(bool toShow);
+        void Hide();
 
     }
 }

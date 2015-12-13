@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -118,10 +119,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _rigidbody.velocity = ElementVelocityAtLaunch;
         _hoursBetweenCourseUpdates = 1F / CourseUpdateFrequency;
         SteeringInaccuracy = CalcSteeringInaccuracy();
-        target.onDeathOneShot += OnTargetDeath;
+        target.deathOneShot += TargetDeathEventHandler;
 
         _nominalThrust = CalcNominalThrust();
-        enabled = true; // enables Update() and FixedUpdate()
+        enabled = true;
     }
 
     protected override void ValidateEffects() {
@@ -172,29 +173,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             if (!_hasPushedOver) {
                 if (distanceTraveled > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
                     _hasPushedOver = true;
-                    OnPushover();
+                    HandlePushover();
                 }
             }
         }
         return distanceTraveled;
     }
-    //protected override float CheckProgress() {
-    //    var distanceTraveled = base.CheckProgress();
-    //    if (IsOperational) {    // Missile can be terminated by base.CheckProgress() if beyond range
-    //        if (!Target.IsOperational) {
-    //            // target is dead and about to be destroyed. 
-    //            D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
-    //            TerminateNow();
-    //        }
-    //        else if (!_hasPushedOver) {
-    //            if (distanceTraveled > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
-    //                _hasPushedOver = true;
-    //                OnPushover();
-    //            }
-    //        }
-    //    }
-    //    return distanceTraveled;
-    //}
 
     protected override void FixedUpdate() {
         base.FixedUpdate();
@@ -210,19 +194,22 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
     }
 
-    private void OnPushover() {
+    private void HandlePushover() {
         //D.Log("{0} has reached pushover. Checking course to target {1}.", Name, Target.FullName);
         LaunchCourseUpdateJob();
     }
 
+    #region Event and Property Change Handlers
+
     /// <summary>
     /// Must terminate the missile in a timely fashion on Target death as
     /// there are multiple Jobs running to track the target. Previously, I checked
-    /// for death in CheckProgress() but that is no longer 'timely' enough
-    /// when using Jobs.
+    /// for death in CheckProgress() but that is no longer 'timely' enough when using Jobs.
     /// </summary>
-    /// <param name="deadTarget">The dead target.</param>
-    private void OnTargetDeath(IMortalItem deadTarget) {
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void TargetDeathEventHandler(object sender, EventArgs e) {
+        IMortalItem deadTarget = sender as IMortalItem;
         D.Assert(deadTarget == Target);
         if (IsOperational) {
             D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
@@ -230,10 +217,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
     }
 
+    #endregion
+
     private void LaunchCourseUpdateJob() {
         D.Assert(_courseUpdateJob == null);
-        _courseUpdateJob = new Job(UpdateCourse(), toStart: true, onJobComplete: (jobWasKilled) => {
-            // TODO
+        _courseUpdateJob = new Job(UpdateCourse(), toStart: true, jobCompleted: (jobWasKilled) => {
+            //TODO
         });
     }
 
@@ -256,7 +245,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null && _changeHeadingJob.IsRunning) {
             _changeHeadingJob.Kill();
         }
-        _changeHeadingJob = new Job(ChangeHeading(newHeading), toStart: true, onJobComplete: (jobWasKilled) => {
+        _changeHeadingJob = new Job(ChangeHeading(newHeading), toStart: true, jobCompleted: (jobWasKilled) => {
             if (!IsOperational) { return; } // missile is or about to be destroyed
             if (jobWasKilled) {
                 D.Warn("{0} had its ChangeHeadingJob killed.", Name);   // -> course update freq is too high or turnRate too low
@@ -328,7 +317,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null) {
             _changeHeadingJob.Dispose();
         }
-        Target.onDeathOneShot -= OnTargetDeath;
+        //Target.onDeathOneShot -= OnTargetDeath;
+        Target.deathOneShot -= TargetDeathEventHandler;
     }
 
     public override string ToString() {

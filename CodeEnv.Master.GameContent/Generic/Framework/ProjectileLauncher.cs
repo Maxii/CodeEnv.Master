@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() { } // Projectile ordnance cannot be remotely terminated
 
-        protected override void OnToShowEffectsChanged() {
+        protected override void ToShowEffectsPropChangedHandler() {
             if (_activeFiredOrdnance.Any()) {
                 _activeFiredOrdnance.ForAll(ord => ord.ToShowEffects = ToShowEffects);
             }

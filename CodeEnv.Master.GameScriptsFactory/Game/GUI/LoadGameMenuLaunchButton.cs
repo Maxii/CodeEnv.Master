@@ -42,22 +42,26 @@ public class LoadGameMenuLaunchButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
-        //LoadSavedGame();
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
+        ////LoadSavedGame();
         __LoadDummySavedGame();
     }
+
+    #endregion
 
     private void __LoadDummySavedGame() {
         _gameMgr.LoadSavedGame(_selectedGameCaption);
     }
 
-    //private void LoadSavedGame() {
-    //    if (LevelSerializer.SavedGames.Count > 0) {
-    //        Arguments.ValidateForContent(_selectedGameCaption);
-    //        _gameMgr.LoadSavedGame(_selectedGameCaption);
-    //    }
-    //}
+    ////private void LoadSavedGame() {
+    ////    if (LevelSerializer.SavedGames.Count > 0) {
+    ////        Arguments.ValidateForContent(_selectedGameCaption);
+    ////        _gameMgr.LoadSavedGame(_selectedGameCaption);
+    ////    }
+    ////}
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();

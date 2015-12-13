@@ -39,32 +39,31 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>
         /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
         /// </remarks>
-        event Action onIsRunningOneShot;
+        event EventHandler isRunningOneShot;
 
         /// <summary>
-        /// Occurs when GameState is about to change. The parameter is
-        /// the GameState the game is about to change too.
+        /// Occurs when GameState is about to change. 
         /// </summary>
-        event Action<GameState> onGameStateChanging;
+        event EventHandler gameStateChanging;
 
         /// <summary>
         /// Occurs when the GameState has just changed. 
         /// </summary>
-        event Action onGameStateChanged;
+        event EventHandler gameStateChanged;
 
         /// <summary>
         /// Occurs just before a scene starts loading.
         /// Note: Event is not fired when the first scene is about to start loading as a result of the Application starting.
         /// </summary>
-        event Action<SceneLevel> onSceneLoading;
+        event EventHandler sceneLoading;
 
         /// <summary>
         /// Occurs just after a scene finishes loading, aka immediately after OnLevelWasLoaded is received.
         /// Note: Event is not fired when the first scene is loaded as a result of the Application starting.
         /// </summary>
-        event Action onSceneLoaded;
+        event EventHandler sceneLoaded;
 
-        event Action onNewGameBuilding;
+        event EventHandler newGameBuilding;
 
         bool IsSceneLoading { get; }
 

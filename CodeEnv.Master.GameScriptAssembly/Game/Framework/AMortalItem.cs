@@ -27,7 +27,7 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItem : AIntelItem, IMortalItem {
 
-    public event Action<IMortalItem> onDeathOneShot;
+    public event EventHandler deathOneShot;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -44,7 +44,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, HealthPropChangedHandler));
     }
 
     protected override EffectsManager InitializeEffectsManager() {
@@ -52,8 +52,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     #endregion
-
-    #region Model Methods
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -70,30 +68,12 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     /*******************************************************************************************************************************
-           * HOW TO INITIATE DEATH: Set IsOperational to false. Do not use OnDeath or set a state of Dead. The primary reason is 
-           * to make sure IsOperational immediately reflects the death and can be used right away to check for it. 
-           * Use of a state of Dead can also work as it is changed immediately too. 
-           * The previous implementation had IsOperational being set when the Dead EnterState ran, which could be a whole 
-           * frame later, given the way the state machine works. This approach keeps IsOperational and Dead in sync.
-            ********************************************************************************************************************************/
-
-    /// <summary>
-    /// Called when the item's health has changed. 
-    /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItems as damage is taken which
-    /// makes the logic behind dieing more visible and understandable. In the case of a UnitCommand, death occurs
-    /// when the last Element has been removed from the Unit.
-    /// </summary>
-    protected virtual void OnHealthChanged() { }
-
-    protected override void OnIsOperationalChanged() {
-        if (!IsOperational) {
-            D.Log("{0} is initiating death sequence.", FullName);
-            SetDeadState();
-            PrepareForOnDeathNotification();
-            OnDeath();
-            CleanupAfterOnDeathNotification();
-        }
-    }
+     * HOW TO INITIATE DEATH: Set IsOperational to false. Do not use OnDeath or set a state of Dead. The primary reason is 
+     * to make sure IsOperational immediately reflects the death and can be used right away to check for it. 
+     * Use of a state of Dead can also work as it is changed immediately too. 
+     * The previous implementation had IsOperational being set when the Dead EnterState ran, which could be a whole 
+     * frame later, given the way the state machine works. This approach keeps IsOperational and Dead in sync.
+     ********************************************************************************************************************************/
 
     /// <summary>
     ///Derived classes should set a state of Dead in their state machines.
@@ -110,31 +90,44 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
     }
 
-    private void OnDeath() {
-        if (onDeathOneShot != null) {
-            onDeathOneShot(this);
-            onDeathOneShot = null;
+    #region Event and Property Change Handlers
+
+    /// <summary>
+    /// Called when the item's health has changed. 
+    /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItems as damage is taken which
+    /// makes the logic behind dieing more visible and understandable. In the case of a UnitCommand, death occurs
+    /// when the last Element has been removed from the Unit.
+    /// </summary>
+    protected virtual void HealthPropChangedHandler() { }
+
+    protected override void IsOperationalPropChangedHandler() {
+        if (!IsOperational) {
+            D.Log("{0} is initiating death sequence.", FullName);
+            SetDeadState();
+            PrepareForOnDeathNotification();
+            OnDeath();
+            CleanupAfterOnDeathNotification();
         }
     }
+
+    protected override void HandleAltLeftClick() {
+        base.HandleAltLeftClick();
+        __SimulateAttacked();
+    }
+
+    private void OnDeath() {
+        if(deathOneShot != null) {
+            deathOneShot(this, new EventArgs());
+            deathOneShot = null;
+        }
+    }
+
+    #endregion
 
     /// <summary>
     /// Executes any cleanup work required after the OnDeath event has been broadcast.
     /// </summary>
     protected virtual void CleanupAfterOnDeathNotification() { }
-
-    #endregion
-
-    #region View Methods
-    #endregion
-
-    #region Mouse Events
-
-    protected override void OnAltLeftClick() {
-        base.OnAltLeftClick();
-        __SimulateAttacked();
-    }
-
-    #endregion
 
     #region Attack Simulation
 

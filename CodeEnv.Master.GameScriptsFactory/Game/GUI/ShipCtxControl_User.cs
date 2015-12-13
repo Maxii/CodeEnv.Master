@@ -29,8 +29,8 @@ using UnityEngine;
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
-    private static ShipDirective[] _selectedItemDirectivesAvailable = new ShipDirective[] {     ShipDirective.Join, 
-                                                                                                ShipDirective.Disband, 
+    private static ShipDirective[] _selectedItemDirectivesAvailable = new ShipDirective[] {     ShipDirective.Join,
+                                                                                                ShipDirective.Disband,
                                                                                                 ShipDirective.Refit,
                                                                                                 ShipDirective.Scuttle };
 
@@ -59,7 +59,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override bool IsSelectedItemMenuItemDisabled(ShipDirective directive) {
         switch (directive) {
             case ShipDirective.Refit:
-            // TODO
+            //TODO
             case ShipDirective.Join:
             case ShipDirective.Disband:
             case ShipDirective.Scuttle:
@@ -93,8 +93,8 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         }
     }
 
-    protected override void OnMenuSelection_SelectedItemAccess(int itemID) {
-        base.OnMenuSelection_SelectedItemAccess(itemID);
+    protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {
+        base.HandleMenuSelection_SelectedItemAccess(itemID);
 
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
         IUnitAttackableTarget target;

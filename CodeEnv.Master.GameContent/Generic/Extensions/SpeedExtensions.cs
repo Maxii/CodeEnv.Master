@@ -22,9 +22,8 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Extension methods for Speed values.
-    /// TODO Externalize values in XML.
     /// </summary>
-    public static class SpeedExtensions {
+    public static class SpeedExtensions {    //TODO Externalize values in XML.
 
         /// <summary>
         /// Gets the speed in units per hour for this ship or fleet. Either data

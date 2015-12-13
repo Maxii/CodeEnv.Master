@@ -24,8 +24,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AEquipment : APropertyChangeTracking {
 
-        public event Action<AEquipment> onIsOperationalChanged;
-        public event Action<AEquipment> onIsDamagedChanged;
+        public event EventHandler<EventArgs> isOperationalChanged;
+
+        public event EventHandler<EventArgs> isDamagedChanged;
 
         public virtual string Name { get; private set; }
 
@@ -41,19 +42,19 @@ namespace CodeEnv.Master.GameContent {
         private bool _isActivated;
         public bool IsActivated {
             get { return _isActivated; }
-            set { SetProperty<bool>(ref _isActivated, value, "IsActivated", OnIsActivatedChanged); }
+            set { SetProperty<bool>(ref _isActivated, value, "IsActivated", IsActivatedPropChangedHandler); }
         }
 
         private bool _isDamaged;
         public bool IsDamaged {
             get { return _isDamaged; }
-            set { SetProperty<bool>(ref _isDamaged, value, "IsDamaged", OnIsDamagedChanged); }
+            set { SetProperty<bool>(ref _isDamaged, value, "IsDamaged", IsDamagedPropChangedHandler); }
         }
 
         private bool _isOperational;
         public bool IsOperational {
             get { return _isOperational; }
-            private set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
+            private set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
         }
 
         protected AEquipmentStat Stat { get; private set; }
@@ -68,16 +69,16 @@ namespace CodeEnv.Master.GameContent {
             Name = name != null ? name : stat.Name;
         }
 
-        protected virtual void OnIsActivatedChanged() {
+        #region Event and Property Change Handlers
+
+        private void IsActivatedPropChangedHandler() {
             D.Log("{0}.IsActivated changed to {1}.", Name, IsActivated);
             AssessIsOperational();
         }
 
-        protected virtual void OnIsDamagedChanged() {
+        private void IsDamagedPropChangedHandler() {
             D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
-            if (onIsDamagedChanged != null) {
-                onIsDamagedChanged(this);
-            }
+            OnIsDamagedChanged();
             AssessIsOperational();
         }
 
@@ -85,16 +86,24 @@ namespace CodeEnv.Master.GameContent {
             IsOperational = IsActivated && !IsDamaged;
         }
 
-        protected virtual void OnIsOperationalChanged() {
+        protected virtual void IsOperationalPropChangedHandler() {
             D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
-            NotifyIsOperationalChanged();
+            OnIsOperationalChanged();
         }
 
-        protected void NotifyIsOperationalChanged() {
-            if (onIsOperationalChanged != null) {
-                onIsOperationalChanged(this);
+        protected void OnIsOperationalChanged() {
+            if (isOperationalChanged != null) {
+                isOperationalChanged(this, new EventArgs());
             }
         }
+
+        private void OnIsDamagedChanged() {
+            if (isDamagedChanged != null) {
+                isDamagedChanged(this, new EventArgs());
+            }
+        }
+
+        #endregion
 
     }
 }

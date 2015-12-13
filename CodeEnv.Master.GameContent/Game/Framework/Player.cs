@@ -102,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(relationship == DiplomaticRelationship.Self);
             }
             _diplomaticRelationship[player] = relationship;
-            // TODO send DiploRelationsChange event
+            //TODO send DiploRelationsChange event
         }
 
         public bool IsRelationship(Player player, params DiplomaticRelationship[] relations) {

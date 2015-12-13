@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         private string _parentName;
         public string ParentName {
             get { return _parentName; }
-            set { SetProperty<string>(ref _parentName, value, "ParentName", OnParentNameChanged); }
+            set { SetProperty<string>(ref _parentName, value, "ParentName", ParentNamePropChangedHandler); }
         }
 
         public override string FullName {
@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         private AUnitElementItemData _hqElementData;
         public AUnitElementItemData HQElementData {
             get { return _hqElementData; }
-            set { SetProperty<AUnitElementItemData>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged, OnHQElementDataChanging); }
+            set { SetProperty<AUnitElementItemData>(ref _hqElementData, value, "HQElementData", HQElementDataPropChangedHandler, HQElementDataPropChangingHandler); }
         }
 
         // AItemData.Health, CurrentHitPts and MaxHitPts are all for this CommandData, not for the Unit as a whole.
@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
         // doesn't let it drop below 50% of MaxHitPts. Health is directly derived from changes in CurrentHitPts.
 
         private int _currentCmdEffectiveness;
-        public int CurrentCmdEffectiveness {  // TODO make use of this
+        public int CurrentCmdEffectiveness {  //TODO make use of this
             get { return _currentCmdEffectiveness; }
             private set { SetProperty<int>(ref _currentCmdEffectiveness, value, "CurrentCmdEffectiveness"); }
         }
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
         private int _maxCmdEffectiveness;
         public int MaxCmdEffectiveness {
             get { return _maxCmdEffectiveness; }
-            set { SetProperty<int>(ref _maxCmdEffectiveness, value, "MaxCmdEffectiveness", OnMaxCmdEffectivenessChanged); }
+            set { SetProperty<int>(ref _maxCmdEffectiveness, value, "MaxCmdEffectiveness", MaxCmdEffectivenessPropChangedHandler); }
         }
 
         private RangeDistance _unitWeaponsRange;
@@ -118,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float UnitMaxHitPoints {
             get { return _unitMaxHitPoints; }
-            private set { SetProperty<float>(ref _unitMaxHitPoints, value, "UnitMaxHitPoints", OnUnitMaxHitPointsChanged, OnUnitMaxHitPointsChanging); }
+            private set { SetProperty<float>(ref _unitMaxHitPoints, value, "UnitMaxHitPoints", UnitMaxHitPtsPropChangedHandler, UnitMaxHitPtsPropChangingHandler); }
         }
 
         private float _unitCurrentHitPoints;
@@ -128,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float UnitCurrentHitPoints {
             get { return _unitCurrentHitPoints; }
-            private set { SetProperty<float>(ref _unitCurrentHitPoints, value, "UnitCurrentHitPoints", OnUnitCurrentHitPointsChanged); }
+            private set { SetProperty<float>(ref _unitCurrentHitPoints, value, "UnitCurrentHitPoints", UnitCurrentHitPtsPropChangedHandler); }
         }
 
         private float _unitHealth;
@@ -141,7 +141,7 @@ namespace CodeEnv.Master.GameContent {
             }
             private set {
                 value = Mathf.Clamp01(value);
-                SetProperty<float>(ref _unitHealth, value, "UnitHealth", OnUnitHealthChanged);
+                SetProperty<float>(ref _unitHealth, value, "UnitHealth", UnitHealthPropChangedHandler);
             }
         }
 
@@ -195,27 +195,44 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions = new Dictionary<AUnitElementItemData, IList<IDisposable>>();
         }
 
-        protected virtual void OnHQElementDataChanging(AUnitElementItemData newHQElementData) {
+
+        protected virtual void Subscribe(AUnitElementItemData elementData) {
+            _subscriptions.Add(elementData, new List<IDisposable>());
+            IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.CurrentHitPoints, ElementCurrentHitPtsPropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxHitPoints, ElementMaxHitPtsPropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, ElementDefensiveStrengthPropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, ElementOffensiveStrengthPropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.WeaponsRange, ElementWeaponsRangePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.SensorRange, ElementSensorRangePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Science, ElementSciencePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Culture, ElementCulturePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Income, ElementIncomePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Expense, ElementExpensePropChangedHandler));
+        }
+
+        #region Event and Property Change Handlers
+
+        protected virtual void HQElementDataPropChangingHandler(AUnitElementItemData newHQElementData) {
             var previousHQElementData = HQElementData;
             if (previousHQElementData != null) {
-                previousHQElementData.onIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+                previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
             }
         }
 
-        protected virtual void OnHQElementDataChanged() {
-            D.Assert(ElementsData.Contains(HQElementData),
-                "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
-            HQElementData.onIntelCoverageChanged += OnHQElementIntelCoverageChanged;
+        protected virtual void HQElementDataPropChangedHandler() {
+            D.Assert(ElementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
+            HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
         }
-
-        private void OnHQElementIntelCoverageChanged(Player player) {
+        private void HQElementIntelCoverageChangedEventHandler(object sender, IntelEventArgs e) {
+            var player = e.Player;
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
             var isIntelCoverageSet = SetIntelCoverage(player, playerIntelCoverageOfHQElement);
             D.Assert(isIntelCoverageSet);
             D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
         }
 
-        private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {
+        private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPoints) {
             if (newMaxHitPoints < UnitMaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
                 UnitCurrentHitPoints = Mathf.Clamp(UnitCurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
@@ -223,11 +240,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnUnitMaxHitPointsChanged() {
+        private void UnitMaxHitPtsPropChangedHandler() {
             UnitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
         }
 
-        private void OnUnitCurrentHitPointsChanged() {
+        private void UnitCurrentHitPtsPropChangedHandler() {
             var unitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
             UnitHealth = unitHealth;
         }
@@ -238,28 +255,69 @@ namespace CodeEnv.Master.GameContent {
         /// This is not done to initiate the UnitCommand's death, but to keep the values of a UnitCommand's CurrentHitPoints 
         /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
         /// </summary>
-        private void OnUnitHealthChanged() {
+        private void UnitHealthPropChangedHandler() {
             //D.Log("{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", FullName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             if (UnitHealth <= Constants.ZeroF) {
                 CurrentHitPoints -= MaxHitPoints;
             }
         }
 
-        protected override void OnHealthChanged() {
-            base.OnHealthChanged();
+        protected override void HealthPropChangedHandler() {
+            base.HealthPropChangedHandler();
             RefreshCurrentCmdEffectiveness();
         }
 
-        private void OnMaxCmdEffectivenessChanged() {
+        private void MaxCmdEffectivenessPropChangedHandler() {
             RefreshCurrentCmdEffectiveness();
         }
 
-        private void OnParentNameChanged() {
+        private void ParentNamePropChangedHandler() {
             // the parent name of a command is the unit name
             if (!ElementsData.IsNullOrEmpty()) {
                 ElementsData.ForAll(eData => eData.ParentName = ParentName);
             }
         }
+
+        private void ElementOffensiveStrengthPropChangedHandler() {
+            RecalcUnitOffensiveStrength();
+        }
+
+        private void ElementDefensiveStrengthPropChangedHandler() {
+            RecalcUnitDefensiveStrength();
+        }
+
+        private void ElementCurrentHitPtsPropChangedHandler() {
+            RecalcUnitCurrentHitPoints();
+        }
+
+        private void ElementMaxHitPtsPropChangedHandler() {
+            RecalcUnitMaxHitPoints();
+        }
+
+        private void ElementWeaponsRangePropChangedHandler() {
+            RecalcUnitWeaponsRange();
+        }
+
+        private void ElementSensorRangePropChangedHandler() {
+            RecalcUnitSensorRange();
+        }
+
+        private void ElementSciencePropChangedHandler() {
+            RecalcUnitScience();
+        }
+
+        private void ElementCulturePropChangedHandler() {
+            RecalcUnitCulture();
+        }
+
+        private void ElementIncomePropChangedHandler() {
+            RecalcUnitIncome();
+        }
+
+        private void ElementExpensePropChangedHandler() {
+            RecalcUnitExpense();
+        }
+        #endregion
 
         private void RefreshCurrentCmdEffectiveness() {
             CurrentCmdEffectiveness = Mathf.RoundToInt(MaxCmdEffectiveness * Health);
@@ -291,7 +349,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateElementParentName(AUnitElementItemData elementData) {
-            // TODO something more than just assigning a parent name?
+            //TODO something more than just assigning a parent name?
             //D.Log("{0}.ParentName changing to {1}.", elementData.Name, ParentName);
             elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }
@@ -382,76 +440,16 @@ namespace CodeEnv.Master.GameContent {
             UnitExpense = ElementsData.Sum(ed => ed.Expense);
         }
 
-        #region ElementData PropertyChanged Subscription and Methods
-
-        protected virtual void Subscribe(AUnitElementItemData elementData) {
-            _subscriptions.Add(elementData, new List<IDisposable>());
-            IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
-            //anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
-            //anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.WeaponsRange, OnElementWeaponsRangeChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, RangeDistance>(ed => ed.SensorRange, OnElementSensorRangeChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Science, OnElementScienceChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Culture, OnElementCultureChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Income, OnElementIncomeChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Expense, OnElementExpenseChanged));
-        }
-
-        private void OnElementOffensiveStrengthChanged() {
-            RecalcUnitOffensiveStrength();
-        }
-
-        private void OnElementDefensiveStrengthChanged() {
-            RecalcUnitDefensiveStrength();
-        }
-
-        private void OnElementCurrentHitPointsChanged() {
-            RecalcUnitCurrentHitPoints();
-        }
-
-        private void OnElementMaxHitPointsChanged() {
-            RecalcUnitMaxHitPoints();
-        }
-
-        private void OnElementWeaponsRangeChanged() {
-            RecalcUnitWeaponsRange();
-        }
-
-        private void OnElementSensorRangeChanged() {
-            RecalcUnitSensorRange();
-        }
-
-        private void OnElementScienceChanged() {
-            RecalcUnitScience();
-        }
-
-        private void OnElementCultureChanged() {
-            RecalcUnitCulture();
-        }
-
-        private void OnElementIncomeChanged() {
-            RecalcUnitIncome();
-        }
-
-        private void OnElementExpenseChanged() {
-            RecalcUnitExpense();
-        }
-
         private void Unsubscribe(AUnitElementItemData elementData) {
             _subscriptions[elementData].ForAll(d => d.Dispose());
             _subscriptions.Remove(elementData);
 
             D.Assert(HQElementData != null);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
             if (elementData == HQElementData) {
-                HQElementData.onIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+                //HQElementData.onIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+                HQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
             }
         }
-
-        #endregion
 
         protected override void Unsubscribe() {
             base.Unsubscribe();

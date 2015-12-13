@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IMortalItem : IIntelItem {
 
-        event Action<IMortalItem> onDeathOneShot;
+        event EventHandler deathOneShot;
 
         Index3D SectorIndex { get; }
 

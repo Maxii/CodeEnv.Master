@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -34,20 +35,11 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
 
     public override void Add(ShieldGenerator generator) {
         base.Add(generator);
-        generator.onHasChargeChanged += OnGeneratorHasChargeChanged;
+        generator.hasChargeChanged += GeneratorHasChargeChangedEventHandler;
     }
 
     protected override void AssignMonitorTo(ShieldGenerator generator) {
         generator.Shield = this;
-    }
-
-    protected override void OnIsOperationalChanged() {
-        string shieldStateMsg = IsOperational ? "is being raised" : "has failed";
-        D.Log("{0} {1}.", Name, shieldStateMsg);
-    }
-
-    private void OnGeneratorHasChargeChanged(ShieldGenerator generator) {
-        AssessIsOperational();
     }
 
     /// <summary>
@@ -61,6 +53,19 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         DistributeShieldImpactTo(operationalGeneratorsWithCharge, deliveryVehicleStrength.Value);
         // if all the generators go down, the shield will go down allowing the beam to potentially find the parent element during its next raycast
     }
+
+    #region Event and Property Change Handlers
+
+    protected override void IsOperationalPropChangedHandler() {
+        string shieldStateMsg = IsOperational ? "is being raised" : "has failed";
+        D.Log("{0} {1}.", Name, shieldStateMsg);
+    }
+
+    private void GeneratorHasChargeChangedEventHandler(object sender, EventArgs e) {
+        AssessIsOperational();
+    }
+
+    #endregion
 
     /// <summary>
     /// Distributes the shield impact to the provided operational generators with a charge remaining. Returns <c>true</c> if the

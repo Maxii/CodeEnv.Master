@@ -23,7 +23,9 @@ public abstract class ATextTooltip : AMonoBase {
 
     protected virtual string TooltipContent { get { return null; } }
 
-    void OnTooltip(bool toShow) {
+    #region Event and Property Change Handlers
+
+    private void TooltipEventHandler(bool toShow) {
         if (toShow) {
             TooltipHudWindow.Instance.Show(TooltipContent);   // Tooltip tests for null or empty
         }
@@ -31,6 +33,12 @@ public abstract class ATextTooltip : AMonoBase {
             TooltipHudWindow.Instance.Hide();
         }
     }
+
+    void OnTooltip(bool toShow) {
+        TooltipEventHandler(toShow);
+    }
+
+    #endregion
 
 }
 

@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         private string _name;
         public string Name {
             get { return _name; }
-            set { SetProperty<string>(ref _name, value, "Name", OnNameChanged, OnNameChanging); }
+            set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler, NamePropChangingHandler); }
         }
 
         public virtual string FullName { get { return Name; } }
@@ -35,13 +35,13 @@ namespace CodeEnv.Master.GameContent {
         private Player _owner;
         public Player Owner {
             get { return _owner; }
-            set { SetProperty<Player>(ref _owner, value, "Owner", OnOwnerChanged); }
+            set { SetProperty<Player>(ref _owner, value, "Owner", OwnerPropChangedHandler); }
         }
 
         private Topography _topography;
         public virtual Topography Topography {
             get { return _topography; }
-            set { SetProperty<Topography>(ref _topography, value, "Topography", OnTopographyChanged); }
+            set { SetProperty<Topography>(ref _topography, value, "Topography", TopographyPropChangedHandler); }
         }
 
         public Vector3 Position { get { return _itemTransform.position; } }
@@ -60,21 +60,24 @@ namespace CodeEnv.Master.GameContent {
             _owner = owner;
         }
 
-        protected virtual void OnOwnerChanged() {
+        #region Event and Property Change Handlers
+
+        protected virtual void OwnerPropChangedHandler() {
             //D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
         }
 
-        private void OnNameChanging(string newName) {
+        private void NamePropChangingHandler(string newName) {
             string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
             D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
         }
 
-        private void OnNameChanged() {
+        private void NamePropChangedHandler() {
             _itemTransform.name = Name;
         }
 
-        protected virtual void OnTopographyChanged() { }
+        protected virtual void TopographyPropChangedHandler() { }
 
+        #endregion
 
     }
 }

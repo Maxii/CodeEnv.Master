@@ -37,7 +37,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         set {
             D.Assert(_system == null);  // only happens once
             _system = value;
-            OnSystemSet();
+            SystemPropSetHandler();
         }
     }
 
@@ -62,18 +62,12 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     #endregion
 
-    #region Model Methods
-
     public SettlementReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public SettlementReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
-    }
-
-    private void OnSystemSet() {
-        Data.SystemData = System.Data;
     }
 
     protected override void PrepareForOnDeathNotification() {
@@ -88,10 +82,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         System.Settlement = null;
     }
 
-    #endregion
-
-    #region View Methods
-
     protected override IconInfo MakeIconInfo() {
         return SettlementIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
@@ -100,9 +90,11 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, GetUserReport());
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    private void SystemPropSetHandler() {
+        Data.SystemData = System.Data;
+    }
 
     #endregion
 

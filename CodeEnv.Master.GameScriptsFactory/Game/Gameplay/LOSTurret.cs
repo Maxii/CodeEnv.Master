@@ -240,10 +240,10 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         if (_traverseJob != null && _traverseJob.IsRunning) {
             D.Error("{0} is killing a Traverse Job that was traversing to {1}.", Name, __lastFiringSolution);   // if this happens, no onTraverseCompleted will be returned for cancelled traverse
             _traverseJob.Kill();
-            // onJobComplete will run next frame so placed cancelled notice here
+            // jobCompleted will run next frame so placed cancelled notice here
         }
 
-        _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
+        _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
             if (!jobWasKilled) {
                 //D.Log("{0}'s traverse to aim at {1} complete.", Name, targetName);
                 //Vector3 actualTargetBearing = (target.Position - barrel.position).normalized;
@@ -252,7 +252,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 //Vector3 barrelLocalFacing = hub.InverseTransformDirection(barrel.forward);
                 //D.Log("{0}: LocalBarrelFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoBarrelPlane.normalized, barrelLocalFacing);
                 //D.Log("{0}: DeviationAngle = {1}, ActualTargetBearing = {2}, MuzzleBearingAfterTraverse = {3}.", Name, deviationAngle, actualTargetBearing, MuzzleFacing);
-                OnTraverseCompleted(firingSolution);
+                HandleTraverseCompleted(firingSolution);
             }
         });
         __lastFiringSolution = firingSolution;
@@ -356,14 +356,18 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         return elevationAngleDeviationFromMax <= _allowedBarrelElevationAngleDeviationFromMax;
     }
 
-    private void OnTraverseCompleted(LosWeaponFiringSolution firingSolution) {
-        Weapon.OnWeaponAimed(firingSolution);
+    private void HandleTraverseCompleted(LosWeaponFiringSolution firingSolution) {
+        Weapon.HandleWeaponAimed(firingSolution);
     }
 
-    protected override void OnWeaponSet() {
-        base.OnWeaponSet();
+    #region Event and Property Change Handlers
+
+    protected override void WeaponPropSetHandler() {
+        base.WeaponPropSetHandler();
         TraverseInaccuracy = CalcTraverseInaccuracy();
     }
+
+    #endregion
 
     private float CalcTraverseInaccuracy() {
         var maxTraverseInaccuracy = Mathf.Max(_minTraverseInaccuracy, Weapon.MaxTraverseInaccuracy);

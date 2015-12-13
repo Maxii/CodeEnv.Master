@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         float Radius { get; }
 
-        void OnEffectFinished(EffectID effectID);
+        void HandleEffectFinished(EffectID effectID);
 
     }
 }

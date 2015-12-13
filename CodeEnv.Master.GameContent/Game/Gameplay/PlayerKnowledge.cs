@@ -138,7 +138,7 @@ namespace CodeEnv.Master.GameContent {
         /// items that this player already has knowledge of.
         /// </summary>
         /// <param name="detectedItem">The detected item.</param>
-        public void OnItemDetected(IIntelItem detectedItem) {
+        public void HandleItemDetection(IIntelItem detectedItem) {
             D.Log("{0}'s {1} is adding {2}.", Player.LeaderName, GetType().Name, detectedItem.FullName);
             if (detectedItem is IUnitElementItem) {
                 AddElement(detectedItem as IUnitElementItem);
@@ -162,7 +162,7 @@ namespace CodeEnv.Master.GameContent {
         /// longer detected by <c>Player</c> at all. 
         /// </summary>
         /// <param name="detectedItem">The detected item.</param>
-        public void OnItemDetectionLost(IIntelItem detectedItem) {
+        public void HandleItemDetectionLost(IIntelItem detectedItem) {
             var element = detectedItem as IUnitElementItem;
             if (element != null) {
                 // no need to test element for death as it gets removed when
@@ -219,7 +219,8 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
 
-            element.onIsHQChanged += OnElementIsHQChanged;
+
+            element.isHQChanged += ElementIsHQChangedEventHandler;
 
             D.Assert(element.GetIntelCoverage(Player) > IntelCoverage.None);
             if (element.IsHQ) {
@@ -227,7 +228,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnElementIsHQChanged(IUnitElementItem element) {
+        #region Event and Property Change Handlers
+
+        private void ElementIsHQChangedEventHandler(object sender, EventArgs e) {
+            IUnitElementItem element = sender as IUnitElementItem;
             if (element.IsHQ) {
                 // this known element is now a HQ
                 AddCommand(element.Command);
@@ -238,9 +242,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #endregion
+
         private void AddCommand(IUnitCmdItem command) {
             var isAdded = _commands.Add(command);
-            D.Assert(isAdded);  // Cmd cannot already be present. If adding due to OnElementIsHQChanged(), then previous HQElement removed Cmd before this Add
+            D.Assert(isAdded);  // Cmd cannot already be present. If adding due to a change in an element's IsHQ state, then previous HQElement removed Cmd before this Add
             D.Log("{0}'s {1} has added Command {2}.", Player.LeaderName, GetType().Name, command.FullName);
         }
 
@@ -256,7 +262,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Log("{0}'s {1} has added System {2}.", Player.LeaderName, GetType().Name, system.FullName);
                 if (Player.IsUser) {
                     // the User just discovered this system for the first time
-                    system.OnUserDiscoveredSystem();
+                    system.HandleUserDiscoveryOfSystem();
                 }
             }
         }
@@ -272,7 +278,8 @@ namespace CodeEnv.Master.GameContent {
             var isRemoved = _elements.Remove(element);
             D.Assert(isRemoved, "{0}'s {1} could not remove Element {2}.".Inject(Player.LeaderName, GetType().Name, element.FullName));
 
-            element.onIsHQChanged -= OnElementIsHQChanged;
+            //element.onIsHQChanged -= OnElementIsHQChanged;
+            element.isHQChanged -= ElementIsHQChangedEventHandler;
             if (element.IsHQ) {
                 _commands.Remove(element.Command);
             }
@@ -307,11 +314,10 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Unsubscribe();
-            // other cleanup here including any tracking Gui2D elements
         }
 
         private void Unsubscribe() {
-            _elements.ForAll(e => e.onIsHQChanged -= OnElementIsHQChanged);
+            _elements.ForAll(e => e.isHQChanged -= ElementIsHQChangedEventHandler);
         }
 
         public override string ToString() {

@@ -140,8 +140,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         }
     }
 
-    protected override void OnMenuSelection_SelectedItemAccess(int itemID) {
-        base.OnMenuSelection_SelectedItemAccess(itemID);
+    protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {
+        base.HandleMenuSelection_SelectedItemAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IUnitAttackableTarget target;
@@ -151,8 +151,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, target, Speed.FleetTwoThirds);
     }
 
-    protected override void OnMenuSelection_RemoteFleetAccess(int itemID) {
-        base.OnMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
+        base.HandleMenuSelection_RemoteFleetAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _fleetMenuOperator;
@@ -160,8 +160,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
-    protected override void OnMenuSelection_RemoteShipAccess(int itemID) {
-        base.OnMenuSelection_RemoteShipAccess(itemID);
+    protected override void HandleMenuSelection_RemoteShipAccess(int itemID) {
+        base.HandleMenuSelection_RemoteShipAccess(itemID);
 
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _fleetMenuOperator;

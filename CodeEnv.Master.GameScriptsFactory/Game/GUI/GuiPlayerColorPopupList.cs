@@ -33,7 +33,7 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     /// Occurs when the USER makes a selection from the ColorPopupList.
     /// Disabled when the selection change is initiated by the PlayerColorManager.
     /// </summary>
-    public event Action<GuiPlayerColorPopupList> onSelection;
+    public event EventHandler userSelectedColor;
 
     //[FormerlySerializedAs("elementID")]
     [Tooltip("The unique ID of this ColorPopupList GuiElement")]
@@ -80,13 +80,24 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
         _label.color = SelectedColor.ToUnityColor();
     }
 
-    protected override void OnPopupListSelection() {
-        base.OnPopupListSelection();
+    #region Event and Property Change Handlers
+
+    protected override void PopupListSelectionChangedEventHandler() {
+        base.PopupListSelectionChangedEventHandler();
         RefreshLabelColor();
-        if (_isSelectionEventsEnabled && onSelection != null) {
-            onSelection(this);
+        if(_isSelectionEventsEnabled) {
+            OnUserSelectedColor();
         }
     }
+
+    private void OnUserSelectedColor() {
+        D.Assert(_isSelectionEventsEnabled);
+        if(userSelectedColor != null) {
+            userSelectedColor(this, new EventArgs());
+        }
+    }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

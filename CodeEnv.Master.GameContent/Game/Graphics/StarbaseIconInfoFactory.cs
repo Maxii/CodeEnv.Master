@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class StarbaseIconInfoXmlReader : ACmdIconInfoXmlReader<StarbaseIconInfoXmlReader> {
 
-            protected override string XmlFilename { get { return "FleetIconInfo"; } }   // TODO
+            protected override string XmlFilename { get { return "FleetIconInfo"; } }   //TODO
 
             private StarbaseIconInfoXmlReader() {
                 Initialize();

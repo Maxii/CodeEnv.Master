@@ -29,19 +29,19 @@ using UnityEngine;
 /// </summary>
 public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
-    private static BaseDirective[] _selectedItemDirectivesAvailable = new BaseDirective[] {     BaseDirective.Repair, 
-                                                                                                BaseDirective.Refit, 
+    private static BaseDirective[] _selectedItemDirectivesAvailable = new BaseDirective[] {     BaseDirective.Repair,
+                                                                                                BaseDirective.Refit,
                                                                                                 BaseDirective.Attack,
                                                                                                 BaseDirective.Disband,
                                                                                                 BaseDirective.Scuttle};
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Disband, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Disband,
                                                                                                 FleetDirective.Refit,
                                                                                                 FleetDirective.Repair,
-                                                                                                FleetDirective.Move, 
+                                                                                                FleetDirective.Move,
                                                                                                 FleetDirective.Guard };
 
-    private static ShipDirective[] _remoteShipDirectivesAvailable = new ShipDirective[] {   ShipDirective.Disband, 
+    private static ShipDirective[] _remoteShipDirectivesAvailable = new ShipDirective[] {   ShipDirective.Disband,
                                                                                             ShipDirective.Refit };
 
     protected override IEnumerable<BaseDirective> SelectedItemDirectives {
@@ -90,9 +90,9 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Repair:
                 return _baseMenuOperator.Data.Health == Constants.OneHundredPercent && _baseMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
             case BaseDirective.Attack:
-            // TODO
+            //TODO
             case BaseDirective.Refit:
-            // TODO
+            //TODO
             case BaseDirective.Disband:
             case BaseDirective.Scuttle:
                 return false;
@@ -149,8 +149,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         }
     }
 
-    protected override void OnMenuSelection_SelectedItemAccess(int itemID) {
-        base.OnMenuSelection_SelectedItemAccess(itemID);
+    protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {
+        base.HandleMenuSelection_SelectedItemAccess(itemID);
 
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         IUnitAttackableTarget target;
@@ -160,8 +160,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         _baseMenuOperator.CurrentOrder = new BaseOrder(directive, target);
     }
 
-    protected override void OnMenuSelection_RemoteFleetAccess(int itemID) {
-        base.OnMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
+        base.HandleMenuSelection_RemoteFleetAccess(itemID);
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;
@@ -169,8 +169,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
-    protected override void OnMenuSelection_RemoteShipAccess(int itemID) {
-        base.OnMenuSelection_RemoteShipAccess(itemID);
+    protected override void HandleMenuSelection_RemoteShipAccess(int itemID) {
+        base.HandleMenuSelection_RemoteShipAccess(itemID);
 
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;

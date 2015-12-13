@@ -146,7 +146,7 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
             // no reason to cleanup if never initialized
             return;
         }
-        Cleanup();
+        base.OnDestroy();   // calls Cleanup()
         if (!IsPersistentAcrossScenes) {
             // Warning: nulling the static _instance of Singletons that persist across scenes will affect both copies of the singleton
             _instance = null;

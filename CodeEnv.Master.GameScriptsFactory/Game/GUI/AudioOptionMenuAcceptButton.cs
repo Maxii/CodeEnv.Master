@@ -25,14 +25,18 @@ public class AudioOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent { get { return "Click to implement Option changes."; } }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
-        // TODO
+    #region Event and Property Change Handlers
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
+        //TODO
     }
+
+    #endregion
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();
-        // TODO
+        //TODO
     }
 
     protected override void Cleanup() { }

@@ -56,8 +56,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
-            base.OnFiringInitiated(targetFiredOn, ordnanceFired);
+        public override void HandleFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+            base.HandleFiringInitiated(targetFiredOn, ordnanceFired);
             // IMPROVE Track target with turret
         }
 
@@ -66,8 +66,8 @@ namespace CodeEnv.Master.GameContent {
             _activeOrdnance = ordnanceFired as ITerminatableOrdnance;
         }
 
-        public override void OnFiringComplete(IOrdnance ordnanceFired) {
-            base.OnFiringComplete(ordnanceFired);
+        public override void HandleFiringComplete(IOrdnance ordnanceFired) {
+            base.HandleFiringComplete(ordnanceFired);
             // IMPROVE Stop tracking target with turret
         }
 
@@ -76,18 +76,22 @@ namespace CodeEnv.Master.GameContent {
             _activeOrdnance = null;
         }
 
-        protected override void OnToShowEffectsChanged() {
+        #region Event and Property Change Handlers
+
+        protected override void ToShowEffectsPropChangedHandler() {
             if (_activeOrdnance != null) {
                 _activeOrdnance.ToShowEffects = ToShowEffects;
             }
         }
 
-        protected override void OnIsOperationalChanged() {
-            base.OnIsOperationalChanged();
+        protected override void IsOperationalPropChangedHandler() {
+            base.IsOperationalPropChangedHandler();
             if (!IsOperational) {
                 CheckActiveOrdnanceTargeting();
             }
         }
+
+        #endregion
 
     }
 }

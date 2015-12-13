@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSingleInterfaceInImmediateChildren<IRevolver>();  // avoids moon revolvers
             _revolver.enabled = false;
-            // TODO Revolver settings
+            //TODO Revolver settings
         }
 
         protected override void AssessComponentsToShowOrOperate() {

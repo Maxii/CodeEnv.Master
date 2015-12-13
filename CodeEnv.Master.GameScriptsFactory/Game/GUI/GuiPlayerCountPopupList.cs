@@ -47,6 +47,16 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
         _countChoices = Enumerable.Range(start: 2, count: TempGameValues.MaxAIPlayers).Select(value => value.ToString()).ToArray();
     }
 
+    #region Event and Property Change Handlers
+
+    protected override void PopupListSelectionChangedEventHandler() {
+        base.PopupListSelectionChangedEventHandler();
+        int aiPlayerCount = int.Parse(_popupList.value) - Constants.One;
+        RefreshAIPlayerAvailability(aiPlayerCount);
+    }
+
+    #endregion
+
     #region Dynamic AI Player Show/Hide System
 
     private void PopulateAIPlayerContainerLookup() {
@@ -57,12 +67,6 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
             var aiPlayerContainer = aiIQPopup.transform.parent.parent.gameObject.GetSafeComponent<UIWidget>();  // HACK
             _aiPlayerContainerLookup.Add(aiIQPopup.ElementID, aiPlayerContainer);
         });
-    }
-
-    protected override void OnPopupListSelection() {
-        base.OnPopupListSelection();
-        int aiPlayerCount = int.Parse(_popupList.value) - Constants.One;
-        RefreshAIPlayerAvailability(aiPlayerCount);
     }
 
     /// <summary>

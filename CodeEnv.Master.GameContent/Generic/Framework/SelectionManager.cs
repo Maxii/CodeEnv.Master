@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         private ISelectable _currentSelection;
         public ISelectable CurrentSelection {
             get { return _currentSelection; }
-            set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", OnSelectionChanged, OnSelectionChanging); }
+            set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", CurrentSelectionPropChangedHandler, CurrentSelectionPropChangingHandler); }
         }
 
         private ISFXManager _sfxMgr;
@@ -42,43 +42,51 @@ namespace CodeEnv.Master.GameContent {
         protected override void Initialize() {
             _inputMgr = References.InputManager;
             _sfxMgr = References.SFXManager;
-            References.GameManager.onIsRunningOneShot += Subscribe;
+            References.GameManager.isRunningOneShot += IsRunningEventHandler;
         }
 
         private void Subscribe() {
-            _inputMgr.onUnconsumedPressDown += OnUnconsumedPressDown;
+            _inputMgr.unconsumedPress += UnconsumedPressEventHandler;
         }
 
-        private void OnUnconsumedPressDown(NguiMouseButton button) {
-            if (button == NguiMouseButton.Left) {
+        #region Events and Property Change Handlers
+
+        private void IsRunningEventHandler(object sender, EventArgs e) {
+            Subscribe();
+        }
+
+        private void UnconsumedPressEventHandler(object sender, EventArgs e) {
+            if (References.InputHelper.IsLeftMouseButton) {
                 CurrentSelection = null;
             }
         }
 
-        private void OnSelectionChanging(ISelectable newSelection) {
+        private void CurrentSelectionPropChangingHandler(ISelectable newSelection) {
             if (CurrentSelection != null) {
                 CurrentSelection.IsSelected = false;
             }
         }
 
-        private void OnSelectionChanged() {
+        private void CurrentSelectionPropChangedHandler() {
             if (CurrentSelection != null) {
                 _sfxMgr.PlaySFX(SfxClipID.Select);
             }
             else {
-                _sfxMgr.PlaySFX(SfxClipID.Select);  // TODO play a different sound indicating selection cleared
+                _sfxMgr.PlaySFX(SfxClipID.Select);  //TODO play a different sound indicating selection cleared
                 References.SelectedItemHudWindow.Hide();   // Note: handled centrally here as ISelectable's don't know whether another item has been selected
             }
         }
 
+        #endregion
+
         private void Cleanup() {
             Unsubscribe();
-            OnDispose();
+            CallOnDispose();
         }
 
         private void Unsubscribe() {
             if (UnityUtility.CheckNotNullOrAlreadyDestroyed(_inputMgr)) {
-                _inputMgr.onUnconsumedPressDown -= OnUnconsumedPressDown;
+                _inputMgr.unconsumedPress -= UnconsumedPressEventHandler;
             }
         }
 

@@ -120,6 +120,14 @@ namespace CodeEnv.Master.Common {
             return currentWord;
         }
 
+        public sealed override int Read() {
+            return base.Read();
+        }
+
+        public sealed override int Peek() {
+            return base.Peek();
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         private PlayerViewMode _viewMode;
         public PlayerViewMode ViewMode {
             get { return _viewMode; }
-            set { SetProperty<PlayerViewMode>(ref _viewMode, value, "ViewMode", OnViewModeChanged); }
+            set { SetProperty<PlayerViewMode>(ref _viewMode, value, "ViewMode", ViewModePropChangedHandler); }
         }
 
         public KeyCode[] ViewModeKeyCodes { get; private set; }
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
             _keyConfigs = new PlayerViewModeKeyConfiguration[] { sectorViewMode, /*sectorOrderMode,*/ normalViewMode };
         }
 
-        public void OnViewModeKeyPressed(KeyCode key) {
+        public void HandleViewModeKeyPressed(KeyCode key) {
             ChangeViewMode((ViewModeKeys)key);
         }
 
@@ -68,7 +68,9 @@ namespace CodeEnv.Master.GameContent {
             ViewMode = activatedConfig.viewMode;
         }
 
-        private void OnViewModeChanged() {
+        #region Event and Property Change Handlers
+
+        private void ViewModePropChangedHandler() {
             D.Log("ViewMode changed to {0}.", ViewMode.GetValueName());
             switch (ViewMode) {
                 case PlayerViewMode.SectorView:
@@ -88,11 +90,13 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #endregion
+
         #region Cleaup
 
         private void Cleanup() {
             _lastViewModeKeyPressed = ViewModeKeys.None;
-            OnDispose();    // PlayerViews has state and should not persist across scenes
+            CallOnDispose();    // PlayerViews has state and should not persist across scenes
         }
 
         #endregion

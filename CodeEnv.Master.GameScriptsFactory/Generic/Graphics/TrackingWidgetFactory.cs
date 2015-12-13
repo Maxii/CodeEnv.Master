@@ -219,7 +219,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     }
 
     private void Cleanup() {
-        OnDispose();
+        CallOnDispose();
     }
 
     public override string ToString() {

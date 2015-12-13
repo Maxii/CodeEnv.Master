@@ -26,9 +26,13 @@ public class GuiExitButton : AGuiButton {
 
     protected override string TooltipContent { get { return "Exit the Game."; } }
 
-    protected override void OnLeftClick() {
+    #region Event and Property Change Handlers
+
+     protected override void HandleLeftClick() {
         _gameMgr.ExitGame();
     }
+
+   #endregion
 
     protected override void Cleanup() { }
 

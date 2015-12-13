@@ -49,7 +49,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     /// </summary>
     public FacilityOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+        set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
     private FacilityPublisher _publisher;
@@ -74,8 +74,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #endregion
 
-    #region Model Methods
-
     public override void CommenceOperations() {
         base.CommenceOperations();
         CurrentState = FacilityState.Idling;
@@ -85,8 +83,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    private void OnCurrentOrderChanged() {
-        // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+    private void CurrentOrderPropChangedHandler() {
+        //TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
         if (CurrentState == FacilityState.Repairing) {
             Return();
             // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
@@ -152,10 +150,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.Dead;
     }
 
-    #endregion
-
-    #region View Methods
-
     public override void AssessHighlighting() {
         if (IsDiscernibleToUser) {
             if (IsFocus) {
@@ -180,18 +174,12 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
     }
 
-    #endregion
-
-    #region Events
-
-    #endregion
-
     #region StateMachine
 
     public new FacilityState CurrentState {
         get { return (FacilityState)base.CurrentState; }
         protected set {
-            if (CurrentState == value) {
+            if (base.CurrentState != null && CurrentState == value) {
                 D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
             }
             base.CurrentState = value;
@@ -223,10 +211,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
         }
-        // TODO register as available
+        //TODO register as available
     }
 
-    void Idling_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -234,7 +222,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     void Idling_ExitState() {
         //LogEvent();
-        // TODO register as unavailable
+        //TODO register as unavailable
     }
 
     #endregion
@@ -249,7 +237,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         _ordersTarget = CurrentOrder.Target;
 
         while (_ordersTarget.IsOperational) {
-            // TODO Primary target needs to be picked
+            //TODO Primary target needs to be picked, and if it dies, its death handled ala ShipItem
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
             yield return null;
@@ -257,7 +245,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void ExecuteAttackOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
         InitiateFiringSequence(selectedFiringSolution);
@@ -279,7 +267,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -316,7 +304,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         Return();
     }
 
-    void Repairing_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void Repairing_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -330,13 +318,13 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #region Refitting
 
-    // TODO Deactivate/Activate Equipment
+    //TODO Deactivate/Activate Equipment
 
     IEnumerator Refitting_EnterState() {
         // ShipView shows animation while in this state
         //OnStartShow();
         //while (true) {
-        // TODO refit until complete
+        //TODO refit until complete
         yield return new WaitForSeconds(2);
         //}
         //OnStopShow();   // must occur while still in target state
@@ -354,7 +342,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     // UNDONE not clear how this works
 
     void Disbanding_EnterState() {
-        // TODO detach from fleet and create temp FleetCmd
+        //TODO detach from fleet and create temp FleetCmd
         // issue a Disband order to our new fleet
         Return();   // ??
     }
@@ -372,7 +360,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         StartEffect(EffectID.Dying);
     }
 
-    void Dead_OnEffectFinished(EffectID effectID) {
+    void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         __DestroyMe();
     }
@@ -381,10 +369,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #region StateMachine Support Methods
 
-    public override void OnEffectFinished(EffectID effectID) {
-        base.OnEffectFinished(effectID);
+    public override void HandleEffectFinished(EffectID effectID) {
+        base.HandleEffectFinished(effectID);
         if (CurrentState == FacilityState.Dead) {   // OPTIMIZE avoids 'method not found' warning spam
-            RelayToCurrentState(effectID);
+            UponEffectFinished(effectID);
         }
     }
 
@@ -436,7 +424,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     }
 
     #endregion
-
 
     #region Nested Classes
 

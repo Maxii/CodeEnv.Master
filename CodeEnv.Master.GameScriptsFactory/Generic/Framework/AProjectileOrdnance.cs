@@ -71,7 +71,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
     }
 
     public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
@@ -83,8 +83,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _rigidbody.mass = Mass;
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
-        weapon.OnFiringComplete(this);
-        //target.OnFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
+        weapon.HandleFiringComplete(this);
+        //target.HandleFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
         //enabled = true set by derived classes after all settings initialized
     }
 
@@ -117,8 +117,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         return distanceTraveled;
     }
 
-    protected override void OnCollisionEnter(Collision collision) {
-        base.OnCollisionEnter(collision);
+    private void HandleCollision(Collision collision) {
         //string collidedObjectName = collision.collider.transform.parent.name + collision.collider.name;
         //D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
         //Name, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
@@ -173,15 +172,22 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected abstract float GetDistanceTraveled();
 
-    private void OnGameSpeedChanged() {
+    #region Event and Property Change Handlers
+
+    protected sealed override void OnCollisionEnter(Collision collision) {
+        base.OnCollisionEnter(collision);
+        HandleCollision(collision);
+    }
+
+    private void GameSpeedPropChangedHandler() {
         float previousGameSpeedMultiplier = _gameSpeedMultiplier;
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
         float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
         AdjustForGameSpeed(gameSpeedChangeRatio);
     }
 
-    protected override void OnIsPausedChanged() {
-        base.OnIsPausedChanged();
+    protected override void IsPausedPropChangedHandler() {
+        base.IsPausedPropChangedHandler();
         if (_gameMgr.IsPaused) {
             _velocityOnPause = _rigidbody.velocity;
             _rigidbody.isKinematic = true;
@@ -192,6 +198,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             _rigidbody.WakeUp();
         }
     }
+
+    #endregion
 
     private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
@@ -238,7 +246,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     #region ITopographyChangeListener Members
 
-    public void OnTopographyChanged(Topography newTopography) {
+    public void HandleTopographyChanged(Topography newTopography) {
         _rigidbody.drag = Drag * newTopography.GetRelativeDensity();
     }
 

@@ -48,7 +48,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     /// </summary>
     public Index3D CurrentSectorIndex {
         get { return _currentSectorIndex; }
-        private set { SetProperty<Index3D>(ref _currentSectorIndex, value, "CurrentSectorIndex", OnCurrentSectorIndexChanged); }
+        private set { SetProperty<Index3D>(ref _currentSectorIndex, value, "CurrentSectorIndex", CurrentSectorIndexPropChangedHandler); }
     }
 
     private float _distanceToHighlightedSector;
@@ -65,6 +65,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private ITrackingWidget _sectorIDLabel;
 
     private PlayerViewMode _viewMode;
+    private InputManager _inputMgr;
+    private GameInputHelper _inputHelper;
     private Job _sectorViewJob;
 
     private IList<IDisposable> _subscriptions;
@@ -72,6 +74,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _sectorGrid = SectorGrid.Instance;
+        _inputHelper = GameInputHelper.Instance;
+        _inputMgr = InputManager.Instance;
         _distanceToHighlightedSector = _distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
         InitializeCenterCollider();
         Subscribe();
@@ -86,19 +90,17 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
+        _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
     }
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
-            //GameInput.Instance.onUnconsumedPress += OnUnconsumedPress;
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
         }
         else {
             IDisposable d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
             _subscriptions.Remove(d);
             d.Dispose();
-            //GameInput.Instance.onUnconsumedPress -= OnUnconsumedPress;
         }
     }
 
@@ -111,26 +113,78 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _ctxControl = new SectorCtxControl(this);
     }
 
-    #region Mouse Events
+    #region Event and Property Change Handlers
 
-    void OnHover(bool isOver) {
+    private void CurrentSectorIndexPropChangedHandler() {
+        transform.position = _sectorGrid.GetSector(CurrentSectorIndex).Position;
+        UpdateSectorIDLabel();
+    }
+
+    private void CameraSectorIndexPropChangedHandler() {
+        // does nothing for now
+    }
+
+    private void PlayerViewModePropChangedHandler() {
+        _viewMode = PlayerViews.Instance.ViewMode;
+        switch (_viewMode) {
+            case PlayerViewMode.SectorView:
+                DynamicallySubscribe(true);
+                _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: true, jobCompleted: (wasKilled) => {
+                    //TODO
+                });
+                _collider.enabled = true;
+                break;
+            case PlayerViewMode.NormalView:
+                // turn off wireframe, sectorID label, collider, contextMenu and Hud
+                DynamicallySubscribe(false);
+                if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
+                    _sectorViewJob.Kill();
+                    _sectorViewJob = null;
+                    ShowSector(false);
+                }
+                _collider.enabled = false;
+                if (_ctxControl.IsShowing) { _ctxControl.Hide(); }
+
+                // OPTIMIZE cache sector and sectorView
+                var sector = _sectorGrid.GetSector(CurrentSectorIndex);
+                if (sector != null) {  // can be null if camera is located where no sector object was created
+                    if (sector.IsHudShowing) {
+                        sector.ShowHud(false);
+                    }
+                }
+                break;
+            case PlayerViewMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_viewMode));
+        }
+    }
+
+    private void HoverEventHandler(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
             //D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
             _sectorGrid.GetSector(CurrentSectorIndex).ShowHud(isOver);
         }
     }
 
-    void OnPress(bool isDown) {
-        if (GameInputHelper.Instance.IsRightMouseButton) {
-            OnRightPress(isDown);
+    private void PressEventHandler(bool isDown) {
+        if (_inputHelper.IsRightMouseButton && !isDown) {
+            HandleRightPressRelease();
         }
     }
 
-    private void OnRightPress(bool isDown) {
-        if (!isDown && !InputManager.Instance.IsDragging) {
+    private void HandleRightPressRelease() {
+        if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
+    }
+
+    void OnHover(bool isOver) {
+        HoverEventHandler(isOver);
+    }
+
+    void OnPress(bool isDown) {
+        PressEventHandler(isDown);
     }
 
     #endregion
@@ -146,50 +200,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         var sectorIDLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Over);
         sectorIDLabel.Color = TempGameValues.SectorHighlightColor;
         return sectorIDLabel;
-    }
-
-    private void OnCurrentSectorIndexChanged() {
-        transform.position = _sectorGrid.GetSector(CurrentSectorIndex).Position;
-        UpdateSectorIDLabel();
-    }
-
-    private void OnCameraSectorIndexChanged() {
-        // does nothing for now
-    }
-
-    private void OnPlayerViewModeChanged() {
-        _viewMode = PlayerViews.Instance.ViewMode;
-        switch (_viewMode) {
-            case PlayerViewMode.SectorView:
-                DynamicallySubscribe(true);
-                _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: true, onJobComplete: (wasKilled) => {
-                    // TODO
-                });
-                _collider.enabled = true;
-                break;
-            case PlayerViewMode.NormalView:
-                // turn off wireframe, sectorID label, collider, contextMenu and Hud
-                DynamicallySubscribe(false);
-                if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
-                    _sectorViewJob.Kill();
-                    _sectorViewJob = null;
-                    ShowSector(false);
-                }
-                _collider.enabled = false;
-                if (_ctxControl.IsShowing) { _ctxControl.Show(false); }
-
-                // OPTIMIZE cache sector and sectorView
-                var sector = _sectorGrid.GetSector(CurrentSectorIndex);
-                if (sector != null) {  // can be null if camera is located where no sector object was created
-                    if (sector.IsHudShowing) {
-                        sector.ShowHud(false);
-                    }
-                }
-                break;
-            case PlayerViewMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_viewMode));
-        }
     }
 
     private IEnumerator ShowSectorUnderMouse() {

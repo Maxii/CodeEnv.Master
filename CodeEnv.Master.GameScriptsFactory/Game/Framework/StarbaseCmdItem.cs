@@ -45,8 +45,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
 
     #endregion
 
-    #region Model Methods
-
     public StarbaseReport GetUserReport() { return GetReport(_gameMgr.UserPlayer); }
 
     public StarbaseReport GetReport(Player player) { return Publisher.GetReport(player); }
@@ -60,10 +58,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 
-    #endregion
-
-    #region View Methods
-
     protected override IconInfo MakeIconInfo() {
         return StarbaseIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
@@ -71,12 +65,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, GetUserReport());
     }
-
-    #endregion
-
-    #region Events
-
-    #endregion
 
     #region Cleanup
 
@@ -86,11 +74,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ISelectable Members
-
-    //public override ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
-
-    #endregion
 
 }
 

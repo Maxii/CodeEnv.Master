@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -49,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public event Action<GameDate> onDateChanged;
+        public event EventHandler dateChanged;
 
         /// <summary>
         /// The number of Hours passing per second, adjusted for GameSpeed.
@@ -61,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
         private GameSpeed _gameSpeed;
         public GameSpeed GameSpeed {
             get { return _gameSpeed; }
-            set { SetProperty<GameSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging); }
+            set { SetProperty<GameSpeed>(ref _gameSpeed, value, "GameSpeed", GameSpeedPropChangedHandler, GameSpeedPropChangingHandler); }
         }
 
         #region GameSpeed Adjusted DeltaTime Archive
@@ -179,11 +180,13 @@ namespace CodeEnv.Master.GameContent {
                 if (updatedDate != _currentDate) {   // use of _currentDate rather than CurrentDate.get() avoids infinite loop 
                     // updatedDate can be < _currentDate when a new game is started
                     CurrentDate = updatedDate;
-                    if (onDateChanged != null) {
-                        //string subscribers = onDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
-                        //D.Log("{0}.onDateChanged. List = {1}.", GetType().Name, subscribers);
-                        onDateChanged(updatedDate);
-                    }
+                    //if (onDateChanged != null) {
+                    //    //string subscribers = onDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
+                    //    //D.Log("{0}.onDateChanged. List = {1}.", GetType().Name, subscribers);
+                    //    onDateChanged(updatedDate);
+                    //}
+
+                    OnDateChanged();
                 }
             }
         }
@@ -244,12 +247,12 @@ namespace CodeEnv.Master.GameContent {
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, OnIsRunningChanged));
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangingHandler));
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, IsRunningPropChangedHandler));
         }
 
-        private void OnIsRunningChanged() {
-            //D.Log("{0}.OnIsRunningChanged() called. IsRunning = {1}.", GetType().Name, _gameMgr.IsRunning);
+        private void IsRunningPropChangedHandler() {
+            //D.Log("{0}.IsRunningPropChangedHandler() called. IsRunning = {1}.", GetType().Name, _gameMgr.IsRunning);
             if (_gameMgr.IsRunning) {
                 D.Assert(!_gameMgr.IsPaused);    // my practice - set IsRunning to true, THEN pause when isPauseOnLoad option enabled
                 _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
@@ -258,7 +261,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnIsPausedChanging(bool isPausing) {
+        private void IsPausedPropChangingHandler(bool isPausing) {
             if (_gameMgr.IsRunning) {
                 if (isPausing) {
                     // we are about to pause
@@ -285,7 +288,7 @@ namespace CodeEnv.Master.GameContent {
             _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = Constants.ZeroF;
             _currentDateTime = Constants.ZeroF;
             __savedCurrentDateTime = Constants.ZeroF;
-            // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
+            // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synched CurrentDate instance once Date is requested
@@ -315,20 +318,32 @@ namespace CodeEnv.Master.GameContent {
             // currentDateTime is key! It value when restored should be accurate as it is kept current up to the point it is saved
             _currentDateTime = __savedCurrentDateTime; // FIXME bug? currentDateTime does not get properly restored
             D.Log("CurrentDateTime restored to {0:0.00}.", _currentDateTime);
-            // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
+            // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the GameSpeed when saved is not relevant to the resumed GameInstance
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime everytime it is used
             // the list of subscribers to onDateChanged should be fine as saved
         }
 
-        private void OnGameSpeedChanging(GameSpeed proposedSpeed) {
+        #region Event and Property Change Handlers
+
+        private void GameSpeedPropChangingHandler(GameSpeed proposedSpeed) {
             RefreshCurrentDateTime();
         }
 
-        private void OnGameSpeedChanged() {
+        private void GameSpeedPropChangedHandler() {
             GameSpeedMultiplier = GameSpeed.SpeedMultiplier();
         }
+
+        private void OnDateChanged() {
+            if (dateChanged != null) {
+                //string subscribers = dateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
+                //D.Log("{0}.dateChanged. Subscribers = {1}.", GetType().Name, subscribers);
+                dateChanged(this, new EventArgs());
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Brings _currentDateTime up to date. While the Date only needs to be refreshed when it is about to be used,
@@ -349,7 +364,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Unsubscribe();
-            OnDispose();
+            CallOnDispose();
         }
 
         private void Unsubscribe() {
@@ -360,6 +375,19 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        //#region Nested Classes
+
+        //public class GameDateEventArgs : EventArgs {
+
+        //    public GameDate Date { get; private set; }
+
+        //    public GameDateEventArgs(GameDate date) {
+        //        Date = date;
+        //    }
+        //}
+
+        //#endregion
 
         #region IDisposable
 

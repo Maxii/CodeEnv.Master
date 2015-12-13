@@ -28,6 +28,8 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
 
     private static string _nameFormat = "{0}[{1}]";
 
+    private static float __stationRadiusMultiplier = 5F;
+
     public bool IsOnStation { get; private set; }   // OPTIMIZE Eliminate collider and just test for distance to ship < stationRadius?
 
     public override string Name {
@@ -43,7 +45,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
     /// </summary>
     public Vector3 StationOffset {
         get { return _stationOffset; }
-        set { SetProperty<Vector3>(ref _stationOffset, value, "StationOffset", OnStationOffsetChanged); }
+        set { SetProperty<Vector3>(ref _stationOffset, value, "StationOffset", StationOffsetPropChangedHandler); }
     }
 
     private IShipItem _assignedShip;
@@ -52,7 +54,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
     /// </summary>
     public IShipItem AssignedShip {
         get { return _assignedShip; }
-        set { SetProperty<IShipItem>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged); }
+        set { SetProperty<IShipItem>(ref _assignedShip, value, "AssignedShip", AssignedShipPropChangedHandler); }
     }
 
     /// <summary>
@@ -66,6 +68,8 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
     private bool IsShipAlreadyOnStation {
         get { return _collider.bounds.Contains(AssignedShip.Position); }
     }
+
+    #region Event and Property Change Handlers
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
@@ -95,9 +99,9 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
         }
     }
 
-    private void OnAssignedShipChanged() {
+    private void AssignedShipPropChangedHandler() {
         if (AssignedShip != null) {
-            RangeDistance = AssignedShip.Radius * 5F;
+            RangeDistance = AssignedShip.Radius * __stationRadiusMultiplier;
             //D.Log("Radius of {0} assigned to {1} set to {2:0.0000}.", GetType().Name, AssignedShip.FullName, RangeDistance);
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
@@ -114,13 +118,15 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
     // Note: no need to detect when the AssignedShip dies as FleetCmd will set it
     // to null when it is removed from the fleet, whether through death or some other reason
 
-    private void OnStationOffsetChanged() {
+    private void StationOffsetPropChangedHandler() {
         // setting local position doesn't work as the resultant world position is modified by the rotation of FleetCmd
         transform.position += StationOffset;
         // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
     }
 
-    protected override void OnIsOperationalChanged() { }
+    protected override void IsOperationalPropChangedHandler() { }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

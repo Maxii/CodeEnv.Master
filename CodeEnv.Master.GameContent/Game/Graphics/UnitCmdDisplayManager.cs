@@ -27,8 +27,8 @@ namespace CodeEnv.Master.GameContent {
     public class UnitCmdDisplayManager : AIconDisplayManager {
 
         /******************************************************************************************
-                    * For detail on this color change system, see AElementDisplayManager
-                    ******************************************************************************************/
+         * For detail on this color change system, see AElementDisplayManager
+         ******************************************************************************************/
 
         private static Vector2 _cmdIconSize = new Vector2(24F, 24F);
         private static float _primaryMeshAlpha = 0.1F;
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
             set {
                 if (_color != value) {
                     _color = value;
-                    OnColorChanged();
+                    ColorPropChangedHandler();
                 }
             }
         }
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         public UnitCmdDisplayManager(IWidgetTrackable trackedCmd, IconInfo iconInfo, GameColor color)
             : base(trackedCmd) {
             IconInfo = iconInfo;
-            Color = color;  // will result in OnColorChanged() which will initialize the ColorChangeSystem
+            Color = color;  // will result in ColorPropChangedHandler() which will initialize the ColorChangeSystem
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
@@ -140,13 +140,17 @@ namespace CodeEnv.Master.GameContent {
             return IsDisplayEnabled && _isIconInMainCameraLOS;
         }
 
-        private void OnColorChanged() {
+        #region Event and Property Change Handlers
+
+        private void ColorPropChangedHandler() {
             InitializeColorChangeSystem(Color);
             if (IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS) {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();
             }
         }
+
+        #endregion
 
         protected override void DestroyIcon() {
             throw new NotSupportedException("{0}'s cannot destroy Icons during runtime.".Inject(GetType().Name));

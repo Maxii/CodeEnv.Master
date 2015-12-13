@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class SettlementIconInfoXmlReader : ACmdIconInfoXmlReader<SettlementIconInfoXmlReader> {
 
-            protected override string XmlFilename { get { return "FleetIconInfo"; } }   // TODO
+            protected override string XmlFilename { get { return "FleetIconInfo"; } }   //TODO
 
             private SettlementIconInfoXmlReader() {
                 Initialize();

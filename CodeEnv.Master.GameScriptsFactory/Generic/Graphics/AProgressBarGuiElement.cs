@@ -81,7 +81,7 @@ public abstract class AProgressBarGuiElement : AGuiElement {
         _barForeground.color = color.ToUnityColor();
     }
 
-    protected void OnValuesUnknown() {
+    protected void HandleValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
         switch (_widgetsPresent) {
             case WidgetsPresent.ProgressBar:

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SensorRangeMonitor.cs
-// Detects IDetectable Items that enter and exit the range of its sensors and notifies each with an OnDetection() or OnDetectionLost() event.
+// Detects IDetectable Items that enter and exit the range of its sensors and notifies each with an HandleDetectionBy() or HandleDetectionLostBy() event.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,18 +16,22 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Detects ISensorDetectable Items that enter and exit the range of its sensors and notifies each with an OnDetection() or OnDetectionLost() event.
-/// TODO Account for a diploRelations change with an owner.
+/// Detects ISensorDetectable Items that enter and exit the range of its sensors and notifies each with an HandleDetectionBy() or HandleDetectionLostBy() event.
 /// </summary>
 public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sensor>, ISensorRangeMonitor {
+
+    //TODO Account for a diploRelations change with an owner.
+
     /************************************************************************************************************************
-           * Note: PlayerKnowledge is updated by the detectedItem's DetectionHandlers as only they know when they are no longer detected
-           ************************************************************************************************************************/
+     * Note: PlayerKnowledge is updated by the detectedItem's DetectionHandlers as only they know when they are no longer detected
+     ************************************************************************************************************************/
+
     public new IUnitCmdItem ParentItem {
         get { return base.ParentItem as IUnitCmdItem; }
         set { base.ParentItem = value as AItem; }
@@ -54,7 +58,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         D.Assert(_equipmentList.Contains(sensor));
 
         sensor.RangeMonitor = null;
-        sensor.onIsOperationalChanged -= OnEquipmentIsOperationalChanged;
+        sensor.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler;
         _equipmentList.Remove(sensor);
         if (_equipmentList.Count == Constants.Zero) {
             return false;
@@ -67,33 +71,36 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         sensor.RangeMonitor = this;
     }
 
-    protected override void OnDetectedItemAdded(ISensorDetectable newlyDetectedItem) {
-        newlyDetectedItem.onOwnerChanged += OnDetectedItemOwnerChanged;
+    protected override void HandleDetectedObjectAdded(ISensorDetectable newlyDetectedItem) {
+        newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
 
         var mortalItem = newlyDetectedItem as IMortalItem;
         if (mortalItem != null) {
-            mortalItem.onDeathOneShot += OnDetectedItemDeath;
+            mortalItem.deathOneShot += DetectedItemDeathEventHandler;
             var attackableTarget = mortalItem as IElementAttackableTarget;
             if (attackableTarget != null && attackableTarget.Owner.IsEnemyOf(Owner)) {
                 AddEnemy(attackableTarget);
             }
         }
-        newlyDetectedItem.OnDetection(ParentItem, RangeCategory);
+        newlyDetectedItem.HandleDetectionBy(ParentItem, RangeCategory);
     }
 
-    protected override void OnDetectedItemRemoved(ISensorDetectable lostDetectionItem) {
-        lostDetectionItem.onOwnerChanged -= OnDetectedItemOwnerChanged;
+    protected override void HandleDetectedObjectRemoved(ISensorDetectable lostDetectionItem) {
+        lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
         var mortalItem = lostDetectionItem as IMortalItem;
         if (mortalItem != null) {
-            mortalItem.onDeathOneShot -= OnDetectedItemDeath;
-            //D.Log("{0} removed {1} OnDeath subscription.", Name, mortalItem.FullName);
+            mortalItem.deathOneShot -= DetectedItemDeathEventHandler;
+            //D.Log("{0} removed {1} death subscription.", Name, mortalItem.FullName);
             var enemyTarget = mortalItem as IElementAttackableTarget;
             if (enemyTarget != null && enemyTarget.Owner.IsEnemyOf(Owner)) {
                 RemoveEnemy(enemyTarget);
             }
         }
-        lostDetectionItem.OnDetectionLost(ParentItem, RangeCategory);
+        lostDetectionItem.HandleDetecionLostBy(ParentItem, RangeCategory);
     }
+
+    #region Event and Property Change Handlers
+
 
     /// <summary>
     /// Called when the owner of a detectedItem changes.
@@ -102,9 +109,10 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// its owner changes. With weapons, WeaponRangeMonitor overrides OnTargetBecomesNonEnemy()
     /// and checks the targets of all active ordnance of each weapon.</remarks>
     /// </summary>
-    /// <param name="item">The item.</param>
-    private void OnDetectedItemOwnerChanged(IItem item) {
-        var alreadyTrackedDetectableItem = item as ISensorDetectable;
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void DetectedItemOwnerChangedEventHandler(object sender, EventArgs e) {
+        ISensorDetectable alreadyTrackedDetectableItem = sender as ISensorDetectable;
         var target = alreadyTrackedDetectableItem as IElementAttackableTarget;
         if (target != null) {
             // an attackable target with an owner
@@ -130,11 +138,15 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// Called when a tracked ISensorDetectable item dies. It is necessary to track each item's onDeath
     /// event as OnTriggerExit() is not called when an item inside the collider is destroyed.
     /// </summary>
-    /// <param name="deadDetectedItem">The detected item that has died.</param>
-    private void OnDetectedItemDeath(IMortalItem deadDetectedItem) {
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void DetectedItemDeathEventHandler(object sender, EventArgs e) {
+        ISensorDetectable deadDetectedItem = sender as ISensorDetectable;
         D.Assert(!deadDetectedItem.IsOperational);
-        RemoveDetectedItem(deadDetectedItem as ISensorDetectable);
+        RemoveDetectedObject(deadDetectedItem as ISensorDetectable);
     }
+
+    #endregion
 
     private void AddEnemy(IElementAttackableTarget enemyTarget) {
         AttackableEnemyTargetsDetected.Add(enemyTarget);
@@ -167,9 +179,9 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     protected override void Cleanup() {
         base.Cleanup();
         if (!IsApplicationQuiting && !References.GameManager.IsSceneLoading) {
-            // It is important to cleanup the onDeath and onOwnerChanged subscription and detected state for each item detected
+            // It is important to cleanup the death and ownerChanged subscription and detected state for each item detected
             // when this Monitor is dying of natural causes. However, doing so when the App is quiting or loading a new scene results in a cascade of these
-            // OnDetectionLost() calls which results in NRExceptions from Singleton managers like GameTime which have already CleanedUp.
+            // HandleDetectionLostBy() calls which results in NRExceptions from Singleton managers like GameTime which have already CleanedUp.
             IsOperational = false;
         }
     }

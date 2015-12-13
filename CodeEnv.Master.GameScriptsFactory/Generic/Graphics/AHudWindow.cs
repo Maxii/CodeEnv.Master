@@ -93,14 +93,14 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         base.InitializeOnAwake();
         InitializeFormLookup();
         InitializeContentHolder();
-        WireDelegates();
+        Subscribe();
         DeactivateAllForms();
     }
 
     protected override void AcquireReferences() {
         base.AcquireReferences();
         _backgroundEnvelopContent = gameObject.GetSingleComponentInChildren<MyEnvelopContent>();
-        // TODO set envelopContent padding programmatically once background is permanently picked?
+        //TODO set envelopContent padding programmatically once background is permanently picked?
         _backgroundWidget = _backgroundEnvelopContent.gameObject.GetSafeComponent<UIWidget>();
     }
 
@@ -113,9 +113,17 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         _contentHolder = _formLookup.Values.First().transform;
     }
 
-    private void WireDelegates() {
-        onHideComplete.Add(new EventDelegate(DeactivateAllForms));
+    private void Subscribe() {
+        EventDelegate.Add(onHideComplete, WindowHideCompleteEventHandler);
     }
+
+    #region Event and Property Change Handlers
+
+    private void WindowHideCompleteEventHandler() {
+        DeactivateAllForms();
+    }
+
+    #endregion
 
     /// <summary>
     /// Activates the specified form's gameObject, deactivating all others.
@@ -172,11 +180,16 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
 
     protected sealed override void OnDestroy() {
         base.OnDestroy();
+        _instance = null;
     }
 
     protected override void Cleanup() {
         base.Cleanup();
-        _instance = null;
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        EventDelegate.Remove(onHideComplete, WindowHideCompleteEventHandler);
     }
 
     protected override void OnApplicationQuit() {

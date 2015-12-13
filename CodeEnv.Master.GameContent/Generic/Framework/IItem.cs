@@ -26,14 +26,14 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when the owner of this <c>IItem</c> is about to change.
-        /// The new incoming owner is the <c>Player</c> provided.
+        /// The new incoming owner is the <c>Player</c> provided in the EventArgs.
         /// </summary>
-        event Action<IItem, Player> onOwnerChanging;
+        event EventHandler<OwnerChangingEventArgs> ownerChanging;
 
         /// <summary>
         /// Occurs when the owner of this <c>IItem</c> has changed.
         /// </summary>
-        event Action<IItem> onOwnerChanged;
+        event EventHandler ownerChanged;
 
         Player Owner { get; }
         bool IsOperational { get; }

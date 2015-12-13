@@ -29,15 +29,15 @@ using UnityEngine;
 public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     /// <summary>
-    /// Occurs when the owner of this <c>IItem</c> is about to change.
-    /// The new incoming owner is the <c>Player</c> provided.
+    /// Occurs when the owner of this <c>AItem</c> is about to change.
+    /// The new incoming owner is the <c>Player</c> provided in the EventArgs.
     /// </summary>
-    public event Action<IItem, Player> onOwnerChanging;
+    public event EventHandler<OwnerChangingEventArgs> ownerChanging;
 
     /// <summary>
-    /// Occurs when the owner of this <c>IItem</c> has changed.
+    /// Occurs when the owner of this <c>AItem</c> has changed.
     /// </summary>
-    public event Action<IItem> onOwnerChanged;
+    public event EventHandler ownerChanged;
 
     private AItemData _data;
     public AItemData Data {
@@ -63,7 +63,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         protected set {
             if (enabled != value) {
                 enabled = value;
-                OnIsOperationalChanged();
+                IsOperationalPropChangedHandler();
             }
         }
     }
@@ -114,7 +114,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     protected virtual void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
+        _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, InputModePropChangedHandler));
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
     }
 
@@ -128,8 +128,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// </summary>
     protected virtual void SubscribeToDataValueChanges() {
         D.Assert(_subscriptions != null);
-        _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
     }
 
     protected sealed override void Start() {
@@ -138,8 +138,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     #endregion
 
-    #region Model Methods
-
     /// <summary>
     /// Called when the Item should start operations, typically once the game is running.
     /// </summary>
@@ -147,26 +145,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
         IsOperational = true;
     }
-
-    protected virtual void OnIsOperationalChanged() {
-        D.Assert(IsOperational);    // only MortalItems should ever see a change to false
-    }
-
-    protected virtual void OnOwnerChanging(Player newOwner) {
-        if (onOwnerChanging != null) {
-            onOwnerChanging(this, newOwner);
-        }
-    }
-
-    protected virtual void OnOwnerChanged() {
-        if (onOwnerChanged != null) {
-            onOwnerChanged(this);
-        }
-    }
-
-    #endregion
-
-    #region View Methods
 
     public void ShowHud(bool toShow) {
         if (_hudManager != null) {
@@ -179,11 +157,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         }
     }
 
-    private void OnInputModeChanged() {
-        OnInputModeChanged(_inputMgr.InputMode);
-    }
-
-    protected virtual void OnInputModeChanged(GameInputMode inputMode) {
+    protected virtual void HandleInputModeChanged(GameInputMode inputMode) {
         if (IsHudShowing) {
             switch (inputMode) {
                 case GameInputMode.NoInput:
@@ -202,9 +176,35 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         }
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    protected virtual void IsOperationalPropChangedHandler() {
+        D.Assert(IsOperational);    // only MortalItems should ever see a change to false
+    }
+
+    protected virtual void OwnerPropChangingHandler(Player newOwner) {
+        OnOwnerChanging(newOwner);
+    }
+
+    protected virtual void OwnerPropChangedHandler() {
+        OnOwnerChanged();
+    }
+
+    private void InputModePropChangedHandler() {
+        HandleInputModeChanged(_inputMgr.InputMode);
+    }
+
+    private void OnOwnerChanging(Player newOwner) {
+        if(ownerChanging != null) {
+            ownerChanging(this, new OwnerChangingEventArgs(newOwner));
+        }
+    }
+
+    private void OnOwnerChanged() {
+        if (ownerChanged != null) {
+            ownerChanged(this, new EventArgs());
+        }
+    }
 
     #endregion
 

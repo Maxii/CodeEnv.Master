@@ -34,16 +34,19 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     private Index3D _sectorIndex;
     public Index3D SectorIndex {
         get { return _sectorIndex; }
-        set { SetProperty<Index3D>(ref _sectorIndex, value, "SectorIndex", OnSectorIndexChanged); }
+        set {
+            D.Assert(_sectorIndex == default(Index3D)); // only occurs once between Resets
+            SetProperty<Index3D>(ref _sectorIndex, value, "SectorIndex", SectorIndexPropSetHandler); }
     }
 
-    private bool _isPositionSet = false;
+    private bool _isPositionSet;
     private Vector3? _position;
     public Vector3? Position {
         get { return _position; }
         set {
+            D.Assert(!_isPositionSet);  // only occurs once between Resets
             _position = value;
-            OnPositionSet();
+            PositionPropSetHandler();
         }
     }
 
@@ -60,18 +63,22 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    private void OnSectorIndexChanged() {
+    #region Event and Property Change Handlers
+
+    private void SectorIndexPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
-    private void OnPositionSet() {
+    private void PositionPropSetHandler() {
         _isPositionSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     protected virtual void PopulateElementWidgets() {
         bool isPositionValid = false;

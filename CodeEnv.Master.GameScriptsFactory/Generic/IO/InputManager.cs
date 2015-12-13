@@ -56,7 +56,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     public GameInputMode InputMode {
         get { return _inputMode; }
-        set { SetProperty<GameInputMode>(ref _inputMode, value, "InputMode", OnInputModeChanged); }
+        set { SetProperty<GameInputMode>(ref _inputMode, value, "InputMode", InputModePropChangedHandler); }
     }
 
     /// <summary>
@@ -147,34 +147,51 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void Subscribe() {
-        _gameMgr.onGameStateChanging += OnGameStateChanging;
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
-        _gameMgr.onSceneLoading += OnSceneLoading;
-        _gameMgr.onSceneLoaded += OnSceneLoaded;
+        _gameMgr.gameStateChanging += GameStateChangingEventHandler;
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
+        _gameMgr.sceneLoading += SceneLoadingEventHandler;
+        _gameMgr.sceneLoaded += SceneLoadedEventHandler;
+    }
+
+    /// <summary>
+    /// Subscribes to world mouse events. 
+    /// Note: Subscribing (and unsubscribing) to these mouse events via their delegate is req'd to 
+    /// control which events occur as changing the UICamera.eventRcvrMask does not affect the delegate
+    /// being fired. The assignment of the fallthrough gameObject makes sure the delegate fires whether the
+    /// UICamera sees a gameObject or not.
+    /// </summary>
+    private void SubscribeToWorldMouseEvents() {
+        UICamera.onScroll += ScrollEventHandler;
+        UICamera.onDragStart += DragStartEventHandler;
+        UICamera.onDrag += DraggingEventHandler;
+        UICamera.onDragEnd += DragEndEventHandler;
+        UICamera.onPress += PressEventHandler;
     }
 
     #endregion
 
-    private void OnSceneLoading(SceneLevel incomingScene) {
+    #region Event and Property Change Handlers
+
+    private void SceneLoadingEventHandler(object sender, EventArgs e) {
         InvalidateNonpersistentReferences();
     }
 
-    private void OnSceneLoaded() {
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
         _currentScene = _gameMgr.CurrentScene;
         InitializeNonpersistentReferences();
     }
 
-    private void OnGameStateChanging(GameState incomingState) {
+    private void GameStateChangingEventHandler(object sender, EventArgs e) {
         var previousState = _gameMgr.CurrentState;
-        //D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetValueName());
+        //D.Log("{0}_{1} received a gameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetValueName());
         if (previousState == GameState.Lobby || previousState == GameState.Running) {
             InputMode = GameInputMode.NoInput;
         }
     }
 
-    private void OnGameStateChanged() {
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         var gameState = _gameMgr.CurrentState;
-        //D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, gameState.GetValueName());
+        //D.Log("{0}_{1} received a gameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, gameState.GetValueName());
         if (gameState == GameState.Lobby) {
             InputMode = GameInputMode.Lobby;
         }
@@ -183,21 +200,15 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         }
     }
 
-    protected override void Update() {
-        base.Update();
-        CheckForArrowKeyActivity();
-        CheckForScreenEdgeActivity();
-    }
-
     /// <summary>
     /// Called when the InputMode changes.
     /// Notes: [Un]subscribing to world mouse events covers camera movement from dragging and scrolling, and pressing on empty space (for SelectionManager).
     /// Camera movement from arrow keys and the screen edge are covered by their specific bool as is other key detection used by PlayerViews.
-    /// Changing the eventReceiverMask of the _worldEventDispatcher covers all OnHover, OnClick, OnDoubleClick, OnPress events embedded in world objects.
-    /// Changing the eventReceiverMask of the _uiEventDispatcher covers all OnHover, OnTooltip, OnClick, OnDrag and OnPress events for UI elements.
+    /// Changing the eventReceiverMask of the _worldEventDispatcher covers all OnHover, OnClick, OnDoubleClick, PressEventHandler events embedded in world objects.
+    /// Changing the eventReceiverMask of the _uiEventDispatcher covers all OnHover, OnTooltip, OnClick, DraggingEventHandler and PressEventHandler events for UI elements.
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
-    private void OnInputModeChanged() {
+    private void InputModePropChangedHandler() {
         D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetValueName());
         __ValidateEventDispatchersNotDestroyed();
 
@@ -206,7 +217,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UIEventDispatcher.eventReceiverMask = EventDispatcherMask_NoInput;
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
-                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
+                UnsubscribeToViewModeKeyEvents();
                 if (_currentScene == SceneLevel.GameScene) {
                     WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                     UnsubscribeToWorldMouseEvents();
@@ -217,14 +228,14 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
-                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
+                UnsubscribeToViewModeKeyEvents();
                 break;
             case GameInputMode.PartialPopup:
                 D.Assert(_currentScene == SceneLevel.GameScene);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
-                UnsubscribeToViewModeKeyEvents();   //_enableViewModeKeys = false;
+                UnsubscribeToViewModeKeyEvents();
                 WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                 UnsubscribeToWorldMouseEvents();
                 break;
@@ -252,24 +263,17 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         }
     }
 
-    /// <summary>
-    /// Subscribes to world mouse events. 
-    /// Note: Subscribing (and unsubscribing) to these mouse events via their delegate is req'd to 
-    /// control which events occur as changing the UICamera.eventRcvrMask does not affect the delegate
-    /// being fired. The assignment of the fallthrough gameObject makes sure the delegate fires whether the
-    /// UICamera sees a gameObject or not.
-    /// </summary>
-    private void SubscribeToWorldMouseEvents() {
-        UICamera.onScroll += OnScroll;
-        UICamera.onDragStart += OnDragStart;
-        UICamera.onDrag += OnDrag;
-        UICamera.onDragEnd += OnDragEnd;
-        UICamera.onPress += OnPress;
+    #endregion
+
+    protected override void Update() {
+        base.Update();
+        CheckForArrowKeyActivity();
+        CheckForScreenEdgeActivity();
     }
 
     #region ScrollWheel Events
 
-    private void OnScroll(GameObject go, float delta) {
+    private void ScrollEventHandler(GameObject go, float delta) {
         if (UICamera.isOverUI) {
             //D.Log("Scroll using GameObject {0} detected over UI.", go.name);
             return;
@@ -339,9 +343,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     public bool IsDragValueWaiting { get; private set; }
     private Vector2 _dragDelta;
 
-    private void OnDragStart(GameObject go) {
+    private void DragStartEventHandler(GameObject go) {
         if (UICamera.isOverUI) {
-            //D.Log("OnDragStart using GameObject {0} detected over UI.", go.name);
+            //D.Log("DragStartEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
         WriteMessage(go.name);
@@ -350,9 +354,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         IsDragging = true;
     }
 
-    private void OnDrag(GameObject go, Vector2 delta) {
+    private void DraggingEventHandler(GameObject go, Vector2 delta) {
         if (UICamera.isOverUI) {
-            //D.Log("OnDrag using GameObject {0} detected over UI.", go.name);
+            //D.Log("DraggingEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
         WriteMessage(go.name + Constants.Space + delta);
@@ -360,9 +364,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         IsDragValueWaiting = true;
     }
 
-    private void OnDragEnd(GameObject go) {
+    private void DragEndEventHandler(GameObject go) {
         if (UICamera.isOverUI) {
-            //D.Log("OnDragEnd using GameObject {0} detected over UI.", go.name);
+            //D.Log("DragEndEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
         WriteMessage(go.name);
@@ -395,29 +399,40 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     // delegate isn't fired until the completion of the click action, which is way after the input mode is changed
     // back to normal, thereby firing onUnconsumedClick which undesireably clears the SelectionManager.
 
-    public event Action<NguiMouseButton> onUnconsumedPressDown;
+    /// <summary>
+    /// Occurs when a mouse button is pressed down, but not over a gameObject.
+    /// This event does not fire when the button is released.
+    /// </summary>
+    public event EventHandler unconsumedPress;
+    //public event Action<NguiMouseButton> onUnconsumedPressDown;
 
-    private void OnPress(GameObject go, bool isDown) {
+    private void PressEventHandler(GameObject go, bool isDown) {
         if (UICamera.isOverUI) {
-            //D.Log("OnPress({0}) detected over UI.", go.name);
+            //D.Log("PressEventHandler({0}) detected over UI.", go.name);
             return;
         }
         //WriteMessage(go.name);    // FIXME: UICamera.onPress bug? go can be null, posted on Ngui support 11/7/14
 
-        if (UICamera.fallThrough == go) {
+        if (isDown && UICamera.fallThrough == go) {
             // the target of the press is the fallThrough event handler, so this press wasn't consumed by another gameobject
-            OnUnconsumedPress(isDown);
+            //OnUnconsumedPress(isDown);
+            OnUnconsumedPress();
         }
     }
 
     /// <summary>
     /// Called when a mouse button press event occurs but no collider consumes it.
     /// </summary>
-    private void OnUnconsumedPress(bool isDown) {
-        if (isDown) {
-            if (onUnconsumedPressDown != null) {
-                onUnconsumedPressDown(_inputHelper.CurrentMouseButton);
-            }
+    //private void OnUnconsumedPress(bool isDown) {
+    //    if (isDown) {
+    //        if (onUnconsumedPressDown != null) {
+    //            onUnconsumedPressDown(_inputHelper.CurrentMouseButton);
+    //        }
+    //    }
+    //}
+    private void OnUnconsumedPress() {
+        if (unconsumedPress != null) {
+            unconsumedPress(this, new EventArgs());
         }
     }
 
@@ -586,16 +601,16 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whos typical use case is holding down.
 
     private void SubscribeToViewModeKeyEvents() {
-        UICamera.onKey += OnViewModeKey;
+        UICamera.onKey += KeyEventHandler;
     }
 
     private void UnsubscribeToViewModeKeyEvents() {
-        UICamera.onKey -= OnViewModeKey;
+        UICamera.onKey -= KeyEventHandler;
     }
 
-    private void OnViewModeKey(GameObject go, KeyCode key) {
+    private void KeyEventHandler(GameObject go, KeyCode key) {
         if (_playerViews.ViewModeKeyCodes.Contains(key)) {
-            _playerViews.OnViewModeKeyPressed(key);
+            _playerViews.HandleViewModeKeyPressed(key);
         }
     }
 
@@ -650,10 +665,14 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void Unsubscribe() {
-        _gameMgr.onGameStateChanging -= OnGameStateChanging;
-        _gameMgr.onGameStateChanged -= OnGameStateChanged;
-        _gameMgr.onSceneLoading -= OnSceneLoading;
-        _gameMgr.onSceneLoaded -= OnSceneLoaded;
+        //_gameMgr.onGameStateChanging -= OnGameStateChanging;
+        _gameMgr.gameStateChanging -= GameStateChangingEventHandler;
+        //_gameMgr.onGameStateChanged -= OnGameStateChanged;
+        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
+        //_gameMgr.onSceneLoading -= OnSceneLoading;
+        _gameMgr.sceneLoading -= SceneLoadingEventHandler;
+        //_gameMgr.onSceneLoaded -= OnSceneLoaded;
+        _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
         UnsubscribeToWorldMouseEvents();
     }
 
@@ -665,11 +684,11 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// UICamera sees a gameObject or not.
     /// </summary>
     private void UnsubscribeToWorldMouseEvents() {
-        UICamera.onScroll -= OnScroll;
-        UICamera.onDragStart -= OnDragStart;
-        UICamera.onDrag -= OnDrag;
-        UICamera.onDragEnd -= OnDragEnd;
-        UICamera.onPress -= OnPress;
+        UICamera.onScroll -= ScrollEventHandler;
+        UICamera.onDragStart -= DragStartEventHandler;
+        UICamera.onDrag -= DraggingEventHandler;
+        UICamera.onDragEnd -= DragEndEventHandler;
+        UICamera.onPress -= PressEventHandler;
     }
 
     #endregion
@@ -784,7 +803,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     //public bool isScrollValueWaiting;
     //private float _scrollWheelDelta;
 
-    //private void OnScroll(GameObject go, float delta) {
+    //private void ScrollEventHandler(GameObject go, float delta) {
     //    if (UICamera.isOverUI) {
     //        //D.Log("Scroll using GameObject {0} detected over UI.", go.name);
     //        return;

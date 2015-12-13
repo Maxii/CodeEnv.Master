@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
             _revolver.enabled = false;
-            // TODO Revolver settings
+            //TODO Revolver settings
         }
 
         protected override void AssessComponentsToShowOrOperate() {

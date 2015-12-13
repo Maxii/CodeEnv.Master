@@ -31,7 +31,7 @@ using UnityEngine;
 /// </summary>
 public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyChangeListener, ICanNavigate {
 
-    public event Action onDestinationReached;
+    public event EventHandler destinationReached;
 
     private ShipOrder _currentOrder;
     /// <summary>
@@ -43,7 +43,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     /// </summary>
     public ShipOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<ShipOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+        set { SetProperty<ShipOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
     public new ShipData Data {
@@ -117,8 +117,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     #endregion
 
-    #region Model Methods
-
     public override void CommenceOperations() {
         base.CommenceOperations();
         CurrentState = ShipState.Idling;
@@ -128,7 +126,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    public void OnFleetFullSpeedChanged() { _helm.OnFleetFullSpeedChanged(); }
+    public void HandleFleetFullSpeedChanged() { _helm.HandleFleetFullSpeedChanged(); }
 
     /// <summary>
     /// The Captain uses this method to issue orders.
@@ -146,7 +144,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 standingOrder = CurrentOrder;
                 if (IsHQ) {
                     // the captain is overriding his superior on the flagship so declare an emergency   // HACK
-                    Command.__OnHQElementEmergency();
+                    Command.__HandleHQElementEmergency();
                 }
             }
             else if (CurrentOrder.StandingOrder != null) {
@@ -164,8 +162,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         CurrentState = ShipState.Dead;
     }
 
-    private void OnCurrentOrderChanged() {
-        // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+    private void CurrentOrderPropChangedHandler() {
+        //TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
         if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingOrbit) {
             Return();
             // I expect the assert below to fail when either CalledState_ExitState() or CallingState_EnterState() returns IEnumerable.  Return() above executes
@@ -226,17 +224,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         }
     }
 
-    protected override void OnOwnerChanging(Player newOwner) {
-        base.OnOwnerChanging(newOwner);
-        if (_isViewMembersInitialized) {
-            // _ctxControl has already been initialized
-            if (Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI and Player so generate a new ctxControl
-                InitializeContextMenu(newOwner);
-            }
-        }
-    }
-
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
         // once ShipState.Dead is set, if Moving, Moving.ExitState will DisengageAutoPilot
@@ -286,7 +273,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         AMortalItem mortalOrbitedObject = orbitSlot.OrbitedObject as AMortalItem;
         if (mortalOrbitedObject != null) {
-            mortalOrbitedObject.onDeathOneShot += OnOrbitedObjectDeath;
+            //mortalOrbitedObject.onDeathOneShot += OnOrbitedObjectDeath;
+            mortalOrbitedObject.deathOneShot += OrbitedObjectDeathEventHandler;
         }
         _isInOrbit = true;
     }
@@ -302,7 +290,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             if (AssessWhetherToBreakOrbit(_currentOrIntendedOrbitSlot)) {
                 AMortalItem mortalOrbitedObject = _currentOrIntendedOrbitSlot.OrbitedObject as AMortalItem;
                 if (mortalOrbitedObject != null) {
-                    mortalOrbitedObject.onDeathOneShot -= OnOrbitedObjectDeath;
+                    //mortalOrbitedObject.onDeathOneShot -= OnOrbitedObjectDeath;
+                    mortalOrbitedObject.deathOneShot -= OrbitedObjectDeathEventHandler;
                 }
                 BreakOrbit(_currentOrIntendedOrbitSlot);
             }
@@ -345,21 +334,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         D.Assert(_isInOrbit);
         _orbitSimulatorJoint.connectedBody = null;
         Destroy(_orbitSimulatorJoint);
-        orbitSlot.OnLeftOrbit(this);
+        orbitSlot.HandleLeftOrbit(this);
         orbitSlot = null;
         _isInOrbit = false;
     }
 
-    private void OnOrbitedObjectDeath(IMortalItem orbitedObject) {
-        // no need to disconnect event that called this as the event is a oneShot
-        BreakOrbit(_currentOrIntendedOrbitSlot);
-    }
-
     #endregion
-
-    #endregion
-
-    #region View Methods
 
     public override void AssessHighlighting() {
         if (IsDiscernibleToUser) {
@@ -398,20 +378,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         var report = GetUserReport();
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
         return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
-    }
-
-    protected override void OnIsDiscernibleToUserChanged() {
-        base.OnIsDiscernibleToUserChanged();
-        ShowVelocityRay(IsDiscernibleToUser);
-    }
-
-    private void OnIsSelectedChanged() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessHighlighting();
-        AssessShowCoursePlot();
     }
 
     /// <summary>
@@ -466,20 +432,64 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         }
     }
 
-    #endregion
+    private void HandleDestinationReached() {
+        UponDestinationReached();
+        OnDestinationReached();
+    }
 
-    #region Events
+    #region Event and Property Change Handlers
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    private void OnDestinationReached() {
+        if (destinationReached != null) {
+            destinationReached(this, new EventArgs());
+        }
+    }
+
+    private void OrbitedObjectDeathEventHandler(object sender, EventArgs e) {
+        // no need to disconnect event that called this as the event is a oneShot
+        BreakOrbit(_currentOrIntendedOrbitSlot);
+    }
+
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
+        if (_hasInitOnFirstDiscernibleToUserRun) {
+            // _ctxControl has already been initialized
+            if (Owner.IsUser != newOwner.IsUser) {
+                // Kind of owner has changed between AI and Player so generate a new ctxControl
+                InitializeContextMenu(newOwner);
+            }
+        }
+    }
+
+    protected override void IsDiscernibleToUserPropChangedHandler() {
+        base.IsDiscernibleToUserPropChangedHandler();
+        ShowVelocityRay(IsDiscernibleToUser);
+    }
+
+    private void IsSelectedPropChangedHandler() {
+        if (IsSelected) {
+            ShowSelectedItemHud();
+            SelectionManager.Instance.CurrentSelection = this;
+        }
+        AssessHighlighting();
+        AssessShowCoursePlot();
+    }
+
+    private void TargetDeathEventHandler(object sender, EventArgs e) {
+        IMortalItem deadTarget = sender as IMortalItem;
+        UponTargetDeath(deadTarget);
+    }
+
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         IsSelected = true;
     }
 
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (_ctxControl != null && !isDown && !_inputMgr.IsDragging) {  // AI ships have no _ctxControl
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if (_ctxControl != null && !_inputMgr.IsDragging) {  // AI ships have no _ctxControl
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -512,7 +522,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     public new ShipState CurrentState {
         get { return (ShipState)base.CurrentState; }
         protected set {
-            if (CurrentState == value && value != ShipState.ExecuteMoveOrder) { // Common to have repeating ExecuteMoveOrder states when following waypoints
+            if (base.CurrentState != null && CurrentState == value && value != ShipState.ExecuteMoveOrder) { // Common to have repeating ExecuteMoveOrder states when following waypoints
                 D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
             }
             base.CurrentState = value;
@@ -558,11 +568,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 //D.Log("{0} is already on station.", FullName);
             }
         }
-        // TODO register as available
+        //TODO register as available
         yield return null;
     }
 
-    void Idling_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -574,7 +584,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     void Idling_ExitState() {
         LogEvent();
-        // TODO register as unavailable
+        //TODO register as unavailable
     }
 
     #endregion
@@ -702,7 +712,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteMoveOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void ExecuteMoveOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -743,41 +753,41 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         LogEvent();
         var mortalMoveTarget = _moveTarget as AMortalItem;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onDeathOneShot += OnTargetDeath;
+            mortalMoveTarget.deathOneShot += TargetDeathEventHandler;
         }
         _helm.PlotCourse(_moveTarget, _moveSpeed, _orderSource);
     }
 
-    void Moving_OnCoursePlotSuccess() {
+    void Moving_UponCoursePlotSuccess() {
         LogEvent();
         _helm.EngageAutoPilot();
     }
 
-    void Moving_OnCoursePlotFailure() {
+    void Moving_UponCoursePlotFailure() {
         LogEvent();
         _isDestinationUnreachable = true;
         Return();
     }
 
-    void Moving_OnDestinationUnreachable() {
+    void Moving_UponDestinationUnreachable() {
         LogEvent();
         _isDestinationUnreachable = true;
         Return();
     }
 
-    void Moving_OnTargetDeath(IMortalItem deadTarget) {
+    void Moving_UponTargetDeath(IMortalItem deadTarget) {
         LogEvent();
         D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _moveTarget.FullName, deadTarget.FullName));
         Return();
     }
 
-    void Moving_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void Moving_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void Moving_OnDestinationReached() {
+    void Moving_UponDestinationReached() {
         LogEvent();
         D.Log("{0} has reached destination {1}.", FullName, _moveTarget.FullName);
         Return();
@@ -791,7 +801,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         LogEvent();
         var mortalMoveTarget = _moveTarget as AMortalItem;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onDeathOneShot -= OnTargetDeath;
+            mortalMoveTarget.deathOneShot -= TargetDeathEventHandler;
         }
         _moveTarget = null;
         _moveSpeed = Speed.None;
@@ -825,7 +835,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             if (TryPickPrimaryTarget(out _primaryTarget)) {
                 //D.Log("{0} picked {1} as Primary Target.", FullName, _primaryTarget.FullName);
                 // target found within sensor range
-                _primaryTarget.onDeathOneShot += OnTargetDeath;
+                _primaryTarget.deathOneShot += TargetDeathEventHandler;
                 _moveTarget = _primaryTarget;
                 _moveSpeed = Speed.Full;
                 _orderSource = OrderSource.ElementCaptain;
@@ -855,13 +865,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void ExecuteAttackOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteAttackOrder_OnTargetDeath(IMortalItem deadTarget) {
+    void ExecuteAttackOrder_UponTargetDeath(IMortalItem deadTarget) {
         D.Assert(_primaryTarget == deadTarget);
         LogEvent();
         _primaryTarget = null;  // tells EnterState it can stop waiting for targetDeath and pick another primary target
@@ -870,7 +880,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
         if (_primaryTarget != null) {
-            _primaryTarget.onDeathOneShot -= OnTargetDeath;
+            _primaryTarget.deathOneShot -= TargetDeathEventHandler;
         }
         _ordersTarget = null;
         _primaryTarget = null;
@@ -883,7 +893,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     // only called from ExecuteAttackOrder
 
     void Withdrawing_EnterState() {
-        // TODO withdraw to rear, evade
+        //TODO withdraw to rear, evade
     }
 
     #endregion
@@ -932,9 +942,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     #region Entrenching
 
     //IEnumerator Entrenching_EnterState() {
-    //    // TODO ShipView shows animation while in this state
+    //    //TODO ShipView shows animation while in this state
     //    while (true) {
-    //        // TODO entrench until complete
+    //        //TODO entrench until complete
     //        yield return null;
     //    }
     //    //_fleet.OnEntrenchingComplete(this)?
@@ -960,7 +970,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here
         if (_isDestinationUnreachable) {
-            // TODO how to handle move errors?
+            //TODO how to handle move errors?
             CurrentState = ShipState.Idling;
             yield break;
         }
@@ -976,7 +986,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteRepairOrder_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -1016,7 +1026,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         Return();
     }
 
-    void Repairing_OnWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void Repairing_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -1030,14 +1040,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     #region Refitting
 
-    // TODO Deactivate/Activate Equipment
+    //TODO Deactivate/Activate Equipment
 
     IEnumerator Refitting_EnterState() {
         D.Warn("{0}.Refitting not currently implemented.", FullName);
         // ShipView shows animation while in this state
         //OnStartShow();
         //while (true) {
-        // TODO refit until complete
+        //TODO refit until complete
         yield return new WaitForSeconds(2);
         //}
         //OnStopShow();   // must occur while still in target state
@@ -1056,7 +1066,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     void Disbanding_EnterState() {
         D.Warn("{0}.Disbanding not currently implemented.", FullName);
-        // TODO detach from fleet and create temp FleetCmd
+        //TODO detach from fleet and create temp FleetCmd
         // issue a Disband order to our new fleet
         Return();   // ??
     }
@@ -1074,7 +1084,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         StartEffect(EffectID.Dying);
     }
 
-    void Dead_OnEffectFinished(EffectID effectID) {
+    void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         __DestroyMe(3F);
     }
@@ -1083,17 +1093,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     #region StateMachine Support Methods
 
-    public override void OnEffectFinished(EffectID effectID) {
-        base.OnEffectFinished(effectID);
+    public override void HandleEffectFinished(EffectID effectID) {
+        base.HandleEffectFinished(effectID);
         if (CurrentState == ShipState.Dead) {   // OPTIMIZE avoids 'method not found' warning spam
-            RelayToCurrentState(effectID);
+            UponEffectFinished(effectID);
         }
     }
 
     private void __HandleDestinationUnreachable() {
         D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.Target.FullName);
         if (IsHQ) {
-            Command.__OnHQElementEmergency();   // HACK stays in this state, assuming this will cause a new order from Cmd
+            Command.__HandleHQElementEmergency();   // HACK stays in this state, assuming this will cause a new order from Cmd
         }
         CurrentState = ShipState.Idling;
     }
@@ -1117,38 +1127,23 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             return false;
         }
 
-        // TODO increase speed if further away
+        //TODO increase speed if further away
         // var vectorToStation = Data.FormationStation.VectorToStation;
         // var distanceToStationSqrd = vectorToStation.sqrMagnitude;
         speed = Speed.Docking;
         return true;
     }
 
-    void OnCoursePlotSuccess() { RelayToCurrentState(); }
+    private void UponCoursePlotSuccess() { RelayToCurrentState(); }
 
-    void OnCoursePlotFailure() {
+    private void UponCoursePlotFailure() {
         D.Warn("{0} course plot to {1} failed.", FullName, _helm.Target.FullName);
         RelayToCurrentState();
     }
 
-    void OnDestinationReached() {
-        RelayToCurrentState();
-        if (onDestinationReached != null) {
-            onDestinationReached();
-        }
-    }
+    private void UponDestinationReached() { RelayToCurrentState(); }
 
-    void OnDestinationUnreachable() { RelayToCurrentState(); }
-
-    protected override void AssessNeedForRepair() {
-        if (Data.Health < 0.30F) {
-            if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
-                var repairLoc = Data.Position - transform.forward * 10F;
-                INavigableTarget repairDestination = new StationaryLocation(repairLoc);
-                OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
-            }
-        }
-    }
+    private void UponDestinationUnreachable() { RelayToCurrentState(); }
 
     #endregion
 
@@ -1194,17 +1189,22 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     private IElementAttackableTarget __SelectHighestPriorityTarget(IEnumerable<IElementAttackableTarget> availableTargets) {
         return availableTargets.MinBy(target => Vector3.SqrMagnitude(target.Position - Position));
-        //return RandomExtended<IElementAttackableTarget>.Choice(availableTargets);
     }
-
-    void OnTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        //var equipmentSurvivalChance = Constants.OneHundredPercent - damageSeverity;
         var equipDamagedChance = damageSeverity;
-        //Data.IsFtlOperational = RandomExtended.Chance(equipmentSurvivalChance);
         Data.IsFtlDamaged = RandomExtended.Chance(equipDamagedChance);
+    }
+
+    protected override void AssessNeedForRepair() {
+        if (Data.Health < 0.30F) {
+            if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
+                var repairLoc = Data.Position - transform.forward * 10F;
+                INavigableTarget repairDestination = new StationaryLocation(repairLoc);
+                OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
+            }
+        }
     }
 
     #endregion
@@ -1231,7 +1231,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     private bool _isSelected;
     public bool IsSelected {
         get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
+        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
     }
 
     //public ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
@@ -1270,8 +1270,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     #region ITopographyChangeListener Members
 
-    public void OnTopographyChanged(Topography newTopography) {
-        //D.Log("{0}.OnTopographyChanged({1}).", FullName, newTopography.GetValueName());
+    public void HandleTopographyChanged(Topography newTopography) {
+        //D.Log("{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
         Data.Topography = newTopography;
     }
 
@@ -1352,9 +1352,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
-            _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
+            _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
+            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, FullSpeedPropChangedHandler));
+            _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
         }
 
         /// <summary>
@@ -1368,7 +1368,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             _fstOffset = orderSource == OrderSource.UnitCommand ? _ship.FormationStation.StationOffset : Vector3.zero;
             _targetCloseEnoughDistance = target.GetCloseEnoughDistance(_ship);
             RefreshCourse(CourseRefreshMode.NewCourse);
-            OnCoursePlotSuccess();
+            HandleCoursePlotSuccess();
         }
 
         protected override void RunPilotJobs() {
@@ -1376,7 +1376,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             // before anything, check to see if we are already there
             if (TargetPointDistance < _targetCloseEnoughDistance) {
                 //D.Log("{0} TargetDistance = {1}, TargetCloseEnoughDistance = {2}.", Name, TargetPointDistance, _targetCloseEnoughDistance);
-                OnDestinationReached();
+                HandleDestinationReached();
                 return;
             }
 
@@ -1418,33 +1418,33 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
             if (_orderSource == OrderSource.UnitCommand) {
                 ChangeHeading(newHeading, 5F);
-                _pilotWaitForFleetJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, onJobComplete: (wasKilled) => {
+                _pilotWaitForFleetJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, jobCompleted: (wasKilled) => {
                     if (!wasKilled) {
                         //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
                         EngageEnginesAtTravelSpeed();
                         // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-                        _pilotNavigationJob = new Job(EngageDirectCourseTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance, _fstOffset), toStart: true, onJobComplete: (wasKilled2) => {
+                        _pilotNavigationJob = new Job(EngageDirectCourseTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance, _fstOffset), toStart: true, jobCompleted: (wasKilled2) => {
                             if (!wasKilled2) {
                                 RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
                                 ResumeDirectCourseToTarget();
                             }
                         });
                         _pilotObstacleCheckJob = new Job(CheckForObstacles(obstacleDetour, Constants.ZeroF, CourseRefreshMode.ReplaceObstacleDetour), toStart: true);
-                    }       // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+                    }       // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
                 });
             }
             else {
                 ChangeHeading(newHeading, 5F, onHeadingConfirmed: () => {
                     EngageEnginesAtTravelSpeed();
                     // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-                    _pilotNavigationJob = new Job(EngageDirectCourseTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance), toStart: true, onJobComplete: (wasKilled) => {
+                    _pilotNavigationJob = new Job(EngageDirectCourseTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance), toStart: true, jobCompleted: (wasKilled) => {
                         if (!wasKilled) {
                             RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
                             ResumeDirectCourseToTarget();
                         }
                     });
                     _pilotObstacleCheckJob = new Job(CheckForObstacles(obstacleDetour, Constants.ZeroF, CourseRefreshMode.ReplaceObstacleDetour), toStart: true);
-                });     // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+                });     // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
             }
         }
 
@@ -1462,30 +1462,30 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             if (_orderSource == OrderSource.UnitCommand) {
                 ChangeHeading(targetPtBearing, 5F);
-                _pilotWaitForFleetJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, onJobComplete: (wasKilled) => {
+                _pilotWaitForFleetJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, jobCompleted: (wasKilled) => {
                     if (!wasKilled) {
                         //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
                         EngageEnginesAtTravelSpeed();
-                        _pilotNavigationJob = new Job(EngageDirectCourseTo(Target, _targetCloseEnoughDistance, _fstOffset), toStart: true, onJobComplete: (wasKilled2) => {
+                        _pilotNavigationJob = new Job(EngageDirectCourseTo(Target, _targetCloseEnoughDistance, _fstOffset), toStart: true, jobCompleted: (wasKilled2) => {
                             if (!wasKilled2) {
-                                OnDestinationReached();
+                                HandleDestinationReached();
                             }
                         });
                         _pilotObstacleCheckJob = new Job(CheckForObstacles(Target, _targetCloseEnoughDistance, CourseRefreshMode.AddWaypoint), toStart: true);
-                    }       // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+                    }       // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
                 });
             }
             else {
                 ChangeHeading(targetPtBearing, 5F, onHeadingConfirmed: () => {
                     //D.Log("{0} is initiating direct course to {1}.", Name, Target.FullName);
                     EngageEnginesAtTravelSpeed();
-                    _pilotNavigationJob = new Job(EngageDirectCourseTo(Target, _targetCloseEnoughDistance, _fstOffset), toStart: true, onJobComplete: (wasKilled) => {
+                    _pilotNavigationJob = new Job(EngageDirectCourseTo(Target, _targetCloseEnoughDistance, _fstOffset), toStart: true, jobCompleted: (wasKilled) => {
                         if (!wasKilled) {
-                            OnDestinationReached();
+                            HandleDestinationReached();
                         }
                     });
                     _pilotObstacleCheckJob = new Job(CheckForObstacles(Target, _targetCloseEnoughDistance, CourseRefreshMode.AddWaypoint), toStart: true);
-                });     // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+                });     // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
             }
         }
 
@@ -1501,13 +1501,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             ChangeHeading(targetPtBearing, 5F, onHeadingConfirmed: () => {
                 //D.Log("{0} is now on heading to reach {1}.", Name, Target.FullName);
-                _pilotNavigationJob = new Job(EngageDirectCourseTo(Target, _targetCloseEnoughDistance, _fstOffset), toStart: true, onJobComplete: (wasKilled) => {
+                _pilotNavigationJob = new Job(EngageDirectCourseTo(Target, _targetCloseEnoughDistance, _fstOffset), toStart: true, jobCompleted: (wasKilled) => {
                     if (!wasKilled) {
-                        OnDestinationReached();
+                        HandleDestinationReached();
                     }
                 });
                 _pilotObstacleCheckJob = new Job(CheckForObstacles(Target, _targetCloseEnoughDistance, CourseRefreshMode.AddWaypoint), toStart: true);
-            });     // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+            });     // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
         }
 
         /// <summary>
@@ -1525,14 +1525,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 //D.Log("{0} is now on heading to reach obstacle detour {1}.", Name, obstacleDetour.FullName);
 
                 // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-                _pilotNavigationJob = new Job(EngageDirectCourseTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance), toStart: true, onJobComplete: (wasKilled) => {
+                _pilotNavigationJob = new Job(EngageDirectCourseTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance), toStart: true, jobCompleted: (wasKilled) => {
                     if (!wasKilled) {
                         RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
                         ResumeDirectCourseToTarget();
                     }
                 });
                 _pilotObstacleCheckJob = new Job(CheckForObstacles(obstacleDetour, Constants.ZeroF, CourseRefreshMode.ReplaceObstacleDetour), toStart: true);
-            });     // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+            });     // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
         }
 
         #region Course Execution Coroutines
@@ -1656,14 +1656,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             //D.Log("{0} received ChangeHeading to {1}.", Name, newHeading);
             if (_headingJob != null && _headingJob.IsRunning) {
                 _headingJob.Kill();
-                // onJobComplete will run next frame so placed cancelled notice here
+                // jobCompleted will run next frame so placed cancelled notice here
                 //D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
             }
 
             _engineRoom.IsTurnUnderway = true;  // signals engineRoom to correct for drift during the turn
 
             _ship.Data.RequestedHeading = newHeading;
-            _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
+            _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
                 if (!_isDisposing) {
                     if (!jobWasKilled) {
                         //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
@@ -1835,14 +1835,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         //    //D.Log("{0} received ChangeHeading to {1}.", Name, newHeading);
         //    if (_headingJob != null && _headingJob.IsRunning) {
         //        _headingJob.Kill();
-        //        // onJobComplete will run next frame so placed cancelled notice here
+        //        // jobCompleted will run next frame so placed cancelled notice here
         //        D.Log("{0}'s previous turn order to {1} has been cancelled.", Name, _ship.Data.RequestedHeading);
         //    }
 
         //    AdjustSpeedForTurn(newHeading, currentSpeed);
 
         //    _ship.Data.RequestedHeading = newHeading;
-        //    _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
+        //    _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
         //        if (!_isDisposing) {
         //            if (!jobWasKilled) {
         //                //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
@@ -1906,36 +1906,36 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         #endregion
 
-        private void OnCoursePlotFailure() {
-            _ship.OnCoursePlotFailure();
+        private void HandleCoursePlotFailure() {
+            _ship.UponCoursePlotFailure();
         }
 
-        private void OnCoursePlotSuccess() {
-            _ship.OnCoursePlotSuccess();
+        private void HandleCoursePlotSuccess() {
+            _ship.UponCoursePlotSuccess();
         }
 
         /// <summary>
         /// Called when the ship gets 'close enough' to the destination.
         /// </summary>
-        protected override void OnDestinationReached() {
-            base.OnDestinationReached();
+        protected override void HandleDestinationReached() {
+            base.HandleDestinationReached();
             //_pilotJob.Kill(); // should be handled by the ship's state machine ordering a Disengage()
-            _ship.OnDestinationReached();
+            _ship.HandleDestinationReached();
         }
 
-        protected override void OnDestinationUnreachable() {
-            base.OnDestinationUnreachable();
+        protected override void HandleDestinationUnreachable() {
+            base.HandleDestinationUnreachable();
             //_pilotJob.Kill(); // should be handled by the ship's state machine ordering a Disengage()
-            _ship.OnDestinationUnreachable();
+            _ship.UponDestinationUnreachable();
         }
 
-        protected override void OnAutoPilotEngaged() {
+        protected override void HandleAutoPilotEngaged() {
             RefreshAutoPilotNavValues();
             // no need to RefreshEngineSpeedValues as the AutoPilot will engage the engines when ready to move
-            base.OnAutoPilotEngaged();
+            base.HandleAutoPilotEngaged();
         }
 
-        internal void OnFleetFullSpeedChanged() {
+        internal void HandleFleetFullSpeedChanged() {
             if (IsAutoPilotEngaged) {
                 if (_orderSource == OrderSource.UnitCommand) {
                     // TravelSpeed is a FleetSpeed value so the Fleet's FullSpeed change will affect its value
@@ -1945,7 +1945,20 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
         }
 
-        private void OnFullSpeedChanged() {
+        #region Event and Property Change Handlers
+
+        private void GameSpeedPropChangedHandler() {
+            if (IsAutoPilotEngaged) {
+                RefreshAutoPilotNavValues();
+                // no need to change engineRoom speed as it auto adjusts to game speed changes
+            }
+        }
+
+        private void IsPausedPropChangedHandler() {
+            PauseJobs(GameManager.Instance.IsPaused);
+        }
+
+        private void FullSpeedPropChangedHandler() {
             if (IsAutoPilotEngaged) {
                 if (_orderSource == OrderSource.ElementCaptain) {
                     // TravelSpeed is a ShipSpeed value so this Ship's FullSpeed change will affect its value
@@ -1961,23 +1974,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             }
         }
 
-        // Note: No need for OnTopographyChanged as FullSpeedValues get changed when density (and therefore drag) changes
+        // Note: No need for TopographyPropChangedHandler as FullSpeedValues get changed when density (and therefore drag) changes
 
-        private void OnCourseChanged() {
+        #endregion
+
+        private void HandleCourseChanged() {
             _ship.AssessShowCoursePlot();
         }
-
-        private void OnGameSpeedChanged() {
-            if (IsAutoPilotEngaged) {
-                RefreshAutoPilotNavValues();
-                // no need to change engineRoom speed as it auto adjusts to game speed changes
-            }
-        }
-
-        private void OnIsPausedChanged() {
-            PauseJobs(GameManager.Instance.IsPaused);
-        }
-
         private void PauseJobs(bool toPause) {
             if (_pilotNavigationJob != null && _pilotNavigationJob.IsRunning) {
                 if (toPause) {
@@ -2092,7 +2095,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
             }
             //D.Log("CourseCountAfter = {0}.", Course.Count);
-            OnCourseChanged();
+            HandleCourseChanged();
         }
 
         #region SeparationDistance Archive
@@ -2379,7 +2382,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 set {
                     if (_isTurnUnderway != value) {
                         _isTurnUnderway = value;
-                        OnIsTurnUnderwayChanged();
+                        IsTurnUnderwayPropChangedHandler();
                     }
                 }
             }
@@ -2427,8 +2430,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
             private void Subscribe() {
                 _subscriptions = new List<IDisposable>();
-                _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-                _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+                _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
+                _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
             }
 
             /// <summary>
@@ -2455,7 +2458,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 }
             }
 
-            private void OnIsTurnUnderwayChanged() {
+            #region Event and Property Change Handlers
+
+            private void IsTurnUnderwayPropChangedHandler() {
                 if (!IsTurnUnderway) {  // most interested in residual velocity after turn has ended
                     Vector3 relativeVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
                     string turnStateMsg = IsTurnUnderway ? "turn has begun" : "turn has ended";
@@ -2463,14 +2468,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 }
             }
 
-            private void OnGameSpeedChanged() {
+            private void GameSpeedPropChangedHandler() {
                 float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
                 _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
                 float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
                 AdjustForGameSpeed(gameSpeedChangeRatio);
             }
 
-            private void OnIsPausedChanged() {
+            private void IsPausedPropChangedHandler() {
                 if (_gameMgr.IsPaused) {
                     _velocityOnPause = _shipRigidbody.velocity;
                     //D.Log("{0}.Rigidbody.velocity = {1}, .isKinematic changing to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
@@ -2484,6 +2489,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                     _shipRigidbody.WakeUp();    // OPTIMIZE superfluous?
                 }
             }
+
+            #endregion
 
             /// <summary>
             /// Sets the engine power output values needed to achieve the requested speed. This speed has already
@@ -2503,7 +2510,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 }
                 if (_operateForwardPropulsionJob == null || !_operateForwardPropulsionJob.IsRunning) {
                     //D.Log("{0} is engaging forward propulsion.", _shipData.FullName);
-                    _operateForwardPropulsionJob = new Job(OperateForwardPropulsion(), toStart: true, onJobComplete: (jobWasKilled) => {
+                    _operateForwardPropulsionJob = new Job(OperateForwardPropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
                         D.Assert(jobWasKilled);
                         //D.Log("{0} has ended forward propulsion.", _shipData.FullName);
                     });
@@ -2519,7 +2526,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 }
                 if (_operateReversePropulsionJob == null || !_operateReversePropulsionJob.IsRunning) {
                     //D.Log("{0} is engaging reverse propulsion.", _shipData.FullName);
-                    _operateReversePropulsionJob = new Job(OperateReversePropulsion(), toStart: true, onJobComplete: (jobWasKilled) => {
+                    _operateReversePropulsionJob = new Job(OperateReversePropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
                             // ReverseEngines completed naturally and should engage forward engines unless RequestedSpeed is zero
                             if (_shipData.RequestedSpeed != Constants.ZeroF) {
@@ -2737,8 +2744,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
         //    private void Subscribe() {
         //        _subscriptions = new List<IDisposable>();
-        //        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-        //        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+        //        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
+        //        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
         //    }
 
         //    /// <summary>
@@ -2751,7 +2758,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         //        if (CheckForAcceptableSpeedValue(newSpeedRequest)) {
         //            SetPowerOutputFor(newSpeedRequest);
         //            if (_operateEnginesJob == null) {
-        //                _operateEnginesJob = new Job(OperateEngines(), toStart: true, onJobComplete: (wasKilled) => {
+        //                _operateEnginesJob = new Job(OperateEngines(), toStart: true, jobCompleted: (wasKilled) => {
         //                    // OperateEngines() can complete, but it is never killed
         //                    if (_isDisposing) { return; }
         //                    _operateEnginesJob = null;
@@ -2793,14 +2800,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         //        return true;
         //    }
 
-        //    private void OnGameSpeedChanged() {
+        //    private void GameSpeedPropChangedHandler() {
         //        float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
         //        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
         //        float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
         //        AdjustForGameSpeed(gameSpeedChangeRatio);
         //    }
 
-        //    private void OnIsPausedChanged() {
+        //    private void IsPausedPropChangedHandler() {
         //        if (_gameMgr.IsPaused) {
         //            _velocityOnPause = _shipRigidbody.velocity;
         //            _shipRigidbody.isKinematic = true;  // immediately stops rigidbody and puts it to sleep, but rigidbody.velocity value remains
@@ -3171,11 +3178,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     //    private void Subscribe() {
     //        _subscriptions = new List<IDisposable>();
-    //        _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+    //        _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
     //        _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
     //        _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
     //        _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
-    //        _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, Topography>(d => d.Topography, OnTopographyChanged));
+    //        _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, Topography>(d => d.Topography, HandleTopographyChanged));
     //    }
 
     //    /// <summary>
@@ -3255,7 +3262,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //        _travelSpeed = speed;
     //        RefreshNavigationalValues();
     //        RefreshCourse(CourseRefreshMode.NewCourse);
-    //        OnCoursePlotSuccess();
+    //        UponCoursePlotSuccess();
     //    }
 
     //    /// <summary>
@@ -3320,14 +3327,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //            D.Log("{0} is ready for departure.", _ship.FullName);
 
     //            // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-    //            _pilotJob = new Job(EngageDirectCourseTo(obstacleDetour), toStart: true, onJobComplete: (wasKilled) => {
+    //            _pilotJob = new Job(EngageDirectCourseTo(obstacleDetour), toStart: true, jobCompleted: (wasKilled) => {
     //                if (!wasKilled) {
     //                    RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
     //                    InitiateDirectCourseToTarget();
     //                }
     //            });
     //            _obstacleCheckJob = new Job(CheckForObstacles(obstacleDetour, _obstacleDetourCloseEnoughDistance, CourseRefreshMode.ReplaceObstacleDetour), toStart: true);
-    //        });     // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+    //        });     // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
     //    }
 
 
@@ -3340,30 +3347,30 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //        Vector3 targetPtBearing = (TargetPoint - _ship.Position).normalized;
     //        if (_orderSource == OrderSource.UnitCommand) {
     //            ChangeHeading(targetPtBearing, _currentSpeed);
-    //            _pilotJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, onJobComplete: (wasKilled) => {
+    //            _pilotJob = new Job(WaitWhileFleetAlignsForDeparture(), toStart: true, jobCompleted: (wasKilled) => {
     //                if (!wasKilled) {
     //                    D.Log("{0} reports {1} ready for departure.", _ship.FullName, _ship.Command.DisplayName);
     //                    ChangeSpeed(_travelSpeed);
-    //                    _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, onJobComplete: (wasKilled2) => {
+    //                    _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, jobCompleted: (wasKilled2) => {
     //                        if (!wasKilled2) {
     //                            OnDestinationReached();
     //                        }
     //                    });
     //                    _obstacleCheckJob = new Job(CheckForObstacles(Target, _targetInfo.CloseEnoughDistance, CourseRefreshMode.AddWaypoint), toStart: true);
-    //                }       // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+    //                }       // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
     //            });
     //        }
     //        else {
     //            ChangeHeading(targetPtBearing, _currentSpeed, 5F, onHeadingConfirmed: () => {
     //                D.Log("{0} is ready for departure.", _ship.FullName);
     //                ChangeSpeed(_travelSpeed);
-    //                _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, onJobComplete: (wasKilled) => {
+    //                _pilotJob = new Job(EngageDirectCourseToTarget(), toStart: true, jobCompleted: (wasKilled) => {
     //                    if (!wasKilled) {
     //                        OnDestinationReached();
     //                    }
     //                });
     //                _obstacleCheckJob = new Job(CheckForObstacles(Target, _targetInfo.CloseEnoughDistance, CourseRefreshMode.AddWaypoint), toStart: true);
-    //            });     // Note: can't use onJobComplete because 'out' cannot be used on coroutine method parameters
+    //            });     // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
     //        }
     //    }
 
@@ -3495,14 +3502,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //        D.Log("{0} received ChangeHeading to {1}.", _ship.FullName, newHeading);
     //        if (_headingJob != null && _headingJob.IsRunning) {
     //            _headingJob.Kill();
-    //            // onJobComplete will run next frame so placed cancelled notice here
+    //            // jobCompleted will run next frame so placed cancelled notice here
     //            D.Log("{0}'s previous turn order to {1} has been cancelled.", _ship.FullName, _ship.Data.RequestedHeading);
     //        }
 
     //        AdjustSpeedForTurn(newHeading, currentSpeed);
 
     //        _ship.Data.RequestedHeading = newHeading;
-    //        _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, onJobComplete: (jobWasKilled) => {
+    //        _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
     //            if (!_isDisposing) {
     //                if (!jobWasKilled) {
     //                    D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
@@ -3607,8 +3614,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //        _ship.OnCoursePlotFailure();
     //    }
 
-    //    private void OnCoursePlotSuccess() {
-    //        _ship.OnCoursePlotSuccess();
+    //    private void UponCoursePlotSuccess() {
+    //        _ship.UponCoursePlotSuccess();
     //    }
 
     //    /// <summary>
@@ -3632,7 +3639,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //        RefreshNavigationalValues();
     //    }
 
-    //    internal void OnFleetFullSpeedChanged() {
+    //    internal void HandleFleetFullSpeedChanged() {
     //        RefreshNavigationalValues();
     //    }
 
@@ -3640,17 +3647,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //        RefreshNavigationalValues();
     //    }
 
-    //    private void OnGameSpeedChanged() {
+    //    private void GameSpeedPropChangedHandler() {
     //        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
     //        RefreshNavigationalValues();
     //    }
 
-    //    private void OnTopographyChanged() {
+    //    private void HandleTopographyChanged() {
     //        D.Log("{0}.Topography now {1}.", _ship.FullName, _ship.Topography.GetName());
     //        RefreshNavigationalValues();
     //    }
 
-    //    private void OnCourseChanged() {
+    //    private void HandleCourseChanged() {
     //        _ship.AssessShowCoursePlot();
     //    }
 
@@ -3964,7 +3971,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
     //        }
     //        //D.Log("CourseCountAfter = {0}.", Course.Count);
-    //        OnCourseChanged();
+    //        HandleCourseChanged();
     //    }
 
     //    private float EstimateDistanceTraveledWhileTurning(Vector3 newHeading) {    // IMPROVE use newHeading
@@ -4331,8 +4338,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     //        private void Subscribe() {
     //            _subscriptions = new List<IDisposable>();
-    //            _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-    //            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+    //            _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
+    //            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
     //        }
 
     //        /// <summary>
@@ -4345,7 +4352,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //            if (CheckForAcceptableSpeedValue(newSpeedRequest)) {
     //                SetThrustFor(newSpeedRequest);
     //                if (_operateEnginesJob == null) {
-    //                    _operateEnginesJob = new Job(OperateEngines(), toStart: true, onJobComplete: (wasKilled) => {
+    //                    _operateEnginesJob = new Job(OperateEngines(), toStart: true, jobCompleted: (wasKilled) => {
     //                        // OperateEngines() can complete, but it is never killed
     //                        if (_isDisposing) { return; }
     //                        _operateEnginesJob = null;
@@ -4387,14 +4394,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     //            return true;
     //        }
 
-    //        private void OnGameSpeedChanged() {
+    //        private void GameSpeedPropChangedHandler() {
     //            float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
     //            _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
     //            float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
     //            AdjustForGameSpeed(gameSpeedChangeRatio);
     //        }
 
-    //        private void OnIsPausedChanged() {
+    //        private void IsPausedPropChangedHandler() {
     //            if (_gameMgr.IsPaused) {
     //                _velocityOnPause = _shipRigidbody.velocity;
     //                _shipRigidbody.isKinematic = true;

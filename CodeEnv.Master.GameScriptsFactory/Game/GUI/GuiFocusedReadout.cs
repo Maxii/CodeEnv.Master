@@ -39,51 +39,62 @@ public class GuiFocusedReadout : AGuiLabelReadout {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanging<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanging));
-        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanged));
+        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanging<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, CurrentFocusPropChangingHandler));
+        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, CurrentFocusPropChangedHandler));
     }
 
-    private void OnFocusChanging(ICameraFocusable newFocus) {
+    #region Event and Property Change Handlers
+
+    private void CurrentFocusPropChangingHandler(ICameraFocusable newFocus) {
         var previousFocus = MainCameraControl.Instance.CurrentFocus;
         if (previousFocus != null && previousFocus.IsRetainedFocusEligible) {
             var previousMortalFocus = previousFocus as IMortalItem;
             if (previousMortalFocus != null) {
-                previousMortalFocus.onDeathOneShot -= OnRetainedFocusDeath;
+
+                previousMortalFocus.deathOneShot -= RetainedFocusDeathEventHandler;
             }
         }
     }
 
-    private void OnFocusChanged() {
+    private void CurrentFocusPropChangedHandler() {
         ICameraFocusable focus = MainCameraControl.Instance.CurrentFocus;
         TryRetainingFocus(focus);
     }
+
+    private void RetainedFocusDeathEventHandler(object sender, EventArgs e) {
+        ICameraFocusable focusableItem = sender as ICameraFocusable;
+        D.Assert(focusableItem == _retainedFocus);
+        RefreshReadout(string.Empty);
+        _retainedFocus = null;
+    }
+
+    private void HandleMiddleClick() {
+        if (_retainedFocus != null) {
+            _retainedFocus.IsFocus = true;
+        }
+    }
+
+    private void ClickEventHandler() {
+        if (GameInputHelper.Instance.IsMiddleMouseButton) {
+            HandleMiddleClick();
+        }
+    }
+
+    void OnClick() {
+        ClickEventHandler();
+    }
+
+    #endregion
 
     private void TryRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {
             _retainedFocus = focus;
             var mortalFocus = focus as IMortalItem;
             if (mortalFocus != null) {
-                mortalFocus.onDeathOneShot += OnRetainedFocusDeath;
+
+                mortalFocus.deathOneShot += RetainedFocusDeathEventHandler;
             }
             RefreshReadout(focus.DisplayName);
-        }
-    }
-
-    private void OnRetainedFocusDeath(IMortalItem mortalItem) {
-        D.Assert(mortalItem as ICameraFocusable == _retainedFocus);
-        RefreshReadout(string.Empty);
-        _retainedFocus = null;
-    }
-
-    void OnClick() {
-        if (GameInputHelper.Instance.IsMiddleMouseButton) {
-            OnMiddleClick();
-        }
-    }
-
-    private void OnMiddleClick() {
-        if (_retainedFocus != null) {
-            _retainedFocus.IsFocus = true;
         }
     }
 
@@ -97,7 +108,8 @@ public class GuiFocusedReadout : AGuiLabelReadout {
         if (_retainedFocus != null) {
             var mortalRetainedFocus = _retainedFocus as IMortalItem;
             if (mortalRetainedFocus != null) {
-                mortalRetainedFocus.onDeathOneShot -= OnRetainedFocusDeath;
+                //mortalRetainedFocus.onDeathOneShot -= OnRetainedFocusDeath;
+                mortalRetainedFocus.deathOneShot -= RetainedFocusDeathEventHandler;
             }
         }
     }

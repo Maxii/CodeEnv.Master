@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             set {
                 D.Assert(_hull == null);    // happens only once
                 _hull = value;
-                OnHullChanged();
+                HullPropSetHandler();
             }
         }
 
@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             Weapons.Add(weapon);
         }
 
-        protected abstract void OnHullChanged();
+        protected abstract void HullPropSetHandler();
 
     }
 }

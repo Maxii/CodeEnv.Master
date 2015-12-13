@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         private bool _isReady;
         private bool IsReady {
             get { return _isReady; }
-            set { SetProperty<bool>(ref _isReady, value, "IsReady", OnIsReadyChanged); }
+            set { SetProperty<bool>(ref _isReady, value, "IsReady", IsReadyPropChangedHandler); }
         }
 
         private bool _isAnyThreatInRange;
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private bool IsAnyThreatInRange {
             get { return _isAnyThreatInRange; }
-            set { SetProperty<bool>(ref _isAnyThreatInRange, value, "IsAnyThreatInRange", OnIsAnyThreatInRangeChanged); }
+            set { SetProperty<bool>(ref _isAnyThreatInRange, value, "IsAnyThreatInRange", IsAnyThreatInRangePropChangedHandler); }
         }
 
         public IActiveCountermeasureRangeMonitor RangeMonitor { get; set; }
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private bool Fire(CountermeasureFiringSolution firingSolution) {
             var threat = firingSolution.Threat;
-            OnFiringInitiated(threat);
+            HandleFiringInitiated(threat);
 
             D.Log("{0} is firing on {1}. Qualified Threats = {2}.", Name, threat.Name, _qualifiedThreats.Select(t => t.Name).Concatenate());
             bool isThreatHit = false;
@@ -121,7 +121,7 @@ namespace CodeEnv.Master.GameContent {
                 WDVStrength interceptStrength = GetInterceptStrength(threatWdvCategory);
                 threat.TakeHit(interceptStrength);
             }
-            OnFiringComplete();
+            HandleFiringComplete();
             return isThreatHit;
         }
 
@@ -129,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
             return InterceptStrengths.Single(intS => intS.Category == threatWdvCategory);
         }
 
-        // Note: Unlike Weapons, there is no reason to have a OnDeclinedToFire() method as CMs on automatic 
+        // Note: Unlike Weapons, there is no reason to have a HandleDeclinedToFire() method as CMs on automatic 
         // should always fire on a threat if there is a FiringSolution.
 
         /// <summary>
@@ -137,8 +137,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="threat">The ordnance threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
-        public void OnThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
-            D.Log("{0} received OnThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
+        public void HandleThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
+            D.Log("{0} received HandleThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(threat)) {
                     D.Assert(!_qualifiedThreats.Contains(threat));
@@ -157,19 +157,11 @@ namespace CodeEnv.Master.GameContent {
             IsAnyThreatInRange = _qualifiedThreats.Any();
         }
 
-        private void OnReadyToFire(IList<CountermeasureFiringSolution> firingSolutions) {
+        private void HandleReadyToFire(IList<CountermeasureFiringSolution> firingSolutions) {
             D.Assert(firingSolutions.Count >= Constants.One);    // must have one or more firingSolutions to be ready to fire
             var bestFiringSolution = PickBestFiringSolution(firingSolutions);
             bool isThreatHit = Fire(bestFiringSolution);
             //D.Log(isThreatHit, "{0} has hit threat {1}.", Name, bestFiringSolution.Threat.FullName);
-        }
-
-        private void OnIsReadyChanged() {
-            AssessReadinessToFire();
-        }
-
-        private void OnIsAnyThreatInRangeChanged() {
-            AssessReadinessToFire();
         }
 
         /// <summary>
@@ -179,7 +171,7 @@ namespace CodeEnv.Master.GameContent {
         /// this was a public method called by the fired ordnance.</remarks>
 
         /// <param name="threatFiredOn">The target fired on.</param>
-        private void OnFiringInitiated(IInterceptableOrdnance threatFiredOn) {
+        private void HandleFiringInitiated(IInterceptableOrdnance threatFiredOn) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.Name));
             D.Assert(_qualifiedThreats.Contains(threatFiredOn));
 
@@ -193,7 +185,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Note: Done this way to match the way I handled it with Weapons, 
         /// where this was a public method called by the weapon's ordnance, and
         /// some ordnance (beams) didn't complete firing until the beam was terminated.</remarks>
-        private void OnFiringComplete() {
+        private void HandleFiringComplete() {
             D.Assert(!_isLoaded);
             UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
@@ -201,7 +193,17 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        protected override void OnIsOperationalChanged() {
+        #region Event and Property Change Handlers
+
+        private void IsReadyPropChangedHandler() {
+            AssessReadinessToFire();
+        }
+
+        private void IsAnyThreatInRangePropChangedHandler() {
+            AssessReadinessToFire();
+        }
+
+        protected override void IsOperationalPropChangedHandler() {
             //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
@@ -216,10 +218,12 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             AssessReadiness();
-            NotifyIsOperationalChanged();
+            OnIsOperationalChanged();
         }
 
-        private void OnReloaded() {
+        #endregion
+
+        private void HandleReloaded() {
             //D.Log("{0} completed reload.", Name);
             _isLoaded = true;
             AssessReadiness();
@@ -240,7 +244,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
-                    OnReloaded();
+                    HandleReloaded();
                 }
             });
         }
@@ -278,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
 
             IList<CountermeasureFiringSolution> firingSolutions;
             if (TryGetFiringSolutions(out firingSolutions)) {
-                OnReadyToFire(firingSolutions);
+                HandleReadyToFire(firingSolutions);
             }
             else {
                 // With one or more qualified threats in range, there should always be a firing solution
@@ -367,14 +371,14 @@ namespace CodeEnv.Master.GameContent {
         //    return firingSolutions.Any();
         //}
 
-        //private void OnIsReadyChanged() {
+        //private void IsReadyPropChangedHandler() {
         //    if (!IsReady) {
         //        KillFiringSolutionsCheckJob();
         //    }
         //    AssessReadinessToFire();
         //}
 
-        //private void OnIsAnyThreatInRangeChanged() {
+        //private void IsAnyThreatInRangePropChangedHandler() {
         //    if (!IsAnyThreatInRange) {
         //        KillFiringSolutionsCheckJob();
         //    }
@@ -388,7 +392,7 @@ namespace CodeEnv.Master.GameContent {
 
         //    IList<CountermeasureFiringSolution> firingSolutions;
         //    if (TryGetFiringSolutions(out firingSolutions)) {
-        //        OnReadyToFire(firingSolutions);
+        //        HandleReadyToFire(firingSolutions);
         //    }
         //    else {
         //        LaunchFiringSolutionsCheckJob();
@@ -414,7 +418,7 @@ namespace CodeEnv.Master.GameContent {
         //    D.Assert(IsAnyThreatInRange);
         //    //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
         //    _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
-        //        // TODO
+        //        //TODO
         //    });
         //}
 
@@ -430,7 +434,7 @@ namespace CodeEnv.Master.GameContent {
         //        if (TryGetFiringSolutions(out firingSolutions)) {
         //            hasFiringSolutions = true;
         //            //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
-        //            OnReadyToFire(firingSolutions);
+        //            HandleReadyToFire(firingSolutions);
         //        }
         //        // OPTIMIZE can also handle this changeable waitDuration by subscribing to a GameSpeed change
         //        var waitDuration = TempGameValues.HoursBetweenFiringSolutionChecks / _gameTime.GameSpeedAdjustedHoursPerSecond;

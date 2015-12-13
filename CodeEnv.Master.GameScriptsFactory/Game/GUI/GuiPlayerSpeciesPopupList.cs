@@ -54,10 +54,14 @@ public class GuiPlayerSpeciesPopupList : AGuiMenuPopupList<SpeciesGuiSelection> 
         _speciesImageSprite = imageFrameSprite.gameObject.GetSingleComponentInChildren<UISprite>(excludeSelf: true);
     }
 
-    protected override void OnPopupListSelection() {
-        base.OnPopupListSelection();
+    #region Event and Property Change Handlers
+
+    protected override void PopupListSelectionChangedEventHandler() {
+        base.PopupListSelectionChangedEventHandler();
         RefreshSpeciesImageAndName();
     }
+
+    #endregion
 
     private void RefreshSpeciesImageAndName() {
         if (SelectedSpecies == SpeciesGuiSelection.Random) {

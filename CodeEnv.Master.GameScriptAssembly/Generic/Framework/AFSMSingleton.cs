@@ -52,7 +52,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// </param>
     protected void RelayToCurrentState(params object[] param) {
         if (CurrentState.Equals(default(E))) { return; }
-        var message = CurrentState.ToString() + Constants.Underscore + new StackFrame(1).GetMethod().Name;
+        string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
+        D.Warn(!callingMethodName.StartsWith("Upon"), "Calling method name: {0) should start with 'Upon'.", callingMethodName);
+        var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
         D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
         SendMessageEx(message, param);
     }
@@ -138,6 +140,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         }
     }
 
+    #region SendMessageEx Archive
 
     ///// <summary>
     ///// Optimized SendMessage replacement.
@@ -202,6 +205,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     #endregion
 
+    #endregion
+
     /// <summary>
     /// The enter state coroutine.
     /// </summary>
@@ -250,7 +255,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     private static void DoNothingCollision(Collision other) { }
 
-    private static void DoNothingBoolean(bool b) { }
+    ////private static void DoNothingBoolean(bool b) { }
 
     #endregion
 
@@ -275,10 +280,10 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         public IEnumerator enterStateEnumerator = null;
         public IEnumerator exitStateEnumerator = null;
 
-        public Action<bool> DoOnHover = DoNothingBoolean;
-        public Action<bool> DoOnPress = DoNothingBoolean;
-        public Action DoOnClick = DoNothing;
-        public Action DoOnDoubleClick = DoNothing;
+        ////public Action<bool> DoOnHover = DoNothingBoolean;
+        ////public Action<bool> DoOnPress = DoNothingBoolean;
+        ////public Action DoOnClick = DoNothing;
+        ////public Action DoOnDoubleClick = DoNothing;
 
         public E currentState;
 
@@ -464,10 +469,10 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
         state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
-        state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
-        state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
-        state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
-        state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
+        ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
+        ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
+        ////state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
+        ////state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
 
         state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
         state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
@@ -524,7 +529,6 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             lookup[methodRoot] = returnValue;
         }
         return returnValue as R;
-
     }
 
     #region Pass On Methods
@@ -539,7 +543,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoOccasionalUpdate();
     }
 
-    void LateUpdate() {
+    protected override void LateUpdate() {
+        base.LateUpdate();
         state.DoLateUpdate();
     }
 
@@ -576,21 +581,21 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoOnCollisionStay(collision);
     }
 
-    void OnHover(bool isOver) {
-        state.DoOnHover(isOver);
-    }
+    ////void OnHover(bool isOver) {
+    ////    state.DoOnHover(isOver);
+    ////}
 
-    void OnPress(bool isDown) {
-        state.DoOnPress(isDown);
-    }
+    ////void OnPress(bool isDown) {
+    ////    state.DoOnPress(isDown);
+    ////}
 
-    void OnClick() {
-        state.DoOnClick();
-    }
+    ////void OnClick() {
+    ////    state.DoOnClick();
+    ////}
 
-    void OnDoubleClick() {
-        state.DoOnDoubleClick();
-    }
+    ////void OnDoubleClick() {
+    ////    state.DoOnDoubleClick();
+    ////}
 
     #endregion
 

@@ -267,8 +267,8 @@ namespace Pathfinding {
 
             return new Dictionary<Topography, IList<Vector3>>() {
                 { Topography.OpenSpace, openSpaceWaypoints.ToList() },
-                { Topography.Nebula, new List<Vector3>() },        // TODO
-                { Topography.DeepNebula, new List<Vector3>() },    // TODO
+                { Topography.Nebula, new List<Vector3>() },        //TODO
+                { Topography.DeepNebula, new List<Vector3>() },    //TODO
                 { Topography.System, allWaypointsInsideSystems.ToList() }
                 };
         }
@@ -314,7 +314,7 @@ namespace Pathfinding {
             }
             nextNodeIndex += waypoints.Count;
             D.Assert(waypointCount == nextNodeIndex);
-            // TODO initialize nodes that will be tagged Nebula and DeepNebula
+            //TODO initialize nodes that will be tagged Nebula and DeepNebula
         }
 
 
@@ -326,10 +326,10 @@ namespace Pathfinding {
         /// The method determines which based on whether the starbase has previously been recorded.
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
-        public void UpdateGraph(StarbaseCmdItem baseCmd) {  // TODO Call from StarbaseUnitCreator.DeployUnit()
+        public void UpdateGraph(StarbaseCmdItem baseCmd) {  //TODO Call from StarbaseUnitCreator.DeployUnit()
             throw new System.NotImplementedException("{0}.UpdateGraph(StarbaseCommandItem) is awaiting upgrade to AstarPath.Pro.".Inject(GetType().Name));
             // *****************************************************************************
-            // TODO Aren: "PointGraphs implement GraphUpdateObject.Apply() only in Pro"
+            //TODO Aren: "PointGraphs implement GraphUpdateObject.Apply() only in Pro"
             // GraphUpdateObject.RevertFromBackup() implementation was forgotten by devs
             // Currently, using this generates Nodes around the starbase, but without connections
             // As a result, those nodes are in another GraphNode.area which leads to a course plotting error

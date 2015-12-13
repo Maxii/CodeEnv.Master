@@ -27,11 +27,11 @@ public class ConstantSizeTrackingLabel : AWorldTrackingWidget_ConstantSize {
 
     /// <summary>
     /// Temporary. The desired size in pixels of this font. 
-    /// TODO: As I have only a couple of font sizes available now, this setting will change the size 
     /// of the UILabel font to reflect this desired size. The longer term solution is to have my fonts be the 
     /// desired size to begin with, eliminating any change requirement. 
     /// </summary>
-    public int desiredFontSize = 6;
+    public int desiredFontSize = 6;    //TODO: As I have only a couple of font sizes available now, this setting will change the size 
+
 
     protected new UILabel Widget { get { return base.Widget as UILabel; } }
 
@@ -47,7 +47,7 @@ public class ConstantSizeTrackingLabel : AWorldTrackingWidget_ConstantSize {
     public override void Set(string text) {
         if (Widget.text == text) { return; }
         Widget.text = text;
-        OnTextChanged();
+        Widget.MakePixelPerfect();
     }
 
     protected override void AlignWidgetOtherTo(WidgetPlacement placement) {
@@ -74,10 +74,6 @@ public class ConstantSizeTrackingLabel : AWorldTrackingWidget_ConstantSize {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
         }
         Widget.alignment = alignment;
-    }
-
-    private void OnTextChanged() {
-        Widget.MakePixelPerfect();
     }
 
     private void __AdjustFontSize() {

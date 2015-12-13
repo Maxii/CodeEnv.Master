@@ -42,7 +42,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     public string OptionalRootName {
         private get { return _optionalRootName; }
-        set { SetProperty<string>(ref _optionalRootName, value, "OptionalRootName", OnOptionalRootNameChanged); }
+        set { SetProperty<string>(ref _optionalRootName, value, "OptionalRootName", OptionalRootNamePropChangedHandler); }
     }
 
     private int _drawDepth = -5;
@@ -54,19 +54,19 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     public int DrawDepth {
         get { return _drawDepth; }
-        set { SetProperty<int>(ref _drawDepth, value, "DrawDepth", OnDrawDepthChanged); }
+        set { SetProperty<int>(ref _drawDepth, value, "DrawDepth", DrawDepthPropChangedHandler); }
     }
 
     private GameColor _color = GameColor.White;
     public GameColor Color {
         get { return _color; }
-        set { SetProperty<GameColor>(ref _color, value, "Color", OnColorChanged); }
+        set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedHandler); }
     }
 
     private GameColor _highlightColor = GameColor.Yellow;
     public GameColor HighlightColor {
         get { return _highlightColor; }
-        set { SetProperty<GameColor>(ref _highlightColor, value, "HighlightColor", OnHighlightColorChanged); }
+        set { SetProperty<GameColor>(ref _highlightColor, value, "HighlightColor", HighlightColorPropChangedHandler); }
     }
 
     private bool _isHighlighted;
@@ -76,13 +76,13 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     public bool IsHighlighted {
         get { return _isHighlighted; }
-        set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", OnIsHighlightedChanged); }
+        set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", IsHighlightedPropChangedHandler); }
     }
 
     private WidgetPlacement _placement = WidgetPlacement.Above;
     public WidgetPlacement Placement {
         get { return _placement; }
-        set { SetProperty<WidgetPlacement>(ref _placement, value, "Placement", OnPlacementChanged); }
+        set { SetProperty<WidgetPlacement>(ref _placement, value, "Placement", PlacementPropChangedHandler); }
     }
 
     public Transform WidgetTransform {
@@ -95,7 +95,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private IWidgetTrackable _target;
     public virtual IWidgetTrackable Target {
         get { return _target; }
-        set { SetProperty<IWidgetTrackable>(ref _target, value, "Target", OnTargetChanged); }
+        set { SetProperty<IWidgetTrackable>(ref _target, value, "Target", TargetPropChangedHandler); }
     }
 
     protected UIWidget Widget { get; private set; }
@@ -182,6 +182,45 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         Widget.enabled = false;
         IsShowing = false;
     }
+
+    #region Event and Property Change Handlers
+
+    protected virtual void TargetPropChangedHandler() {
+        RenameGameObjects();
+        RefreshWidgetValues();
+    }
+
+    private void PlacementPropChangedHandler() {
+        //D.Log("Placement changed to {0}.", Placement.GetName());
+        RefreshWidgetValues();
+    }
+
+    private void DrawDepthPropChangedHandler() {
+        _panel.depth = DrawDepth;
+    }
+
+    private void ColorPropChangedHandler() {
+        if (!IsHighlighted) {
+            Widget.color = Color.ToUnityColor();
+        }
+    }
+
+    private void HighlightColorPropChangedHandler() {
+        if (IsHighlighted) {
+            Widget.color = HighlightColor.ToUnityColor();
+        }
+    }
+
+    private void IsHighlightedPropChangedHandler() {
+        Widget.color = IsHighlighted && IsShowing ? HighlightColor.ToUnityColor() : Color.ToUnityColor();
+        //D.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
+    }
+
+    private void OptionalRootNamePropChangedHandler() {
+        RenameGameObjects();
+    }
+
+    #endregion
 
     /// <summary>
     /// Clears the <see cref="ATrackingWidget"/> back to its base state:
@@ -285,41 +324,6 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// AUITrackingWidgets do need to constantly reposition to track their target as they reside under UIRoot. 
     /// </summary>
     protected virtual void RefreshPositionOnUpdate() { }
-
-    protected virtual void OnTargetChanged() {
-        RenameGameObjects();
-        RefreshWidgetValues();
-    }
-
-    private void OnPlacementChanged() {
-        //D.Log("Placement changed to {0}.", Placement.GetName());
-        RefreshWidgetValues();
-    }
-
-    private void OnDrawDepthChanged() {
-        _panel.depth = DrawDepth;
-    }
-
-    private void OnColorChanged() {
-        if (!IsHighlighted) {
-            Widget.color = Color.ToUnityColor();
-        }
-    }
-
-    private void OnHighlightColorChanged() {
-        if (IsHighlighted) {
-            Widget.color = HighlightColor.ToUnityColor();
-        }
-    }
-
-    private void OnIsHighlightedChanged() {
-        Widget.color = IsHighlighted && IsShowing ? HighlightColor.ToUnityColor() : Color.ToUnityColor();
-        //D.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
-    }
-
-    private void OnOptionalRootNameChanged() {
-        RenameGameObjects();
-    }
 
     private void RenameGameObjects() {
         if (Target != null) {   // Target can be null if OptionalRootName is set before Target

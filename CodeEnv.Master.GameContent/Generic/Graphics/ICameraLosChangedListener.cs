@@ -24,7 +24,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICameraLosChangedListener {
 
-        event Action<GameObject, bool> onCameraLosChanged;
+        /// <summary>
+        /// Occurs when Camera Line Of Sight state has changed on this GameObject.
+        /// </summary>
+        event EventHandler inCameraLosChanged;
+
+        bool InCameraLOS { get; }
 
         bool enabled { get; set; }
 

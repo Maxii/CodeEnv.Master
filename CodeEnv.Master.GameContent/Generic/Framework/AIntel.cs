@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public virtual IntelCoverage CurrentCoverage {
             get { return _currentCoverage; }
-            set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, OnCurrentCoverageChanging); }
+            set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, CurrentCoveragePropChangingHandler); }
         }
 
         public AIntel(IntelCoverage coverage) {
@@ -39,16 +39,20 @@ namespace CodeEnv.Master.GameContent {
 
         public abstract bool IsCoverageChangeAllowed(IntelCoverage newCoverage);
 
+        #region Event and Property Change Handlers
+
+        private void CurrentCoveragePropChangingHandler(IntelCoverage newCoverage) {
+            PreProcessChange(newCoverage);
+        }
+
+        #endregion
+
         /// <summary>
         /// Processes the change to a new level of coverage BEFORE the new level of coverage
         /// is applied.
         /// </summary>
         /// <param name="newCoverage">The new coverage.</param>
         protected virtual void PreProcessChange(IntelCoverage newCoverage) { }
-
-        private void OnCurrentCoverageChanging(IntelCoverage newCoverage) {
-            PreProcessChange(newCoverage);
-        }
 
     }
 }

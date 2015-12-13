@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Occurs when the mouse is pressed down, but not over a gameObject.
         /// </summary>
-        event Action<NguiMouseButton> onUnconsumedPressDown;
+        event EventHandler unconsumedPress;
 
         /// <summary>
         /// The current InputMode of the game.

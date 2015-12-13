@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -33,16 +34,10 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        Data.onUserIntelCoverageChanged += OnUserIntelCoverageChanged;
+        Data.userIntelCoverageChanged += UserIntelCoverageChangedEventHandler;
     }
 
     #endregion
-
-    #region Model Methods
-
-    #endregion
-
-    #region View Methods
 
     public IntelCoverage GetUserIntelCoverage() { return Data.GetUserIntelCoverage(); }
 
@@ -52,8 +47,16 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
         return Data.SetIntelCoverage(player, coverage);
     }
 
-    protected virtual void OnUserIntelCoverageChanged() {
-        //D.Log("{0}.OnUserIntelCoverageChanged() called. IntelCoverage = {1}.", FullName, GetUserIntelCoverage().GetName());
+    protected override void AssessIsDiscernibleToUser() {
+        var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
+        IsDiscernibleToUser = isInMainCameraLOS && Data.GetUserIntelCoverage() != IntelCoverage.None;
+    }
+
+
+    #region Event and Property Change Handlers
+
+    protected virtual void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
+        D.Log("{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, GetUserIntelCoverage().GetValueName());
         AssessIsDiscernibleToUser();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
@@ -63,15 +66,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
         DisplayMgr.EnableDisplay(toEnableDisplayMgr);
     }
 
-    protected override void AssessIsDiscernibleToUser() {
-        var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
-        IsDiscernibleToUser = isInMainCameraLOS && Data.GetUserIntelCoverage() != IntelCoverage.None;
-    }
-
-    #endregion
-
-    #region Events
-
     #endregion
 
     #region Cleanup
@@ -79,7 +73,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
     protected override void Unsubscribe() {
         base.Unsubscribe();
         if (Data != null) { // Data can be null for a time when creators delay builds
-            Data.onUserIntelCoverageChanged -= OnUserIntelCoverageChanged;
+            Data.userIntelCoverageChanged -= UserIntelCoverageChangedEventHandler;
         }
     }
 

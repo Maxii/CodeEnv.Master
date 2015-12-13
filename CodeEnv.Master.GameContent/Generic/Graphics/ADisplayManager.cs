@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsPrimaryMeshInMainCameraLOS {
             get { return _isPrimaryMeshInMainCameraLOS; }
-            protected set { SetProperty<bool>(ref _isPrimaryMeshInMainCameraLOS, value, "IsPrimaryMeshInMainCameraLOS", OnIsPrimaryMeshInMainCameraLosChanged); }
+            protected set { SetProperty<bool>(ref _isPrimaryMeshInMainCameraLOS, value, "IsPrimaryMeshInMainCameraLOS", IsPrimaryMeshInMainCameraLosPropChangedHandler); }
         }
 
         /// <summary>
@@ -69,9 +69,9 @@ namespace CodeEnv.Master.GameContent {
             _primaryMeshRenderer = InitializePrimaryMesh(itemGO);
             _primaryMeshRenderer.enabled = true;
 
-            var meshCameraLosChgdListener = _primaryMeshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
-            meshCameraLosChgdListener.onCameraLosChanged += (go, isMeshInCameraLOS) => IsPrimaryMeshInMainCameraLOS = isMeshInCameraLOS;
-            meshCameraLosChgdListener.enabled = true;
+            var primaryMeshCameraLosChgdListener = _primaryMeshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
+            primaryMeshCameraLosChgdListener.inCameraLosChanged += PrimaryMeshInCameraLosChangedEventHandler;
+            primaryMeshCameraLosChgdListener.enabled = true;
 
             InitializeSecondaryMeshes(itemGO);
             InitializeOther(itemGO);
@@ -98,15 +98,28 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!(toEnable && isDead));    // should never both be true
             if (IsDisplayEnabled != toEnable) {
                 IsDisplayEnabled = toEnable;
-                OnIsDisplayEnabledChanged();
+                IsDisplayEnabledPropChangedHandler();
             }
             if (isDead) { _primaryMeshRenderer.enabled = false; }
         }
 
-        protected virtual void OnIsDisplayEnabledChanged() {
+        #region Event and Property Change Handlers
+
+        private void PrimaryMeshInCameraLosChangedEventHandler(object sender, EventArgs e) {
+            IsPrimaryMeshInMainCameraLOS = (sender as ICameraLosChangedListener).InCameraLOS;
+        }
+
+        protected virtual void IsDisplayEnabledPropChangedHandler() {
             //D.Log("{0}.IsDisplayEnabled changed to {1}.", GetType().Name, IsDisplayEnabled);
             AssessComponentsToShowOrOperate();
         }
+
+        protected virtual void IsPrimaryMeshInMainCameraLosPropChangedHandler() {
+            AssessInMainCameraLOS();
+            AssessComponentsToShowOrOperate();
+        }
+
+        #endregion
 
         private void ShowPrimaryMesh(bool toShow) {
             // can't disable meshRenderer as lose OnMeshInCameraLOSChanged events
@@ -140,11 +153,6 @@ namespace CodeEnv.Master.GameContent {
         /// when it is in cameraLOS. e.g. The user has no IntelCoverage on the item.
         /// </summary>
         protected virtual void HidePrimaryMesh() { }
-
-        protected virtual void OnIsPrimaryMeshInMainCameraLosChanged() {
-            AssessInMainCameraLOS();
-            AssessComponentsToShowOrOperate();
-        }
 
         protected virtual void AssessComponentsToShowOrOperate() {
             bool toShow = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;

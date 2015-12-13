@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(isRemoved);
         }
 
-        protected override void OnToShowEffectsChanged() {
+        protected override void ToShowEffectsPropChangedHandler() {
             if (_activeFiredOrdnance.Any()) {
                 _activeFiredOrdnance.ForAll(ord => ord.ToShowEffects = ToShowEffects);
             }

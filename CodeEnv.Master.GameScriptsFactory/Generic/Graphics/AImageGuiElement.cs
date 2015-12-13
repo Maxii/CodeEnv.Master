@@ -73,7 +73,7 @@ public abstract class AImageGuiElement : AGuiElement {
         _imageSprite.spriteName = filename;
     }
 
-    protected void OnValuesUnknown() {
+    protected void HandleValuesUnknown() {
         switch (_widgetsPresent) {
             case WidgetsPresent.Image:
                 _imageSprite.atlas = AtlasID.MyGui.GetAtlas();

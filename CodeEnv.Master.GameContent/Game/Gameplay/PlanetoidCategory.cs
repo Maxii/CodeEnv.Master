@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("Gas Giant")]
         GasGiant,
 
-        // TODO change to my own names like DesolateMoon, VolcanicMoon, etc.
+        //TODO change to my own names like DesolateMoon, VolcanicMoon, etc.
         // will also need to align the name of the Moon gameobject with this change
         // as parsing the name of the gameobject which holds a mesh and material
         // below it is how I figure out the type

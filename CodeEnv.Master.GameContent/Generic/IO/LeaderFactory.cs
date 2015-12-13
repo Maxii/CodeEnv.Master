@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            References.GameManager.onNewGameBuilding += OnNewGameBuilding;
+            References.GameManager.newGameBuilding += NewGameBuildingEventHandler;
         }
 
         public LeaderStat MakeInstance(Species species) {
@@ -64,16 +64,20 @@ namespace CodeEnv.Master.GameContent {
             _leadersInUse.Clear();
         }
 
-        private void OnNewGameBuilding() {
+        #region Event and Property Change Handlers
+
+        private void NewGameBuildingEventHandler(object sender, EventArgs e) {
             Reset();
         }
+
+        #endregion
 
         private void Cleanup() {
             Unsubscribe();
         }
 
         private void Unsubscribe() {
-            References.GameManager.onNewGameBuilding -= OnNewGameBuilding;
+            References.GameManager.newGameBuilding -= NewGameBuildingEventHandler;
         }
 
         public override string ToString() {

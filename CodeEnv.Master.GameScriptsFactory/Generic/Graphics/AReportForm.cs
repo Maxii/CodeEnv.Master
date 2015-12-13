@@ -33,7 +33,9 @@ public abstract class AReportForm : AForm {
     private AItemReport _report;
     public AItemReport Report {
         get { return _report; }
-        set { SetProperty<AItemReport>(ref _report, value, "Report", OnReportChanged); }
+        set {
+            D.Assert(_report == null);  // occurs only once between Resets
+            SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler); }
     }
 
     protected UILabel _nameLabel;
@@ -204,9 +206,13 @@ public abstract class AReportForm : AForm {
 
     protected virtual void InitializeNonGuiElementMembers() { }
 
-    private void OnReportChanged() {
+    #region Event and Property Change Handlers
+
+    private void ReportPropSetHandler() {
         AssignValuesToMembers();
     }
+
+    #endregion
 
     protected sealed override void AssignValuesToMembers() {
         _guiElementsPresent.Keys.ForAll(id => AssignValueTo(id));

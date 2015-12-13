@@ -31,29 +31,42 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
 
     public override GuiElementID ElementID { get { return GuiElementID.Hero; } }
 
-    private bool _isHeroSet;
+    private bool __isHeroNameSet;
     private string __heroName;
     public string __HeroName {
         get { return __heroName; }
-        set { SetProperty<string>(ref __heroName, value, "__HeroName", __OnHeroChanged); }
+        set {
+            D.Assert(!__isHeroNameSet); // only happens once between Resets
+            SetProperty<string>(ref __heroName, value, "__HeroName", __HeroNamePropSetHandler);
+        }
     }
 
-    protected override bool AreAllValuesSet { get { return _isHeroSet; } }
+    protected override bool AreAllValuesSet { get { return __isHeroNameSet; } }
 
-    void OnClick() {
-        D.Warn("{0}.OnClick() not yet implemented. TODO: Redirect to Hero management screen.", GetType().Name);
+    #region Event and Property Change Handlers
+
+    private void ClickEventHandler() {
+        //TODO Redirect to Hero management screen
+        D.Warn("{0}.OnClick() not yet implemented.", GetType().Name);
     }
 
-    private void __OnHeroChanged() {
-        _isHeroSet = true;
+    private void __HeroNamePropSetHandler() {
+        __isHeroNameSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
+    void OnClick() {
+        ClickEventHandler();
+    }
+
+
+    #endregion
+
     protected override void PopulateElementWidgets() {
         if (__HeroName == null) {
-            OnValuesUnknown();
+            HandleValuesUnknown();
             return;
         }
 
@@ -81,7 +94,7 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
     public override void Reset() {
         // UNDONE
         __heroName = null;
-        _isHeroSet = false;
+        __isHeroNameSet = false;
     }
 
     protected override void Cleanup() { }
@@ -94,7 +107,7 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
 
     public int CompareTo(HeroGuiElement other) {
         int result = __HeroName.CompareTo(other.__HeroName);
-        // TODO use same logic as OwnerGuiElement as Hero can be null (unknown) too
+        //TODO use same logic as OwnerGuiElement as Hero can be null (unknown) too
         return result;
     }
 

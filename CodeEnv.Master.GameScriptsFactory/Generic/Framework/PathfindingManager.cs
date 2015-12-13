@@ -40,7 +40,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         _gameMgr = GameManager.Instance;
         if (AstarPath.active == null) {
             // this Awake was called before AstarPath.Awake so AstarPath has not initialized yet
-            AstarPath.OnAwakeSettings += InitializeAstarPath;   // event raised on AstarPath.Awake(), right after AstarPath.active is set
+            AstarPath.OnAwakeSettings += AstarPathOnAwakeEventHandler;  // event raised on AstarPath.Awake(), right after AstarPath.active is set
         }
         else {
             // AstarPath Awake has already been called 
@@ -61,35 +61,40 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         //_astarPath.logPathResults = PathLog.Heavy;    // Editor controls will work if save change as prefab
 
         // Can't programmatically set TagNames. They appear to only be setable through the Editor
-
-        AstarPath.OnAwakeSettings -= InitializeAstarPath;
         Subscribe();
     }
 
     private void Subscribe() {
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
-        AstarPath.OnLatePostScan += OnGraphScansCompleted;
-        AstarPath.OnGraphsUpdated += OnGraphRuntimeUpdateCompleted;
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
+        AstarPath.OnLatePostScan += GraphScansCompletedEventHandler;
+        AstarPath.OnGraphsUpdated += GraphRuntimeUpdateCompletedEventHandler;
     }
 
-    private void OnGameStateChanged() {
+    #region Event and Property Change Handler
+
+    private void AstarPathOnAwakeEventHandler() {
+        InitializeAstarPath();
+        AstarPath.OnAwakeSettings -= AstarPathOnAwakeEventHandler;
+    }
+
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: false);
-            _astarPath.Scan();  //AstarPath.active.Scan();
+            _astarPath.Scan();
         }
     }
 
-    private void OnGraphScansCompleted(AstarPath astarPath) {
+    private void GraphScansCompletedEventHandler(AstarPath astarPath) {
         Graph = astarPath.graphs[0] as MyAStarPointGraph;
         _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: true);
         // WARNING: I must not directly cause the game state to change as the other subscribers to GameStateChanged may not have been called yet. 
         // This GraphScansCompletedEvent occurs while we are still processing OnGameStateChanged.
     }
 
-    private void OnGraphRuntimeUpdateCompleted(AstarPath astarPath) {
+    private void GraphRuntimeUpdateCompletedEventHandler(AstarPath astarPath) {
         D.Assert(astarPath.graphs[0] == Graph);
         D.Log("{0} node count after graph update.", Graph.nodeCount);
-        Graph.GetNodes(delegate(GraphNode node) {   // while return true, passes each node to this anonymous method
+        Graph.GetNodes(delegate (GraphNode node) {   // while return true, passes each node to this anonymous method
             if (!node.Walkable) {
                 D.Log("Node {0} is not walkable.", (Vector3)node.position);
                 return false;   // no need to pass any more nodes
@@ -98,14 +103,16 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         });
     }
 
+    #endregion
+
     protected override void Cleanup() {
         Unsubscribe();
     }
 
     private void Unsubscribe() {
-        _gameMgr.onGameStateChanged -= OnGameStateChanged;
-        AstarPath.OnLatePostScan -= OnGraphScansCompleted;
-        AstarPath.OnGraphsUpdated -= OnGraphRuntimeUpdateCompleted;
+        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
+        AstarPath.OnLatePostScan -= GraphScansCompletedEventHandler;
+        AstarPath.OnGraphsUpdated -= GraphRuntimeUpdateCompletedEventHandler;
     }
 
     public override string ToString() {

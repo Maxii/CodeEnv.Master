@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitElementItem : IMortalItem {
 
-        event Action<IUnitElementItem> onIsHQChanged;
+        event EventHandler isHQChanged;
 
         bool IsHQ { get; }
 

@@ -49,17 +49,9 @@ public class SectorItem : AItem, ISectorItem {
 
     #endregion
 
-    #region Model Methods
-
     public SectorReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    #endregion
-
-    #region View Methods
-
-    #endregion
 
     #region Cleanup
 

@@ -27,8 +27,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SystemCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move, 
-                                                                                                FleetDirective.Guard, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move,
+                                                                                                FleetDirective.Guard,
                                                                                                 FleetDirective.Explore,
                                                                                                 FleetDirective.Patrol };
 
@@ -56,15 +56,15 @@ public class SystemCtxControl : ACtxControl {
             case FleetDirective.Move:
             case FleetDirective.Guard:
             case FleetDirective.Patrol:
-                // TODO
+                //TODO
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
 
-    protected override void OnMenuSelection_RemoteFleetAccess(int itemID) {
-        base.OnMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
+        base.HandleMenuSelection_RemoteFleetAccess(itemID);
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _systemMenuOperator;

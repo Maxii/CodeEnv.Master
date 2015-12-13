@@ -28,12 +28,10 @@ public class GuiGameSpeedSlider : AGuiEnumSlider<GameSpeed> {
 
     protected override string TooltipContent { get { return "Slide to adjust game speed."; } }
 
-    protected override void OnSliderEnumValueChange(GameSpeed value) {
-        //D.Log("{0}.OnSliderTValueChange({1}.{2}) called.", GetType().Name, typeof(GameClockSpeed).Name, value.GetName());
+    protected override void HandleSliderEnumValueChanged(GameSpeed value) {
+        //D.Log("{0}.HandleSliderEnumValueChanged({1}.{2}) called.", GetType().Name, typeof(GameSpeed).Name, value.GetValueName());
         GameTime.Instance.GameSpeed = value;
     }
-
-    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

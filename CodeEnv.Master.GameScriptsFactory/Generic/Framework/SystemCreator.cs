@@ -69,11 +69,11 @@ public class SystemCreator : AMonoBase {
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };
 
-    private static IEnumerable<PlanetoidCategory> _acceptablePlanetCategories = new PlanetoidCategory[] { 
-        PlanetoidCategory.GasGiant, PlanetoidCategory.Ice, PlanetoidCategory.Terrestrial, PlanetoidCategory.Volcanic 
+    private static IEnumerable<PlanetoidCategory> _acceptablePlanetCategories = new PlanetoidCategory[] {
+        PlanetoidCategory.GasGiant, PlanetoidCategory.Ice, PlanetoidCategory.Terrestrial, PlanetoidCategory.Volcanic
     };
 
-    private static IEnumerable<PlanetoidCategory> _acceptableMoonCategories = new PlanetoidCategory[] { 
+    private static IEnumerable<PlanetoidCategory> _acceptableMoonCategories = new PlanetoidCategory[] {
         PlanetoidCategory.Moon_001, PlanetoidCategory.Moon_002, PlanetoidCategory.Moon_003, PlanetoidCategory.Moon_004, PlanetoidCategory.Moon_005
     };
 
@@ -147,9 +147,10 @@ public class SystemCreator : AMonoBase {
     }
 
     private void Subscribe() {
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
         SubscribeStaticallyOnce();
     }
+
 
     /// <summary>
     /// Subscribes this class using static event handler(s) to instance events exactly one time.
@@ -157,15 +158,39 @@ public class SystemCreator : AMonoBase {
     private void SubscribeStaticallyOnce() {
         if (!_isStaticallySubscribed) {
             //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
-            _gameMgr.onSceneLoaded += CleanupStaticMembers;
+            _gameMgr.sceneLoaded += SceneLoadedEventHandler;
             _isStaticallySubscribed = true;
         }
     }
 
-    private void OnGameStateChanged() {
+    #region Event and Property Change Handlers
+
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+        CleanupStaticMembers();
+    }
+
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         GameState gameState = _gameMgr.CurrentState;
         BuildDeployAndBeginSystemOperationsDuringStartup(gameState);
     }
+
+    /// <summary>
+    /// Removes the planetoid from the AllPlanetoids static collection when the planetoid dies.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private static void PlanetoidDeathEventHandler(object sender, EventArgs e) {
+        APlanetoidItem planetoidItem = sender as APlanetoidItem;
+        _allPlanetoids.Remove(planetoidItem);
+        if (planetoidItem is PlanetItem) {
+            _allPlanets.Remove(planetoidItem as PlanetItem);
+        }
+        else {
+            _allMoons.Remove(planetoidItem as MoonItem);
+        }
+    }
+
+    #endregion
 
     private void BuildDeployAndBeginSystemOperationsDuringStartup(GameState gameState) {
         if (gameState == GameState.BuildAndDeploySystems) {
@@ -568,7 +593,7 @@ public class SystemCreator : AMonoBase {
 
     private void InitializeTopographyMonitor() {
         var monitor = gameObject.GetSingleComponentInChildren<TopographyMonitor>();
-        monitor.SurroundingTopography = Topography.OpenSpace;   // TODO Items monitored should know about their surrounding space
+        monitor.SurroundingTopography = Topography.OpenSpace;   //TODO Items monitored should know about their surrounding space
         monitor.ParentItem = _system;
     }
 
@@ -591,7 +616,8 @@ public class SystemCreator : AMonoBase {
         var planetoidNamesStored = _allPlanetoids.Select(p => p.Name);
         _planets.ForAll(planet => {
             D.Assert(!planetoidNamesStored.Contains(planet.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, planet.Name));
-            planet.onDeathOneShot += OnPlanetoidDeath;
+            //planet.onDeathOneShot += OnPlanetoidDeath;
+            planet.deathOneShot += PlanetoidDeathEventHandler;
             _allPlanetoids.Add(planet);
             _allPlanets.Add(planet);
         });
@@ -599,7 +625,8 @@ public class SystemCreator : AMonoBase {
         // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
         _moons.ForAll(moon => {
             D.Assert(!planetoidNamesStored.Contains(moon.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, moon.Name));
-            moon.onDeathOneShot += OnPlanetoidDeath;
+            //moon.onDeathOneShot += OnPlanetoidDeath;
+            moon.deathOneShot += PlanetoidDeathEventHandler;
             _allPlanetoids.Add(moon);
             _allMoons.Add(moon);
         });
@@ -649,21 +676,6 @@ public class SystemCreator : AMonoBase {
             allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, planetsFolder, _system.IsMobile, orbitPeriod);
         }
         return allOrbitSlots;
-    }
-
-    /// <summary>
-    /// Removes the planetoid from the AllPlanetoids static collection
-    /// when the planetoid dies.
-    /// </summary>
-    /// <param name="mortalItem">The mortal item.</param>
-    private static void OnPlanetoidDeath(IMortalItem mortalItem) {
-        _allPlanetoids.Remove(mortalItem as APlanetoidItem);
-        if (mortalItem is PlanetItem) {
-            _allPlanets.Remove(mortalItem as PlanetItem);
-        }
-        else {
-            _allMoons.Remove(mortalItem as MoonItem);
-        }
     }
 
     private ResourceYield CreateRandomResourceYield(params ResourceCategory[] resCategories) {
@@ -757,7 +769,6 @@ public class SystemCreator : AMonoBase {
         return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
     }
 
-
     private CameraFollowableStat __MakeMoonCameraStat(MoonStat moonStat) {
         float fov;
         PlanetoidCategory pCat = moonStat.Category;
@@ -820,7 +831,7 @@ public class SystemCreator : AMonoBase {
     }
 
     private void Unsubscribe() {
-        _gameMgr.onGameStateChanged -= OnGameStateChanged;
+        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
     }
 
     /// <summary>
@@ -832,7 +843,7 @@ public class SystemCreator : AMonoBase {
     private static void CleanupStaticMembers() {
         _systemLookupBySectorIndex.Clear();
         _allStars.Clear();
-        _allPlanetoids.ForAll(p => p.onDeathOneShot -= OnPlanetoidDeath);
+        _allPlanetoids.ForAll(p => p.deathOneShot -= PlanetoidDeathEventHandler);
         _allPlanetoids.Clear();
         _allPlanets.Clear();
         _allMoons.Clear();
@@ -843,7 +854,7 @@ public class SystemCreator : AMonoBase {
     /// </summary>
     private void UnsubscribeStaticallyOnceOnQuit() {
         if (_isStaticallySubscribed) {
-            _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
             _isStaticallySubscribed = false;
         }
     }

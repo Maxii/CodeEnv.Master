@@ -42,13 +42,14 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     [SerializeField]
     private ResourceCategory _resourceCategory = ResourceCategory.None;
 
-    private bool _isResourcesSet = false;
+    private bool _isResourcesSet;
     private ResourceYield? _resources;
     public ResourceYield? Resources {
         get { return _resources; }
         set {
+            D.Assert(!_isResourcesSet); // occurs only once between Resets
             _resources = value;
-            OnResourcesSet();
+            ResourcesPropSetHandler();
         }
     }
 
@@ -114,7 +115,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             InitializeResourceContainer(slot, container);
         });
 
-        MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip += (go, show) => OnUnknownTooltip(show);
+        MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip += (go, show) => UnknownTooltipEventHandler(show);
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
 
@@ -122,12 +123,14 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         _resourceContainerLookup.Add(slot, container);
 
         var eventListener = MyNguiEventListener.Get(container.gameObject);
-        eventListener.onTooltip += (go, show) => OnResourceContainerTooltip(go, show);
+        eventListener.onTooltip += ResourceContainerTooltipEventHandler;
 
         NGUITools.SetActive(container.gameObject, false);
     }
 
-    private void OnResourceContainerTooltip(GameObject containerGo, bool show) {
+    #region Event and Property Change Handlers
+
+    private void ResourceContainerTooltipEventHandler(GameObject containerGo, bool show) {
         if (show) {
             var resourceID = _resourceIDLookup[containerGo];
             TooltipHudWindow.Instance.Show(resourceID);
@@ -137,7 +140,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         }
     }
 
-    private void OnUnknownTooltip(bool show) {
+    private void UnknownTooltipEventHandler(bool show) {
         if (show) {
             TooltipHudWindow.Instance.Show("Resource presence unknown");
         }
@@ -146,16 +149,18 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         }
     }
 
-    private void OnResourcesSet() {
+    private void ResourcesPropSetHandler() {
         _isResourcesSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
+    #endregion
+
     private void PopulateElementWidgets() {
         if (!Resources.HasValue) {
-            OnValuesUnknown();
+            HandleValuesUnknown();
             return;
         }
 
@@ -178,7 +183,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         }
     }
 
-    private void OnValuesUnknown() {
+    private void HandleValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
     }
 
@@ -201,9 +206,9 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void Cleanup() {
         _resourceIDLookup.Keys.ForAll(containerGo => {
-            MyNguiEventListener.Get(containerGo).onTooltip -= (go, show) => OnResourceContainerTooltip(go, show);
+            MyNguiEventListener.Get(containerGo).onTooltip -= ResourceContainerTooltipEventHandler;
         });
-        MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip -= (go, show) => OnUnknownTooltip(show);
+        MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip -= (go, show) => UnknownTooltipEventHandler(show);
     }
 
     public override string ToString() {

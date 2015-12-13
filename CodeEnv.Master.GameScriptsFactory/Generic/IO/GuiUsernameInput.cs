@@ -31,15 +31,27 @@ public class GuiUsernameInput : ATextTooltip {
     protected override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
+        Subscribe();
     }
 
     private void InitializeValuesAndReferences() {
         _inputField = gameObject.GetSafeComponent<UIInput>();
         _inputField.value = PlayerPrefsManager.Instance.Username;
-        EventDelegate.Add(_inputField.onSubmit, OnUsernameSubmitted);
     }
 
-    private void OnUsernameSubmitted() {
+    private void Subscribe() {
+        EventDelegate.Add(_inputField.onSubmit, InputFieldSubmitEventHandler);
+    }
+
+    #region Event and Property Change Handlers
+
+    private void InputFieldSubmitEventHandler() {
+        RecordUsername();
+    }
+
+    #endregion
+
+    private void RecordUsername() { // IMPROVE illegal character filtering
         PlayerPrefsManager.Instance.Username = _inputField.value;
         _inputField.isSelected = false; // stops the caret blinking
     }
@@ -49,7 +61,7 @@ public class GuiUsernameInput : ATextTooltip {
     }
 
     private void Unsubscribe() {
-        EventDelegate.Remove(_inputField.onSubmit, OnUsernameSubmitted);
+        EventDelegate.Remove(_inputField.onSubmit, InputFieldSubmitEventHandler);
     }
 
     public override string ToString() {

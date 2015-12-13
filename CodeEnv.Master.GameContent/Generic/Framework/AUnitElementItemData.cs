@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         private bool _isHQ;
         public virtual bool IsHQ {
             get { return _isHQ; }
-            set { SetProperty<bool>(ref _isHQ, value, "IsHQ", OnIsHQChanged); }
+            set { SetProperty<bool>(ref _isHQ, value, "IsHQ", IsHQPropChangedHandler); }
         }
 
         private string _parentName;
@@ -112,6 +112,11 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
+        public sealed override Topography Topography {  // avoids CA2214
+            get { return base.Topography; }
+            set { base.Topography = value; }
+        }
+
         protected AHullEquipment HullEquipment { get; private set; }
 
         /// <summary>
@@ -136,6 +141,44 @@ namespace CodeEnv.Master.GameContent {
             Initialize(activeCMs);
             Initialize(shieldGenerators);
         }
+        private void InitializeWeapons() {
+            // weapons are already present in hullEquipment
+            Weapons.ForAll(weap => {
+                D.Assert(weap.RangeMonitor != null);
+                D.Assert(weap.WeaponMount != null);
+                D.Assert(!weap.IsActivated); // items activate equipment when the item commences operation
+                weap.isDamagedChanged += WeaponIsDamagedChangedEventHandler;
+            });
+        }
+
+        private void Initialize(IEnumerable<ActiveCountermeasure> activeCMs) {
+            ActiveCountermeasures = activeCMs.ToList();
+            ActiveCountermeasures.ForAll(cm => {
+                D.Assert(cm.RangeMonitor != null);
+                D.Assert(!cm.IsActivated);    // items activate equipment when the item commences operation
+                cm.isDamagedChanged += CountermeasureIsDamagedChangedEventHandler;
+            });
+        }
+
+        private void Initialize(IEnumerable<Sensor> sensors) {
+            Sensors = sensors.ToList();
+            Sensors.ForAll(s => {
+                D.Assert(s.RangeMonitor == null);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
+                // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
+                // and SensorRangeMonitors get attached to Cmds, not elements.
+                D.Assert(!s.IsActivated);    // items activate equipment when the item commences operation
+                s.isDamagedChanged += SensorIsDamagedChangedEventHandler;
+            });
+        }
+
+        private void Initialize(IEnumerable<ShieldGenerator> generators) {
+            ShieldGenerators = generators.ToList();
+            ShieldGenerators.ForAll(gen => {
+                D.Assert(gen.Shield != null);
+                D.Assert(!gen.IsActivated);    // items activate equipment when the item commences operation
+                gen.isDamagedChanged += ShieldGeneratorIsDamagedChangedEventHandler;
+            });
+        }
 
         public override void CommenceOperations() {
             base.CommenceOperations();
@@ -150,62 +193,27 @@ namespace CodeEnv.Master.GameContent {
             RecalcWeaponsRange();
         }
 
-        private void InitializeWeapons() {
-            // weapons are already present in hullEquipment
-            Weapons.ForAll(weap => {
-                D.Assert(weap.RangeMonitor != null);
-                D.Assert(weap.WeaponMount != null);
-                D.Assert(!weap.IsActivated); // items activate equipment when the item commences operation
-                weap.onIsDamagedChanged += OnWeaponIsDamagedChanged;
-            });
-        }
 
-        private void Initialize(IEnumerable<ActiveCountermeasure> activeCMs) {
-            ActiveCountermeasures = activeCMs.ToList();
-            ActiveCountermeasures.ForAll(cm => {
-                D.Assert(cm.RangeMonitor != null);
-                D.Assert(!cm.IsActivated);    // items activate equipment when the item commences operation
-                cm.onIsDamagedChanged += OnCountermeasureIsDamagedChanged;
-            });
-        }
+        #region Event and Property Change Handlers
 
-        private void Initialize(IEnumerable<Sensor> sensors) {
-            Sensors = sensors.ToList();
-            Sensors.ForAll(s => {
-                D.Assert(s.RangeMonitor == null);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
-                // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
-                // and SensorRangeMonitors get attached to Cmds, not elements.
-                D.Assert(!s.IsActivated);    // items activate equipment when the item commences operation
-                s.onIsDamagedChanged += OnSensorIsDamagedChanged;
-            });
-        }
-
-        private void Initialize(IEnumerable<ShieldGenerator> generators) {
-            ShieldGenerators = generators.ToList();
-            ShieldGenerators.ForAll(gen => {
-                D.Assert(gen.Shield != null);
-                D.Assert(!gen.IsActivated);    // items activate equipment when the item commences operation
-                gen.onIsDamagedChanged += OnShieldGeneratorIsDamagedChanged;
-            });
-        }
-
-        private void OnIsHQChanged() {
+        private void IsHQPropChangedHandler() {
             Name = IsHQ ? Name + _hqNameAddendum : Name.Remove(_hqNameAddendum);
         }
-
-        private void OnSensorIsDamagedChanged(AEquipment sensor) {
+        private void SensorIsDamagedChangedEventHandler(object sender, EventArgs e) {
             RecalcSensorRange();
         }
 
-        private void OnWeaponIsDamagedChanged(AEquipment weapon) {
+        private void WeaponIsDamagedChangedEventHandler(object sender, EventArgs e) {
             RecalcWeaponsRange();
             RecalcOffensiveStrength();
         }
 
-        private void OnShieldGeneratorIsDamagedChanged(AEquipment generator) {
+        private void ShieldGeneratorIsDamagedChangedEventHandler(object sender, EventArgs e) {
             RecalcShieldRange();
             RecalcDefensiveValues();
         }
+
+        #endregion
 
         private void RecalcSensorRange() {
             // CalcSensorRangeDistance filters out damaged sensors
@@ -255,10 +263,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Unsubscribe() {
             base.Unsubscribe();
-            Weapons.ForAll(w => w.onIsDamagedChanged -= OnWeaponIsDamagedChanged);
-            Sensors.ForAll(s => s.onIsDamagedChanged -= OnSensorIsDamagedChanged);
-            ActiveCountermeasures.ForAll(cm => cm.onIsDamagedChanged -= OnCountermeasureIsDamagedChanged);
-            ShieldGenerators.ForAll(gen => gen.onIsDamagedChanged -= OnShieldGeneratorIsDamagedChanged);
+            Weapons.ForAll(w => w.isDamagedChanged -= WeaponIsDamagedChangedEventHandler);
+            Sensors.ForAll(s => s.isDamagedChanged -= SensorIsDamagedChangedEventHandler);
+            ActiveCountermeasures.ForAll(cm => cm.isDamagedChanged -= CountermeasureIsDamagedChangedEventHandler);
+            ShieldGenerators.ForAll(gen => gen.isDamagedChanged -= ShieldGeneratorIsDamagedChangedEventHandler);
         }
 
     }

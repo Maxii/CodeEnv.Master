@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IElementAttackableTarget : INavigableTarget, ISensorDetectable {
 
-        event Action<IMortalItem> onDeathOneShot;
+        event EventHandler deathOneShot;
 
         string Name { get; }
 
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="ordnanceFired">The ordnance fired.</param>
         [Obsolete]
-        void OnFiredUponBy(IInterceptableOrdnance ordnanceFired);
+        void HandleFiredUponBy(IInterceptableOrdnance ordnanceFired);
 
         void TakeHit(DamageStrength attackerStrength);
 

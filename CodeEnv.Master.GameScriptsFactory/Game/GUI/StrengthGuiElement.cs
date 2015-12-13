@@ -46,8 +46,9 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     public CombatStrength? Strength {
         get { return _strength; }
         set {
+            D.Assert(!_isStrengthSet);  // only occurs once between Resets
             _strength = value;
-            OnStrengthSet();
+            StrengthPropSetHandler();
         }
     }
 
@@ -83,12 +84,16 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
         }
     }
 
-    private void OnStrengthSet() {
+    #region Event and Property Change Handlers
+
+    private void StrengthPropSetHandler() {
         _isStrengthSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     private void PopulateElementWidgets() {
         string combinedValueLabelText = _unknown;

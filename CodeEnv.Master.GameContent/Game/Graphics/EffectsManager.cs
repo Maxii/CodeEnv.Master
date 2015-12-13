@@ -38,15 +38,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="effectID">The effect identifier.</param>
         public virtual void StartEffect(EffectID effectID) {
-            _effectsClient.OnEffectFinished(effectID);
+            _effectsClient.HandleEffectFinished(effectID);
         }
 
         /// <summary>
         /// Stops the effect(s) associated with <c>effectID</c>. 
-        /// TODO This default version does nothing.
         /// </summary>
         /// <param name="effectID">The effect identifier.</param>
-        public virtual void StopEffect(EffectID effectID) { }
+        public virtual void StopEffect(EffectID effectID) {
+            //TODO This default version does nothing.
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

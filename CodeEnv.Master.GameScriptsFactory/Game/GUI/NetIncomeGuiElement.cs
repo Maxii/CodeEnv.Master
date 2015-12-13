@@ -34,8 +34,9 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     public float? Income {
         get { return _income; }
         set {
+            D.Assert(!_isIncomeSet);    // only happens once between Resets
             _income = value;
-            OnIncomeSet();
+            IncomePropSetHandler();
         }
     }
 
@@ -44,8 +45,9 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     public float? Expense {
         get { return _expense; }
         set {
+            D.Assert(!_isExpenseSet);    // only happens once between Resets
             _expense = value;
-            OnExpenseSet();
+            ExpensePropSetHandler();
         }
     }
 
@@ -63,19 +65,23 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    private void OnIncomeSet() {
+    #region Event and Property Change Handlers
+
+    private void IncomePropSetHandler() {
         _isIncomeSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
-    private void OnExpenseSet() {
+    private void ExpensePropSetHandler() {
         _isExpenseSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     private void PopulateElementWidgets() {
         string incomeTooltipContent = _unknown;

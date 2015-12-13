@@ -55,8 +55,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         GraphicsOptionSettings settings = new GraphicsOptionSettings() {
             QualitySetting = _qualitySetting,
             IsElementIconsEnabled = _isElementIconsEnabled

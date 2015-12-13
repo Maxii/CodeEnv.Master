@@ -28,7 +28,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     private AtlasID _atlasID;
     public AtlasID AtlasID {
         get { return _atlasID; }
-        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", OnAtlasIDChanged); }
+        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", AtlasIDPropChangedHandler); }
     }
 
     protected new UISprite Widget { get { return base.Widget as UISprite; } }
@@ -50,20 +50,20 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     /// <summary>
     /// Temporary. Sets the dimensions of the sprite in pixels. 
     /// If not set, the sprite will assume the dimensions found in the atlas.
-    /// 
-    /// TODO: As I have only one sprite size available now (32, 32), this setting will change the dimensions
-    /// of UISprite to reflect this desired size. The longer term solution is to have my sprites be the 
-    /// desired size to begin with, eliminating any dimension change requirement. 
     /// </summary>
     /// <param name="width">The width.</param>
     /// <param name="height">The height.</param>
-    public virtual void __SetDimensions(int width, int height) {
+    public virtual void __SetDimensions(int width, int height) {        //TODO: Start with sprites of desired size
         Widget.SetDimensions(width, height);
     }
 
-    private void OnAtlasIDChanged() {
+    #region Event and Property Change Handlers
+
+    private void AtlasIDPropChangedHandler() {
         Widget.atlas = AtlasID.GetAtlas();
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

@@ -30,6 +30,11 @@ namespace CodeEnv.Master.GameContent {
 
         public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
 
+        public sealed override Topography Topography {  // avoids CA2214
+            get { return base.Topography; }
+            set { base.Topography = value; }
+        }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
@@ -53,9 +58,13 @@ namespace CodeEnv.Master.GameContent {
             return new ImprovingIntel(initialcoverage);
         }
 
-        protected override void OnOwnerChanged() {
+        #region Event and Property Change Handlers
+
+        protected override void OwnerPropChangedHandler() {
             throw new System.InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(FullName, Owner.LeaderName));
         }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

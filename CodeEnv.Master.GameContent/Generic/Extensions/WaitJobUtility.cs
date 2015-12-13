@@ -52,15 +52,14 @@ namespace CodeEnv.Master.GameContent {
             // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
         }
 
-
         private void Subscribe() {
-            if (_subscribers == null) {
-                _subscribers = new List<IDisposable>();
-            }
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, OnIsRunningChanged));
+            _subscribers = new List<IDisposable>();
+            _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, IsRunningPropChangedHandler));
         }
 
-        private void OnIsRunningChanged() {
+        #region Event and Property Change Handlers
+
+        private void IsRunningPropChangedHandler() {
             _isGameRunning = _gameMgr.IsRunning;
             if (_isGameRunning) {
                 D.Assert(_runningJobs.Count == Constants.Zero);
@@ -69,6 +68,8 @@ namespace CodeEnv.Master.GameContent {
                 KillAllJobs();
             }
         }
+
+        #endregion
 
         private void KillAllJobs() {
             _runningJobs.ForAll(job => job.Kill());
@@ -234,7 +235,7 @@ namespace CodeEnv.Master.GameContent {
         private void Cleanup() {
             Unsubscribe();
             KillAllJobs();
-            // other cleanup here including any tracking Gui2D elements
+            CallOnDispose();
         }
 
         private void Unsubscribe() {

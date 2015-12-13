@@ -30,19 +30,19 @@ namespace CodeEnv.Master.GameContent {
         private GameColor _color;
         public GameColor Color {
             get { return _color; }
-            set { SetProperty<GameColor>(ref _color, value, "Color", OnColorChanged); }
+            set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedHandler); }
         }
 
         private float _lineWidth;
         public float LineWidth {
             get { return _lineWidth; }
-            set { SetProperty<float>(ref _lineWidth, value, "LineWidth", OnLineWidthChanged); }
+            set { SetProperty<float>(ref _lineWidth, value, "LineWidth", LineWidthPropChangedHandler); }
         }
 
         private List<Vector3> _points;  // must be a List<> (not IList<>) to allow access to the list's capacity during Initialize
         public List<Vector3> Points {
             get { return _points; }
-            set { SetProperty<List<Vector3>>(ref _points, value, "Points", OnPointsChanged); }
+            set { SetProperty<List<Vector3>>(ref _points, value, "Points", PointsPropChangedHandler); }
         }
 
         protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
@@ -67,10 +67,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Initialize() {
+
             /*********************************************************************************************************************************************
-                             * GOTCHA! The new VectorLine 5.0 constructor relies on the capacity of the list when Points.Count is 0. 
-                             * If Points.Count is 0, new List(Points) creates an empty list with ZERO capacity, it DOES NOT copy the capacity of the Points list!
-                             *********************************************************************************************************************************************/
+             * GOTCHA! The new VectorLine 5.0 constructor relies on the capacity of the list when Points.Count is 0. 
+             * If Points.Count is 0, new List(Points) creates an empty list with ZERO capacity, it DOES NOT copy the capacity of the Points list!
+             *********************************************************************************************************************************************/
+
             var points = new List<Vector3>(Points.Capacity);
             points.AddRange(Points);
             //D.Log("List being used for Line creation: Capacity = {0}, Count = {1}.", points.Capacity, points.Count);
@@ -95,8 +97,8 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (toShow) {
-                _drawJob = new Job(DrawLine(), toStart: true, onJobComplete: delegate {
-                    // TODO
+                _drawJob = new Job(DrawLine(), toStart: true, jobCompleted: delegate {
+                    //TODO
                 });
             }
             _line.active = toShow;
@@ -113,25 +115,30 @@ namespace CodeEnv.Master.GameContent {
             _line.Draw3D();  // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
-        private void OnColorChanged() {
+        #region Event and Property Change Handlers
+
+        private void ColorPropChangedHandler() {
             if (_line != null) {
                 _line.SetColor(Color.ToUnityColor());
             }
         }
 
-        private void OnLineWidthChanged() {
+        private void LineWidthPropChangedHandler() {
             if (_line != null) {
                 _line.lineWidth = LineWidth;
             }
         }
 
-        private void OnPointsChanged() {
+        private void PointsPropChangedHandler() {
             if (_line != null) {
                 _line.points3.Clear();  //_line.Resize(Points); removed by Vectrosity 4.0
-                //D.Log("{0}.OnPointsChanged called. Adding {1} points.", GetType().Name, Points.Count);
+                //D.Log("{0}.PointsPropChangedHandler called. Adding {1} points.", GetType().Name, Points.Count);
                 _line.points3.AddRange(Points);
             }
         }
+
+        #endregion
+
     }
 }
 

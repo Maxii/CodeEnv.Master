@@ -26,8 +26,8 @@ public class SaveMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent { get { return "Click to save game."; } }
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
+    protected override void HandleLeftClick() {
+        base.HandleLeftClick();
         _gameMgr.SaveGame("Game");
     }
 

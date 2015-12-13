@@ -100,7 +100,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     }
 
     private void Subscribe() {
-        _gameMgr.onGameStateChanged += OnGameStateChanged;
+        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
         SubscribeStaticallyOnce();
     }
 
@@ -114,12 +114,14 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     private void SubscribeStaticallyOnce() {
         if (!_isStaticallySubscribed) {
             //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
-            _gameMgr.onSceneLoaded += CleanupStaticMembers;
+            _gameMgr.sceneLoaded += SceneLoadedEventHandler;
             _isStaticallySubscribed = true;
         }
     }
 
-    private void OnGameStateChanged() {
+    #region Event and Property Change Handlers
+
+    private void GameStateChangedEventHandler(object sender, EventArgs e) {
         var gameState = _gameMgr.CurrentState;
         switch (gameState) {
             case GameState.Building:
@@ -158,6 +160,17 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         BuildDeployAndBeginUnitOperationsDuringStartup(gameState);
     }
 
+    private static void UnitDeathHandler(object sender, EventArgs e) {
+        CommandType command = sender as CommandType;
+        AllUnitCommands.Remove(command);
+    }
+
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+        CleanupStaticMembers();
+    }
+
+    #endregion
+
     private void BuildDeployAndBeginUnitOperationsDuringStartup(GameState gameState) {
         D.Assert(!toDelayOperations);  // toDelayBuild can be true from previous editor setting
         if (gameState == GameState.PrepareUnitsForDeployment) {
@@ -182,11 +195,41 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         }
     }
 
-
     #region Delay into Runtime System
 
     private GameDate _delayedDateInRuntime;
 
+    //private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
+    //    D.Assert(toDelayOperations && !toDelayBuild);
+    //    if (gameState == GameState.PrepareUnitsForDeployment) {
+    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
+    //        CreateElementHullStats();
+    //        MakeAndRecordDesigns();
+    //        PrepareUnitForOperations();
+    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
+    //    }
+
+    //    if (gameState == GameState.DeployingUnits) {
+    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: false);
+    //        _isUnitDeployed = DeployUnit();
+    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: true);
+    //        if (!_isUnitDeployed) {
+    //            Destroy(gameObject);
+    //        }
+    //    }
+
+    //    if (gameState == GameState.Running && _isUnitDeployed) {
+    //        var delay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
+    //        if (delay == default(GameTimeDuration)) {
+    //            // delayOperations selected but delay is 0 so begin operations now
+    //            BeginUnitOperations();
+    //        }
+    //        else {
+    //            _delayedDateInRuntime = new GameDate(delay);
+    //            GameTime.Instance.onDateChanged += OnCurrentDateChanged;
+    //        }
+    //    }
+    //}
     private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
         D.Assert(toDelayOperations && !toDelayBuild);
         if (gameState == GameState.PrepareUnitsForDeployment) {
@@ -214,11 +257,27 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             else {
                 _delayedDateInRuntime = new GameDate(delay);
-                GameTime.Instance.onDateChanged += OnCurrentDateChanged;
+                GameTime.Instance.dateChanged += DateChangedHandler;
             }
         }
     }
 
+    //private void DelayBuildDeployAndBeginUnitOperations(GameState gameState) {
+    //    D.Assert(toDelayOperations && toDelayBuild);
+
+    //    if (gameState == GameState.Running) {
+    //        var runtimeDelay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
+    //        if (runtimeDelay == default(GameTimeDuration)) {
+    //            // delayOperations selected but delay is 0 so begin operations now
+    //            //D.Log("Beginning Unit Operations with 0 hours delay.");
+    //            BuildDeployAndBeginUnitOperations();
+    //        }
+    //        else {
+    //            _delayedDateInRuntime = new GameDate(runtimeDelay);
+    //            GameTime.Instance.onDateChanged += OnCurrentDateChanged;
+    //        }
+    //    }
+    //}
     private void DelayBuildDeployAndBeginUnitOperations(GameState gameState) {
         D.Assert(toDelayOperations && toDelayBuild);
 
@@ -231,17 +290,18 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             else {
                 _delayedDateInRuntime = new GameDate(runtimeDelay);
-                GameTime.Instance.onDateChanged += OnCurrentDateChanged;
+                GameTime.Instance.dateChanged += DateChangedHandler;
             }
         }
     }
 
-    private void OnCurrentDateChanged(GameDate currentDate) {
-        //D.Log("{0} for {1} received OnCurrentDateChanged({2}).", GetType().Name, UnitName, currentDate);
+    private void DateChangedHandler(object sender, EventArgs e) {
+        GameDate currentDate = GameTime.Instance.CurrentDate;
+        //D.Log("{0}.{1}.DateChangedEventHandler called. Date = ({2}).", UnitName, GetType().Name,  currentDate);
         D.Assert(toDelayOperations);
         if (currentDate >= _delayedDateInRuntime) {
             if (currentDate > _delayedDateInRuntime) {
-                D.Warn("{0} for {1} recorded current date {2} beyond target date {3}.", GetType().Name, UnitName, currentDate, _delayedDateInRuntime);
+                D.Warn("{0}.{1} recorded current date {2} beyond target date {3}.", UnitName, GetType().Name, currentDate, _delayedDateInRuntime);
             }
             if (toDelayBuild) {
                 D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
@@ -251,10 +311,30 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                 D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
                 BeginUnitOperations();
             }
-            //D.Log("{0} for {1} is unsubscribing from GameTime.onDateChanged.", GetType().Name, UnitName);
-            GameTime.Instance.onDateChanged -= OnCurrentDateChanged;
+            //D.Log("{0}.{1} is unsubscribing from GameTime.onDateChanged.", UnitName, GetType().Name);
+            GameTime.Instance.dateChanged -= DateChangedHandler;
         }
     }
+
+    //private void OnCurrentDateChanged(GameDate currentDate) {
+    //    //D.Log("{0} for {1} received OnCurrentDateChanged({2}).", GetType().Name, UnitName, currentDate);
+    //    D.Assert(toDelayOperations);
+    //    if (currentDate >= _delayedDateInRuntime) {
+    //        if (currentDate > _delayedDateInRuntime) {
+    //            D.Warn("{0} for {1} recorded current date {2} beyond target date {3}.", GetType().Name, UnitName, currentDate, _delayedDateInRuntime);
+    //        }
+    //        if (toDelayBuild) {
+    //            D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
+    //            BuildDeployAndBeginUnitOperations();
+    //        }
+    //        else {
+    //            D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
+    //            BeginUnitOperations();
+    //        }
+    //        //D.Log("{0} for {1} is unsubscribing from GameTime.onDateChanged.", GetType().Name, UnitName);
+    //        GameTime.Instance.onDateChanged -= OnCurrentDateChanged;
+    //    }
+    //}
 
     #endregion
 
@@ -423,8 +503,8 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             switch (rangeCat) {
                 case RangeCategory.Short:
                     name = "CIWS";
-                    interceptStrengths = new WDVStrength[] { 
-                        new WDVStrength(WDVCategory.Projectile, 0.2F), 
+                    interceptStrengths = new WDVStrength[] {
+                        new WDVStrength(WDVCategory.Projectile, 0.2F),
                         new WDVStrength(WDVCategory.Missile, 0.5F)
                     };
                     interceptAccuracy = 0.50F;
@@ -433,7 +513,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                 case RangeCategory.Medium:
                     name = "AvengerADS";
                     interceptStrengths = new WDVStrength[] {
-                        new WDVStrength(WDVCategory.Missile, 3.0F) 
+                        new WDVStrength(WDVCategory.Missile, 3.0F)
                     };
                     interceptAccuracy = 0.80F;
                     reloadPeriod = 2.0F;
@@ -669,7 +749,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     /// these items are stored in are static and persist across scenes.
     /// </summary>
     private void RecordCommandInStaticCollections() {
-        _command.onDeathOneShot += OnUnitDeath;
+        _command.deathOneShot += UnitDeathHandler;
         var cmdNamesStored = _allUnitCommands.Select(cmd => cmd.DisplayName);
         // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
         D.Assert(!cmdNamesStored.Contains(_command.DisplayName), "{0}.{1} reports {2} already present.".Inject(UnitName, GetType().Name, _command.DisplayName));
@@ -755,15 +835,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         Destroy(this);
     }
 
-    /// <summary>
-    /// Removes the command from the AllUnitCommands static collection
-    /// when the command dies.
-    /// </summary>
-    /// <param name="mortalItem">The mortal item.</param>
-    private static void OnUnitDeath(IMortalItem mortalItem) {
-        AllUnitCommands.Remove(mortalItem as CommandType);
-    }
-
     protected override void Cleanup() {
         Unsubscribe();
         if (IsApplicationQuiting) {
@@ -774,7 +845,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
 
     protected virtual void Unsubscribe() {
         if (_gameMgr != null) {
-            _gameMgr.onGameStateChanged -= OnGameStateChanged;
+            _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
         }
     }
 
@@ -785,7 +856,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     /// retain their value after deserialization, and/or 2) can static members even be serialized? 
     /// </summary>
     private static void CleanupStaticMembers() {
-        _allUnitCommands.ForAll(cmd => cmd.onDeathOneShot -= OnUnitDeath);
+        _allUnitCommands.ForAll(cmd => cmd.deathOneShot -= UnitDeathHandler);
         _allUnitCommands.Clear();
         _elementInstanceIDCounter = Constants.One;
     }
@@ -796,7 +867,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     private void UnsubscribeStaticallyOnceOnQuit() {
         if (_isStaticallySubscribed) {
             if (_gameMgr != null) {
-                _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+                _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
             }
             _isStaticallySubscribed = false;
         }

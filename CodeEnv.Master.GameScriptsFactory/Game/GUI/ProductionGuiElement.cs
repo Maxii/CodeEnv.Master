@@ -29,14 +29,17 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
 
     public override GuiElementID ElementID { get { return GuiElementID.Production; } }
 
-    private bool _isProductionSet = false;
+    private bool __isProductionSet;
     private string __producingName;
     public string __ProducingName {
         get { return __producingName; }
-        set { SetProperty<string>(ref __producingName, value, "__ProducingName", __OnProducingNameChanged); }
+        set {
+            D.Assert(!__isProductionSet);   // occurs only once between Resets
+            SetProperty<string>(ref __producingName, value, "__ProducingName", __ProducingNamePropSetHandler);
+        }
     }
 
-    private bool AreAllValuesSet { get { return _isProductionSet; } }
+    private bool AreAllValuesSet { get { return __isProductionSet; } }
 
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
@@ -59,16 +62,20 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
         // UNDONE find constructionTime and buyoutCost labels
     }
 
-    private void __OnProducingNameChanged() {
-        _isProductionSet = true;
+    #region Event and Property Change Handlers
+
+    private void __ProducingNamePropSetHandler() {
+        __isProductionSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
+    #endregion
+
     private void PopulateElementWidgets() {
         if (__ProducingName.IsNullOrEmpty()) {
-            OnValuesUnknown();
+            HandleValuesUnknown();
             return;
         }
 
@@ -78,7 +85,7 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
         // UNDONE
     }
 
-    private void OnValuesUnknown() {
+    private void HandleValuesUnknown() {
         _imageSprite.atlas = AtlasID.MyGui.GetAtlas();
         _imageSprite.spriteName = TempGameValues.UnknownImageFilename;
         _imageNameLabel.text = Constants.QuestionMark;
@@ -88,7 +95,7 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
     public override void Reset() {
         // UNDONE
         __producingName = null;
-        _isProductionSet = false;
+        __isProductionSet = false;
     }
 
     protected override void Cleanup() { }
@@ -101,7 +108,7 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
 
     public int CompareTo(ProductionGuiElement other) {
         int result = __ProducingName.CompareTo(other.__ProducingName);
-        // TODO
+        //TODO
         return result;
     }
 

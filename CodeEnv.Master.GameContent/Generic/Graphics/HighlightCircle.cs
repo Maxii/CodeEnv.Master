@@ -87,9 +87,9 @@ namespace CodeEnv.Master.GameContent {
             if (_line == null) { Initialize(); }
 
             if (toShow) {
-                _drawJob = _drawJob ?? new Job(DrawCircles(), toStart: true, onJobComplete: delegate {
+                _drawJob = _drawJob ?? new Job(DrawCircles(), toStart: true, jobCompleted: delegate {
                     D.Log("{0}.Job(DrawCircles()) completed.", LineName);
-                    // TODO
+                    //TODO
                 });
                 AddCircle(index);
                 _line.active = true;

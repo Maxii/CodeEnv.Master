@@ -30,7 +30,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     private static int __instanceCount = 1;
     private static string _fullNameFormat = "{0}_{1}";
 
-    public event Action<IOrdnance> onDeathOneShot;
+    public event EventHandler deathOneShot;
 
     public string Name { get; private set; }
 
@@ -47,7 +47,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     private bool _toShowEffects;
     public bool ToShowEffects {
         get { return _toShowEffects; }
-        set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", OnToShowEffectsChanged); }
+        set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", ToShowEffectsPropChangedHandler); }
     }
 
     public WDVStrength DeliveryVehicleStrength { get; protected set; }
@@ -74,7 +74,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     protected virtual void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
     }
 
     protected void PrepareForLaunch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
@@ -85,7 +85,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         DamagePotential = weapon.DamagePotential;
 
         SyncName();
-        weapon.OnFiringInitiated(target, this);
+        weapon.HandleFiringInitiated(target, this);
 
         _range = weapon.RangeDistance;
         ToShowEffects = toShowEffects;
@@ -100,22 +100,33 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     protected abstract void ShowImpactEffects(Vector3 position, Quaternion rotation);
 
-    protected virtual void OnToShowEffectsChanged() {
+    protected virtual void ToShowEffectsPropChangedHandler() {
         //D.Log("{0}.ToShowEffects is now {1}.", Name, ToShowEffects);
         AssessShowMuzzleEffects();
         AssessShowOperatingEffects();
     }
 
-    protected virtual void OnIsPausedChanged() {
+    #region Event and Property Change Handlers
+
+    protected virtual void IsPausedPropChangedHandler() {
         enabled = !_gameMgr.IsPaused;
     }
 
+    private void OnDeath() {
+        if(deathOneShot != null) {
+            deathOneShot(this, new EventArgs());
+            deathOneShot = null;
+        }
+    }
+
+    #endregion
+
     protected void ReportTargetHit() {
-        Weapon.OnTargetHit(Target);
+        Weapon.HandleTargetHit(Target);
     }
 
     protected void ReportTargetMissed() {
-        Weapon.OnTargetMissed(Target);
+        Weapon.HandleTargetMissed(Target);
     }
 
     /// <summary>
@@ -124,7 +135,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// object that was not its target.
     /// </summary>
     protected void ReportInterdiction() {
-        Weapon.OnOrdnanceInterdicted(Target);
+        Weapon.HandleOrdnanceInterdicted(Target);
     }
 
     /// <summary>
@@ -145,10 +156,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         enabled = false;
         IsOperational = false;
         PrepareForTermination();
-        if (onDeathOneShot != null) {
-            onDeathOneShot(this);
-            onDeathOneShot = null;
-        }
+
+        OnDeath();
         Destroy(gameObject);
     }
 

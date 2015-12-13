@@ -27,11 +27,9 @@ public class VariableSizeTrackingLabel : AWorldTrackingWidget_VariableSize {
 
     /// <summary>
     /// Temporary. The desired size in pixels of this font. 
-    /// TODO: As I have only a couple of font sizes available now, this setting will change the size 
-    /// of the UILable font to reflect this desired size. The longer term solution is to have my fonts be the 
-    /// desired size to begin with, eliminating any change requirement. 
     /// </summary>
-    public int desiredFontSize = 6;
+    public int desiredFontSize = 6;    //TODO: User properly sized font
+
 
     protected new UILabel Widget { get { return base.Widget as UILabel; } }
 
@@ -47,7 +45,7 @@ public class VariableSizeTrackingLabel : AWorldTrackingWidget_VariableSize {
     public override void Set(string text) {
         if (Widget.text == text) { return; }
         Widget.text = text;
-        OnTextChanged();
+        Widget.MakePixelPerfect();
     }
 
     protected override void AlignWidgetOtherTo(WidgetPlacement placement) {
@@ -74,10 +72,6 @@ public class VariableSizeTrackingLabel : AWorldTrackingWidget_VariableSize {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
         }
         Widget.alignment = alignment;
-    }
-
-    private void OnTextChanged() {
-        Widget.MakePixelPerfect();
     }
 
     protected override int GetSmallestWidgetDimension() {

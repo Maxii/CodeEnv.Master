@@ -38,13 +38,21 @@ public abstract class AGuiButton : ATextTooltip {
         _button = gameObject.GetSafeComponent<UIButton>();
     }
 
-    void OnClick() {
+    #region Event and Property Change Handlers
+
+    protected abstract void HandleLeftClick();
+
+    private void ClickEventHandler() {
         if (GameInputHelper.Instance.IsLeftMouseButton) {
-            OnLeftClick();
+            HandleLeftClick();
         }
     }
 
-    protected abstract void OnLeftClick();
+    void OnClick() {
+        ClickEventHandler();
+    }
+
+    #endregion
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

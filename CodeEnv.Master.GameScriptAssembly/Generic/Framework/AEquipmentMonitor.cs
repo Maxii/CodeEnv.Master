@@ -52,15 +52,17 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         _equipmentList = new List<EquipmentType>();
     }
 
-    protected virtual void OnEquipmentIsOperationalChanged(AEquipment pieceOfEquipment) {
-        //D.Log("{0}.OnEquipmentIsOperationalChanged() called. Equipment.IsOperational = {1}.", Name, pieceOfEquipment.IsOperational);
+    #region Event and Property Change Handlers
+
+    protected virtual void EquipmentIsOperationalChangedEventHandler(object sender, EventArgs e) {
         RangeDistance = RefreshRangeDistance();
         AssessIsOperational();
     }
 
+    #endregion
+
     public virtual void Add(EquipmentType pieceOfEquipment) {
         D.Assert(!pieceOfEquipment.IsActivated);
-        //D.Assert(!pieceOfEquipment.IsOperational);
         D.Assert(!_equipmentList.Contains(pieceOfEquipment));
         if (RangeCategory == RangeCategory.None) {
             RangeCategory = pieceOfEquipment.RangeCategory;
@@ -68,25 +70,25 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         D.Assert(RangeCategory == pieceOfEquipment.RangeCategory);
         AssignMonitorTo(pieceOfEquipment);
         _equipmentList.Add(pieceOfEquipment);
-        pieceOfEquipment.onIsOperationalChanged += OnEquipmentIsOperationalChanged;
+        pieceOfEquipment.isOperationalChanged += EquipmentIsOperationalChangedEventHandler;
         // RangeDistance is set when when a piece of equipment first becomes operational.
     }
 
     protected abstract void AssignMonitorTo(EquipmentType pieceOfEquipment);
 
     /**********************************************************************************************************
-           * Remove(equipment) eliminated as it is my intention to replace existing equipment with
-           * upgraded equipment by building a new element to replace the existing element.
-           **********************************************************************************************************/
+     * Remove(equipment) eliminated as it is my intention to replace existing equipment with
+     * upgraded equipment by building a new element to replace the existing element.
+     **********************************************************************************************************/
 
     protected virtual void AssessIsOperational() {
         IsOperational = _equipmentList.Where(e => e.IsOperational).Any();
     }
 
     /************************************************************************************************************************************
-           * Note: No reason to take a direct action in the monitor when the ParentItem dies as the ParentItem sets each equipment's
-           * IsOperational state to false when death occurs. The monitor's IsOperational state follows the change in all its equipment to false.
-           *************************************************************************************************************************************/
+     * Note: No reason to take a direct action in the monitor when the ParentItem dies as the ParentItem sets each equipment's
+     * IsOperational state to false when death occurs. The monitor's IsOperational state follows the change in all its equipment to false.
+     *************************************************************************************************************************************/
 
     /// <summary>
     /// Refreshes the range distance of this monitor. The range of a monitor can be affected
@@ -108,11 +110,15 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     protected override void Cleanup() {
         base.Cleanup();
         _equipmentList.ForAll(e => {
-            e.onIsOperationalChanged -= OnEquipmentIsOperationalChanged;
             if (e is IDisposable) {
                 (e as IDisposable).Dispose();
             }
         });
+    }
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        _equipmentList.ForAll(e => e.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler);
     }
 
 }

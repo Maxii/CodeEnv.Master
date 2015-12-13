@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.Target, "Target: {0}"},
                 {ContentID.TargetDistance, "TargetDistance: {0}"},
                 {ContentID.CurrentSpeed, "Speed: {0}"},
-                {ContentID.FullSpeed, "FullSpeed: {0}"}, 
+                {ContentID.FullSpeed, "FullSpeed: {0}"},
                 {ContentID.MaxTurnRate, "MaxTurnRate: {0}"},
                 {ContentID.CombatStance, "Stance: {0}"},
 
@@ -99,7 +99,7 @@ namespace CodeEnv.Master.GameContent {
 
                 {ContentID.TargetDistance, Constants.FormatFloat_0Dp},
                 {ContentID.CurrentSpeed, Constants.FormatFloat_2DpMax},
-                {ContentID.FullSpeed, Constants.FormatFloat_2DpMax}, 
+                {ContentID.FullSpeed, Constants.FormatFloat_2DpMax},
                 {ContentID.MaxTurnRate, Constants.FormatFloat_0Dp},
 
                 {ContentID.Population, Constants.FormatInt_1DMin},
@@ -314,7 +314,7 @@ namespace CodeEnv.Master.GameContent {
         //    /// <param name="point">The point in world space..</param>
         //    /// <param name="format">The format.</param>
         //    public ColoredTextList_Distance(Vector3 point, string format = Constants.FormatFloat_1DpMax) {
-        //        // TODO calculate from Data.Position and <code>static GetSelected()<code>
+        //        //TODO calculate from Data.Position and <code>static GetSelected()<code>
         //        //if(nothing selected) return empty
         //        float distance = point.DistanceToCamera();
         //        string text = GetDefaultPhrase(ContentID.CameraDistance).Inject(format.Inject(distance));

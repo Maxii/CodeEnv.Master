@@ -38,11 +38,11 @@ namespace CodeEnv.Master.GameContent {
                 var explosion = _generalFactory.MakeExplosionInstance(_effectsClient.Radius, _effectsClient.Position);
                 explosion.Play(withChildren: true);
                 WaitJobUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, onWaitFinished: delegate {
-                    _effectsClient.OnEffectFinished(effectID);
+                    _effectsClient.HandleEffectFinished(effectID);
                 });
                 return;
             }
-            base.StartEffect(effectID); // currently just returns OnEffectFinished
+            base.StartEffect(effectID); // currently just calls HandleEffectFinished
         }
 
         public override string ToString() {

@@ -37,10 +37,7 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
         _slider = gameObject.GetSafeComponent<UISlider>();
         InitializeSlider();
         InitializeSliderValue();
-        GameManager.Instance.onIsRunningOneShot += delegate {
-            // Note: UIProgressBar automatically sends a value change event on Start() if the delegate isn't null
-            EventDelegate.Add(_slider.onChange, OnSliderValueChange);
-        };
+        Subscribe();
     }
 
     private void InitializeSlider() {
@@ -70,21 +67,45 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
         }
     }
 
-    private void OnSliderValueChange() {
+    private void Subscribe() {
+        GameManager.Instance.isRunningOneShot += IsRunningEventHandler;
+    }
+
+    #region Event and Property Change Handlers
+
+    private void IsRunningEventHandler(object sender, EventArgs e) {
+        // Note: UIProgressBar automatically sends a value change event on Start() if the delegate isn't null
+        EventDelegate.Add(_slider.onChange, SliderValueChangedEventHandler);
+    }
+
+    private void SliderValueChangedEventHandler() {
         float tolerance = 0.05F;
         float sliderValue = UISlider.current.value;
         int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
         Arguments.ValidateNotNegative(index);
         E enumValue = _orderedEnumValues[index];
         //D.Log("{0}.index = {1}, TValue = {2}.", GetType().Name, index, tValue);
-        OnSliderEnumValueChange(enumValue);
+        HandleSliderEnumValueChanged(enumValue);
     }
 
-    protected abstract void OnSliderEnumValueChange(E value);
+    #endregion
+
+    protected abstract void HandleSliderEnumValueChanged(E value);
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
     // execution is problematic as the gameObject may have already been destroyed.
+
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    protected virtual void Unsubscribe() {
+        if (_slider != null) {
+            EventDelegate.Remove(_slider.onChange, SliderValueChangedEventHandler);
+        }
+    }
+
 
 }
 

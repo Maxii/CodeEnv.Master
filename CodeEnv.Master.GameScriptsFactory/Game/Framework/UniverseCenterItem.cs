@@ -88,8 +88,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #endregion
 
-    #region Model Methods
-
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collider.enabled = true;
@@ -99,23 +97,18 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void OnOwnerChanged() {
+
+    #region Event and Property Change Handlers
+
+    protected override void OwnerPropChangedHandler() {
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
     }
 
-    #endregion
-
-    #region View Methods
-
-    #endregion
-
-    #region Events
-
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (!isDown && !_inputMgr.IsDragging) {
+    protected override void HandleRightPressRelease() {
+        base.HandleRightPressRelease();
+        if(!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
-            _ctxControl.OnRightPressRelease();
+            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -159,12 +152,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IDetectable Members
 
-    public void OnDetection(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.OnDetection(cmdItem, sensorRange);
+    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
+    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
     }
 
     #endregion

@@ -19,17 +19,22 @@ namespace CodeEnv.Master.GameContent {
     using System;
     using System.Collections;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
     /// An Element's ShieldGenerator. Can be Short, Medium or Long range.
     /// </summary>
-    public class ShieldGenerator : ARangedEquipment, ICountermeasure {
+    public class ShieldGenerator : ARangedEquipment, ICountermeasure, IDisposable {
 
         //private static float _hoursPerSecond = GameTime.HoursPerSecond;
         private static string _nameFormat = "{0}[{1}({2:0.})]";
 
-        public event Action<ShieldGenerator> onHasChargeChanged;
+        /// <summary>
+        /// Occurs when this ShieldGenerator changes from having any charge to having
+        /// no charge, or vis-versa.
+        /// </summary>
+        public event EventHandler hasChargeChanged;
 
         public override string Name {
             get {
@@ -75,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool HasCharge {
             get { return _hasCharge; }
-            private set { SetProperty<bool>(ref _hasCharge, value, "HasCharge", OnHasChargeChanged); }
+            private set { SetProperty<bool>(ref _hasCharge, value, "HasCharge", HasChargePropChangedHandler); }
         }
 
         /// <summary>
@@ -139,12 +144,14 @@ namespace CodeEnv.Master.GameContent {
             return isHitCompletelyAbsorbed;
         }
 
-        private void OnReloaded() {
+        private void HandleReloaded() {
             HasCharge = true;
         }
 
-        protected override void OnIsOperationalChanged() {
-            base.OnIsOperationalChanged();
+        #region Event and Property Change Handlers
+
+        protected override void IsOperationalPropChangedHandler() {
+            base.IsOperationalPropChangedHandler();
             if (IsOperational) {
                 InitiateReloadCycle();
             }
@@ -155,7 +162,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnHasChargeChanged() {
+        private void HasChargePropChangedHandler() {
             if (HasCharge) {
                 CurrentCharge = MaximumCharge;
             }
@@ -163,10 +170,16 @@ namespace CodeEnv.Master.GameContent {
                 CurrentCharge = Constants.ZeroF;
                 AssessReloadState();
             }
-            if (onHasChargeChanged != null) {
-                onHasChargeChanged(this);
+            OnHasChargeChanged();
+        }
+
+        private void OnHasChargeChanged() {
+            if (hasChargeChanged != null) {
+                hasChargeChanged(this, new EventArgs());
             }
         }
+
+        #endregion
 
         #region Recharging
 
@@ -188,7 +201,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!_isRecharging);
             D.Log("{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.Name, Name, TrickleChargeRate);
             _isRecharging = true;
-            _rechargeJob = new Job(Recharge(), toStart: true, onJobComplete: (jobWasKilled) => {
+            _rechargeJob = new Job(Recharge(), toStart: true, jobCompleted: (jobWasKilled) => {
                 _isRecharging = false;
                 if (!jobWasKilled) {
                     D.Log("{0}.{1} completed recharging.", Shield.Name, Name);
@@ -235,7 +248,7 @@ namespace CodeEnv.Master.GameContent {
                 _isReloading = false;
                 if (!jobWasKilled) {
                     D.Log("{0}.{1} completed reload.", Shield.Name, Name);
-                    OnReloaded();
+                    HandleReloaded();
                 }
             });
         }
@@ -260,6 +273,32 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region IDisposable
+
+        [NonSerialized]
+        protected bool _isDisposing = false;
+        private bool _alreadyDisposed = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (_alreadyDisposed) {
+                D.Warn("{0} has already been disposed.", GetType().Name);
+                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+            }
+
+            _isDisposing = true;
+            Cleanup();
+
+            _alreadyDisposed = true;
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
 
     }
 }

@@ -50,36 +50,32 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
         return displayMgr;
     }
 
+    //private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover += (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick += (go) => OnClick();
+    //    iconEventListener.onDoubleClick += (go) => OnDoubleClick();
+    //    iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+    //}
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick += (go) => OnClick();
-        iconEventListener.onDoubleClick += (go) => OnDoubleClick();
-        iconEventListener.onPress += (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick += (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
+        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion
-
-    #region Model Methods
-
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
-        AssessIcon();
-    }
 
     protected override void PrepareForOnDeathNotification() {
         base.PrepareForOnDeathNotification();
         var moons = transform.GetComponentsInChildren<MoonItem>();
         if (moons.Any()) {
             // since the planet is on its way to destruction, the moons need to show their destruction too
-            moons.ForAll(moon => moon.OnPlanetDying());
+            moons.ForAll(moon => moon.HandlePlanetDying());
         }
-        // TODO consider destroying the orbiter object and separating it from the OrbitSlot
+        //TODO consider destroying the orbiter object and separating it from the OrbitSlot
     }
-
-    #endregion
-
-    #region View Methods
 
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -103,9 +99,13 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
         return new IconInfo("Icon02", AtlasID.Contextual, iconColor);
     }
 
-    #endregion
+    #region Event and Property Change Handlers
 
-    #region Events
+    protected override void OwnerPropChangedHandler() {
+        base.OwnerPropChangedHandler();
+        AssessIcon();
+    }
+
     #endregion
 
     #region Cleanup
@@ -120,12 +120,19 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
         }
     }
 
+    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick -= (go) => OnClick();
+    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
+    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-        iconEventListener.onClick -= (go) => OnClick();
-        iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-        iconEventListener.onPress -= (go, isDown) => OnPress(isDown);
+        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
+        iconEventListener.onClick -= (go) => ClickEventHandler();
+        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
+        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
     }
 
     #endregion

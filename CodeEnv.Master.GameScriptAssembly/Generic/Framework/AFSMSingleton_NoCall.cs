@@ -68,19 +68,23 @@ public abstract class AFSMSingleton_NoCall<T, E> : AFSMSingleton<T, E>
             if (state.currentState.Equals(value)) {
                 //D.Log("{0} duplicate state {1} set attempt.", GetType().Name, value);
             }
-            SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging);
+            SetProperty<E>(ref state.currentState, value, "CurrentState", CurrentStatePropChangedHandler, CurrentStatePropChangingHandler);
         }
     }
 
-    protected virtual void OnCurrentStateChanging(E incomingState) {
+    #region Event and Property Change Handlers
+
+    protected virtual void CurrentStatePropChangingHandler(E incomingState) {
         __ValidateNoNewStateSetDuringEnterState(incomingState);
         ChangingState();
     }
 
-    protected virtual void OnCurrentStateChanged() {
+    protected virtual void CurrentStatePropChangedHandler() {
         ConfigureCurrentState();
         __ResetStateChangeValidationTest();
     }
+
+    #endregion
 
     public override void Call(E stateToActivate) {
         throw new NotImplementedException("Call() is not implemented in this version of MonoStateMachine.");

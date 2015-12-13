@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public void DestroyOrbitSimulator() {
             D.Assert(_orbitSimulator != null, "Attempting to destroy a non-existant {0} around {1}.".Inject(typeof(IOrbitSimulator).Name, _orbitedObject.name));
-            new Job(DestroyOrbitSimulatorWhenEmpty(), toStart: true, onJobComplete: (wasKilled) => {
+            new Job(DestroyOrbitSimulatorWhenEmpty(), toStart: true, jobCompleted: (wasKilled) => {
                 D.Log("{0} around {1} destroyed.", typeof(IOrbitSimulator).Name, _orbitedObject.name);
             });
         }
@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private Vector3 GenerateRandomLocalPositionWithinSlot() {
-            Vector2 pointOnCircle = RandomExtended.OnCircle(MeanRadius);
+            Vector2 pointOnCircle = RandomExtended.PointOnCircle(MeanRadius);
             return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
         }
 

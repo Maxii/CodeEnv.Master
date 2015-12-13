@@ -35,16 +35,16 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The highest level of data coverage previously achieved on this object, now out of date.
         /// </summary>
-        public virtual IntelCoverage DatedCoverage {
+        public IntelCoverage DatedCoverage {
             get { return _datedCoverage; }
-            private set { SetProperty<IntelCoverage>(ref _datedCoverage, value, "DatedCoverage", null, OnDatedCoverageChanging); }
+            private set { SetProperty<IntelCoverage>(ref _datedCoverage, value, "DatedCoverage", null, DatedCoveragePropChangingHandler); }
         }
 
         /// <summary>
         /// The "time stamp" associated with the DatedCoverage, aka when DatedCoverage was last updated.
         /// Used to calculate the age of the dated coverage level of intel.
         /// </summary>
-        public virtual GameDate DateStamp { get; private set; }
+        public GameDate DateStamp { get; private set; }
 
         public Intel(IntelCoverage coverage) : base(coverage) { }
 
@@ -87,9 +87,13 @@ namespace CodeEnv.Master.GameContent {
             // CurrentCoverage is set to newCoverage after PreProcessChange(newCoverage) finishes
         }
 
-        private void OnDatedCoverageChanging(IntelCoverage newDatedCoverage) {
+        #region Event and Property Change Handlers
+
+        private void DatedCoveragePropChangingHandler(IntelCoverage newDatedCoverage) {
             D.Log("Intel.DatedCoverage changing from {0} to {1}.", DatedCoverage, newDatedCoverage);
         }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

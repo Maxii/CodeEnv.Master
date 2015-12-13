@@ -33,8 +33,9 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
     public Player Owner {
         get { return _owner; }
         set {
+            D.Assert(!_isOwnerSet);    // only happens once between Resets
             _owner = value;
-            OnOwnerSet();
+            OwnerPropSetHandler();
         }
     }
 
@@ -42,20 +43,30 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
 
     protected override bool AreAllValuesSet { get { return _isOwnerSet; } }
 
-    void OnClick() {
-        D.Warn("{0}.OnClick() not yet implemented. TODO: redirect to Owner diplomacy screen.", GetType().Name);
+    #region Event and Property Change Handlers
+
+    private void ClickEventHandler() {
+        D.Warn("{0}.OnClick() not yet implemented.", GetType().Name);
+        //TODO: redirect to Owner diplomacy screen.
     }
 
-    private void OnOwnerSet() {
+    private void OwnerPropSetHandler() {
         _isOwnerSet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
 
+    void OnClick() {
+        ClickEventHandler();
+    }
+
+
+    #endregion
+
     protected override void PopulateElementWidgets() {
         if (Owner == null) {
-            OnValuesUnknown();
+            HandleValuesUnknown();
             return;
         }
 

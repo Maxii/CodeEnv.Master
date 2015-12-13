@@ -253,9 +253,8 @@
       <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\GridFramework\GridFramework.csproj">
-      <Project>{bc58c434-3fa7-45cb-aa08-a398038874db}</Project>
+      <Project>{2f5a6d85-040f-4ee6-a77f-d3e3b107a524}</Project>
       <Name>GridFramework</Name>
-      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\Ngui\Ngui.csproj">
       <Project>{ac0f8b23-dd41-4bab-a967-aa2c33bb1d0b}</Project>

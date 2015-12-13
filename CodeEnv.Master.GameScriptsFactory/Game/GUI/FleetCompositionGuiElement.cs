@@ -27,19 +27,26 @@ public class FleetCompositionGuiElement : ACompositionGuiElement {
     private FleetCategory _category;
     public FleetCategory Category {
         get { return _category; }
-        set { SetProperty<FleetCategory>(ref _category, value, "Category", OnCategoryChanged); }
+        set {
+            D.Assert(_category == default(FleetCategory));  // only happens once between Resets
+            SetProperty<FleetCategory>(ref _category, value, "Category", CategoryPropSetHandler);
+        }
         // Note: Once a cmd is detected, an estimation of its category is always available based on the elements that have been detected
     }
 
-    protected override string TooltipContent { get { return base.TooltipContent; } }    // TODO
+    protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
 
     protected override bool AreAllValuesSet { get { return IconInfo != default(IconInfo) && Category != default(FleetCategory); } }
 
-    private void OnCategoryChanged() {
+    #region Event and Property Change Handlers
+
+    private void CategoryPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
     }
+
+    #endregion
 
     protected override string GetCategoryName() { return Category.GetValueName(); }
 

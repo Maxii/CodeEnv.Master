@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitAttackableTarget : INavigableTarget {
 
-        event Action<IMortalItem> onDeathOneShot;
+        event EventHandler deathOneShot;
 
         bool IsOperational { get; }
 

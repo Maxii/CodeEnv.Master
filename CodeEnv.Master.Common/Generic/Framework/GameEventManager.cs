@@ -72,7 +72,7 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="T">The Type of AGameEvent.</typeparam>
         /// <param name="source">The source.</param>
         /// <param name="listener">The EventDelegate encapsulating the listener's EventHandler method.</param>
-        public void AddListener<T>(System.Object source, EventDelegate<T> listener) where T : AGameEvent {
+        public void AddListener<T>(object source, EventDelegate<T> listener) where T : AGameEvent {
             Delegate delegateWithInvocationList;
             if (listenerDelegates.TryGetValue(typeof(T), out delegateWithInvocationList)) {
                 listenerDelegates[typeof(T)] = Delegate.Combine(delegateWithInvocationList, listener);
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.Common {
         }
 
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        private void WriteCompositionToLog<T>(System.Object source, EventDelegate<T> currentListeners, string action) where T : AGameEvent {
+        private void WriteCompositionToLog<T>(object source, EventDelegate<T> currentListeners, string action) where T : AGameEvent {
             string result;
             if (DebugSettings.Instance.EnableVerboseDebugLog) {
                 StringBuilder sb = new StringBuilder();
@@ -122,7 +122,7 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="T">The Type of AGameEvent.</typeparam>
         /// <param name="source">The source.</param>
         /// <param name="listener">TThe EventDelegate encapsulating the listener's EventHandler method.</param>
-        public void RemoveListener<T>(System.Object source, EventDelegate<T> listener) where T : AGameEvent {
+        public void RemoveListener<T>(object source, EventDelegate<T> listener) where T : AGameEvent {
             Delegate delegateWithInvocationList;
             if (listenerDelegates.TryGetValue(typeof(T), out delegateWithInvocationList)) {
                 Delegate delegateAfterRemoval = Delegate.Remove(delegateWithInvocationList, listener);

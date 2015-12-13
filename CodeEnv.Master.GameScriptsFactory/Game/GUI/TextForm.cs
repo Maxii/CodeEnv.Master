@@ -27,7 +27,9 @@ public class TextForm : AForm {
     private string _text;
     public string Text {
         get { return _text; }
-        set { SetProperty<string>(ref _text, value, "Text", OnTextChanged); }
+        set {
+            D.Assert(_text == null);    // occurs only once between Resets
+            SetProperty<string>(ref _text, value, "Text", TextPropSetHandler); }
     }
 
     public override FormID FormID { get { return FormID.TextHud; } }
@@ -38,16 +40,20 @@ public class TextForm : AForm {
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    private void OnTextChanged() {
+    #region Event and Property Change Handlers
+
+    private void TextPropSetHandler() {
         AssignValuesToMembers();
     }
+
+    #endregion
 
     protected override void AssignValuesToMembers() {
         _label.text = Text;
     }
 
     public override void Reset() {
-        Text = null;
+        _text = null;
     }
 
     protected override void Cleanup() { }

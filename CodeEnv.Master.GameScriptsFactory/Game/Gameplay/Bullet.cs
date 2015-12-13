@@ -89,7 +89,7 @@ public class Bullet : AProjectileOrdnance {
         if (_muzzleEffect != null) { // muzzleEffect is detroyed once used
             _muzzleEffect.SetActive(toShow);    // effect will destroy itself when completed
         }
-        // TODO add Audio
+        //TODO add Audio
     }
 
     protected override void AssessShowOperatingEffects() {

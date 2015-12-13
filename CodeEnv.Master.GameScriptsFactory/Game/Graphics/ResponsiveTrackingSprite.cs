@@ -33,7 +33,7 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveT
     private IconInfo _iconInfo;
     public IconInfo IconInfo {
         get { return _iconInfo; }
-        set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", OnIconInfoChanged); }
+        set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
     }
 
     private Collider _collider;
@@ -63,11 +63,15 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveT
         // Note: donot disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
     }
 
-    private void OnIconInfoChanged() {
+    #region Event and Property Change Handlers
+
+    private void IconInfoPropChangedHandler() {
         AtlasID = IconInfo.AtlasID;
         Set(IconInfo.Filename);
         Color = IconInfo.Color;
     }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

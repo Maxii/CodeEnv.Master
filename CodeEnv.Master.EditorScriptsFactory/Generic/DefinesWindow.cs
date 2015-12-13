@@ -46,14 +46,14 @@ public class DefinesWindow : EditorWindow {
         window.Show();
     }
 
+    #region Event and Property Change Handlers
+
     void OnEnable() {
-        EditorApplication.playmodeStateChanged = OnPlayModeStateChanged;
+        EditorApplication.playmodeStateChanged += PlayModeStateChangedEventHandler;
     }
 
-    private void OnPlayModeStateChanged() {
-        _isGuiEnabled = !EditorApplication.isPlaying;
-        Repaint();
-        // Debug.Log(string.Format("OnPlayModeStateChanged(). Gui.enabled = {0}.", _isGuiEnabled));
+    void OnDisable() {
+        EditorApplication.playmodeStateChanged -= PlayModeStateChangedEventHandler;
     }
 
     void OnGUI() {
@@ -66,9 +66,21 @@ public class DefinesWindow : EditorWindow {
         GUI.enabled = true;
         if (_isGuiEnabled && _isDebugLogEnabled != _previousDebugLogEnabledValue) {
             _previousDebugLogEnabledValue = _isDebugLogEnabled;
-            OnDebugLogEnabledChanged();
+            DebugLogEnabledChangedHandler();
         }
     }
+
+    private void PlayModeStateChangedEventHandler() {
+        _isGuiEnabled = !EditorApplication.isPlaying;
+        Repaint();
+        // Debug.Log(string.Format("OnPlayModeStateChanged(). Gui.enabled = {0}.", _isGuiEnabled));
+    }
+
+    private void DebugLogEnabledChangedHandler() {
+        CheckConditionalCompilationSettings();
+    }
+
+    #endregion
 
     private class RecompileChecker { }
     private RecompileChecker _recompileCheck;
@@ -90,10 +102,6 @@ public class DefinesWindow : EditorWindow {
             }
             Debug.LogFormat("Recompile Completed. Active #Define Symbols: {0}.", activeSymbolText);
         }
-    }
-
-    private void OnDebugLogEnabledChanged() {
-        CheckConditionalCompilationSettings();
     }
 
     private void CheckConditionalCompilationSettings() {

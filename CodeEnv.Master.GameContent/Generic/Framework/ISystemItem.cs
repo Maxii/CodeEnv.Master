@@ -24,10 +24,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Called by User's PlayerKnowledge when the User first discovers this system.
-        /// Note: This is the replacement for ADiscernibleItem.OnUserIntelCoverageChanged() calling 
+        /// Note: This is the replacement for ADiscernibleItem.UserIntelCoveragePropChangedHandler() calling 
         /// AssessDiscernibleToUser() since SystemItem is not an ADiscernibleItem.
         /// </summary>
-        void OnUserDiscoveredSystem();
+        void HandleUserDiscoveryOfSystem();
 
         SystemReport GetUserReport();
 

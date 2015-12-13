@@ -38,6 +38,7 @@ namespace CodeEnv.Master.GameContent {
             CameraStat = cameraStat;
         }
 
+
     }
 }
 

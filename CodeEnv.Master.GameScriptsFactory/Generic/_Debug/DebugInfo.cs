@@ -38,7 +38,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        // TODO  
+        //TODO  
     }
 
     /// <summary>
@@ -53,24 +53,20 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         }
         else {
             // GameScene not ready to BuildContent on Awake
-            GameManager.Instance.onIsRunningOneShot += delegate {
-                Subscribe();
-                BuildContent();
-            };
+            GameManager.Instance.isRunningOneShot += IsRunningEventHandler;
         }
     }
-
     #endregion
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
-        _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
+        _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, PauseStatePropChangedHandler));
+        _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
         if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, OnCameraStateChanged));
-            _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
-            _subscriptions.Add(InputManager.Instance.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, OnGameInputModeChanged));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
+            _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
+            _subscriptions.Add(InputManager.Instance.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
         }
     }
 
@@ -99,7 +95,28 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         return "Camera Sector: " + sectorText;
     }
 
-    void OnTooltip(bool show) {
+    #region Event and Property Change Handlers
+
+    private void IsRunningEventHandler(object sender, EventArgs e) {
+        Subscribe();
+        BuildContent();
+    }
+
+    // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
+
+    private void PauseStatePropChangedHandler() { BuildContent(); }
+
+    private void PlayerViewModePropChangedHandler() { BuildContent(); }
+
+    private void CameraStatePropChangedHandler() { BuildContent(); }
+
+    private void QualitySettingPropChangedHandler() { BuildContent(); }
+
+    private void CameraSectorIndexPropChangedHandler() { BuildContent(); }
+
+    private void InputModePropChangedHandler() { BuildContent(); }
+
+    private void TooltipEventHandler(bool show) {
         if (show) {
             TooltipHudWindow.Instance.Show(_debugInfoContent);
         }
@@ -108,21 +125,9 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         }
     }
 
-    #region Subscriptions
-
-    // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
-
-    private void OnPauseStateChanged() { BuildContent(); }
-
-    private void OnPlayerViewModeChanged() { BuildContent(); }
-
-    private void OnCameraStateChanged() { BuildContent(); }
-
-    private void OnQualitySettingChanged() { BuildContent(); }
-
-    private void OnCameraSectorIndexChanged() { BuildContent(); }
-
-    private void OnGameInputModeChanged() { BuildContent(); }
+    void OnTooltip(bool show) {
+        TooltipEventHandler(show);
+    }
 
     #endregion
 

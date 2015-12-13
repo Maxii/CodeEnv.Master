@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
 
             _revolvers = itemGo.GetSafeInterfacesInChildren<IRevolver>();
             _revolvers.ForAll(r => r.enabled = false);
-            // TODO Revolver settings
+            //TODO Revolver settings
         }
 
         protected override void AssessComponentsToShowOrOperate() {

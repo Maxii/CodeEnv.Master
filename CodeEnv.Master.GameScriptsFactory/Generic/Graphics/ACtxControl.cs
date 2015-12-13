@@ -136,9 +136,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void Subscribe() {
-        EventDelegate.Add(_ctxObject.onShow, OnShowMenu);
-        EventDelegate.Add(_ctxObject.onSelection, OnMenuSelection);
-        EventDelegate.Add(_ctxObject.onHide, OnHideMenu);
+        EventDelegate.Add(_ctxObject.onShow, ShowCtxMenuEventHandler);
+        EventDelegate.Add(_ctxObject.onSelection, CtxMenuSelectionEventHandler);
+        EventDelegate.Add(_ctxObject.onHide, HideCtxMenuEventHandler);
         SubscribeStaticallyOnce();
     }
 
@@ -152,12 +152,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void SubscribeStaticallyOnce() {
         if (!_isStaticallySubscribed) {
             //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
-            _gameMgr.onSceneLoaded += CleanupStaticMembers;
+            _gameMgr.sceneLoaded += SceneLoadedEventHandler;
             _isStaticallySubscribed = true;
         }
     }
 
-    public void Show(bool toShow) {
+    private void Show(bool toShow) {
         if (toShow) {
             _ctxObject.ShowMenu();
         }
@@ -166,7 +166,11 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         }
     }
 
-    public void OnRightPressRelease() {
+    public void Hide() {
+        Show(false);
+    }
+
+    public bool TryShowContextMenu() {
         var selectedItem = SelectionManager.Instance.CurrentSelection;
         if (selectedItem != null) {
             if (TryIsSelectedItemAccessAttempted(selectedItem)) {
@@ -174,7 +178,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 _accessSource = CtxAccessSource.SelectedItem;
                 _remotePlayerOwnedSelectedItem = null;
                 Show(true);
-                return;
+                return true;
             }
 
             FleetCmdItem selectedFleet;
@@ -183,7 +187,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 _accessSource = CtxAccessSource.RemoteFleet;
                 _remotePlayerOwnedSelectedItem = selectedFleet;
                 Show(true);
-                return;
+                return true;
             }
 
             AUnitBaseCmdItem selectedBase;
@@ -192,7 +196,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 _accessSource = CtxAccessSource.RemoteBase;
                 _remotePlayerOwnedSelectedItem = selectedBase;
                 Show(true);
-                return;
+                return true;
             }
 
             ShipItem selectedShip;
@@ -201,12 +205,13 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 _accessSource = CtxAccessSource.RemoteShip;
                 _remotePlayerOwnedSelectedItem = selectedShip;
                 Show(true);
-                return;
+                return true;
             }
 
             _accessSource = CtxAccessSource.None;
             _remotePlayerOwnedSelectedItem = null;
         }
+        return false;
     }
 
     /// <summary>
@@ -255,7 +260,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         return false;
     }
 
-    private void OnShowMenu() {
+    #region Event and Property Change Handlers
+
+    private void ShowCtxMenuEventHandler() {
         switch (_accessSource) {
             case CtxAccessSource.SelectedItem:
                 PopulateMenu_SelectedItemAccess();
@@ -277,6 +284,48 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         InputManager.Instance.InputMode = GameInputMode.PartialPopup;
         _gameMgr.RequestPauseStateChange(toPause: true);
     }
+
+    private void CtxMenuSelectionEventHandler() {
+        int menuItemID = _ctxObject.selectedItem;
+        switch (_accessSource) {
+            case CtxAccessSource.SelectedItem:
+                HandleMenuSelection_SelectedItemAccess(menuItemID);
+                break;
+            case CtxAccessSource.RemoteFleet:
+                HandleMenuSelection_RemoteFleetAccess(menuItemID);
+                break;
+            case CtxAccessSource.RemoteShip:
+                HandleMenuSelection_RemoteShipAccess(menuItemID);
+                break;
+            case CtxAccessSource.RemoteBase:
+                HandleMenuSelection_RemoteBaseAccess(menuItemID);
+                break;
+            case CtxAccessSource.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_accessSource));
+        }
+    }
+
+    private void HideCtxMenuEventHandler() {
+        IsShowing = false;
+        _gameMgr.RequestPauseStateChange(toPause: false);
+        InputManager.Instance.InputMode = GameInputMode.Normal;
+
+        _unitTargetLookup.Clear();
+        _directiveLookup.Clear();
+
+        CleanupMenuArrays();    // not really needed as all CtxMenu.Item arrays get assigned new arrays when used again
+
+        _nextAvailableItemId = Constants.Zero;
+        _remotePlayerOwnedSelectedItem = null;
+        _accessSource = CtxAccessSource.None;
+    }
+
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+        CleanupStaticMembers();
+    }
+
+    #endregion
 
     protected virtual void PopulateMenu_SelectedItemAccess() { }
 
@@ -337,49 +386,13 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected virtual bool IsRemoteBaseMenuItemDisabled(BaseDirective directive) { return false; }
 
-    private void OnMenuSelection() {
-        int menuItemID = _ctxObject.selectedItem;
-        switch (_accessSource) {
-            case CtxAccessSource.SelectedItem:
-                OnMenuSelection_SelectedItemAccess(menuItemID);
-                break;
-            case CtxAccessSource.RemoteFleet:
-                OnMenuSelection_RemoteFleetAccess(menuItemID);
-                break;
-            case CtxAccessSource.RemoteShip:
-                OnMenuSelection_RemoteShipAccess(menuItemID);
-                break;
-            case CtxAccessSource.RemoteBase:
-                OnMenuSelection_RemoteBaseAccess(menuItemID);
-                break;
-            case CtxAccessSource.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_accessSource));
-        }
-    }
+    protected virtual void HandleMenuSelection_SelectedItemAccess(int itemID) { }
 
-    protected virtual void OnMenuSelection_SelectedItemAccess(int itemID) { }
+    protected virtual void HandleMenuSelection_RemoteFleetAccess(int itemID) { }
 
-    protected virtual void OnMenuSelection_RemoteFleetAccess(int itemID) { }
+    protected virtual void HandleMenuSelection_RemoteShipAccess(int itemID) { }
 
-    protected virtual void OnMenuSelection_RemoteShipAccess(int itemID) { }
-
-    protected virtual void OnMenuSelection_RemoteBaseAccess(int itemID) { }
-
-    private void OnHideMenu() {
-        IsShowing = false;
-        _gameMgr.RequestPauseStateChange(toPause: false);
-        InputManager.Instance.InputMode = GameInputMode.Normal;
-
-        _unitTargetLookup.Clear();
-        _directiveLookup.Clear();
-
-        CleanupMenuArrays();    // not really needed as all CtxMenu.Item arrays get assigned new arrays when used again
-
-        _nextAvailableItemId = Constants.Zero;
-        _remotePlayerOwnedSelectedItem = null;
-        _accessSource = CtxAccessSource.None;
-    }
+    protected virtual void HandleMenuSelection_RemoteBaseAccess(int itemID) { }
 
     private void CleanupMenuArrays() {
         _generalCtxMenu.items = new CtxMenu.Item[0];
@@ -397,9 +410,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void Unsubscribe() {
-        EventDelegate.Remove(_ctxObject.onShow, OnShowMenu);
-        EventDelegate.Remove(_ctxObject.onSelection, OnMenuSelection);
-        EventDelegate.Remove(_ctxObject.onHide, OnHideMenu);
+        EventDelegate.Remove(_ctxObject.onShow, ShowCtxMenuEventHandler);
+        EventDelegate.Remove(_ctxObject.onSelection, CtxMenuSelectionEventHandler);
+        EventDelegate.Remove(_ctxObject.onHide, HideCtxMenuEventHandler);
     }
 
     /// <summary>
@@ -422,7 +435,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void UnsubscribeStaticallyOnceOnQuit() {
         if (_isStaticallySubscribed) {
             //D.Log("{0} is unsubscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
-            _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
             _isStaticallySubscribed = false;
         }
     }
