@@ -172,10 +172,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Assert(bool condition, string format, params object[] paramList) {
-            //if (!condition) {
-            //    Debug.LogErrorFormat("Assert failed! " + format, paramList);
-            //}
-            Debug.Assert(condition, format, paramList);
+            Debug.AssertFormat(condition, format, paramList);
         }
 
         /// <summary>

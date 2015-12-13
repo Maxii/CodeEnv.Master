@@ -96,6 +96,11 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         return _equipmentList.First().RangeDistance;  // currently no qty effects on range distance
     }
 
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        _equipmentList.ForAll(gen => gen.hasChargeChanged -= GeneratorHasChargeChangedEventHandler);
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

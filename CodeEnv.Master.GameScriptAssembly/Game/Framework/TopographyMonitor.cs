@@ -29,6 +29,8 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }
 
+    #region Event and Property Change Handlers
+
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
         if (other.isTrigger) {
@@ -62,6 +64,8 @@ public class TopographyMonitor : AColliderMonitor {
     }
 
     protected override void IsOperationalPropChangedHandler() { }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
