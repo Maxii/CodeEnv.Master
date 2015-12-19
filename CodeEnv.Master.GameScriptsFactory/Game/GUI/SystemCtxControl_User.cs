@@ -54,16 +54,18 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         get { return _remoteShipDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return 1; } }
-
     protected override ADiscernibleItem ItemForFindClosest { get { return _settlement; } }
+
+    protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
+
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;
 
     public SystemCtxControl_User(SystemItem system)
-        : base(system.gameObject) {
+        : base(system.gameObject, uniqueSubmenusReqd: 1, toOffsetMenu: false) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
+        D.Assert(_settlement != null);
     }
 
     protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
@@ -142,6 +144,10 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _systemMenuOperator.OptimalCameraViewingDistance = _systemMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {

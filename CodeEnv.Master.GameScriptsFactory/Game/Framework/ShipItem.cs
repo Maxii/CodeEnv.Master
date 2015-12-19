@@ -29,7 +29,8 @@ using UnityEngine;
 /// <summary>
 /// AUnitElementItems that are Ships.
 /// </summary>
-public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyChangeListener, ICanNavigate {
+//public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyChangeListener, ICanNavigate {
+public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, ICanNavigate {
 
     public event EventHandler destinationReached;
 
@@ -74,7 +75,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         get { return _publisher = _publisher ?? new ShipPublisher(Data, this); }
     }
 
-    private ICtxControl _ctxControl;
     private ShipHelm _helm;
     private VelocityRay _velocityRay;
     private CoursePlotLine _coursePlotLine;
@@ -94,11 +94,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         CurrentState = ShipState.None;
     }
 
-    protected override void InitializeOnFirstDiscernibleToUser() {
-        base.InitializeOnFirstDiscernibleToUser();
-        InitializeContextMenu(Owner);
-    }
-
     protected override ItemHudManager InitializeHudManager() {
         return new ItemHudManager(Publisher);
     }
@@ -107,12 +102,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         return new ShipDisplayManager(this, Owner.Color);
     }
 
-    private void InitializeContextMenu(Player owner) {
+    protected override ICtxControl InitializeContextMenu(Player owner) {
         D.Assert(owner != TempGameValues.NoPlayer);
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
-        _ctxControl = owner.IsUser ? new ShipCtxControl_User(this) as ICtxControl : null;
+        return owner.IsUser ? new ShipCtxControl_User(this) as ICtxControl : new ShipCtxControl_AI(this);
     }
 
     #endregion
@@ -341,32 +333,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
     #endregion
 
-    public override void AssessHighlighting() {
-        if (IsDiscernibleToUser) {
-            if (IsFocus) {
-                if (IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
-                    return;
-                }
-                if (Command.IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.UnitElement);
-                    return;
-                }
-                ShowHighlights(HighlightID.Focused);
-                return;
-            }
-            if (IsSelected) {
-                ShowHighlights(HighlightID.Selected);
-                return;
-            }
-            if (Command.IsSelected) {
-                ShowHighlights(HighlightID.UnitElement);
-                return;
-            }
-        }
-        ShowHighlights(HighlightID.None);
-    }
-
     public void AssessShowCoursePlot() {
         // Note: left out IsDiscernible ... as I want these lines to show up whether the ship is on screen or not
         var coursePlot = _helm.Course;
@@ -380,15 +346,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
     }
 
-    /// <summary>
-    /// Shows the SelectedItemHudWindow for this ship.
-    /// </summary>
-    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
-    /// handled by the SelectionMgr when there is no longer an item selected.
-    /// </remarks>
-    private void ShowSelectedItemHud() {
+    protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedShip, GetUserReport());
     }
 
@@ -450,47 +408,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         BreakOrbit(_currentOrIntendedOrbitSlot);
     }
 
-    protected override void OwnerPropChangingHandler(Player newOwner) {
-        base.OwnerPropChangingHandler(newOwner);
-        if (_hasInitOnFirstDiscernibleToUserRun) {
-            // _ctxControl has already been initialized
-            if (Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI and Player so generate a new ctxControl
-                InitializeContextMenu(newOwner);
-            }
-        }
-    }
-
     protected override void IsDiscernibleToUserPropChangedHandler() {
         base.IsDiscernibleToUserPropChangedHandler();
         ShowVelocityRay(IsDiscernibleToUser);
     }
 
-    private void IsSelectedPropChangedHandler() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessHighlighting();
+    protected override void IsSelectedPropChangedHandler() {
+        base.IsSelectedPropChangedHandler();
         AssessShowCoursePlot();
     }
 
     private void TargetDeathEventHandler(object sender, EventArgs e) {
         IMortalItem deadTarget = sender as IMortalItem;
         UponTargetDeath(deadTarget);
-    }
-
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
-        IsSelected = true;
-    }
-
-    protected override void HandleRightPressRelease() {
-        base.HandleRightPressRelease();
-        if (_ctxControl != null && !_inputMgr.IsDragging) {  // AI ships have no _ctxControl
-            // right press release while not dragging means both press and release were over this object
-            _ctxControl.TryShowContextMenu();
-        }
     }
 
     protected override void OnTriggerEnter(Collider other) {
@@ -511,7 +441,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         base.OnTriggerExit(other);
         if (other.gameObject.layer == (int)Layers.ShipTransitBan) {
             string obstacleName = other.transform.parent.name + "." + other.name;
-            D.Log("{0} exited {1}.", FullName, obstacleName);
+            //D.Log("{0} exited {1}.", FullName, obstacleName);
         }
     }
 
@@ -1215,9 +1145,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         base.Cleanup();
         _helm.Dispose();
         if (_velocityRay != null) { _velocityRay.Dispose(); }
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
+        if (_coursePlotLine != null) { _coursePlotLine.Dispose(); }
     }
 
     #endregion
@@ -1225,18 +1153,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region ISelectable Members
-
-    private bool _isSelected;
-    public bool IsSelected {
-        get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
-    }
-
-    //public ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
-
-    #endregion
 
     #region INavigableTarget Members
 
@@ -1580,10 +1496,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             bool isCurrentDestADetour = currentDestination != Target;
 
             while (distanceToCurrentDest > closeEnoughDistance) {
-                D.Log("{0} distance to {1} = {2:0.0}. CloseEnough = {3:0.0}.", Name, currentDestination.FullName, distanceToCurrentDest, closeEnoughDistance);
+                //D.Log("{0} distance to {1} = {2:0.0}. CloseEnough = {3:0.0}.", Name, currentDestination.FullName, distanceToCurrentDest, closeEnoughDistance);
                 Vector3 correctedHeading;
                 if (TryCheckForCourseCorrection(currentDestination, out correctedHeading, currentDestOffset)) {
-                    D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
+                    //D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
                     ChangeHeading(correctedHeading, allowedTime: 5F, onHeadingConfirmed: () => {
                         // no need to 'resume' orderSpeed as currentSpeed from turn slowdown no longer used
                     });
@@ -1664,22 +1580,20 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
 
             _ship.Data.RequestedHeading = newHeading;
             _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
-                if (!_isDisposing) {
-                    if (!jobWasKilled) {
-                        //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
-                        //Name, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
-                        _engineRoom.IsTurnUnderway = false;
-                        if (onHeadingConfirmed != null) {
-                            onHeadingConfirmed();
-                        }
+                if (!jobWasKilled) {
+                    //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
+                    //Name, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+                    _engineRoom.IsTurnUnderway = false;
+                    if (onHeadingConfirmed != null) {
+                        onHeadingConfirmed();
                     }
-                    // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
-                    // The actual culprit was the physics engine which when started, found Creators had placed the non-kinematic ships at the same
-                    // location, relying on the formation generator to properly separate them later. The physics engine came on before the formation
-                    // had been deployed, resulting in both velocity and angular velocity from the collisions. The fix was to make the ship rigidbodies
-                    // kinematic until the formation had been deployed.
-                    //_rigidbody.angularVelocity = Vector3.zero;
                 }
+                // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
+                // The actual culprit was the physics engine which when started, found Creators had placed the non-kinematic ships at the same
+                // location, relying on the formation generator to properly separate them later. The physics engine came on before the formation
+                // had been deployed, resulting in both velocity and angular velocity from the collisions. The fix was to make the ship rigidbodies
+                // kinematic until the formation had been deployed.
+                //_rigidbody.angularVelocity = Vector3.zero;
             });
         }
 
@@ -2259,10 +2173,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
                 TargetContinuousProgressCheckDistanceThreshold_Mobile = CalcContinuousProgressCheckDistanceThreshold(speedPerSecond, targetCloseEnoughDistance, isDestinationMobile: true, isDestinationADetour: false, target: target);
                 TargetContinuousProgressCheckDistanceThreshold_Stationary = CalcContinuousProgressCheckDistanceThreshold(speedPerSecond, targetCloseEnoughDistance, isDestinationMobile: false, isDestinationADetour: false, target: target);
                 ObstacleAvoidanceCheckPeriod = CalcObstacleCheckPeriod(speedPerSecond, topography);
-                D.Log("{0} is calculating/refreshing NavigationValues.", Name);
-                D.Log("{0}.ProgressCheckPeriods: Mobile = {1:0.##}, Stationary = {2:0.##}, ObstacleAvoidance = {3:0.##}.", Name, ProgressCheckPeriod_Mobile, ProgressCheckPeriod_Stationary, ObstacleAvoidanceCheckPeriod);
-                D.Log("{0}.ContinuousProgressCheckDistanceThresholds: MobileDetour = {1:0.#}, StationaryDetour = {2:0.#}, MobileTarget = {3:0.#}, StationaryTarget = {4:0.#}.",
-                    Name, DetourContinuousProgressCheckDistanceThreshold_Mobile, DetourContinuousProgressCheckDistanceThreshold_Stationary, TargetContinuousProgressCheckDistanceThreshold_Mobile, TargetContinuousProgressCheckDistanceThreshold_Stationary);
+                //D.Log("{0} is calculating/refreshing NavigationValues.", Name);
+                //D.Log("{0}.ProgressCheckPeriods: Mobile = {1:0.##}, Stationary = {2:0.##}, ObstacleAvoidance = {3:0.##}.", Name, ProgressCheckPeriod_Mobile, ProgressCheckPeriod_Stationary, ObstacleAvoidanceCheckPeriod);
+                //D.Log("{0}.ContinuousProgressCheckDistanceThresholds: MobileDetour = {1:0.#}, StationaryDetour = {2:0.#}, MobileTarget = {3:0.#}, StationaryTarget = {4:0.#}.",
+                //Name, DetourContinuousProgressCheckDistanceThreshold_Mobile, DetourContinuousProgressCheckDistanceThreshold_Stationary, TargetContinuousProgressCheckDistanceThreshold_Mobile, TargetContinuousProgressCheckDistanceThreshold_Stationary);
             }
 
             /// <summary>
@@ -2637,47 +2551,41 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
             #region IDisposable
 
             private bool _alreadyDisposed = false;
-            protected bool _isDisposing = false;
 
             /// <summary>
             /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
             /// </summary>
             public void Dispose() {
+
                 Dispose(true);
+
+                // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+                // the finalization queue and prevent finalization code from 'disposing' a second time
                 GC.SuppressFinalize(this);
             }
 
             /// <summary>
-            /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-            /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+            /// Releases unmanaged and - optionally - managed resources.
             /// </summary>
-            /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-            protected virtual void Dispose(bool isDisposing) {
-                // Allows Dispose(isDisposing) to be called more than once
-                if (_alreadyDisposed) {
+            /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+            protected virtual void Dispose(bool isExplicitlyDisposing) {
+                if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
                     D.Warn("{0} has already been disposed.", GetType().Name);
-                    return;
+                    return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
                 }
 
-                _isDisposing = isDisposing;
-                if (isDisposing) {
-                    // free managed resources here including unhooking events
+                if (isExplicitlyDisposing) {
+                    // Dispose of managed resources here as you have called Dispose() explicitly
                     Cleanup();
                 }
-                // free unmanaged resources here
+
+                // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+                // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+                // called Dispose(false) to cleanup unmanaged resources
 
                 _alreadyDisposed = true;
             }
 
-            // Example method showing check for whether the object has been disposed
-            //public void ExampleMethod() {
-            //    // throw Exception if called on object that is already disposed
-            //    if(alreadyDisposed) {
-            //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-            //    }
-
-            //    // method content here
-            //}
             #endregion
 
         }
@@ -4623,18 +4531,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
             FullName, _rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
     }
-    //private void __CompareVelocity() {
-    //    Vector3 currentPosition = _transform.position;
-    //    float distanceTraveled = Vector3.Distance(currentPosition, __lastPosition);
-    //    __lastPosition = currentPosition;
-
-    //    float currentTime = GameTime.Instance.GameInstanceTime;
-    //    float elapsedTime = currentTime - __lastTime;
-    //    __lastTime = currentTime;
-    //    float calcVelocity = distanceTraveled / elapsedTime;
-    //    D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
-    //        FullName, rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
-    //}
 
     private void __ReportCollision(Collision collision) {
         SphereCollider sphereCollider = collision.collider as SphereCollider;
@@ -4647,17 +4543,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable, ITopographyCha
         //    Debug.DrawRay(contact.point, contact.normal, Color.white);
         //}
     }
-    //private void __ReportCollision(Collision collision) {
-    //    SphereCollider sphereCollider = collision.collider as SphereCollider;
-    //    CapsuleCollider capsuleCollider = collision.collider as CapsuleCollider;
-    //    string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((capsuleCollider != null) ? "radius = " + capsuleCollider.radius : "size = " + (collision.collider as BoxCollider).size.ToPreciseString());
-    //    D.Warn("While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
-    //        CurrentState.GetValueName(), FullName, collision.collider.name, rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
-
-    //    //foreach (ContactPoint contact in collision.contacts) {
-    //    //    Debug.DrawRay(contact.point, contact.normal, Color.white);
-    //    //}
-    //}
 
     #endregion
 

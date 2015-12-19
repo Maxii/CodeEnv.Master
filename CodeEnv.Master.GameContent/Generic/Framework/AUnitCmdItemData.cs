@@ -40,11 +40,6 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
-        public override Topography Topography {
-            get { return HQElementData.Topography; }
-            set { throw new NotSupportedException(); }
-        }
-
         private Formation _unitFormation;
         public Formation UnitFormation {
             get { return _unitFormation; }
@@ -181,7 +176,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
-        public AUnitCmdItemData(Transform cmdTransform, UnitCmdStat cmdStat, Player owner, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
+        public AUnitCmdItemData(Transform cmdTransform, UnitCmdStat cmdStat, Player owner, ACameraItemStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
             : base(cmdTransform, CommonTerms.Command, cmdStat.MaxHitPoints, owner, cameraStat, passiveCMs) {
             ParentName = cmdStat.UnitName;
             UnitFormation = cmdStat.UnitFormation;
@@ -223,7 +218,9 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void HQElementDataPropChangedHandler() {
             D.Assert(ElementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
+            Topography = HQElementData.Topography;
         }
+
         private void HQElementIntelCoverageChangedEventHandler(object sender, IntelEventArgs e) {
             var player = e.Player;
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);

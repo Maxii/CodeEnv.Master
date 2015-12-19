@@ -26,7 +26,7 @@ public class Logger : AMonoSingleton<Logger> {
 
     public bool enableScriptLogging;
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     /// <summary>
     /// Sends the specified message to the Unity.Debug log.

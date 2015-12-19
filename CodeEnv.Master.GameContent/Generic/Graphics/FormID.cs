@@ -44,7 +44,15 @@ namespace CodeEnv.Master.GameContent {
 
         SelectedSystem,
 
-        SelectedShip
+        SelectedShip,
+
+        SelectedFacility,
+
+        SelectedStar,
+
+        SelectedPlanetoid,
+
+        SelectedUniverseCenter
 
     }
 }

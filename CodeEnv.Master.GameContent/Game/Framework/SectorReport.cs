@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
             AssignValues(data);
         }
 
-        protected override void AssignValues(AItemData data) {
+        private void AssignValues(AItemData data) {
             var sData = data as SectorData;
             Name = sData.Name;
             Owner = sData.Owner;

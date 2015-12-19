@@ -115,7 +115,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #endregion
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     protected override void Cleanup() { }
 

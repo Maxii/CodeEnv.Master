@@ -142,14 +142,15 @@ namespace CodeEnv.Master.Common {
         /// rotation and scale are set to identity values.
         /// </summary>
         /// <param name="child">The child.</param>
-        /// <param name="parent">The parent.</param>
+        /// <param name="parent">The parent. If null, child becomes a root GameObject.</param>
         public static void AttachChildToParent(GameObject child, GameObject parent) {
+            Arguments.ValidateNotNull(child);
             Transform childTransform = child.transform;
-            childTransform.parent = parent.transform;
+            childTransform.parent = (parent != null) ? parent.transform : null;
             childTransform.localPosition = Vector3.zero;
             childTransform.localRotation = Quaternion.identity;
             childTransform.localScale = Vector3.one;
-            child.layer = parent.layer;
+            child.layer = (parent != null) ? parent.layer : child.layer;
         }
 
         /// <summary>
@@ -158,16 +159,14 @@ namespace CodeEnv.Master.Common {
         /// being attached to a parent.
         /// </summary>
         /// <param name="parent">The object to parent too. If null, the object is instantiated without a parent.</param>
-        /// <param name="prefab">The prefab to instantiate from.</param>
+        /// <param name="prefab">The childPrefab to instantiate from.</param>
         /// <returns></returns>
-        public static GameObject AddChild(GameObject parent, GameObject prefab) {
-            GameObject clone = GameObject.Instantiate(prefab) as GameObject;
-            clone.name = prefab.name;
-            if (clone != null && parent != null) {
-                //D.Log("Instantiated {0} and parented to {1}. Awake() can preceed this!", prefab.name, parent.name);
-                AttachChildToParent(clone, parent);
-            }
-            return clone;
+        public static GameObject AddChild(GameObject parent, GameObject childPrefab) {
+            GameObject clonedChild = GameObject.Instantiate(childPrefab) as GameObject;
+            clonedChild.name = childPrefab.name;
+            //D.Log("Instantiated {0} and parented to {1}. {0}.Awake() has already occurred!", childPrefab.name, parent.name);
+            AttachChildToParent(clonedChild, parent);
+            return clonedChild;
         }
 
         /// <summary>

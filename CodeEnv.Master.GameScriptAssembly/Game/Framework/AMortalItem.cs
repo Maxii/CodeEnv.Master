@@ -39,6 +39,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     #region Initialization
 
     protected override void InitializeOnData() {
+        base.InitializeOnData();
         Data.PassiveCountermeasures.ForAll(cm => Attach(cm));
     }
 
@@ -52,11 +53,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     #endregion
-
-    public override void CommenceOperations() {
-        base.CommenceOperations();
-        Data.CommenceOperations();
-    }
 
     /// <summary>
     /// Attaches this passive countermeasure to this item.
@@ -116,7 +112,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     private void OnDeath() {
-        if(deathOneShot != null) {
+        if (deathOneShot != null) {
             deathOneShot(this, new EventArgs());
             deathOneShot = null;
         }

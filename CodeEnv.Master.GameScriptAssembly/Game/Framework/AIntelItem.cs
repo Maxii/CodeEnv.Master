@@ -32,6 +32,10 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     #region Initialization
 
+    protected override void InitializeOnData() {
+        Data.InitializePlayersIntel();  // moved here to move out of Data constructor
+    }
+
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         Data.userIntelCoverageChanged += UserIntelCoverageChangedEventHandler;
@@ -39,7 +43,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     #endregion
 
-    public IntelCoverage GetUserIntelCoverage() { return Data.GetUserIntelCoverage(); }
+    public IntelCoverage GetUserIntelCoverage() { return Data.GetIntelCoverage(_gameMgr.UserPlayer); }
 
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
@@ -49,7 +53,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     protected override void AssessIsDiscernibleToUser() {
         var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
-        IsDiscernibleToUser = isInMainCameraLOS && Data.GetUserIntelCoverage() != IntelCoverage.None;
+        IsDiscernibleToUser = isInMainCameraLOS && GetUserIntelCoverage() != IntelCoverage.None;
     }
 
 
@@ -62,7 +66,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
-        var toEnableDisplayMgr = Data.GetUserIntelCoverage() != IntelCoverage.None;
+        var toEnableDisplayMgr = GetUserIntelCoverage() != IntelCoverage.None;
         DisplayMgr.EnableDisplay(toEnableDisplayMgr);
     }
 

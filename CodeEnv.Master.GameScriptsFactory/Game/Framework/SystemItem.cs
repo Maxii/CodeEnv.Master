@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelectable {
+public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
 
     public bool IsTrackingLabelEnabled { private get; set; }
 
@@ -68,7 +68,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
     private ITrackingWidget _trackingLabel;
-    private ICtxControl _ctxControl;
     private MeshCollider _orbitalPlaneCollider;
 
     #region Initialization
@@ -85,7 +84,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
 
     protected override void InitializeOnFirstDiscernibleToUser() {
         base.InitializeOnFirstDiscernibleToUser();
-        InitializeContextMenu(Owner);
         __InitializeOrbitalPlaneMeshCollider();
     }
 
@@ -100,17 +98,15 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         return new ItemHudManager(Publisher);
     }
 
-    private void InitializeContextMenu(Player owner) {
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
+    protected override ICtxControl InitializeContextMenu(Player owner) {
+        ICtxControl ctxControl;
         if (owner == TempGameValues.NoPlayer) {
-            _ctxControl = new SystemCtxControl(this);
+            ctxControl = new SystemCtxControl(this);
         }
         else {
-            _ctxControl = owner.IsUser ? new SystemCtxControl_User(this) as ICtxControl : new SystemCtxControl_AI(this);
+            ctxControl = owner.IsUser ? new SystemCtxControl_User(this) as ICtxControl : new SystemCtxControl_AI(this);
         }
-        //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
+        return ctxControl;
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
@@ -167,33 +163,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         IsDiscernibleToUser = isInMainCameraLOS && isDiscoveredByUser;
     }
 
-    public override void AssessHighlighting() {
-        if (IsDiscernibleToUser) {
-            if (IsFocus) {
-                if (IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
-                    return;
-                }
-                ShowHighlights(HighlightID.Focused);
-                return;
-            }
-            if (IsSelected) {
-                ShowHighlights(HighlightID.Selected);
-                return;
-            }
-        }
-        ShowHighlights(HighlightID.None);
-    }
-
-    /// <summary>
-    /// Shows the SelectedItemHudWindow for this system.
-    /// </summary>
-    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
-    /// handled by the SelectionMgr when there is no longer an item selected.
-    /// </remarks>
-    private void ShowSelectedItemHud() {
+    protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, GetUserReport());
     }
 
@@ -236,17 +206,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
 
-    protected override void OwnerPropChangingHandler(Player newOwner) {
-        base.OwnerPropChangingHandler(newOwner);
-        if (_hasInitOnFirstDiscernibleToUserRun) {
-            // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI, Player and NoPlayer so generate a new ctxControl
-                InitializeContextMenu(newOwner);
-            }
-        }
-    }
-
     protected override void OwnerPropChangedHandler() {
         base.OwnerPropChangedHandler();
         if (_trackingLabel != null) {
@@ -260,27 +219,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
         _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
     }
 
-    private void IsSelectedPropChangedHandler() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessHighlighting();
-    }
-
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
-        IsSelected = true;
-    }
-
-    protected override void HandleRightPressRelease() {
-        base.HandleRightPressRelease();
-        if (!_inputMgr.IsDragging) {
-            // right press release while not dragging means both press and release were over this object
-            _ctxControl.TryShowContextMenu();
-        }
-    }
-
     #endregion
 
     #region Cleanup
@@ -288,9 +226,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     protected override void Cleanup() {
         base.Cleanup();
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
         Data.Dispose();
     }
 
@@ -303,18 +238,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelec
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible { get { return true; } }
-
-    #endregion
-
-    #region ISelectable Members
-
-    private bool _isSelected;
-    public bool IsSelected {
-        get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
-    }
-
-    //public ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
 
     #endregion
 

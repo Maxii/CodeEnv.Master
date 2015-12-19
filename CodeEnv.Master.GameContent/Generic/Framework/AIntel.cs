@@ -32,7 +32,18 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, CurrentCoveragePropChangingHandler); }
         }
 
-        public AIntel(IntelCoverage coverage) {
+        public AIntel() { }
+
+        /// <summary>
+        /// Copy Constructor. Initializes a new instance of the <see cref="AIntel"/> class,
+        /// a copy of <c>intelToCopy</c>.
+        /// </summary>
+        /// <param name="intelToCopy">The intel to copy.</param>
+        public AIntel(AIntel intelToCopy) {
+            _currentCoverage = intelToCopy.CurrentCoverage;
+        }
+
+        public void InitializeCoverage(IntelCoverage coverage) {
             PreProcessChange(coverage);
             _currentCoverage = coverage;
         }

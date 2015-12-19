@@ -37,7 +37,7 @@ public class UsefulTools : AMonoSingleton<UsefulTools>, IUsefulTools {
     //*******************************************************************
     public Light flareLight;
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override void Initialize() {
+        protected sealed override void Initialize() {
             base.Initialize();
             _xmlReader = FleetIconInfoXmlReader.Instance;
         }

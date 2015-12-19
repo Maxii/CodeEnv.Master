@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override void Initialize() { }
+        protected sealed override void Initialize() { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

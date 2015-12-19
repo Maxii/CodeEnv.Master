@@ -32,7 +32,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
     /// <summary>
     /// The fixed panels of the GUI that should normally be hidden when a popup shows.
-    /// Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.
+    /// Use GuiShowModeControlButton.exceptions to exclude a _panel listed here from being hidden.
     /// </summary>
     //[FormerlySerializedAs("fixedGuiPanels")]
     [Tooltip("The fixed panels of the GUI that should be hidden when a popup shows.")]
@@ -47,7 +47,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _hiddenPanels = new List<UIPanel>();
-        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
+        if (GameManager.Instance.CurrentScene == GameManager.Instance.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
             D.WarnContext(gameObject, "{0}.fixedGuiPanels list is empty.", GetType().Name);
         }
         CheckDebugSettings();
@@ -136,7 +136,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     //            _stackedPanelsToReappear.Push(panelsToDisappear.ToList<UIPanel>());
     //            break;
     //        case GuiVisibilityMode.Visible:
-    //            if (GameManager.Instance.CurrentScene == SceneLevel.GameScene && _stackedPanelsToReappear.Count == Constants.Zero) {
+    //            if (GameManager.Instance.CurrentScene == SceneID.GameScene && _stackedPanelsToReappear.Count == Constants.Zero) {
     //                // if LobbyScene, there are currently no fixed UIElements to restore
     //                D.Warn("{0}: The stack holding the lists of UIPanels to restore should not be empty!", GetType().Name);
     //            }

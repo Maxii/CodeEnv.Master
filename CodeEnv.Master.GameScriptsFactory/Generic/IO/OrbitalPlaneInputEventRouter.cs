@@ -106,10 +106,11 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private void PressEventHandler(bool isDown) {
         GameObject occludedObject;
         if (TryCheckForOccludedObject(out occludedObject)) {
-            _inputHelper.Notify(occludedObject, "PressEventHandler", isDown);
+            _inputHelper.Notify(occludedObject, "OnPress", isDown);   //_inputHelper.Notify(occludedObject, "PressEventHandler", isDown);
+
             return;
         }
-        _inputHelper.Notify(_systemItemGo, "PressEventHandler", isDown);
+        _inputHelper.Notify(_systemItemGo, "OnPress", isDown);    //_inputHelper.Notify(_systemItemGo, "PressEventHandler", isDown);
     }
 
     void OnHover(bool isOver) {
@@ -120,12 +121,12 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         ClickEventHandler();
     }
 
-    void OnPress(bool isDown) {
-        PressEventHandler(isDown);
-    }
-
     void OnDoubleClick() {
         DoubleClickEventHandler();
+    }
+
+    void OnPress(bool isDown) {
+        PressEventHandler(isDown);
     }
 
     #endregion

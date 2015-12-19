@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CameraFollowableStat.cs
-// Camera settings for ICameraFollowable Items.
+// Camera stat for ICameraFollowable Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Camera settings for ICameraFollowable Items.
+    /// Camera stat for ICameraFollowable Items.
     /// </summary>
     public class CameraFollowableStat : CameraFocusableStat {
 
@@ -37,14 +37,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="followRotationDampener">The follow rotation dampener. Default is 1F.</param>
         public CameraFollowableStat(float minViewDistance, float optViewDistance, float fov, float followDistanceDampener = 3F, float followRotationDampener = 1F)
             : base(minViewDistance, optViewDistance, fov) {
+            D.Assert(followDistanceDampener > Constants.OneF);
+            D.Assert(followRotationDampener > Constants.ZeroF);
             FollowDistanceDampener = followDistanceDampener;
             FollowRotationDampener = followRotationDampener;
-            Validate();
-        }
-
-        private void Validate() {
-            D.Assert(FollowDistanceDampener > Constants.OneF);
-            D.Assert(FollowRotationDampener > Constants.ZeroF);
         }
 
         public override string ToString() {

@@ -50,12 +50,19 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     protected static IDictionary<int, ValueType> _directiveLookup = new Dictionary<int, ValueType>();
 
+    /// <summary>
+    /// Allows a one time static subscription to event publishers from this class.
+    /// </summary>
+    private static bool _isStaticallySubscribed;
     private static CtxMenu _generalCtxMenu;
+    private static string _setOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
 
     public bool IsShowing { get; private set; }
 
+    protected abstract string OperatorName { get; }
+
     /// <summary>
-    /// The directives available for execution by a player-owned remote fleet, if any.
+    /// The directives available for execution by a user-owned remote fleet, if any.
     /// Default is empty. Derived classes should override to provide any directives.
     /// </summary>
     protected virtual IEnumerable<FleetDirective> RemoteFleetDirectives {
@@ -63,7 +70,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     /// <summary>
-    /// The directives available for execution by a player-owned remote ship, if any.
+    /// The directives available for execution by a user-owned remote ship, if any.
     /// Default is empty. Derived classes should override to provide any directives.
     /// </summary>
     protected virtual IEnumerable<ShipDirective> RemoteShipDirectives {
@@ -71,7 +78,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     /// <summary>
-    /// The directives available for execution by a player-owned remote base, if any.
+    /// The directives available for execution by a user-owned remote base, if any.
     /// Default is empty. Derived classes should override to provide any directives.
     /// </summary>
     protected virtual IEnumerable<BaseDirective> RemoteBaseDirectives {
@@ -79,37 +86,37 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     /// <summary>
-    /// The number of unique submenus (CtxMenu) required by this CtxControl.
-    /// </summary>
-    protected abstract int UniqueSubmenuCountReqd { get; }
-
-    /// <summary>
     /// The _lowest unused item ID available for assignment to menu items.
     /// </summary>
     protected int _nextAvailableItemId;
 
     /// <summary>
-    /// The player-owned Item that is selected and remotely accessing this Menu.
+    /// The user-owned Item that is selected and remotely accessing this Menu.
     /// </summary>
     protected ADiscernibleItem _remotePlayerOwnedSelectedItem;
     protected CtxObject _ctxObject;
+    private int _optimalFocusDistanceItemID;
+    private int _uniqueSubmenusReqd;
     private CtxAccessSource _accessSource;
     private GameManager _gameMgr;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ACtxControl"/> class.
+    /// Initializes a new instance of the <see cref="ACtxControl" /> class.
     /// </summary>
     /// <param name="ctxObjectGO">The gameObject where the desired CtxObject is located.</param>
-    public ACtxControl(GameObject ctxObjectGO) {
+    /// <param name="uniqueSubmenusReqd">The number of unique submenus reqd by this CtxControl.</param>
+    /// <param name="toOffsetMenu">if set to <c>true</c> the menu will be offset to avoid covering the object.</param>
+    public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenusReqd, bool toOffsetMenu) {
         //D.Log("Creating {0} for {1}.", GetType().Name, ctxObjectGO.name);
         _gameMgr = GameManager.Instance;
-        InitializeContextMenu(ctxObjectGO);
+        _uniqueSubmenusReqd = uniqueSubmenusReqd;   // done this way to avoid CA2214 - accessing a virtual property from constructor
+        InitializeContextMenu(ctxObjectGO, toOffsetMenu);
         Subscribe();
     }
 
-    private void InitializeContextMenu(GameObject ctxObjectGO) {    // IMPROVE use of strings
+    private void InitializeContextMenu(GameObject ctxObjectGO, bool toOffsetMenu) {    // IMPROVE use of strings
         _ctxObject = UnityUtility.ValidateComponentPresence<CtxObject>(ctxObjectGO);
-        _ctxObject.offsetMenu = true;
+        _ctxObject.toOffsetMenu = toOffsetMenu; // IMPROVE could be determined by testing for collider
 
         // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
         // Accordingly, the work around is 1) to either use the editor to set the items using a CtxMenu dedicated to ships, or 2) have this already dedicated 
@@ -118,7 +125,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         if (_availableSubMenus.Count == Constants.Zero) {
             _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
                 .Where(menu => menu.gameObject.name.Equals("SubMenu")));
-            D.Assert(UniqueSubmenuCountReqd <= _availableSubMenus.Count);
+            D.Assert(_uniqueSubmenusReqd <= _availableSubMenus.Count);
         }
         if (_generalCtxMenu == null) {
             _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
@@ -126,7 +133,15 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         }
 
         if (!_generalCtxMenu.items.IsNullOrEmpty()) {
-            D.Warn("{0}.{1}.CtxMenu.items = {2}.", ctxObjectGO.name, GetType().Name, _generalCtxMenu.items.Select<CtxMenu.Item, string>(i => i.text).Concatenate());
+            // There are already populated items in this CtxMenu. In certain corner cases, this can occur when this object initializes itself while
+            // another object is still showing the menu. One example: Use a context menu to scuttle a Settlement. The destruction of the settlement
+            // immediately changes the system's owner which causes the system's context menu to reinitialize while the Settlement's context menu 
+            // has yet to finish hiding. This reinitialization encounters the Settlement's items as they haven't been cleared yet which occurs
+            // when finished hiding. Accordingly, we test for this condition by seeing if the menu is still visible.
+            if (!_generalCtxMenu.IsVisible) {
+                // A hidden CtxMenu should not have any items in its list
+                D.Warn("{0}.{1}.CtxMenu.items = {2}.", ctxObjectGO.name, GetType().Name, _generalCtxMenu.items.Select<CtxMenu.Item, string>(i => i.text).Concatenate());
+            }
         }
         _ctxObject.contextMenu = _generalCtxMenu;
         // this empty, general purpose CtxMenu will be populated with all menu items held by CtxObject when Show is called
@@ -143,15 +158,11 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     /// <summary>
-    /// Allows a one time static subscription to event publishers from this class.
-    /// </summary>
-    private static bool _isStaticallySubscribed;
-    /// <summary>
     /// Subscribes this class using static event handler(s) to instance events exactly one time.
     /// </summary>
     private void SubscribeStaticallyOnce() {
         if (!_isStaticallySubscribed) {
-            //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
+            //D.Log("{0} is subscribing statically to {1}'s sceneLoaded event.", _ctxObject.gameObject.name, _gameMgr.GetType().Name);
             _gameMgr.sceneLoaded += SceneLoadedEventHandler;
             _isStaticallySubscribed = true;
         }
@@ -171,47 +182,52 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     public bool TryShowContextMenu() {
+        bool toShow = false;
         var selectedItem = SelectionManager.Instance.CurrentSelection;
         if (selectedItem != null) {
             if (TryIsSelectedItemAccessAttempted(selectedItem)) {
-                // the local player-owned item that operates this context menu is selected
+                // the local item that operates this context menu is selected
                 _accessSource = CtxAccessSource.SelectedItem;
                 _remotePlayerOwnedSelectedItem = null;
-                Show(true);
-                return true;
+                toShow = true;
             }
-
-            FleetCmdItem selectedFleet;
-            if (TryIsRemoteFleetAccessAttempted(selectedItem, out selectedFleet)) {
-                // a remote player owned fleet is selected
-                _accessSource = CtxAccessSource.RemoteFleet;
-                _remotePlayerOwnedSelectedItem = selectedFleet;
-                Show(true);
-                return true;
+            else {
+                FleetCmdItem selectedFleet;
+                if (TryIsRemoteFleetAccessAttempted(selectedItem, out selectedFleet)) {
+                    // a remote player owned fleet is selected
+                    _accessSource = CtxAccessSource.RemoteFleet;
+                    _remotePlayerOwnedSelectedItem = selectedFleet;
+                    toShow = true;
+                }
+                else {
+                    AUnitBaseCmdItem selectedBase;
+                    if (TryIsRemoteBaseAccessAttempted(selectedItem, out selectedBase)) {
+                        // a remote player owned base is selected
+                        _accessSource = CtxAccessSource.RemoteBase;
+                        _remotePlayerOwnedSelectedItem = selectedBase;
+                        toShow = true;
+                    }
+                    else {
+                        ShipItem selectedShip;
+                        if (TryIsRemoteShipAccessAttempted(selectedItem, out selectedShip)) {
+                            // a remote player owned ship is selected
+                            _accessSource = CtxAccessSource.RemoteShip;
+                            _remotePlayerOwnedSelectedItem = selectedShip;
+                            toShow = true;
+                        }
+                        else {
+                            _accessSource = CtxAccessSource.None;
+                            _remotePlayerOwnedSelectedItem = null;
+                        }
+                    }
+                }
             }
-
-            AUnitBaseCmdItem selectedBase;
-            if (TryIsRemoteBaseAccessAttempted(selectedItem, out selectedBase)) {
-                // a remote player owned base is selected
-                _accessSource = CtxAccessSource.RemoteBase;
-                _remotePlayerOwnedSelectedItem = selectedBase;
-                Show(true);
-                return true;
-            }
-
-            ShipItem selectedShip;
-            if (TryIsRemoteShipAccessAttempted(selectedItem, out selectedShip)) {
-                // a remote player owned ship is selected
-                _accessSource = CtxAccessSource.RemoteShip;
-                _remotePlayerOwnedSelectedItem = selectedShip;
-                Show(true);
-                return true;
-            }
-
-            _accessSource = CtxAccessSource.None;
-            _remotePlayerOwnedSelectedItem = null;
         }
-        return false;
+        //D.Log("{0}.{1}.TryShowContextMenu called. Resulting AccessSource = {2}.", OperatorName, GetType().Name, _accessSource.GetValueName());
+        if (toShow) {
+            Show(true);
+        }
+        return toShow;
     }
 
     /// <summary>
@@ -263,9 +279,11 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     #region Event and Property Change Handlers
 
     private void ShowCtxMenuEventHandler() {
+        //D.Log("{0}.{1}: Subscriber count to ShowCtxMenuEventHandler = {2}.", OperatorName, GetType().Name, _ctxObject.onShow.Count);
         switch (_accessSource) {
             case CtxAccessSource.SelectedItem:
                 PopulateMenu_SelectedItemAccess();
+                AddOptimalFocusDistanceItemToMenu();
                 break;
             case CtxAccessSource.RemoteShip:
                 PopulateMenu_RemoteShipAccess();
@@ -289,7 +307,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         int menuItemID = _ctxObject.selectedItem;
         switch (_accessSource) {
             case CtxAccessSource.SelectedItem:
-                HandleMenuSelection_SelectedItemAccess(menuItemID);
+                if (menuItemID == _optimalFocusDistanceItemID) {
+                    HandleMenuSelection_OptimalFocusDistance();
+                }
+                else {
+                    HandleMenuSelection_SelectedItemAccess(menuItemID);
+                }
                 break;
             case CtxAccessSource.RemoteFleet:
                 HandleMenuSelection_RemoteFleetAccess(menuItemID);
@@ -307,6 +330,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void HideCtxMenuEventHandler() {
+        //D.Log("{0}.{1}.HideCtxMenuEventHandler called.", OperatorName, GetType().Name);
         IsShowing = false;
         _gameMgr.RequestPauseStateChange(toPause: false);
         InputManager.Instance.InputMode = GameInputMode.Normal;
@@ -317,6 +341,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         CleanupMenuArrays();    // not really needed as all CtxMenu.Item arrays get assigned new arrays when used again
 
         _nextAvailableItemId = Constants.Zero;
+        _optimalFocusDistanceItemID = Constants.Zero;
         _remotePlayerOwnedSelectedItem = null;
         _accessSource = CtxAccessSource.None;
     }
@@ -328,6 +353,19 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     #endregion
 
     protected virtual void PopulateMenu_SelectedItemAccess() { }
+
+    private void AddOptimalFocusDistanceItemToMenu() {
+        _optimalFocusDistanceItemID = _nextAvailableItemId;
+        CtxMenu.Item optimalFocusDistanceItem = new CtxMenu.Item() {
+            text = _setOptimalFocusDistanceItemText,
+            id = _optimalFocusDistanceItemID
+        };
+        // many SelectedItems will not offer any other menuItems to select
+        var menuItems = (_ctxObject.menuItems != null) ? _ctxObject.menuItems.ToList() : new List<CtxMenu.Item>(1);
+        menuItems.Add(optimalFocusDistanceItem);
+        _ctxObject.menuItems = menuItems.ToArray();
+        _nextAvailableItemId++; // probably not necessary as this is the last item being added
+    }
 
     protected virtual void PopulateMenu_RemoteFleetAccess() {   // IMPROVE temp virtual to allow SectorCtxControl to override
         var topLevelMenuItems = new List<CtxMenu.Item>();
@@ -394,6 +432,8 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected virtual void HandleMenuSelection_RemoteBaseAccess(int itemID) { }
 
+    protected abstract void HandleMenuSelection_OptimalFocusDistance();
+
     private void CleanupMenuArrays() {
         _generalCtxMenu.items = new CtxMenu.Item[0];
         _availableSubMenus.ForAll(subMenu => subMenu.items = new CtxMenu.Item[0]);
@@ -403,7 +443,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void Cleanup() {
         Unsubscribe();
         _ctxObject.contextMenu = null;
-        if (AMonoBase.IsApplicationQuiting) {
+        if (GameManager.IsApplicationQuiting) {
             CleanupStaticMembers();
             UnsubscribeStaticallyOnceOnQuit();
         }
@@ -447,47 +487,41 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     #region IDisposable
 
     private bool _alreadyDisposed = false;
-    protected bool _isDisposing = false;
 
     /// <summary>
     /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
     /// </summary>
     public void Dispose() {
+
         Dispose(true);
+
+        // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+        // the finalization queue and prevent finalization code from 'disposing' a second time
         GC.SuppressFinalize(this);
     }
 
     /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// Releases unmanaged and - optionally - managed resources.
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (_alreadyDisposed) {
+    /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isExplicitlyDisposing) {
+        if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
             D.Warn("{0} has already been disposed.", GetType().Name);
-            return;
+            return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
         }
 
-        _isDisposing = true;
-        if (isDisposing) {
-            // free managed resources here including unhooking events
+        if (isExplicitlyDisposing) {
+            // Dispose of managed resources here as you have called Dispose() explicitly
             Cleanup();
         }
-        // free unmanaged resources here
+
+        // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+        // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+        // called Dispose(false) to cleanup unmanaged resources
 
         _alreadyDisposed = true;
     }
 
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
     #endregion
 
     #region Nested Classes

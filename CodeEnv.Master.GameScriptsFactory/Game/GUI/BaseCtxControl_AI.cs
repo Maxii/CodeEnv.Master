@@ -27,20 +27,28 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class BaseCtxControl_AI : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Attack, 
-                                                                                                FleetDirective.Move, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Attack,
+                                                                                                FleetDirective.Move,
                                                                                                 FleetDirective.Guard };
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
+    protected override string OperatorName { get { return _baseMenuOperator.FullName; } }
 
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_AI(AUnitBaseCmdItem baseCmd)
-        : base(baseCmd.gameObject) {
+        : base(baseCmd.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: false) {
         _baseMenuOperator = baseCmd;
+    }
+
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        if (_baseMenuOperator.IsSelected) {
+            D.Assert(_baseMenuOperator == selected as AUnitBaseCmdItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
@@ -58,6 +66,10 @@ public class BaseCtxControl_AI : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _baseMenuOperator.OptimalCameraViewingDistance = _baseMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for Items that can change whether they are discernible by the UserPlayer.
 /// </summary>
-public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsClient {
+public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsClient, ISelectable {
 
     private bool _isDiscernibleToUser;
     public bool IsDiscernibleToUser {
@@ -57,6 +57,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     private IGameInputHelper _inputHelper;
     private IHighlighter _highlighter;
+    private ICtxControl _ctxControl;
 
     #region Initialization
 
@@ -83,6 +84,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
         EffectsMgr = InitializeEffectsManager();
         _highlighter = InitializeHighlighter();
+        _ctxControl = InitializeContextMenu(Owner);
         _hasInitOnFirstDiscernibleToUserRun = true;
     }
 
@@ -98,8 +100,9 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         return new Highlighter(this);
     }
 
-    #endregion
+    protected abstract ICtxControl InitializeContextMenu(Player owner);
 
+    #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -112,9 +115,19 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected abstract void AssessIsDiscernibleToUser();
 
     public virtual void AssessHighlighting() {
-        if (IsDiscernibleToUser && IsFocus) {
-            ShowHighlights(HighlightID.Focused);
-            return;
+        if (IsDiscernibleToUser) {
+            if (IsFocus) {
+                if (IsSelected) {
+                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
+                    return;
+                }
+                ShowHighlights(HighlightID.Focused);
+                return;
+            }
+            if (IsSelected) {
+                ShowHighlights(HighlightID.Selected);
+                return;
+            }
         }
         ShowHighlights(HighlightID.None);
     }
@@ -130,6 +143,16 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
             _highlighter.ShowHovered(toShow);
         }
     }
+
+    /// <summary>
+    /// Shows the SelectedItemHudWindow for this ISelectable Item.
+    /// </summary>
+    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
+    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
+    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
+    /// handled by the SelectionMgr when there is no longer an item selected.
+    /// </remarks>
+    protected abstract void ShowSelectedItemHud();
 
     public virtual void HandleEffectFinished(EffectID effectID) { }
 
@@ -158,6 +181,27 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
             References.MainCameraControl.CurrentFocus = this;
         }
         AssessHighlighting();
+    }
+
+    protected virtual void IsSelectedPropChangedHandler() {
+        if (IsSelected) {
+            ShowSelectedItemHud();
+            SelectionManager.Instance.CurrentSelection = this;
+        }
+        AssessHighlighting();
+    }
+
+    protected override void OwnerPropChangingHandler(Player newOwner) {
+        base.OwnerPropChangingHandler(newOwner);
+        if (_hasInitOnFirstDiscernibleToUserRun) {
+            D.Assert(_ctxControl != null);
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
+                // Kind of owner (NoPlayer, AI or User) has changed so generate a new ctxControl -
+                // aka, a change from one AI player to another does not necessitate a change
+                (_ctxControl as IDisposable).Dispose();
+                _ctxControl = InitializeContextMenu(newOwner);
+            }
+        }
     }
 
     protected virtual void IsInMainCameraLosPropChangedHandler() {
@@ -207,7 +251,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         HoverEventHandler(isOver);
     }
 
-    protected virtual void HandleLeftClick() { }
+    protected virtual void HandleLeftClick() { IsSelected = true; }
     protected virtual void HandleAltLeftClick() { }
     protected virtual void HandleMiddleClick() { IsFocus = true; }
     protected virtual void HandleRightClick() { }
@@ -283,7 +327,12 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     protected virtual void HandleLeftPressRelease() { }
     protected virtual void HandleMiddlePressRelease() { }
-    protected virtual void HandleRightPressRelease() { }
+    protected virtual void HandleRightPressRelease() {
+        if (!_inputMgr.IsDragging) {
+            // right press release while not dragging means both press and release were over this object
+            _ctxControl.TryShowContextMenu();
+        }
+    }
 
     protected virtual void HandleLeftDoubleClick() { }
     protected virtual void HandleMiddleDoubleClick() { }
@@ -315,6 +364,13 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     #region Cleanup
 
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_ctxControl != null) {
+            (_ctxControl as IDisposable).Dispose();
+        }
+    }
+
     #endregion
 
     #region ICameraTargetable Members
@@ -341,7 +397,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return Data.CameraStat.OptimalViewingDistance;
+            return (Data.CameraStat as CameraFocusableStat).OptimalViewingDistance;
         }
         set { _optimalCameraViewingDistance = value; }  //TODO public but not currently used until implement option to right click set
         // Camera auto setting value commented out for now
@@ -394,6 +450,16 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     public virtual float HoverHighlightRadius { get { return Radius * 2F; } }
 
     public virtual float HighlightRadius { get { return Radius * Screen.height * 3F; } }
+
+    #endregion
+
+    #region ISelectable Members
+
+    private bool _isSelected;
+    public bool IsSelected {
+        get { return _isSelected; }
+        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
+    }
 
     #endregion
 

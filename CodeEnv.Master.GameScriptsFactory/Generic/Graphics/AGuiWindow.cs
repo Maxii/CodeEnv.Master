@@ -26,7 +26,7 @@ using UnityEngine;
 /// Abstract base class for Gui Windows with fading ability. 
 /// GuiWIndows have the ability to appear and disappear, aka 'popup'.
 /// </summary>
-/// <remarks>A replacement for SpaceD UIWindow without all the automatic panel depth changes.</remarks>
+/// <remarks>A replacement for SpaceD UIWindow without all the automatic _panel depth changes.</remarks>
 public abstract class AGuiWindow : AMonoBase {
 
     /// <summary>

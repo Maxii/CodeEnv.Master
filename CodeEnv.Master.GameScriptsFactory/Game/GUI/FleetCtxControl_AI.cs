@@ -27,8 +27,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class FleetCtxControl_AI : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Attack, 
-                                                                                                FleetDirective.Move, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Attack,
+                                                                                                FleetDirective.Move,
                                                                                                 FleetDirective.Guard };
 
     private static BaseDirective[] _remoteBaseDirectivesAvailable = new BaseDirective[] { BaseDirective.Attack };
@@ -41,18 +41,21 @@ public class FleetCtxControl_AI : ACtxControl {
         get { return _remoteBaseDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
+    protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
 
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_AI(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: false) {
         _fleetMenuOperator = fleetCmd;
     }
 
     protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
-        D.Warn("You are trying to open a ContextMenu that doesn't belong to you!");
-        return base.TryIsSelectedItemAccessAttempted(selected);
+        if (_fleetMenuOperator.IsSelected) {
+            D.Assert(_fleetMenuOperator == selected as FleetCmdItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteShipAccessAttempted(ISelectable selected, out ShipItem selectedShip) {
@@ -88,6 +91,10 @@ public class FleetCtxControl_AI : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _fleetMenuOperator.OptimalCameraViewingDistance = _fleetMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

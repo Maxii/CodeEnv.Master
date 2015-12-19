@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override void Initialize() {
+        protected sealed override void Initialize() {
             _inputMgr = References.InputManager;
             _sfxMgr = References.SFXManager;
             References.GameManager.isRunningOneShot += IsRunningEventHandler;
@@ -96,46 +96,44 @@ namespace CodeEnv.Master.GameContent {
 
         #region IDisposable
 
-        private bool alreadyDisposed = false;
+        private bool _alreadyDisposed = false;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose() {
+
             Dispose(true);
+
+            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+            // the finalization queue and prevent finalization code from 'disposing' a second time
             GC.SuppressFinalize(this);
         }
 
         /// <summary>
-        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// Releases unmanaged and - optionally - managed resources.
         /// </summary>
-        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool isDisposing) {
-            // Allows Dispose(isDisposing) to be called more than once
-            if (alreadyDisposed) {
-                return;
+        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isExplicitlyDisposing) {
+            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
+                D.Warn("{0} has already been disposed.", GetType().Name);
+                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
             }
 
-            if (isDisposing) {
-                // free managed resources here including unhooking events
+            if (isExplicitlyDisposing) {
+                // Dispose of managed resources here as you have called Dispose() explicitly
                 Cleanup();
             }
-            // free unmanaged resources here
 
-            alreadyDisposed = true;
+            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+            // called Dispose(false) to cleanup unmanaged resources
+
+            _alreadyDisposed = true;
         }
 
-        // Example method showing check for whether the object has been disposed
-        //public void ExampleMethod() {
-        //    // throw Exception if called on object that is already disposed
-        //    if(alreadyDisposed) {
-        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-        //    }
-
-        //    // method content here
-        //}
         #endregion
+
 
     }
 }

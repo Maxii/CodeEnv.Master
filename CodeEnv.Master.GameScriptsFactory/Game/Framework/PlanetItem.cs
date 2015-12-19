@@ -45,18 +45,11 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
     }
 
     protected override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = new PlanetDisplayManager(this, MakeIconInfo());
-        SubscribeToIconEvents(displayMgr.Icon);
-        return displayMgr;
+        var dMgr = new PlanetDisplayManager(this, MakeIconInfo());
+        SubscribeToIconEvents(dMgr.Icon);
+        return dMgr;
     }
 
-    //private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-    //    var iconEventListener = icon.EventListener;
-    //    iconEventListener.onHover += (go, isOver) => OnHover(isOver);
-    //    iconEventListener.onClick += (go) => OnClick();
-    //    iconEventListener.onDoubleClick += (go) => OnDoubleClick();
-    //    iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
-    //}
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
@@ -120,13 +113,6 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
         }
     }
 
-    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-    //    var iconEventListener = icon.EventListener;
-    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-    //    iconEventListener.onClick -= (go) => OnClick();
-    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
-    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);

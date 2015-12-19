@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AMonoBaseSingleton.cs" />
     <Compile Include="Game\Framework\SensorRangeMonitor.cs" />
     <Compile Include="Generic\Framework\ADetectableRangeMonitor.cs" />
     <Compile Include="Generic\Framework\AEquipmentMonitor.cs" />

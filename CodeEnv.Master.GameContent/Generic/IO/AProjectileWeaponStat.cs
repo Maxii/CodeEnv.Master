@@ -55,18 +55,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-    float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
+            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential) {
-            OrdnanceMaxSpeed = ordnanceMaxSpeed;
-            OrdnanceMass = ordnanceMass;
-            OrdnanceDrag = ordnanceDrag;
-        }
-
-        protected override void Validate() {
-            base.Validate();
             D.Assert(OrdnanceMaxSpeed > Constants.ZeroF);
             D.Assert(OrdnanceMass > Constants.ZeroF);
             D.Assert(OrdnanceDrag > Constants.ZeroF);
+            OrdnanceMaxSpeed = ordnanceMaxSpeed;
+            OrdnanceMass = ordnanceMass;
+            OrdnanceDrag = ordnanceDrag;
         }
 
     }

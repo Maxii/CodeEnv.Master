@@ -39,12 +39,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     private DetectionHandler _detectionHandler;
-    private ICtxControl _ctxControl;
     private SphereCollider _collider;
 
     #region Initialization
 
     protected override void InitializeOnData() {
+        base.InitializeOnData();
         InitializePrimaryCollider();
         InitializeShipOrbitSlot();
         InitializeTransitBanCollider();
@@ -69,17 +69,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         shipTransitBanCollider.radius = ShipTransitBanRadius;
     }
 
-    protected override void InitializeOnFirstDiscernibleToUser() {
-        base.InitializeOnFirstDiscernibleToUser();
-        InitializeContextMenu(Owner);
-    }
-
     protected override ItemHudManager InitializeHudManager() {
         return new ItemHudManager(Publisher);
     }
 
-    private void InitializeContextMenu(Player owner) {
-        _ctxControl = new UniverseCenterCtxControl(this);
+    protected override ICtxControl InitializeContextMenu(Player owner) {
+        return new UniverseCenterCtxControl(this);
     }
 
     protected override ADisplayManager InitializeDisplayManager() {
@@ -97,19 +92,18 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+    protected override void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedUniverseCenter, GetUserReport());
+    }
 
     #region Event and Property Change Handlers
 
-    protected override void OwnerPropChangedHandler() {
+    protected override void OwnerPropChangingHandler(Player newOwner) {
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
     }
 
-    protected override void HandleRightPressRelease() {
-        base.HandleRightPressRelease();
-        if(!_inputMgr.IsDragging) {
-            // right press release while not dragging means both press and release were over this object
-            _ctxControl.TryShowContextMenu();
-        }
+    protected override void OwnerPropChangedHandler() {
+        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
     }
 
     #endregion
@@ -118,9 +112,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
         if (_detectionHandler != null) {
             _detectionHandler.Dispose();
         }

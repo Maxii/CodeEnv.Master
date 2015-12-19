@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
             AssignValuesFromMemberReports();
         }
 
-        protected override void AssignValues(AItemData data) {
+        private void AssignValues(AItemData data) {
             var sysData = data as SystemData;
             Name = sysData.Name;
             SectorIndex = sysData.SectorIndex;

@@ -62,21 +62,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="courseUpdateFreq">How often the ordnance's course is updated in updates per hour.</param>
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
         public MissileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-    float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
             DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate,
             float courseUpdateFreq, float maxSteeringInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag) {
-            OrdnanceTurnRate = turnRate;
-            OrdnanceCourseUpdateFrequency = courseUpdateFreq;
-            MaxSteeringInaccuracy = maxSteeringInaccuracy;
-            Validate();
-        }
-
-        protected override void Validate() {
-            base.Validate();
             D.Assert(OrdnanceTurnRate > Constants.ZeroF);
             D.Assert(OrdnanceCourseUpdateFrequency > Constants.ZeroF);
             D.Warn(MaxSteeringInaccuracy > 5F, "{0} MaxSteeringInaccuracy of {1:0.#} is very high.", Name, MaxSteeringInaccuracy);
+            OrdnanceTurnRate = turnRate;
+            OrdnanceCourseUpdateFrequency = courseUpdateFreq;
+            MaxSteeringInaccuracy = maxSteeringInaccuracy;
         }
 
     }

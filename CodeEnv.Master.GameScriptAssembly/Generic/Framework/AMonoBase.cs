@@ -561,8 +561,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     #endregion
 
-    // No need for IDisposable as there are no resources here to clean up
-
     // An abstract Base has no need for a ToString() method as its derived children have one.
     // ObjectAnalyzer DOES include analysis of base classes in its scope.
 

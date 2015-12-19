@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
     public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
         private static GameColor[] _defaultPlayerColors = new GameColor[] {
-            GameColor.Blue, GameColor.Red, GameColor.Cyan, GameColor.Green, 
+            GameColor.Blue, GameColor.Red, GameColor.Cyan, GameColor.Green,
             GameColor.Magenta, GameColor.Yellow, GameColor.Brown, GameColor.Purple
         };
 
@@ -152,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
         ///<summary>
         /// Called once from the constructor, this does all required initialization
         /// </summary>
-        protected override void Initialize() {
+        protected sealed override void Initialize() {
             IncrementInstanceCounter();
             _generalSettings = GeneralSettings.Instance;
             _gameMgr = References.GameManager;

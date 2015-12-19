@@ -142,6 +142,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// Called when the Item should start operations, typically once the game is running.
     /// </summary>
     public virtual void CommenceOperations() {
+        Data.CommenceOperations();
         D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
         IsOperational = true;
     }
@@ -195,7 +196,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     }
 
     private void OnOwnerChanging(Player newOwner) {
-        if(ownerChanging != null) {
+        if (ownerChanging != null) {
             ownerChanging(this, new OwnerChangingEventArgs(newOwner));
         }
     }

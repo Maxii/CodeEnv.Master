@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override void Initialize() {
+        protected sealed override void Initialize() {
             _xmlReader = SpeciesStatXmlReader.Instance;
             _statCache = new Dictionary<Species, SpeciesStat>();
             // WARNING: Donot use Instance or _instance in here as this is still part of Constructor

@@ -166,9 +166,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 
 }

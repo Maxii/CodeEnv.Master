@@ -25,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     #region Initialization
 

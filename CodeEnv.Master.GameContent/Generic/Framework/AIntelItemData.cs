@@ -42,13 +42,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        public AIntelItemData(Transform itemTransform, string name, Player owner, CameraFocusableStat cameraStat)
+        public AIntelItemData(Transform itemTransform, string name, Player owner, ACameraItemStat cameraStat)
             : base(itemTransform, name, owner, cameraStat) {
             _gameMgr = References.GameManager;
-            InitializePlayersIntel();
+            //InitializePlayersIntel(); now called by AIntelItem.InitializeOnData to move out of constructor
         }
 
-        private void InitializePlayersIntel() {
+        public void InitializePlayersIntel() {
             int playerCount = _gameMgr.AIPlayers.Count + 1;
             //D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
@@ -70,19 +70,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="initialcoverage">The initial coverage.</param>
         /// <returns></returns>
+        //protected virtual AIntel MakeIntel(IntelCoverage initialcoverage) {
+        //    return new Intel(initialcoverage);
+        //}
         protected virtual AIntel MakeIntel(IntelCoverage initialcoverage) {
-            return new Intel(initialcoverage);
-        }
-
-        /// <summary>
-        /// Sets the intel coverage for the User player. Returns <c>true</c> if the <c>newCoverage</c>
-        /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
-        /// the item to regress its IntelCoverage.
-        /// </summary>
-        /// <param name="newCoverage">The new coverage.</param>
-        /// <returns></returns>
-        public bool SetUserIntelCoverage(IntelCoverage newCoverage) {
-            return SetIntelCoverage(_gameMgr.UserPlayer, newCoverage);
+            var intel = new Intel();
+            intel.InitializeCoverage(initialcoverage);
+            return intel;
         }
 
         /// <summary>
@@ -105,15 +99,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public IntelCoverage GetUserIntelCoverage() { return GetIntelCoverage(_gameMgr.UserPlayer); }
-
         public IntelCoverage GetIntelCoverage(Player player) { return GetIntelCopy(player).CurrentCoverage; }
-
-        /// <summary>
-        /// Returns a copy of the intel instance for the User.
-        /// </summary>
-        /// <returns></returns>
-        public AIntel GetUserIntelCopy() { return GetIntelCopy(_gameMgr.UserPlayer); }
 
         /// <summary>
         /// Returns a copy of the intel instance for this player.

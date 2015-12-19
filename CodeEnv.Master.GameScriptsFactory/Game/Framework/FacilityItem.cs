@@ -72,6 +72,11 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         return new FacilityDisplayManager(this, Owner.Color);
     }
 
+    protected override ICtxControl InitializeContextMenu(Player owner) {
+        D.Assert(owner != TempGameValues.NoPlayer);
+        return new FacilityCtxControl(this);
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -82,6 +87,12 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     public FacilityReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+    protected override void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedFacility, GetUserReport());
+    }
+
+    #region Event and Property Change Handlers
 
     private void CurrentOrderPropChangedHandler() {
         //TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
@@ -121,6 +132,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         }
     }
 
+    #endregion
+
     /// <summary>
     /// The Captain uses this method to issue orders.
     /// </summary>
@@ -148,24 +161,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     protected override void SetDeadState() {
         CurrentState = FacilityState.Dead;
-    }
-
-    public override void AssessHighlighting() {
-        if (IsDiscernibleToUser) {
-            if (IsFocus) {
-                if (Command.IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.UnitElement);
-                    return;
-                }
-                ShowHighlights(HighlightID.Focused);
-                return;
-            }
-            if (Command.IsSelected) {
-                ShowHighlights(HighlightID.UnitElement);
-                return;
-            }
-        }
-        ShowHighlights(HighlightID.None);
     }
 
     protected override IconInfo MakeIconInfo() {

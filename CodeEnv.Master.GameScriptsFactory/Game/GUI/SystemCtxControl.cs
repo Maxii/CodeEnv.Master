@@ -31,18 +31,25 @@ public class SystemCtxControl : ACtxControl {
                                                                                                 FleetDirective.Guard,
                                                                                                 FleetDirective.Explore,
                                                                                                 FleetDirective.Patrol };
-
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return 1; } }
+    protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
 
     private SystemItem _systemMenuOperator;
 
     public SystemCtxControl(SystemItem system)
-        : base(system.gameObject) {
+        : base(system.gameObject, uniqueSubmenusReqd: Constants.One, toOffsetMenu: false) {
         _systemMenuOperator = system;
+    }
+
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        if (_systemMenuOperator.IsSelected) {
+            D.Assert(_systemMenuOperator == selected as SystemItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
@@ -61,6 +68,10 @@ public class SystemCtxControl : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _systemMenuOperator.OptimalCameraViewingDistance = _systemMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ImprovingIntel(IntelCoverage currentCoverage) : base(currentCoverage) { }
+        public ImprovingIntel() : base() { }
 
         /// <summary>
         /// Copy constructor. Initializes a new instance of the <see cref="ImprovingIntel"/> class,
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelToCopy">The intel to copy.</param>
         public ImprovingIntel(ImprovingIntel intelToCopy)
-            : this(intelToCopy.CurrentCoverage) { }
+            : base(intelToCopy) { }
 
         public override bool IsCoverageChangeAllowed(IntelCoverage newCoverage) {
             return newCoverage > CurrentCoverage;

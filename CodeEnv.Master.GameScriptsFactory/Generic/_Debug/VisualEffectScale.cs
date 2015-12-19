@@ -100,7 +100,7 @@ public class VisualEffectScale : AMonoBase {
 #if UNITY_EDITOR
         ParticleSystem[] pSystems = GetComponentsInChildren<ParticleSystem>();
 
-        foreach (ParticleSystem pSystem in pSystems) {
+        foreach (ParticleSystem pSystem in pSystems) {  // IMPROVE use ParticleSystem.ScalingMode added in Unity 5.3?
             pSystem.startSpeed *= scaleFactor;
             pSystem.startSize *= scaleFactor;
             pSystem.gravityModifier *= scaleFactor;

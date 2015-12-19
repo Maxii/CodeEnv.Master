@@ -94,7 +94,6 @@
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
     <Compile Include="Game\Framework\GamePlayOptionSettings.cs" />
-    <Compile Include="Game\Framework\SceneLevel.cs" />
     <Compile Include="Generic\_Debug\D.cs" />
     <Compile Include="Generic\_Debug\IInstanceCount.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />

@@ -56,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\GUI\FacilityCtxControl.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />
     <Compile Include="Game\Framework\ShipItem.cs" />
     <Compile Include="Game\Gameplay\LOSTurret.cs" />
@@ -217,6 +218,18 @@
     <Compile Include="Game\Gameplay\ShipHull.cs" />
     <Compile Include="Generic\Graphics\LOSMountPlaceholder.cs" />
     <Compile Include="Generic\Graphics\MissileMountPlaceholder.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Game\GUI\SelectedFacilityForm.cs" />
+    <Compile Include="Game\GUI\SelectedPlanetoidForm.cs" />
+    <Compile Include="Game\GUI\SelectedStarForm.cs" />
+    <Compile Include="Game\GUI\SelectedUniverseCenterForm.cs" />
+    <Compile Include="Game\GUI\ShipCtxControl_AI.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxMenu.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxMenuButton.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxObject.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxPickHandler.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxPopup.cs" />
     <Compile Include="ThirdParty\MyNguiEventListener.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
@@ -245,11 +258,6 @@
     <ProjectReference Include="..\..\..\Plugins\AStar\AStar.csproj">
       <Project>{7e32bd55-f315-4bde-885c-646841c273f7}</Project>
       <Name>AStar</Name>
-      <Private>False</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Plugins\Contextual\Contextual.csproj">
-      <Project>{4fa683ff-627f-49fe-9046-b1e9049cbe14}</Project>
-      <Name>Contextual</Name>
       <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\GridFramework\GridFramework.csproj">

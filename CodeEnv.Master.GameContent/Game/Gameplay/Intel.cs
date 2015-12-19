@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public GameDate DateStamp { get; private set; }
 
-        public Intel(IntelCoverage coverage) : base(coverage) { }
+        public Intel() : base() { }
 
         /// <summary>
         /// Copy constructor. Initializes a new instance of the <see cref="Intel"/> class,
@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelToCopy">The intel to copy.</param>
         public Intel(Intel intelToCopy)
-            : this(intelToCopy.CurrentCoverage) {
+            : base(intelToCopy) {
             this.DatedCoverage = intelToCopy.DatedCoverage;
             this.DateStamp = intelToCopy.DateStamp;
         }

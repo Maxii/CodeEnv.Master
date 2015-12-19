@@ -42,8 +42,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         set { base.Data = value; }
     }
 
-    private ICtxControl _ctxControl;
-
     #region Initialization
 
     protected override void InitializeOnData() {
@@ -56,19 +54,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
-    protected override void InitializeOnFirstDiscernibleToUser() {
-        base.InitializeOnFirstDiscernibleToUser();
-        InitializeContextMenu(Owner);
-        // revolvers control their own enabled state
-    }
-
-    private void InitializeContextMenu(Player owner) {
+    protected override ICtxControl InitializeContextMenu(Player owner) {
         D.Assert(owner != TempGameValues.NoPlayer);
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
-        _ctxControl = owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
-        //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
+        return owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
     }
 
     #endregion
@@ -132,25 +120,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-        }
-    }
-
-    protected override void OwnerPropChangingHandler(Player newOwner) {
-        base.OwnerPropChangingHandler(newOwner);
-        if (_hasInitOnFirstDiscernibleToUserRun) {
-            // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI and Player so generate a new ctxControl
-                InitializeContextMenu(newOwner);
-            }
-        }
-    }
-
-    protected override void HandleRightPressRelease() {
-        base.HandleRightPressRelease();
-        if(!_inputMgr.IsDragging) {
-            // right press release while not dragging means both press and release were over this object
-            _ctxControl.TryShowContextMenu();
         }
     }
 
@@ -293,13 +262,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #endregion
 
     #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
-    }
 
     #endregion
 

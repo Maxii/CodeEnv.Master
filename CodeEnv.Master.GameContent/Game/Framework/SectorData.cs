@@ -37,11 +37,6 @@ namespace CodeEnv.Master.GameContent {
         [System.Obsolete]
         public float Density { get; set; }
 
-        public sealed override Topography Topography {  // avoids CA2214
-            get { return base.Topography; }
-            set { base.Topography = value; }
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SectorData" /> class
         /// with the owner initialized to NoPlayer.

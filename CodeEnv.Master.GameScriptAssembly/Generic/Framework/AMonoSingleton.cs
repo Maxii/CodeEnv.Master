@@ -22,17 +22,23 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base Singleton Pattern for MonoBehaviours that initializes when Instance is first called. 
-/// Also has responsibility for destroying extra copies of instances which implement DontDestroyOnLoad.
+/// Also has responsibility for destroying extra copies of instances if IsPersistentAcrossScenes is <c>true</c>.
 /// </summary>
 /// <typeparam name="T">The Type of the derived class.</typeparam>
-public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AMonoSingleton<T> {
+public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount where T : AMonoSingleton<T> {
 
     /// <summary>
-    /// Determines whether this singleton is persistent across scenes. If not persistent, it
-    /// is destroyed on each scene load. If it is persistent, then it is not destroyed on a scene
-    /// load, and any instances already present in the new scene are destroyed.
+    /// Flag indicating whether this instance is an extra copy. If true, then it has not been initialized
+    /// and is slated for destruction. Used to determine cleanup behaviour during OnDestroy().
     /// </summary>
-    protected virtual bool IsPersistentAcrossScenes { get { return false; } }
+    protected bool IsExtraCopy { get; private set; }
+
+    /// <summary>
+    /// Indicates whether this instance is a root GameObject, aka it has no parent.
+    /// If it is a root GameObject AND it is also persistent across scenes, then DontDestroyOnLoad 
+    /// is used on this instance to keep it AND its children from being destroyed on a scene transition.
+    /// </summary>
+    protected virtual bool IsRootGameObject { get { return false; } }
 
     #region MonoBehaviour Singleton Pattern
 
@@ -74,10 +80,25 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
 
         IncrementInstanceCounter();
 
+        ValidateRootGameObjectState();
+
         if (IsPersistentAcrossScenes) {
-            if (TryDestroyExtraCopies()) {
+            IsExtraCopy = _instance != null && _instance != this;
+
+            if (IsExtraCopy) {
+                DestroyExtraCopy();
                 // this extra copy is being destroyed so don't initialize
                 return;
+            }
+            else {
+                // persistent but not extra
+                if (IsRootGameObject) {  // DontDestroyOnLoad only works for Root GameObjects (and their children)
+                    DontDestroyOnLoad(gameObject);
+                }
+                else {
+                    // MgmtFolder is the only class setup to keep its persistent children from being destroyed
+                    ValidateMgmtFolderIsAParent();
+                }
             }
         }
         InitializeOnAwake();
@@ -102,47 +123,37 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
         //D.Log("{0}_{1}.InitializeOnAwake() called.", GetType().Name, InstanceID);
     }
 
-    #region Cross Scene Persistence System
-
-    /// <summary>
-    /// Flag indicating whether this instance is an extra copy. If true, then it has not been initialized
-    /// and is slated for destruction. Used to determine cleanup behaviour during OnDestroy().
-    /// </summary>
-    protected bool _isExtraCopy;
-
-    /// <summary>
-    /// Ensures that no matter how many scenes this Object is
-    /// in (having one dedicated to each scene may be useful for testing) there's only ever one copy
-    /// in memory if you make a scene transition.
-    /// </summary>
-    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
-    private bool TryDestroyExtraCopies() {
-        if (_instance && _instance != this) {
-            D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceCount));
-            _isExtraCopy = true;
-            ExecutePriorToDestroy();
-            D.Log("Destroying {0}_{1}.", gameObject.name, InstanceCount);
-            Destroy(gameObject);
-        }
-        else {
-            DontDestroyOnLoad(gameObject);
-            //_instance = this as T;
-        }
-        return _isExtraCopy;
-    }
-
     /// <summary>
     /// Hook method for any work to be done before the extra copy is destroyed.
     /// Default does nothing.
     /// </summary>
     protected virtual void ExecutePriorToDestroy() { }
 
-    #endregion
+    private void DestroyExtraCopy() {
+        D.Assert(IsExtraCopy);
+        D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceCount));
+        ExecutePriorToDestroy();
+        D.Log("Destroying {0}_{1}.", gameObject.name, InstanceCount);
+        Destroy(gameObject);
+    }
+
+    private void ValidateRootGameObjectState() {
+        if (IsRootGameObject) {
+            D.Assert(transform.parent == null);
+        }
+        else {
+            D.Assert(transform.parent != null);
+        }
+    }
+
+    private void ValidateMgmtFolderIsAParent() {
+        gameObject.GetSingleComponentInParents<ManagementFolder>(excludeSelf: true);
+    }
 
     #region Cleanup
 
     protected sealed override void OnDestroy() {
-        if (_isExtraCopy) {
+        if (IsExtraCopy) {
             // no reason to cleanup if never initialized
             return;
         }
@@ -182,11 +193,61 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
 
     #endregion
 
+    #region ExtraCopy Destruction Archive
+
+    //protected bool _isExtraCopy;
+
+    //protected sealed override void Awake() {
+    //    base.Awake();
+    //    // If no other MonoBehaviour has requested Instance in an Awake() call executing
+    //    // before this one, then we are it. There is no reason to search for an object
+    //    if (_instance == null) {
+    //        var tempInstanceCount = _instanceCounter + 1;  // HACK as InitializeOnInstance doesn't get called for extra copies so can't increment there
+    //        D.Log("{0}_{1} is initializing Instance from Awake().", GetType().Name, tempInstanceCount);
+    //        _instance = this as T;
+    //        InitializeOnInstance();
+    //    }
+
+    //    IncrementInstanceCounter();
+
+    //    if (IsPersistentAcrossScenes) {
+    //        if (TryDestroyExtraCopies()) {
+    //            // this extra copy is being destroyed so don't initialize
+    //            return;
+    //        }
+    //    }
+    //    InitializeOnAwake();
+    //}
+
+    /// <summary>
+    /// Ensures that no matter how many scenes this Object is
+    /// in (having one dedicated to each scene may be useful for testing) there's only ever one copy
+    /// in memory if you make a scene transition.
+    /// </summary>
+    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
+    //private bool TryDestroyExtraCopies() {
+    //    if (_instance && _instance != this) {
+    //        D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceCount));
+    //        _isExtraCopy = true;
+    //        ExecutePriorToDestroy();
+    //        D.Log("Destroying {0}_{1}.", gameObject.name, InstanceCount);
+    //        Destroy(gameObject);
+    //    }
+    //    else {
+    //        D.Warn("{0}.DontDestroyOnLoad() about to be called.", GetType().Name);
+    //        DontDestroyOnLoad(gameObject);
+    //    }
+    //    return _isExtraCopy;
+    //}
+
+    #endregion
+
     #region IInstanceCount Members
 
     public int InstanceCount { get; private set; }
 
     #endregion
+
 
 }
 

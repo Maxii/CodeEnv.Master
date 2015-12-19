@@ -41,7 +41,7 @@ public class InputModeControlButton : AGuiButton {
     }
 
     protected override void HandleLeftClick() {
-        D.Assert(_gameMgr.CurrentScene != SceneLevel.LobbyScene);
+        D.Assert(_gameMgr.CurrentScene != _gameMgr.LobbyScene);
         GameInputMode gameInputMode;
         switch (_inputModeOnClick) {
             case GameSceneInputMode.PartialPopup:

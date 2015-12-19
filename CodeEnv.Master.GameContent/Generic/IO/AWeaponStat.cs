@@ -50,16 +50,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
         public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-    float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
             DamageStrength damagePotential)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
             DeliveryVehicleStrength = deliveryVehicleStrength;
             ReloadPeriod = reloadPeriod;
             DamagePotential = damagePotential;
-        }
-
-        protected virtual void Validate() {
-            //Arguments.ValidateForRange(Accuracy, Constants.ZeroF, Constants.OneHundredPercent);
         }
 
         public override sealed string ToString() {

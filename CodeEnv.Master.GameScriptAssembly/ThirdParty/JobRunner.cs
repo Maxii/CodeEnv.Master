@@ -17,10 +17,7 @@
 
 // default namespace
 
-using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Singleton. A MonoBehaviour-based proxy for executing Jobs as Coroutines.
@@ -28,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public class JobRunner : AMonoSingleton<JobRunner>, IJobRunner {
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();

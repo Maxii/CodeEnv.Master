@@ -52,7 +52,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     public ISystemItem System { get; private set; }
 
     private DetectionHandler _detectionHandler;
-    private ICtxControl _ctxControl;
     private SphereCollider _collider;
 
     #region Initialization
@@ -83,8 +82,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     protected override void InitializeOnFirstDiscernibleToUser() {
         base.InitializeOnFirstDiscernibleToUser();
-        InitializeContextMenu(Owner);
-
         float orbitalRadius = transform.localPosition.magnitude;
         // moons will have 2 OrbitSimulators as parents, 1 for the moon and 1 for the planet        
         Data.OrbitalSpeed = gameObject.GetSafeFirstComponentInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
@@ -94,8 +91,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         return new ItemHudManager(Publisher);
     }
 
-    private void InitializeContextMenu(Player owner) {
-        _ctxControl = new PlanetoidCtxControl(this);
+    protected override ICtxControl InitializeContextMenu(Player owner) {
+        return new PlanetoidCtxControl(this);
     }
 
     #endregion
@@ -110,6 +107,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     public PlanetoidReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+    protected override void ShowSelectedItemHud() {
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedPlanetoid, GetUserReport());
+    }
 
     protected override void SetDeadState() {
         CurrentState = PlanetoidState.Dead;
@@ -126,19 +127,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     #region Event and Property Change Handlers
-
-    protected override void OwnerPropChangingHandler(Player newOwner) {
-        base.OwnerPropChangingHandler(newOwner);
-        // there is only 1 type of ContextMenu for Planetoids so no need to generate a new one
-    }
-
-    protected override void HandleRightPressRelease() {
-        base.HandleRightPressRelease();
-        if (!_inputMgr.IsDragging) {
-            // right press release while not dragging means both press and release were over this object
-            _ctxControl.TryShowContextMenu();
-        }
-    }
 
     #endregion
 
@@ -185,9 +173,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
         if (_detectionHandler != null) {
             _detectionHandler.Dispose();
         }

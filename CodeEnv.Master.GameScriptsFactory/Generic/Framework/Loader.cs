@@ -32,14 +32,17 @@ public class Loader : AMonoSingleton<Loader> {
     [SerializeField]
     private int _targetFPS = 25;
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    //protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     private IList<IDisposable> _subscriptions;
     private PlayerPrefsManager _playerPrefsMgr;
+    private GameManager _gameMgr;
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
         _playerPrefsMgr = PlayerPrefsManager.Instance;
+        _gameMgr = GameManager.Instance;
     }
 
     protected override void InitializeOnAwake() {
@@ -66,13 +69,13 @@ public class Loader : AMonoSingleton<Loader> {
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
-        GameManager.Instance.sceneLoaded += SceneLoadedEventHandler;
+        _gameMgr.sceneLoaded += SceneLoadedEventHandler;
     }
 
     #region Event and Property Change Handlers
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {
-        D.Assert(GameManager.Instance.CurrentScene == SceneLevel.GameScene);
+        D.Assert(_gameMgr.CurrentScene == _gameMgr.GameScene);
         AssignAudioListener();
     }
 
@@ -89,7 +92,7 @@ public class Loader : AMonoSingleton<Loader> {
     #endregion
 
     private void AssignAudioListener() {
-        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
+        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
             var cameraAL = MainCameraControl.Instance.gameObject.AddComponent<AudioListener>();
             cameraAL.gameObject.SetActive(true);
             var loaderAL = gameObject.GetComponent<AudioListener>();

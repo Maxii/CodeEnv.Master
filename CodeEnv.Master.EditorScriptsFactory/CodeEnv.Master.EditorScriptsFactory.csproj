@@ -68,6 +68,13 @@
     <Compile Include="Game\StarbasesTableWindowEditor.cs" />
     <Compile Include="Game\SystemsTableWindowEditor.cs" />
     <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxMenuButtonInspector.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxMenuInspector.cs" />
+    <Compile Include="ThirdParty\ContextMenu\ACtxMenuItemInspector.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxMenus.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxObjectInspector.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxPickHandlerInspector.cs" />
+    <Compile Include="ThirdParty\ContextMenu\CtxPopupInspector.cs" />
     <Compile Include="ThirdParty\RotateMesh.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />
     <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />

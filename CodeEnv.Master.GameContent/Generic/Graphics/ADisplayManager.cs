@@ -109,12 +109,12 @@ namespace CodeEnv.Master.GameContent {
             IsPrimaryMeshInMainCameraLOS = (sender as ICameraLosChangedListener).InCameraLOS;
         }
 
-        protected virtual void IsDisplayEnabledPropChangedHandler() {
+        private void IsDisplayEnabledPropChangedHandler() {
             //D.Log("{0}.IsDisplayEnabled changed to {1}.", GetType().Name, IsDisplayEnabled);
             AssessComponentsToShowOrOperate();
         }
 
-        protected virtual void IsPrimaryMeshInMainCameraLosPropChangedHandler() {
+        private void IsPrimaryMeshInMainCameraLosPropChangedHandler() {
             AssessInMainCameraLOS();
             AssessComponentsToShowOrOperate();
         }

@@ -56,14 +56,14 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         get { return _remoteShipDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return 1; } }
-
     protected override ADiscernibleItem ItemForFindClosest { get { return _baseMenuOperator; } }
+
+    protected override string OperatorName { get { return _baseMenuOperator.FullName; } }
 
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_User(AUnitBaseCmdItem baseCmd)
-        : base(baseCmd.gameObject) {
+        : base(baseCmd.gameObject, uniqueSubmenusReqd: 1, toOffsetMenu: false) {
         _baseMenuOperator = baseCmd;
     }
 
@@ -149,14 +149,18 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         }
     }
 
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _baseMenuOperator.OptimalCameraViewingDistance = _baseMenuOperator.Position.DistanceToCamera();
+    }
+
     protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {
         base.HandleMenuSelection_SelectedItemAccess(itemID);
 
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = isTarget ? target.FullName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.FullName, directive.GetValueName(), msg);
+        string tgtMsg = isTarget ? target.FullName : "[none]";
+        D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.FullName, directive.GetValueName(), tgtMsg);
         _baseMenuOperator.CurrentOrder = new BaseOrder(directive, target);
     }
 

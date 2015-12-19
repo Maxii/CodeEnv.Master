@@ -80,7 +80,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     private VelocityRay _velocityRay;
     private CoursePlotLine _coursePlotLine;
     private FleetNavigator _navigator;
-    private ICtxControl _ctxControl;
     private FixedJoint _hqJoint;
 
     #region Initialization
@@ -105,22 +104,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         _subscriptions.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, FullSpeedPropChangedHandler));
     }
 
-    protected override void InitializeOnFirstDiscernibleToUser() {
-        base.InitializeOnFirstDiscernibleToUser();
-        InitializeContextMenu();
-    }
-
     protected override ItemHudManager InitializeHudManager() {
         return new ItemHudManager(Publisher);
     }
 
-    private void InitializeContextMenu() {
-        D.Assert(Owner != TempGameValues.NoPlayer);
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
-        }
-        _ctxControl = Owner.IsUser ? new FleetCtxControl_User(this) as ICtxControl : new FleetCtxControl_AI(this);
-        //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
+    protected override ICtxControl InitializeContextMenu(Player owner) {
+        D.Assert(owner != TempGameValues.NoPlayer);
+        return owner.IsUser ? new FleetCtxControl_User(this) as ICtxControl : new FleetCtxControl_AI(this);
     }
 
     private void InitializeHQAttachmentSystem() {
@@ -402,17 +392,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         }
     }
 
-    protected override void OwnerPropChangingHandler(Player newOwner) {
-        base.OwnerPropChangingHandler(newOwner);
-        if (_hasInitOnFirstDiscernibleToUserRun) {
-            // _ctxControl has already been initialized
-            if (Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner has changed between AI and Player so generate a new ctxControl
-                InitializeContextMenu();
-            }
-        }
-    }
-
     private void FullSpeedPropChangedHandler() {
         Elements.ForAll(e => (e as ShipItem).HandleFleetFullSpeedChanged());
     }
@@ -425,14 +404,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     protected override void IsSelectedPropChangedHandler() {
         base.IsSelectedPropChangedHandler();
         AssessShowCoursePlot();
-    }
-
-    protected override void HandleRightPressRelease() {
-        base.HandleRightPressRelease();
-        if (!_inputMgr.IsDragging) {
-            // right press release while not dragging means both press and release were over this object
-            _ctxControl.TryShowContextMenu();
-        }
     }
 
     #endregion
@@ -758,10 +729,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         base.Cleanup();
         if (_velocityRay != null) {
             _velocityRay.Dispose();
-            _velocityRay = null;
+            _velocityRay = null;    // OPTIMIZE needed?
         }
-        if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
+        if (_coursePlotLine != null) {
+            _coursePlotLine.Dispose();
         }
         _navigator.Dispose();
     }

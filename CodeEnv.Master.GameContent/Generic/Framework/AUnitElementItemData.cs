@@ -112,11 +112,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
-        public sealed override Topography Topography {  // avoids CA2214
-            get { return base.Topography; }
-            set { base.Topography = value; }
-        }
-
         protected AHullEquipment HullEquipment { get; private set; }
 
         /// <summary>
@@ -192,7 +187,6 @@ namespace CodeEnv.Master.GameContent {
             RecalcShieldRange();
             RecalcWeaponsRange();
         }
-
 
         #region Event and Property Change Handlers
 

@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override void Initialize() { }
+        protected sealed override void Initialize() { }
 
         protected override bool TryMakeColorizedText(ContentID contentID, FacilityReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);

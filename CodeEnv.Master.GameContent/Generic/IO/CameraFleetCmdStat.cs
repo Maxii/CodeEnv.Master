@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CameraFleetCmdStat.cs
-// Camera settings for a FleetCmd.
+// Camera stat for a FleetCmd.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Camera settings for a FleetCmd.
+    /// Camera stat for a FleetCmd.
     /// </summary>
-    public class CameraFleetCmdStat : CameraFollowableStat {
+    public class CameraFleetCmdStat : ACameraItemStat {
 
         /// <summary>
         /// ICameraFocusable's OptimalViewingDistance for a fleetCmd is calculated differently than most Items.
@@ -32,11 +32,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float OptimalViewingDistanceAdder { get; private set; }
 
-        /// <summary>
-        /// The OptimalViewingDistance for a fleetCmd has no meaning and will throw an InvalidOperationException.
-        /// Instead use OptimalViewingDistanceAdder.
-        /// </summary>
-        public override float OptimalViewingDistance { get { throw new InvalidOperationException(); } }
+        public float FollowDistanceDampener { get; private set; }
+
+        public float FollowRotationDampener { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CameraFleetCmdStat"/> class.
@@ -50,12 +48,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="followDistanceDampener">The follow distance dampener. Default is 3F.</param>
         /// <param name="followRotationDampener">The follow rotation dampener. Default is 1F.</param>
         public CameraFleetCmdStat(float minViewDistance, float optViewDistanceAdder, float fov, float followDistanceDampener = 3F, float followRotationDampener = 1F)
-            : base(minViewDistance, Constants.ZeroF, fov, followDistanceDampener, followRotationDampener) {
+            : base(minViewDistance, fov) {
+            Arguments.ValidateNotNegative(optViewDistanceAdder);
+            D.Assert(followDistanceDampener > Constants.OneF);
+            D.Assert(followRotationDampener > Constants.ZeroF);
+            FollowDistanceDampener = followRotationDampener;
+            FollowRotationDampener = followRotationDampener;
             OptimalViewingDistanceAdder = optViewDistanceAdder;
-        }
-
-        protected override void ValidateOptimalViewingDistance() {
-            // Does nothing. Overridden to avoid accessing OptimalViewingDistance
         }
 
         public override string ToString() {

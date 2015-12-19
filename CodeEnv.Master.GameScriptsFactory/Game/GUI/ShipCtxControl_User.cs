@@ -33,18 +33,18 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
                                                                                                 ShipDirective.Disband,
                                                                                                 ShipDirective.Refit,
                                                                                                 ShipDirective.Scuttle };
-
     protected override IEnumerable<ShipDirective> SelectedItemDirectives {
         get { return _selectedItemDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return 3; } }
-
     protected override ADiscernibleItem ItemForFindClosest { get { return _shipMenuOperator; } }
+
+    protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
+
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_User(ShipItem ship)
-        : base(ship.gameObject) {
+        : base(ship.gameObject, uniqueSubmenusReqd: 3, toOffsetMenu: true) {
         _shipMenuOperator = ship;
     }
 
@@ -91,6 +91,10 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {

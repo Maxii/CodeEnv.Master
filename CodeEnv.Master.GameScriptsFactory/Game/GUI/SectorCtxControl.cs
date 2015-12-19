@@ -28,22 +28,21 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SectorCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Patrol, 
-                                                                                                FleetDirective.Move, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Patrol,
+                                                                                                FleetDirective.Move,
                                                                                                 FleetDirective.Explore,
                                                                                                 FleetDirective.Guard };
-
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
+    protected override string OperatorName { get { return _sector.FullName; } }
 
     private SectorExaminer _sectorExaminerMenuOperator;
     private SectorItem _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
-        : base(sectorExaminer.gameObject) {
+        : base(sectorExaminer.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
         _sectorExaminerMenuOperator = sectorExaminer;
     }
 
@@ -75,6 +74,10 @@ public class SectorCtxControl : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        throw new NotImplementedException("SectorExaminer is not selectable or focusable.");
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

@@ -276,25 +276,40 @@ namespace CodeEnv.Master.GameContent {
 
         #region IDisposable
 
-        [NonSerialized]
-        protected bool _isDisposing = false;
         private bool _alreadyDisposed = false;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose() {
-            // Allows Dispose(isDisposing) to be called more than once
-            if (_alreadyDisposed) {
+
+            Dispose(true);
+
+            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+            // the finalization queue and prevent finalization code from 'disposing' a second time
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isExplicitlyDisposing) {
+            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
                 D.Warn("{0} has already been disposed.", GetType().Name);
                 return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
             }
 
-            _isDisposing = true;
-            Cleanup();
+            if (isExplicitlyDisposing) {
+                // Dispose of managed resources here as you have called Dispose() explicitly
+                Cleanup();
+            }
+
+            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+            // called Dispose(false) to cleanup unmanaged resources
 
             _alreadyDisposed = true;
-            GC.SuppressFinalize(this);
         }
 
         #endregion

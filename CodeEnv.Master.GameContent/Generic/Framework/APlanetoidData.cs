@@ -60,11 +60,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        public sealed override Topography Topography {  // avoids CA2214
-            get { return base.Topography; }
-            set { base.Topography = value; }
-        }
-
         private Index3D _sectorIndex;
         public override Index3D SectorIndex { get { return _sectorIndex; } }
 
@@ -113,8 +108,13 @@ namespace CodeEnv.Master.GameContent {
             _sectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }
 
+        //protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
+        //    return new ImprovingIntel(initialcoverage);
+        //}
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
-            return new ImprovingIntel(initialcoverage);
+            var intel = new ImprovingIntel();
+            intel.InitializeCoverage(initialcoverage);
+            return intel;
         }
 
     }

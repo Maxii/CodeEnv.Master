@@ -27,6 +27,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Singleton. The main manager for the game, implemented as a mono state machine.
@@ -85,6 +86,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public event EventHandler newGameBuilding;
 
+    public Scene GameScene { get; private set; }
+
+    public Scene LobbyScene { get; private set; }
+
     public GameSettings GameSettings { get; private set; }
 
     public bool IsSceneLoading { get; private set; }
@@ -101,7 +106,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     public IList<Player> AIPlayers { get { return AllPlayers.Where(p => !p.IsUser).ToList(); } }
 
-    public SceneLevel CurrentScene { get { return (SceneLevel)Application.loadedLevel; } }
+    public Scene CurrentScene {
+        get {
+            Scene scene = SceneManager.GetActiveScene();
+            //D.Log("CurrentScene is {0}.", scene.name);
+            D.Assert(scene != default(Scene));
+            return scene;
+        }
+    }
 
     private bool _isRunning;
     /// <summary>
@@ -149,7 +161,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public PlayerKnowledge UserPlayerKnowledge { get { return PlayersKnowledge.GetUserKnowledge(); } }
 
-    protected override bool IsPersistentAcrossScenes { get { return true; } }
+    //protected override bool IsPersistentAcrossScenes { get { return true; } }
+    public override bool IsPersistentAcrossScenes { get { return true; } }
 
     private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
     private GameTime _gameTime;
@@ -160,6 +173,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
         References.GameManager = Instance;
+        RefreshScenes();
         RefreshStaticReferences();
     }
 
@@ -201,7 +215,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (References.TrackingWidgetFactory != null) { (References.TrackingWidgetFactory as IDisposable).Dispose(); }
 
         References.InputHelper = GameInputHelper.Instance;
-        if (CurrentScene == SceneLevel.GameScene) {
+        if (CurrentScene == GameScene) {
             // not used in LobbyScene
             References.GeneralFactory = GeneralFactory.Instance;
             References.TrackingWidgetFactory = TrackingWidgetFactory.Instance;
@@ -230,19 +244,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private void __SimulateStartup() {
         //D.Log("{0}{1}.SimulateStartup() called.", GetType().Name, InstanceCount);
-        switch (CurrentScene) {
-            case SceneLevel.LobbyScene:
-                CurrentState = GameState.Lobby;
-                break;
-            case SceneLevel.GameScene:
-                GameSettings = __CreateStartupSimulationGameSettings();
-                CurrentState = GameState.Lobby;
-                CurrentState = GameState.Loading;
-                //CurrentState = GameState.Building;
-                //CurrentState = GameState.Waiting;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentScene));
+        if (CurrentScene == LobbyScene) {
+            CurrentState = GameState.Lobby;
+        }
+        else {
+            GameSettings = __CreateStartupSimulationGameSettings();
+            CurrentState = GameState.Lobby;
+            CurrentState = GameState.Loading;
+            // CurrentState progression occurs automatically from here
         }
     }
 
@@ -432,9 +441,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     /// <param name="level">The scene level.</param>
     void OnLevelWasLoaded(int level) {
-        if (_isExtraCopy) { return; }
-        D.Assert(CurrentScene == (SceneLevel)level);
-        //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneLevel)level).GetName(), CurrentState.GetName());
+        if (IsExtraCopy) { return; }
+        D.Assert(CurrentScene.buildIndex == level);
+        //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneID)level).GetValueName(), CurrentState.GetName());
+        RefreshScenes();
         RefreshStaticReferences();
         UponLevelLoaded(level);
     }
@@ -512,8 +522,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         GameSettings = settings;
         CurrentState = GameState.Loading;
 
-        //D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
-        Application.LoadLevel((int)SceneLevel.GameScene);
+        //D.Log("SceneManager.LoadScene({0}) being called.", SceneID.GameScene.GetValueName());
+        SceneManager.LoadScene(SceneID.GameScene.GetValueName(), LoadSceneMode.Single); //Application.LoadLevel(index) deprecated by Unity 5.3
+
     }
 
     #endregion
@@ -584,6 +595,11 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (PlayersKnowledge != null) {
             PlayersKnowledge.Dispose();
         }
+    }
+
+    private void RefreshScenes() {
+        LobbyScene = SceneManager.GetSceneByName(SceneID.LobbyScene.GetValueName());
+        GameScene = SceneManager.GetSceneByName(SceneID.GameScene.GetValueName());
     }
 
     #region Pausing System
@@ -694,7 +710,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Assert(!GameSettings.__IsStartupSimulation);
         LogEvent();
 
-        D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetValueName()));
+        D.Assert(CurrentScene == GameScene, "Scene transition to {0} not implemented.", CurrentScene.name);
         IsSceneLoading = false;
         OnSceneLoaded();
 
@@ -929,7 +945,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             __progressCheckJob.Dispose();
         }
         DisposeOfGlobals();
-        References.GameManager = null;  // last as Globals may use it when disposing
+        References.GameManager = null;  // last, as Globals may use it when disposing
     }
 
     /// <summary>
@@ -941,7 +957,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         WaitJobUtility.Instance.Dispose();
         GameInputHelper.Instance.Dispose();
 
-        if (CurrentScene == SceneLevel.GameScene) {
+        if (CurrentScene == GameScene) {
             // not used in LobbyScene
             GeneralFactory.Instance.Dispose();
             TrackingWidgetFactory.Instance.Dispose();
@@ -954,5 +970,18 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum containing both the name and index of a scene.
+    /// </summary>
+    public enum SceneID {
+        // None as the default requires that there is a None scene set to 0 in build settings.
+        LobbyScene = Constants.Zero,
+        GameScene = Constants.One
+    }
+
+    #endregion
 
 }

@@ -54,7 +54,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         Initialize();
     }
 
-    protected override void Initialize() {
+    protected sealed override void Initialize() {
         var reqdPrefabs = RequiredPrefabs.Instance;
 
         _fleetCmdPrefab = reqdPrefabs.fleetCmd.gameObject;

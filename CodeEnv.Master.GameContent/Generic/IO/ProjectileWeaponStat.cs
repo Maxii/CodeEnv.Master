@@ -48,17 +48,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         /// <param name="maxTraverseInaccuracy">The maximum traverse inaccuracy in degrees.</param>
         public ProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-    float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
             DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float maxTraverseInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance,
             deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag) {
-            MaxTraverseInaccuracy = maxTraverseInaccuracy;
-            Validate();
-        }
-
-        protected override void Validate() {
-            base.Validate();
             D.Warn(MaxTraverseInaccuracy > 5F, "{0} MaxTraverseInaccuracy of {1:0.#} is very high.", Name, MaxTraverseInaccuracy);
+            MaxTraverseInaccuracy = maxTraverseInaccuracy;
         }
 
     }

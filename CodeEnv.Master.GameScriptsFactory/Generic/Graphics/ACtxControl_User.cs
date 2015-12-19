@@ -41,7 +41,8 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     private Stack<CtxMenu> _unusedSubMenus;
 
-    public ACtxControl_User(GameObject ctxObjectGO) : base(ctxObjectGO) { }
+    public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, bool toOffsetMenu)
+        : base(ctxObjectGO, uniqueSubmenusReqd, toOffsetMenu) { }
 
     protected override void PopulateMenu_SelectedItemAccess() {
         base.PopulateMenu_SelectedItemAccess();
@@ -113,11 +114,11 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
                 topLevelItem.id = -1;  // needed to get item spacing right
                 topLevelItem.submenu = subMenu;
                 _nextAvailableItemId += submenuItemCount;
-                return false;   // targets are present in the submenu so don't disable
+                return false;   // targets are present to populate the submenu so don't disable
             }
             topLevelItem.isSubmenu = true;
             topLevelItem.id = -1;   // needed to get item spacing right
-            return true;    // targets are NOT present in the submenu so disable
+            return true;    // targets are NOT present to populate the submenu so disable
         }
         return false;   // directive doesn't use a submenu so don't disable
     }

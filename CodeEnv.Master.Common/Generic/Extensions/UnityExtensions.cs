@@ -206,6 +206,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static I GetSingleInterfaceInChildren<I>(this GameObject go, bool excludeSelf = false, bool includeInactive = false) where I : class {
             var interfaces = go.GetComponentsInChildren<I>(includeInactive);
+            //D.Log("Found {0} interfaces of type {1}.", interfaces.Count(), typeof(I).Name);
             if (excludeSelf) {
                 interfaces = interfaces.Where(i => (i as Component).gameObject != go).ToArray();
             }

@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\ACameraItemStat.cs" />
     <Compile Include="Generic\Framework\ADiscernibleItemData.cs" />
     <Compile Include="Generic\Framework\AUnitBaseCmdItemData.cs" />
     <Compile Include="Generic\IO\CameraFleetCmdStat.cs" />

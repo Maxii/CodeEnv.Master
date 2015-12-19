@@ -44,7 +44,7 @@ public class FpsReadout : AGuiLabelReadout {
     protected override void Awake() {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
-        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
+        if (GameManager.Instance.CurrentScene == GameManager.Instance.GameScene) {
             enabled = false;
             Subscribe();
         }

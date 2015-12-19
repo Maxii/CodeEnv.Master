@@ -56,11 +56,6 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        public sealed override Topography Topography {  // avoids CA2214
-            get { return base.Topography; }
-            set { base.Topography = value; }
-        }
-
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         /// <summary>
@@ -91,8 +86,13 @@ namespace CodeEnv.Master.GameContent {
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }
 
-        protected sealed override AIntel MakeIntel(IntelCoverage initialcoverage) {
-            return new ImprovingIntel(initialcoverage);
+        //protected sealed override AIntel MakeIntel(IntelCoverage initialcoverage) {
+        //    return new ImprovingIntel(initialcoverage);
+        //}
+        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
+            var intel = new ImprovingIntel();
+            intel.InitializeCoverage(initialcoverage);
+            return intel;
         }
 
         public override string ToString() {

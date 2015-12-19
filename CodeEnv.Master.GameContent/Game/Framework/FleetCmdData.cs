@@ -112,7 +112,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public FleetCmdData(Transform cmdTransform, UnitCmdStat cmdStat, CameraFollowableStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
+        public FleetCmdData(Transform cmdTransform, UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
             : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
         }
 

@@ -28,21 +28,28 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class UniverseCenterCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move, 
-                                                                                                FleetDirective.Patrol, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move,
+                                                                                                FleetDirective.Patrol,
                                                                                                 FleetDirective.Guard };
-
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
+    protected override string OperatorName { get { return _universeCenterMenuOperator.FullName; } }
 
     private UniverseCenterItem _universeCenterMenuOperator;
 
     public UniverseCenterCtxControl(UniverseCenterItem universeCenter)
-        : base(universeCenter.gameObject) {
+        : base(universeCenter.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
         _universeCenterMenuOperator = universeCenter;
+    }
+
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        if (_universeCenterMenuOperator.IsSelected) {
+            D.Assert(_universeCenterMenuOperator == selected as UniverseCenterItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
@@ -50,7 +57,7 @@ public class UniverseCenterCtxControl : ACtxControl {
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // not really needed
+    protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // OPTIMIZE not really needed
         switch (directive) {
             case FleetDirective.Patrol:
             case FleetDirective.Move:
@@ -59,6 +66,10 @@ public class UniverseCenterCtxControl : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _universeCenterMenuOperator.OptimalCameraViewingDistance = _universeCenterMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

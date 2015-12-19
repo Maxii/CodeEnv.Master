@@ -54,15 +54,6 @@ namespace CodeEnv.Master.GameContent {
             Item = item;
         }
 
-        /// <summary>
-        /// Assigns the values to this report. Some values may be acquired from
-        /// data, others from other Constructor parameters provided by the derived
-        /// class. The derived class is responsible for calling this method once all
-        /// Constructor parameters needed by it have been recorded.
-        /// </summary>
-        /// <param name="data">The data.</param>
-        protected abstract void AssignValues(AItemData data);
-        // can't call from this Constructor as derived class parameters not yet recorded
     }
 }
 

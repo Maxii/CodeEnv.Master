@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private Topography _topography;
-        public virtual Topography Topography {
+        public Topography Topography {
             get { return _topography; }
             set { SetProperty<Topography>(ref _topography, value, "Topography", TopographyPropChangedHandler); }
         }
@@ -59,6 +59,8 @@ namespace CodeEnv.Master.GameContent {
             Name = name;
             _owner = owner;
         }
+
+        public virtual void CommenceOperations() { }
 
         #region Event and Property Change Handlers
 

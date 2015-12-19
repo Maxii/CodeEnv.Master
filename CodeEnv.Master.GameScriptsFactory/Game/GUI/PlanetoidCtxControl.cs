@@ -28,22 +28,29 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class PlanetoidCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move, 
-                                                                                                FleetDirective.Attack, 
-                                                                                                FleetDirective.Guard, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move,
+                                                                                                FleetDirective.Attack,
+                                                                                                FleetDirective.Guard,
                                                                                                 FleetDirective.Explore };
-
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
+    protected override string OperatorName { get { return _planetoidMenuOperator.FullName; } }
 
     private APlanetoidItem _planetoidMenuOperator;
 
     public PlanetoidCtxControl(APlanetoidItem planetoid)
-        : base(planetoid.gameObject) {
+        : base(planetoid.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
         _planetoidMenuOperator = planetoid;
+    }
+
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        if (_planetoidMenuOperator.IsSelected) {
+            D.Assert(_planetoidMenuOperator == selected as APlanetoidItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
@@ -64,6 +71,10 @@ public class PlanetoidCtxControl : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _planetoidMenuOperator.OptimalCameraViewingDistance = _planetoidMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

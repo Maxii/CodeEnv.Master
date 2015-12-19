@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
             _xmlReader = StarbaseIconInfoXmlReader.Instance;
         }
 
-        protected override void Initialize() {
+        protected sealed override void Initialize() {
             base.Initialize();
         }
 

@@ -28,22 +28,29 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class StarCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move, 
-                                                                                                FleetDirective.Patrol, 
-                                                                                                FleetDirective.Guard, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move,
+                                                                                                FleetDirective.Patrol,
+                                                                                                FleetDirective.Guard,
                                                                                                 FleetDirective.Explore };
-
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
+    protected override string OperatorName { get { return _starMenuOperator.FullName; } }
 
     private StarItem _starMenuOperator;
 
     public StarCtxControl(StarItem star)
-        : base(star.gameObject) {
+        : base(star.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
         _starMenuOperator = star;
+    }
+
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        if (_starMenuOperator.IsSelected) {
+            D.Assert(_starMenuOperator == selected as StarItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
@@ -65,6 +72,10 @@ public class StarCtxControl : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _starMenuOperator.OptimalCameraViewingDistance = _starMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

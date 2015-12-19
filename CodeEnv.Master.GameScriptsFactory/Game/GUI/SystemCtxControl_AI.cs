@@ -31,21 +31,28 @@ public class SystemCtxControl_AI : ACtxControl {
                                                                                                 FleetDirective.Move,
                                                                                                 FleetDirective.Guard,
                                                                                                 FleetDirective.Explore };
-
     protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
         get { return _remoteFleetDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return 0; } }
+    protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
 
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;
 
     public SystemCtxControl_AI(SystemItem system)
-        : base(system.gameObject) {
-        D.Assert(system.Settlement != null);
+        : base(system.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: false) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
+        D.Assert(_settlement != null);
+    }
+
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        if (_systemMenuOperator.IsSelected) {
+            D.Assert(_systemMenuOperator == selected as SystemItem);
+            return true;
+        }
+        return false;
     }
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
@@ -65,6 +72,10 @@ public class SystemCtxControl_AI : ACtxControl {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _systemMenuOperator.OptimalCameraViewingDistance = _systemMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {

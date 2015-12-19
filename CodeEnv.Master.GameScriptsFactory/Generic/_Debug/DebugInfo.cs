@@ -29,6 +29,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     private StringBuilder _debugInfoContent;
     private IList<IDisposable> _subscriptions;
+    private GameManager _gameMgr;
 
     #region Initialization
 
@@ -38,7 +39,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        //TODO  
+        _gameMgr = GameManager.Instance;
     }
 
     /// <summary>
@@ -47,22 +48,22 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        if (GameManager.Instance.CurrentScene == SceneLevel.LobbyScene) {
+        if (_gameMgr.CurrentScene == _gameMgr.LobbyScene) {
             Subscribe();
             BuildContent();
         }
         else {
             // GameScene not ready to BuildContent on Awake
-            GameManager.Instance.isRunningOneShot += IsRunningEventHandler;
+            _gameMgr.isRunningOneShot += IsRunningEventHandler;
         }
     }
     #endregion
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, PauseStatePropChangedHandler));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, PauseStatePropChangedHandler));
         _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
-        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
+        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
             _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
@@ -73,9 +74,9 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     private void BuildContent() {
         _debugInfoContent = _debugInfoContent ?? new StringBuilder();
         _debugInfoContent.Clear();
-        _debugInfoContent.AppendLine("PauseState: " + GameManager.Instance.PauseState.GetValueName());
+        _debugInfoContent.AppendLine("PauseState: " + _gameMgr.PauseState.GetValueName());
         _debugInfoContent.AppendLine(ConstructQualityText());
-        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
+        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
             _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetValueName());
             _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetValueName());
             _debugInfoContent.AppendLine(ConstructCameraSectorText());

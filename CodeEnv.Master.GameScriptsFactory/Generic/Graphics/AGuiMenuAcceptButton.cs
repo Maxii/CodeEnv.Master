@@ -40,7 +40,7 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        _panel = gameObject.GetSafeFirstComponentInParents<UIPanel>();  // more than one panel in parents
+        _panel = gameObject.GetSafeFirstComponentInParents<UIPanel>();  // more than one _panel in parents
         _checkboxes = _panel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         _popupLists = _panel.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         _sliders = _panel.gameObject.GetComponentsInChildren<UISlider>(includeInactive: true);

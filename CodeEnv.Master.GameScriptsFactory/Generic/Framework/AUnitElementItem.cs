@@ -91,24 +91,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
     }
 
-    protected sealed override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = MakeDisplayManager();
+    protected override ADisplayManager InitializeDisplayManager() {
+        var dMgr = MakeDisplayManager();
         if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-            displayMgr.IconInfo = MakeIconInfo();
-            SubscribeToIconEvents(displayMgr.Icon);
+            dMgr.IconInfo = MakeIconInfo();
+            SubscribeToIconEvents(dMgr.Icon);
         }
-        return displayMgr;
+        return dMgr;
     }
 
+    /// <summary>
+    /// Instantiates and returns the appropriate ElementDisplayMgr.
+    /// </summary>
+    /// <returns></returns>
     protected abstract AIconDisplayManager MakeDisplayManager();
 
-    //private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-    //    var iconEventListener = icon.EventListener;
-    //    iconEventListener.onHover += (go, isOver) => OnHover(isOver);
-    //    iconEventListener.onClick += (go) => OnClick();
-    //    iconEventListener.onDoubleClick += (go) => OnDoubleClick();
-    //    iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
-    //}
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
@@ -122,7 +119,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collider.enabled = true;
-        // AMortalItem.CommenceOperations() calls Data.CommenceOperations for all derived Items
     }
 
     /// <summary>
@@ -132,15 +128,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// <param name="unitContainer">The unit container.</param>
     protected internal virtual void AttachAsChildOf(Transform unitContainer) {
         transform.parent = unitContainer;
-    }
-
-    protected override void OwnerPropChangedHandler() {
-        base.OwnerPropChangedHandler();
-        if (DisplayMgr != null) {
-            DisplayMgr.Color = Owner.Color;
-            AssessIcon();
-        }
-        // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
     protected override void PrepareForOnDeathNotification() {
@@ -421,6 +408,32 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected abstract IconInfo MakeIconInfo();
 
+    public override void AssessHighlighting() {
+        if (IsDiscernibleToUser) {
+            if (IsFocus) {
+                if (IsSelected) {
+                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
+                    return;
+                }
+                if (Command.IsSelected) {
+                    ShowHighlights(HighlightID.Focused, HighlightID.UnitElement);
+                    return;
+                }
+                ShowHighlights(HighlightID.Focused);
+                return;
+            }
+            if (IsSelected) {
+                ShowHighlights(HighlightID.Selected);
+                return;
+            }
+            if (Command.IsSelected) {
+                ShowHighlights(HighlightID.UnitElement);
+                return;
+            }
+        }
+        ShowHighlights(HighlightID.None);
+    }
+
     #region Event and Property Change Handlers
 
     private void IsHQPropChangedHandler() {
@@ -431,6 +444,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         if (isHQChanged != null) {
             isHQChanged(this, new EventArgs());
         }
+    }
+
+    protected override void OwnerPropChangedHandler() {
+        base.OwnerPropChangedHandler();
+        if (DisplayMgr != null) {
+            DisplayMgr.Color = Owner.Color;
+            AssessIcon();
+        }
+        // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
     private void WeaponReadyToFireEventHandler(object sender, AWeapon.WeaponFiringSolutionEventArgs e) {

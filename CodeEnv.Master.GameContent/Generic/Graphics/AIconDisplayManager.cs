@@ -66,6 +66,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void IconInfoPropChangedHandler() {
+            //D.Assert(_isInitialized, "{0} must be initialized before setting IconInfo.", GetType().Name);
             if (Icon != null) {
                 // icon already present
                 if (IconInfo != null) {

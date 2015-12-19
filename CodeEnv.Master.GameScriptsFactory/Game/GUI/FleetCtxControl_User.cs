@@ -30,13 +30,13 @@ using UnityEngine;
 public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private static FleetDirective[] _menuOperatorDirectivesAvailable = new FleetDirective[] {   FleetDirective.Join,
-                                                                                                FleetDirective.Repair, 
+                                                                                                FleetDirective.Repair,
                                                                                                 FleetDirective.Disband,
                                                                                                 FleetDirective.Refit,
                                                                                                 FleetDirective.Scuttle };
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Join, 
-                                                                                                FleetDirective.Move, 
+    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Join,
+                                                                                                FleetDirective.Move,
                                                                                                 FleetDirective.Guard };
 
     private static ShipDirective[] _remoteShipDirectivesAvailable = new ShipDirective[] { ShipDirective.Join };
@@ -53,13 +53,14 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         get { return _remoteShipDirectivesAvailable; }
     }
 
-    protected override int UniqueSubmenuCountReqd { get { return 4; } }
+    protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
 
     protected override ADiscernibleItem ItemForFindClosest { get { return _fleetMenuOperator; } }
+
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 4, toOffsetMenu: false) {
         _fleetMenuOperator = fleetCmd;
     }
 
@@ -138,6 +139,10 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuSelection_OptimalFocusDistance() {
+        _fleetMenuOperator.OptimalCameraViewingDistance = _fleetMenuOperator.Position.DistanceToCamera();
     }
 
     protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {

@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISelectable, IUnitAttackableTarget {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUnitAttackableTarget {
 
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
@@ -113,9 +113,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     protected override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = new UnitCmdDisplayManager(this, MakeIconInfo(), Owner.Color);
-        SubscribeToIconEvents(displayMgr.Icon);
-        return displayMgr;
+        var dMgr = new UnitCmdDisplayManager(this, MakeIconInfo(), Owner.Color);
+        SubscribeToIconEvents(dMgr.Icon);
+        return dMgr;
     }
 
     protected override EffectsManager InitializeEffectsManager() {
@@ -131,7 +131,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     #endregion
-
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -259,16 +258,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
 
-    /// <summary>
-    /// Shows the SelectedItemHudWindow for this item.
-    /// </summary>
-    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
-    /// handled by the SelectionMgr when there is no longer an item selected.
-    /// </remarks>
-    protected abstract void ShowSelectedItemHud();
-
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
 
@@ -286,24 +275,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
     }
 
     protected abstract IconInfo MakeIconInfo();
-
-    public override void AssessHighlighting() {
-        if (IsDiscernibleToUser) {
-            if (IsFocus) {
-                if (IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
-                    return;
-                }
-                ShowHighlights(HighlightID.Focused);
-                return;
-            }
-            if (IsSelected) {
-                ShowHighlights(HighlightID.Selected);
-                return;
-            }
-        }
-        ShowHighlights(HighlightID.None);
-    }
 
     private void ShowTrackingLabel(bool toShow) {
         //D.Log("{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
@@ -344,7 +315,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         UponTargetDeath(deadTarget);
     }
 
-
     protected override void OwnerPropChangedHandler() {
         base.OwnerPropChangedHandler();
         if (_trackingLabel != null) {
@@ -374,18 +344,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
         ShowTrackingLabel(IsDiscernibleToUser);
     }
 
-    protected virtual void IsSelectedPropChangedHandler() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessHighlighting();
+    protected override void IsSelectedPropChangedHandler() {
+        base.IsSelectedPropChangedHandler();
         Elements.ForAll(e => e.AssessHighlighting());
-    }
-
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
-        IsSelected = true;
     }
 
     #endregion
@@ -520,17 +481,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISel
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible { get { return Data.GetUserIntelCoverage() != IntelCoverage.None; } }
-
-    #endregion
-
-    #region ISelectable Members
-
-    private bool _isSelected;
-    public bool IsSelected {
-        get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
-    }
+    public override bool IsRetainedFocusEligible { get { return GetUserIntelCoverage() != IntelCoverage.None; } }
 
     #endregion
 

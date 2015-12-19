@@ -33,7 +33,7 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
         Initialize();
     }
 
-    protected override void Initialize() {
+    protected sealed override void Initialize() {
         _sectorPrefab = RequiredPrefabs.Instance.sector.gameObject;
     }
 

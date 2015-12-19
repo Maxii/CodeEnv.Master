@@ -66,7 +66,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         Initialize();
     }
 
-    protected override void Initialize() {
+    protected sealed override void Initialize() {
         var reqdPrefabs = RequiredPrefabs.Instance;
         _starPrefabs = reqdPrefabs.stars;
         _planetPrefabs = reqdPrefabs.planets;
