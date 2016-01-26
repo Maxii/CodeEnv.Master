@@ -88,7 +88,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
         // popupList.Clear();  // This just clears an initially empty items list and does nothing about what is showing in the editor.
         // Unfortunately, the UIPopupListInspector reads what is in the editor's text box and adds it to the items list every time OnInspectorGui()
         // is called. Accordingly, I have to manually clear the editor text box of content if I don't want the onChange event raised on Start().
-        D.Assert(!Utility.CheckForContent<string>(popupList.items), "{0}: UIPopupList Inspector content must be empty.".Inject(GetType().Name), this);
+        D.Assert(!Utility.CheckForContent<string>(popupList.items), gameObject, "{0}: UIPopupList Inspector content must be empty.", GetType().Name);
         return popupList;
     }
 

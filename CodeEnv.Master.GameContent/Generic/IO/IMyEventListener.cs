@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMyNguiEventListener.cs
-// Interface for easy access to MyNguiEventListener.
+// File: IMyEventListener.cs
+// Interface for easy access to MyEventListener.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for easy access to MyNguiEventListener.
+    /// Interface for easy access to MyEventListener.
     /// </summary>
-    public interface IMyNguiEventListener {
+    public interface IMyEventListener {
 
         event Action<GameObject> onSubmit;
         event Action<GameObject> onClick;
@@ -39,6 +39,12 @@ namespace CodeEnv.Master.GameContent {
         event Action<GameObject, GameObject> onDrop;
         event Action<GameObject, KeyCode> onKey;
         event Action<GameObject, bool> onTooltip;
+
+        event Action<GameObject, Collider> onTriggerEnter;
+        event Action<GameObject, Collider> onTriggerExit;
+        event Action<GameObject, Collision> onCollisionEnter;
+        event Action<GameObject, Collision> onCollisionExit;
+
 
     }
 }

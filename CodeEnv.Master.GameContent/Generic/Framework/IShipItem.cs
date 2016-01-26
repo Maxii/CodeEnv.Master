@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IShipItem : IUnitElementItem {
 
+        float CollisionDetectionZoneRadius { get; }
+
     }
 }
 

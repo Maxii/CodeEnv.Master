@@ -88,7 +88,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private bool _isCurrentImpact;
 
     /// <summary>
-    /// Indicates whether the intended target <c>Target</c> has been hit one or more times by this beam.
+    /// Indicates whether the intended <c>Target</c> has been hit one or more times by this beam.
     /// Used to AssessCombatResults() when the beam is terminated.
     /// </summary>
     private bool _isIntendedTargetHit;
@@ -366,7 +366,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _operatingAudioSource.Stop();
         }
         AssessCombatResults();
-        //Weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
         Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
         Weapon.HandleFiringComplete(this);
     }

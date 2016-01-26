@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         ICameraLosChangedListener CameraLosChangedListener { get; }
 
-        IMyNguiEventListener EventListener { get; }
+        IMyEventListener EventListener { get; }
 
     }
 }

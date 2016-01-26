@@ -38,9 +38,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _population, value, "Population"); }
         }
 
-        public int Capacity { get { return SystemData.Capacity; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
+        public int Capacity { get { return ParentSystemData.Capacity; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
 
-        public ResourceYield Resources { get { return SystemData.Resources; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
+        public ResourceYield Resources { get { return ParentSystemData.Resources; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
 
         private float _approval;
         public float Approval {
@@ -48,30 +48,30 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
         }
 
-        public SystemData SystemData { private get; set; }
+        public SystemData ParentSystemData { private get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="cmdStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner)
-            : this(cmdTransform, cmdStat, cameraStat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        /// <param name="cameraStat">The camera stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        public SettlementCmdData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, SettlementCmdStat cmdStat)
+            : this(cmdTransform, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="cmdStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
+        /// <param name="cmdStat">The stat.</param>
+        public SettlementCmdData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, SettlementCmdStat cmdStat)
+            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) {
             Population = cmdStat.Population;
         }
 

@@ -64,9 +64,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     /*******************************************************************************************************************************
-     * HOW TO INITIATE DEATH: Set IsOperational to false. Do not use OnDeath or set a state of Dead. The primary reason is 
-     * to make sure IsOperational immediately reflects the death and can be used right away to check for it. 
-     * Use of a state of Dead can also work as it is changed immediately too. 
+     * HOW TO INITIATE DEATH: Set IsOperational to false. Do not use OnDeath, HandleDeath or set a state of Dead. 
+     * The primary reason is to make sure IsOperational immediately reflects the death and can be used right away to check for it. 
+     * Use of CurrentState == Dead can also be checked as it is changed immediately too. 
      * The previous implementation had IsOperational being set when the Dead EnterState ran, which could be a whole 
      * frame later, given the way the state machine works. This approach keeps IsOperational and Dead in sync.
      ********************************************************************************************************************************/
@@ -77,13 +77,36 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     protected abstract void SetDeadState();
 
     /// <summary>
-    /// Executes any preparation work prior to broadcasting the OnDeath event.
+    /// Execute any preparation work that must occur prior to others hearing about this Item's death.
+    /// The normal death shutdown process is handled by HandleDeath() which is called by the 
+    /// Item's Dead_EnterState method up to a frame later.
     /// </summary>
-    protected virtual void PrepareForOnDeathNotification() {
-        if (IsFocus) {
-            References.MainCameraControl.CurrentFocus = null;
-        }
+    protected virtual void PrepareForDeathNotification() {
+        //if (IsSelected) {
+        //    SelectionManager.Instance.CurrentSelection = null;  // UNCLEAR can this wait until Dead_EnterState calls HandleDeath?
+        //}
+    }
+
+    /// <summary>
+    /// Handles the death shutdown process, called by Dead_EnterState.
+    /// </summary>
+    protected virtual void HandleDeath() {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
+        if (IsFocus) {
+            HandleDeathWhileIsFocus();
+        }
+        if (IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;  // UNCLEAR can this wait until Dead_EnterState calls HandleDeath?
+        }
+    }
+
+    /// <summary>
+    /// Handles the death of this item when it is the focus. Allows override
+    /// by AUnitElementItem so it can assign its command as the focus to replace it.
+    /// </summary>
+    protected virtual void HandleDeathWhileIsFocus() {
+        D.Assert(IsFocus);
+        References.MainCameraControl.CurrentFocus = null;
     }
 
     #region Event and Property Change Handlers
@@ -96,13 +119,15 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     protected virtual void HealthPropChangedHandler() { }
 
-    protected override void IsOperationalPropChangedHandler() {
+    protected sealed override void IsOperationalPropChangedHandler() {
+        base.IsOperationalPropChangedHandler();
         if (!IsOperational) {
             D.Log("{0} is initiating death sequence.", FullName);
             SetDeadState();
-            PrepareForOnDeathNotification();
+            PrepareForDeathNotification();
             OnDeath();
-            CleanupAfterOnDeathNotification();
+            CleanupAfterDeathNotification();
+            // HandleDeath gets called after this, from Dead_EnterState
         }
     }
 
@@ -121,9 +146,11 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     #endregion
 
     /// <summary>
-    /// Executes any cleanup work required after the OnDeath event has been broadcast.
+    /// Execute any cleanup work that must occur immediately after others hearing about this Item's death.
+    /// The normal death shutdown process is handled by HandleDeath() which is called by the 
+    /// Item's Dead_EnterState method up to a frame later.
     /// </summary>
-    protected virtual void CleanupAfterOnDeathNotification() { }
+    protected virtual void CleanupAfterDeathNotification() { }
 
     #region Attack Simulation
 
@@ -162,13 +189,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     /// <param name="damageSeverity">The severity of the damage as a percentage of the item's hit points when hit.</param>
     protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
-        Arguments.ValidateForRange(damageSeverity, Constants.ZeroF, Constants.OneHundredPercent);
-        //var passiveCMSurvivalChance = Constants.OneHundredPercent - damageSeverity;
+        Arguments.ValidateForRange(damageSeverity, Constants.ZeroPercent, Constants.OneHundredPercent);
         var passiveCmDamageChance = damageSeverity;
-        //var operationalPassiveCMs = Data.PassiveCountermeasures.Where(cm => cm.IsOperational);
         var undamagedPassiveCMs = Data.PassiveCountermeasures.Where(cm => !cm.IsDamaged);
         undamagedPassiveCMs.ForAll(cm => cm.IsDamaged = RandomExtended.Chance(passiveCmDamageChance));
-        //operationalPassiveCMs.ForAll(cm => cm.IsOperational = RandomExtended.Chance(passiveCMSurvivalChance));
     }
 
     #endregion

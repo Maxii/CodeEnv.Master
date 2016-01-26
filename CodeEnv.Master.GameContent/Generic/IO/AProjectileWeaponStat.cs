@@ -57,9 +57,9 @@ namespace CodeEnv.Master.GameContent {
         public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
             float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential) {
-            D.Assert(OrdnanceMaxSpeed > Constants.ZeroF);
-            D.Assert(OrdnanceMass > Constants.ZeroF);
-            D.Assert(OrdnanceDrag > Constants.ZeroF);
+            D.Assert(ordnanceMaxSpeed > Constants.ZeroF);
+            D.Assert(ordnanceMass > Constants.ZeroF);
+            D.Assert(ordnanceDrag > Constants.ZeroF);
             OrdnanceMaxSpeed = ordnanceMaxSpeed;
             OrdnanceMass = ordnanceMass;
             OrdnanceDrag = ordnanceDrag;

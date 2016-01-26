@@ -95,7 +95,9 @@ namespace CodeEnv.Master.GameContent {
 
         public Topography Topography { get; private set; }
 
-        public float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
+        public float RadiusAroundTargetContainingKnownObstacles { get { return Constants.ZeroF; } }
+
+        public float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
             return TempGameValues.WaypointCloseEnoughDistance;
         }
 

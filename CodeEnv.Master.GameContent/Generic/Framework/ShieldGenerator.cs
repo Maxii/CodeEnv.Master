@@ -27,7 +27,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShieldGenerator : ARangedEquipment, ICountermeasure, IDisposable {
 
-        //private static float _hoursPerSecond = GameTime.HoursPerSecond;
         private static string _nameFormat = "{0}[{1}({2:0.})]";
 
         /// <summary>

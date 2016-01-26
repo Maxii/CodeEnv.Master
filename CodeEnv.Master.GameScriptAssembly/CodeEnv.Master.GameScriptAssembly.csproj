@@ -64,7 +64,6 @@
     <Compile Include="Game\Framework\AIntelItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />
     <Compile Include="Generic\_Debug\DrawTriggerCollider.cs" />
-    <Compile Include="Game\Framework\FormationStationMonitor.cs" />
     <Compile Include="Game\Framework\MovingOrbitSimulator.cs" />
     <Compile Include="Game\Framework\MovingShipOrbitSimulator.cs" />
     <Compile Include="Game\Framework\OrbitSimulator.cs" />

@@ -16,14 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-
     /// <summary>
     /// Interface for easy access to APlanetoidItems.
     /// </summary>
     public interface IPlanetoidItem : IMortalItem {
 
-        ISystemItem System { get; }
+        ISystemItem ParentSystem { get; }
 
     }
 }

@@ -316,7 +316,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 D.Error("{0}'s GameState Progression Readiness System has timed out.", GetType().Name);
             }
             else {
-                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.".Inject(GetType().Name, InstanceCount, typeof(GameState).Name, CurrentState.GetValueName()), true);
+                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.", GetType().Name, InstanceCount, typeof(GameState).Name, CurrentState.GetValueName());
                 //D.Log("{0}'s GameState Progression Readiness System has successfully completed.", GetType().Name);
             }
         });
@@ -335,11 +335,11 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(CurrentState), "{0} key not found.", CurrentState.GetValueName());
             // this will tell me what state failed, whereas failing while accessing the dictionary won't
             IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[CurrentState];
-            //D.Log("{0}_{1}.AssessReadinessToProgressGameState() called. GameState = {2}, UnreadyElements count = {3}.", GetType().Name, InstanceCount, CurrentState.GetName(), unreadyElements.Count);
+            //D.Log("{0}_{1}.AssessReadinessToProgressGameState() called. GameState = {2}, UnreadyElements count = {3}.", GetType().Name, InstanceCount, CurrentState.GetValueName(), unreadyElements.Count);
             if (unreadyElements != null && unreadyElements.Count == Constants.Zero) {
-                //D.Log("State prior to ProgressState = {0}.", CurrentState.GetName());
+                //D.Log("State prior to ProgressState = {0}.", CurrentState.GetValueName());
                 ProgressState();
-                //D.Log("State after ProgressState = {0}.", CurrentState.GetName());
+                //D.Log("State after ProgressState = {0}.", CurrentState.GetValueName());
             }
             __CheckTime(startTime);
             yield return null;
@@ -361,13 +361,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (!isReady) {
             D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateUntilReady.GetValueName(), source.name));
             unreadyElements.Add(source);
-            //D.Log("{0} has registered as unready to progress beyond {1}.", source.name, maxGameStateUntilReady.GetName());
+            //D.Log("{0} has registered as unready to progress beyond {1}.", source.name, maxGameStateUntilReady.GetValueName());
         }
         else {
             D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetValueName(), source.name));
             unreadyElements.Remove(source);
             //D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.",
-            //source.name, maxGameStateUntilReady.GetName(), unreadyElements.Any() ? unreadyElements.Select(m => m.gameObject.name).Concatenate() : "None");
+            //source.name, maxGameStateUntilReady.GetValueName(), unreadyElements.Any() ? unreadyElements.Select(m => m.gameObject.name).Concatenate() : "None");
         }
     }
 
@@ -443,7 +443,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void OnLevelWasLoaded(int level) {
         if (IsExtraCopy) { return; }
         D.Assert(CurrentScene.buildIndex == level);
-        //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneID)level).GetValueName(), CurrentState.GetName());
+        //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneID)level).GetValueName(), CurrentState.GetValueName());
         RefreshScenes();
         RefreshStaticReferences();
         UponLevelLoaded(level);

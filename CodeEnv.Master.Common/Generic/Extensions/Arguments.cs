@@ -121,7 +121,6 @@ namespace CodeEnv.Master.Common {
                 if (n < Constants.Zero) {
                     string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                     throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(n, callingMethodName));
-
                 }
             });
         }

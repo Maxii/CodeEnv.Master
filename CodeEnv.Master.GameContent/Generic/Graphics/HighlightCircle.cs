@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
@@ -75,6 +76,22 @@ namespace CodeEnv.Master.GameContent {
             Widths.Populate<float>(width);
             Colors = new List<GameColor>(maxCircles);
             Colors.Populate<GameColor>(color);
+            //InitializeCamera();
+        }
+
+        /// <summary>
+        /// Initializes the camera so highlight circles appear behind UI elements.
+        /// <see cref="http://www.tasharen.com/forum/index.php?topic=8476.0"/>
+        /// FIXME Currently doesn't work as Vectrosity 5 only supports RenderMode.ScreenSpace-Overlay.
+        /// </summary>
+        private void InitializeCamera() {
+            if (VectorLine.canvas == null) {
+                D.Log("Initializing HighlightCircle Camera and RenderMode.");
+                VectorLine.SetCanvasCamera(References.GuiCameraControl.GuiCamera);  // sets up the canvas
+                //VectorLine.canvas.renderMode = RenderMode.ScreenSpaceCamera;    // SetCanvasCamera() sets mode to ScreenSpaceCamera
+                VectorLine.canvas.planeDistance = 1;
+                VectorLine.canvas.sortingOrder = -1;
+            }
         }
 
         /// <summary>
@@ -84,7 +101,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="index">The index of the circle to show or hide.</param>
         public void Show(bool toShow, int index) {
             Arguments.ValidateForRange(index, Constants.Zero, MaxCircles - 1);
-            if (_line == null) { Initialize(); }
+            if (_line == null) {
+                InitializeLine();
+                InitializeColors();
+                InitializeWidths();
+            }
 
             if (toShow) {
                 _drawJob = _drawJob ?? new Job(DrawCircles(), toStart: true, jobCompleted: delegate {
@@ -162,15 +183,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override void Initialize() {
+        private void InitializeLine() {
             int pointsCount = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
             _line = new VectorLine(LineName, new List<Vector2>(pointsCount), texture, 1F, LineType.Discrete);
             _line.active = false;
 
             _circlesToShow = new bool[MaxCircles];
-
-            InitializeColors();
-            InitializeWidths();
         }
 
         private void InitializeColors() {

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -30,7 +31,7 @@ public abstract class ASelectedItemForm : AReportForm {
 
     protected override void InitializeNameGuiElement(AGuiElement e) {
         base.InitializeNameGuiElement(e);
-        MyNguiEventListener.Get(e.gameObject).onDoubleClick += (go) => NameDoubleClickEventHandler();
+        MyEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
     }
 
     protected override void InitializeNonGuiElementMembers() {
@@ -46,11 +47,16 @@ public abstract class ASelectedItemForm : AReportForm {
 
     #region Event and Property Change Handlers
 
-    private void NameDoubleClickEventHandler() {
+    private void NameDoubleClickEventHandler(GameObject go) {
         (Report.Item as ICameraFocusable).IsFocus = true;
     }
 
     #endregion
+
+    protected override void CleanupNameGuiElement(AGuiElement e) {
+        base.CleanupNameGuiElement(e);
+        MyEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;
+    }
 
 }
 

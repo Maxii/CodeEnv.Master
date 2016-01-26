@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Draw3D() {
-            //D.Log("{0}.Draw3D() called. Capacity = {1}, Count = {2}.", GetType().Name, _line.points3.Capacity, _line.points3.Count);
+            //D.Log("{0}.Draw3D() called. Capacity = {1}, Count = {2}, SpeedValue = {3}.", GetType().Name, _line.points3.Capacity, _line.points3.Count, _speed.Value);
             _line.points3[1] = Vector3.forward * _speed.Value;
             base.Draw3D();
         }

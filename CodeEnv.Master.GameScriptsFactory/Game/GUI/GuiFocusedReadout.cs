@@ -39,33 +39,17 @@ public class GuiFocusedReadout : AGuiLabelReadout {
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanging<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, CurrentFocusPropChangingHandler));
         _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, CurrentFocusPropChangedHandler));
     }
 
+    // Note: No need to handle the death event of an ICameraFocusable as they always null MainCameraControl.Focus when dieing
+    // This generates a Focus Prop Changed event which handles this readout
+
     #region Event and Property Change Handlers
-
-    private void CurrentFocusPropChangingHandler(ICameraFocusable newFocus) {
-        var previousFocus = MainCameraControl.Instance.CurrentFocus;
-        if (previousFocus != null && previousFocus.IsRetainedFocusEligible) {
-            var previousMortalFocus = previousFocus as IMortalItem;
-            if (previousMortalFocus != null) {
-
-                previousMortalFocus.deathOneShot -= RetainedFocusDeathEventHandler;
-            }
-        }
-    }
 
     private void CurrentFocusPropChangedHandler() {
         ICameraFocusable focus = MainCameraControl.Instance.CurrentFocus;
         TryRetainingFocus(focus);
-    }
-
-    private void RetainedFocusDeathEventHandler(object sender, EventArgs e) {
-        ICameraFocusable focusableItem = sender as ICameraFocusable;
-        D.Assert(focusableItem == _retainedFocus);
-        RefreshReadout(string.Empty);
-        _retainedFocus = null;
     }
 
     private void HandleMiddleClick() {
@@ -89,11 +73,6 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     private void TryRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {
             _retainedFocus = focus;
-            var mortalFocus = focus as IMortalItem;
-            if (mortalFocus != null) {
-
-                mortalFocus.deathOneShot += RetainedFocusDeathEventHandler;
-            }
             RefreshReadout(focus.DisplayName);
         }
     }
@@ -105,13 +84,6 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     private void Unsubscribe() {
         _subscriptions.ForAll(s => s.Dispose());
         _subscriptions.Clear();
-        if (_retainedFocus != null) {
-            var mortalRetainedFocus = _retainedFocus as IMortalItem;
-            if (mortalRetainedFocus != null) {
-                //mortalRetainedFocus.onDeathOneShot -= OnRetainedFocusDeath;
-                mortalRetainedFocus.deathOneShot -= RetainedFocusDeathEventHandler;
-            }
-        }
     }
 
     public override string ToString() {

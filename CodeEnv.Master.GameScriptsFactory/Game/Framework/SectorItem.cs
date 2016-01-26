@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -32,6 +33,18 @@ public class SectorItem : AItem, ISectorItem {
     }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
+
+    private SystemItem _system;
+    /// <summary>
+    /// The System present in this Sector, if any.
+    /// </summary>
+    public SystemItem System {
+        get { return _system; }
+        set {
+            D.Assert(_system == null);    // one time only, if at all 
+            SetProperty<SystemItem>(ref _system, value, "System", SystemPropChangedHandler);
+        }
+    }
 
     private SectorPublisher _publisher;
     public SectorPublisher Publisher {
@@ -53,7 +66,17 @@ public class SectorItem : AItem, ISectorItem {
 
     public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+    private void SystemPropChangedHandler() {
+        Data.SystemData = System.Data;
+        // The owner of a sector and all it's celestial objects is determined by the ownership of the System, if any
+    }
+
     #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        Data.Dispose();
+    }
 
     #endregion
 
@@ -63,9 +86,12 @@ public class SectorItem : AItem, ISectorItem {
 
     #region INavigableTarget Members
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        return Radius / 2F; // 600
-    }
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return System != null ? System.Radius : Constants.ZeroF; } }
+    // TODO what about a Starbase or Nebula?
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) { return Radius / 2F; }  // 600
+
+
 
     #endregion
 

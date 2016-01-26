@@ -130,8 +130,8 @@ public class CtxObject : AMonoBase {
             current = this;
             EventDelegate.Execute(onShow);
 
-            // I subscribe to EventDelegates rather than implement OnShowMenu() as an event handler
-            //gameObject.SendMessage("OnShowMenu", this, SendMessageOptions.DontRequireReceiver);
+            // OPTIMIZE not needed as I subscribe to EventDelegates rather than implement OnShowMenu() as an event handler
+            gameObject.SendMessage("OnShowMenu", this, SendMessageOptions.DontRequireReceiver);
 
             if (menuItems != null && menuItems.Length > 0) {
                 contextMenu.Show(MenuPosition, menuItems);
@@ -153,39 +153,24 @@ public class CtxObject : AMonoBase {
 
     #region Event and Property Change Handlers
 
-    //private void OnMenuSelect() {
-    //    selectedItem = CtxMenu.current.selectedItem;
-
-    //    current = this;
-    //    EventDelegate.Execute(onSelection);
-
-    //    gameObject.SendMessage("OnMenuSelection", selectedItem, SendMessageOptions.DontRequireReceiver);
-    //}
-    private void MenuSelectionEventHandler() {
+    private void MenuSelectionEventHandler() {  // OnMenuSelect()
         selectedItem = CtxMenu.current.selectedItem;
 
         current = this;
         EventDelegate.Execute(onSelection);
 
-        // I subscribe to EventDelegates rather than implement OnMenuSelection() as an event handler
-        //gameObject.SendMessage("OnMenuSelection", selectedItem, SendMessageOptions.DontRequireReceiver);
+        // OPTIMIZE not needed as I subscribe to EventDelegates rather than implement OnMenuSelection() as an event handler
+        gameObject.SendMessage("OnMenuSelection", selectedItem, SendMessageOptions.DontRequireReceiver);
     }
 
 
-    //private void OnHide() {
-    //    current = this;
-    //    EventDelegate.Execute(onHide);
-    //    EventDelegate.Remove(contextMenu.onSelection, OnMenuSelect);    // <-- In case the menu was hidden with no selection made
-
-    //    gameObject.SendMessage("OnHideMenu", this, SendMessageOptions.DontRequireReceiver);
-    //}
-    private void HideMenuEventHandler() {
+    private void HideMenuEventHandler() {   // OnHide()
         current = this;
         EventDelegate.Execute(onHide);
         EventDelegate.Remove(contextMenu.onSelection, MenuSelectionEventHandler);    // <-- In case the menu was hidden with no selection made
 
-        // I subscribe to EventDelegates rather than implement OnHideMenu() as an event handler
-        //gameObject.SendMessage("OnHideMenu", this, SendMessageOptions.DontRequireReceiver);
+        // OPTIMIZE not needed as I subscribe to EventDelegates rather than implement OnHideMenu() as an event handler
+        gameObject.SendMessage("OnHideMenu", this, SendMessageOptions.DontRequireReceiver);
     }
 
     #endregion
@@ -312,9 +297,7 @@ public class CtxObject : AMonoBase {
 
     protected override void Cleanup() {
         if (contextMenu != null) {
-            //EventDelegate.Remove(contextMenu.onSelection, OnMenuSelect);
             EventDelegate.Remove(contextMenu.onSelection, MenuSelectionEventHandler);    // gets removed OnHide so probably not necessary 
-            //EventDelegate.Remove(contextMenu.onHide, OnHide);   
             EventDelegate.Remove(contextMenu.onHide, HideMenuEventHandler);   // oneShot so probably not necessary                                                                  
         }
     }

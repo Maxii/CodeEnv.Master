@@ -52,6 +52,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override Vector2 IconSize { get { return _cmdIconSize; } }
 
+        protected override int IconDepth { get { return -3; } }
+
         private float _currentPrimaryMeshRadius;
         private MaterialPropertyBlock _primaryMeshMPB;
         private MaterialPropertyBlock _hiddenMeshMPB;
@@ -123,11 +125,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void ShowPrimaryMesh() {
             base.ShowPrimaryMesh();
+            //D.Log("{0}: Showing HQElement Highlight.", GetType().Name);
             _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
         }
 
         protected override void HidePrimaryMesh() {
             base.HidePrimaryMesh();
+            //D.Log("{0}: Hiding HQElement Highlight.", GetType().Name);
             _primaryMeshRenderer.SetPropertyBlock(_hiddenMeshMPB);
         }
 

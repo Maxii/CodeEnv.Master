@@ -17,7 +17,6 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -25,6 +24,8 @@ using CodeEnv.Master.GameContent;
 /// Initializes Data for all items in the universe.
 /// </summary>
 public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
+
+    protected override bool IsRootGameObject { get { return true; } }
 
     public UniverseCenterItem UniverseCenter { get; private set; }
 
@@ -63,7 +64,7 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
             float radius = TempGameValues.UniverseCenterRadius;
             float lowOrbitRadius = radius + 5F;
             CameraFocusableStat cameraStat = __MakeCameraStat(radius, lowOrbitRadius);
-            UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, radius, lowOrbitRadius, cameraStat, "UniverseCenter");
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, "UniverseCenter", cameraStat, radius, lowOrbitRadius);
             UniverseCenter.Data = data;
             // UC will be enabled when CommenceOperations() called
         }

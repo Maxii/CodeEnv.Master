@@ -79,8 +79,8 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
     protected override StarbaseCmdItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
-        UnitBaseCmdStat cmdStat = __MakeCmdStat();
-        CameraFocusableStat cameraStat = __MakeCmdCameraStat(TempGameValues.FacilityMaxRadius, cmdStat.LowOrbitRadius);
+        UnitCmdStat cmdStat = __MakeCmdStat();
+        CameraUnitCmdStat cameraStat = __MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
         StarbaseCmdItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSingleComponentInChildren<StarbaseCmdItem>();
@@ -121,18 +121,17 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         return hullCategory.__MaxMissileWeapons();
     }
 
-    private UnitBaseCmdStat __MakeCmdStat() {
+    private UnitCmdStat __MakeCmdStat() {
         float maxHitPts = 10F;
-        float lowOrbitDistance = TempGameValues.BaseCmdUnitRadius;
         int maxCmdEffect = 100;
-        return new UnitBaseCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle, lowOrbitDistance);
+        Formation formation = Enums<Formation>.GetRandomExcept(default(Formation), Formation.Wedge);
+        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, formation);
     }
 
-    private CameraFocusableStat __MakeCmdCameraStat(float maxElementRadius, float lowOrbitRadius) {
+    private CameraUnitCmdStat __MakeCmdCameraStat(float maxElementRadius) {
         float minViewDistance = maxElementRadius + 1F; // close to the HQ Facility
-        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
-        float optViewDistance = highOrbitRadius + 1F;
-        return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 60F);
+        float optViewDistanceAdder = Constants.ZeroF;
+        return new CameraUnitCmdStat(minViewDistance, optViewDistanceAdder, fov: 60F);
     }
 
     private CameraFollowableStat __MakeElementCameraStat(FacilityHullStat hullStat) {

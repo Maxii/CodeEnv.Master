@@ -32,7 +32,8 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
         get { return _iconInfo; }
         set {
             D.Assert(_iconInfo == default(IconInfo));   // only occurs once between Resets
-            SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropSetHandler); }
+            SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropSetHandler);
+        }
     }
 
     protected override string TooltipContent { get { return "Composition custom tooltip placeholder"; } }
@@ -50,7 +51,6 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
 
     #region Event and Property Change Handlers
 
-
     private void IconInfoPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
@@ -63,7 +63,7 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
         _sprite.atlas = IconInfo.AtlasID.GetAtlas();
         _sprite.spriteName = IconInfo.Filename;
         _sprite.color = IconInfo.Color.ToUnityColor();
-        //D.Log("{0}.PopulateElementWidgets() called. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetName());
+        //D.Log("{0}.PopulateElementWidgets() called. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetValueName());
         //sprite size and placement are preset
         _label.text = GetCategoryName();
     }

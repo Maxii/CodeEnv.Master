@@ -66,9 +66,9 @@ namespace CodeEnv.Master.GameContent {
             DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate,
             float courseUpdateFreq, float maxSteeringInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag) {
-            D.Assert(OrdnanceTurnRate > Constants.ZeroF);
-            D.Assert(OrdnanceCourseUpdateFrequency > Constants.ZeroF);
-            D.Warn(MaxSteeringInaccuracy > 5F, "{0} MaxSteeringInaccuracy of {1:0.#} is very high.", Name, MaxSteeringInaccuracy);
+            D.Assert(turnRate > Constants.ZeroF);
+            D.Assert(courseUpdateFreq > Constants.ZeroF);
+            D.Warn(maxSteeringInaccuracy > 5F, "{0} MaxSteeringInaccuracy of {1:0.#} is very high.", Name, MaxSteeringInaccuracy);
             OrdnanceTurnRate = turnRate;
             OrdnanceCourseUpdateFrequency = courseUpdateFreq;
             MaxSteeringInaccuracy = maxSteeringInaccuracy;

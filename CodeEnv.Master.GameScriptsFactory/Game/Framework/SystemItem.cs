@@ -194,7 +194,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
     private void SettlementPropChangedHandler() {
         SettlementCmdData settlementData = null;
         if (Settlement != null) {
-            Settlement.System = this;
+            Settlement.ParentSystem = this;
             settlementData = Settlement.Data;
             AttachSettlement(Settlement);
         }
@@ -243,17 +243,15 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
 
     #region IHighlightable Members
 
-    public override float HoverHighlightRadius { get { return Radius; } }
-
     public override float HighlightRadius { get { return Radius * Screen.height * 1F; } }
 
     #endregion
 
     #region INavigableTarget Members
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        return Radius;  // 120
-    }
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return Radius; } }
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) { return Radius; }
 
     #endregion
 

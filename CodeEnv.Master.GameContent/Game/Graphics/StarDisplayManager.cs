@@ -34,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override Vector2 IconSize { get { return _starIconSize; } }
 
+        protected override int IconDepth { get { return -4; } }
+
         private IBillboard _glowBillboard;
         private IRevolver[] _revolvers; // star mesh and 2 glows
 

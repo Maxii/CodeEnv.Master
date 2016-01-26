@@ -115,14 +115,14 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             InitializeResourceContainer(slot, container);
         });
 
-        MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip += (go, show) => UnknownTooltipEventHandler(show);
+        MyEventListener.Get(_unknownLabel.gameObject).onTooltip += UnknownTooltipEventHandler;
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
 
     private void InitializeResourceContainer(Slot slot, UIWidget container) {
         _resourceContainerLookup.Add(slot, container);
 
-        var eventListener = MyNguiEventListener.Get(container.gameObject);
+        var eventListener = MyEventListener.Get(container.gameObject);
         eventListener.onTooltip += ResourceContainerTooltipEventHandler;
 
         NGUITools.SetActive(container.gameObject, false);
@@ -140,7 +140,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         }
     }
 
-    private void UnknownTooltipEventHandler(bool show) {
+    private void UnknownTooltipEventHandler(GameObject go, bool show) {
         if (show) {
             TooltipHudWindow.Instance.Show("Resource presence unknown");
         }
@@ -206,9 +206,9 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void Cleanup() {
         _resourceIDLookup.Keys.ForAll(containerGo => {
-            MyNguiEventListener.Get(containerGo).onTooltip -= ResourceContainerTooltipEventHandler;
+            MyEventListener.Get(containerGo).onTooltip -= ResourceContainerTooltipEventHandler;
         });
-        MyNguiEventListener.Get(_unknownLabel.gameObject).onTooltip -= (go, show) => UnknownTooltipEventHandler(show);
+        MyEventListener.Get(_unknownLabel.gameObject).onTooltip -= UnknownTooltipEventHandler;
     }
 
     public override string ToString() {

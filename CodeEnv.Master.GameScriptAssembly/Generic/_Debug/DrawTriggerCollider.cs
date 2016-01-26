@@ -73,12 +73,12 @@ public class DrawTriggerCollider : AMonoBase {
         Color oldColor = Gizmos.color;
         Gizmos.color = _color;
         if (BoxCollider != null) {
-            var colliderCenter = transform.position + BoxCollider.center;   // can't use _transform as DrawGizmos called when not playing
+            var colliderCenter = transform.position + BoxCollider.center;   // can't use transform as DrawGizmos called when not playing
             var colliderSize = new Vector3(BoxCollider.size.x, BoxCollider.size.y, BoxCollider.size.z);
             Gizmos.DrawWireCube(colliderCenter, colliderSize);
         }
         if (SphereCollider != null) {
-            var colliderCenter = transform.position + SphereCollider.center;    // can't use _transform as DrawGizmos called when not playing
+            var colliderCenter = transform.position + SphereCollider.center;    // can't use transform as DrawGizmos called when not playing
             Gizmos.DrawWireSphere(colliderCenter, SphereCollider.radius);
         }
         Gizmos.color = oldColor;

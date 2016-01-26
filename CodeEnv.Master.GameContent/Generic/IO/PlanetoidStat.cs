@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: APlanetoidStat.cs
-// Immutable abstract stat containing externally acquirable values for Planetoids, aka Planets and Moons.
+// File: PlanetoidStat.cs
+// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable abstract stat containing externally acquirable values for Planetoids, aka Planets and Moons.
+    /// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
     /// </summary>
-    public abstract class APlanetoidStat {
+    public class PlanetoidStat {
 
         // A Planetoid's name is assigned once its parent's name and its orbit are known
         public float Radius { get; private set; }
@@ -40,13 +40,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public APlanetoidStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources) {
+        public PlanetoidStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources) {
             Radius = radius;
             Mass = mass;
             MaxHitPoints = maxHitPts;
             Category = category;
             Capacity = capacity;
             Resources = resources;
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
 
     }

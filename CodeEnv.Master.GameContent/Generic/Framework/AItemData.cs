@@ -40,11 +40,24 @@ namespace CodeEnv.Master.GameContent {
 
         private Topography _topography;
         public Topography Topography {
-            get { return _topography; }
+            get {
+                D.Assert(_topography != Topography.None, "{0}.{1} not yet set.", FullName, typeof(Topography).Name);
+                return _topography;
+            }
             set { SetProperty<Topography>(ref _topography, value, "Topography", TopographyPropChangedHandler); }
         }
 
         public Vector3 Position { get { return _itemTransform.position; } }
+
+        private bool _isOperational;
+        /// <summary>
+        /// Indicates whether this item has commenced operations, and if
+        /// it is a MortalItem, that it is not dead. Set to false to initiate death.
+        /// </summary>
+        public bool IsOperational {
+            get { return _isOperational; }
+            set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
+        }
 
         protected Transform _itemTransform;
 
@@ -60,9 +73,16 @@ namespace CodeEnv.Master.GameContent {
             _owner = owner;
         }
 
-        public virtual void CommenceOperations() { }
+        public virtual void CommenceOperations() {
+            D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
+            IsOperational = true;
+        }
 
         #region Event and Property Change Handlers
+
+        protected virtual void IsOperationalPropChangedHandler() {
+            D.Assert(IsOperational);    // only MortalItems should ever see a change to false
+        }
 
         protected virtual void OwnerPropChangedHandler() {
             //D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);

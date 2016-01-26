@@ -161,27 +161,63 @@ namespace CodeEnv.Master.Common {
         public static void Assert(bool condition, Object context, string format, params object[] paramList) {
             if (!condition) {
                 Debug.LogErrorFormat(context, "Assert failed! " + format, paramList);
+                //Debug.Break();  // if in an infinite loop, error log never reaches console so console's ErrorPause doesn't engage
+                throw new UnityException();
             }
         }
 
         /// <summary>
         /// Tests the specified condition and logs the provided message as an Error if it fails.
         /// </summary>
-        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="condition">if <c>true</c> the assert passes.</param>
         /// <param name="format">The composite message format string.</param>
         /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Assert(bool condition, string format, params object[] paramList) {
-            Debug.AssertFormat(condition, format, paramList);
+            if (!condition) {
+                Debug.LogErrorFormat("Assert failed! " + format, paramList);
+            }
         }
 
         /// <summary>
-        /// Tests the specified condition and raises a Debug.Assert() if it fails.
+        /// Tests the specified condition and Logs an error if it fails.
         /// </summary>
-        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="condition">if <c>true</c> the assert passes.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Assert(bool condition) {
-            Debug.Assert(condition);
+            if (!condition) {
+                Debug.LogError("Assert failed!");
+            }
+        }
+
+        /// <summary>
+        /// Tests the specified condition and if it fails raises an exception that is gauranteed to
+        /// stop the editor, even if in an infinite loop.
+        /// </summary>
+        /// <param name="condition">if <c>true</c> the assert passes.</param>
+        /// <exception cref="UnityEngine.UnityException">Assert failed!  + format.Inject(paramList)</exception>
+        [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void AssertWithException(bool condition) {
+            if (!condition) {
+                // Debug.Break() pauses editor play but only at the end of the frame. If infinite loop, no end of frame ever occurs
+                throw new UnityException("Assert failed!");
+            }
+        }
+
+        /// <summary>
+        /// Tests the specified condition and if it fails raises an exception that is gauranteed to
+        /// stop the editor, even if in an infinite loop.
+        /// </summary>
+        /// <param name="condition">if <c>true</c> the assert passes.</param>
+        /// <param name="format">The composite message format string.</param>
+        /// <param name="paramList">The parameter list.</param>
+        /// <exception cref="UnityEngine.UnityException">Assert failed!  + format.Inject(paramList)</exception>
+        [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void AssertWithException(bool condition, string format, params object[] paramList) {
+            if (!condition) {
+                // Debug.Break() pauses editor play but only at the end of the frame. If infinite loop, no end of frame ever occurs
+                throw new UnityException("Assert failed! " + format.Inject(paramList));
+            }
         }
 
     }

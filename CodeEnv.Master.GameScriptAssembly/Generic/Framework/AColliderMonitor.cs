@@ -64,14 +64,19 @@ public abstract class AColliderMonitor : AMonoBase {
     public Player Owner { get { return ParentItem.Owner; } }
 
     /// <summary>
-    /// Flag indicating whether a Kinematic Rigidbody is required by the monitor to keep any
-    /// parent rigidbody from forming a compound collider.
-    protected virtual bool IsKinematicRigidbodyReqd { get { return true; } }
+    /// Flag indicating whether a Kinematic Rigidbody is required by the monitor. 
+    /// <remarks>A Kinematic Rigidbody is required if the collider is a regular collider and its parent has a regular collider. 
+    /// This would form a compound collider which is not what is desired in a Monitor. It can also be required if the monitor
+    /// is a trigger collider and the monitor must detect static colliders like Planetoids, Stars and UCenter, as trigger
+    /// events aren't generated between 2 static colliders.
+    /// </remarks>
+    /// </summary>
+    protected abstract bool IsKinematicRigidbodyReqd { get; }
 
     /// <summary>
     /// Flag indicating whether the collider used should be a trigger or normal collider.
     /// </summary>
-    protected virtual bool IsTriggerCollider { get { return true; } }
+    protected abstract bool IsTriggerCollider { get; }
 
     protected SphereCollider _collider;
 
@@ -85,6 +90,10 @@ public abstract class AColliderMonitor : AMonoBase {
         if (IsKinematicRigidbodyReqd) {
             var rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
             rigidbody.isKinematic = true;
+        }
+        else {
+            var rigidbody = gameObject.GetComponent<Rigidbody>();
+            D.Warn(rigidbody != null, "{0} has a rigidbody it doesn't need.", Name);
         }
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = IsTriggerCollider;

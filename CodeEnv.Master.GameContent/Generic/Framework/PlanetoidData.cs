@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: APlanetoidData.cs
-// Abstract Data associated with a APlanetoidItem.
+// File: PlanetoidData.cs
+// Data associated with a APlanetoidItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Abstract Data associated with a APlanetoidItem.
+    /// Data associated with a APlanetoidItem.
     /// </summary>
-    public abstract class APlanetoidData : AMortalItemData {
+    public class PlanetoidData : AMortalItemData {
 
         public PlanetoidCategory Category { get; private set; }
 
@@ -66,38 +66,38 @@ namespace CodeEnv.Master.GameContent {
         public float Mass { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="APlanetoidData" /> class
+        /// Initializes a new instance of the <see cref="PlanetoidData" /> class
         /// with no countermeasures and no owner.
         /// </summary>
         /// <param name="planetoidTransform">The planetoid transform.</param>
-        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
-        /// <param name="planetoidStat">The stat.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        public APlanetoidData(Transform planetoidTransform, Rigidbody planetoidRigidbody, APlanetoidStat planetoidStat, CameraFollowableStat cameraStat)
-            : this(planetoidTransform, planetoidRigidbody, planetoidStat, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>()) { }
+        /// <param name="planetoidStat">The stat.</param>
+        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
+        public PlanetoidData(Transform planetoidTransform, CameraFollowableStat cameraStat, PlanetoidStat planetoidStat, Rigidbody planetoidRigidbody)
+            : this(planetoidTransform, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), planetoidStat, planetoidRigidbody) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="APlanetoidData" /> class with no owner.
+        /// Initializes a new instance of the <see cref="PlanetoidData" /> class with no owner.
         /// </summary>
         /// <param name="planetoidTransform">The planetoid transform.</param>
-        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
-        /// <param name="planetoidStat">The stat.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
-        public APlanetoidData(Transform planetoidTransform, Rigidbody planetoidRigidbody, APlanetoidStat planetoidStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : this(planetoidTransform, planetoidRigidbody, planetoidStat, TempGameValues.NoPlayer, cameraStat, passiveCMs) { }
+        /// <param name="planetoidStat">The stat.</param>
+        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
+        public PlanetoidData(Transform planetoidTransform, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat, Rigidbody planetoidRigidbody)
+            : this(planetoidTransform, TempGameValues.NoPlayer, cameraStat, passiveCMs, planetoidStat, planetoidRigidbody) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
         /// </summary>
         /// <param name="planetoidTransform">The planetoid transform.</param>
-        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
-        /// <param name="planetoidStat">The stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
-        public APlanetoidData(Transform planetoidTransform, Rigidbody planetoidRigidbody, APlanetoidStat planetoidStat, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(planetoidTransform, planetoidStat.Category.GetValueName(), planetoidStat.MaxHitPoints, owner, cameraStat, passiveCMs) {
+        /// <param name="planetoidStat">The stat.</param>
+        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
+        public PlanetoidData(Transform planetoidTransform, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat, Rigidbody planetoidRigidbody)
+            : base(planetoidTransform, planetoidStat.Category.GetValueName(), owner, cameraStat, planetoidStat.MaxHitPoints, passiveCMs) {
             Mass = planetoidStat.Mass;
             planetoidRigidbody.mass = planetoidStat.Mass;
             Category = planetoidStat.Category;
@@ -108,13 +108,14 @@ namespace CodeEnv.Master.GameContent {
             _sectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }
 
-        //protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
-        //    return new ImprovingIntel(initialcoverage);
-        //}
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
 
     }

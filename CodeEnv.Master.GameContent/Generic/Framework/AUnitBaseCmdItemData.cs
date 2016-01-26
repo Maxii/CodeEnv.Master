@@ -26,29 +26,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitBaseCmdItemData : AUnitCmdItemData {
 
-        public float LowOrbitRadius { get; private set; }
+        public float LowOrbitRadius { get { return UnitMaxFormationRadius; } }
 
         public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
 
         public new FacilityData HQElementData {
-            get { return base.HQElementData as FacilityData; }
+            protected get { return base.HQElementData as FacilityData; }
             set { base.HQElementData = value; }
         }
-
-        public new CameraFocusableStat CameraStat { get { return base.CameraStat as CameraFocusableStat; } }
 
         private BaseComposition _unitComposition;
         public BaseComposition UnitComposition {
             get { return _unitComposition; }
-            set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
+            private set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
 
-        public AUnitBaseCmdItemData(Transform cmdTransform, UnitBaseCmdStat cmdStat, Player owner, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
-            LowOrbitRadius = cmdStat.LowOrbitRadius;
-        }
+        public AUnitBaseCmdItemData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) { }
 
         protected override void RefreshComposition() {
             var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);

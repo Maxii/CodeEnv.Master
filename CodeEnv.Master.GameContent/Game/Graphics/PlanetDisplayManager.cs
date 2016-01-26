@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override Vector2 IconSize { get { return _planetIconSize; } }
 
+        protected override int IconDepth { get { return -6; } }
+
         private IRevolver _revolver;
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
 

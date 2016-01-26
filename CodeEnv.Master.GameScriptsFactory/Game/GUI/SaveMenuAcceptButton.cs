@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using UnityEngine;
 
@@ -24,12 +25,18 @@ using UnityEngine;
 /// </summary>
 public class SaveMenuAcceptButton : AGuiMenuAcceptButton {
 
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+
     protected override string TooltipContent { get { return "Click to save game."; } }
 
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
+    #region Event and Property Change Handlers
+
+    protected override void HandleValidClick() {
+        base.HandleValidClick();
         _gameMgr.SaveGame("Game");
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

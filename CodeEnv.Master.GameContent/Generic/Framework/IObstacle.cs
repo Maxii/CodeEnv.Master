@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipTransitBanned.cs
-// Interface for Items that implement a surrounding zone where ships cannot transit.
+// File: IObstacle.cs
+// Interface for an Item that can be an obstacle to ship passage.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,17 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Interface for Items that implement a surrounding zone where ships cannot transit.
-    /// </summary>
-    public interface IShipTransitBanned {
+    using UnityEngine;
 
-        /// <summary>
-        /// The radius of the Ship TransitBan around this Item.
-        /// </summary>
-        float ShipTransitBanRadius { get; }
+    /// <summary>
+    /// Interface for an Item that can be an obstacle to ship passage. 
+    /// Items include other ships, facilities, planetoids, stars and the UCenter.
+    /// </summary>
+    public interface IObstacle {
+
+        Vector3 Position { get; }
 
         string FullName { get; }
+
+        bool IsMobile { get; }
 
     }
 }

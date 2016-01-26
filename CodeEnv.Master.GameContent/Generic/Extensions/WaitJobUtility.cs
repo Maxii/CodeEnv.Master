@@ -105,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
             var allowedSeconds = hours / _gameTime.GameSpeedAdjustedHoursPerSecond;
             float elapsedSeconds = Constants.ZeroF;
             while (elapsedSeconds < allowedSeconds) {
-                elapsedSeconds += _gameTime.DeltaTimeOrPaused;
+                elapsedSeconds += _gameTime.DeltaTimeOrPaused;  // IMPROVE if gameSpeed changes, hours wait time won't be correct
                 allowedSeconds = hours / _gameTime.GameSpeedAdjustedHoursPerSecond;
                 yield return null;
             }
@@ -137,7 +137,6 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Waits for the designated GameDate, then executes the provided delegate. As this method 
         /// uses a date, it automatically adjusts for Pauses and GameSpeed changes.
-
         /// Usage:
         /// WaitForDate(futureDate, onWaitFinished: (jobWasKilled) =&gt; {
         /// Code to execute after the wait;

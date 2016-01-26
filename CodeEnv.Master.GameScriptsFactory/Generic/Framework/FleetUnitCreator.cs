@@ -17,7 +17,6 @@
 // default namespace
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -71,7 +70,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     protected override void MakeAndRecordDesign(string designName, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
         ShipHullCategory hullCategory = hullStat.HullCategory;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-        var engineStat = __MakeEngineStat(hullCategory);
+        var engineStat = __MakeEnginesStat(hullCategory);
 
         var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
         var design = new ShipDesign(_owner, designName, hullStat, engineStat, combatStance, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
@@ -144,8 +143,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     protected override void __IssueFirstUnitOrder(Action onCompleted) {
         LogEvent();
-        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {    // makes sure all targets are present in scene if they are supposed to be
-            if (move) {                                             // avoids script execution order issue when this creator receives IsRunning before other creators
+        WaitJobUtility.WaitForHours(1F, onWaitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
+            if (move) {                                               // avoids script execution order issue when this creator receives IsRunning before other creators
                 if (attack) {
                     __GetFleetAttackUnderway();
                 }
@@ -160,21 +159,22 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     private void __GetFleetUnderway() {
         LogEvent();
         Player fleetOwner = _owner;
-        IEnumerable<INavigableTarget> moveTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsOperational && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelationship.Ally)).Cast<INavigableTarget>();
+        var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
+        IEnumerable<INavigableTarget> moveTgts = fleetOwnerKnowledge.Starbases.Where(sb => !fleetOwner.IsEnemyOf(sb.Owner)).Cast<INavigableTarget>();
         if (!moveTgts.Any()) {
             // in case no starbases qualify
-            moveTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsOperational && fleetOwner.IsRelationship(s.Owner, DiplomaticRelationship.Ally)).Cast<INavigableTarget>();
+            moveTgts = fleetOwnerKnowledge.Settlements.Where(s => !fleetOwner.IsEnemyOf(s.Owner)).Cast<INavigableTarget>();
             if (!moveTgts.Any()) {
                 // in case no Settlements qualify
-                moveTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
+                moveTgts = fleetOwnerKnowledge.Planets.Where(p => !fleetOwner.IsEnemyOf(p.Owner)).Cast<INavigableTarget>();
                 if (!moveTgts.Any()) {
                     // in case no Planets qualify
-                    moveTgts = SystemCreator.AllSystems.Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
+                    moveTgts = fleetOwnerKnowledge.Systems.Where(sys => !fleetOwner.IsEnemyOf(sys.Owner)).Cast<INavigableTarget>();
                     if (!moveTgts.Any()) {
                         // in case no Systems qualify
-                        moveTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsOperational && fleetOwner.IsRelationship(f.Owner, DiplomaticRelationship.Ally)).Cast<INavigableTarget>();
+                        moveTgts = fleetOwnerKnowledge.Stars.Where(star => star.GetIntelCoverage(fleetOwner) == IntelCoverage.Basic || !fleetOwner.IsEnemyOf(star.Owner)).Cast<INavigableTarget>();
                         if (!moveTgts.Any()) {
-                            // in case no fleets qualify
+                            // in case no Stars qualify
                             moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                             if (!moveTgts.Any()) {
                                 D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
@@ -200,22 +200,18 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     private void __GetFleetAttackUnderway() {
         LogEvent();
         Player fleetOwner = _owner;
-        IEnumerable<IUnitAttackableTarget> attackTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsOperational && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
+        var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
+        IEnumerable<IUnitAttackableTarget> attackTgts = fleetOwnerKnowledge.Starbases.Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsOperational && fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitAttackableTarget>();
+            attackTgts = fleetOwnerKnowledge.Settlements.Where(s => fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitAttackableTarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsOperational && fleetOwner.IsEnemyOf(f.Owner)).Cast<IUnitAttackableTarget>();
+                attackTgts = fleetOwnerKnowledge.Planets.Where(p => fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitAttackableTarget>();
                 if (attackTgts.IsNullOrEmpty()) {
-                    // in case no Fleets qualify
-                    attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsOperational && fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitAttackableTarget>();
-                    if (attackTgts.IsNullOrEmpty()) {
-                        // in case no enemy Planets qualify
-                        D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
-                        __GetFleetUnderway();
-                        return;
-                    }
+                    D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
+                    __GetFleetUnderway();
+                    return;
                 }
             }
         }
@@ -241,7 +237,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     private UnitCmdStat __MakeCmdStat() {
         float maxHitPts = 10F;
         int maxCmdEffect = 100;
-        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle);
+        Formation formation = Enums<Formation>.GetRandomExcept(default(Formation), Formation.Wedge);
+        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, formation);
     }
 
     private CameraFleetCmdStat __MakeCmdCameraStat(float maxElementRadius) {
@@ -282,17 +279,19 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         //D.Log("Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
         float minViewDistance = radius * 2F;
         float optViewDistance = radius * 3F;
-        return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
+        float distanceDampener = 3F;    // default
+        float rotationDampener = 10F;   // ships can change direction pretty fast
+        return new CameraFollowableStat(minViewDistance, optViewDistance, fov, distanceDampener, rotationDampener);
     }
 
-    private EngineStat __MakeEngineStat(ShipHullCategory hullCategory) {
+    private EnginesStat __MakeEnginesStat(ShipHullCategory hullCategory) {
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
-        float engineMass = __GetEngineMass(hullCategory);
+        float singleEngineSize = 10F;
+        float singleEngineMass = __GetEngineMass(hullCategory);
+        float singleEngineExpense = 5F;
 
-        float fullFtlPower = __GetFullFtlPower(hullCategory);  // FullFtlOpenSpaceSpeed ~ 30-40 units/hour
-        float fullStlPower = fullFtlPower / TempGameValues.FtlToStlPowerRatio;   // FullStlSystemSpeed ~ 1.2 - 1.6 units/hour
-        return new EngineStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPower, fullFtlPower,
-            maxTurnRate, 0F, engineMass, 0F, 0F);
+        float fullStlPropulsionPower = __GetFullStlPropulsionPower(hullCategory);   // FullFtlOpenSpaceSpeed ~ 30-40 units/hour, FullStlSystemSpeed ~ 1.2 - 1.6 units/hour
+        return new EnginesStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPropulsionPower, maxTurnRate, singleEngineSize, singleEngineMass, singleEngineExpense, TempGameValues.__StlToFtlPropulsionPowerFactor, engineQty: 1);
     }
 
     private float __GetIncome(ShipHullCategory category) {
@@ -396,19 +395,19 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     }
 
     /// <summary>
-    /// Gets the power generated by the FTL engines when operating at Full capacity.
+    /// Gets the power generated by the STL engines when operating at Full capability.
     /// </summary>
     /// <param name="hull">The ship hull.</param>
     /// <returns></returns>
-    private float __GetFullFtlPower(ShipHullCategory hull) {
-        float fastestFullSpeedTgt = TempGameValues.TargetFtlOpenSpaceFullSpeed; // 40F
-        float slowestFullSpeedTgt = fastestFullSpeedTgt * 0.75F;   // this way, the slowest Speed.OneThird speed >= Speed.Slow
-        float fullSpeedTgt = UnityEngine.Random.Range(slowestFullSpeedTgt, fastestFullSpeedTgt);
+    private float __GetFullStlPropulsionPower(ShipHullCategory hull) {
+        float fastestFullFtlSpeedTgt = TempGameValues.__TargetFtlOpenSpaceFullSpeed; // 40F
+        float slowestFullFtlSpeedTgt = fastestFullFtlSpeedTgt * 0.75F;   // this way, the slowest Speed.OneThird speed >= Speed.Slow
+        float fullFtlSpeedTgt = UnityEngine.Random.Range(slowestFullFtlSpeedTgt, fastestFullFtlSpeedTgt);
         float hullMass = __GetHullMass(hull);   // most but not all of the mass of the ship
         float hullOpenSpaceDrag = __GetHullDrag(hull);
 
-        // reqdFullPower = fullSpeedTgt x Mass x Drag(OpenSpace);
-        return fullSpeedTgt * hullMass * hullOpenSpaceDrag;
+        float reqdFullFtlPower = fullFtlSpeedTgt * hullMass * hullOpenSpaceDrag;
+        return reqdFullFtlPower / TempGameValues.__StlToFtlPropulsionPowerFactor;
     }
 
     private Vector3 __GetHullDimensions(ShipHullCategory hullCat) {

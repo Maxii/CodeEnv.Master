@@ -113,7 +113,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     private void OnDeath() {
-        if(deathOneShot != null) {
+        if (deathOneShot != null) {
             deathOneShot(this, new EventArgs());
             deathOneShot = null;
         }

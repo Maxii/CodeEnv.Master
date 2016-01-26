@@ -53,7 +53,7 @@ public class MissileTube : AWeaponMount {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
-        if (!ConfirmInRange(enemyTarget)) {
+        if (!ConfirmInRangeForLaunch(enemyTarget)) {
             //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);
             firingSolution = null;
             return false;
@@ -67,7 +67,7 @@ public class MissileTube : AWeaponMount {
     /// </summary>
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
-    public override bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
+    public override bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget) {
         float distanceToPushover = TempGameValues.__ReqdMissileTravelDistanceBeforePushover;
         Vector3 launchDirection = MuzzleFacing;
         Vector3 vectorToPushover = launchDirection * distanceToPushover;

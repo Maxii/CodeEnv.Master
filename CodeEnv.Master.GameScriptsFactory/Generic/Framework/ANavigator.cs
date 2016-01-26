@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -28,7 +28,11 @@ using UnityEngine;
 /// </summary>
 internal abstract class ANavigator : IDisposable {
 
-    private static LayerMask _transitBanOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.ShipTransitBan);
+    private static LayerMask _avoidableObstacleZoneOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.AvoidableObstacleZone);
+
+    protected const float TargetCastingDistanceBuffer = 0.1F;
+
+    protected const float WaypointCastingDistanceSubtractor = Constants.ZeroF;
 
     private static IList<Speed> _inValidAutoPilotSpeeds = new List<Speed>() {
         Speed.None,
@@ -92,12 +96,23 @@ internal abstract class ANavigator : IDisposable {
     /// </summary>
     protected Speed TravelSpeed { get; private set; }
 
+    protected IList<IDisposable> _subscriptions;
     protected OrderSource _orderSource;
     protected Job _pilotNavigationJob;
+    protected GameTime _gameTime;
+    protected GameManager _gameMgr;
 
     internal ANavigator() {
         Course = new List<INavigableTarget>();
+        _gameTime = GameTime.Instance;
+        _gameMgr = GameManager.Instance;
     }
+
+    protected virtual void Subscribe() {
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+    }
+
 
     /// <summary>
     /// Records the automatic pilot course values.
@@ -121,18 +136,18 @@ internal abstract class ANavigator : IDisposable {
     }
 
     /// <summary>
-    /// Internal control for launching new pilot Job(s).
+    /// Internal control that engages the autoPilot.
     /// </summary>
-    protected virtual void RunPilotJobs() {
+    protected virtual void EngageAutoPilot_Internal() {
         D.Assert(Course.Count != Constants.Zero, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(Name));
-        KillAllPilotJobs();
+        CleanupAnyRemainingAutoPilotJobs();
     }
 
     /// <summary>
-    /// Internal control for killing all existing pilot Job(s).
+    /// Internal control that kills any remaining autoPilot Jobs.
     /// </summary>
     /// <returns></returns>
-    protected virtual void KillAllPilotJobs() {
+    protected virtual void CleanupAnyRemainingAutoPilotJobs() {
         if (IsPilotNavigationJobRunning) {
             //D.Log("{0} AutoPilot disengaging.", Name);
             _pilotNavigationJob.Kill();
@@ -150,14 +165,30 @@ internal abstract class ANavigator : IDisposable {
         }
     }
 
+    private void IsPausedPropChangedHandler() {
+        PauseJobs(_gameMgr.IsPaused);
+    }
+
+
     #endregion
 
+    protected virtual void PauseJobs(bool toPause) {
+        if (IsPilotNavigationJobRunning) {
+            if (toPause) {
+                _pilotNavigationJob.Pause();
+            }
+            else {
+                _pilotNavigationJob.Unpause();
+            }
+        }
+    }
+
     protected virtual void HandleAutoPilotEngaged() {
-        RunPilotJobs();
+        EngageAutoPilot_Internal();
     }
 
     private void HandleAutoPilotDisengaged() {
-        KillAllPilotJobs();
+        CleanupAnyRemainingAutoPilotJobs();
         RefreshCourse(CourseRefreshMode.ClearCourse);
         _orderSource = OrderSource.None;
         TravelSpeed = Speed.None;
@@ -175,131 +206,69 @@ internal abstract class ANavigator : IDisposable {
     }
 
     /// <summary>
-    /// Checks for an obstacle enroute to the provided <c>currentDestination</c>. Returns true if one
-    /// is found and provides the detour around it.
+    /// Checks for an obstacle enroute to the provided <c>destination</c>. Returns true if one
+    /// is found that requires immediate action and provides the detour to avoid it.
     /// </summary>
-    /// <param name="currentDestination">The current destination. May be the Target, waypoint or an obstacle detour.</param>
-    /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid detecting any TransitBanCollider around the currentDestination.</param>
+    /// <param name="destination">The current destination. May be the Target, waypoint or an obstacle detour.</param>
+    /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid detecting any ObstacleZoneCollider around the destination.</param>
+    /// <param name="closeEnoughDistanceToUtilizeMobileObstacleDetours">The distance that is close enough to start utilizing mobile obstacle detours.</param>
+    /// <param name="fleetRadius">The collision clearance reqd by ship or fleet.</param>
     /// <param name="detour">The obstacle detour.</param>
-    /// <param name="obstacleHitDistance">The obstacle hit distance.</param>
+    /// <param name="formationOffset">The formation offset.</param>
     /// <returns>
     ///   <c>true</c> if an obstacle was found, false if the way is clear.
     /// </returns>
-    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget currentDestination, float castingDistanceSubtractor, out INavigableTarget detour, out float obstacleHitDistance) {
+    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, float closeEnoughDistanceToUtilizeMobileObstacleDetours, float fleetRadius, out INavigableTarget detour, Vector3 formationOffset = default(Vector3)) {
+        int iterationCount = Constants.Zero;
+        return TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, formationOffset, out detour, ref iterationCount);
+    }
+
+    private bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, float closeEnoughDistanceToUtilizeMobileObstacleDetours, float fleetRadius, Vector3 formationOffset, out INavigableTarget detour, ref int iterationCount) {
+        D.Assert(closeEnoughDistanceToUtilizeMobileObstacleDetours > Constants.ZeroF);
+        D.AssertWithException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
         detour = null;
-        obstacleHitDistance = Mathf.Infinity;
-        Vector3 vectorToCurrentDest = currentDestination.Position - Position;
-        float currentDestDistance = vectorToCurrentDest.magnitude;
+        Vector3 vectorToDestination = (destination.Position + formationOffset) - Position;
+        float currentDestDistance = vectorToDestination.magnitude;
         if (currentDestDistance <= castingDistanceSubtractor) {
             return false;
         }
-        Vector3 currentDestBearing = vectorToCurrentDest.normalized;
+        Vector3 currentDestBearing = vectorToDestination.normalized;
         float rayLength = currentDestDistance - castingDistanceSubtractor;
-        Ray entryRay = new Ray(Position, currentDestBearing);
+        Ray ray = new Ray(Position, currentDestBearing);
 
-        RaycastHit entryHit;
-        if (Physics.Raycast(entryRay, out entryHit, rayLength, _transitBanOnlyLayerMask.value)) {
-            // there is a TransitBanZone obstacle in the way 
-            var obstacle = entryHit.transform;
-            string obstacleName = obstacle.parent.name + "." + obstacle.name;
-            obstacleHitDistance = entryHit.distance;
-            D.Log("{0} encountered obstacle {1} centered at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
-            Name, obstacleName, obstacle.position, currentDestination.FullName, rayLength, obstacleHitDistance);
-            detour = GenerateDetourAroundObstacle(entryRay, entryHit);
+        RaycastHit hitInfo;
+        if (Physics.Raycast(ray, out hitInfo, rayLength, _avoidableObstacleZoneOnlyLayerMask.value)) {
+            // there is an AvoidableObstacleZone in the way. Warning: hitInfo.transform returns the rigidbody parent since 
+            // the obstacleZone trigger collider is static. UNCLEAR if this means it forms a compound collider as this is a raycast
+            var obstacleZoneGo = hitInfo.collider.gameObject;
+            var obstacleZoneHitDistance = hitInfo.distance;
+            IAvoidableObstacle obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
+            D.Log("{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}, FormationOffset = {6}, CastSubtractor = {7:0.#}, FleetRadius = {8:0.#}.",
+            Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance, formationOffset, castingDistanceSubtractor, fleetRadius);
+
+            if (obstacle.IsMobile && obstacleZoneHitDistance > closeEnoughDistanceToUtilizeMobileObstacleDetours) {
+                // obstacle is mobile and too far away to bother generating a detour
+                D.Log("{0} is ignoring obstacle {1} as it is mobile and zone is beyond {2:0.#} units away.", Name, obstacle.FullName, closeEnoughDistanceToUtilizeMobileObstacleDetours);
+                return false;
+            }
+
+            detour = GenerateDetourAroundObstacle(obstacle, hitInfo, fleetRadius, formationOffset);
 
             INavigableTarget newDetour;
-            float newObstacleHitDistance;
-            float detourCastingTransitBanRadius = Constants.ZeroF;  // obstacle detour waypoints don't have keepout zones
-            if (TryCheckForObstacleEnrouteTo(detour, detourCastingTransitBanRadius, out newDetour, out newObstacleHitDistance)) {
+            float detourCastingDistanceSubtractor = Constants.ZeroF;  // obstacle detours don't have ObstacleZones
+            if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, formationOffset, out newDetour, ref iterationCount)) {
                 D.Warn("{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
                 detour = newDetour;
-                obstacleHitDistance = newObstacleHitDistance;
             }
             return true;
         }
         return false;
     }
 
-    /// <summary>
-    /// Generates a detour that avoids the obstacle that was found by the provided entryRay and hit.
-    /// </summary>
-    /// <param name="entryRay">The ray used to find the entryPt.</param>
-    /// <param name="entryHit">The info for the entryHit.</param>
-    /// <returns></returns>
-    private INavigableTarget GenerateDetourAroundObstacle(Ray entryRay, RaycastHit entryHit) {
-        INavigableTarget detour = null;
-        Transform obstacle = entryHit.transform;
-        string obstacleName = obstacle.parent.name + "." + obstacle.name;
-        Vector3 rayEntryPoint = entryHit.point;
-        SphereCollider obstacleCollider = entryHit.collider as SphereCollider;
-        float obstacleRadius = obstacleCollider.radius;
-        float rayLength = (2F * obstacleRadius) + 1F;
-        Vector3 pointBeyondTransitBanZone = entryRay.GetPoint(entryHit.distance + rayLength);
-        Vector3 rayExitPoint = FindRayExitPoint(entryRay, entryHit, pointBeyondTransitBanZone, 0);
-
-        //D.Log("{0} found RayExitPoint. EntryPt to exitPt distance = {1}.", Name, Vector3.Distance(rayEntryPoint, rayExitPoint));
-        Vector3 obstacleCenter = obstacle.position;
-        var ptOnSphere = UnityUtility.FindClosestPointOnSphereOrthogonalToIntersectingLine(rayEntryPoint, rayExitPoint, obstacleCenter, obstacleRadius);
-        float obstacleClearanceLeeway = 2F; // HACK
-        var detourWorldSpaceLocation = ptOnSphere + (ptOnSphere - obstacleCenter).normalized * obstacleClearanceLeeway;
-
-        INavigableTarget obstacleParent = obstacle.gameObject.GetSafeFirstInterfaceInParents<INavigableTarget>();
-        D.Assert(obstacleParent != null, "Obstacle {0} does not have a {1} parent.".Inject(obstacleName, typeof(INavigableTarget).Name));
-
-        if (obstacleParent.IsMobile) {
-            var detourRelativeToObstacleCenter = detourWorldSpaceLocation - obstacleCenter;
-            var detourRef = new Reference<Vector3>(() => obstacle.position + detourRelativeToObstacleCenter);
-            detour = new MovingLocation(detourRef);
-        }
-        else {
-            detour = new StationaryLocation(detourWorldSpaceLocation);
-        }
-
-        //D.Log("{0} found detour {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4:0.#}. Obstacle transitBan radius = {5:0.##}. Detour is {6:0.#} from obstacle center.",
-        //Name, detour.FullName, obstacleName, obstacleCenter, Vector3.Distance(Position, detour.Position), obstacleRadius, Vector3.Distance(obstacleCenter, detour.Position));
-        return detour;
-    }
-
-    /// <summary>
-    /// Finds the exit point from the ObstacleKeepoutZone collider, derived from the provided Ray and RaycastHit info.
-    /// OPTIMIZE Current approach uses recursion to find the exit point. This is because there can be other ObstacleKeepoutZones
-    /// encountered when searching for the original KeepoutZone's exit point. I'm sure there is a way to calculate it without this
-    /// recursive use of Raycasting, but it is complex.
-    /// </summary>
-    /// <param name="entryRay">The entry ray.</param>
-    /// <param name="entryHit">The entry hit.</param>
-    /// <param name="exitRayStartPt">The exit ray start pt.</param>
-    /// <param name="recursiveCount">The number of recursive calls.</param>
-    /// <returns></returns>
-    private Vector3 FindRayExitPoint(Ray entryRay, RaycastHit entryHit, Vector3 exitRayStartPt, int recursiveCount) {
-        SphereCollider entryObstacleCollider = entryHit.collider as SphereCollider;
-        string entryObstacleName = entryHit.transform.parent.name + "." + entryObstacleCollider.name;
-        if (recursiveCount > 0) {
-            D.Warn("{0}.GetRayExitPoint() called recursively. Count: {1}.", Name, recursiveCount);
-        }
-        D.Assert(recursiveCount < 4); // I can imagine a max of 3 iterations - a planet and two moons around a star
-        Vector3 exitHitPt = Vector3.zero;
-        float exitRayLength = Vector3.Distance(exitRayStartPt, entryHit.point);
-        RaycastHit exitHit;
-        if (Physics.Raycast(exitRayStartPt, -entryRay.direction, out exitHit, exitRayLength, _transitBanOnlyLayerMask.value)) {
-            SphereCollider exitObstacleCollider = exitHit.collider as SphereCollider;
-            if (entryObstacleCollider != exitObstacleCollider) {
-                string exitObstacleName = exitHit.transform.parent.name + "." + exitObstacleCollider.name;
-                D.Warn("{0} EntryObstacle {1} != ExitObstacle {2}.", Name, entryObstacleName, exitObstacleName);
-                float leeway = 1F;
-                Vector3 newExitRayStartPt = exitHit.point + (exitHit.point - exitRayStartPt).normalized * leeway;
-                recursiveCount++;
-                exitHitPt = FindRayExitPoint(entryRay, entryHit, newExitRayStartPt, recursiveCount);
-            }
-            else {
-                exitHitPt = exitHit.point;
-            }
-        }
-        else {
-            D.Error("{0} Raycast found no TransitBanZone Collider.", Name);
-        }
-        //D.Log("{0} found RayExitPoint. EntryPt to exitPt distance = {1}.", Name, Vector3.Distance(entryHit.point, exitHitPt));
-        return exitHitPt;
+    private INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius, Vector3 formationOffset) {
+        Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius, formationOffset);
+        D.Log("{0} has created a detour at {1} to get by {2}.", Name, detourPosition, obstacle.FullName);
+        return new StationaryLocation(detourPosition);
     }
 
     /// <summary>
@@ -313,6 +282,11 @@ internal abstract class ANavigator : IDisposable {
         if (_pilotNavigationJob != null) {
             _pilotNavigationJob.Dispose();
         }
+        Unsubscribe();
+    }
+
+    protected virtual void Unsubscribe() {
+        _subscriptions.ForAll(s => s.Dispose());
     }
 
     #region IDisposable
@@ -355,6 +329,128 @@ internal abstract class ANavigator : IDisposable {
 
     #endregion
 
+    #region Check for obstacle and generate own detour Archive
+
+    //protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, float maxDistanceTraveledBeforeNextCheck, out INavigableTarget detour) {
+    //    detour = null;
+    //    Vector3 vectorToCurrentDest = destination.Position - Position;
+    //    float currentDestDistance = vectorToCurrentDest.magnitude;
+    //    if (currentDestDistance <= castingDistanceSubtractor) {
+    //        return false;
+    //    }
+    //    Vector3 currentDestBearing = vectorToCurrentDest.normalized;
+    //    float rayLength = currentDestDistance - castingDistanceSubtractor;
+    //    Ray entryRay = new Ray(Position, currentDestBearing);
+
+    //    RaycastHit entryHit;
+    //    if (Physics.Raycast(entryRay, out entryHit, rayLength, _shipBanZoneOnlyLayerMask.value)) {
+    //        // there is a AvoidableObstacleZone obstacle in the way 
+    //        var obstacle = entryHit.transform;
+    //        var obstacleHitDistance = entryHit.distance;
+    //        string obstacleName = obstacle.parent.name + "." + obstacle.name;
+    //        D.Log("{0} encountered obstacle {1} centered at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
+    //        Name, obstacleName, obstacle.position, destination.FullName, rayLength, obstacleHitDistance);
+
+    //        if (!destination.IsMobile || obstacleHitDistance < maxDistanceTraveledBeforeNextCheck * 2F) {
+    //            // detours are only useful if obstacle not mobile or if close enough to need to take action
+    //            detour = GenerateDetourAroundObstacle(entryRay, entryHit);
+
+    //            INavigableTarget newDetour;
+    //            float detourCastingDistanceSubtractor = Constants.ZeroF;  // obstacle detour waypoints don't have ShipBanZones
+    //            if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, maxDistanceTraveledBeforeNextCheck, out newDetour)) {
+    //                D.Warn("{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
+    //                detour = newDetour;
+    //            }
+    //            return true;
+    //        }
+    //    }
+    //    return false;
+    //}
+
+
+    /// <summary>
+    /// Generates a detour that avoids the obstacle that was found by the provided entryRay and hit.
+    /// </summary>
+    /// <param name="entryRay">The ray used to find the entryPt.</param>
+    /// <param name="entryHit">The info for the entryHit.</param>
+    /// <returns></returns>
+    //private INavigableTarget GenerateDetourAroundObstacle(Ray entryRay, RaycastHit entryHit) {
+    //    INavigableTarget detour = null;
+    //    Transform obstacle = entryHit.transform;
+    //    string obstacleName = obstacle.parent.name + "." + obstacle.name;
+    //    Vector3 rayEntryPoint = entryHit.point;
+    //    SphereCollider obstacleCollider = entryHit.collider as SphereCollider;
+    //    float obstacleRadius = obstacleCollider.radius;
+    //    float rayLength = (2F * obstacleRadius) + 1F;
+    //    Vector3 pointBeyondShipBanZone = entryRay.GetPoint(entryHit.distance + rayLength);
+    //    Vector3 rayExitPoint = FindRayExitPoint(entryRay, entryHit, pointBeyondShipBanZone, 0);
+
+    //    //D.Log("{0} found RayExitPoint. EntryPt to exitPt distance = {1}.", Name, Vector3.Distance(rayEntryPoint, rayExitPoint));
+    //    Vector3 obstacleCenter = obstacle.position;
+    //    var ptOnSphere = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(rayEntryPoint, rayExitPoint, obstacleCenter, obstacleRadius);
+    //    float obstacleClearanceLeeway = 2F * TempGameValues.LargestShipCollisionDetectionZoneRadius;
+    //    var detourWorldSpaceLocation = ptOnSphere + (ptOnSphere - obstacleCenter).normalized * obstacleClearanceLeeway;
+
+    //    INavigableTarget obstacleParent = obstacle.gameObject.GetSafeFirstInterfaceInParents<INavigableTarget>();
+    //    D.Assert(obstacleParent != null, "Obstacle {0} does not have a {1} parent.".Inject(obstacleName, typeof(INavigableTarget).Name));
+
+    //    if (obstacleParent.IsMobile) {
+    //        var detourRelativeToObstacleCenter = detourWorldSpaceLocation - obstacleCenter;
+    //        var detourRef = new Reference<Vector3>(() => obstacle.position + detourRelativeToObstacleCenter);
+    //        detour = new MovingLocation(detourRef);
+    //    }
+    //    else {
+    //        detour = new StationaryLocation(detourWorldSpaceLocation);
+    //    }
+
+    //    //D.Log("{0} found detour {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4:0.#}. Obstacle transitBan radius = {5:0.##}. Detour is {6:0.#} from obstacle center.",
+    //    //Name, detour.FullName, obstacleName, obstacleCenter, Vector3.Distance(Position, detour.Position), obstacleRadius, Vector3.Distance(obstacleCenter, detour.Position));
+    //    return detour;
+    //}
+
+    /// <summary>
+    /// Finds the exit point from the ShipBanZone collider, derived from the provided Ray and RaycastHit info.
+    /// OPTIMIZE Current approach uses recursion to find the exit point. This is because there can be other ShipBanZones
+    /// encountered when searching for the original ShipBanZone's exit point. I'm sure there is a way to calculate it without this
+    /// recursive use of Raycasting, but it is complex.
+    /// </summary>
+    /// <param name="entryRay">The entry ray.</param>
+    /// <param name="entryHit">The entry hit.</param>
+    /// <param name="exitRayStartPt">The exit ray start pt.</param>
+    /// <param name="recursiveCount">The number of recursive calls.</param>
+    /// <returns></returns>
+    //private Vector3 FindRayExitPoint(Ray entryRay, RaycastHit entryHit, Vector3 exitRayStartPt, int recursiveCount) {
+    //    SphereCollider entryObstacleCollider = entryHit.collider as SphereCollider;
+    //    string entryObstacleName = entryHit.transform.parent.name + "." + entryObstacleCollider.name;
+    //    if (recursiveCount > 0) {
+    //        D.Warn("{0}.GetRayExitPoint() called recursively. Count: {1}.", Name, recursiveCount);
+    //    }
+    //    D.Assert(recursiveCount < 4); // I can imagine a max of 3 iterations - a planet and two moons around a star
+    //    Vector3 exitHitPt = Vector3.zero;
+    //    float exitRayLength = Vector3.Distance(exitRayStartPt, entryHit.point);
+    //    RaycastHit exitHit;
+    //    if (Physics.Raycast(exitRayStartPt, -entryRay.direction, out exitHit, exitRayLength, _shipBanZoneOnlyLayerMask.value)) {
+    //        SphereCollider exitObstacleCollider = exitHit.collider as SphereCollider;
+    //        if (entryObstacleCollider != exitObstacleCollider) {
+    //            string exitObstacleName = exitHit.transform.parent.name + "." + exitObstacleCollider.name;
+    //            D.Warn("{0} EntryObstacle {1} != ExitObstacle {2}.", Name, entryObstacleName, exitObstacleName);
+    //            float leeway = 1F;
+    //            Vector3 newExitRayStartPt = exitHit.point + (exitHit.point - exitRayStartPt).normalized * leeway;
+    //            recursiveCount++;
+    //            exitHitPt = FindRayExitPoint(entryRay, entryHit, newExitRayStartPt, recursiveCount);
+    //        }
+    //        else {
+    //            exitHitPt = exitHit.point;
+    //        }
+    //    }
+    //    else {
+    //        D.Error("{0} Raycast found no TransitBanZone Collider.", Name);
+    //    }
+    //    //D.Log("{0} found RayExitPoint. EntryPt to exitPt distance = {1}.", Name, Vector3.Distance(entryHit.point, exitHitPt));
+    //    return exitHitPt;
+    //}
+
+    #endregion
 
 }
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Layers.cs
-// Simple Enum for Layers that avoids typing out strings or trying to remember the int value.. Use Layers.[Constant].GetName() extension for
+// Simple Enum for Layers that avoids typing out strings or trying to remember the int value.. Use Layers.[Constant].GetValueName() extension for
 // the string name or (int){Layers.[Constant] for the index.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -17,7 +17,7 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Enum for Layers that avoids typing out strings or trying to remember the int value. 
-    /// Use Layers.[Constant].GetName() extension for the string name or (int){Layers.[Constant] 
+    /// Use Layers.[Constant].GetValueName() extension for the string name or (int){Layers.[Constant] 
     /// for the index. Generate a bit mask to isolate a layer like this: 
     /// <c>int universeEdgeLayerOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);</c>
     /// </summary>
@@ -40,9 +40,9 @@ namespace CodeEnv.Master.Common {
         //Gui2D = 8,    // Removed 8.29.14, replaced by new built-in layer UI introduced in Unity 4.5
 
         /************************************************************************************************
-                    * These 2 layers exist to allow the MainCameraControl to raycast using a mask which avoids
-                    * interference from other colliders.
-                    *************************************************************************************************/
+         * These 2 layers exist to allow the MainCameraControl to raycast using a mask which avoids
+         * interference from other colliders.
+         *************************************************************************************************/
         UniverseEdge = 9,
         DummyTarget = 10,
 
@@ -56,9 +56,9 @@ namespace CodeEnv.Master.Common {
         //UIPopup = 12, // No longer used 6.7.15
 
         /************************************************************************************************
-                    * These 4 layers exist to allow the MainCamera to automatically cull the meshes present 
-                     * on the layer beyond a predefined distance. Avoids calculating camera distance in update.
-                    *************************************************************************************************/
+         * These 4 layers exist to allow the MainCamera to automatically cull the meshes present 
+         * on the layer beyond a predefined distance. Avoids calculating camera distance in update.
+         *************************************************************************************************/
         ShipCull = 14,
         FacilityCull = 15,
         PlanetoidCull = 16,
@@ -77,10 +77,11 @@ namespace CodeEnv.Master.Common {
         DeepSpace = 20,
 
         /// <summary>
-        /// Layer that allows Fleets and Ships to raycast without interference from 
-        /// other colliders, for the purpose of detecting transit ban zones to avoid.
+        /// Layer for Zones around non-ship Items (Obstacles) where ships are banned. 
+        /// Separated as a layer to allow Fleets and Ships to raycast without interference from 
+        /// other colliders, for the purpose of detecting these obstacles to avoid.
         /// </summary>
-        ShipTransitBan = 21,    // CelestialObjectKeepout = 21, // Name changed 11.20.15
+        AvoidableObstacleZone = 21,    // CelestialObjectKeepout = 21, // Name changed 11.20.15
 
         /// <summary>
         /// Layer for shields so a shield collision can be tested for by a Beam RayCast. 
@@ -93,13 +94,20 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Layer for Projectile Ordnance so they won't collide with each other when trying to impact a Target on the Default layer. 
         /// </summary>
-        Projectiles = 24
+        Projectiles = 24,
 
         /// <summary>
         /// Layer that allows the dedicated VectorCam (Vectrosity Camera) to cull all meshes
         /// except the Vectrosity2D meshes in the scene.
         /// </summary>
         //Vectrosity2D = 31 // Removed 2.20.15 when upgrading to Vectrosity 4.0
+
+        /// <summary>
+        /// Layer for Zones around Ships used for collision detection. Must be separate from the AvoidableObstacleZone 
+        /// layer to avoid interfering with ship and fleet raycasts. CollisionDetectionZone layer objects are allowed to 
+        /// collide with each other and AvoidableObstacleZone layer objects to detect impending collisions.
+        /// </summary>
+        CollisionDetectionZone = 26
 
     }
 }

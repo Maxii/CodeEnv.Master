@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable stat containing externally acquirable values for Planets.
     /// </summary>
-    public class PlanetStat : APlanetoidStat {
+    public class PlanetStat : PlanetoidStat {
 
         public float LowOrbitRadius { get; private set; }
 

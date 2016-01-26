@@ -64,7 +64,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private GameColor _highlightColor = GameColor.Yellow;
-    public GameColor HighlightColor {
+    public GameColor HighlightColor {   // FIXME PropChangedHandler doesn't get called if set to Yellow
         get { return _highlightColor; }
         set { SetProperty<GameColor>(ref _highlightColor, value, "HighlightColor", HighlightColorPropChangedHandler); }
     }
@@ -79,8 +79,8 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", IsHighlightedPropChangedHandler); }
     }
 
-    private WidgetPlacement _placement = WidgetPlacement.Above;
-    public WidgetPlacement Placement {
+    private WidgetPlacement _placement = WidgetPlacement.Above; // Note: OK if PropChangedHandler doesn't fire when Placement.set = Above
+    public WidgetPlacement Placement {                          // as RefreshWidgetValues() gets called when Target is set
         get { return _placement; }
         set { SetProperty<WidgetPlacement>(ref _placement, value, "Placement", PlacementPropChangedHandler); }
     }
@@ -148,7 +148,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [to show].</param>
     public void Show(bool toShow) {
-        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", _transform.name, toShow, _toCheckShowDistance, IsWithinShowDistance());
+        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", transform.name, toShow, _toCheckShowDistance, IsWithinShowDistance());
         if (!toShow || (_toCheckShowDistance && !IsWithinShowDistance())) {
             Hide();
         }
@@ -158,7 +158,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         // Note: If there is a CameraLosChangedListener installed, position updates must continue even when offscreen so that OnBecameVisible
         // will be received. Only really matters for UITrackableWidgets as they are the only version that needs to update position
         enabled = Widget.gameObject.GetComponent<CameraLosChangedListener>() != null ? true : toShow;
-        //D.Log("{0}.Show({1}) called. Widget alpha is now {2}.", _transform.name, toShow, Widget.alpha);
+        //D.Log("{0}.Show({1}) called. Widget alpha is now {2}.", transform.name, toShow, Widget.alpha);
     }
 
     /// <summary>
@@ -170,14 +170,14 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     protected virtual void Show() {
-        //D.Log("{0}.Show() called.", _transform.name);
-        Widget.alpha = 1.0F;
+        //D.Log("{0}.Show() called.", transform.name);
+        Widget.alpha = Constants.OneF;
         Widget.enabled = true;
         IsShowing = true;
     }
 
     protected virtual void Hide() {
-        //D.Log("{0}.Hide() called.", _transform.name);
+        //D.Log("{0}.Hide() called.", transform.name);
         Widget.alpha = Constants.ZeroF;
         Widget.enabled = false;
         IsShowing = false;
@@ -191,7 +191,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private void PlacementPropChangedHandler() {
-        //D.Log("Placement changed to {0}.", Placement.GetName());
+        //D.Log("Placement changed to {0}.", Placement.GetValueName());
         RefreshWidgetValues();
     }
 
@@ -239,7 +239,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// radius as its own target changes.
     /// </summary>
     public void RefreshWidgetValues() {
-        _offset = Target.GetOffset(_placement);
+        _offset = Target.GetOffset(Placement);
         AlignWidget();
     }
 
@@ -257,8 +257,8 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private void AlignWidget() {
-        AlignWidgetPivotTo(_placement);
-        AlignWidgetOtherTo(_placement);
+        AlignWidgetPivotTo(Placement);
+        AlignWidgetOtherTo(Placement);
         SetPosition();
     }
 

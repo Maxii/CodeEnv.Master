@@ -77,7 +77,7 @@ public static class UnityEditorUtility {
     /// run again.
     /// </summary>
     /// <param name="platformTargets">The platform targets.</param>
-    /// <param name="symbolsToInclude">The symbols automatic include.</param>
+    /// <param name="symbolsToInclude">The #Define symbols to include.</param>
     public static void ResetConditionalCompilation(BuildTargetGroup[] platformTargets, string[] symbolsToInclude) {
         foreach (var platformTarget in platformTargets) {
             string symbolsAlreadyPresentString = PlayerSettings.GetScriptingDefineSymbolsForGroup(platformTarget).Trim();
@@ -101,7 +101,7 @@ public static class UnityEditorUtility {
                 }
             }
             PlayerSettings.SetScriptingDefineSymbolsForGroup(platformTarget, newSymbolString);
-            Debug.LogWarning(string.Format("Reset player conditional compilation symbols for {0}: {1}", platformTarget, newSymbolString));
+            Debug.Log(string.Format("Reset player conditional compilation symbols for {0}: {1}", platformTarget, newSymbolString));
         }
     }
 

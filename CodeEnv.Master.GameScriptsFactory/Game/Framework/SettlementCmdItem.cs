@@ -31,13 +31,13 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         set { base.Data = value; }
     }
 
-    private SystemItem _system;
-    public SystemItem System {
-        get { return _system; }
+    private SystemItem _parentSystem;
+    public SystemItem ParentSystem {
+        get { return _parentSystem; }
         set {
-            D.Assert(_system == null);  // only happens once
-            _system = value;
-            SystemPropSetHandler();
+            D.Assert(_parentSystem == null);  // only happens once
+            _parentSystem = value;
+            ParentSystemPropSetHandler();
         }
     }
 
@@ -56,6 +56,10 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     #region Initialization
 
+    protected override AFormationManager InitializeFormationMgr() {
+        return new SettlementFormationManager(this);
+    }
+
     protected override ItemHudManager InitializeHudManager() {
         return new ItemHudManager(Publisher);
     }
@@ -70,16 +74,11 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
-    protected override void PrepareForOnDeathNotification() {
-        base.PrepareForOnDeathNotification();
-        RemoveSettlementFromSystem();
-    }
-
     /// <summary>
     /// Removes the settlement and its orbiter from the system in preparation for a future settlement.
     /// </summary>
     private void RemoveSettlementFromSystem() {
-        System.Settlement = null;
+        ParentSystem.Settlement = null;
     }
 
     protected override IconInfo MakeIconInfo() {
@@ -90,10 +89,15 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, GetUserReport());
     }
 
+    protected override void HandleDeath() {
+        base.HandleDeath();
+        RemoveSettlementFromSystem();
+    }
+
     #region Event and Property Change Handlers
 
-    private void SystemPropSetHandler() {
-        Data.SystemData = System.Data;
+    private void ParentSystemPropSetHandler() {
+        Data.ParentSystemData = ParentSystem.Data;
     }
 
     #endregion

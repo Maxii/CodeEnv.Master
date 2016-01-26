@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -28,7 +28,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdItemData : AMortalItemData {
 
+        /// <summary>
+        /// The radius of this Unit's maximum formation, independant of whether the Unit's elements
+        /// are located on their formation station. Value encompasses each element's "KeepoutZone"
+        /// (Facility: AvoidableObstacleZone, Ship: CollisionDetectionZone) when the element is OnStation. 
+        /// </summary>
+        public float UnitMaxFormationRadius { get; set; }
+
         public float Radius { get { return HQElementData.HullDimensions.magnitude / 2F; } }
+
+        public new CameraUnitCmdStat CameraStat { get { return base.CameraStat as CameraUnitCmdStat; } }
 
         private string _parentName;
         public string ParentName {
@@ -42,13 +51,16 @@ namespace CodeEnv.Master.GameContent {
 
         private Formation _unitFormation;
         public Formation UnitFormation {
-            get { return _unitFormation; }
+            get {
+                D.Assert(_unitFormation != Formation.None, "{0}.{1} not yet set.", FullName, typeof(Formation).Name);
+                return _unitFormation;
+            }
             set { SetProperty<Formation>(ref _unitFormation, value, "UnitFormation"); }
         }
 
         private AUnitElementItemData _hqElementData;
         public AUnitElementItemData HQElementData {
-            get { return _hqElementData; }
+            protected get { return _hqElementData; }
             set { SetProperty<AUnitElementItemData>(ref _hqElementData, value, "HQElementData", HQElementDataPropChangedHandler, HQElementDataPropChangingHandler); }
         }
 
@@ -74,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance UnitWeaponsRange {
             get { return _unitWeaponsRange; }
-            set { SetProperty<RangeDistance>(ref _unitWeaponsRange, value, "UnitWeaponsRange"); }
+            private set { SetProperty<RangeDistance>(ref _unitWeaponsRange, value, "UnitWeaponsRange"); }
         }
 
         private RangeDistance _unitSensorRange;
@@ -83,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance UnitSensorRange {
             get { return _unitSensorRange; }
-            set { SetProperty<RangeDistance>(ref _unitSensorRange, value, "UnitSensorRange"); }
+            private set { SetProperty<RangeDistance>(ref _unitSensorRange, value, "UnitSensorRange"); }
         }
 
         private CombatStrength _unitOffensiveStrength;
@@ -171,13 +183,12 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AUnitCmdItemData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
-        /// <param name="cmdMaxHitPts">The command maximum hit PTS.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
-        public AUnitCmdItemData(Transform cmdTransform, UnitCmdStat cmdStat, Player owner, ACameraItemStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, CommonTerms.Command, cmdStat.MaxHitPoints, owner, cameraStat, passiveCMs) {
+        /// <param name="cmdStat">The command stat.</param>
+        public AUnitCmdItemData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmdTransform, CommonTerms.Command, owner, cameraStat, cmdStat.MaxHitPoints, passiveCMs) {
             ParentName = cmdStat.UnitName;
             UnitFormation = cmdStat.UnitFormation;
             MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
@@ -189,7 +200,6 @@ namespace CodeEnv.Master.GameContent {
             ElementsData = new List<AUnitElementItemData>();
             _subscriptions = new Dictionary<AUnitElementItemData, IList<IDisposable>>();
         }
-
 
         protected virtual void Subscribe(AUnitElementItemData elementData) {
             _subscriptions.Add(elementData, new List<IDisposable>());
@@ -218,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void HQElementDataPropChangedHandler() {
             D.Assert(ElementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
-            Topography = HQElementData.Topography;
+            Topography = GetTopography();
         }
 
         private void HQElementIntelCoverageChangedEventHandler(object sender, IntelEventArgs e) {
@@ -226,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
             var isIntelCoverageSet = SetIntelCoverage(player, playerIntelCoverageOfHQElement);
             D.Assert(isIntelCoverageSet);
-            D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+            //D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
         }
 
         private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPoints) {
@@ -351,7 +361,6 @@ namespace CodeEnv.Master.GameContent {
             elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }
 
-
         public virtual void RemoveElement(AUnitElementItemData elementData) {
             bool isRemoved = ElementsData.Remove(elementData);
             D.Assert(isRemoved, "Attempted to remove {0} {1} that is not present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
@@ -360,6 +369,15 @@ namespace CodeEnv.Master.GameContent {
             Unsubscribe(elementData);
             RecalcPropertiesDerivedFromCombinedElements();
         }
+
+        /// <summary>
+        /// Called when the HQElement changes, this method returns the Topography for this UnitCmd. 
+        /// Default returns the HQElement's Topography.
+        /// <remarks>FleetCmds should override this method as their Flagship does not yet know their
+        /// Topography when the Flagship is first assigned as the HQElement during construction.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        protected virtual Topography GetTopography() { return HQElementData.Topography; }
 
         // OPTIMIZE avoid creating new Composition at startup for every element.add transaction
         protected abstract void RefreshComposition();
@@ -443,7 +461,6 @@ namespace CodeEnv.Master.GameContent {
 
             D.Assert(HQElementData != null);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
             if (elementData == HQElementData) {
-                //HQElementData.onIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
                 HQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
             }
         }

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -24,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// APlanetoidItems that are Planets.
 /// </summary>
-public class PlanetItem : APlanetoidItem, IShipOrbitable {
+public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
 
     public new PlanetData Data {
         get { return base.Data as PlanetData; }
@@ -32,6 +33,8 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
     }
 
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
+
+    private DetourGenerator _detourGenerator;
 
     #region Initialization
 
@@ -44,6 +47,13 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
+    protected override void InitializeObstacleZone() {
+        base.InitializeObstacleZone();
+        _obstacleZoneCollider.radius = Data.LowOrbitRadius;
+        Vector3 obstacleZoneCenter = Position + _obstacleZoneCollider.center;
+        _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.HighOrbitRadius);
+    }
+
     protected override ADisplayManager InitializeDisplayManager() {
         var dMgr = new PlanetDisplayManager(this, MakeIconInfo());
         SubscribeToIconEvents(dMgr.Icon);
@@ -52,23 +62,13 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
 
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick += (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
-        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover += HoverEventHandler;
+        iconEventListener.onClick += ClickEventHandler;
+        iconEventListener.onDoubleClick += DoubleClickEventHandler;
+        iconEventListener.onPress += PressEventHandler;
     }
 
     #endregion
-
-    protected override void PrepareForOnDeathNotification() {
-        base.PrepareForOnDeathNotification();
-        var moons = transform.GetComponentsInChildren<MoonItem>();
-        if (moons.Any()) {
-            // since the planet is on its way to destruction, the moons need to show their destruction too
-            moons.ForAll(moon => moon.HandlePlanetDying());
-        }
-        //TODO consider destroying the orbiter object and separating it from the OrbitSlot
-    }
 
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -90,6 +90,16 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
         var report = GetUserReport();
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
         return new IconInfo("Icon02", AtlasID.Contextual, iconColor);
+    }
+
+    protected override void HandleDeath() {
+        base.HandleDeath();
+        var moons = transform.GetComponentsInChildren<MoonItem>();
+        if (moons.Any()) {
+            // since the planet is on its way to destruction, the moons need to show their destruction too
+            moons.ForAll(moon => moon.HandlePlanetDying());
+        }
+        //TODO consider destroying the orbiter object and separating it from the OrbitSlot
     }
 
     #region Event and Property Change Handlers
@@ -115,10 +125,10 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
 
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick -= (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
-        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover -= HoverEventHandler;
+        iconEventListener.onClick -= ClickEventHandler;
+        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+        iconEventListener.onPress -= PressEventHandler;
     }
 
     #endregion
@@ -133,9 +143,25 @@ public class PlanetItem : APlanetoidItem, IShipOrbitable {
 
     #endregion
 
-    #region IShipTransitBanned Members
+    #region INavigableTarget Members
 
-    public override float ShipTransitBanRadius { get { return Data.HighOrbitRadius; } }
+    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
+        return Data.HighOrbitRadius + shipCollisionDetectionRadius; // OPTIMIZE want shipRadius value as AvoidableObstacleZone ends at LowOrbitRadius?
+    }
+
+    #endregion
+
+    #region IHighlightable Members
+
+    public override float HoverHighlightRadius { get { return Radius * 2F; } }
+
+    #endregion
+
+    #region IAvoidableObstacle Members
+
+    public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
+        return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius, formationOffset);
+    }
 
     #endregion
 

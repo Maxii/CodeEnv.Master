@@ -43,7 +43,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
     private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
-    Layers.DeepSpace, Layers.UI, Layers.ShipTransitBan, Layers.Shields, Layers.IgnoreRaycast, Layers.Water);
+        Layers.DeepSpace, Layers.UI, Layers.AvoidableObstacleZone, Layers.CollisionDetectionZone, Layers.Shields, Layers.IgnoreRaycast,
+        Layers.Water);
 
     /// <summary>
     /// The EventDispatcher (World or UI) mask that does not allow any events to be raised.
@@ -112,7 +113,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeUIEventDispatcher() {
-        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSingleComponentInChildren<UICamera>();
+        UIEventDispatcher = UICamera.first; //UIRoot.list.Single().gameObject.GetSingleComponentInChildren<UICamera>();
 
         //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
         UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
@@ -200,10 +201,12 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     /// <summary>
     /// Called when the InputMode changes.
-    /// Notes: [Un]subscribing to world mouse events covers camera movement from dragging and scrolling, and pressing on empty space (for SelectionManager).
-    /// Camera movement from arrow keys and the screen edge are covered by their specific bool as is other key detection used by PlayerViews.
-    /// Changing the eventReceiverMask of the _worldEventDispatcher covers all OnHover, OnClick, OnDoubleClick, PressEventHandler events embedded in world objects.
-    /// Changing the eventReceiverMask of the _uiEventDispatcher covers all OnHover, OnTooltip, OnClick, DraggingEventHandler and PressEventHandler events for UI elements.
+    /// Notes: [Un]subscribing to world mouse events covers camera movement from dragging and scrolling, 
+    /// and pressing on empty space (for SelectionManager). Camera movement from arrow keys and the screen edge 
+    /// are covered by their specific bool as is other key detection used by PlayerViews. Changing the eventReceiverMask 
+    /// of the _worldEventDispatchers covers all OnHover, OnClick, OnDoubleClick, PressEventHandler events embedded 
+    /// in world objects. Changing the eventReceiverMask of the _uiEventDispatcher covers all OnHover, 
+    /// OnTooltip, OnClick, DraggingEventHandler and PressEventHandler events for UI elements.
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     private void InputModePropChangedHandler() {
@@ -703,20 +706,6 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         Top,
         Bottom
     }
-
-    //public enum GameInputMode {
-    //    None,
-
-    //    NoInput,
-
-    //    LobbyInput,
-
-    //    PartialPopupInput,
-
-    //    FullPopupInput,
-
-    //    NormalInput
-    //}
 
     /// <summary>
     /// Simple container for a scroll event so it can be retrieved when desired by MainCameraControl.

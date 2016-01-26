@@ -55,8 +55,6 @@ namespace CodeEnv.Master.GameContent {
             _lineName = name;
         }
 
-        protected abstract void Initialize();
-
         #region Event and Property Change Handlers
 
         private void LineNamePropChangedHandler() {

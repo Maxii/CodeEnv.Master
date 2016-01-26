@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void GameSpeedPropChangingHandler(GameSpeed newSpeed) { // OPTIMIZE use static event?
-            //D.Log("{0}.GameSpeedPropChangingHandler() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
+            //D.Log("{0}.GameSpeedPropChangingHandler() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetValueName(), newSpeed.GetValueName());
             float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
             float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
             _hudRefreshRate *= speedChangeRatio;

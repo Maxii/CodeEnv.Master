@@ -17,14 +17,18 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Launch button for the NewGameMenu.
 /// </summary>
 public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
+
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
 
     protected override string TooltipContent { get { return "Launch a New Game with these settings."; } }
 
@@ -54,7 +58,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     protected override void RecordPopupListState(GuiElementID popupListID, string selection) {
         base.RecordPopupListState(popupListID, selection);
-        //D.Log("{0}.RecordPopupListState() called. ID = {1}, Selection = {2}.", GetType().Name, popupListID.GetName(), selectionName);
+        //D.Log("{0}.RecordPopupListState() called. ID = {1}, Selection = {2}.", GetType().Name, popupListID.GetValueName(), selectionName);
         switch (popupListID) {
             case GuiElementID.UniverseSizePopupList:
                 _universeSizeSelection = Enums<UniverseSizeGuiSelection>.Parse(selection);
@@ -151,8 +155,8 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
+    protected override void HandleValidClick() {
+        base.HandleValidClick();
         RecordPreferences();
         InitiateNewGame();
     }

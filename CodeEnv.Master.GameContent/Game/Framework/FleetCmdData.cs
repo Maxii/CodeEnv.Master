@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public new ShipData HQElementData {
-            get { return base.HQElementData as ShipData; }
+            protected get { return base.HQElementData as ShipData; }
             set { base.HQElementData = value; }
         }
 
@@ -97,23 +97,23 @@ namespace CodeEnv.Master.GameContent {
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="cmdStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public FleetCmdData(Transform cmdTransform, UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, Player owner)
-            : this(cmdTransform, cmdStat, cameraStat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        /// <param name="cameraStat">The camera stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        public FleetCmdData(Transform cmdTransform, Player owner, CameraFleetCmdStat cameraStat, UnitCmdStat cmdStat)
+            : this(cmdTransform, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="cmdStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public FleetCmdData(Transform cmdTransform, UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
+        /// <param name="cmdStat">The stat.</param>
+        public FleetCmdData(Transform cmdTransform, Player owner, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) {
         }
 
         public override void AddElement(AUnitElementItemData elementData) {
@@ -185,6 +185,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        protected override Topography GetTopography() {
+            if (!IsOperational) {
+                // if not yet operational, the Flagship does not yet know its topography
+                return References.SectorGrid.GetSpaceTopography(Position);
+            }
+            return base.GetTopography();
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

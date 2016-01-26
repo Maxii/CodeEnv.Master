@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IRevolver {
 
+        bool RotateDuringPause { get; set; }
+
         bool enabled { get; set; }
 
     }

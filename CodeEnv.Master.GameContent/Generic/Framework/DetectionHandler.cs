@@ -29,13 +29,14 @@ namespace CodeEnv.Master.GameContent {
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
         /// of the sensor used and the owner of the Cmd.
         /// </summary>
-        private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>> _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>>();
+        private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>> _detectionLookup;
         private IIntelItem _item;
         private IGameManager _gameMgr;
 
         public DetectionHandler(IIntelItem item) {
             _item = item;
-            _gameMgr = References.GameManager;
+            _gameMgr = References.GameManager;  // OPTIMIZE AllPlayers or AllPlayers - 1? Does item owner detect its own items this way?
+            _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>>(_gameMgr.AllPlayers.Count);
             Subscribe();
         }
 
@@ -153,6 +154,11 @@ namespace CodeEnv.Master.GameContent {
             var playerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(player);
             if (rangeLookup.Keys.Count > Constants.Zero) {
                 // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
+                if (!_item.IsOperational) {
+                    // Item is dead so defer any knowledge update until the final DistanceRange key is removed, 
+                    // at which time playerKnowledge.HandleItemDetectionLost will be called
+                    return;
+                }
                 playerKnowledge.HandleItemDetection(_item);
             }
             else {
@@ -263,7 +269,7 @@ namespace CodeEnv.Master.GameContent {
         //    }
 
         //    if (_data.TrySetIntelCoverage(player, newCoverage)) {
-        //        D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _data.FullName, player.LeaderName, newCoverage.GetName());
+        //        D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _data.FullName, player.LeaderName, newCoverage.GetValueName());
         //    }
         //}
 

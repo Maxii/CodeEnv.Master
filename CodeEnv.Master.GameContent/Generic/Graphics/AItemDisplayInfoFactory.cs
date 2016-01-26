@@ -286,7 +286,7 @@ namespace CodeEnv.Master.GameContent {
         //    }
 
         //    private string ConstructIntelText(AIntel intel) {
-        //        string intelMsg = intel.CurrentCoverage.GetName();
+        //        string intelMsg = intel.CurrentCoverage.GetValueName();
         //        string addendum = ". Intel is current.";
         //        var intelWithDatedCoverage = intel as Intel;
         //        if (intelWithDatedCoverage != null && intelWithDatedCoverage.IsDatedCoverageValid) {

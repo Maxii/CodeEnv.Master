@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using UnityEngine;
@@ -36,14 +37,16 @@ public class GuiShowModeControlButton : AGuiButton {
     /// </summary>
     public List<UIPanel> hideExceptions;    // Has Editor
 
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+
     protected override void Awake() {
         base.Awake();
-        D.Assert(showModeOnClick != ShowMode.None, "{0} has illegal {1} setting.".Inject(GetType().Name, typeof(ShowMode).Name), gameObject);
+        D.Assert(showModeOnClick != ShowMode.None, gameObject, "{0} has illegal {1} setting.", GetType().Name, typeof(ShowMode).Name);
     }
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
+    protected override void HandleValidClick() {
         if (showModeOnClick == ShowMode.Show) {
             GuiManager.Instance.ShowFixedPanels();
         }

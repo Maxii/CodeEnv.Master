@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  Abstract class for AMortalItem's that are Unit Elements.
+/// Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
 public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IElementAttackableTarget, ISensorDetectable {
 
@@ -35,7 +35,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         set { base.Data = value; }
     }
 
-    public override float Radius { get { return Data.HullDimensions.magnitude / 2F; } }
+    public override float Radius {
+        get {
+            var radius = Data.HullDimensions.magnitude / 2F;
+            //D.Log("{0} Radius = {1:0.##}.", FullName, radius);
+            return radius;
+        }
+    }
 
     public bool IsHQ { get { return Data.IsHQ; } }
 
@@ -49,7 +55,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected Rigidbody _rigidbody;
 
     private DetectionHandler _detectionHandler;
-    private BoxCollider _collider;
+    private BoxCollider _primaryCollider;
 
     #region Initialization
 
@@ -67,15 +73,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     private void InitializePrimaryCollider() {
-        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        _collider.isTrigger = false;
-        _collider.enabled = false;
-        _collider.size = Data.HullDimensions;
+        _primaryCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        _primaryCollider.isTrigger = false;
+        _primaryCollider.enabled = false;
+        _primaryCollider.size = Data.HullDimensions;
     }
 
-    private void InitializePrimaryRigidbody() {
+    protected virtual void InitializePrimaryRigidbody() {
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _rigidbody.useGravity = false;
+        _rigidbody.isKinematic = true;  // avoid physics affects until CommenceOperations, if at all
     }
 
     private void AttachEquipment() {
@@ -108,17 +115,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick += (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
-        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover += HoverEventHandler;
+        iconEventListener.onClick += ClickEventHandler;
+        iconEventListener.onDoubleClick += DoubleClickEventHandler;
+        iconEventListener.onPress += PressEventHandler;
     }
 
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        _collider.enabled = true;
+        _primaryCollider.enabled = true;
     }
 
     /// <summary>
@@ -130,9 +137,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         transform.parent = unitContainer;
     }
 
-    protected override void PrepareForOnDeathNotification() {
-        base.PrepareForOnDeathNotification();
-        // Note: Keep the collider enabled until destroyed or returned to the pool. This allows in-route ordnance to show its impact effect while the item is showing its death
+    protected override void HandleDeath() {
+        base.HandleDeath();
+        // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
+        // in-route ordnance to show its impact effect while the item is showing its death.
         Data.Weapons.ForAll(w => {
             w.readytoFire -= WeaponReadyToFireEventHandler;
             w.IsActivated = false;
@@ -140,11 +148,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         Data.ActiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         Data.Sensors.ForAll(s => s.IsActivated = false);
         Data.ShieldGenerators.ForAll(gen => gen.IsActivated = false);
+
+        Command.HandleSubordinateElementDeath(this);
     }
 
-    protected override void CleanupAfterOnDeathNotification() {
-        base.CleanupAfterOnDeathNotification();
-        Command.HandleSubordinateElementDeath(this);
+    /// <summary>
+    /// Overridden to assign Command as the focus to replace it. 
+    /// <remarks>If the last element to die then Command will shortly die 
+    /// after HandleSubordinateElementDeath() called. This in turn
+    /// will null the MainCameraControl.CurrentFocus property.
+    /// </remarks>
+    /// </summary>
+    protected override void HandleDeathWhileIsFocus() {
+        D.Assert(IsFocus);
+        //References.MainCameraControl.CurrentFocus = Command as ICameraFocusable;
+        (Command as ICameraFocusable).IsFocus = true;
     }
 
     /********************************************************************************************************************************************
@@ -436,7 +454,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region Event and Property Change Handlers
 
-    private void IsHQPropChangedHandler() {
+    protected virtual void IsHQPropChangedHandler() {
         OnIsHQChanged();
     }
 
@@ -463,7 +481,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         var firingSolution = e.FiringSolution;
         var target = firingSolution.EnemyTarget;
         var losWeapon = firingSolution.Weapon;
-        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRange(target)) {
+        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
             LaunchOrdnance(losWeapon, target);
         }
         else {
@@ -491,7 +509,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
-        //D.Log("{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
+        D.Log("{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
     }
 
     #endregion
@@ -510,7 +528,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         return RelayToCurrentState(firingSolutions);
     }
-
 
     #endregion
 
@@ -568,19 +585,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
-    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-    //    var iconEventListener = icon.EventListener;
-    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-    //    iconEventListener.onClick -= (go) => OnClick();
-    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
-    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick -= (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
-        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover -= HoverEventHandler;
+        iconEventListener.onClick -= ClickEventHandler;
+        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+        iconEventListener.onPress -= PressEventHandler;
     }
 
     #endregion
@@ -656,7 +666,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
     }
 
-    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+    public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
     }
 

@@ -26,8 +26,6 @@ public class SelectedUniverseCenterForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedUniverseCenter; } }
 
-    protected override void Cleanup() { }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

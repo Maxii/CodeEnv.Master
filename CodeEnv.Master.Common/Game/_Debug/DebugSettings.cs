@@ -61,6 +61,15 @@ namespace CodeEnv.Master.Common {
             private set { _disableGui = value; }
         }
 
+        private bool _disableRetreat;
+        public bool DisableRetreat {
+            get {
+                CheckValuesInitialized();
+                return _disableRetreat;
+            }
+            private set { _disableRetreat = value; }
+        }
+
         private bool _allPlayersInvulnerable;
         public bool AllPlayersInvulnerable {
             get {

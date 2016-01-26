@@ -42,6 +42,8 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// </summary>
     public IList<IElementAttackableTarget> AttackableEnemyTargetsDetected { get; private set; }
 
+    protected override bool IsKinematicRigidbodyReqd { get { return true; } }   // Stars and UCenter don't have rigidbodies
+
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         AttackableEnemyTargetsDetected = new List<IElementAttackableTarget>();
@@ -96,7 +98,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
                 RemoveEnemy(enemyTarget);
             }
         }
-        lostDetectionItem.HandleDetecionLostBy(ParentItem, RangeCategory);
+        lostDetectionItem.HandleDetectionLostBy(ParentItem, RangeCategory);
     }
 
     #region Event and Property Change Handlers

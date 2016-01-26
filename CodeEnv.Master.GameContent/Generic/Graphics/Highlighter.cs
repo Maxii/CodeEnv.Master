@@ -129,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
             var hoveredHighlight = References.SphericalHighlight;
             if (hoveredHighlight != null) {  // allows deactivation of the SphericalHighlight gameObject
                 if (toShow) {
-                    hoveredHighlight.SetTarget(_highlightableObject, _highlightableObject.HoverHighlightRadius);
+                    hoveredHighlight.SetTarget(_highlightableObject);
                 }
                 hoveredHighlight.Show(toShow);
             }

@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a StarbaseCmdItem.
     /// </summary>
-    public class StarbaseCmdData : AUnitBaseCmdItemData {   //: AUnitCmdItemData {
+    public class StarbaseCmdData : AUnitBaseCmdItemData {
 
         private StarbaseCategory _category;
         public StarbaseCategory Category {
@@ -49,23 +49,23 @@ namespace CodeEnv.Master.GameContent {
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="cmdStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public StarbaseCmdData(Transform cmdTransform, UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner)
-            : this(cmdTransform, cmdStat, cameraStat, owner, Enumerable.Empty<PassiveCountermeasure>()) {
+        /// <param name="cameraStat">The camera stat.</param>
+        /// <param name="cmdStat">The stat.</param>
+        public StarbaseCmdData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, UnitCmdStat cmdStat)
+            : this(cmdTransform, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
-        /// <param name="cmdStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
-        public StarbaseCmdData(Transform cmdTransform, UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(cmdTransform, cmdStat, owner, cameraStat, passiveCMs) {
+        /// <param name="cmdStat">The stat.</param>
+        public StarbaseCmdData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) {
             __PopulateResourcesFromSector();
         }
 

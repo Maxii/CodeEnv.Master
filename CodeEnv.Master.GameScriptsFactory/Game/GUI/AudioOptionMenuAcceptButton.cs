@@ -16,20 +16,24 @@
 
 // default namespace
 
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
+using UnityEngine;
 
 /// <summary>
 /// Accept button for the AudioOptionsMenu. 
 /// </summary>
 public class AudioOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+
     protected override string TooltipContent { get { return "Click to implement Option changes."; } }
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
-        //TODO
+    protected override void HandleValidClick() {
+        base.HandleValidClick();
+        // TODO
     }
 
     #endregion

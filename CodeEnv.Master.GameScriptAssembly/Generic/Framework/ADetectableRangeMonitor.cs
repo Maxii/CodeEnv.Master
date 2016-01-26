@@ -33,6 +33,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     where IDetectableType : class, IDetectable
     where EquipmentType : ARangedEquipment {
 
+    protected override bool IsTriggerCollider { get { return true; } }
+
     /// <summary>
     /// All the detectable Items in range of this Monitor.
     /// </summary>
@@ -134,9 +136,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected abstract void HandleDetectedObjectAdded(IDetectableType newlyDetectedObject);
 
     /// <summary>
-    /// Called immediately after an object has been removed from the list of objects detected by this monitor. 
+    /// Called immediately after an object has been removed from the list of objects detected by this monitor.
     /// </summary>
-    /// <param name="lostDetectionItem">The object whose detection was just lost and is no longer tracked .</param>
+    /// <param name="lostDetectionObject">The object just lost from detection.</param>
     protected abstract void HandleDetectedObjectRemoved(IDetectableType lostDetectionObject);
 
     /// <summary>

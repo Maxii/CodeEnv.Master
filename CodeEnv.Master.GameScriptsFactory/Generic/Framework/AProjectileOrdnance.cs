@@ -121,12 +121,12 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //string collidedObjectName = collision.collider.transform.parent.name + collision.collider.name;
         //D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
         //Name, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
-        //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(_transform.position, Target.Position));
+        //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(transform.position, Target.Position));
         var impactedGo = collision.collider.gameObject;
         var impactedTarget = impactedGo.GetComponent<IElementAttackableTarget>();
         if (impactedTarget != null) {
             // hit an attackableTarget
-            D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
+            //D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
             ContactPoint contactPoint = collision.contacts[0];
             var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {

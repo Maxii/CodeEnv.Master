@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IShipTransitBanned {
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle {
 
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
@@ -39,7 +39,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     private DetectionHandler _detectionHandler;
-    private SphereCollider _collider;
+    private SphereCollider _primaryCollider;
+    private SphereCollider _obstacleZoneCollider;
+    private DetourGenerator _detourGenerator;
 
     #region Initialization
 
@@ -47,26 +49,31 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         base.InitializeOnData();
         InitializePrimaryCollider();
         InitializeShipOrbitSlot();
-        InitializeTransitBanCollider();
+        InitializeObstacleZone();
         _detectionHandler = new DetectionHandler(this);
     }
 
     private void InitializePrimaryCollider() {
-        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
-        _collider.enabled = false;
-        _collider.isTrigger = false;
-        _collider.radius = Data.Radius;
+        _primaryCollider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+        _primaryCollider.enabled = false;
+        _primaryCollider.isTrigger = false;
+        _primaryCollider.radius = Data.Radius;
     }
 
     private void InitializeShipOrbitSlot() {
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
-    private void InitializeTransitBanCollider() {
-        SphereCollider shipTransitBanCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(shipTransitBanCollider.gameObject.layer == (int)Layers.ShipTransitBan);
-        shipTransitBanCollider.isTrigger = true;
-        shipTransitBanCollider.radius = ShipTransitBanRadius;
+    private void InitializeObstacleZone() {
+        _obstacleZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
+        D.Assert(_obstacleZoneCollider.gameObject.layer == (int)Layers.AvoidableObstacleZone);
+        _obstacleZoneCollider.enabled = false;
+        _obstacleZoneCollider.isTrigger = true;
+        _obstacleZoneCollider.radius = Data.LowOrbitRadius;
+        // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone collider has a kinematic rigidbody
+        D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        Vector3 obstacleZoneCenter = Position + _obstacleZoneCollider.center;
+        _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.HighOrbitRadius);
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -85,7 +92,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        _collider.enabled = true;
+        _primaryCollider.enabled = true;
+        _obstacleZoneCollider.enabled = true;
     }
 
     public UniverseCenterReport GetUserReport() { return Publisher.GetUserReport(); }
@@ -129,12 +137,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #endregion
 
-    #region IShipTransitBanned Members
-
-    public float ShipTransitBanRadius { get { return Data.HighOrbitRadius; } }
-
-    #endregion
-
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible { get { return true; } }
@@ -147,7 +149,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
     }
 
-    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
+    public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
     }
 
@@ -155,9 +157,25 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region INavigableTarget Members
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        return ShipTransitBanRadius + 1F;   // ~ 60
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
+        return Data.HighOrbitRadius + shipCollisionAvoidanceRadius; // OPTIMIZE want shipRadius value as AvoidableObstacleZone ends at LowOrbitRadius?
     }
+
+    #endregion
+
+    #region IAvoidableObstacle Members
+
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
+        return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius, formationOffset);
+    }
+
+    #endregion
+
+    #region IHighlightable Members
+
+    public override float HoverHighlightRadius { get { return Radius + 10F; } }
 
     #endregion
 

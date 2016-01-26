@@ -62,38 +62,71 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Finds the average vector between myLoc and all otherLocations.
+        /// Returns a more precise version of Vector2.ToString().
         /// </summary>
-        /// <param name="myLoc">My loc.</param>
-        /// <param name="otherLocations">The other locations.</param>
+        /// <param name="source">The source.</param>
         /// <returns></returns>
-        public static Vector3 FindMean(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
-            int length = otherLocations.Count();
+        public static string ToPreciseString(this Vector2 source) {
+            return source.ToString("G4");
+        }
+
+        /// <summary>
+        /// Gets the vectors between <c>fromLocation</c> and all <c>toLocations</c>.
+        /// </summary>
+        /// <param name="fromLocation">From location.</param>
+        /// <param name="toLocations">To locations.</param>
+        /// <returns></returns>
+        public static IEnumerable<Vector3> GetVectorsTo(this Vector3 fromLocation, IEnumerable<Vector3> toLocations) {
+            D.Assert(!toLocations.IsNullOrEmpty());
+            int length = toLocations.Count();
             var vectorsToOtherLocations = new List<Vector3>(length);
-            foreach (var loc in otherLocations) {
-                vectorsToOtherLocations.Add(loc - myLoc);
+            foreach (var loc in toLocations) {
+                vectorsToOtherLocations.Add(loc - fromLocation);
             }
-            return UnityUtility.Mean(vectorsToOtherLocations);
+            return vectorsToOtherLocations;
+        }
+
+
+        /// <summary>
+        /// Finds the average vector between fromLocation and all toLocations.
+        /// </summary>
+        /// <param name="fromLocation"> Source location.</param>
+        /// <param name="toLocations">The other locations.</param>
+        /// <returns></returns>
+        public static Vector3 FindMeanVectorTo(this Vector3 fromLocation, IEnumerable<Vector3> toLocations) {
+            var vectorsToLocations = fromLocation.GetVectorsTo(toLocations);
+            return MyMath.Mean(vectorsToLocations);
         }
 
         /// <summary>
-        /// Finds the normalized average direction from myLoc toward the otherLocations.
+        /// Finds the normalized average direction vector between fromLocation and all toLocations.
         /// </summary>
-        /// <param name="myLoc">My location.</param>
-        /// <param name="otherLocations">The provided locations.</param>
+        /// <param name="fromLocation">Source location.</param>
+        /// <param name="toLocations">The provided locations.</param>
         /// <returns></returns>
-        public static Vector3 FindMeanDirection(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
-            return myLoc.FindMean(otherLocations).normalized;
+        public static Vector3 FindMeanDirectionTo(this Vector3 fromLocation, IEnumerable<Vector3> toLocations) {
+            return fromLocation.FindMeanVectorTo(toLocations).normalized;
         }
 
         /// <summary>
-        /// Finds the mean distance between myLoc and all otherLocations.
+        /// Finds the mean distance between fromLocation and all toLocations.
         /// </summary>
-        /// <param name="myLoc">My loc.</param>
-        /// <param name="otherLocations">The other locations.</param>
+        /// <param name="fromLocation">Source location.</param>
+        /// <param name="toLocations">The other locations.</param>
         /// <returns></returns>
-        public static float FindMeanDistance(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
-            return myLoc.FindMean(otherLocations).magnitude;
+        public static float FindMeanDistanceTo(this Vector3 fromLocation, IEnumerable<Vector3> toLocations) {
+            return fromLocation.FindMeanVectorTo(toLocations).magnitude;
+        }
+
+        /// <summary>
+        /// Finds the maximum distance between fromLocation and all toLocations.
+        /// </summary>
+        /// <param name="fromLocation">Source location.</param>
+        /// <param name="toLocations">The other locations.</param>
+        /// <returns></returns>
+        public static float FindMaxDistanceTo(this Vector3 fromLocation, IEnumerable<Vector3> toLocations) {
+            var vectorsToLocations = fromLocation.GetVectorsTo(toLocations);
+            return Mathf.Sqrt(Mathf.Max(vectorsToLocations.Select(v => v.sqrMagnitude).ToArray()));
         }
 
         /// <summary>
@@ -154,6 +187,18 @@ namespace CodeEnv.Master.Common {
         public static void SetLocalPositionZ(this Transform t, float z) {
             Vector3 newPosition = new Vector3(t.localPosition.x, t.localPosition.y, z);
             t.localPosition = newPosition;
+        }
+
+        public static Vector3 SetX(this Vector3 source, float x) {
+            return new Vector3(x, source.y, source.z);
+        }
+
+        public static Vector3 SetY(this Vector3 source, float y) {
+            return new Vector3(source.x, y, source.z);
+        }
+
+        public static Vector3 SetZ(this Vector3 source, float z) {
+            return new Vector3(source.x, source.y, z);
         }
 
     }

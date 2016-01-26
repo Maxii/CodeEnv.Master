@@ -70,7 +70,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
 
     protected override FacilityHullCategory[] ElementCategories {
         get {
-            return new FacilityHullCategory[] { FacilityHullCategory.Factory, FacilityHullCategory.Defense, 
+            return new FacilityHullCategory[] { FacilityHullCategory.Factory, FacilityHullCategory.Defense,
             FacilityHullCategory.Economic, FacilityHullCategory.Laboratory, FacilityHullCategory.Barracks, FacilityHullCategory.ColonyHab };
         }
     }
@@ -83,7 +83,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
         LogEvent();
         var countermeasures = _availablePassiveCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         SettlementCmdStat cmdStat = __MakeCmdStat();
-        CameraFocusableStat cameraStat = __MakeCmdCameraStat(TempGameValues.FacilityMaxRadius, cmdStat.LowOrbitRadius);
+        CameraUnitCmdStat cameraStat = __MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
         SettlementCmdItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSingleComponentInChildren<SettlementCmdItem>();
@@ -131,17 +131,15 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
 
     private SettlementCmdStat __MakeCmdStat() {
         float maxHitPts = 10F;
-        float lowOrbitRadius = TempGameValues.BaseCmdUnitRadius;
         int maxCmdEffect = 100;
         int population = 100;
-        return new SettlementCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle, lowOrbitRadius, population);
+        return new SettlementCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle, population);
     }
 
-    private CameraFocusableStat __MakeCmdCameraStat(float maxElementRadius, float lowOrbitRadius) {
+    private CameraUnitCmdStat __MakeCmdCameraStat(float maxElementRadius) {
         float minViewDistance = maxElementRadius + 1F; // close to the HQ Facility
-        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
-        float optViewDistance = highOrbitRadius + 1F;
-        return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 60F);
+        float optViewDistanceAdder = Constants.ZeroF;
+        return new CameraUnitCmdStat(minViewDistance, optViewDistanceAdder, fov: 60F);
     }
 
     private CameraFollowableStat __MakeElementCameraStat(FacilityHullStat hullStat) {
@@ -250,7 +248,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
         D.Warn(radius > TempGameValues.FacilityMaxRadius, "Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.FacilityMaxRadius);
         return dimensions;
     }
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

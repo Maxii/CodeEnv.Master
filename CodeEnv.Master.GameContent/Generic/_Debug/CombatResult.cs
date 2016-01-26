@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CombatResult.cs
-// Record of the results of combat between a Weapon and its target.
+// Record of the results of combat between a single Weapon and its target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Record of the results of combat between a Weapon  and its target.
+    /// Record of the results of combat between a single Weapon and its target.
     /// </summary>
     public class CombatResult {
 
@@ -27,6 +27,15 @@ namespace CodeEnv.Master.GameContent {
 
         public string WeaponName { get; private set; }
 
+        /// <summary>
+        /// The name of the target when this round of combat was initiated.
+        /// <remarks>The name of the target can change during or after combat
+        /// due to a user renaming action or the addition or removal of the HQ addendum.
+        /// </remarks>
+        /// </summary>
+        /// <value>
+        /// The name of the target.
+        /// </value>
         public string TargetName { get; private set; }
 
         public int ShotsTaken { get; set; }

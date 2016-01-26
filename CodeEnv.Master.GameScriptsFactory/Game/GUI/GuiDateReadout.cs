@@ -37,7 +37,7 @@ public class GuiDateReadout : AGuiLabelReadout {
     }
 
     private void Subscribe() {
-        D.Log("{0} subscribing to {1}.dateChanged.", GetType().Name, typeof(GameTime).Name);
+        //D.Log("{0} subscribing to {1}.dateChanged.", GetType().Name, typeof(GameTime).Name);
         _gameTime.dateChanged += DateChangedEventHandler;
     }
 

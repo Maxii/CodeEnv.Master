@@ -102,7 +102,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     }
 
     private void OnInCameraLosChanged() {
-        if(inCameraLosChanged != null) {
+        if (inCameraLosChanged != null) {
             inCameraLosChanged(this, new EventArgs());
         }
         else {
@@ -158,7 +158,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             _meshCache[cacheKey].name = cacheKey + " Invisible Bounds";
         }
         else {
-            //D.Log("{0} is reusing {1} mesh.", _transform.name, _meshCache[cacheKey].name);
+            //D.Log("{0} is reusing {1} mesh.", transform.name, _meshCache[cacheKey].name);
         }
         _meshFilter.mesh = _meshCache[cacheKey];
     }

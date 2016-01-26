@@ -295,6 +295,40 @@ public class CtxMenu : AMonoBase {
         get { return _menuRoot != null && CtxHelper.IsActive(_menuRoot.gameObject); }
     }
 
+    private Vector3 CollapsedScale {
+        get {
+            Vector3 scale = Vector3.one;
+
+            if (growDirection == GrowDirection.Auto) {
+                switch (style) {
+                    case Style.Horizontal:
+                        scale = new Vector3(0.1f, 1f, 1f);
+                        break;
+                    case Style.Vertical:
+                        scale = new Vector3(1f, 0.1f, 1f);
+                        break;
+                    case Style.Pie:
+                        scale = new Vector3(0.1f, 0.1f, 1f);
+                        break;
+                }
+            }
+            else {
+                switch (growDirection) {
+                    case GrowDirection.LeftRight:
+                        scale = new Vector3(0.1f, 1f, 1f);
+                        break;
+                    case GrowDirection.UpDown:
+                        scale = new Vector3(1f, 0.1f, 1f);
+                        break;
+                    case GrowDirection.Center:
+                        scale = new Vector3(0.1f, 0.1f, 1f);
+                        break;
+                }
+            }
+            return scale;
+        }
+    }
+
     // We use the UICamera enough that caching it seems a good idea.
     private UICamera _uiCamera;
     private UICamera UICamera {
@@ -421,7 +455,7 @@ public class CtxMenu : AMonoBase {
                 if (isAnimated) {
                     TweenScale ts = TweenScale.Begin(_menuRoot.gameObject, animationDuration, CollapsedScale);
                     ts.method = UITweener.Method.EaseOut;
-                    ts.onFinished.Add(new EventDelegate(OnHideAnimationFinished));
+                    ts.onFinished.Add(new EventDelegate(HideAnimationFinishedEventHandler));    //ts.onFinished.Add(new EventDelegate(OnHideAnimationFinished));
 
                     if (hideSound) {
                         NGUITools.PlaySound(hideSound);
@@ -894,265 +928,9 @@ public class CtxMenu : AMonoBase {
         }
     }
 
-    void OnItemPress(GameObject go, bool isPressed) {
-        if (isPressed) {
-            int newIndex = FindItem(go);
-
-            if (newIndex != _index && newIndex >= 0) {
-                PlayHighlightSound();
-            }
-
-            SetHighlight(newIndex);
-            SelectInUI(newIndex);	// <-- In case this isn't already selected.
-        }
-        else {
-            // In NGUI terms receiving OnPress(false) following OnPress(true) for
-            // the same item pretty much means that the item in question has been
-            // actuated in some way. This is our cue to choose a menu item.
-
-            int newIndex = FindItem(go);
-
-            if (newIndex >= 0 /* && newIndex == index*/) {
-                // Menu bars are a weird special case. We use the menuBarActive flag
-                // to indicate that the isMenuBar is actively popping submenus, but
-                // we only do so after an item has been actuated. This primarily is
-                // to prevent the child menus from appearing whenever the mouse hovers
-                // over them, unless the user has indicated a desire to poke around
-                // in the menus.
-
-                if (isMenuBar) {
-                    _isMenuBarActive = true;
-                    SelectItem(items[_index]);
-                }
-                else if (_index >= 0) {
-                    // The current index will tell us what item the user actually released
-                    // over, which may not be the item that was initially pressed. See
-                    // OnItemDrag() below to see how this works.
-
-                    if (items[_index].submenu != null) {
-                        // The item the user released over might actually be in one of
-                        // our submenus. This is likely if the current index is referencing
-                        // a submenu item. We can determine the child item simply by recursing 
-                        // into the open submenus to see if any has a valid selection index.
-
-                        CtxMenu submenu = items[_index].submenu;
-                        while (submenu._index >= 0) {
-                            CtxMenu.Item submenuItem = submenu.items[submenu._index];
-                            if (submenuItem.submenu == null) {
-                                submenu.SelectItem(submenuItem);
-                                break;
-                            }
-                            else {
-                                submenu = submenuItem.submenu;
-                            }
-                        }
-                    }
-                    else {
-                        SelectItem(items[_index]);
-                    }
-                }
-            }
-        }
-    }
-    //private void ItemPressEventHandler(GameObject go, bool isPressed) {
-    //    if (isPressed) {
-    //        int newIndex = FindItem(go);
-
-    //        if (newIndex != _index && newIndex >= 0) {
-    //            PlayHighlightSound();
-    //        }
-
-    //        SetHighlight(newIndex);
-    //        SelectInUI(newIndex);	// <-- In case this isn't already selected.
-    //    }
-    //    else {
-    //        // In NGUI terms receiving OnPress(false) following OnPress(true) for
-    //        // the same item pretty much means that the item in question has been
-    //        // actuated in some way. This is our cue to choose a menu item.
-
-    //        int newIndex = FindItem(go);
-
-    //        if (newIndex >= 0 /* && newIndex == index*/) {
-    //            // Menu bars are a weird special case. We use the menuBarActive flag
-    //            // to indicate that the isMenuBar is actively popping submenus, but
-    //            // we only do so after an item has been actuated. This primarily is
-    //            // to prevent the child menus from appearing whenever the mouse hovers
-    //            // over them, unless the user has indicated a desire to poke around
-    //            // in the menus.
-
-    //            if (isMenuBar) {
-    //                _isMenuBarActive = true;
-    //                SelectItem(items[_index]);
-    //            }
-    //            else if (_index >= 0) {
-    //                // The current index will tell us what item the user actually released
-    //                // over, which may not be the item that was initially pressed. See
-    //                // OnItemDrag() below to see how this works.
-
-    //                if (items[_index].submenu != null) {
-    //                    // The item the user released over might actually be in one of
-    //                    // our submenus. This is likely if the current index is referencing
-    //                    // a submenu item. We can determine the child item simply by recursing 
-    //                    // into the open submenus to see if any has a valid selection index.
-
-    //                    CtxMenu submenu = items[_index].submenu;
-    //                    while (submenu._index >= 0) {
-    //                        CtxMenu.Item submenuItem = submenu.items[submenu._index];
-    //                        if (submenuItem.submenu == null) {
-    //                            submenu.SelectItem(submenuItem);
-    //                            break;
-    //                        }
-    //                        else {
-    //                            submenu = submenuItem.submenu;
-    //                        }
-    //                    }
-    //                }
-    //                else {
-    //                    SelectItem(items[_index]);
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-
-    void OnItemDrag(GameObject go, Vector2 delta) {
-        // We track item drags in order to correctly handle the case where the user
-        // clicks on an item, decides he doesn't actually want that item, and moves the
-        // highlight before releasing the mouse/touch. Since the drag always references
-        // the item that was originally clicked, we have to ask NGUI for the current
-        // hovered object to see what they're really pointing at.
-
-        int newIndex = FindItem(UICamera.hoveredObject);
-        if (newIndex >= 0) {
-            if (newIndex != _index) {
-                PlayHighlightSound();
-
-                SetHighlight(newIndex);
-                SelectInUI(newIndex);
-            }
-        }
-
-        // Check to see if the player is hovering over a submenu item. In this case
-        // we have to search a little deeper and manipulate the child menu a bit.
-        else {
-            CtxMenu childMenu = null;
-            CtxMenu.Item childItem = FindItemRecursively(UICamera.hoveredObject, out childMenu);
-            if (childItem != null) {
-                int childIdx = System.Array.IndexOf(childMenu.items, childItem);
-                if (childMenu._index != childIdx) {
-                    childMenu.PlayHighlightSound();
-                }
-
-                childMenu.SetHighlight(childIdx);
-            }
-        }
-    }
-    //private void ItemDragEventHandler() {
-    //    // We track item drags in order to correctly handle the case where the user
-    //    // clicks on an item, decides he doesn't actually want that item, and moves the
-    //    // highlight before releasing the mouse/touch. Since the drag always references
-    //    // the item that was originally clicked, we have to ask NGUI for the current
-    //    // hovered object to see what they're really pointing at.
-
-    //    int newIndex = FindItem(UICamera.hoveredObject);
-    //    if (newIndex >= 0) {
-    //        if (newIndex != _index) {
-    //            PlayHighlightSound();
-
-    //            SetHighlight(newIndex);
-    //            SelectInUI(newIndex);
-    //        }
-    //    }
-
-    //    // Check to see if the player is hovering over a submenu item. In this case
-    //    // we have to search a little deeper and manipulate the child menu a bit.
-    //    else {
-    //        CtxMenu childMenu = null;
-    //        CtxMenu.Item childItem = FindItemRecursively(UICamera.hoveredObject, out childMenu);
-    //        if (childItem != null) {
-    //            int childIdx = System.Array.IndexOf(childMenu.items, childItem);
-    //            if (childMenu._index != childIdx) {
-    //                childMenu.PlayHighlightSound();
-    //            }
-
-    //            childMenu.SetHighlight(childIdx);
-    //        }
-    //    }
-    //}
-
-    void OnItemHover(GameObject go, bool isOver) {
-        // Hovering over an item will potentially result in it becoming the active item.
-        if (isOver && (!isMenuBar || _isMenuBarActive)) {
-            SelectInUI(FindItem(go));
-        }
-    }
-    //private void ItemHoverEventHandler(GameObject go, bool isOver) {
-    //    // Hovering over an item will potentially result in it becoming the active item.
-    //    if (isOver && (!isMenuBar || _isMenuBarActive)) {
-    //        SelectInUI(FindItem(go));
-    //    }
-    //}
-
-    void OnItemSelect(GameObject go, bool isSelected) {
-        // We use the NGUI selection state to keep track of which menu item is
-        // currently active -- that is, highlighted. This allows us to make use
-        // of NGUI's standard submit/cancel and navigation semantics, which in
-        // turn allows us to support keyboard and game controller input.
-
-        if (isSelected) {
-            int newIndex = FindItem(go);
-            if (newIndex >= 0) {
-                PlayHighlightSound();
-                SetHighlight(newIndex);
-            }
-        }
-        else {
-            int newIndex = FindItem(go);
-            if (newIndex >= 0 && newIndex == _index) {
-                SetHighlight(-1);
-            }
-        }
-    }
-    //private void ItemSelectEventHandler(GameObject go, bool isSelected) {
-    //    // We use the NGUI selection state to keep track of which menu item is
-    //    // currently active -- that is, highlighted. This allows us to make use
-    //    // of NGUI's standard submit/cancel and navigation semantics, which in
-    //    // turn allows us to support keyboard and game controller input.
-
-    //    if (isSelected) {
-    //        int newIndex = FindItem(go);
-    //        if (newIndex >= 0) {
-    //            PlayHighlightSound();
-    //            SetHighlight(newIndex);
-    //        }
-    //    }
-    //    else {
-    //        int newIndex = FindItem(go);
-    //        if (newIndex >= 0 && newIndex == _index) {
-    //            SetHighlight(-1);
-    //        }
-    //    }
-    //}
-
-    void OnSubmenuSelect(CtxMenu submenu, bool isSelected) {
-        // This is a bit tricky: when a submenu item is selected we want its
-        // highlight state to remain active, but of course the NGUI selection has
-        // moved to the submenu. To keep the highlight state the way we want we
-        // pass the submenu select event up the chain of parents so that they
-        // can set the highlight state appropriately.
-
-        int submenuIdx = FindItemForSubmenu(submenu);
-        if (submenuIdx >= 0) {
-            if (isSelected) {
-                SetHighlight(submenuIdx);
-            }
-        }
-        OnSelect(isSelected);
-    }
-
     void OnSelect(bool isSelected) {
         if (parentMenu != null) {
-            parentMenu.OnSubmenuSelect(this, isSelected);
+            parentMenu.RetainHighlightOnItemWithSubmenuOnSubmenuItemSelectEvent(this, isSelected);  // parentMenu.OnSubmenuSelect()
         }
     }
 
@@ -1228,17 +1006,7 @@ public class CtxMenu : AMonoBase {
         }
     }
 
-    void OnItemKey(GameObject go, KeyCode key) {
-        // Normally we treat keyboard events the same whether the go directly to
-        // this object or to any of its child items.
-        OnKey(key);
-    }
-
-    void OnHideAnimationFinished() {
-        DestroyMenu();
-    }
-
-    void OnLocalize() {
+    void OnLocalize() { // UNCLEAR how this is called/used...
         if (isLocalized && _language != Localization.language && _itemData != null && items != null) {
             _language = Localization.language;
 
@@ -1246,6 +1014,155 @@ public class CtxMenu : AMonoBase {
             // this blows all the metrics to hell, so it's just easier to do this.
             Refresh();
         }
+    }
+
+    private void SubmenuItemPressEventHandler(GameObject go, bool isPressed) {  // OnItemPress(go, isPressed)
+        if (isPressed) {
+            int newIndex = FindItem(go);
+
+            if (newIndex != _index && newIndex >= 0) {
+                PlayHighlightSound();
+            }
+
+            SetHighlight(newIndex);
+            SelectInUI(newIndex);	// <-- In case this isn't already selected.
+        }
+        else {
+            // In NGUI terms receiving OnPress(false) following OnPress(true) for
+            // the same item pretty much means that the item in question has been
+            // actuated in some way. This is our cue to choose a menu item.
+
+            int newIndex = FindItem(go);
+
+            if (newIndex >= 0 /* && newIndex == index*/) {
+                // Menu bars are a weird special case. We use the menuBarActive flag
+                // to indicate that the isMenuBar is actively popping submenus, but
+                // we only do so after an item has been actuated. This primarily is
+                // to prevent the child menus from appearing whenever the mouse hovers
+                // over them, unless the user has indicated a desire to poke around
+                // in the menus.
+
+                if (isMenuBar) {
+                    _isMenuBarActive = true;
+                    SelectItem(items[_index]);
+                }
+                else if (_index >= 0) {
+                    // The current index will tell us what item the user actually released
+                    // over, which may not be the item that was initially pressed. See
+                    // SubmenuItemDragEventHandler() below to see how this works.
+
+                    if (items[_index].submenu != null) {
+                        // The item the user released over might actually be in one of
+                        // our submenus. This is likely if the current index is referencing
+                        // a submenu item. We can determine the child item simply by recursing 
+                        // into the open submenus to see if any has a valid selection index.
+
+                        CtxMenu submenu = items[_index].submenu;
+                        while (submenu._index >= 0) {
+                            CtxMenu.Item submenuItem = submenu.items[submenu._index];
+                            if (submenuItem.submenu == null) {
+                                submenu.SelectItem(submenuItem);
+                                break;
+                            }
+                            else {
+                                submenu = submenuItem.submenu;
+                            }
+                        }
+                    }
+                    else {
+                        SelectItem(items[_index]);
+                    }
+                }
+            }
+        }
+    }
+
+    private void SubmenuItemDragEventHandler(GameObject go, Vector2 delta) {    // OnItemDrag(go, delta)
+        // We track item drags in order to correctly handle the case where the user
+        // clicks on an item, decides he doesn't actually want that item, and moves the
+        // highlight before releasing the mouse/touch. Since the drag always references
+        // the item that was originally clicked, we have to ask NGUI for the current
+        // hovered object to see what they're really pointing at.
+
+        int newIndex = FindItem(UICamera.hoveredObject);
+        if (newIndex >= 0) {
+            if (newIndex != _index) {
+                PlayHighlightSound();
+
+                SetHighlight(newIndex);
+                SelectInUI(newIndex);
+            }
+        }
+
+        // Check to see if the player is hovering over a submenu item. In this case
+        // we have to search a little deeper and manipulate the child menu a bit.
+        else {
+            CtxMenu childMenu = null;
+            CtxMenu.Item childItem = FindItemRecursively(UICamera.hoveredObject, out childMenu);
+            if (childItem != null) {
+                int childIdx = System.Array.IndexOf(childMenu.items, childItem);
+                if (childMenu._index != childIdx) {
+                    childMenu.PlayHighlightSound();
+                }
+
+                childMenu.SetHighlight(childIdx);
+            }
+        }
+    }
+
+    private void SubmenuItemHoverEventHandler(GameObject go, bool isOver) { // OnItemHover(go, isOver)
+        // Hovering over an item will potentially result in it becoming the active item.
+        if (isOver && (!isMenuBar || _isMenuBarActive)) {
+            SelectInUI(FindItem(go));
+        }
+    }
+
+    private void SubmenuItemSelectEventHandler(GameObject go, bool isSelected) {    // OnItemSelect(go, isSelected)
+        // We use the NGUI selection state to keep track of which menu item is
+        // currently active -- that is, highlighted. This allows us to make use
+        // of NGUI's standard submit/cancel and navigation semantics, which in
+        // turn allows us to support keyboard and game controller input.
+
+        if (isSelected) {
+            int newIndex = FindItem(go);
+            if (newIndex >= 0) {
+                PlayHighlightSound();
+                SetHighlight(newIndex);
+            }
+        }
+        else {
+            int newIndex = FindItem(go);
+            if (newIndex >= 0 && newIndex == _index) {
+                SetHighlight(-1);
+            }
+        }
+    }
+
+    private void RetainHighlightOnItemWithSubmenuOnSubmenuItemSelectEvent(CtxMenu submenu, bool isSelected) {   // OnSubmenuSelect(submenu, isSelected)
+        // This is a bit tricky: when a submenu item is selected we want its
+        // highlight state to remain active, but of course the NGUI selection has
+        // moved to the submenu. To keep the highlight state the way we want we
+        // pass the submenu select event up the chain of parents so that they
+        // can set the highlight state appropriately.
+
+        int submenuIdx = FindItemForSubmenu(submenu);
+        if (submenuIdx >= 0) {
+            if (isSelected) {
+                SetHighlight(submenuIdx);
+            }
+        }
+        OnSelect(isSelected);
+    }
+
+
+    private void SubmenuItemKeyEventHandler(GameObject go, KeyCode key) {   // OnItemKey(go, key)
+        // Normally we treat keyboard events the same whether the go directly to
+        // this object or to any of its child items.
+        OnKey(key);
+    }
+
+    private void HideAnimationFinishedEventHandler() {  // OnHideAnimationFinished()
+        DestroyMenu();
     }
 
     #endregion
@@ -1275,7 +1192,7 @@ public class CtxMenu : AMonoBase {
 
             UICamera uiCam = UICamera;
 
-            EventDelegate.Add(_currentSubmenu.onSelection, OnSubmenuSelection);
+            EventDelegate.Add(_currentSubmenu.onSelection, SubmenuSelectionEventHandler);   //EventDelegate.Add(_currentSubmenu.onSelection, OnSubmenuSelection);
             _currentSubmenu.parentMenu = this;
 
             float dx = 0f, dy = 0f;
@@ -1401,7 +1318,8 @@ public class CtxMenu : AMonoBase {
         }
 
         if (_currentSubmenu == submenu) {
-            EventDelegate.Remove(_currentSubmenu.onSelection, OnSubmenuSelection);	// <-- In case the submenu was hidden with no selection being made.
+            // In case the submenu was hidden with no selection being made.
+            EventDelegate.Remove(_currentSubmenu.onSelection, SubmenuSelectionEventHandler);    //EventDelegate.Remove(_currentSubmenu.onSelection, OnSubmenuSelection);
             _currentSubmenu = null;
         }
 
@@ -1410,14 +1328,10 @@ public class CtxMenu : AMonoBase {
         }
     }
 
-    private void OnSubmenuSelection() {
+    private void SubmenuSelectionEventHandler() {   //OnSubmenuSelection()
         SendEvent(current.selectedItem);
         Hide();
     }
-    //private void SubmenuSelectionEventHandler() {
-    //    SendEvent(current.selectedItem);
-    //    Hide();
-    //}
 
     private bool IsChildMenu(GameObject go) {
         if (go == null) {
@@ -1445,14 +1359,10 @@ public class CtxMenu : AMonoBase {
                 return true;
             }
         }
-
         return false;
     }
 
     #endregion
-
-
-    // 
 
     /// <summary>
     /// Builds the menu. This method does all of the heavy lifting. Given the position
@@ -1695,8 +1605,7 @@ public class CtxMenu : AMonoBase {
                 _itemData[i].size = new Vector2(width, itemHeight);
                 itemWidth = Mathf.Max(itemWidth, width);
 
-                // We now have enough information to size the background for pie
-                // menu items.
+                // We now have enough information to size the background for pie menu items.
                 if (_itemData[i].background != null) {
                     float w = width + _backgroundPadding.x * 2f;
                     float h = itemHeight + _backgroundPadding.y * 2f + padding.y;
@@ -1735,11 +1644,11 @@ public class CtxMenu : AMonoBase {
                 }
 
                 if (listener != null) {
-                    listener.onHover = OnItemHover;
-                    listener.onPress = OnItemPress;
-                    listener.onDrag = OnItemDrag;
-                    listener.onSelect = OnItemSelect;
-                    listener.onKey = OnItemKey;
+                    listener.onHover = SubmenuItemHoverEventHandler;    //listener.onHover = OnItemHover;
+                    listener.onPress = SubmenuItemPressEventHandler;    //listener.onPress = OnItemPress;
+                    listener.onDrag = SubmenuItemDragEventHandler;      //listener.onDrag = OnItemDrag;
+                    listener.onSelect = SubmenuItemSelectEventHandler;  //listener.onSelect = OnItemSelect;
+                    listener.onKey = SubmenuItemKeyEventHandler;        //listener.onKey = OnItemKey;
                     listener.parameter = item;
                 }
             }
@@ -1763,7 +1672,7 @@ public class CtxMenu : AMonoBase {
 
                     _itemData[i].separator = sep;
 
-                    //Debug.Log("UIContextMenu separator size "+sep.cachedTransform.localScale);
+                    //D.Log("UIContextMenu separator size: {0}.", sep.cachedTransform.localScale);
 
                     if (style == Style.Horizontal) {
                         _itemData[i].size.x = padding.x * 2f + sepWidth;
@@ -2458,42 +2367,7 @@ public class CtxMenu : AMonoBase {
         bounds.center += delta;
     }
 
-    private Vector3 CollapsedScale {
-        get {
-            Vector3 scale = Vector3.one;
-
-            if (growDirection == GrowDirection.Auto) {
-                switch (style) {
-                    case Style.Horizontal:
-                        scale = new Vector3(0.1f, 1f, 1f);
-                        break;
-                    case Style.Vertical:
-                        scale = new Vector3(1f, 0.1f, 1f);
-                        break;
-                    case Style.Pie:
-                        scale = new Vector3(0.1f, 0.1f, 1f);
-                        break;
-                }
-            }
-            else {
-                switch (growDirection) {
-                    case GrowDirection.LeftRight:
-                        scale = new Vector3(0.1f, 1f, 1f);
-                        break;
-                    case GrowDirection.UpDown:
-                        scale = new Vector3(1f, 0.1f, 1f);
-                        break;
-                    case GrowDirection.Center:
-                        scale = new Vector3(0.1f, 0.1f, 1f);
-                        break;
-                }
-            }
-            return scale;
-        }
-    }
-
     // Change the highlight state given the new highlighted item index.
-
     private void SetHighlight(int newIndex) {
         if (items == null || items.Length == 0 || _index == newIndex) {
             return;
@@ -2600,7 +2474,6 @@ public class CtxMenu : AMonoBase {
             selectedItem = id;
             EventDelegate.Execute(onSelection);
         }
-
         current = previous;
     }
 
@@ -2666,7 +2539,6 @@ public class CtxMenu : AMonoBase {
                 return i;
             }
         }
-
         return -1;
     }
 

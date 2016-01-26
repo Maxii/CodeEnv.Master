@@ -15,6 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -35,6 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Vector3 HullDimensions { get { return HullEquipment.HullDimensions; } }
 
+        // OPTIMIZE all elements followable for now to support facilities rotating around bases or stars
         public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
 
         private bool _isHQ;
@@ -65,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance WeaponsRange {
             get { return _weaponsRange; }
-            set { SetProperty<RangeDistance>(ref _weaponsRange, value, "WeaponsRange"); }
+            private set { SetProperty<RangeDistance>(ref _weaponsRange, value, "WeaponsRange"); }
         }
 
         private RangeDistance _sensorRange;
@@ -74,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance SensorRange {
             get { return _sensorRange; }
-            set { SetProperty<RangeDistance>(ref _sensorRange, value, "SensorRange"); }
+            private set { SetProperty<RangeDistance>(ref _sensorRange, value, "SensorRange"); }
         }
 
         private RangeDistance _shieldRange;
@@ -83,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance ShieldRange {
             get { return _shieldRange; }
-            set { SetProperty<RangeDistance>(ref _shieldRange, value, "ShieldRange"); }
+            private set { SetProperty<RangeDistance>(ref _shieldRange, value, "ShieldRange"); }
         }
 
         private float _science;
@@ -118,16 +120,16 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AUnitElementItemData" /> class.
         /// </summary>
         /// <param name="elementTransform">The element transform.</param>
-        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public AUnitElementItemData(Transform elementTransform, AHullEquipment hullEquipment, Player owner, CameraFollowableStat cameraStat, IEnumerable<ActiveCountermeasure> activeCMs,
-            IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(elementTransform, hullEquipment.Name, hullEquipment.MaxHitPoints, owner, cameraStat, passiveCMs) {
+        public AUnitElementItemData(Transform elementTransform, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
+            AHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators)
+            : base(elementTransform, hullEquipment.Name, owner, cameraStat, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
@@ -136,6 +138,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize(activeCMs);
             Initialize(shieldGenerators);
         }
+
         private void InitializeWeapons() {
             // weapons are already present in hullEquipment
             Weapons.ForAll(weap => {

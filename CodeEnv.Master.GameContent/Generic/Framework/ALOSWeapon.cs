@@ -48,6 +48,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        //UNCLEAR what happens when the traverse fails aka job is killed? onTraverseFailed? why would it ever fail?
         private void OnWeaponAimed(LosWeaponFiringSolution firingSolution) {
             if (weaponAimed != null) {
                 weaponAimed(this, new LosWeaponFiringSolutionEventArgs(firingSolution));
@@ -55,8 +56,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        //TODO what happens when the traverse fails aka job is killed? onTraverseFailed? why would it ever fail?
 
         /// <summary>
         /// Aims this LOS Weapon using the provided firing solution.

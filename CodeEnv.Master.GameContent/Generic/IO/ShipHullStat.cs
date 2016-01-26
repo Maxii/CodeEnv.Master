@@ -25,10 +25,12 @@ namespace CodeEnv.Master.GameContent {
     public class ShipHullStat : AHullStat {
 
         public ShipHullCategory HullCategory { get; private set; }
+
         /// <summary>
         /// The drag of this hull in Topography.OpenSpace.
         /// </summary>
         public float Drag { get; private set; }
+
         public float Science { get; private set; }
         public float Culture { get; private set; }
         public float Income { get; private set; }

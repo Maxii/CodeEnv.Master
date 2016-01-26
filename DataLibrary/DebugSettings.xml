@@ -21,6 +21,10 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
+      <PropertyName>DisableRetreat</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
+    <Setting>
       <PropertyName>AllPlayersInvulnerable</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
@@ -50,11 +54,11 @@
     </Setting>
     <Setting>
       <PropertyName>EnableFleetCourseDisplay</PropertyName>
-      <PropertyValue>false</PropertyValue>
+      <PropertyValue>true</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>EnableShipCourseDisplay</PropertyName>
-      <PropertyValue>true</PropertyValue>
+      <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>AllowEnemyOrders</PropertyName>

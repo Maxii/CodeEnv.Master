@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
-
+    using System.Collections.Generic;
     using UnityEngine;
 
     /// <summary>
@@ -25,11 +25,19 @@ namespace CodeEnv.Master.Common {
     public interface IGameInputHelper {
 
         /// <summary>
-        /// Gets the NguiMouseButton that is being used to generate the current event.
-        /// Valid only within an Ngui UICamera-generated event.
+        /// Returns <c>true</c> if UICamera.currentKey is present in the provided keys.
         /// </summary>
+        /// <param name="keys">The keys.</param>
         /// <returns></returns>
-        NguiMouseButton CurrentMouseButton { get; }
+        bool IsCurrentKeyAnyOf(IList<KeyCode> keys);
+
+        /// <summary>
+        /// Returns <c>true</c> if UICamera.currentTouchID is present in the provided NguiMouseButtons.
+        /// If currentTouchID is not an NguiMouseButton, returns false without warning.
+        /// </summary>
+        /// <param name="buttons">The buttons.</param>
+        /// <returns></returns>
+        bool IsCurrentMouseButtonAnyOf(IList<NguiMouseButton> buttons);
 
         /// <summary>
         /// Tests whether the left mouse button is the current button that is being

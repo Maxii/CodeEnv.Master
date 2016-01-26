@@ -69,11 +69,11 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
     }
 
     protected override void PositionWindow() {
-        //D.Log("{0}.PositionPopup() called.", GetType().Name);
+        //D.Log("{0}.PositionWindow() called.", GetType().Name);
         Vector3 intendedLocalPosition;
         if (SelectedItemHudWindow.Instance.IsShowing) {
             var selectionPopupLocalCorners = SelectedItemHudWindow.Instance.LocalCorners;
-            //D.Log("{0} local corners: {1}.", typeof(SelectionPopup).Name, selectionPopupLocalCorners.Concatenate());
+            //D.Log("{0} local corners: {1}.", typeof(SelectedItemHudWindow).Name, selectionPopupLocalCorners.Concatenate());
             intendedLocalPosition = _startingLocalPosition + selectionPopupLocalCorners[1];
         }
         else {

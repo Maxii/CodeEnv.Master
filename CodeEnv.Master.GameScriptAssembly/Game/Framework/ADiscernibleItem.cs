@@ -235,7 +235,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         ShowHoverHighlight(false);
     }
 
-    protected void HoverEventHandler(bool isOver) {
+    protected void HoverEventHandler(GameObject go, bool isOver) {
         //D.Log("{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
         if (IsDiscernibleToUser) {
             if (isOver) {
@@ -248,7 +248,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     void OnHover(bool isOver) {
-        HoverEventHandler(isOver);
+        HoverEventHandler(gameObject, isOver);
     }
 
     protected virtual void HandleLeftClick() { IsSelected = true; }
@@ -256,7 +256,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected virtual void HandleMiddleClick() { IsFocus = true; }
     protected virtual void HandleRightClick() { }
 
-    protected void ClickEventHandler() {
+    protected void ClickEventHandler(GameObject go) {
         //D.Log("{0} is handling an OnClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
@@ -281,14 +281,14 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     void OnClick() {
-        ClickEventHandler();
+        ClickEventHandler(gameObject);
     }
 
     protected virtual void HandleLeftPress() { }
     protected virtual void HandleMiddlePress() { }
     protected virtual void HandleRightPress() { }
 
-    protected void PressEventHandler(bool isDown) {
+    protected void PressEventHandler(GameObject go, bool isDown) {
         //D.Log("{0} is handling an OnPress event. IsDown = {1}.", FullName, isDown);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
@@ -322,7 +322,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     void OnPress(bool isDown) {
-        PressEventHandler(isDown);
+        PressEventHandler(gameObject, isDown);
     }
 
     protected virtual void HandleLeftPressRelease() { }
@@ -338,7 +338,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected virtual void HandleMiddleDoubleClick() { }
     protected virtual void HandleRightDoubleClick() { }
 
-    protected void DoubleClickEventHandler() {
+    protected void DoubleClickEventHandler(GameObject go) {
         //D.Log("{0} is handling an OnDoubleClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
@@ -357,7 +357,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     void OnDoubleClick() {
-        DoubleClickEventHandler();
+        DoubleClickEventHandler(gameObject);
     }
 
     #endregion
@@ -447,7 +447,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     #region IHighlightable Members
 
-    public virtual float HoverHighlightRadius { get { return Radius * 2F; } }
+    public virtual float HoverHighlightRadius { get { return Radius; } }
 
     public virtual float HighlightRadius { get { return Radius * Screen.height * 3F; } }
 

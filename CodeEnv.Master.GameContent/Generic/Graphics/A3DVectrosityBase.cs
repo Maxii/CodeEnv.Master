@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _lineWidth, value, "LineWidth", LineWidthPropChangedHandler); }
         }
 
-        private List<Vector3> _points;  // must be a List<> (not IList<>) to allow access to the list's capacity during Initialize
+        private List<Vector3> _points;  // must be a List<> (not IList<>) to allow access to the list's capacity during InitializeLine
         public List<Vector3> Points {
             get { return _points; }
             set { SetProperty<List<Vector3>>(ref _points, value, "Points", PointsPropChangedHandler); }
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
             _color = color;
         }
 
-        protected override void Initialize() {
+        protected virtual void Initialize() {
 
             /*********************************************************************************************************************************************
              * GOTCHA! The new VectorLine 5.0 constructor relies on the capacity of the list when Points.Count is 0. 
@@ -75,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
 
             var points = new List<Vector3>(Points.Capacity);
             points.AddRange(Points);
-            //D.Log("List being used for Line creation: Capacity = {0}, Count = {1}.", points.Capacity, points.Count);
+            D.Log("List being used for Line creation: Capacity = {0}, Count = {1}.", points.Capacity, points.Count);
             _line = new VectorLine(LineName, points, texture, LineWidth, _lineType);
             _line.color = Color.ToUnityColor(); // color removed from constructor in Vectrosity 4.0
             _line.layer = (int)Layers.TransparentFX;    // make the line visible to the mainCamera. line.layer added in Vectrosity 5.0
@@ -132,7 +132,7 @@ namespace CodeEnv.Master.GameContent {
         private void PointsPropChangedHandler() {
             if (_line != null) {
                 _line.points3.Clear();  //_line.Resize(Points); removed by Vectrosity 4.0
-                //D.Log("{0}.PointsPropChangedHandler called. Adding {1} points.", GetType().Name, Points.Count);
+                D.Log("{0}.PointsPropChangedHandler called. Adding {1} points.", GetType().Name, Points.Count);
                 _line.points3.AddRange(Points);
             }
         }

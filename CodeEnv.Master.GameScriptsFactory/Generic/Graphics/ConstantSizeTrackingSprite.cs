@@ -35,7 +35,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, "Sprite size not set.", this);
+        D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     /// </summary>
     /// <param name="spriteFilename">The Filename of the sprite in the atlas.</param>
     public override void Set(string spriteFilename) {
-        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
+        D.Assert(Widget.atlas != null, WidgetTransform, "Sprite atlas has not been assigned.");
         Widget.spriteName = spriteFilename;
     }
 

@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and HudContent Publisher for Planetoids.
     /// </summary>
-    public class PlanetoidPublisher : AIntelItemPublisher<PlanetoidReport, APlanetoidData> {
+    public class PlanetoidPublisher : AIntelItemPublisher<PlanetoidReport, PlanetoidData> {
 
         public override ColoredStringBuilder ItemHudText {
             get { return PlanetoidDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IPlanetoidItem _item;
 
-        public PlanetoidPublisher(APlanetoidData data, IPlanetoidItem item) : base(data) { _item = item; }
+        public PlanetoidPublisher(PlanetoidData data, IPlanetoidItem item) : base(data) { _item = item; }
 
         protected override PlanetoidReport GenerateReport(Player player) {
             return new PlanetoidReport(_data, player, _item);

@@ -40,18 +40,29 @@ namespace CodeEnv.Master.GameContent {
         bool IsMobile { get; }
 
         /// <summary>
-        /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
+        /// Readonly. The radius in units of the conceptual 'globe' that encompasses this Item. 
         /// </summary>
         float Radius { get; }
 
         Topography Topography { get; }
 
         /// <summary>
-        /// Gets the CloseEnoughDistance value required by <c>navigatingItem</c> for this INavigableTarget.
+        /// The radius around this INavigableTarget that contains known obstacles.
+        /// Used primarily by FleetNavigator to set the length of its obstacle detection castingRay
+        /// so it doesn't determine the target itself as an obstacle.
         /// </summary>
-        /// <param name="navigatingItem">The navigating item, a ship or fleetCmd.</param>
+        float RadiusAroundTargetContainingKnownObstacles { get; }
+
+        /// <summary>
+        /// Returns the distance from the target that is 'close enough' for a ship to deem itself 'arrived' at the target.
+        /// <remarks>INavigableTargets that are IObstacles incorporate the shipCollisionDetectionRadius in their answers
+        /// so the ship's CollisionDetection collider won't encounter the target's AvoidableObstacleZone. 
+        /// Those that aren't IObstacles have no need to incorporate the value.</remarks>
+        /// </summary>
+        /// <param name="shipCollisionDetectionRadius">The collision detection radius of the inquiring ship.</param>
         /// <returns></returns>
-        float GetCloseEnoughDistance(ICanNavigate navigatingItem);
+        float GetShipArrivalDistance(float shipCollisionDetectionRadius);
+
 
     }
 }

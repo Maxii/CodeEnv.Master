@@ -30,7 +30,7 @@ using UnityEngine;
 /// <summary>
 /// AUnitCmdItems that are Fleets.
 /// </summary>
-public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICanNavigate {
+public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     public new FleetCmdData Data {
         get { return base.Data as FleetCmdData; }
@@ -56,18 +56,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     /// </summary>
     public bool IsHeadingConfirmed { get { return Elements.All(e => (e as ShipItem).IsHeadingConfirmed); } }
 
-    public override float UnitRadius {
-        get {
-            var result = Data.Radius;
-            if (Elements.Count >= 2) {
-                var meanDistanceToFleetShips = Position.FindMeanDistance(Elements.Except(HQElement).Select(e => e.Position));
-                result = Mathf.Max(result, meanDistanceToFleetShips);
-            }
-            //D.Log("{0}.UnitRadius is {1}.", FullName, result);
-            return result;
-        }
-    }
-
     private FleetPublisher _publisher;
     public FleetPublisher Publisher {
         get { return _publisher = _publisher ?? new FleetPublisher(Data, this); }
@@ -76,7 +64,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     /// <summary>
     /// The stations in this fleet's formation.
     /// </summary>
-    private List<FormationStationMonitor> _formationStations;
+    //private IList<FormationStationMonitor> _formationStations;
     private VelocityRay _velocityRay;
     private CoursePlotLine _coursePlotLine;
     private FleetNavigator _navigator;
@@ -86,7 +74,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _formationStations = new List<FormationStationMonitor>();
+        //_formationStations = new List<FormationStationMonitor>();
+    }
+
+    protected override AFormationManager InitializeFormationMgr() {
+        return new FleetFormationManager(this);
     }
 
     protected override void InitializeOnData() {
@@ -117,39 +109,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         var rigidbody = gameObject.AddComponent<Rigidbody>();
         rigidbody.isKinematic = false; // FixedJoint needs a Rigidbody. If isKinematic acts as anchor for HQShip
         rigidbody.useGravity = false;
+        rigidbody.mass = Constants.ZeroF;
+        rigidbody.drag = Constants.ZeroF;
+        rigidbody.angularDrag = Constants.ZeroF;
         _hqJoint = gameObject.AddComponent<FixedJoint>();
     }
 
     #endregion
 
+
+
     public override void CommenceOperations() {
         base.CommenceOperations();
         CurrentState = FleetState.Idling;
-    }
-
-    public override void AddElement(AUnitElementItem element) {
-        base.AddElement(element);
-        ShipItem ship = element as ShipItem;
-        //D.Log("{0}.CurrentState = {1} when being added to {2}.", ship.FullName, ship.CurrentState.GetName(), FullName);
-
-        // fleets have formation stations (or create them) and allocate them to new ships. Ships should not come with their own
-        D.Assert(ship.FormationStation == null, "{0} should not yet have a FormationStation.".Inject(ship.FullName));
-
-        ship.Command = this;
-
-        if (HQElement != null) {
-            // regeneration of a formation requires a HQ element
-            var unusedFormationStations = _formationStations.Where(fst => fst.AssignedShip == null);
-            if (!unusedFormationStations.IsNullOrEmpty()) {
-                var unusedFst = unusedFormationStations.First();
-                ship.FormationStation = unusedFst;
-                unusedFst.AssignedShip = ship;
-            }
-            else {
-                // there are no empty formation stations so regenerate the whole formation
-                _formationGenerator.RegenerateFormation();    //TODO instead, create a new one at the rear of the formation
-            }
-        }
     }
 
     public void TransferShip(ShipItem ship, FleetCmdItem fleetCmd) {
@@ -162,10 +134,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     public override void RemoveElement(AUnitElementItem element) {
         base.RemoveElement(element);
 
-        // remove the formationStation from the ship and the ship from the FormationStation
         var ship = element as ShipItem;
-        var shipFst = ship.FormationStation;
-        shipFst.AssignedShip = null;
+        // Remove FS so the GC can clean it up. Also, if joining another fleet, the joined fleet will find it null 
+        // when adding the ship and therefore make a new FS with the proper reference to the joined fleet
         ship.FormationStation = null;
 
         if (!IsOperational) {
@@ -175,13 +146,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
         if (ship == HQElement) {
             // HQ Element has left
-            var newHQElement = SelectHQElement();
-            if (newHQElement == null) {
-                // newHQElement can be null if no remaining elements to choose from
-                D.Warn("{0} cannot select a HQElement. Retaining {1}.", FullName, HQElement.FullName);
-                return;
-            }
-            HQElement = newHQElement;
+            HQElement = SelectHQElement();
         }
     }
 
@@ -193,12 +158,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         return Elements.Cast<ShipItem>().Select(s => s.GetReport(player)).ToArray();
     }
 
+    /// <summary>
+    /// Selects and returns a new HQElement.
+    /// Throws an InvalidOperationException if there are no elements to select from.
+    /// </summary>
+    /// <returns></returns>
     private ShipItem SelectHQElement() {
-        return Elements.MaxBy(e => e.Data.Health) as ShipItem;
+        return Elements.MaxBy(e => e.Data.Health) as ShipItem;  // IMPROVE
     }
-
-    // A fleetCmd causes heading and speed changes to occur by issuing orders to ships, not by directly telling ships to modify 
-    // their speed or heading. As such, the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
 
     protected override void AttachCmdToHQElement() {
         if (_hqJoint == null) {
@@ -208,61 +175,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         // Note: Assigning connectedBody links the two rigidbodies at their current relative positions. Therefore the Cmd must be
         // relocated to the HQElement before the joint is made. Making the joint does not itself relocate Cmd to the newly connectedBody
         _hqJoint.connectedBody = HQElement.gameObject.GetSafeComponent<Rigidbody>();
-        //D.Log("{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, _transform.position);
-    }
-    protected internal override void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
-        ShipItem ship = element as ShipItem;
-
-        Rigidbody shipRigidbody = ship.transform.GetComponent<Rigidbody>();
-        if (shipRigidbody.isKinematic) {
-            // if kinematic, this ship came directly from the FleetCreator so it needs to get its initial position
-            // instantly places the ship in its proper position before assigning it to a station so the station will find it 'onStation'
-            // during runtime, ships that already exist (aka aren't kinematic) will move under power to their station when they are idle
-            base.PositionElementInFormation(element, stationOffset);
-            shipRigidbody.isKinematic = false;
-            // as ships were temporarily set to be immune to physics in FleetUnitCreator. Now that they are properly positioned, change them back
-        }
-
-        FormationStationMonitor shipStation = ship.FormationStation;
-        if (shipStation == null) {
-            // the ship does not yet have a formation station so find or make one
-            var unusedStations = _formationStations.Where(fst => fst.AssignedShip == null);
-            if (!unusedStations.IsNullOrEmpty()) {
-                // there are unused stations so assign the ship to one of them
-                //D.Log("{0} is being assigned an existing but unassigned FormationStation.", ship.FullName);
-                shipStation = unusedStations.First();
-                shipStation.AssignedShip = ship;
-                ship.FormationStation = shipStation;
-            }
-            else {
-                // there are no unused stations so make a new one and assign the ship to it
-                //D.Log("{0} is adding a new FormationStation.", ship.FullName);
-                shipStation = UnitFactory.Instance.MakeFormationStationInstance(stationOffset, this);
-                shipStation.AssignedShip = ship;
-                ship.FormationStation = shipStation;
-                _formationStations.Add(shipStation);
-            }
-        }
-        else {
-            //D.Log("{0} already has a FormationStation.", ship.FullName);
-        }
-        //D.Log("{0} FormationStation assignment offset position = {1}.", ship.FullName, stationOffset);
-        shipStation.StationOffset = stationOffset;
-    }
-
-    protected internal override void CleanupAfterFormationGeneration() {
-        base.CleanupAfterFormationGeneration();
-        // remove and destroy any remaining formation stations that may still exist
-        var unusedStations = _formationStations.Where(fst => fst.AssignedShip == null);
-        if (!unusedStations.IsNullOrEmpty()) {
-            unusedStations.ForAll(fst => {
-                _formationStations.Remove(fst);
-                Destroy(fst.gameObject);
-            });
-        }
+        //D.Log("{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, transform.position);
     }
 
     public void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
+        var localTgtBearing = transform.InverseTransformDirection((target.Position - Position).normalized);
+        D.Log("{0} issuing Ship move orders. Target: {1} at LocalBearing {2}, Speed = {3}.", FullName, target.FullName, localTgtBearing, speed.GetValueName());
         var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.UnitCommand, target, speed);
         Elements.ForAll(e => {
             var ship = e as ShipItem;
@@ -273,6 +191,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     protected override void SetDeadState() {
         CurrentState = FleetState.Dead;
+    }
+
+    protected override void HandleDeath() {
+        base.HandleDeath();
     }
 
     /// <summary>
@@ -292,9 +214,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     internal void AssessShowCoursePlot() {
         // Note: left out IsDiscernible ... as I want these lines to show up whether the fleet is on screen or not
-        var coursePlot = _navigator.Course;
-        bool toShow = (DebugSettings.Instance.EnableFleetCourseDisplay || IsSelected) && coursePlot.Count > Constants.Zero;
-        ShowCoursePlot(toShow, coursePlot);
+        bool toShow = (DebugSettings.Instance.EnableFleetCourseDisplay || IsSelected) && _navigator.Course.Count > Constants.Zero;
+        ShowCoursePlot(toShow);
     }
 
     protected override void ShowSelectedItemHud() {
@@ -306,32 +227,36 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     }
 
     /// <summary>
-    /// Shows a Ray eminating from the Fleet's CommandTransform (tracking the HQ ship) indicating its course and speed.
+    /// Shows a Ray emanating from the Fleet's CommandTransform (tracking the HQ ship) indicating its course and speed.
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
-    private void ShowVelocityRay(bool toShow) {
-        if (DebugSettings.Instance.EnableFleetVelocityRays) {
-            if (_velocityRay == null) {
-                if (!toShow) { return; }
-                Reference<float> fleetSpeed = new Reference<float>(() => Data.CurrentSpeed);
-                var name = DisplayName + " Velocity";
-                _velocityRay = new VelocityRay(name, transform, fleetSpeed, width: 2F, color: GameColor.Green);
-            }
-            _velocityRay.Show(toShow);
+    private void __ShowVelocityRay(bool toShow) {
+        if (!DebugSettings.Instance.EnableFleetVelocityRays) {
+            return;
         }
+        if (_velocityRay == null) {
+            if (!toShow) { return; }
+            Reference<float> fleetSpeed = new Reference<float>(() => Data.CurrentSpeed);
+            var name = "{0} VelocityRay".Inject(DisplayName);
+            _velocityRay = new VelocityRay(name, transform, fleetSpeed, width: 2F, color: GameColor.Green);
+        }
+        // unlike ship, little or no benefit to disposing of line once built as it is needed everytime Fleet is discernible
+        _velocityRay.Show(toShow);
     }
 
     /// <summary>
     /// Shows the current course plot of the fleet. Fleet courses contain a single
     /// final destination but potentially many waypoints. When a new order is received 
     /// with a new destination, the previous course plot is removed.
+    /// IMPROVE Course should not show if AI fleet, but line of travel across universe should show
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [to show].</param>
-    /// <param name="course">The course.</param>
-    private void ShowCoursePlot(bool toShow, IList<INavigableTarget> course) {
-        if (course.Any()) {
+    private void ShowCoursePlot(bool toShow) {
+        if (toShow) {
+            var course = _navigator.Course;
+            D.Assert(course.Count > Constants.Zero);
             if (_coursePlotLine == null) {
-                var name = DisplayName + " CoursePlot";
+                var name = "{0} CoursePlot".Inject(DisplayName);
                 _coursePlotLine = new CoursePlotLine(name, course, 1F, GameColor.Yellow);
             }
             else {
@@ -339,6 +264,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                 //    FullName, typeof(CoursePlotLine).Name, _coursePlotLine.Points.Length, course.Count);
                 _coursePlotLine.UpdateCourse(course);
             }
+            // Little or no benefit to disposing of line as it is needed everytime fleet is selected
         }
         if (_coursePlotLine != null) {
             _coursePlotLine.Show(toShow);
@@ -398,7 +324,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     protected override void IsDiscernibleToUserPropChangedHandler() {
         base.IsDiscernibleToUserPropChangedHandler();
-        ShowVelocityRay(IsDiscernibleToUser);
+        __ShowVelocityRay(IsDiscernibleToUser);
     }
 
     protected override void IsSelectedPropChangedHandler() {
@@ -423,7 +349,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     #region None
 
     void None_EnterState() {
-        //LogEvent();
+        LogEvent();
     }
 
     void None_ExitState() {
@@ -688,13 +614,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     void Dead_EnterState() {
         LogEvent();
+        HandleDeath();
         StartEffect(EffectID.Dying);
     }
 
     void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         D.Assert(effectID == EffectID.Dying);
-        __DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // long wait so last element can play death effect
+        __DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // IMPROVE long wait so last element can play death effect
     }
 
     #endregion
@@ -723,6 +650,28 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     #endregion
 
+    /// <summary>
+    /// Waits for the ships in the fleet to align with the requested heading, then executes the provided callback.
+    /// <remarks>
+    /// Called by each of the ships in the fleet when they are preparing for collective departure to a destination 
+    /// ordered by FleetCmd. This single coroutine replaces a similar coroutine previously run by each ship.
+    /// </remarks>
+    /// </summary>
+    /// <param name="fleetIsAlignedCallback">The fleet is aligned callback.</param>
+    internal void WaitForFleetToAlign(Action fleetIsAlignedCallback) {
+        _navigator.WaitForFleetToAlign(fleetIsAlignedCallback);
+    }
+
+    /// <summary>
+    /// Removes the 'fleet is now aligned' callback a ship may have requested by providing the ship's
+    /// delegate that registered the callback. Returns <c>true</c> if the callback was removed, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="shipCallbackDelegate">The callback delegate from the ship. Can be null.</param>
+    /// <returns></returns>
+    internal bool TryRemoveFleetIsAlignedCallback(Action shipCallbackDelegate) {
+        return _navigator.TryRemoveFleetIsAlignedCallback(shipCallbackDelegate);
+    }
+
     #region Cleanup
 
     protected override void Cleanup() {
@@ -743,22 +692,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ICameraFocusable Members
-
-    public override float OptimalCameraViewingDistance {
-        get {
-            if (_optimalCameraViewingDistance != Constants.ZeroF) {
-                // the user has set the value manually
-                return _optimalCameraViewingDistance;
-            }
-            D.Assert(UnitRadius >= Data.Radius);
-            return UnitRadius + Data.CameraStat.OptimalViewingDistanceAdder;
-        }
-        set { base.OptimalCameraViewingDistance = value; }
-    }
-
-    #endregion
-
     #region ICameraFollowable Members
 
     public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
@@ -771,21 +704,37 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
     public override bool IsMobile { get { return true; } }
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        bool isEnemy = navigatingItem.Owner.IsEnemyOf(Owner);
-        if (isEnemy) {
-            return UnitRadius + Data.UnitWeaponsRange.Max;
-        }
-        else {
-            return UnitRadius;
-        }
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return Constants.ZeroF; } }
+    // IMPROVE Currently Ships aren't obstacles that can be discovered via casting
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
+        return Data.UnitMaxFormationRadius + shipCollisionAvoidanceRadius;
     }
 
     #endregion
 
-    #region ICanNavigate Members
+    #region IFormationMgrClient Members
 
-    public RangeDistance WeaponsRange { get { return Data.UnitWeaponsRange; } }
+    public override void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
+        ShipItem ship = element as ShipItem;
+
+        if (!IsOperational) {
+            // If not operational, this positioning is occuring during construction so place the ship now where it belongs
+            base.PositionElementInFormation(element, stationOffset);
+        }
+
+        FleetFormationStation station = ship.FormationStation;
+        if (station == null) {
+            // the ship does not yet have a formation station so make one
+            //D.Log("{0} is adding a new FormationStation.", ship.FullName);
+            station = new FleetFormationStation(ship, stationOffset);
+            ship.FormationStation = station;
+        }
+        else {
+            //D.Log("{0} already has a FormationStation.", ship.FullName);
+            station.StationOffset = stationOffset;
+        }
+    }
 
     #endregion
 
@@ -814,13 +763,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             }
         }
 
+        private bool IsWaitForFleetToAlignJobRunning { get { return _waitForFleetToAlignJob != null && _waitForFleetToAlignJob.IsRunning; } }
+
+        private Action _fleetIsAlignedCallbacks;
+        private Job _waitForFleetToAlignJob;
+
         /// <summary>
         /// If <c>true </c> the flagship has reached its current destination. In most cases, this
         /// "destination" is an interum waypoint provided by this fleet navigator, but it can also be the
         /// 'final' destination, aka Target.
         /// </summary>
         private bool _hasFlagshipReachedDestination;
-        private float _targetCloseEnoughDistance;
         private bool _isCourseReplot;
         private Vector3 _targetPointAtLastCoursePlot;
         private float _targetMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
@@ -835,7 +788,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             Subscribe();
         }
 
-        private void Subscribe() {
+        protected sealed override void Subscribe() {
+            base.Subscribe();
             _seeker.pathCallback += CoursePlotCompletedEventHandler;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
@@ -846,9 +800,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed to travel at.</param>
         internal void PlotCourse(INavigableTarget target, Speed speed) {
-            D.Assert(!(target is StationaryLocation) && !(target is MovingLocation) && !(target is FormationStationMonitor) && !(target is AUnitElementItem));
+            D.Assert(!(target is StationaryLocation) && !(target is MovingLocation) && !(target is FleetFormationStation) && !(target is AUnitElementItem));
             RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
-            _targetCloseEnoughDistance = target.GetCloseEnoughDistance(_fleet);
             ResetCourseReplotValues();
             GenerateCourse();
         }
@@ -861,8 +814,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             base.EngageAutoPilot();
         }
 
-        protected override void RunPilotJobs() {
-            base.RunPilotJobs();
+        protected override void EngageAutoPilot_Internal() {
+            base.EngageAutoPilot_Internal();
             InitiateCourseToTarget();
         }
 
@@ -878,6 +831,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             D.Assert(!IsPilotNavigationJobRunning);
             D.Assert(!_hasFlagshipReachedDestination);
             D.Log("{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
+            //D.Log("{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
             _pilotNavigationJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
                 if (!wasKilled) {
                     HandleDestinationReached();
@@ -894,23 +848,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageCourse() {
+            //D.Log("{0}.EngageCourse() has begun.", _fleet.FullName);
             int targetDestinationIndex = Course.Count - 1;
             _currentWaypointIndex = 1;  // skip the course start position as the fleet is already there
             INavigableTarget currentWaypoint = Course[_currentWaypointIndex];
+            //D.Log("{0} first waypoint in multi-waypoint course is {1}.", Name, currentWaypoint.Position);
 
-            float castingDistanceSubtractor = Constants.ZeroF;  // all waypoints except the final Target is a StationaryLocation
+            float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target is a StationaryLocation
             if (_currentWaypointIndex == targetDestinationIndex) {
-                castingDistanceSubtractor = _targetCloseEnoughDistance;
+                castingDistanceSubtractor = Target.RadiusAroundTargetContainingKnownObstacles + TargetCastingDistanceBuffer;
             }
 
+            float maxDistanceTraveledBeforeNextCheck = _gameTime.DeltaTimeOrPaused * TravelSpeed.GetUnitsPerHour(_fleet.Data) * _gameTime.GameSpeedAdjustedHoursPerSecond;
+            float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
+            float fleetRadius = _fleet.Data.UnitMaxFormationRadius;
             INavigableTarget detour;
-            float obstacleHitDistance;
-            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour, out obstacleHitDistance)) {
+            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
                 // but there is an obstacle, so add a waypoint
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 currentWaypoint = detour;
                 targetDestinationIndex = Course.Count - 1;
-                castingDistanceSubtractor = Constants.ZeroF;
+                castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
             }
             _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
 
@@ -919,7 +877,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                     _hasFlagshipReachedDestination = false;
                     _currentWaypointIndex++;
                     if (_currentWaypointIndex == targetDestinationIndex) {
-                        castingDistanceSubtractor = _targetCloseEnoughDistance;
+                        castingDistanceSubtractor = Target.RadiusAroundTargetContainingKnownObstacles + TargetCastingDistanceBuffer;
                     }
                     else if (_currentWaypointIndex > targetDestinationIndex) {
                         continue;   // conclude coroutine
@@ -928,12 +886,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                         _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, Course[_currentWaypointIndex].FullName);
 
                     currentWaypoint = Course[_currentWaypointIndex];
-                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour, out obstacleHitDistance)) {
+                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
                         // there is an obstacle enroute to the next waypoint, so use the detour provided instead
                         RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                         currentWaypoint = detour;
                         targetDestinationIndex = Course.Count - 1;
-                        castingDistanceSubtractor = Constants.ZeroF;
+                        castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
                         // IMPROVE validate that the detour provided does not itself leave us with another obstacle to encounter
                     }
                     _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
@@ -945,6 +903,88 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                 //yield return new WaitForSeconds(_courseProgressCheckPeriod);  // IMPROVE use ProgressCheckDistance to derive
             }
             // we've reached the target
+        }
+
+        #endregion
+
+        #region Wait For Fleet To Align
+
+        /// <summary>
+        /// Waits for the ships in the fleet to align with the requested heading, then executes the provided callback.
+        /// <remarks>
+        /// Called by each of the ships in the fleet when they are preparing for collective departure to a destination 
+        /// ordered by FleetCmd. This single coroutine replaces a similar coroutine previously run by each ship.
+        /// </remarks>
+        /// </summary>
+        /// <param name="fleetIsAlignedCallback">The fleet is aligned callback.</param>
+        internal void WaitForFleetToAlign(Action fleetIsAlignedCallback) {
+            _fleetIsAlignedCallbacks += fleetIsAlignedCallback;
+            if (!IsWaitForFleetToAlignJobRunning) {
+                float allowedTime = CalcMaxSecsReqdForFleetToAlign();
+                //D.Log("{0}: Time allowed for coroutine to wait for fleet to align for departure before error = {1:0.##} secs.", FullName, allowedTime);
+                _waitForFleetToAlignJob = new Job(WaitWhileShipsAlignToRequestedHeading(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
+                    if (jobWasKilled) {
+                        D.Assert(_fleetIsAlignedCallbacks == null);  // only killed when all waiting delegates from ships removed
+                    }
+                    else {
+                        D.Assert(_fleetIsAlignedCallbacks != null);  // completed normally so there must be a ship to notify
+                        int delegateCount;
+                        D.Warn((delegateCount = _fleetIsAlignedCallbacks.GetInvocationList().Count()) < _fleet.Elements.Count,
+                            "{0}'s FleetIsAligned delegate count {1} < element count {2}.", Name, delegateCount, _fleet.Elements.Count);
+                        _fleetIsAlignedCallbacks();
+                        _fleetIsAlignedCallbacks = null;
+                    }
+                });
+            }
+        }
+
+        private float CalcMaxSecsReqdForFleetToAlign() {
+            float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
+            //D.Log("{0}'s lowest ship turn rate = {1:0.##} Degrees/Hr.", Name, lowestShipTurnrate);
+            return GameUtility.CalcMaxReqdSecsToCompleteRotation(lowestShipTurnrate, ShipItem.ShipHelm.MaxReqdHeadingChange);
+        }
+
+        /// <summary>
+        /// Coroutine that waits while the ships in the fleet align themselves with their requested heading.
+        /// </summary>
+        /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
+        /// <returns></returns>
+        private IEnumerator WaitWhileShipsAlignToRequestedHeading(float allowedTime) {
+            float cumTime = Constants.ZeroF;
+            while (!_fleet.IsHeadingConfirmed) {
+                // wait here until the fleet is aligned
+                cumTime += GameTime.Instance.DeltaTimeOrPaused;
+                D.Assert(cumTime < allowedTime, "{0}'s WaitWhileShipsAlignToRequestedHeading coroutine exceeded AllowedTime of {1:0.##}.", Name, allowedTime);
+                yield return null;
+            }
+            //D.Log("{0}'s WaitWhileShipsAlignToRequestedHeading coroutine completed. AllowedTime = {1:0.##}, TimeTaken = {2:0.##}, .", Name, allowedTime, cumTime);
+        }
+
+        private void KillWaitForFleetToAlignJob() {
+            if (IsWaitForFleetToAlignJobRunning) {
+                _waitForFleetToAlignJob.Kill();
+            }
+        }
+
+        /// <summary>
+        /// Removes the 'fleet is now aligned' callback a ship may have requested by providing the ship's
+        /// delegate that registered the callback. Returns <c>true</c> if the callback was removed, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="shipCallbackDelegate">The callback delegate from the ship. Can be null.</param>
+        /// <returns></returns>
+        internal bool TryRemoveFleetIsAlignedCallback(Action shipCallbackDelegate) {
+            bool delegateWasRemoved = false;
+            if (_fleetIsAlignedCallbacks != null) {
+                D.Assert(IsWaitForFleetToAlignJobRunning);
+                _fleetIsAlignedCallbacks = Delegate.Remove(_fleetIsAlignedCallbacks, shipCallbackDelegate) as Action;
+                if (_fleetIsAlignedCallbacks == null) {
+                    // delegate invocation list is now empty
+                    KillWaitForFleetToAlignJob();
+                }
+                // IMPROVE technically not always true as callbackDelegate may not be present and Remove() won't tell us that
+                delegateWasRemoved = true;
+            }
+            return delegateWasRemoved;
         }
 
         #endregion
@@ -973,7 +1013,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
             if (_isCourseReplot) {
                 ResetCourseReplotValues();
-                RunPilotJobs();
+                EngageAutoPilot_Internal();
             }
             else {
                 HandleCoursePlotSuccess();
@@ -1056,8 +1096,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                     //D.Log("{0} and target {1} are both within System {2}.", _fleet.DisplayName, Target.FullName, fleetSystem.FullName);
                     return;
                 }
-                Vector3 fleetSystemExitPt = UnityUtility.FindClosestPointOnSphereTo(Position, fleetSystem.Position, fleetSystem.Radius);
+                Vector3 fleetSystemExitPt = MyMath.FindClosestPointOnSphereTo(Position, fleetSystem.Position, fleetSystem.Radius);
                 Course.Insert(1, new StationaryLocation(fleetSystemExitPt));
+                D.Log("{0} adding SystemExit Waypoint {1} for System {2}.", Name, fleetSystemExitPt, fleetSystem.FullName);
             }
 
             if (targetSystem != null) {
@@ -1070,9 +1111,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
                     targetSystemEntryPt = targetSystem.Position + systemToWaypointDirection * targetSystem.Radius;
                 }
                 else {
-                    targetSystemEntryPt = UnityUtility.FindClosestPointOnSphereTo(TargetPoint, targetSystem.Position, targetSystem.Radius);
+                    targetSystemEntryPt = MyMath.FindClosestPointOnSphereTo(TargetPoint, targetSystem.Position, targetSystem.Radius);
                 }
                 Course.Insert(Course.Count - 1, new StationaryLocation(targetSystemEntryPt));
+                D.Log("{0} adding SystemEntry Waypoint {1} for System {2}.", Name, targetSystemEntryPt, targetSystem.FullName);
             }
         }
 
@@ -1118,7 +1160,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
 
         private void GenerateCourse() {
             Vector3 start = Position;
-            string replot = _isCourseReplot ? "REPLOTTING" : "plotting";
+            string replot = _isCourseReplot ? "RE-plotting" : "plotting";
             D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", Name, replot, Target.FullName, start, TargetPoint);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
@@ -1174,15 +1216,37 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             _isCourseReplot = false;
         }
 
-        protected override void Cleanup() {
-            base.Cleanup();
-            Unsubscribe();
+        protected override void CleanupAnyRemainingAutoPilotJobs() {
+            base.CleanupAnyRemainingAutoPilotJobs();
+            // Note: WaitForFleetToAlign Job is designed to assist ships, not the FleetCmd. It can still be running 
+            // if the Fleet disengages its autoPilot while ships are turning. This would occur when the fleet issues 
+            // a new set of orders immediately after issueing a prior set, thereby interrupting ship's execution of 
+            // the first set. Each ship will remove their fleetIsAligned delegate once their autopilot is interrupted
+            // by this new set of orders. The final ship to remove their delegate will shut down the Job.
         }
 
-        private void Unsubscribe() {
+        protected override void PauseJobs(bool toPause) {
+            base.PauseJobs(toPause);
+            if (IsWaitForFleetToAlignJobRunning) {
+                if (toPause) {
+                    _waitForFleetToAlignJob.Pause();
+                }
+                else {
+                    _waitForFleetToAlignJob.Unpause();
+                }
+            }
+        }
+
+        protected override void Cleanup() {
+            base.Cleanup();
+            if (_waitForFleetToAlignJob != null) {
+                _waitForFleetToAlignJob.Dispose();
+            }
+        }
+
+        protected override void Unsubscribe() {
+            base.Unsubscribe();
             _seeker.pathCallback -= CoursePlotCompletedEventHandler;
-            // subscriptions contained completely within this gameobject (both subscriber
-            // and subscribee) donot have to be cleaned up as all instances are destroyed
         }
 
         public override string ToString() {
@@ -1254,7 +1318,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
             float lineMagnitude = (lineStart - lineEnd).magnitude;
             if (lineMagnitude == Constants.ZeroF) { return lineStart; }
 
-            float closestPointFactorToUsAlongInfinteLine = Mathfx.NearestPointFactor(lineStart, lineEnd, currentPosition);
+            float closestPointFactorToUsAlongInfinteLine = MyMath.NearestPointFactor(lineStart, lineEnd, currentPosition);
 
             float closestPointFactorToUsOnLine = Mathf.Clamp01(closestPointFactorToUsAlongInfinteLine);
             Vector3 closestPointToUsOnLine = (lineEnd - lineStart) * closestPointFactorToUsOnLine + lineStart;
@@ -1305,7 +1369,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
         //        nonOpenSpaceNodes.ForAll(node => {
         //            D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
         //            Topography tag = (Topography)Mathf.Log((int)node.Tag, 2F);
-        //            D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetName(), _seeker.tagPenalties[(int)tag]);
+        //            D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetValueName(), _seeker.tagPenalties[(int)tag]);
         //        });
         //    }
         //}
@@ -1459,7 +1523,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //    /// <param name="target">The target.</param>
     //    /// <param name="speed">The speed.</param>
     //    internal void PlotCourse(INavigableTarget target, Speed speed) {
-    //        D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(_fleet.DisplayName, speed.GetName()));
+    //        D.Assert(speed != default(Speed) && speed != Speed.Stop && speed != Speed.EmergencyStop, "{0} speed of {1} is illegal.".Inject(_fleet.DisplayName, speed.GetValueName()));
     //        Target = target;
     //        _targetHasKeepoutZone = target is IShipOrbitable;
     //        _travelSpeed = speed;
@@ -1843,7 +1907,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //    /// <param name="waypoint">The waypoint.</param>
     //    /// <exception cref="System.NotImplementedException"></exception>
     //    private void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null) {
-    //        D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", _fleet.DisplayName, mode.GetName(), Course.Count);
+    //        D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", _fleet.DisplayName, mode.GetValueName(), Course.Count);
     //        switch (mode) {
     //            case CourseRefreshMode.NewCourse:
     //                D.Assert(waypoint == null);
@@ -2048,7 +2112,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //            nonOpenSpaceNodes.ForAll(node => {
     //                D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
     //                Topography topographyFromTag = __GetTopographyFromAStarTag(node.Tag);
-    //                D.Warn("Node at {0} has Topography {1}, penalty = {2}.", (Vector3)node.position, topographyFromTag.GetName(), _seeker.tagPenalties[topographyFromTag.AStarTagValue()]);
+    //                D.Warn("Node at {0} has Topography {1}, penalty = {2}.", (Vector3)node.position, topographyFromTag.GetValueName(), _seeker.tagPenalties[topographyFromTag.AStarTagValue()]);
     //            });
     //        }
     //    }
@@ -2145,7 +2209,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable, ICan
     //    //        nonOpenSpaceNodes.ForAll(node => {
     //    //            D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
     //    //            Topography tag = (Topography)Mathf.Log((int)node.Tag, 2F);
-    //    //            D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetName(), _seeker.tagPenalties[(int)tag]);
+    //    //            D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetValueName(), _seeker.tagPenalties[(int)tag]);
     //    //        });
     //    //    }
     //    //}

@@ -102,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
             UnitCurrentHitPoints = elementReports.Select(er => er.CurrentHitPoints).NullableSum();
             //elementReports.ForAll(er => {
             //    D.Log("{0}.{1}.{2} IntelCoverage = {3}, CurrentHitPts = {4}, MaxHitPts = {5}, Health = {6}.", 
-            //        cmdData.FullName, er.GetType().Name, er.Name, er.IntelCoverage.GetName(), er.CurrentHitPoints, er.MaxHitPoints, er.Health);
+            //        cmdData.FullName, er.GetType().Name, er.Name, er.IntelCoverage.GetValueName(), er.CurrentHitPoints, er.MaxHitPoints, er.Health);
             //});
 
             UnitHealth = CalcUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);

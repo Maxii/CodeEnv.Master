@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -27,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitElementItems that are Facilities.
 /// </summary>
-public class FacilityItem : AUnitElementItem, IFacilityItem {
+public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle {
 
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
@@ -57,10 +58,14 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         get { return _publisher = _publisher ?? new FacilityPublisher(Data, this); }
     }
 
+    private SphereCollider _obstacleZoneCollider;
+    private DetourGenerator _detourGenerator;
+
     #region Initialization
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
+        InitializeObstacleZone();
         CurrentState = FacilityState.None;
     }
 
@@ -77,10 +82,25 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         return new FacilityCtxControl(this);
     }
 
+    private void InitializeObstacleZone() {
+        _obstacleZoneCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(col => col.gameObject.layer == (int)Layers.AvoidableObstacleZone);
+        _obstacleZoneCollider.enabled = false;
+        _obstacleZoneCollider.isTrigger = true;
+        _obstacleZoneCollider.radius = Radius * 2F;
+        //D.Log("{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
+        D.Warn(_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius, "{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.",
+            FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
+        // Static trigger collider (no rigidbody) is OK as a ship's CollisionDetectionCollider has a kinematic rigidbody
+        D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        Vector3 zoneCenter = Position + _obstacleZoneCollider.center;
+        _detourGenerator = new DetourGenerator(zoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+    }
+
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        _obstacleZoneCollider.enabled = true;
         CurrentState = FacilityState.Idling;
     }
 
@@ -163,6 +183,11 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
         CurrentState = FacilityState.Dead;
     }
 
+    protected override void HandleDeath() {
+        base.HandleDeath();
+        // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
+    }
+
     protected override IconInfo MakeIconInfo() {
         var report = GetUserReport();
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
@@ -216,7 +241,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
     }
 
     void Idling_ExitState() {
-        //LogEvent();
+        LogEvent();
         //TODO register as unavailable
     }
 
@@ -352,6 +377,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     void Dead_EnterState() {
         LogEvent();
+        HandleDeath();
         StartEffect(EffectID.Dying);
     }
 
@@ -397,24 +423,28 @@ public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     #region INavigableTarget Members
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        bool isEnemy = navigatingItem.Owner.IsEnemyOf(Owner);
-        if (isEnemy) {
-            if (navigatingItem.WeaponsRange.Max > Constants.ZeroF) {
-                // got weapons so get close enough and attack
-                return navigatingItem.WeaponsRange.Max / 2F;
-            }
-            else {
-                // no weapons so stay just out of range
-                return Command.Data.UnitWeaponsRange.Max + 1F;
-            }
-        }
-        else {
-            // friendly
-            var baseShipOrbitSlot = (Command as IShipOrbitable).ShipOrbitSlot;
-            var baseOrbitSlotDistanceFromFacility = baseShipOrbitSlot.OuterRadius - Command.UnitRadius;
-            D.Warn(baseOrbitSlotDistanceFromFacility == Constants.ZeroF, "{0}.CloseEnoughDistance is zero.", FullName);
-            return baseOrbitSlotDistanceFromFacility;
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
+        return _obstacleZoneCollider.radius + shipCollisionAvoidanceRadius;
+    }
+
+    #endregion
+
+    #region IAvoidableObstacle Members
+
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
+        var formation = Command.Data.UnitFormation;
+        switch (formation) {
+            case Formation.Circle:
+                return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius, formationOffset);
+
+            case Formation.Globe:
+                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius, formationOffset);
+            case Formation.Wedge:
+            case Formation.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
         }
     }
 

@@ -25,7 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         Circle,
 
-        Globe
+        Globe,
+
+        Wedge
 
     }
 }

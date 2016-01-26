@@ -108,7 +108,6 @@
     <Compile Include="Game\GUI\FleetCtxControl_User.cs" />
     <Compile Include="Game\GUI\FleetCtxControl_AI.cs" />
     <Compile Include="Game\Framework\FleetCmdItem.cs" />
-    <Compile Include="Game\Framework\FormationGenerator.cs" />
     <Compile Include="Generic\Framework\APlanetoidItem.cs" />
     <Compile Include="Generic\Framework\AUnitBaseCmdItem.cs" />
     <Compile Include="Generic\Framework\AUnitCmdItem.cs" />
@@ -230,7 +229,7 @@
     <Compile Include="ThirdParty\ContextMenu\CtxObject.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxPickHandler.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxPopup.cs" />
-    <Compile Include="ThirdParty\MyNguiEventListener.cs" />
+    <Compile Include="Generic\IO\MyEventListener.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

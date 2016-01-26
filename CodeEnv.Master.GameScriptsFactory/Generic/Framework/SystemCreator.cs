@@ -100,7 +100,7 @@ public class SystemCreator : AMonoBase {
 
     private StarStat _starStat;
     private IList<PlanetStat> _planetStats;
-    private IList<MoonStat> _moonStats;
+    private IList<PlanetoidStat> _moonStats;
     private IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
 
     private SystemItem _system;
@@ -200,9 +200,8 @@ public class SystemCreator : AMonoBase {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: true);
             // System is now prepared to receive a Settlement when it deploys
         }
-
         if (gameState == GameState.Running) {
-            InitializeTopographyMonitor();
+            InitializeTopographyMonitor();    // no need to do earlier as ships initialize their Topography during commence operations
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
@@ -269,26 +268,26 @@ public class SystemCreator : AMonoBase {
         return planetStats;
     }
 
-    private IList<MoonStat> CreateMoonStatsFromChildren() {
+    private IList<PlanetoidStat> CreateMoonStatsFromChildren() {
         D.Assert(isCompositionPreset);
-        var moonStats = new List<MoonStat>();
+        var moonStats = new List<PlanetoidStat>();
         var moons = gameObject.GetComponentsInChildren<MoonItem>();
         foreach (var moon in moons) {
             var mCategory = moon.category;
-            MoonStat stat = __MakeMoonStat(mCategory);
+            PlanetoidStat stat = __MakeMoonStat(mCategory);
             moonStats.Add(stat);
         }
         return moonStats;
     }
 
-    private IList<MoonStat> CreateRandomMoonStats() {
+    private IList<PlanetoidStat> CreateRandomMoonStats() {
         D.Assert(!isCompositionPreset);
-        var moonStats = new List<MoonStat>();
+        var moonStats = new List<PlanetoidStat>();
         int moonCount = maxMoonsInRandomSystem;
         //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
         for (int i = 0; i < moonCount; i++) {
             PlanetoidCategory mCategory = RandomExtended.Choice(_acceptableMoonCategories);
-            MoonStat stat = __MakeMoonStat(mCategory);
+            PlanetoidStat stat = __MakeMoonStat(mCategory);
             moonStats.Add(stat);
         }
         return moonStats;
@@ -357,6 +356,7 @@ public class SystemCreator : AMonoBase {
             _system = _factory.MakeSystemInstance(SystemName, gameObject, cameraStat);
         }
         _system.IsTrackingLabelEnabled = enableTrackingLabel;
+        SectorGrid.Instance.GetSector(_system.SectorIndex).System = _system;
     }
 
     private void MakeStar() {
@@ -464,6 +464,8 @@ public class SystemCreator : AMonoBase {
                 orbitSlotForPlanet.AssumeOrbit(planet.transform, orbitSimulatorName);
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = name;
+                D.Warn(planet.ShipOrbitSlot.OuterRadius > _systemOrbitSlotDepth, "{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}."
+                    , GetType().Name, planet.FullName, planet.ShipOrbitSlot.OuterRadius, _systemOrbitSlotDepth);
                 //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, slotIndex, SystemName);
             }
             else {
@@ -482,19 +484,20 @@ public class SystemCreator : AMonoBase {
         }
     }
 
-    private bool TryFindOrbitSlot(out int slot, params Stack<int>[] slotStacks) {
+    private bool TryFindOrbitSlot(out int slotIndex, params Stack<int>[] slotStacks) {
         foreach (var slotStack in slotStacks) {
             if (slotStack.Count > 0) {
-                slot = slotStack.Pop();
+                slotIndex = slotStack.Pop();
                 return true;
             }
         }
-        slot = -1;
+        slotIndex = -1;
         return false;
     }
 
     /// <summary>
     /// Makes the moons including assigning their Data component derived from the appropriate stat.
+    /// Each moon is parented to a random planet if not already preset.
     /// </summary>
     private void MakeMoons() {
         LogEvent();
@@ -550,7 +553,7 @@ public class SystemCreator : AMonoBase {
             if (moons.Any()) {
                 int slotIndex = Constants.Zero;
                 foreach (var moon in moons) {
-                    float depthReqdForMoonOrbitSlot = 2F * moon.ShipTransitBanRadius;
+                    float depthReqdForMoonOrbitSlot = 2F * moon.ObstacleZoneRadius;
                     float endDepthForMoonOrbitSlot = startDepthForMoonOrbitSlot + depthReqdForMoonOrbitSlot;
                     if (endDepthForMoonOrbitSlot <= depthAvailForMoonOrbitsAroundPlanet) {
                         string name = planet.Data.Name + _moonLetters[slotIndex];
@@ -568,6 +571,7 @@ public class SystemCreator : AMonoBase {
                         if (moonsToDestroy == null) {
                             moonsToDestroy = new List<MoonItem>();
                         }
+                        D.Warn(slotIndex == Constants.Zero, "{0}: Size of planet {1} precludes adding any moons.", GetType().Name, planet.FullName);
                         //D.Log("{0} scheduled for destruction. OrbitSlot outer depth {1} > available depth {2}.",
                         //    moon.FullName, endDepthForMoonOrbitSlot, depthAvailForMoonOrbitsAroundPlanet);
                         moonsToDestroy.Add(moon);
@@ -593,7 +597,7 @@ public class SystemCreator : AMonoBase {
 
     private void InitializeTopographyMonitor() {
         var monitor = gameObject.GetSingleComponentInChildren<TopographyMonitor>();
-        monitor.SurroundingTopography = Topography.OpenSpace;   //TODO Items monitored should know about their surrounding space
+        monitor.SurroundingTopography = Topography.OpenSpace;
         monitor.ParentItem = _system;
     }
 
@@ -616,7 +620,6 @@ public class SystemCreator : AMonoBase {
         var planetoidNamesStored = _allPlanetoids.Select(p => p.Name);
         _planets.ForAll(planet => {
             D.Assert(!planetoidNamesStored.Contains(planet.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, planet.Name));
-            //planet.onDeathOneShot += OnPlanetoidDeath;
             planet.deathOneShot += PlanetoidDeathEventHandler;
             _allPlanetoids.Add(planet);
             _allPlanets.Add(planet);
@@ -625,7 +628,6 @@ public class SystemCreator : AMonoBase {
         // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
         _moons.ForAll(moon => {
             D.Assert(!planetoidNamesStored.Contains(moon.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, moon.Name));
-            //moon.onDeathOneShot += OnPlanetoidDeath;
             moon.deathOneShot += PlanetoidDeathEventHandler;
             _allPlanetoids.Add(moon);
             _allMoons.Add(moon);
@@ -664,6 +666,7 @@ public class SystemCreator : AMonoBase {
         float sysOrbitSlotsStartRadius = _star.ShipOrbitSlot.OuterRadius;
         float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - sysOrbitSlotsStartRadius;
         systemOrbitSlotDepth = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
+        //D.Log("{0}: SystemOrbitSlotDepth = {1:0.#}.", SystemName, systemOrbitSlotDepth);
 
         var allOrbitSlots = new CelestialOrbitSlot[TempGameValues.TotalOrbitSlotsPerSystem];
         for (int slotIndex = 0; slotIndex < TempGameValues.TotalOrbitSlotsPerSystem; slotIndex++) {
@@ -673,6 +676,7 @@ public class SystemCreator : AMonoBase {
             //D.Log("{0}'s orbit slot index {1} OrbitPeriod = {2}.", SystemName, slotIndex, orbitPeriod);
             GameObject planetsFolder = _system.transform.FindChild("Planets").gameObject;
             // planetsFolder used in place of _system so orbiters don't inherit the layer of the system
+            D.Assert(planetsFolder != null);    // in case I accidently change name of PlanetsFolder
             allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, planetsFolder, _system.IsMobile, orbitPeriod);
         }
         return allOrbitSlots;
@@ -720,10 +724,9 @@ public class SystemCreator : AMonoBase {
         return new PlanetStat(radius, 1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic), lowOrbitRadius);
     }
 
-    private MoonStat __MakeMoonStat(PlanetoidCategory mCategory) {
+    private PlanetoidStat __MakeMoonStat(PlanetoidCategory mCategory) {
         float radius = __GetRadius(mCategory);
-        float shipTransitBanRadius = radius + 1F;
-        return new MoonStat(radius, 10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common), shipTransitBanRadius);
+        return new PlanetoidStat(radius, 10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
     }
 
     private CameraFocusableStat __MakeSystemCameraStat() {
@@ -769,7 +772,7 @@ public class SystemCreator : AMonoBase {
         return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
     }
 
-    private CameraFollowableStat __MakeMoonCameraStat(MoonStat moonStat) {
+    private CameraFollowableStat __MakeMoonCameraStat(PlanetoidStat moonStat) {
         float fov;
         PlanetoidCategory pCat = moonStat.Category;
         switch (pCat) {
@@ -792,7 +795,7 @@ public class SystemCreator : AMonoBase {
         }
         float radius = moonStat.Radius;
         float minViewDistance = radius + 1F;
-        float optViewDistance = radius + 3F;    // optViewDistance has no linkage to ShipTransitBanRadius
+        float optViewDistance = radius + 3F;    // optViewDistance has no linkage to ObstacleZoneRadius
         return new CameraFollowableStat(minViewDistance, optViewDistance, fov);
     }
 

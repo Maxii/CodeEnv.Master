@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract class for Data associated with an AIntelItem.
     /// </summary>
-    public abstract class AIntelItemData : ADiscernibleItemData { //AItemData {
+    public abstract class AIntelItemData : ADiscernibleItemData {
 
         public event EventHandler userIntelCoverageChanged;
 
@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
                 return true;
             }
             //D.Log("{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
-            //    FullName, player.LeaderName, playerIntel.CurrentCoverage.GetName(), newCoverage.GetName());
+            //    FullName, player.LeaderName, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
             return false;
         }
 

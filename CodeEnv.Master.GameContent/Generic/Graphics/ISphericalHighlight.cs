@@ -29,9 +29,8 @@ namespace CodeEnv.Master.GameContent {
         /// Sets the target to highlight.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="sphereRadius">The sphere radius.</param>
         /// <param name="labelPlacement">The label placement.</param>
-        void SetTarget(IWidgetTrackable target, float sphereRadius, WidgetPlacement labelPlacement = WidgetPlacement.Below);
+        void SetTarget(IHighlightable target, WidgetPlacement labelPlacement = WidgetPlacement.Below);
 
         /// <summary>
         /// Sets the radius of the highlighting sphere.

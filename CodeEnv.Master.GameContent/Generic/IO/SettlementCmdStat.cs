@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable stat containing externally acquirable values for SettlementCmds.
     /// </summary>
-    public class SettlementCmdStat : UnitBaseCmdStat {
+    public class SettlementCmdStat : UnitCmdStat {
 
         public int Population { get; private set; }
 
@@ -32,10 +32,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdEffect">The maximum command effect.</param>
         /// <param name="formation">The formation.</param>
-        /// <param name="lowOrbitRadius">The low orbit radius.</param>
         /// <param name="population">The population.</param>
-        public SettlementCmdStat(string unitName, float maxHitPts, int maxCmdEffect, Formation formation, float lowOrbitRadius, int population)
-            : base(unitName, maxHitPts, maxCmdEffect, formation, lowOrbitRadius) {
+        public SettlementCmdStat(string unitName, float maxHitPts, int maxCmdEffect, Formation formation, int population)
+            : base(unitName, maxHitPts, maxCmdEffect, formation) {
+            D.Assert(formation == Formation.Circle, "{0} {1} = {2}.", unitName, typeof(Formation).Name, formation.GetValueName());
             Population = population;
         }
 

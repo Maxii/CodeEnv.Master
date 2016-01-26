@@ -12,15 +12,14 @@
 
 // default namespace
 
-using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 ///  Easy access to Universe folder in Scene.
 /// </summary>
 public class UniverseFolder : AFolderAccess<UniverseFolder> {
+
+    protected override bool IsRootGameObject { get { return true; } }
 
     protected override void Cleanup() { }
 

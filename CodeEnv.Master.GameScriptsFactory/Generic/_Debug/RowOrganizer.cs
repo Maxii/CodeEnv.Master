@@ -45,7 +45,7 @@ public class RowOrganizer : AMonoBase {
     }
 
     private void InitializeLocalReferences() {
-        D.Assert(separatorPrefab != null, "{0}.{1} separatorPrefab not set.".Inject(gameObject.name, GetType().Name), gameObject);
+        D.Assert(separatorPrefab != null, gameObject, "{0}.{1} separatorPrefab not set.", gameObject.name, GetType().Name);
         _separatorWidth = separatorPrefab.width;
         //_rowWidget = gameObject.GetSafeMonoBehaviour<UIWidget>();
         _rowWidget = gameObject.GetSafeComponent<UIWidget>();

@@ -73,7 +73,8 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 _sfxMgr.PlaySFX(SfxClipID.Select);  //TODO play a different sound indicating selection cleared
-                References.SelectedItemHudWindow.Hide();   // Note: handled centrally here as ISelectable's don't know whether another item has been selected
+                // Note: Hide() handled centrally here as ISelectable's don't know whether another item has been selected
+                References.SelectedItemHudWindow.Hide();
             }
         }
 

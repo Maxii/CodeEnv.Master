@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -27,7 +28,9 @@ public class TopographyMonitor : AColliderMonitor {
 
     public Topography SurroundingTopography { get; set; }   // IMPROVE ParentItem should know about their surrounding topology
 
-    protected override bool IsKinematicRigidbodyReqd { get { return false; } }
+    protected override bool IsTriggerCollider { get { return true; } }
+
+    protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // Ships and ProjectileOrdnance have rigidbodies
 
     #region Event and Property Change Handlers
 
@@ -37,7 +40,7 @@ public class TopographyMonitor : AColliderMonitor {
             return;
         }
         //D.Log("{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3}.",
-        //ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
+        //ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - transform.position));
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             listener.HandleTopographyChanged(ParentItem.Topography);
@@ -50,7 +53,7 @@ public class TopographyMonitor : AColliderMonitor {
             return;
         }
         //D.Log("{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3}.",
-        //  ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
+        //  ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - transform.position));
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             listener.HandleTopographyChanged(SurroundingTopography);

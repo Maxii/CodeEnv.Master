@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         private IconSelectionCriteria[] GetSelectionCriteria(ReportType cmdReport) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
             IntelCoverage cmdUserIntelCoverage = cmdReport.IntelCoverage;
-            //D.Log("{0} found UserIntelCoverage = {1}.", GetType().Name, cmdUserIntelCoverage.GetName());
+            //D.Log("{0} found UserIntelCoverage = {1}.", GetType().Name, cmdUserIntelCoverage.GetValueName());
 
             /***************************************************************************************************************************************************************
                             * Concept: Cmd's IntelCoverage is same as HQElement coverage. If Cmd/HQ not yet detected, then invisible icon - does this matter? Icon won't be shown anyhow?

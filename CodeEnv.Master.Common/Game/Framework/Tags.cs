@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Tags.cs
-// Simple Enum for Tags that avoids typing out strings. Use [TagsConstant].GetName() extension.
+// Simple Enum for Tags that avoids typing out strings. Use [TagsConstant].GetValueName() extension.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -15,7 +15,7 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Simple Enum for Tags that avoids typing out strings. Use [TagsConstant].GetName() extension.
+    /// Simple Enum for Tags that avoids typing out strings. Use [TagsConstant].GetValueName() extension.
     /// </summary>
     [Obsolete]  // In general, I want to avoid using Tags
     public enum Tags {

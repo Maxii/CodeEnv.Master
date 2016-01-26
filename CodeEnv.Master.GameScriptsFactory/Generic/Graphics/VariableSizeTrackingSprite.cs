@@ -41,7 +41,7 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, "Sprite size not set.", this);
+        D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
         __AdjustSpriteSize();
     }
 
@@ -50,7 +50,7 @@ public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
     /// </summary>
     /// <param name="spriteName">Name of the sprite.</param>
     public override void Set(string spriteName) {
-        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
+        D.Assert(Widget.atlas != null, WidgetTransform, "Sprite atlas has not been assigned.");
         Widget.spriteName = spriteName;
     }
 

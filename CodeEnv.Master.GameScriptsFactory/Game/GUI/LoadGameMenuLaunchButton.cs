@@ -17,15 +17,19 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Launch button for the Load[Saved]GameMenu.
 /// </summary>
 public class LoadGameMenuLaunchButton : AGuiMenuAcceptButton {
+
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
 
     protected override string TooltipContent { get { return "Launch the selected Saved Game."; } }
 
@@ -44,8 +48,8 @@ public class LoadGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
+    protected override void HandleValidClick() {
+        base.HandleValidClick();
         ////LoadSavedGame();
         __LoadDummySavedGame();
     }

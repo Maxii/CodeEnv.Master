@@ -55,8 +55,8 @@ namespace CodeEnv.Master.GameContent {
             float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength,
             float reloadPeriod, DamageStrength damagePotential, float duration, float maxTraverseInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential) {
-            D.Assert(Duration > Constants.ZeroF);
-            D.Warn(MaxTraverseInaccuracy > 5F, "{0} MaxTraverseInaccuracy of {1:0.#} is very high.", Name, MaxTraverseInaccuracy);
+            D.Assert(duration > Constants.ZeroF);
+            D.Warn(maxTraverseInaccuracy > 5F, "{0} MaxTraverseInaccuracy of {1:0.#} is very high.", Name, MaxTraverseInaccuracy);
             Duration = duration;
             MaxTraverseInaccuracy = maxTraverseInaccuracy;
         }

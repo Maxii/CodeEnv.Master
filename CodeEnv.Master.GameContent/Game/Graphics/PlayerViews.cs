@@ -63,8 +63,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void ChangeViewMode(ViewModeKeys key) {
             _lastViewModeKeyPressed = key;
-            PlayerViewModeKeyConfiguration activatedConfig = _keyConfigs.Single(config => config.IsActivated());
-            D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastViewModeKeyPressed.GetValueName()), true);
+            PlayerViewModeKeyConfiguration activatedConfig = _keyConfigs.Single(config => config.IsActivated);
+            D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.", _lastViewModeKeyPressed.GetValueName());
             ViewMode = activatedConfig.viewMode;
         }
 
@@ -130,8 +130,10 @@ namespace CodeEnv.Master.GameContent {
             public PlayerViewMode viewMode;
             public ViewModeKeys viewModeKey;
 
-            public override bool IsActivated() {
-                return base.IsActivated() && viewModeKey == _lastViewModeKeyPressed;
+            public override bool IsActivated {
+                get {
+                    return base.IsActivated && viewModeKey == _lastViewModeKeyPressed;
+                }
             }
         }
 

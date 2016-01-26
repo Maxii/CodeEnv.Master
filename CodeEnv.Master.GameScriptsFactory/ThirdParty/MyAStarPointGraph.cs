@@ -198,63 +198,58 @@ namespace Pathfinding {
             return sectorsToScan;
         }
 
-        private IList<Vector3> __GetSectorCenters(IList<SectorItem> sectors) {
-            var sectorCenters = new List<Vector3>(sectors.Count);
-            sectors.ForAll(s => {
-                Vector3 sectorCenter;
-                if (SectorGrid.Instance.TryGetSectorPosition(s.SectorIndex, out sectorCenter)) {
-                    sectorCenters.Add(sectorCenter);
-                }
-                else {
-                    D.Warn("{0}: Could not get SectorCenter from Sector {1}.", GetType().Name, s);
-                }
-            });
-            return sectorCenters;
-        }
-
         /// <summary>
         /// Pre-runtime construction of waypoints for the point graph.
         /// </summary>
         /// <returns></returns>
         private IDictionary<Topography, IList<Vector3>> ConstructGraphWaypoints() {
-            var sectors = __GetAllowedSectorsToScan(); //= SectorGrid.Instance.AllSectors;
-            var sectorCenters = __GetSectorCenters(sectors);  //= SectorGrid.Instance.SectorCenters;
-            //D.Assert(sectorCenters != null, "{0} not yet initialized.".Inject(typeof(SectorGrid).Name));  // AstarPath has an option to automatically call Scan() on Awake which can be too early
-            IEnumerable<Vector3> openSpaceWaypoints = new List<Vector3>(sectorCenters);
+            float radiusToAvoidWaypointsAroundUCenter = Constants.ZeroF;
+            IList<Vector3> waypointsAroundUniverseCenter = new List<Vector3>(0);
+            var universeCenter = UniverseFolder.Instance.Folder.GetComponentInChildren<UniverseCenterItem>();
+            if (universeCenter != null) {
+                radiusToAvoidWaypointsAroundUCenter = universeCenter.ShipOrbitSlot.OuterRadius * 2F;
+                waypointsAroundUniverseCenter = MyMath.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, radiusToAvoidWaypointsAroundUCenter);
+            }
+
+            IList<SectorItem> allSectors = __GetAllowedSectorsToScan(); //= SectorGrid.Instance.AllSectors;
+            var nonSystemSectors = allSectors.Where(sector => sector.System == null);
 
             // The 8 vertices of the box inscribed inside the sector's spherical radius
             // Note: these navigational waypoints are clearly inside the boundary of the sector so they can be weighted with the sectors movement penalty
             // This avoids the weighting ambiguity that exists when navigational waypoints are equidistant between sectors, aka shared between sectors
-            IEnumerable<Vector3> interiorSectorPoints = Enumerable.Empty<Vector3>();
-            sectors.ForAll(s => {
-                interiorSectorPoints = interiorSectorPoints.Union(SectorGrid.Instance.GenerateVerticesOfBoxAroundCenter(s.SectorIndex, s.Radius));
+            List<Vector3> allOpenSpaceTopographyWaypoints = new List<Vector3>(nonSystemSectors.Select(sector => sector.Position));
+            allSectors.ForAll(sector => {
+                // add waypoints out toward the perimeter of each sector
+                List<Vector3> aSectorPerimeterOpenSpaceWaypoints = MyMath.CalcVerticesOfInscribedBoxInsideSphere(sector.Position, sector.Radius).ToList();
+                if (universeCenter != null) {
+                    // filter out perimeter waypoints that are too close to the UniverseCenter
+                    aSectorPerimeterOpenSpaceWaypoints.ForAll(sPerimeterWaypoint => {
+                        if (!MyMath.IsPointInsideSphere(universeCenter.Position, radiusToAvoidWaypointsAroundUCenter, sPerimeterWaypoint)) {
+                            allOpenSpaceTopographyWaypoints.Add(sPerimeterWaypoint);
+                        }
+                    });
+                }
+                else {
+                    allOpenSpaceTopographyWaypoints.AddRange(aSectorPerimeterOpenSpaceWaypoints);
+                }
+                // add waypoints from the interior (always outside of any System) of each sector
+                var aSectorInteriorOpenSpaceWaypoints = MyMath.CalcVerticesOfInscribedBoxInsideSphere(sector.Position, sector.Radius / 2F);
+                // Log sector interior waypoints for sectors with systems
+                // D.Log(sector.System != null, "{0}: Interior waypoints for {1}: {2}.", GetType().Name, sector.FullName, aSectorInteriorOpenSpaceWaypoints.Concatenate());
+                allOpenSpaceTopographyWaypoints.AddRange(aSectorInteriorOpenSpaceWaypoints);
             });
-            openSpaceWaypoints = openSpaceWaypoints.Union(interiorSectorPoints);
+            allOpenSpaceTopographyWaypoints.AddRange(waypointsAroundUniverseCenter);
 
-            var universeCenter = UniverseFolder.Instance.Folder.GetComponentInChildren<UniverseCenterItem>();
-            if (universeCenter != null) {
-                var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.ShipOrbitSlot.OuterRadius);
-                openSpaceWaypoints = openSpaceWaypoints.Except(new List<Vector3>() { universeCenter.Position }, UnityUtility.Vector3EqualityComparer);
-                openSpaceWaypoints = openSpaceWaypoints.Union(pointsAroundUniverseCenter, UnityUtility.Vector3EqualityComparer);
-            }
-
-            IEnumerable<Vector3> allWaypointsInsideSystems = Enumerable.Empty<Vector3>();
-
+            IEnumerable<Vector3> allSystemTopographyWaypoints = Enumerable.Empty<Vector3>();
             var systems = SystemCreator.AllSystems;
             if (systems.Any()) {
-                var systemPositions = systems.Select(sys => sys.Position);
-                var allWaypointsPeripheralToSystems = Enumerable.Empty<Vector3>();
                 systems.ForAll(sys => {
-                    var waypointsPeripheralToSystem = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(sys.Position, sys.Radius);
-                    allWaypointsPeripheralToSystems = allWaypointsPeripheralToSystems.Union(waypointsPeripheralToSystem);
-
-                    var waypointsInsideSystem = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(sys.Position, sys.Radius / 2F);
-                    //D.Log("{0} interior waypoints generated = {1}.", sys.FullName, waypointsInsideSystem.Concatenate());
-                    allWaypointsInsideSystems = allWaypointsInsideSystems.Union(waypointsInsideSystem, UnityUtility.Vector3EqualityComparer);
+                    var aSystemPerimeterWaypoints = MyMath.CalcVerticesOfInscribedBoxInsideSphere(sys.Position, sys.Radius);
+                    allSystemTopographyWaypoints = allSystemTopographyWaypoints.Union(aSystemPerimeterWaypoints, UnityUtility.Vector3EqualityComparer);
+                    var aSystemInteriorWaypoints = MyMath.CalcVerticesOfInscribedBoxInsideSphere(sys.Position, sys.Radius / 2F);
+                    allSystemTopographyWaypoints = allSystemTopographyWaypoints.Union(aSystemInteriorWaypoints, UnityUtility.Vector3EqualityComparer);
+                    //D.Log("{0}: {1}'s waypoints are: {2}.", GetType().Name, sys.FullName, allSystemTopographyWaypoints.Concatenate());
                 });
-
-                openSpaceWaypoints = openSpaceWaypoints.Except(systemPositions, UnityUtility.Vector3EqualityComparer);
-                openSpaceWaypoints = openSpaceWaypoints.Union(allWaypointsPeripheralToSystems, UnityUtility.Vector3EqualityComparer);
             }
 
             // Starbase-related waypoints are now added or removed when they are created or destroyed - UpdateGraph()
@@ -266,13 +261,12 @@ namespace Pathfinding {
             //}
 
             return new Dictionary<Topography, IList<Vector3>>() {
-                { Topography.OpenSpace, openSpaceWaypoints.ToList() },
+                { Topography.OpenSpace, allOpenSpaceTopographyWaypoints },
                 { Topography.Nebula, new List<Vector3>() },        //TODO
                 { Topography.DeepNebula, new List<Vector3>() },    //TODO
-                { Topography.System, allWaypointsInsideSystems.ToList() }
+                { Topography.System, allSystemTopographyWaypoints.ToList() }
                 };
         }
-
 
         /// <summary>
         /// Creates a PointNode array populated with waypoint positions, walkability and penalty tags.
@@ -294,8 +288,8 @@ namespace Pathfinding {
 
             // initialize nodes that will be tagged OpenSpace
             var waypoints = graphWaypointsLookupByTag[Topography.OpenSpace];
-            //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.OpenSpace.GetName());
-            //D.Log("{0} tag mask = {1}.", SpaceTopography.OpenSpace.GetName(), StringExtensions.GetBinaryString(openSpaceTagMask));
+            //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.OpenSpace.GetValueName());
+            //D.Log("{0} tag mask = {1}.", SpaceTopography.OpenSpace.GetValueName(), StringExtensions.GetBinaryString(openSpaceTagMask));
             for (int i = 0; i < waypoints.Count; i++) {
                 nodes[i].SetPosition((Int3)waypoints[i]);
                 nodes[i].Walkable = true;
@@ -305,8 +299,8 @@ namespace Pathfinding {
 
             // initialize nodes that will be tagged System
             waypoints = graphWaypointsLookupByTag[Topography.System];
-            //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.System.GetName());
-            //D.Log("{0} tag mask = {1}.", SpaceTopography.System.GetName(), StringExtensions.GetBinaryString(systemTagMask));
+            //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.System.GetValueName());
+            //D.Log("{0} tag mask = {1}.", SpaceTopography.System.GetValueName(), StringExtensions.GetBinaryString(systemTagMask));
             for (int i = nextNodeIndex; i < nextNodeIndex + waypoints.Count; i++) {
                 nodes[i].SetPosition((Int3)waypoints[i - nextNodeIndex]);
                 nodes[i].Walkable = true;

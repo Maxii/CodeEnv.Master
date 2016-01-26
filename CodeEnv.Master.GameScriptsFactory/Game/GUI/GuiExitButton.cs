@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using UnityEngine;
 
@@ -28,11 +29,11 @@ public class GuiExitButton : AGuiButton {
 
     #region Event and Property Change Handlers
 
-     protected override void HandleLeftClick() {
+    protected override void HandleValidClick() {
         _gameMgr.ExitGame();
     }
 
-   #endregion
+    #endregion
 
     protected override void Cleanup() { }
 

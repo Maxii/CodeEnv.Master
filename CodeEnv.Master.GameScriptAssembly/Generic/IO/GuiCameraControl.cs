@@ -17,17 +17,23 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Singleton. Initializes the Camera dedicated to the UI layer.
 /// Note: UICamera settings for this GuiCamera are controlled by InputManager.
 /// </summary>
-public class GuiCameraControl : AMonoSingleton<GuiCameraControl> {
+public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraControl {
+
+    private static LayerMask _guiCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UI);
 
     public Camera GuiCamera { get; private set; }
 
-    private static LayerMask _guiCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UI);
+    protected override void InitializeOnInstance() {
+        base.InitializeOnInstance();
+        References.GuiCameraControl = _instance;
+    }
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
@@ -48,7 +54,9 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl> {
         return guiCamera;
     }
 
-    protected override void Cleanup() { }
+    protected override void Cleanup() {
+        References.GuiCameraControl = null;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

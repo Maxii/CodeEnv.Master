@@ -87,6 +87,17 @@ namespace CodeEnv.Master.GameContent {
             return new Color32(r, g, b, 255);
         }
 
+        /// <summary>
+        /// Gets the maximum required seconds to complete a rotation. 
+        /// <remarks>Typically used to calculate how long to allow a rotation coroutine to run before throwing an error.</remarks>
+        /// </summary>
+        /// <param name="rotationRateInDegreesPerHour">The rotation rate in degrees per hour.</param>
+        /// <param name="maxRotationReqdInDegrees">The maximum rotation reqd in degrees. Default is 180 degrees.</param>
+        /// <returns></returns>
+        public static float CalcMaxReqdSecsToCompleteRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
+            return (maxRotationReqdInDegrees / rotationRateInDegreesPerHour) / GameTime.Instance.GameSpeedAdjustedHoursPerSecond;
+        }
+
         // Note: WaitJobs moved to WaitJobUtility to allow auto job termination when a game instance ends (aka isRunning = false)
 
     }

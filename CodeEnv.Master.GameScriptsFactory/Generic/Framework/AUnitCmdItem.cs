@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUnitAttackableTarget {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUnitAttackableTarget, IFormationMgrClient {
 
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
@@ -48,12 +48,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     public override float Radius { get { return Data.Radius; } }
 
-    /// <summary>
-    /// The radius of the entire Unit. 
-    /// This is not the radius of the Command which is the radius of the HQElement.
-    /// </summary>
-    public abstract float UnitRadius { get; }
-
     public new AUnitCmdItemData Data {
         get { return base.Data as AUnitCmdItemData; }
         set { base.Data = value; }
@@ -71,8 +65,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
 
-    protected FormationGenerator _formationGenerator;
-
+    private AFormationManager _formationMgr;
     private ITrackingWidget _trackingLabel;
 
     #region Initialization
@@ -81,8 +74,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         base.InitializeOnAwake();
         Elements = new List<AUnitElementItem>();
         SensorRangeMonitors = new List<ISensorRangeMonitor>();
-        _formationGenerator = new FormationGenerator(this);
+        _formationMgr = InitializeFormationMgr();
     }
+
+    protected abstract AFormationManager InitializeFormationMgr();
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -124,10 +119,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick += (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
-        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover += HoverEventHandler;
+        iconEventListener.onClick += ClickEventHandler;
+        iconEventListener.onDoubleClick += DoubleClickEventHandler;
+        iconEventListener.onPress += PressEventHandler;
     }
 
     #endregion
@@ -144,25 +139,32 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     public virtual void AddElement(AUnitElementItem element) {
         D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
         D.Assert(!element.IsHQ, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
-        // elements should already be operational when added to a Cmd as that is commonly their state when transferred during runtime
-        D.Assert(element.IsOperational, "{0} should be operational.", element.FullName);
+        D.Assert(element.IsOperational == IsOperational, "{0}: Adding element {1} with incorrect IsOperational state.", FullName, element.FullName);
         Elements.Add(element);
         Data.AddElement(element.Data);
+        element.Command = this;
         element.AttachAsChildOf(UnitContainer);
         Subscribe(element);
         //TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
             //D.Log("{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
-            var unattachedSensorsArray = unattachedSensors.ToArray();
-            AttachSensorsToMonitors(unattachedSensorsArray);
-            // WARNING: Donot use the IEnumerable unattachedSensors here as it will no longer point to any unattached sensors, since they are all attached now
-            // This is the IEnumerable<T> lazy evaluation GOTCHA
+            AttachSensorsToMonitors(unattachedSensors.ToList());
+            // WARNING: IEnumerable<T> lazy evaluation GOTCHA! The IEnumerable unattachedSensors at this point (after AttachSensorsToMonitors
+            // completes) no longer points to any sensors as they would now all be attached. This is because the IEnumerable is not an 
+            // already constructed collection. It is a pointer to a sensor that when called evaluates the sensor against the criteria. 
+            // Since the Attach method modifies the sensor, the sensor being evaluated will no longer meet the unattached criteria, 
+            // so unattachedSensors will no longer point to anything. Using ToList() to feed the method delivers a fully evaluated 
+            // collection to the method, but this doesn't change the fact that Sensors now has no sensors that are unattached, thus 
+            // the unattachedSensors IEnumerable when used again no longer points to anything.
         }
-        if (IsOperational) {
-            // avoid the extra work if adding before beginning operations
-            AssessIcon();
+        if (!IsOperational) {
+            // avoid the following extra work if adding during Cmd construction
+            D.Assert(HQElement == null);    // During Cmd construction, HQElement will be designated AFTER all Elements are
+            return;                         // added resulting in _formationMgr adding all elements into the formation at once
         }
+        AssessIcon();
+        _formationMgr.AddAndPositionNonHQElement(element);
     }
 
     /// <summary>
@@ -172,9 +174,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     /// the Command, not from the element.
     /// </summary>
     /// <param name="sensors">The sensors.</param>
-    public void AttachSensorsToMonitors(params Sensor[] sensors) {
+    private void AttachSensorsToMonitors(IList<Sensor> sensors) {
         sensors.ForAll(sensor => {
-            var monitor = UnitFactory.Instance.MakeMonitorInstance(sensor, this);
+            var monitor = UnitFactory.Instance.AttachSensorToCmdsMonitor(sensor, this);
             if (!SensorRangeMonitors.Contains(monitor)) {
                 // only need to record and setup range monitors once. The same monitor can have more than 1 sensor
                 SensorRangeMonitors.Add(monitor);
@@ -189,7 +191,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     /// the Command, not from the element.
     /// </summary>
     /// <param name="sensors">The sensors.</param>
-    public void DetachSensorsFromMonitors(params Sensor[] sensors) {
+    private void DetachSensorsFromMonitors(IList<Sensor> sensors) {
         sensors.ForAll(sensor => {
             var monitor = sensor.RangeMonitor;
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
@@ -209,17 +211,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         Data.RemoveElement(element.Data);
         Unsubscribe(element);
 
-        DetachSensorsFromMonitors(element.Data.Sensors.ToArray());
-        if (IsOperational) {
-            // avoid this work if removing during startup
-            if (Elements.Count > Constants.Zero) {
-                AssessIcon();
-            }
-            else {
-                D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
-                IsOperational = false;
-            }
+        DetachSensorsFromMonitors(element.Data.Sensors);
+        if (!IsOperational) {
+            return; // avoid the following work if removing during startup
         }
+        if (Elements.Count == Constants.Zero) {
+            D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
+            IsOperational = false;  // tell Cmd its dead
+            return;
+        }
+        AssessIcon();
+        _formationMgr.RemoveElement(element);
     }
 
     private void Subscribe(AUnitElementItem element) {
@@ -239,24 +241,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     protected abstract void AttachCmdToHQElement();
 
-    protected override void PrepareForOnDeathNotification() {
-        base.PrepareForOnDeathNotification();
-        if (IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;
-        }
-    }
-
     public override void __SimulateAttacked() {
         Elements.ForAll(e => e.__SimulateAttacked());
     }
-
-    protected internal virtual void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
-        element.transform.position = HQElement.Position + stationOffset;
-        //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
-        //element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);
-    }
-
-    protected internal virtual void CleanupAfterFormationGeneration() { }
 
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -304,7 +291,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
         //D.Log("{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
-        _formationGenerator.RegenerateFormation();
+        _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
         if (DisplayMgr != null) {
             DisplayMgr.ResizePrimaryMesh(Radius);
         }
@@ -327,7 +314,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     private void UnitFormationPropChangedHandler() {
-        _formationGenerator.RegenerateFormation();
+        _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
     }
 
     protected override void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
@@ -352,6 +339,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     #endregion
 
     # region StateMachine Support Methods
+
+    protected override void HandleDeath() {
+        base.HandleDeath();
+    }
 
     protected void Dead_ExitState() {
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
@@ -449,19 +440,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         }
     }
 
-    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-    //    var iconEventListener = icon.EventListener;
-    //    iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
-    //    iconEventListener.onClick -= (go) => OnClick();
-    //    iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
-    //    iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
-    //}
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick -= (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
-        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover -= HoverEventHandler;
+        iconEventListener.onClick -= ClickEventHandler;
+        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+        iconEventListener.onPress -= PressEventHandler;
     }
 
     // subscriptions contained completely within this gameobject (both subscriber
@@ -475,11 +459,22 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     // override reqd as AMortalItem base version accesses AItemData, not ACommandData
     // since ACommandData.Topography must use new rather than override
-    public override Topography Topography { get { return Data.Topography; } }
+    //public override Topography Topography { get { return Data.Topography; } } // override reason no longer true?
 
     #endregion
 
     #region ICameraFocusable Members
+
+    public override float OptimalCameraViewingDistance {
+        get {
+            if (_optimalCameraViewingDistance != Constants.ZeroF) {
+                // the user has set the value manually
+                return _optimalCameraViewingDistance;
+            }
+            return Data.UnitMaxFormationRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+        }
+        set { base.OptimalCameraViewingDistance = value; }
+    }
 
     public override bool IsRetainedFocusEligible { get { return GetUserIntelCoverage() != IntelCoverage.None; } }
 
@@ -487,9 +482,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     #region IHighlightable Members
 
-    public override float HoverHighlightRadius { get { return UnitRadius; } }
+    public override float HoverHighlightRadius { get { return Data.UnitMaxFormationRadius; } }
 
     public override float HighlightRadius { get { return Screen.height * 0.03F; } }
+
+    #endregion
+
+    #region IFormationMgrClient Members
+
+    public virtual void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
+        (element as AUnitElementItem).transform.position = HQElement.Position + stationOffset;
+        //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.", element.FullName, element.Position, stationOffset, HQElement.FullName, HQElement.Position);
+    }
+
+    public virtual void CleanupAfterFormationChanges() { }
 
     #endregion
 

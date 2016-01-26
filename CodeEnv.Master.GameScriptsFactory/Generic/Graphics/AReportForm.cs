@@ -35,7 +35,8 @@ public abstract class AReportForm : AForm {
         get { return _report; }
         set {
             D.Assert(_report == null);  // occurs only once between Resets
-            SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler); }
+            SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler);
+        }
     }
 
     protected UILabel _nameLabel;
@@ -309,6 +310,97 @@ public abstract class AReportForm : AForm {
 
     public override void Reset() {
         _report = null;
+    }
+
+    private void CleanupGuiElement(AGuiElement e) {
+        switch (e.ElementID) {
+            case GuiElementID.ItemNameLabel:
+                CleanupNameGuiElement(e);
+                break;
+            case GuiElementID.Owner:
+                CleanupOwnerGuiElement(e);
+                break;
+            case GuiElementID.Location:
+                CleanupLocationGuiElement(e);
+                break;
+            case GuiElementID.Hero:
+                CleanupHeroGuiElement(e);
+                break;
+            case GuiElementID.Health:
+                CleanupHealthGuiElement(e);
+                break;
+            case GuiElementID.OffensiveStrength:
+                CleanupOffensiveStrengthGuiElement(e);
+                break;
+            case GuiElementID.DefensiveStrength:
+                CleanupDefensiveStrengthGuiElement(e);
+                break;
+            case GuiElementID.Resources:
+                CleanupStrategicResourcesGuiElement(e);
+                break;
+            case GuiElementID.ScienceLabel:
+                CleanupScienceGuiElement(e);
+                break;
+            case GuiElementID.CultureLabel:
+                CleanupCultureGuiElement(e);
+                break;
+            case GuiElementID.NetIncome:
+                CleanupNetIncomeGuiElement(e);
+                break;
+            case GuiElementID.OrganicsLabel:
+                CleanupOrganicsGuiElement(e);
+                break;
+            case GuiElementID.ParticulatesLabel:
+                CleanupParticulatesGuiElement(e);
+                break;
+            case GuiElementID.EnergyLabel:
+                CleanupEnergyGuiElement(e);
+                break;
+            case GuiElementID.Composition:
+                CleanupCompositionGuiElement(e);
+                break;
+            case GuiElementID.Approval:
+                CleanupApprovalGuiElement(e);
+                break;
+            case GuiElementID.PopulationLabel:
+                CleanupPopulationGuiElement(e);
+                break;
+            case GuiElementID.Production:
+                CleanupProductionGuiElement(e);
+                break;
+            case GuiElementID.SpeedLabel:
+                CleanupSpeedGuiElement(e);
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.ElementID));
+        }
+    }
+
+    protected virtual void CleanupNameGuiElement(AGuiElement e) { }
+    protected virtual void CleanupOwnerGuiElement(AGuiElement e) { }
+    protected virtual void CleanupLocationGuiElement(AGuiElement e) { }
+    protected virtual void CleanupHeroGuiElement(AGuiElement e) { }
+    protected virtual void CleanupHealthGuiElement(AGuiElement e) { }
+    protected virtual void CleanupOffensiveStrengthGuiElement(AGuiElement e) { }
+    protected virtual void CleanupDefensiveStrengthGuiElement(AGuiElement e) { }
+    protected virtual void CleanupStrategicResourcesGuiElement(AGuiElement e) { }
+    protected virtual void CleanupScienceGuiElement(AGuiElement e) { }
+    protected virtual void CleanupCultureGuiElement(AGuiElement e) { }
+    protected virtual void CleanupNetIncomeGuiElement(AGuiElement e) { }
+    protected virtual void CleanupOrganicsGuiElement(AGuiElement e) { }
+    protected virtual void CleanupParticulatesGuiElement(AGuiElement e) { }
+    protected virtual void CleanupEnergyGuiElement(AGuiElement e) { }
+    protected virtual void CleanupCompositionGuiElement(AGuiElement e) { }
+    protected virtual void CleanupApprovalGuiElement(AGuiElement e) { }
+    protected virtual void CleanupPopulationGuiElement(AGuiElement e) { }
+    protected virtual void CleanupProductionGuiElement(AGuiElement e) { }
+    protected virtual void CleanupSpeedGuiElement(AGuiElement e) { }
+
+    protected virtual void CleanupNonGuiElementMembers() { }
+
+    protected override void Cleanup() {
+        _guiElementsPresent.Values.ForAll(e => CleanupGuiElement(e));
+        CleanupNonGuiElementMembers();
     }
 
 }

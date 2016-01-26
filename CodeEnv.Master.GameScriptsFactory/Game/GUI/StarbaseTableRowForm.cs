@@ -46,8 +46,6 @@ public class StarbaseTableRowForm : ACommandTableRowForm {
         _resourcesElement.Resources = report.Resources;
     }
 
-    protected override void Cleanup() { }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

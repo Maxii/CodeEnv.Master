@@ -24,6 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Detects whether the assigned ship IsOnStation in the Fleet Formation.
 /// </summary>
+[Obsolete]
 public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
 
     private static string _nameFormat = "{0}[{1}]";
@@ -111,7 +112,7 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
         else {
             IsOperational = false;
             IsOnStation = false;
-            RangeDistance = Constants.ZeroF;
+            RangeDistance = Constants.ZeroF;    // TODO turn collider off rather than change radius
         }
     }
 
@@ -146,8 +147,9 @@ public class FormationStationMonitor : AColliderMonitor, INavigableTarget {
 
     public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
 
-    public float GetCloseEnoughDistance(ICanNavigate navigatingItem) { return RangeDistance; }
+    public float RadiusAroundTargetContainingKnownObstacles { get { return Constants.ZeroF; } }
 
+    public float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) { return RangeDistance; }
 
     #endregion
 

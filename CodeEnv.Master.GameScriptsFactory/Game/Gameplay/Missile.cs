@@ -27,6 +27,12 @@ using UnityEngine;
 /// </summary>
 public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
+    /// <summary>
+    /// The maximum heading change a Missile may be required to make in degrees.
+    /// <remarks>Rotations always go the shortest route.</remarks>
+    /// </summary>
+    private const float MaxReqdHeadingChange = 180F;
+
     private static Vector3 _localSpaceForward = Vector3.forward;
 
     /// <summary>
@@ -245,7 +251,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null && _changeHeadingJob.IsRunning) {
             _changeHeadingJob.Kill();
         }
-        _changeHeadingJob = new Job(ChangeHeading(newHeading), toStart: true, jobCompleted: (jobWasKilled) => {
+        float allowedTime = GameUtility.CalcMaxReqdSecsToCompleteRotation(TurnRate, MaxReqdHeadingChange);
+        _changeHeadingJob = new Job(ChangeHeading(newHeading, allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
             if (!IsOperational) { return; } // missile is or about to be destroyed
             if (jobWasKilled) {
                 D.Warn("{0} had its ChangeHeadingJob killed.", Name);   // -> course update freq is too high or turnRate too low
@@ -259,12 +266,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     /// <summary>
     /// Changes the heading.
+    /// OPTIMIZE use Quaternions like ShipNav?
     /// </summary>
     /// <param name="requestedHeading">The requested heading.</param>
     /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
-    /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
     /// <returns></returns>
-    private IEnumerator ChangeHeading(Vector3 requestedHeading, float allowedTime = 5F) {
+    private IEnumerator ChangeHeading(Vector3 requestedHeading, float allowedTime) {
         float cumTime = Constants.ZeroF;
         //float angle = Vector3.Angle(Heading, newHeading);
         while (!Heading.IsSameDirection(requestedHeading, SteeringInaccuracy)) {
@@ -317,7 +324,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null) {
             _changeHeadingJob.Dispose();
         }
-        //Target.onDeathOneShot -= OnTargetDeath;
         Target.deathOneShot -= TargetDeathEventHandler;
     }
 

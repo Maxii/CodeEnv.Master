@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
 
-        void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
     }
 }
 

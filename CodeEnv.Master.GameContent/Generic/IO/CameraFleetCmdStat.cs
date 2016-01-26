@@ -22,15 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Camera stat for a FleetCmd.
     /// </summary>
-    public class CameraFleetCmdStat : ACameraItemStat {
-
-        /// <summary>
-        /// ICameraFocusable's OptimalViewingDistance for a fleetCmd is calculated differently than most Items.
-        /// Normally, the CameraFollowableStat value is used directly as the ICameraFollowable OptimalViewingDistance.
-        /// A FleetCmd's ICameraFollowable OptimalViewingDistance is overridden and based off of its UnitRadius.
-        /// As such, this value is used as an adder to the UnitRadius rather than as the OptimalViewingDistance itself.
-        /// </summary>
-        public float OptimalViewingDistanceAdder { get; private set; }
+    public class CameraFleetCmdStat : CameraUnitCmdStat {
 
         public float FollowDistanceDampener { get; private set; }
 
@@ -42,19 +34,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="minViewDistance">The minimum view distance.</param>
         /// <param name="optViewDistanceAdder">ICameraFocusable's OptimalViewingDistance for a fleetCmd is calculated differently than most Items.
         /// Normally, the CameraFollowableStat value is used directly as the ICameraFollowable OptimalViewingDistance.
-        /// A FleetCmd's ICameraFollowable OptimalViewingDistance is overridden and based off of its UnitRadius.
-        /// As such, this value is used as an adder to the UnitRadius rather than as the OptimalViewingDistance itself.</param>
+        /// A FleetCmd's ICameraFollowable OptimalViewingDistance is overridden and based off of its UnitFormationRadius.
+        /// As such, this value is used as an adder to the UnitFormationRadius rather than as the OptimalViewingDistance itself.</param>
         /// <param name="fov">The fov.</param>
         /// <param name="followDistanceDampener">The follow distance dampener. Default is 3F.</param>
-        /// <param name="followRotationDampener">The follow rotation dampener. Default is 1F.</param>
-        public CameraFleetCmdStat(float minViewDistance, float optViewDistanceAdder, float fov, float followDistanceDampener = 3F, float followRotationDampener = 1F)
-            : base(minViewDistance, fov) {
-            Arguments.ValidateNotNegative(optViewDistanceAdder);
+        /// <param name="followRotationDampener">The follow rotation dampener. Default is 10F as Fleets can change directions pretty fast.</param>
+        public CameraFleetCmdStat(float minViewDistance, float optViewDistanceAdder, float fov, float followDistanceDampener = 3F, float followRotationDampener = 10F)
+            : base(minViewDistance, optViewDistanceAdder, fov) {
             D.Assert(followDistanceDampener > Constants.OneF);
             D.Assert(followRotationDampener > Constants.ZeroF);
-            FollowDistanceDampener = followRotationDampener;
+            FollowDistanceDampener = followDistanceDampener;
             FollowRotationDampener = followRotationDampener;
-            OptimalViewingDistanceAdder = optViewDistanceAdder;
         }
 
         public override string ToString() {

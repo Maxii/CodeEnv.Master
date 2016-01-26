@@ -126,24 +126,6 @@ namespace CodeEnv.Master.Common {
             return lineStart + (Mathf.Clamp(closestPoint, 0.0f, Vector3.Magnitude(fullDirection)) * lineDirection);
         }
 
-
-        /// <summary>
-        /// Returns the percentage distance along the line where the nearest point on the line is located.
-        /// 1.0 = 100%. The value can be greater than 1.0 if point is beyond lineEnd.
-        /// </summary>
-        /// <param name="lineStart">The line start.</param>
-        /// <param name="lineEnd">The line end.</param>
-        /// <param name="point">The point.</param>
-        /// <returns></returns>
-        public static float NearestPointFactor(Vector3 lineStart, Vector3 lineEnd, Vector3 point) {
-            Vector3 lineDirection = lineEnd - lineStart;
-            float lineMagnitude = lineDirection.magnitude;
-            lineDirection /= lineMagnitude;    // normalized direction
-
-            float closestPoint = Vector3.Dot((point - lineStart), lineDirection); //Vector3.Dot(lineDirection,lineDirection);
-            return closestPoint / lineMagnitude;
-        }
-
         /// <summary>
         ///Returns a value between 0 and 1 that can be used to easily make bouncing GUI items (a la OS X's Dock)
         /// </summary>
@@ -163,7 +145,6 @@ namespace CodeEnv.Master.Common {
         public static bool Approx(float value, float targetValue, float acceptableRange) {
             return ((Mathf.Abs(value - targetValue) < acceptableRange));
         }
-
 
         /// <summary>
         ///  Tests if a Vector3 is within acceptableRange of another Vector3. Useful in dealing with floating point imprecision.
@@ -208,24 +189,6 @@ namespace CodeEnv.Master.Common {
 
             // Debug.Log("Start: "  + start + "   End: " + end + "  Value: " + value + "  Half: " + half + "  Diff: " + diff + "  Retval: " + retval);
             return retval;
-        }
-
-        /// <summary>
-        /// Returns an array of Vector3 local positions (y = 0) that are uniformly distributed in a circle in the xz plane.
-        /// </summary>
-        /// <param name="radius">The radius of the circle.</param>
-        /// <param name="numberOfPoints">The number of points.</param>
-        /// <returns></returns>
-        public static Vector3[] UniformPointsOnCircle(float radius, int numberOfPoints) {
-            Vector3[] points = new Vector3[numberOfPoints];
-            float twoPi = (float)(2F * Math.PI);
-            float startAngleInRadians = UnityEngine.Random.Range(0F, twoPi);
-            for (int i = 0; i < numberOfPoints; i++) {
-                float x = radius * Mathf.Cos((i * twoPi / (float)numberOfPoints) + startAngleInRadians);
-                float z = radius * Mathf.Sin((i * twoPi / (float)numberOfPoints) + startAngleInRadians);
-                points[i] = new Vector3(x, 0F, z);
-            }
-            return points;
         }
 
     }

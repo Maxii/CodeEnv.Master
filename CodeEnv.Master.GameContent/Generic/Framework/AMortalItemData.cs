@@ -75,11 +75,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="itemTransform">The item transform.</param>
         /// <param name="name">The name.</param>
-        /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
+        /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="passiveCMs">The item's passive Countermeasures.</param>
-        public AMortalItemData(Transform itemTransform, string name, float maxHitPts, Player owner, ACameraItemStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs)
+        public AMortalItemData(Transform itemTransform, string name, Player owner, ACameraItemStat cameraStat, float maxHitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
             : base(itemTransform, name, owner, cameraStat) {
             Initialize(passiveCMs);
             MaxHitPoints = maxHitPts;
@@ -134,6 +134,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void HealthPropChangedHandler() {
             D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
+        }
+
+        protected sealed override void IsOperationalPropChangedHandler() {
+            // override the AItemData Assert as MortalItems set IsOperational to false when dieing
         }
 
         #endregion

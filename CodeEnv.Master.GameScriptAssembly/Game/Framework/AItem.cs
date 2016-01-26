@@ -59,13 +59,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// it is a MortalItem, that it is not dead. Set to false to initiate death.
     /// </summary>
     public bool IsOperational {
-        get { return (this == null) ? false : enabled; }  // if monoBehaviour is destroyed, accessing enabled throws an error
-        protected set {
-            if (enabled != value) {
-                enabled = value;
-                IsOperationalPropChangedHandler();
-            }
-        }
+        get { return Data != null ? Data.IsOperational : false; }
+        protected set { Data.IsOperational = value; }
     }
 
     /// <summary>
@@ -130,6 +125,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         D.Assert(_subscriptions != null);
         _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, bool>(d => d.IsOperational, IsOperationalPropChangedHandler));
     }
 
     protected sealed override void Start() {
@@ -143,8 +139,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// </summary>
     public virtual void CommenceOperations() {
         Data.CommenceOperations();
-        D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
-        IsOperational = true;
     }
 
     public void ShowHud(bool toShow) {
@@ -180,7 +174,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     #region Event and Property Change Handlers
 
     protected virtual void IsOperationalPropChangedHandler() {
-        D.Assert(IsOperational);    // only MortalItems should ever see a change to false
+        enabled = IsOperational;
     }
 
     protected virtual void OwnerPropChangingHandler(Player newOwner) {
@@ -239,7 +233,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     public virtual bool IsMobile { get { return false; } }
 
-    public abstract float GetCloseEnoughDistance(ICanNavigate navigatingItem);
+    public abstract float RadiusAroundTargetContainingKnownObstacles { get; }
+
+    public abstract float GetShipArrivalDistance(float shipCollisionAvoidanceRadius);
+
 
     #endregion
 

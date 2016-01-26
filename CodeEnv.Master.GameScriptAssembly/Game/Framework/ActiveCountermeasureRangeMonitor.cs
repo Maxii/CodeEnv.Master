@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterceptableOrdnance, ActiveCountermeasure>, IActiveCountermeasureRangeMonitor {
 
+    protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // projectileOrdnance have rigidbodies
+
     /// <summary>
     /// Adds the ordnance launched to the list of detected items. 
     /// Part of a workaround to allow 'detection' of ordnance launched inside the monitor's collider. 

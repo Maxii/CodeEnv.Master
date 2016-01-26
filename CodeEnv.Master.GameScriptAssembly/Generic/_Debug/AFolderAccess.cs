@@ -37,7 +37,7 @@ public abstract class AFolderAccess<T> : AMonoSingleton<T> where T : AFolderAcce
                 D.Warn("Expecting folder named {0} but got {1}.", FolderName, gameObject.name);
             }
             // As this is a singleton, it can be called using Instance.Folder before Awake() is run
-            //return _transform ?? transform;
+            //return transform ?? transform;
             return transform;
         }
     }

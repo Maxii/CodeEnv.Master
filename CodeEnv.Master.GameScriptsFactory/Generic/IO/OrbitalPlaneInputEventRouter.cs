@@ -74,6 +74,11 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         }
     }
 
+    private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler(Vector2 moveDelta) {
+        //D.Log("{0}.MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler() called.", GetType().Name);
+        CheckForOccludedObjectAndProcessOnHoverNotifications();
+    }
+
     // Note: No need to filter occlusion checking with IsDiscernible within these events 
     // as turning the collider on and off accomplishes the same thing. In the case of 
     // OnHover, if hovering and IsDiscernible changes to false, the Ngui event system
@@ -188,7 +193,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, maskWithoutOrbitalPlaneLayer)) {
             if (!UICamera.isOverUI) {
                 occludedObject = hit.collider.gameObject;
-                //D.Log("{0}.{1} found occluded object {2}. \nMask = {3}.", _transform.name, GetType().Name, occludedObject.name, maskWithoutOrbitalPlaneLayer.MaskToString());
+                //D.Log("{0}.{1} found occluded object {2}. \nMask = {3}.", transform.name, GetType().Name, occludedObject.name, maskWithoutOrbitalPlaneLayer.MaskToString());
                 isObjectOccluded = true;
             }
         }
@@ -326,20 +331,24 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     /// </summary>
     /// <param name="toEnable">if set to <c>true</c> enable checking. If false, disables it.</param>
     private void EnableOnHoverCheckingForOccludedObjects(bool toEnable) {
+        //D.Log("{0}.EnableOnHoverCheckingForOccludedObjects({1}) called.", GetType().Name, toEnable);
         if (toEnable) {
             CheckForOccludedObjectAndProcessOnHoverNotifications();
 
             _spawnOccludedObjectChecksJob = new Job(SpawnOnHoverOccludedObjectChecks(), toStart: true);
-            UICamera.onMouseMove += (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
-            //D.Log("Occluded Object Checking begun.");
+
+            // C# GOTCHA! You can subscribe to a delegate using a Lambda expression...
+            //UICamera.onMouseMove += (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
+            UICamera.onMouseMove += MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler;
         }
         else {
             if (_spawnOccludedObjectChecksJob != null) {    // can be null if never rcvd OnHover(true)
                 _spawnOccludedObjectChecksJob.Kill();
                 _spawnOccludedObjectChecksJob = null;
             }
-            UICamera.onMouseMove -= (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
-            //D.Log("Occluded Object Checking ended.");
+            // ... but you CAN'T unsubscibe from a delegate using a Lambda expression! There is no error, it just doesn't work!
+            //UICamera.onMouseMove -= (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
+            UICamera.onMouseMove -= MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler;
         }
     }
 
@@ -353,14 +362,6 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             yield return new WaitForSeconds(1F);
         }
     }
-
-    private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler() {
-        CheckForOccludedObjectAndProcessOnHoverNotifications();
-    }
-
-    //private void OnMouseMoveWhileOnHoverCheckingForOccludedObjects(Vector2 delta) {
-    //    CheckForOccludedObjectAndProcessOnHoverNotifications();
-    //}
 
     #endregion
 

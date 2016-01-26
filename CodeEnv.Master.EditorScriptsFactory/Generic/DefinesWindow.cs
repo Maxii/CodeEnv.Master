@@ -37,7 +37,7 @@ public class DefinesWindow : EditorWindow {
     public bool _isDebugLogEnabled;
 
     [SerializeField]
-    private bool _previousDebugLogEnabledValue;
+    private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
     private bool _isGuiEnabled = true;
 
     [MenuItem("My Tools/DEFINEs to Include")]
@@ -82,7 +82,6 @@ public class DefinesWindow : EditorWindow {
 
     #endregion
 
-    private class RecompileChecker { }
     private RecompileChecker _recompileCheck;
     private void CheckForRecompile() {
         if (_recompileCheck == null) {
@@ -112,6 +111,10 @@ public class DefinesWindow : EditorWindow {
         }
         UnityEditorUtility.ResetConditionalCompilation(platformTargets, definesToInclude.ToArray<string>());
     }
+
+    #region Nested Classes
+
+    private class RecompileChecker { }
 
     private class DefineStringComparer : IComparer<string> {
 
@@ -158,5 +161,7 @@ public class DefinesWindow : EditorWindow {
             return _baseComparer.Compare(x, y);
         }
     }
+
+    #endregion
 }
 

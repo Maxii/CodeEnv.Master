@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public class DynamicObjectsFolder : AFolderAccess<DynamicObjectsFolder>, IDynamicObjectsFolder {
 
+    protected override bool IsRootGameObject { get { return true; } }
+
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
         References.DynamicObjectsFolder = Instance;

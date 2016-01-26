@@ -86,9 +86,6 @@ namespace CodeEnv.Master.GameContent {
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }
 
-        //protected sealed override AIntel MakeIntel(IntelCoverage initialcoverage) {
-        //    return new ImprovingIntel(initialcoverage);
-        //}
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);

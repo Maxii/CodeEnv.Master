@@ -45,18 +45,19 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
         /// <param name="facilityTransform">The facility transform.</param>
-        /// <param name="facilityRigidbody">The facility rigidbody.</param>
-        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        /// <param name="topography">The topography.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public FacilityData(Transform facilityTransform, Rigidbody facilityRigidbody, FacilityHullEquipment hullEquipment, Player owner, CameraFollowableStat cameraStat, Topography topography,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(facilityTransform, hullEquipment, owner, cameraStat, activeCMs, sensors, passiveCMs, shieldGenerators) {
+        /// <param name="facilityRigidbody">The facility rigidbody.</param>
+        /// <param name="topography">The topography.</param>
+        public FacilityData(Transform facilityTransform, Player owner, CameraFollowableStat cameraStat,
+            IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
+            IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Rigidbody facilityRigidbody, Topography topography)
+            : base(facilityTransform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
             facilityRigidbody.mass = Mass;
             Topography = topography;
             Science = hullEquipment.Science;

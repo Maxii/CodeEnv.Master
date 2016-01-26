@@ -28,6 +28,8 @@ using UnityEngine;
 /// </summary>
 public class GuiPauseButton : AGuiButton {
 
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Pause }; } }
+
     protected override string TooltipContent {  // called by AGuiTooltip before _pauseButtonLabel reference is established
         get { return _pauseButtonLabel != null ? "{0} the game.".Inject(_pauseButtonLabel.text) : "I'm not empty."; }
     }
@@ -53,7 +55,7 @@ public class GuiPauseButton : AGuiButton {
         UpdateButtonLabel();
     }
 
-    protected override void HandleLeftClick() {
+    protected override void HandleValidClick() {
         bool toPause = !_gameMgr.IsPaused;
         _gameMgr.RequestPauseStateChange(toPause, toOverride: true);
     }

@@ -74,6 +74,10 @@ namespace CodeEnv.Master.Common {
                     }
                     else {
                         // ************** My Addition **************
+                        // IsRunning = false must occur before OnJobCompleted as the onJobCompleted event can immediately generate
+                        // another Job of the same type before the IsRunning = false below is executed. This is a problem when I check
+                        // for whether the first Job is still running and thrown an error if it is...
+                        IsRunning = false;
                         OnJobCompleted();
                         // ******************************************
 
@@ -83,11 +87,14 @@ namespace CodeEnv.Master.Common {
                             _coroutine = childJob._coroutine;
                             // ************** My Addition **************
                             jobCompleted = childJob.jobCompleted;
+                            IsRunning = true;
                             // ******************************************
                         }
-                        else {
-                            IsRunning = false;
-                        }
+                        // *************** My Deletion ***************
+                        //else {
+                        //    IsRunning = false;
+                        //}
+                        // *******************************************
                     }
                 }
             }

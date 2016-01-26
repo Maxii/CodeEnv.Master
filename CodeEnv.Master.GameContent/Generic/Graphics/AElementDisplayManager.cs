@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -45,6 +45,8 @@ namespace CodeEnv.Master.GameContent {
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Below; } }
 
         protected override Vector2 IconSize { get { return _elementIconSize; } }
+
+        protected override int IconDepth { get { return -5; } }
 
         /// <summary>
         /// The Layer used to cull this element's meshes.
@@ -152,6 +154,18 @@ namespace CodeEnv.Master.GameContent {
             if (_secondaryMeshRenderers.Any()) {
                 _secondaryMeshRenderers.ForAll(r => r.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
             }
+        }
+
+        /// <summary>
+        /// Determines the conditions under which the Icon should show. This element version
+        /// shows the icon when 1) the display is enabled, 2) the icon exists and is within the camera's LOS,
+        /// 3) the primary mesh is no longer showing due to clipping planes and 4) the element's Command is the focus.
+        /// This last criteria keeps the element's icon colliders off when the command is not the focus, allowing the
+        /// Command Icon collider to be more easily acquired.
+        /// </summary>
+        /// <returns></returns>
+        protected override bool ShouldIconShow() {
+            return base.ShouldIconShow() && ((_trackedItem as IUnitElementItem).Command as ICameraFocusable).IsFocus;
         }
 
         #region Event and Property Change Handlers

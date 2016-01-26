@@ -16,6 +16,8 @@
 
 // default namespace
 
+using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -25,6 +27,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public class GuiPauseStateControlButton : AGuiButton {
 
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+
     //[FormerlySerializedAs("pauseRequestOnClick")]
     [Tooltip("The Pause/Resume action to take when clicked")]
     [SerializeField]
@@ -32,7 +36,7 @@ public class GuiPauseStateControlButton : AGuiButton {
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
+    protected override void HandleValidClick() {
         if (_pauseRequestOnClick == default(PauseRequest)) {
             D.WarnContext(this, "{0}.{1} not set.", GetType().Name, typeof(PauseRequest).Name);
         }

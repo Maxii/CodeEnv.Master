@@ -53,12 +53,16 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FleetFormationStation.cs" />
+    <Compile Include="Generic\Framework\AFormationManager.cs" />
+    <Compile Include="Game\Framework\FleetFormationManager.cs" />
+    <Compile Include="Generic\Framework\FormationFactory.cs" />
+    <Compile Include="Generic\IO\CameraUnitCmdStat.cs" />
     <Compile Include="Generic\IO\ACameraItemStat.cs" />
     <Compile Include="Generic\Framework\ADiscernibleItemData.cs" />
     <Compile Include="Generic\Framework\AUnitBaseCmdItemData.cs" />
     <Compile Include="Generic\IO\CameraFleetCmdStat.cs" />
     <Compile Include="Generic\IO\SettlementCmdStat.cs" />
-    <Compile Include="Generic\IO\UnitBaseCmdStat.cs" />
     <Compile Include="Generic\IO\UnitCmdStat.cs" />
     <Compile Include="Generic\IO\CameraFocusableStat.cs" />
     <Compile Include="Generic\IO\CameraFollowableStat.cs" />
@@ -89,7 +93,7 @@
     <Compile Include="Game\Graphics\FleetIconInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AElementDisplayManager.cs" />
     <Compile Include="Generic\IO\AHullStat.cs" />
-    <Compile Include="Generic\IO\EngineStat.cs" />
+    <Compile Include="Generic\IO\EnginesStat.cs" />
     <Compile Include="Generic\IO\FacilityHullStat.cs" />
     <Compile Include="Generic\Framework\ActiveCountermeasure.cs" />
     <Compile Include="Generic\IO\ActiveCountermeasureStat.cs" />
@@ -131,7 +135,7 @@
     <Compile Include="Game\Framework\FacilityData.cs" />
     <Compile Include="Game\Framework\FleetCmdData.cs" />
     <Compile Include="Generic\Framework\ISensorDetectable.cs" />
-    <Compile Include="Generic\Framework\APlanetoidData.cs" />
+    <Compile Include="Generic\Framework\PlanetoidData.cs" />
     <Compile Include="Game\GUI\BaseComposition.cs" />
     <Compile Include="Game\GUI\FleetComposition.cs" />
     <Compile Include="Generic\Framework\ACmdPublisher.cs" />
@@ -204,7 +208,7 @@
     <Compile Include="Generic\Framework\OrderSource.cs" />
     <Compile Include="Generic\Deferred\ShipCombatStance.cs" />
     <Compile Include="Generic\Framework\NoPlayer.cs" />
-    <Compile Include="Generic\IO\APlanetoidStat.cs" />
+    <Compile Include="Generic\IO\PlanetoidStat.cs" />
     <Compile Include="Generic\Framework\IShipOrbitable.cs" />
     <Compile Include="Generic\Framework\IOrbitSimulator.cs" />
     <Compile Include="Generic\Framework\IShipOrbitSimulator.cs" />
@@ -306,17 +310,19 @@
     <Compile Include="Generic\IO\MissileWeaponStat.cs" />
     <Compile Include="Game\Gameplay\PlayersKnowledge.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
-    <Compile Include="Generic\Framework\IShipTransitBanned.cs" />
-    <Compile Include="Game\Framework\MoonData.cs" />
-    <Compile Include="Generic\IO\MoonStat.cs" />
     <Compile Include="Game\Framework\PlanetData.cs" />
     <Compile Include="Generic\IO\PlanetStat.cs" />
-    <Compile Include="Generic\Framework\ICanNavigate.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Generic\IO\OwnerChangingEventArgs.cs" />
-    <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
+    <Compile Include="Generic\IO\IGuiCameraControl.cs" />
+    <Compile Include="Generic\Framework\IMoonItem.cs" />
+    <Compile Include="Generic\Framework\IPlanetItem.cs" />
+    <Compile Include="Generic\IO\IMyEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MortalEffectsManager.cs" />
+    <Compile Include="Generic\Framework\IAvoidableObstacle.cs" />
+    <Compile Include="Generic\Framework\IFormationMgrClient.cs" />
+    <Compile Include="Generic\Framework\IObstacle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
@@ -360,12 +366,15 @@
     <Compile Include="Game\Graphics\SfxGroupID.cs" />
     <Compile Include="Generic\Extensions\SpaceUnityConstants.cs" />
     <Compile Include="Game\Graphics\SystemDisplayManager.cs" />
+    <Compile Include="Game\Framework\SettlementFormationManager.cs" />
+    <Compile Include="Game\Framework\StarbaseFormationManager.cs" />
     <Compile Include="ThirdParty\WaitJob.cs" />
     <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />
     <Compile Include="Game\GUI\UniverseCenterDisplayInfoFactory.cs" />
     <Compile Include="Generic\Extensions\TopographyExtensions.cs" />
     <Compile Include="Generic\Extensions\WaitJobUtility.cs" />
+    <Compile Include="Generic\Framework\DetourGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

@@ -27,38 +27,52 @@ using UnityEngine.Serialization;
 /// </summary>
 public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
-    private static string _nameFormat = "{0}.{1}.{2}";
+    private const string NameFormat = "{0}.{1}.{2}";
 
-    private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
+    private const float AllowedTraverseTimeBufferFactor = 1.5F;
 
     /// <summary>
     /// The barrel's maximum elevation angle. 
     /// This value when its sign is inverted and applied to a Euler angle generates a rotation that points straight out from the turret.
     /// </summary>
-    private static float _barrelMaxElevationAngle = 90F;
-
-    /// <summary>
-    /// The maximum elevation of the barrel of this turret which is the midpoint in its elevation traverse range.
-    /// <remarks>Barrel x elevation angle to face outward must be negative due to the orientation of the local x axis of the barrel prefab.</remarks>
-    /// </summary>
-    private static Quaternion _barrelMaxElevation = Quaternion.Euler(new Vector3(-_barrelMaxElevationAngle, Constants.ZeroF, Constants.ZeroF));
+    private const float BarrelMaxElevationAngle = 90F;
 
     /// <summary>
     /// The rotation rate of the hub of this turret in degrees per hour.
     /// </summary>
-    private static float _hubRotationRate = 270F;
+    private const float HubRotationRate = 270F;
 
     /// <summary>
     /// The elevation change rate of the barrel of this turret in degrees per hour.
     /// </summary>
-    private static float _barrelElevationRate = 90F;
+    private const float BarrelElevationRate = 90F;
 
     /// <summary>
     /// The minimum traverse inaccuracy that can be used in degrees. 
     /// Used to allow ExecuteTraverse() to complete early rather than wait
     /// until the direction error is below UnityConstants.FloatEqualityPrecision.
     /// </summary>
-    private static float _minTraverseInaccuracy = .01F;
+    private const float MinTraverseInaccuracy = .01F;
+
+    /// <summary>
+    /// The maximum number of degrees the hub should have to rotate when traversing.
+    /// <remarks>Logs during traverse shows Quaternion always goes shortest route when rotating.</remarks>
+    /// </summary>
+    private const float HubMaxRotationTraversal = 180F;
+
+    /// <summary>
+    /// The maximum number of degrees the barrel should have to elevate when traversing.
+    /// <remarks>Logs during traverse shows Quaternion always goes shortest route when rotating.</remarks>
+    /// </summary>
+    private const float BarrelMaxElevationTraversal = 90F;
+
+    /// <summary>
+    /// The maximum elevation of the barrel of this turret which is the midpoint in its elevation traverse range.
+    /// <remarks>Barrel x elevation angle to face outward must be negative due to the orientation of the local x axis of the barrel prefab.</remarks>
+    /// </summary>
+    private static Quaternion _barrelMaxElevation = Quaternion.Euler(new Vector3(-BarrelMaxElevationAngle, Constants.ZeroF, Constants.ZeroF));
+
+    private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
 
     //[FormerlySerializedAs("hub")]
     [SerializeField]
@@ -73,7 +87,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             if (Weapon == null) {
                 return base.Name;
             }
-            return _nameFormat.Inject(Weapon.Name, GetType().Name, SlotID.GetValueName());
+            return NameFormat.Inject(Weapon.Name, GetType().Name, SlotID.GetValueName());
         }
     }
 
@@ -137,7 +151,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="minBarrelElevationAngle">The minimum barrel elevation angle.</param>
     public void InitializeBarrelElevationSettings(float minBarrelElevationAngle) {
-        _allowedBarrelElevationAngleDeviationFromMax = _barrelMaxElevationAngle - minBarrelElevationAngle;
+        _allowedBarrelElevationAngleDeviationFromMax = BarrelMaxElevationAngle - minBarrelElevationAngle;
     }
 
     /// <summary>
@@ -152,7 +166,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
         firingSolution = null;
-        if (!ConfirmInRange(enemyTarget)) {
+        if (!ConfirmInRangeForLaunch(enemyTarget)) {
             //D.Log("{0}: Target {1} is out of range.", Name, enemyTarget.FullName);
             return false;
         }
@@ -178,8 +192,9 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
-    public override bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
-        return Vector3.Distance(enemyTarget.Position, _hub.position) < Weapon.RangeDistance;
+    public override bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget) {
+        float weaponRange = Weapon.RangeDistance;
+        return Vector3.SqrMagnitude(enemyTarget.Position - _hub.position) < weaponRange * weaponRange;
     }
 
     /// <summary>
@@ -220,7 +235,15 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     public void TraverseTo(LosWeaponFiringSolution firingSolution) {
-        Traverse(firingSolution, 5F);
+        float maxReqdSecsToTraverse = CalcMaxReqdSecondsToTraverse();
+        Traverse(firingSolution, maxReqdSecsToTraverse);
+    }
+
+    private float CalcMaxReqdSecondsToTraverse() {
+        float secsReqdToExecuteMaxHubRotationChange = GameUtility.CalcMaxReqdSecsToCompleteRotation(HubRotationRate, HubMaxRotationTraversal);
+        float secsReqdToExecuteMaxBarrelElevationChange = GameUtility.CalcMaxReqdSecsToCompleteRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
+        float maxReqdSecsToTraverse = Mathf.Max(secsReqdToExecuteMaxHubRotationChange, secsReqdToExecuteMaxBarrelElevationChange) * AllowedTraverseTimeBufferFactor;
+        return maxReqdSecsToTraverse;
     }
 
     /// <summary>
@@ -269,6 +292,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, float allowedTime) {
         //D.Log("Initiating {0} traversal. HubRotationRate: {1:0.}, BarrelElevationRate: {2:0.} degrees/hour.", Name, _hubRotationRate, _barrelElevationRate);
         float cumTime = Constants.ZeroF;
+        Quaternion startingHubRotation = _hub.rotation;
+        Quaternion startingBarrelElevation = _barrel.localRotation;
         bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
         bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
@@ -276,7 +301,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             float deltaTime = _gameTime.DeltaTimeOrPaused;
             if (!isHubRotationCompleted) {
                 //Quaternion previousHubRotation = hub.rotation;
-                float hubRotationRateInDegreesPerSecond = _hubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
+                float hubRotationRateInDegreesPerSecond = HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 float allowedHubRotationChange = hubRotationRateInDegreesPerSecond * deltaTime;
                 _hub.rotation = Quaternion.RotateTowards(_hub.rotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, hub.rotation);
@@ -285,7 +310,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             }
 
             if (!isBarrelElevationCompleted) {
-                float barrelElevationRateInDegreesPerSecond = _barrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
+                float barrelElevationRateInDegreesPerSecond = BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 float allowedBarrelElevationChange = barrelElevationRateInDegreesPerSecond * deltaTime;
                 _barrel.localRotation = Quaternion.RotateTowards(_barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
                 isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
@@ -297,6 +322,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             yield return null; // Note: see Navigator.ExecuteHeadingChange() if wish to use WaitForSeconds() or WaitForFixedUpdate()
         }
         //D.Log("{0} completed Traverse Job. Duration = {1:0.####} GameTimeSecs.", Name, cumTime);
+        float hubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
+        float barrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
+        //D.Log("{0} completed Traverse Job. Hub rotated {1:0.#} degrees, Barrel elevated {2:0.#} degrees.", Name, hubRotationInDegrees, barrelElevationInDegrees);
+        D.Warn(hubRotationInDegrees < Constants.ZeroF || hubRotationInDegrees > HubMaxRotationTraversal, "{0} completed Traverse Job with unexpected Hub Rotation change of {1:0.#} degrees.", Name, hubRotationInDegrees);
+        D.Warn(barrelElevationInDegrees < Constants.ZeroF || barrelElevationInDegrees > BarrelMaxElevationTraversal, "{0} completed Traverse Job with unexpected Barrel Elevation change of {1:0.#} degrees.", Name, barrelElevationInDegrees);
     }
 
     /// <summary>
@@ -370,8 +400,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     #endregion
 
     private float CalcTraverseInaccuracy() {
-        var maxTraverseInaccuracy = Mathf.Max(_minTraverseInaccuracy, Weapon.MaxTraverseInaccuracy);
-        return UnityEngine.Random.Range(_minTraverseInaccuracy, maxTraverseInaccuracy);
+        var maxTraverseInaccuracy = Mathf.Max(MinTraverseInaccuracy, Weapon.MaxTraverseInaccuracy);
+        return UnityEngine.Random.Range(MinTraverseInaccuracy, maxTraverseInaccuracy);
     }
 
     protected override void Cleanup() {

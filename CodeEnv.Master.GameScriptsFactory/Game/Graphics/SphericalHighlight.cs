@@ -34,7 +34,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     [SerializeField]
     private float _alphaValueWhenShowing = 0.20F;
 
-    private IWidgetTrackable _target;
+    private IHighlightable _target;
     private Renderer _renderer;
     private Transform _meshTransform;
     private float _radius;
@@ -59,7 +59,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         _meshTransform = _renderer.transform;
         _baseSphereRadius = _renderer.bounds.size.x / 2F;
         //D.Log("{0} base sphere radius = {1}.", GetType().Name, _baseSphereRadius);
-        UpdateRate = FrameUpdateFrequency.Normal;
+        UpdateRate = FrameUpdateFrequency.Continuous;   // .Normal is not often enough when moving fast
     }
 
     private void InitializeMeshRendererMaterial() {
@@ -70,7 +70,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         material.SetAlpha(_alphaValueWhenShowing);
     }
 
-    public void SetTarget(IWidgetTrackable target, float sphereRadius, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
+    public void SetTarget(IHighlightable target, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
         _target = target;
         if (_enableTrackingLabel && _trackingLabel == null) {
             _trackingLabel = InitializeTrackingLabel();
@@ -83,7 +83,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
             _trackingLabel.Placement = labelPlacement;
         }
         UpdatePosition();
-        SetRadius(sphereRadius);
+        SetRadius(target.HoverHighlightRadius);
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
@@ -109,6 +109,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     }
 
     public void Show(bool toShow) {
+        //D.Log("{0}: Show({1}) called.", GetType().Name, toShow);
         _renderer.enabled = toShow; // no CameraLosChangedListener to get in the way!
         enabled = toShow;
         if (_trackingLabel != null) {
@@ -123,6 +124,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
 
     private void UpdatePosition() {
         transform.position = _target.Position;
+        //D.Log("{0}: Position = {1}.", GetType().Name, transform.position);
     }
 
     protected override void Cleanup() {

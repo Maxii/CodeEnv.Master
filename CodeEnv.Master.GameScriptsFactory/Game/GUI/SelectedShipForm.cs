@@ -26,8 +26,6 @@ public class SelectedShipForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedShip; } }
 
-    protected override void Cleanup() { }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

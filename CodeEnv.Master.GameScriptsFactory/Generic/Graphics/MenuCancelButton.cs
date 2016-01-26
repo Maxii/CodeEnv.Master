@@ -61,7 +61,7 @@ public class MenuCancelButton : AGuiButton {
         CaptureMenuState();
     }
 
-    protected sealed override void HandleLeftClick() {
+    protected sealed override void HandleValidClick() {
         RestoreMenuState();
     }
 

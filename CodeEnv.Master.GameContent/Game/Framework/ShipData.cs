@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region FTL
 
-        // Assume for now that all ships are FTL capable. In the future, I will want some defensive ships to be limited to System space 
+        // Assume for now that all ships are FTL capable. In the future, I will want some defensive ships to be limited to System space.
         // IMPROVE will need to replace this with FtlShipData-derived class as non-Ftl ships won't be part of fleets, aka FormationStation, etc
         // public bool IsShipFtlCapable { get { return true; } }
 
@@ -81,8 +81,6 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
-        // FormationStation moved to ShipItem as it had no apparent value residing in data
-
         private ShipCombatStance _combatStance; //TODO not currently used
         public ShipCombatStance CombatStance {
             get { return _combatStance; }
@@ -124,21 +122,26 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Drag { get { return HullEquipment.Drag; } }
 
-        public float FullEnginePower { get { return IsFtlOperational ? FullFtlEnginePower : FullStlEnginePower; } }
+        /// <summary>
+        /// The maximum power that can currently be projected by the engines. FullSpeed = FullPropulsionPower / (Mass * _rigidbody.drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
+        /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
+        /// </summary>
+        public float FullPropulsionPower { get { return IsFtlOperational ? FullFtlPropulsionPower : FullStlPropulsionPower; } }
 
         /// <summary>
-        /// The maximum power that can be projected by the STL engines. FullStlSpeed = FullStlEnginePower / (Mass * _rigidbody.drag).
-        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
-        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        /// The maximum power that can be projected by the STL engines. FullStlSpeed = FullStlPropulsionPower / (Mass * _rigidbody.drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
+        /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
         /// </summary>
-        public float FullStlEnginePower { get { return _engineStat.FullStlPower; } }
+        public float FullStlPropulsionPower { get { return _enginesStat.FullStlPropulsionPower; } }
 
         /// <summary>
-        /// The maximum power that can be projected by the FTL engines. FullFtlSpeed = FullFtlEnginePower / (Mass * _rigidbody.drag).
-        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
-        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        /// The maximum power that can be projected by the FTL engines. FullFtlSpeed = FullFtlPropulsionPower / (Mass * _rigidbody.drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
+        /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
         /// </summary>
-        public float FullFtlEnginePower { get { return _engineStat.FullFtlPower; } }
+        public float FullFtlPropulsionPower { get { return _enginesStat.FullFtlPropulsionPower; } }
 
         private Vector3 _requestedHeading;
         /// <summary>
@@ -169,13 +172,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum turn rate of the ship in degrees per hour.
         /// </summary>
-        public float MaxTurnRate { get { return _engineStat.MaxTurnRate; } }
+        public float MaxTurnRate { get { return _enginesStat.MaxTurnRate; } }
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
 
         private new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
-        private EngineStat _engineStat;
+        private EnginesStat _enginesStat;
 
         /// <summary>
         /// The speed of the ship in units per hour when it was paused.
@@ -190,19 +193,20 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ShipData" /> class.
         /// </summary>
         /// <param name="shipTransform">The ship transform.</param>
-        /// <param name="shipRigidbody">The ship rigidbody.</param>
-        /// <param name="hullEquipment">The hull equipment.</param>
-        /// <param name="engineStat">The engine stat.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        /// <param name="combatStance">The combat stance.</param>
+        /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public ShipData(Transform shipTransform, Rigidbody shipRigidbody, ShipHullEquipment hullEquipment, EngineStat engineStat, Player owner, CameraFollowableStat cameraStat, ShipCombatStance combatStance,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(shipTransform, hullEquipment, owner, cameraStat, activeCMs, sensors, passiveCMs, shieldGenerators) {
+        /// <param name="shipRigidbody">The ship rigidbody.</param>
+        /// <param name="enginesStat">The engines stat.</param>
+        /// <param name="combatStance">The combat stance.</param>
+        public ShipData(Transform shipTransform, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
+            ShipHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors,
+            IEnumerable<ShieldGenerator> shieldGenerators, Rigidbody shipRigidbody, EnginesStat enginesStat, ShipCombatStance combatStance)
+            : base(shipTransform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
             _shipRigidbody = shipRigidbody;
             _shipRigidbody.mass = Mass;
             // _shipRigidbody.drag gets set when Topography gets set/changed
@@ -210,7 +214,7 @@ namespace CodeEnv.Master.GameContent {
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
 
-            _engineStat = engineStat;
+            _enginesStat = enginesStat;
             CombatStance = combatStance;
             InitializeLocalValuesAndReferences();
             Subscribe();
@@ -277,7 +281,7 @@ namespace CodeEnv.Master.GameContent {
         /// Refreshes the full speed value the ship is capable of achieving.
         /// </summary>
         private void RefreshFullSpeedValue() {
-            FullSpeed = IsFtlOperational ? FullFtlEnginePower / (Mass * _shipRigidbody.drag) : FullStlEnginePower / (Mass * _shipRigidbody.drag);
+            FullSpeed = IsFtlOperational ? FullFtlPropulsionPower / (Mass * _shipRigidbody.drag) : FullStlPropulsionPower / (Mass * _shipRigidbody.drag);
         }
 
         private void AssessIsFtlOperational() {

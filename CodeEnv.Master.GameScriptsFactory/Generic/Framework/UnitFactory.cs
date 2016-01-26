@@ -48,7 +48,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _shieldPrefab;
     private GameObject _weaponRangeMonitorPrefab;
     private GameObject _sensorRangeMonitorPrefab;
-    private GameObject _formationStationPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -65,7 +64,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _shieldPrefab = reqdPrefabs.shield.gameObject;
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
         _sensorRangeMonitorPrefab = reqdPrefabs.sensorRangeMonitor.gameObject;
-        _formationStationPrefab = reqdPrefabs.formationStation.gameObject;
 
         _shipItemPrefab = reqdPrefabs.shipItem;
         _shipHullPrefabs = reqdPrefabs.shipHulls;
@@ -104,7 +102,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.Assert(!item.IsOperational, "{0} should not be operational.", item.FullName);
         D.Assert(item.transform.parent != null, "{0} should already have a parent.", item.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new FleetCmdData(item.transform, cmdStat, cameraStat, owner, passiveCMs);
+        item.Data = new FleetCmdData(item.transform, owner, cameraStat, passiveCMs, cmdStat);
     }
 
     /// <summary>
@@ -186,7 +184,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
         Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
-        ShipData data = new ShipData(element.transform, elementRigidbody, hullEquipment, design.EngineStat, owner, cameraStat, design.CombatStance, activeCMs, sensors, passiveCMs, shieldGenerators);
+        ShipData data = new ShipData(element.transform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, elementRigidbody, design.EnginesStat, design.CombatStance);
         element.Data = data;
     }
 
@@ -199,7 +197,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeInstance(UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, GameObject unitContainer) {
+    public StarbaseCmdItem MakeInstance(UnitCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, GameObject unitContainer) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
         PopulateInstance(cmdStat, cameraStat, passiveCmStats, owner, ref cmd);
@@ -214,11 +212,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(UnitBaseCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
+    public void PopulateInstance(UnitCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
         D.Assert(!item.IsOperational, "{0} should not be operational.", item.FullName);
         D.Assert(item.transform.parent != null, "{0} should already have a parent.", item.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new StarbaseCmdData(item.transform, cmdStat, cameraStat, owner, passiveCMs);
+        item.Data = new StarbaseCmdData(item.transform, owner, cameraStat, passiveCMs, cmdStat);
     }
 
     /// <summary>
@@ -230,7 +228,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, GameObject unitContainer) {
+    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, GameObject unitContainer) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
         PopulateInstance(cmdStat, cameraStat, passiveCmStats, owner, ref cmd);
@@ -245,11 +243,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(SettlementCmdStat cmdStat, CameraFocusableStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
+    public void PopulateInstance(SettlementCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.IsOperational, "{0} should not be operational.", item.FullName);
         D.Assert(item.transform.parent != null, "{0} should already have a parent.", item.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new SettlementCmdData(item.transform, cmdStat, cameraStat, owner, passiveCMs) {
+        item.Data = new SettlementCmdData(item.transform, owner, cameraStat, passiveCMs, cmdStat) {
             Approval = UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent)
         };
     }
@@ -298,29 +296,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
         Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
-        FacilityData data = new FacilityData(element.transform, elementRigidbody, hullEquipment, owner, cameraStat, topography, activeCMs, sensors, passiveCMs, shieldGenerators);
+        FacilityData data = new FacilityData(element.transform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, elementRigidbody, topography);
         element.Data = data;
-    }
-
-    public FormationStationMonitor MakeFormationStationInstance(Vector3 stationOffset, FleetCmdItem fleetCmd) {
-        // make a folder for neatness if one doesn't yet exist
-        GameObject formationStationsFolder = null;
-        var stations = fleetCmd.gameObject.GetComponentsInChildren<FormationStationMonitor>();
-        if (stations.IsNullOrEmpty()) {
-            formationStationsFolder = new GameObject("Formation Stations");
-            UnityUtility.AttachChildToParent(formationStationsFolder, fleetCmd.gameObject);
-            formationStationsFolder.layer = (int)Layers.IgnoreRaycast;
-        }
-        else {
-            formationStationsFolder = stations.First().transform.parent.gameObject;
-        }
-
-        GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, _formationStationPrefab);
-        FormationStationMonitor station = stationGo.GetSafeComponent<FormationStationMonitor>();
-        station.ParentItem = fleetCmd;
-        station.StationOffset = stationOffset;
-        //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
-        return station;
     }
 
     /// <summary>
@@ -625,7 +602,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="sensor">The sensor from one of the command's elements.</param>
     /// <param name="command">The command that has sensor monitors as children.</param>
     /// <returns></returns>
-    public ISensorRangeMonitor MakeMonitorInstance(Sensor sensor, AUnitCmdItem command) {
+    public ISensorRangeMonitor AttachSensorToCmdsMonitor(Sensor sensor, AUnitCmdItem command) {
         var allSensorMonitors = command.gameObject.GetComponentsInChildren<SensorRangeMonitor>();
         var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 

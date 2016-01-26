@@ -17,14 +17,18 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Accept button for the GamePlayOptionsMenu.
 /// </summary>
 public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
+
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
 
     protected override string TooltipContent { get { return "Accept Option changes."; } }
 
@@ -67,8 +71,8 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
+    protected override void HandleValidClick() {
+        base.HandleValidClick();
         GamePlayOptionSettings settings = new GamePlayOptionSettings() {
             IsCameraRollEnabled = _isCameraRollEnabled,
             IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled,

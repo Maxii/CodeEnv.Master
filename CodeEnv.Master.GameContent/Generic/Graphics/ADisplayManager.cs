@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -75,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
 
             InitializeSecondaryMeshes(itemGO);
             InitializeOther(itemGO);
-            //AssessComponentsToShow(); no need to call here as EnableDisplay(true) is called immediately after initialization
+            // AssessComponentsToShow(); no need to call here as EnableDisplay(true) is called immediately after initialization
             // Warning: if called here, derived class constructors will not have completed yet
         }
 
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void IsDisplayEnabledPropChangedHandler() {
-            //D.Log("{0}.IsDisplayEnabled changed to {1}.", GetType().Name, IsDisplayEnabled);
+            D.Log("{0}.IsDisplayEnabled changed to {1}.", GetType().Name, IsDisplayEnabled);
             AssessComponentsToShowOrOperate();
         }
 

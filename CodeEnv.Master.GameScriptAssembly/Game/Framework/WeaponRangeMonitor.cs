@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -25,7 +25,7 @@ using UnityEngine;
 
 /// <summary>
 /// Detects IElementAttackableTargets that enter/exit the range of its weapons and notifies each weapon of such.
-///TODO Account for a diploRelations change with an owner.
+/// TODO Account for a diploRelations change with an owner.
 /// <remarks>This WeaponRangeMonitor assumes that Short, Medium and LongRange weapons all detect
 /// items using the element's "Proximity Detectors" that are always operational. They do not rely on Sensors.</remarks>
 /// </summary>
@@ -35,6 +35,8 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         get { return base.ParentItem as IUnitElementItem; }
         set { base.ParentItem = value as AItem; }
     }
+
+    protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // targets (elements and planetoids) have rigidbodies
 
     /// <summary>
     /// All the detected, attackable enemy targets that are in range of the weapons of this monitor.
@@ -51,6 +53,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
     }
 
     protected override void HandleDetectedObjectAdded(IElementAttackableTarget newlyDetectedItem) {
+        D.Log("{0} detected and added {1}.", Name, newlyDetectedItem.FullName);
         newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
         newlyDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
         if (newlyDetectedItem.Owner.IsEnemyOf(Owner)) {
@@ -59,9 +62,10 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
     }
 
     protected override void HandleDetectedObjectRemoved(IElementAttackableTarget lostDetectionItem) {
+        D.Log("{0} lost detection and removed {1}.", Name, lostDetectionItem.FullName);
         lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
         lostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
-        D.Log("{0} removed {1} death subscription.", Name, lostDetectionItem.FullName);
+        //D.Log("{0} removed {1} death subscription.", Name, lostDetectionItem.FullName);
         if (lostDetectionItem.Owner.IsEnemyOf(Owner)) {
             RemoveEnemy(lostDetectionItem);
         }
@@ -80,7 +84,6 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         D.Assert(!deadDetectedItem.IsOperational);
         RemoveDetectedObject(deadDetectedItem as IElementAttackableTarget);
     }
-
 
     /// <summary>
     /// Called when the owner of a detectedItem changes.
@@ -132,6 +135,14 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         });
     }
 
+    /// <summary>
+    /// Handles the enemy target going out of range.
+    /// <remarks>Enemies go out of range in 3 circumstances. 1) by movement of either the enemy or
+    /// this item, 2) when the enemy dies (onDeath, not when destroyed) and 3) when the
+    /// enemy is no longer the enemy due to an ownership change of either this item 
+    /// or the enemy target.</remarks>
+    /// </summary>
+    /// <param name="previousEnemyTarget">The previous enemy target that was in range.</param>
     private void HandleEnemyTargetOutOfRange(IElementAttackableTarget previousEnemyTarget) {
         _equipmentList.ForAll(weap => weap.HandleEnemyTargetInRangeChanged(previousEnemyTarget, isInRange: false));
     }

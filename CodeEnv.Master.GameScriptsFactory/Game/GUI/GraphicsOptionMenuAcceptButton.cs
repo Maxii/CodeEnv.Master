@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -27,6 +28,8 @@ using UnityEngine;
 /// Accept button for the GraphicsOptionsMenu.
 /// </summary>
 public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
+
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
 
     protected override string TooltipContent { get { return "Click to implement Option changes."; } }
 
@@ -55,14 +58,18 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void HandleLeftClick() {
-        base.HandleLeftClick();
+    #region Event and Property Change Handlers
+
+    protected override void HandleValidClick() {
+        base.HandleValidClick();
         GraphicsOptionSettings settings = new GraphicsOptionSettings() {
             QualitySetting = _qualitySetting,
             IsElementIconsEnabled = _isElementIconsEnabled
         };
         _playerPrefsMgr.RecordGraphicsOptions(settings);
     }
+
+    #endregion
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();

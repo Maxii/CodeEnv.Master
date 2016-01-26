@@ -303,21 +303,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
-    /// Generates and returns 8 world space vertices of a box surrounding the center of a sector
-    /// where each vertex is <c>distance</c> from the center. The box defined by the vertices
-    /// is essentially a box inscribed inside a sphere of radius <c>distance</c> centered on the sector.
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <param name="distance">The distance from any vertex to the sector's center in units.</param>
-    /// <returns></returns>
-    public IList<Vector3> GenerateVerticesOfBoxAroundCenter(Index3D index, float distance) {
-        Arguments.ValidateNotNegative(distance);
-        var sectorGridBoxLoc = GetGridBoxLocation(index);
-        Vector3 sectorCenterWorldLoc = _grid.GridToWorld(sectorGridBoxLoc);
-        return UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(sectorCenterWorldLoc, distance);
-    }
-
-    /// <summary>
     /// Gets the round number (1.0, 1.0, 2.0) location (in the grid coordinate system)
     /// associated with this sector index. This will be the left, lower, back corner of the 
     /// sector box.

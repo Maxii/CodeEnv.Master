@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// and non-MonoBehaviour Singletons. Primary purpose is to allow the relocation of classes 
     /// that need these references out of loose scripts and into pre-compiled assemblies.
     /// 
-    /// PATTERN NOTES: As a static class, References persists across scenes and so do its'static
+    /// PATTERN NOTES: As a static class, References persists across scenes and so do its' static
     /// fields providing references to Singletons. Any reference to a Singleton that itself is 
     /// not persistent across scenes will need to refresh the References field assignment 
     /// when a new instance is created.
     ///     - Persistent MonoSingletons: 
     ///         - no issues as they all persist
-    ///     - Non-persistent MonoSingletons: MainCameraControl, DynamicObjectsFolder, SectorGrid, SphericalHighlight, Tooltip
+    ///     - Non-persistent MonoSingletons: MainCameraControl, GuiCameraControl, DynamicObjectsFolder, SectorGrid, SphericalHighlight, Tooltip
     ///         - all need to refresh the reference on instantiation in InitializeOnInstance
     ///         - all should null the reference in Cleanup
     ///     - Non-persistent StdGenericSingletons: 
@@ -65,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
         #region Non-persistent MonoBehaviour Singletons
 
         public static ICameraControl MainCameraControl { get; set; }
+        public static IGuiCameraControl GuiCameraControl { get; set; }
         public static ISectorGrid SectorGrid { get; set; }
         public static ISphericalHighlight SphericalHighlight { get; set; }
         public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }

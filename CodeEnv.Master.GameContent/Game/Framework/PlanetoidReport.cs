@@ -34,20 +34,20 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public PlanetoidReport(APlanetoidData data, Player player, IPlanetoidItem item)
+        public PlanetoidReport(PlanetoidData data, Player player, IPlanetoidItem item)
             : base(data, player, item) {
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            var planetoidData = data as APlanetoidData;
+            var planetoidData = data as PlanetoidData;
             CurrentHitPoints = planetoidData.CurrentHitPoints;
             Health = planetoidData.Health;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageBroad(data);
-            var planetoidData = data as APlanetoidData;
+            var planetoidData = data as PlanetoidData;
             MaxHitPoints = planetoidData.MaxHitPoints;
             DefensiveStrength = planetoidData.DefensiveStrength;
             Mass = planetoidData.Mass;
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageEssential(data);
-            var planetoidData = data as APlanetoidData;
+            var planetoidData = data as PlanetoidData;
             Owner = planetoidData.Owner;
             Category = planetoidData.Category;
             OrbitalSpeed = planetoidData.OrbitalSpeed;
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageBasic(data);
-            var planetoidData = data as APlanetoidData;
+            var planetoidData = data as PlanetoidData;
             Name = planetoidData.Name;
             ParentName = planetoidData.ParentName;
             SectorIndex = planetoidData.SectorIndex;

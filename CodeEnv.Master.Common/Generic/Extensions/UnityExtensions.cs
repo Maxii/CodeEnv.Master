@@ -181,6 +181,23 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Gets the single interface of Type I in the GameObject or its parents.
+        /// Throws an exception if none are found or more than one exists.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="go">The go.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
+        /// <returns></returns>
+        public static I GetSingleInterfaceInParents<I>(this GameObject go, bool excludeSelf = false) where I : class {
+            var interfaces = go.GetComponentsInParent<I>();
+            //D.Log("Found {0} interfaces of type {1}.", interfaces.Count(), typeof(I).Name);
+            if (excludeSelf) {
+                interfaces = interfaces.Where(i => (i as Component).gameObject != go).ToArray();
+            }
+            return interfaces.Single();
+        }
+
+        /// <summary>
         ///  Gets the interface of type I found in the gameObject's components.
         ///  Logs a warning if the interface cannot be found.
         /// </summary>
@@ -202,10 +219,9 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="I"></typeparam>
         /// <param name="go">The go.</param>
         /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
-        /// <param name="includeInactive">if set to <c>true</c> [include inactive].</param>
         /// <returns></returns>
-        public static I GetSingleInterfaceInChildren<I>(this GameObject go, bool excludeSelf = false, bool includeInactive = false) where I : class {
-            var interfaces = go.GetComponentsInChildren<I>(includeInactive);
+        public static I GetSingleInterfaceInChildren<I>(this GameObject go, bool excludeSelf = false) where I : class {
+            var interfaces = go.GetComponentsInChildren<I>();
             //D.Log("Found {0} interfaces of type {1}.", interfaces.Count(), typeof(I).Name);
             if (excludeSelf) {
                 interfaces = interfaces.Where(i => (i as Component).gameObject != go).ToArray();
@@ -220,10 +236,9 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="I"></typeparam>
         /// <param name="go">The go.</param>
         /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
-        /// <param name="includeInactive">if set to <c>true</c> [include inactive].</param>
         /// <returns>        /// An array of interfaces of type I. Can be empty. </returns>
-        public static I[] GetSafeInterfacesInChildren<I>(this GameObject go, bool excludeSelf = false, bool includeInactive = false) where I : class {
-            I[] interfaces = go.GetComponentsInChildren<I>(includeInactive);
+        public static I[] GetSafeInterfacesInChildren<I>(this GameObject go, bool excludeSelf = false) where I : class {
+            I[] interfaces = go.GetComponentsInChildren<I>();
             if (excludeSelf) {
                 interfaces = interfaces.Where(i => (i as Component).gameObject != go).ToArray();
             }
@@ -240,10 +255,9 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <typeparam name="I"></typeparam>
         /// <param name="go">The source gameobject.</param>
-        /// <param name="includeInactive">if set to <c>true</c> [include inactive].</param>
         /// <returns> The interface of type I. </returns>
-        public static I GetSingleInterfaceInImmediateChildren<I>(this GameObject go, bool includeInactive = false) where I : class {
-            var interfaces = go.GetComponentsInChildren<I>(includeInactive).Where(i => (i as Component).transform.parent == go.transform);
+        public static I GetSingleInterfaceInImmediateChildren<I>(this GameObject go) where I : class {
+            var interfaces = go.GetComponentsInChildren<I>().Where(i => (i as Component).transform.parent == go.transform);
             return interfaces.Single();
         }
 

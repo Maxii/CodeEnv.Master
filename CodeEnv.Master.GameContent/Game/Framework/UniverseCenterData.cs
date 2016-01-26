@@ -35,23 +35,20 @@ namespace CodeEnv.Master.GameContent {
         // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="UniverseCenterData"/> class.
+        /// Initializes a new instance of the <see cref="UniverseCenterData" /> class.
         /// </summary>
         /// <param name="ucTransform">The uc transform.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="radius">The radius.</param>
         /// <param name="lowOrbitRadius">The low orbit radius.</param>
-        /// <param name="cameraStat">The camera stat.</param>
-        /// <param name="name">The name.</param>
-        public UniverseCenterData(Transform ucTransform, float radius, float lowOrbitRadius, CameraFocusableStat cameraStat, string name)
+        public UniverseCenterData(Transform ucTransform, string name, CameraFocusableStat cameraStat, float radius, float lowOrbitRadius)
             : base(ucTransform, name, TempGameValues.NoPlayer, cameraStat) {
             Radius = radius;
             LowOrbitRadius = lowOrbitRadius;
             Topography = Topography.OpenSpace;
         }
 
-        //protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
-        //    return new ImprovingIntel(initialcoverage);
-        //}
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);

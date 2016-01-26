@@ -15,6 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -43,30 +44,36 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract WidgetPlacement IconPlacement { get; }
 
+        /// <summary>
+        /// The UIPanel depth of the icon. Higher values are drawn over lower values.
+        /// </summary>
+        protected abstract int IconDepth { get; }
+
         protected bool _isIconInMainCameraLOS = true;
+        protected IWidgetTrackable _trackedItem;
 
-        private IWidgetTrackable _trackedItem;
-
-        public AIconDisplayManager(IWidgetTrackable itemTracked)
-            : base(itemTracked.transform.gameObject) {
-            _trackedItem = itemTracked;
+        public AIconDisplayManager(IWidgetTrackable trackedItem)
+            : base(trackedItem.transform.gameObject) {
+            _trackedItem = trackedItem;
         }
 
         private void ShowIcon(bool toShow) {
             if (Icon != null) {
-                //D.Log("{0}.ShowIcon({1}) called.", GetType().Name, toShow);
+                D.Log("{0}.ShowIcon({1}) called.", GetType().Name, toShow);
                 if (Icon.IsShowing == toShow) {
-                    //D.Log("{0} recording duplicate call to ShowIcon({1}).", GetType().Name, toShow);
+                    D.Log("{0} recording duplicate call to ShowIcon({1}).", GetType().Name, toShow);
                     return;
                 }
                 Icon.Show(toShow);
+            }
+            else {
+                D.Assert(!toShow, "{0}.ShowIcon(true) called when there is no Icon.", GetType().Name);
             }
         }
 
         #region Event and Property Change Handlers
 
         private void IconInfoPropChangedHandler() {
-            //D.Assert(_isInitialized, "{0} must be initialized before setting IconInfo.", GetType().Name);
             if (Icon != null) {
                 // icon already present
                 if (IconInfo != null) {
@@ -94,6 +101,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IResponsiveTrackingSprite MakeIcon() {
             var icon = References.TrackingWidgetFactory.MakeResponsiveTrackingSprite(_trackedItem, IconInfo, IconSize, IconPlacement);
+            icon.DrawDepth = IconDepth;
             var iconCameraLosChgdListener = icon.CameraLosChangedListener;
             iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;
             iconCameraLosChgdListener.enabled = true;
@@ -102,6 +110,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssessInMainCameraLOS() {
             IsInMainCameraLOS = Icon == null ? IsPrimaryMeshInMainCameraLOS : IsPrimaryMeshInMainCameraLOS || _isIconInMainCameraLOS;
+            D.Log("{0}.AssessInMainCameraLOS() called. IsInMainCameraLOS = {1}.", GetType().Name, IsInMainCameraLOS);
         }
 
         protected override void AssessComponentsToShowOrOperate() {
@@ -112,13 +121,13 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Determines the conditions under which the Icon should show. The default version
-        /// shows the icon when the icon is within the camera's LOS, and the primary mesh is
-        /// no longer showing due to clipping planes. Derived classes that wish the icon to show 
-        /// even when the primary mesh is showing should override this method.
+        /// shows the icon when 1) the display is enabled, 2) the icon exists and is within the camera's LOS, 
+        /// and 3) the primary mesh is no longer showing due to clipping planes. 
+        /// Derived classes that wish the icon to show under other circumstances should override this method.
         /// </summary>
         /// <returns></returns>
         protected virtual bool ShouldIconShow() {
-            return IsDisplayEnabled && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
+            return IsDisplayEnabled && Icon != null && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
         }
 
         /// <summary>

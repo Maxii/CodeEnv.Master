@@ -27,6 +27,13 @@ using UnityEngine;
 /// </summary>
 public class Revolver : AMonoBase, IRevolver {
 
+    [SerializeField]
+    private bool _rotateDuringPause = true;
+    public bool RotateDuringPause {
+        get { return _rotateDuringPause; }
+        set { _rotateDuringPause = value; }
+    }
+
     /// <summary>
     /// The axis of self rotation in local space.
     /// </summary>
@@ -71,7 +78,7 @@ public class Revolver : AMonoBase, IRevolver {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * (int)UpdateRate;
+        float deltaTimeSinceLastUpdate = (RotateDuringPause ? _gameTime.DeltaTime : _gameTime.DeltaTimeOrPaused) * (int)UpdateRate;
         UpdateRotation(deltaTimeSinceLastUpdate);
     }
 

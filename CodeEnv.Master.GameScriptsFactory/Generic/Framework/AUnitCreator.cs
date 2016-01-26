@@ -199,37 +199,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
 
     private GameDate _delayedDateInRuntime;
 
-    //private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
-    //    D.Assert(toDelayOperations && !toDelayBuild);
-    //    if (gameState == GameState.PrepareUnitsForDeployment) {
-    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
-    //        CreateElementHullStats();
-    //        MakeAndRecordDesigns();
-    //        PrepareUnitForOperations();
-    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
-    //    }
-
-    //    if (gameState == GameState.DeployingUnits) {
-    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: false);
-    //        _isUnitDeployed = DeployUnit();
-    //        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: true);
-    //        if (!_isUnitDeployed) {
-    //            Destroy(gameObject);
-    //        }
-    //    }
-
-    //    if (gameState == GameState.Running && _isUnitDeployed) {
-    //        var delay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
-    //        if (delay == default(GameTimeDuration)) {
-    //            // delayOperations selected but delay is 0 so begin operations now
-    //            BeginUnitOperations();
-    //        }
-    //        else {
-    //            _delayedDateInRuntime = new GameDate(delay);
-    //            GameTime.Instance.onDateChanged += OnCurrentDateChanged;
-    //        }
-    //    }
-    //}
     private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
         D.Assert(toDelayOperations && !toDelayBuild);
         if (gameState == GameState.PrepareUnitsForDeployment) {
@@ -262,22 +231,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         }
     }
 
-    //private void DelayBuildDeployAndBeginUnitOperations(GameState gameState) {
-    //    D.Assert(toDelayOperations && toDelayBuild);
-
-    //    if (gameState == GameState.Running) {
-    //        var runtimeDelay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
-    //        if (runtimeDelay == default(GameTimeDuration)) {
-    //            // delayOperations selected but delay is 0 so begin operations now
-    //            //D.Log("Beginning Unit Operations with 0 hours delay.");
-    //            BuildDeployAndBeginUnitOperations();
-    //        }
-    //        else {
-    //            _delayedDateInRuntime = new GameDate(runtimeDelay);
-    //            GameTime.Instance.onDateChanged += OnCurrentDateChanged;
-    //        }
-    //    }
-    //}
     private void DelayBuildDeployAndBeginUnitOperations(GameState gameState) {
         D.Assert(toDelayOperations && toDelayBuild);
 
@@ -315,26 +268,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             GameTime.Instance.dateChanged -= DateChangedHandler;
         }
     }
-
-    //private void OnCurrentDateChanged(GameDate currentDate) {
-    //    //D.Log("{0} for {1} received OnCurrentDateChanged({2}).", GetType().Name, UnitName, currentDate);
-    //    D.Assert(toDelayOperations);
-    //    if (currentDate >= _delayedDateInRuntime) {
-    //        if (currentDate > _delayedDateInRuntime) {
-    //            D.Warn("{0} for {1} recorded current date {2} beyond target date {3}.", GetType().Name, UnitName, currentDate, _delayedDateInRuntime);
-    //        }
-    //        if (toDelayBuild) {
-    //            D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
-    //            BuildDeployAndBeginUnitOperations();
-    //        }
-    //        else {
-    //            D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
-    //            BeginUnitOperations();
-    //        }
-    //        //D.Log("{0} for {1} is unsubscribing from GameTime.onDateChanged.", GetType().Name, UnitName);
-    //        GameTime.Instance.onDateChanged -= OnCurrentDateChanged;
-    //    }
-    //}
 
     #endregion
 
@@ -655,8 +588,8 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     }
 
     protected abstract void MakeAndRecordDesign(string designName, ElementHullStatType hullStat, IEnumerable<AWeaponStat> weaponStats,
-    IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-    IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats);
+        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
+        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats);
 
     private IList<ElementType> MakeElements() {
         LogEvent();
@@ -679,11 +612,9 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
             // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
-            // (after element.Start() completes?), rigidbodies that are not kinematic (ships) are imparted with both linear and angular 
-            // velocity from this intentional collision. This occurs before the elements are moved away from each other by being formed
-            // into a formation. Accordingly, make the rigidbody kinematic here, then change the ships back when the formation is made.
-            var elementRigidbody = element.GetComponent<Rigidbody>();
-            elementRigidbody.isKinematic = true;
+            // rigidbodies that are not kinematic are imparted with both linear and angular velocity from this intentional collision. 
+            // This occurs before the elements are moved away from each other by being formed into a formation. 
+            // Accordingly, all element rigidbodies start as kinematic, then I change ships to non-kinematic during CommenceOperations.
             element.transform.position = transform.position;
             elements.Add(element);
         }

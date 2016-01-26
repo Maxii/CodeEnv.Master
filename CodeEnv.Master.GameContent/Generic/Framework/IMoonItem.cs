@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICanNavigate.cs
-// Interface for an item that can navigate, aka Ships and Fleets.
+// File: IMoonItem.cs
+// Interface for easy access to MoonItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,16 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for an item that can navigate, aka Ships and Fleets.
+    /// Interface for easy access to MoonItems.
     /// </summary>
-    public interface ICanNavigate {
+    public interface IMoonItem : IPlanetoidItem {
 
-        Player Owner { get; }
-
-        /// <summary>
-        /// The range of the weapons of this ICanNavigate Item. If a fleetCmd, the value returned is the Unit's WeaponRange.
-        /// </summary>
-        RangeDistance WeaponsRange { get; }
+        IPlanetItem ParentPlanet { get; }
 
     }
 }

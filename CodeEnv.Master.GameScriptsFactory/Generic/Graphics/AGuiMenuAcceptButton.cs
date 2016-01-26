@@ -48,7 +48,7 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
 
     #region Event and Property Change Handlers
 
-    protected override void HandleLeftClick() {
+    protected override void HandleValidClick() {
         CaptureState();
     }
 

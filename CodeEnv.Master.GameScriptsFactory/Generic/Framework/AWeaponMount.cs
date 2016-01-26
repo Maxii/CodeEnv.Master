@@ -70,11 +70,11 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     public abstract bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution);
 
     /// <summary>
-    /// Confirms the provided enemyTarget is in range prior to launching the weapon's ordnance.
+    /// Confirms the provided enemyTarget is in range PRIOR to launching the weapon's ordnance.
     /// </summary>
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
-    public abstract bool ConfirmInRange(IElementAttackableTarget enemyTarget);
+    public abstract bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget);
 
     #region Event and Property Change Handlers
 

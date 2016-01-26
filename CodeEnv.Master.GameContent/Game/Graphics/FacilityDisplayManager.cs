@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -35,6 +36,7 @@ namespace CodeEnv.Master.GameContent {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
             _revolver.enabled = false;
+            D.Warn(_revolver.RotateDuringPause, "{0} revolver set to rotate during a pause.", Name);
             //TODO Revolver settings
         }
 

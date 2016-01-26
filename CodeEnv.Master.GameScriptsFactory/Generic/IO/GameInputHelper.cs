@@ -18,6 +18,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -35,16 +36,38 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     protected sealed override void Initialize() { }
 
     /// <summary>
+    /// Returns <c>true</c> if UICamera.currentKey is present in the provided keys.
+    /// </summary>
+    /// <param name="keys">The keys.</param>
+    /// <returns></returns>
+    public bool IsCurrentKeyAnyOf(IList<KeyCode> keys) {
+        return keys.Contains(UICamera.currentKey);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if UICamera.currentTouchID is present in the provided NguiMouseButtons.
+    /// If currentTouchID is not an NguiMouseButton, returns false without warning.
+    /// </summary>
+    /// <param name="buttons">The buttons.</param>
+    /// <returns></returns>
+    public bool IsCurrentMouseButtonAnyOf(IList<NguiMouseButton> buttons) {
+        return buttons.Contains(GetCurrentMouseButton(warn: false));
+    }
+
+    /// <summary>
     /// Gets the NguiMouseButton that is being used to generate the current event.
     /// Valid only within an Ngui UICamera-generated event.
     /// </summary>
+    /// <param name="warn">if set to <c>true</c> warn if UICamera.currentTouchID is not a valid mouse button.</param>
     /// <returns></returns>
-    public NguiMouseButton CurrentMouseButton {
-        get {
-            int currentMouseButton = UICamera.currentTouchID;
-            ValidateCurrentTouchID(currentMouseButton);
-            return (NguiMouseButton)currentMouseButton;
+    private NguiMouseButton GetCurrentMouseButton(bool warn = true) {
+        int currentTouchID = UICamera.currentTouchID;
+        if (warn) {
+            if (!Utility.IsInRange(currentTouchID, -3, -1)) {
+                D.Warn("{0}: CurrentTouchID of {1} is not a mouse button.", GetType().Name, currentTouchID);
+            }
         }
+        return (NguiMouseButton)currentTouchID;
     }
 
     /// <summary>
@@ -55,12 +78,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsMouseButton(NguiMouseButton mouseButton) { return mouseButton == CurrentMouseButton; }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    private void ValidateCurrentTouchID(int currentTouchID) {
-        Arguments.ValidateForRange(currentTouchID, -3, -1);
-    }
+    public bool IsMouseButton(NguiMouseButton mouseButton) { return mouseButton == GetCurrentMouseButton(); }
 
     /// <summary>
     /// Tests whether the left mouse button is the current button that is being

@@ -35,8 +35,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
-    public override float UnitRadius { get { return TempGameValues.BaseCmdUnitRadius; } }
-
     public new AUnitBaseCmdItemData Data {
         get { return base.Data as AUnitBaseCmdItemData; }
         set { base.Data = value; }
@@ -66,12 +64,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         CurrentState = BaseState.Idling;
     }
 
-    public override void AddElement(AUnitElementItem element) {
-        base.AddElement(element);
-        element.Command = this;
-        if (HQElement != null) {
-            _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
-        }
+    public override void RemoveElement(AUnitElementItem element) {
+        base.RemoveElement(element);
+        D.Assert(element.IsHQ != IsOperational);    // Base HQElements must be the last element to die
     }
 
     protected override void AttachCmdToHQElement() {
@@ -80,6 +75,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected override void SetDeadState() {
         CurrentState = BaseState.Dead;
+    }
+
+    protected override void HandleDeath() {
+        base.HandleDeath();
     }
 
     /// <summary>
@@ -237,6 +236,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected void Dead_EnterState() {
         LogEvent();
+        HandleDeath();
         StartEffect(EffectID.Dying);
     }
 
@@ -271,18 +271,27 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #endregion
 
+    #region ICameraFocusable Members
+
+    public override float OptimalCameraViewingDistance {
+        get {
+            if (_optimalCameraViewingDistance != Constants.ZeroF) {
+                // the user has set the value manually
+                return _optimalCameraViewingDistance;
+            }
+            return Data.HighOrbitRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+        }
+        set { base.OptimalCameraViewingDistance = value; }
+    }
+
+    #endregion
+
     #region INavigableTarget Members
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        bool isEnemy = navigatingItem.Owner.IsEnemyOf(Owner);
-        if (isEnemy) {
-            float enemyMaxWeapRange = Data.UnitWeaponsRange.Max;
-            if (enemyMaxWeapRange > Constants.ZeroF) {
-                // just outside the range of the closest facility's weapons
-                return UnitRadius + enemyMaxWeapRange;
-            }
-        }
-        return ShipOrbitSlot.OuterRadius + 0.5F;
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return Data.UnitMaxFormationRadius; } }
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
+        return Data.HighOrbitRadius + shipCollisionAvoidanceRadius; // OPTIMIZE shipRadius value needed?
     }
 
     #endregion

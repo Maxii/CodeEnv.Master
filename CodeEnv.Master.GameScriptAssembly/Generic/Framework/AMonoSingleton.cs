@@ -80,8 +80,6 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
 
         IncrementInstanceCounter();
 
-        ValidateRootGameObjectState();
-
         if (IsPersistentAcrossScenes) {
             IsExtraCopy = _instance != null && _instance != this;
 
@@ -123,6 +121,12 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
         //D.Log("{0}_{1}.InitializeOnAwake() called.", GetType().Name, InstanceID);
     }
 
+    protected override void Start() {
+        base.Start();
+        // deferred to allow some objects that aren't root to be parented as Awake runs before any dynamic parenting can take place
+        ValidateRootGameObjectState();
+    }
+
     /// <summary>
     /// Hook method for any work to be done before the extra copy is destroyed.
     /// Default does nothing.
@@ -139,10 +143,10 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
 
     private void ValidateRootGameObjectState() {
         if (IsRootGameObject) {
-            D.Assert(transform.parent == null);
+            D.Assert(transform.parent == null, "{0}.{1}: IsRootGameObject = true but has parent.", GetType().Name, transform.name);
         }
         else {
-            D.Assert(transform.parent != null);
+            D.Assert(transform.parent != null, "{0}.{1}: IsRootGameObject = false but no parent.", GetType().Name, transform.name);
         }
     }
 

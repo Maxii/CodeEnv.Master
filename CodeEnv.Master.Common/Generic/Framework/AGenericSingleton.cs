@@ -17,9 +17,6 @@
 namespace CodeEnv.Master.Common {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// Abstract Generic Singleton Base Class. Derived classes must implement
@@ -54,7 +51,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Clients should call this if and when they Dispose of T. 
-        /// WARNING: T should be disposed of when it holds any reference to an object that does not persist across scenes
+        /// WARNING: T should be disposed of when it holds any reference to an object that does not persist across scenes.
         /// </summary>
         protected void CallOnDispose() {
             //D.Log("{0}.CallOnDispose() called.", GetType().Name);

@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IShipTransitBanned {
+public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle {
 
     public StarCategory category = StarCategory.None;
 
@@ -47,7 +47,9 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
     private DetectionHandler _detectionHandler;
-    private SphereCollider _collider;
+    private SphereCollider _primaryCollider;
+    private SphereCollider _obstacleZoneCollider;
+    private DetourGenerator _detourGenerator;
 
     #region Initialization
 
@@ -55,28 +57,33 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         base.InitializeOnData();
         InitializePrimaryCollider();
         InitializeShipOrbitSlot();
-        InitializeTransitBanCollider();
+        InitializeObstacleZone();
         D.Assert(category == Data.Category);
         System = gameObject.GetSingleComponentInParents<SystemItem>();
         _detectionHandler = new DetectionHandler(this);
     }
 
     private void InitializePrimaryCollider() {
-        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
-        _collider.enabled = false;
-        _collider.isTrigger = false;
-        _collider.radius = Data.Radius;
+        _primaryCollider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+        _primaryCollider.enabled = false;
+        _primaryCollider.isTrigger = false;
+        _primaryCollider.radius = Data.Radius;
     }
 
     private void InitializeShipOrbitSlot() {
         ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
-    private void InitializeTransitBanCollider() {
-        SphereCollider shipTransitBanCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(shipTransitBanCollider.gameObject.layer == (int)Layers.ShipTransitBan);
-        shipTransitBanCollider.isTrigger = true;
-        shipTransitBanCollider.radius = ShipTransitBanRadius;
+    private void InitializeObstacleZone() {
+        _obstacleZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
+        D.Assert(_obstacleZoneCollider.gameObject.layer == (int)Layers.AvoidableObstacleZone);
+        _obstacleZoneCollider.enabled = false;
+        _obstacleZoneCollider.isTrigger = true;
+        _obstacleZoneCollider.radius = Data.LowOrbitRadius;
+        // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
+        D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        Vector3 obstacleZoneCenter = Position + _obstacleZoneCollider.center;
+        _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.HighOrbitRadius);
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -94,17 +101,18 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     }
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick += (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick += (go) => DoubleClickEventHandler();
-        iconEventListener.onPress += (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover += HoverEventHandler;
+        iconEventListener.onClick += ClickEventHandler;
+        iconEventListener.onDoubleClick += DoubleClickEventHandler;
+        iconEventListener.onPress += PressEventHandler;
     }
 
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        _collider.enabled = true;
+        _primaryCollider.enabled = true;
+        _obstacleZoneCollider.enabled = true;
     }
 
     public StarReport GetUserReport() { return Publisher.GetUserReport(); }
@@ -171,10 +179,10 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= (go, isOver) => HoverEventHandler(isOver);
-        iconEventListener.onClick -= (go) => ClickEventHandler();
-        iconEventListener.onDoubleClick -= (go) => DoubleClickEventHandler();
-        iconEventListener.onPress -= (go, isDown) => PressEventHandler(isDown);
+        iconEventListener.onHover -= HoverEventHandler;
+        iconEventListener.onClick -= ClickEventHandler;
+        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+        iconEventListener.onPress -= PressEventHandler;
     }
 
     #endregion
@@ -189,19 +197,13 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #endregion
 
-    #region IShipTransitBanned Members
-
-    public float ShipTransitBanRadius { get { return Data.HighOrbitRadius; } }
-
-    #endregion
-
     #region IDetectable Members
 
     public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.HandleDetectionBy(cmdItem, sensorRangeCat);
     }
 
-    public void HandleDetecionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
+    public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRangeCat);
     }
 
@@ -211,12 +213,24 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     public override float HighlightRadius { get { return Radius * Screen.height * 1.5F; } }
 
+    public override float HoverHighlightRadius { get { return Radius + 5F; } }
+
     #endregion
 
     #region INavigableTarget Members
 
-    public override float GetCloseEnoughDistance(ICanNavigate navigatingItem) {
-        return ShipTransitBanRadius + 1F;
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
+
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
+        return Data.HighOrbitRadius + shipCollisionAvoidanceRadius; // OPTIMIZE want shipRadius value as AvoidableObstacleZone ends at LowOrbitRadius?
+    }
+
+    #endregion
+
+    #region IAvoidableObstacle Members
+
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
+        return _detourGenerator.GenerateDetourAroundPolesFromZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius, formationOffset);
     }
 
     #endregion

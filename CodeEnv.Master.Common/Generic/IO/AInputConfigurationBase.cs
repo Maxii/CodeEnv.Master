@@ -28,9 +28,7 @@ namespace CodeEnv.Master.Common {
         public bool activate;
         public KeyModifiers modifiers = new KeyModifiers();
         public float sensitivity = 1.0F;
-        public virtual bool IsActivated() {
-            return activate && modifiers.confirmModifierKeyState();
-        }
+        public virtual bool IsActivated { get { return activate && modifiers.confirmModifierKeyState(); } }
 
     }
 }

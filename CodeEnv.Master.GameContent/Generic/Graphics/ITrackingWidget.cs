@@ -51,6 +51,8 @@ namespace CodeEnv.Master.GameContent {
 
         IWidgetTrackable Target { get; set; }
 
+        int DrawDepth { get; set; }
+
         void Set(string text);
 
         void SetShowDistance(float min, float max = Mathf.Infinity);

@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -27,6 +28,8 @@ using UnityEngine.Serialization;
 /// Changes the InputMode to that selected on Button LeftClick.
 /// </summary>
 public class InputModeControlButton : AGuiButton {
+
+    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
 
     //[FormerlySerializedAs("inputModeOnClick")]
     [Tooltip("The GameSceneInputMode to use when clicked")]
@@ -40,7 +43,9 @@ public class InputModeControlButton : AGuiButton {
         }
     }
 
-    protected override void HandleLeftClick() {
+    #region Event and Property Change Handlers
+
+    protected override void HandleValidClick() {
         D.Assert(_gameMgr.CurrentScene != _gameMgr.LobbyScene);
         GameInputMode gameInputMode;
         switch (_inputModeOnClick) {
@@ -60,6 +65,8 @@ public class InputModeControlButton : AGuiButton {
         //D.Log("{0} is about to set InputMode to {1}.", GetType().Name, gameInputMode.GetValueName());
         InputManager.Instance.InputMode = gameInputMode;
     }
+
+    #endregion
 
     protected override void Cleanup() { }
 

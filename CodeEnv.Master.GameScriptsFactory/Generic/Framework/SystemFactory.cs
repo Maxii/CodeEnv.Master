@@ -149,7 +149,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
         Rigidbody planetRigidbody = planet.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
-        planet.Data = new PlanetData(planet.transform, planetRigidbody, planetStat, cameraStat, passiveCMs) {
+        planet.Data = new PlanetData(planet.transform, cameraStat, passiveCMs, planetStat, planetRigidbody) {
             ParentName = parentSystemName
         };
     }
@@ -163,7 +163,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanet">The parent planet.</param>
     /// <returns></returns>
-    public MoonItem MakeInstance(MoonStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, PlanetItem parentPlanet) {
+    public MoonItem MakeInstance(PlanetoidStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, PlanetItem parentPlanet) {
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
@@ -176,12 +176,12 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// Populates the item instance provided from the stats provided.
     /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
-    /// <param name="moonStat">The planet stat.</param>
+    /// <param name="moonStat">The moon stat.</param>
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanetName">Name of the parent planet.</param>
     /// <param name="moon">The item.</param>
-    public void PopulateInstance(MoonStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
+    public void PopulateInstance(PlanetoidStat moonStat, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
         D.Assert(!moon.IsOperational, "{0} should not be operational.", moon.FullName);
         D.Assert(moon.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
@@ -189,7 +189,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
         Rigidbody moonRigidbody = moon.GetComponent<Rigidbody>();
         var passiveCMs = MakeCountermeasures(cmStats);
-        moon.Data = new MoonData(moon.transform, moonRigidbody, moonStat, cameraStat, passiveCMs) {
+        moon.Data = new PlanetoidData(moon.transform, cameraStat, passiveCMs, moonStat, moonRigidbody) {
             ParentName = parentPlanetName
         };
     }

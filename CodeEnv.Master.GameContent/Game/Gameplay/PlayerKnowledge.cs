@@ -32,6 +32,20 @@ namespace CodeEnv.Master.GameContent {
 
         public IUniverseCenterItem UniverseCenter { get; private set; }
 
+        public IEnumerable<IMoonItem> MyMoons { get { return Moons.Where(p => p.Owner == Player); } }
+
+        /// <summary>
+        /// The Moons this player has knowledge of.
+        /// </summary>
+        public IEnumerable<IMoonItem> Moons { get { return _planetoids.Where(p => p is IMoonItem).Cast<IMoonItem>(); } }
+
+        public IEnumerable<IPlanetItem> MyPlanets { get { return Planets.Where(p => p.Owner == Player); } }
+
+        /// <summary>
+        /// The Planets this player has knowledge of.
+        /// </summary>
+        public IEnumerable<IPlanetItem> Planets { get { return _planetoids.Where(p => p is IPlanetItem).Cast<IPlanetItem>(); } }
+
         /// <summary>
         /// The Planetoids this player has knowledge of.
         /// </summary>
@@ -56,8 +70,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IEnumerable<IUnitElementItem> Elements { get { return _elements; } }
 
+        /// <summary>
+        /// The Ships this player has knowledge of.
+        /// </summary>
         public IEnumerable<IShipItem> Ships { get { return _elements.Where(e => e is IShipItem).Cast<IShipItem>(); } }
 
+        /// <summary>
+        /// The Facilities this player has knowledge of.
+        /// </summary>
         public IEnumerable<IFacilityItem> Facilities { get { return _elements.Where(e => e is IFacilityItem).Cast<IFacilityItem>(); } }
 
         /// <summary>
@@ -65,12 +85,24 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IEnumerable<IUnitCmdItem> Commands { get { return _commands; } }
 
+        /// <summary>
+        /// The Bases this player has knowledge of.
+        /// </summary>
         public IEnumerable<IBaseCmdItem> Bases { get { return _commands.Where(cmd => cmd is IBaseCmdItem).Cast<IBaseCmdItem>(); } }
 
+        /// <summary>
+        /// The Fleets this player has knowledge of.
+        /// </summary>
         public IEnumerable<IFleetCmdItem> Fleets { get { return _commands.Where(cmd => cmd is IFleetCmdItem).Cast<IFleetCmdItem>(); } }
 
+        /// <summary>
+        /// The Settlements this player has knowledge of.
+        /// </summary>
         public IEnumerable<ISettlementCmdItem> Settlements { get { return _commands.Where(cmd => cmd is ISettlementCmdItem).Cast<ISettlementCmdItem>(); } }
 
+        /// <summary>
+        /// The Starbases this player has knowledge of.
+        /// </summary>
         public IEnumerable<IStarbaseCmdItem> Starbases { get { return _commands.Where(cmd => cmd is IStarbaseCmdItem).Cast<IStarbaseCmdItem>(); } }
 
         public IEnumerable<IFleetCmdItem> MyFleets { get { return Fleets.Where(cmd => cmd.Owner == Player); } }
@@ -139,6 +171,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectedItem">The detected item.</param>
         public void HandleItemDetection(IIntelItem detectedItem) {
+            D.Assert(detectedItem.IsOperational, "{0}: NonOperational Item {1} erroneously detected.", GetType().Name, detectedItem.FullName);
             D.Log("{0}'s {1} is adding {2}.", Player.LeaderName, GetType().Name, detectedItem.FullName);
             if (detectedItem is IUnitElementItem) {
                 AddElement(detectedItem as IUnitElementItem);
@@ -209,7 +242,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             D.Assert(planetoid.GetIntelCoverage(Player) > IntelCoverage.None);
-            AddSystem(planetoid.System);
+            AddSystem(planetoid.ParentSystem);
         }
 
         private void AddElement(IUnitElementItem element) {
@@ -278,7 +311,6 @@ namespace CodeEnv.Master.GameContent {
             var isRemoved = _elements.Remove(element);
             D.Assert(isRemoved, "{0}'s {1} could not remove Element {2}.".Inject(Player.LeaderName, GetType().Name, element.FullName));
 
-            //element.onIsHQChanged -= OnElementIsHQChanged;
             element.isHQChanged -= ElementIsHQChangedEventHandler;
             if (element.IsHQ) {
                 _commands.Remove(element.Command);
@@ -295,7 +327,7 @@ namespace CodeEnv.Master.GameContent {
         private void RemoveDeadPlanetoid(IPlanetoidItem deadPlanetoid) {
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             D.Assert(isRemoved, "{0}'s {1} could not remove Planetoid {2}.".Inject(Player.LeaderName, GetType().Name, deadPlanetoid.FullName));
-            var system = deadPlanetoid.System;
+            var system = deadPlanetoid.ParentSystem;
             if (ShouldSystemBeRemoved(system)) {
                 _systems.Remove(system);
             }
@@ -307,7 +339,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="system">The system.</param>
         /// <returns></returns>
         private bool ShouldSystemBeRemoved(ISystemItem system) {
-            var remainingKnownPlanetoidsInSystem = _planetoids.Where(p => p.System == system);
+            var remainingKnownPlanetoidsInSystem = _planetoids.Where(p => p.ParentSystem == system);
             var knownStarInSystem = _stars.SingleOrDefault(star => star.System == system);
             return knownStarInSystem == null && !remainingKnownPlanetoidsInSystem.Any();
         }

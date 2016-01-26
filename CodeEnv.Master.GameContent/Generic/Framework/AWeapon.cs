@@ -33,26 +33,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public event EventHandler<WeaponFiringSolutionEventArgs> readytoFire;
 
-        private bool _isReady;
-        /// <summary>
-        /// Indicates whether this weapon is ready to execute a firing solution. A weapon is ready when 
-        /// it is both operational and loaded. This property is not affected by whether 
-        /// there are any enemy targets within range, or whether there are any executable firing solutions.
-        /// </summary>
-        private bool IsReady {
-            get { return _isReady; }
-            set { SetProperty<bool>(ref _isReady, value, "IsReady", IsReadyPropChangedHandler); }
-        }
-
-        private bool _isAnyEnemyInRange;
-        /// <summary>
-        /// Indicates whether there are one or more qualified enemy targets within range.
-        /// </summary>
-        private bool IsAnyEnemyInRange {
-            get { return _isAnyEnemyInRange; }
-            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", IsAnyEnemyInRangePropChangedHandler); }
-        }
-
         private bool _toShowEffects;
         /// <summary>
         /// Indicates whether this weapon and its fired ordnance should show their audio and visual effects.
@@ -99,12 +79,50 @@ namespace CodeEnv.Master.GameContent {
 
         protected new AWeaponStat Stat { get { return base.Stat as AWeaponStat; } }
 
+        private bool _isReady;
+        /// <summary>
+        /// Indicates whether this weapon is ready to execute a firing solution. A weapon is ready when 
+        /// it is operational, loaded and is not currently executing a firing sequence. This property is not affected by whether 
+        /// there are any enemy targets within range, or whether there are any executable firing solutions.
+        /// </summary>
+        private bool IsReady {
+            get { return _isReady; }
+            set { SetProperty<bool>(ref _isReady, value, "IsReady", IsReadyPropChangedHandler); }
+        }
+
+        private bool _isAnyEnemyInRange;
+        /// <summary>
+        /// Indicates whether there are one or more qualified enemy targets within range.
+        /// </summary>
+        private bool IsAnyEnemyInRange {
+            get { return _isAnyEnemyInRange; }
+            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", IsAnyEnemyInRangePropChangedHandler); }
+        }
+
+        private bool _isFiringSequenceUnderway;
+        /// <summary>
+        /// Indicates whether this weapon is in the process of executing its firing sequence. Execution of
+        /// a firing sequence begins when one or more firing solutions have been found and ends when firing has completed
+        /// or the element declined to fire. As executing a firing sequence can take time, a weapon
+        /// is not ready to generate another firing solution while executing its firing sequence. In particular, LosWeapons take time to
+        /// aim so this process can take awhile. MissileWeapons do not aim, so this period is very short.
+        /// </summary>
+        private bool IsFiringSequenceUnderway {
+            get { return _isFiringSequenceUnderway; }
+            set { SetProperty<bool>(ref _isFiringSequenceUnderway, value, "IsFiringSequenceUnderway", IsFiringSequenceUnderwayPropChangedHandler); }
+        }
+
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
         protected IList<IElementAttackableTarget> _qualifiedEnemyTargets;
 
-        private IDictionary<string, CombatResult> _combatResults;
+        /// <summary>
+        /// Lookup table for CombatResults keyed by the target of this weapon.
+        /// <remarks>The target itself is used as the key. If the target dies,
+        /// the key is removed before the target is destroyed.</remarks>
+        /// </summary>
+        private IDictionary<IElementAttackableTarget, CombatResult> _combatResults;
         private bool _isLoaded;
         private WaitJob _reloadJob;
         private Job _checkForFiringSolutionsJob;
@@ -119,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
             : base(stat, name) {
             _gameTime = GameTime.Instance;
             _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
-            _combatResults = new Dictionary<string, CombatResult>();
+            _combatResults = new Dictionary<IElementAttackableTarget, CombatResult>();
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
@@ -134,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
                     *******************************************************************************************************************************/
 
         /***********************************************************************************************************************************************
-                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all  equipment when it initiates dying.
+                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
                      **********************************************************************************************************************************************/
 
         /// <summary>
@@ -158,24 +176,24 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 // Note: Some targets going out of range may not have been qualified as targets for this Weapon.
-                // Also, a qualified target can be destroyed (goes out of range) by other Weapons before it is ever added
-                // to this one, so if it is not present, it was never added to this Weapon because it was immediately destroyed
+                // Also, a qualified target can die (goes out of range) from other Weapons fire before it is ever added
+                // to this one, so if it is not present, it was never added to this Weapon because it was immediately killed
                 // by other Weapons as it was being added to them.
                 if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
                     _qualifiedEnemyTargets.Remove(enemyTarget);
-                    ReportCombatResults(enemyTarget);
-                }
-            }
+                    ReportCombatResults(enemyTarget);   // IMPROVE report at later time (combat over?) as not all results are
+                }                                       // available when the target moves out of the Monitor's range, aka missile
+            }                                           // range can be larger or smaller than monitor range
             IsAnyEnemyInRange = _qualifiedEnemyTargets.Any();
         }
 
         /// <summary>
-        /// Confirms the provided enemyTarget is in range prior to launching the weapon's ordnance.
+        /// Confirms the provided enemyTarget is in range PRIOR to launching the weapon's ordnance.
         /// </summary>
         /// <param name="enemyTarget">The target.</param>
         /// <returns></returns>
-        public bool ConfirmInRange(IElementAttackableTarget enemyTarget) {
-            return WeaponMount.ConfirmInRange(enemyTarget);
+        public bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget) {
+            return WeaponMount.ConfirmInRangeForLaunch(enemyTarget);
         }
 
         /// <summary>
@@ -188,6 +206,7 @@ namespace CodeEnv.Master.GameContent {
         /// the weapon was fired.</remarks>
         /// </summary>
         public void HandleElementDeclinedToFire() {
+            IsFiringSequenceUnderway = false;
             LaunchFiringSolutionsCheckJob();
         }
 
@@ -219,7 +238,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual void HandleFiringComplete(IOrdnance ordnanceFired) {
             D.Assert(!_isLoaded);
             //D.Log("{0}.HandleFiringComplete({1}) called.", Name, ordnanceFired.Name);
-
+            IsFiringSequenceUnderway = false;
             UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
                 InitiateReloadCycle();
@@ -227,6 +246,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
+
+        private void IsFiringSequenceUnderwayPropChangedHandler() {
+            AssessReadiness();
+        }
 
         private void IsAnyEnemyInRangePropChangedHandler() {
             if (!IsAnyEnemyInRange) {
@@ -269,6 +292,8 @@ namespace CodeEnv.Master.GameContent {
             AssessReadinessToFire();
         }
 
+        protected abstract void ToShowEffectsPropChangedHandler();
+
         private void OnReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
             D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to generate the event
             if (readytoFire != null) {
@@ -283,8 +308,6 @@ namespace CodeEnv.Master.GameContent {
             _isLoaded = true;
             AssessReadiness();
         }
-
-        protected abstract void ToShowEffectsPropChangedHandler();
 
         /// <summary>
         /// Records the provided ordnance as having been fired.
@@ -316,7 +339,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessReadiness() {
-            IsReady = IsOperational && _isLoaded;
+            IsReady = IsOperational && _isLoaded && !IsFiringSequenceUnderway;
         }
 
         private void AssessReadinessToFire() {
@@ -326,6 +349,7 @@ namespace CodeEnv.Master.GameContent {
 
             IList<WeaponFiringSolution> firingSolutions;
             if (TryGetFiringSolutions(out firingSolutions)) {
+                IsFiringSequenceUnderway = true;
                 OnReadyToFire(firingSolutions);
             }
             else {
@@ -368,6 +392,7 @@ namespace CodeEnv.Master.GameContent {
                 if (TryGetFiringSolutions(out firingSolutions)) {
                     hasFiringSolutions = true;
                     //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    IsFiringSequenceUnderway = true;
                     OnReadyToFire(firingSolutions);
                 }
                 // OPTIMIZE can also handle this changeable waitDuration by subscribing to a GameSpeed change
@@ -401,13 +426,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Records a shot was fired for purposes of tracking CombatResults.
         /// </summary>
-        /// <param name="targetFiredOn">The target.</param>
-        private void RecordShotFired(IElementAttackableTarget targetFiredOn) {
-            string targetName = targetFiredOn.Name;
+        /// <param name="target">The target.</param>
+        private void RecordShotFired(IElementAttackableTarget target) {
+            string targetName = target.Name;
             CombatResult combatResult;
-            if (!_combatResults.TryGetValue(targetName, out combatResult)) {
+            if (!_combatResults.TryGetValue(target, out combatResult)) {
                 combatResult = new CombatResult(FullName, targetName);
-                _combatResults.Add(targetName, combatResult);
+                _combatResults.Add(target, combatResult);
             }
             combatResult.ShotsTaken++;
         }
@@ -417,7 +442,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         public void HandleTargetHit(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
+            var combatResult = _combatResults[target];
             combatResult.Hits++;
         }
 
@@ -426,7 +451,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         public void HandleTargetMissed(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
+            var combatResult = _combatResults[target];
             combatResult.Misses++;
         }
 
@@ -436,15 +461,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         public void HandleOrdnanceInterdicted(IElementAttackableTarget target) {
-            var combatResult = _combatResults[target.Name];
+            var combatResult = _combatResults[target];
             combatResult.Interdictions++;
         }
 
         private void ReportCombatResults(IElementAttackableTarget target) {
             CombatResult combatResult;
-            if (_combatResults.TryGetValue(target.Name, out combatResult)) {    // if the weapon never fired, there won't be a combat result
+            if (_combatResults.TryGetValue(target, out combatResult)) {    // if the weapon never fired, there won't be a combat result
                 D.Log(combatResult);
-            }
+                //_combatResults.Remove(target);    // for now let these accumulate so logging of hits and misses after the target
+            }                                       // is out of the monitor's range doesn't encounter a Dictionary key not found error
         }
 
         #endregion

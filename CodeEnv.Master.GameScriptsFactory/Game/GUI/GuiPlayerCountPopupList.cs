@@ -75,7 +75,7 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
     /// <param name="aiPlayerCount">The AIPlayer count.</param>
     /// <exception cref="System.NotImplementedException"></exception>
     private void RefreshAIPlayerAvailability(int aiPlayerCount) {
-        D.Log("{0}.RefreshAIPlayerAvailability() called. AIPlayer count = {1}.", ElementID.GetValueName(), aiPlayerCount);
+        //D.Log("{0}.RefreshAIPlayerAvailability() called. AIPlayer count = {1}.", ElementID.GetValueName(), aiPlayerCount);
         _aiPlayerContainerLookup.Values.ForAll(containerWidget => containerWidget.alpha = Constants.ZeroF);
 
         // now make the AI player slots that will be in the game visible again

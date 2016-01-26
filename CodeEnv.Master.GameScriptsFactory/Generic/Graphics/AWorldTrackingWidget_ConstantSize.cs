@@ -41,6 +41,7 @@ public abstract class AWorldTrackingWidget_ConstantSize : AWorldTrackingWidget {
 
     protected override void Hide() {
         base.Hide();
+        // IMPROVE avoid turning scaler off as the size of the widget can effect when CameraLOSChangedRelay determines its visibility changes
         _scaler.enabled = false;
     }
 
@@ -49,7 +50,6 @@ public abstract class AWorldTrackingWidget_ConstantSize : AWorldTrackingWidget {
         return max;
     }
 
-    // avoid turning scaler off as the size of the widget can effect when CameraLOSChangedRelay determines its visibility changes
 
 }
 

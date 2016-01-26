@@ -348,7 +348,7 @@ public abstract class ATableWindow : AGuiWindow {
             sortDirection = ToggleSortDirection();
         }
         _lastSortDirection = sortDirection;
-        //D.Log("{0}.AssessSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", GetType().Name, sortTopic.GetName(), sortDirection.GetName(), (int)sortDirection);
+        //D.Log("{0}.AssessSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", GetType().Name, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
         return sortDirection;
     }
 

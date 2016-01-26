@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -39,6 +40,10 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
 
     #region Initialization
 
+    protected override AFormationManager InitializeFormationMgr() {
+        return new StarbaseFormationManager(this);
+    }
+
     protected override ItemHudManager InitializeHudManager() {
         return new ItemHudManager(Publisher);
     }
@@ -53,17 +58,17 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
-    protected override void PrepareForOnDeathNotification() {
-        base.PrepareForOnDeathNotification();
-        // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
-    }
-
     protected override IconInfo MakeIconInfo() {
         return StarbaseIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
 
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, GetUserReport());
+    }
+
+    protected override void HandleDeath() {
+        base.HandleDeath();
+        // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 
     #region Cleanup

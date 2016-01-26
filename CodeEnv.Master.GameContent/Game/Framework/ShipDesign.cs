@@ -28,16 +28,16 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullStat HullStat { get; private set; }
 
-        public EngineStat EngineStat { get; private set; }
+        public EnginesStat EnginesStat { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 
-        public ShipDesign(Player player, string designName, ShipHullStat hullStat, EngineStat engineStat, ShipCombatStance combatStance,
+        public ShipDesign(Player player, string designName, ShipHullStat hullStat, EnginesStat enginesStat, ShipCombatStance combatStance,
             IEnumerable<WeaponDesign> weaponDesigns, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
             IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats)
             : base(player, designName, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats) {
             HullStat = hullStat;
-            EngineStat = engineStat;
+            EnginesStat = enginesStat;
             CombatStance = combatStance;
         }
 

@@ -84,5 +84,9 @@ public class Billboard : AMonoBase, IBillboard {
 
     protected override void Cleanup() { }
 
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
 }
 

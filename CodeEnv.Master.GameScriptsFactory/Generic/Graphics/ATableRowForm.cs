@@ -32,22 +32,27 @@ public abstract class ATableRowForm : AReportForm {
 
     protected override void InitializeNameGuiElement(AGuiElement e) {
         base.InitializeNameGuiElement(e);
-        MyNguiEventListener.Get(e.gameObject).onDoubleClick += (go) => NameDoubleClickEventHandler();
+        MyEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
     }
 
     #region Event and Property Change Handlers
 
-    private void NameDoubleClickEventHandler() {
+    private void NameDoubleClickEventHandler(GameObject go) {
         OnItemFocusUserAction();
     }
 
     private void OnItemFocusUserAction() {
-        if(itemFocusUserAction != null) {
+        if (itemFocusUserAction != null) {
             itemFocusUserAction(this, new TableRowFocusUserActionEventArgs(Report.Item as ICameraFocusable));
         }
     }
 
     #endregion
+
+    protected override void CleanupNameGuiElement(AGuiElement e) {
+        base.CleanupNameGuiElement(e);
+        MyEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;
+    }
 
     #region Nested Classes
 

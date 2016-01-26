@@ -33,6 +33,8 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
 
     protected override bool IsTriggerCollider { get { return false; } }
 
+    protected override bool IsKinematicRigidbodyReqd { get { return true; } }   // avoids CompoundCollider
+
     public override void Add(ShieldGenerator generator) {
         base.Add(generator);
         generator.hasChargeChanged += GeneratorHasChargeChangedEventHandler;
