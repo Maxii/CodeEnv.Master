@@ -178,6 +178,7 @@ internal abstract class ANavigator : IDisposable {
                 _pilotNavigationJob.Pause();
             }
             else {
+                D.Log("{0} is unpausing NavigationJob.", Name);
                 _pilotNavigationJob.Unpause();
             }
         }

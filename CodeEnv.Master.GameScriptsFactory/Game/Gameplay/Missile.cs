@@ -249,7 +249,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private void LaunchChangeHeadingJob(Vector3 newHeading) {
         if (_changeHeadingJob != null && _changeHeadingJob.IsRunning) {
-            _changeHeadingJob.Kill();
+            _changeHeadingJob.Kill();   // Note: no timeout issue w/killing job as allowedTime recalc'd
         }
         float allowedTime = GameUtility.CalcMaxReqdSecsToCompleteRotation(TurnRate, MaxReqdHeadingChange);
         _changeHeadingJob = new Job(ChangeHeading(newHeading, allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
@@ -275,13 +275,14 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         float cumTime = Constants.ZeroF;
         //float angle = Vector3.Angle(Heading, newHeading);
         while (!Heading.IsSameDirection(requestedHeading, SteeringInaccuracy)) {
+            float deltaTime = _gameTime.DeltaTimeOrPaused;
             float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTimeOrPaused;
+            float allowedTurn = maxTurnRateInRadiansPerSecond * deltaTime;
             Vector3 newHeading = Vector3.RotateTowards(Heading, requestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
             // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
             transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
             //D.Log("{0} actual heading after turn step: {1}.", Name, Heading);
-            cumTime += _gameTime.DeltaTimeOrPaused; // WARNING: works only with yield return null;
+            cumTime += deltaTime; // WARNING: works only with yield return null;
             D.Assert(cumTime < allowedTime, "CumTime {0:0.##} > AllowedTime {1:0.##}.".Inject(cumTime, allowedTime));
             yield return null;
         }

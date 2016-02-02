@@ -96,6 +96,7 @@ namespace CodeEnv.Master.GameContent {
                 _orbitSimulator.IsActivelyOrbiting = false;
                 D.Log("Destroying {0}'s {1}.", OrbitedObject.FullName, typeof(IOrbitSimulator).Name);
                 GameObject.Destroy(_orbitSimulator.transform.gameObject);
+                _orbitSimulator = null;
                 // IMPROVE could also keep it around for future uses as rigidbody.isKinematic = true so not using up physics engine cycles
             }
         }

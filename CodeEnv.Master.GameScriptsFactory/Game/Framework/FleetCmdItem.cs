@@ -340,7 +340,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         get { return (FleetState)base.CurrentState; }
         protected set {
             if (base.CurrentState != null && CurrentState == value) {
-                D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
+                //D.Log("{0} is setting {1} to the same value {2} it is already in.", FullName, typeof(FleetState).Name, value.GetValueName());
+                if (CurrentState != FleetState.ExecuteMoveOrder) {  // ExecuteMoveOrder initiated thru ContextMenu is to be expected
+                    D.Warn("{0} received a duplicate change {1} to {2} order.", FullName, typeof(FleetState).Name, value.GetValueName());
+                }
             }
             base.CurrentState = value;
         }
@@ -832,11 +835,45 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             D.Assert(!_hasFlagshipReachedDestination);
             D.Log("{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
             //D.Log("{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
-            _pilotNavigationJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
+
+            _currentWaypointIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
+            INavigableTarget currentWaypoint = Course[_currentWaypointIndex];   // skip the course start position as the fleet is already there
+
+            float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target are StationaryLocations
+            if (currentWaypoint == Target) {
+                castingDistanceSubtractor = Target.RadiusAroundTargetContainingKnownObstacles + TargetCastingDistanceBuffer;
+            }
+
+            // ***************************************************************************************************************************
+            // The following initial Obstacle Check has been extracted from the PilotNavigationJob to accommodate a Fleet Move Cmd issued 
+            // via ContextMenu while Paused. It uses a dummy deltaTime to calc when to utilize a detour around a mobile obstacle, 
+            // starts the Job and then immediately pauses it. This test for an obstacle prior to the Job starting allows the 
+            // Course plot display to show the detour around the obstacle (if one is found) rather than show a course plot into an obstacle.
+            // ***************************************************************************************************************************
+            float deltaTime = _gameTime.DeltaTimeOrPaused;
+            if (_gameMgr.IsPaused) {
+                deltaTime = 1F / 25F;   // HACK deltaTime for 25 FPS
+            }
+
+            float maxDistanceTraveledBeforeNextCheck = deltaTime * TravelSpeed.GetUnitsPerHour(_fleet.Data) * _gameTime.GameSpeedAdjustedHoursPerSecond;
+            float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
+            float fleetRadius = _fleet.Data.UnitMaxFormationRadius;
+            INavigableTarget detour;
+            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
+                // but there is an obstacle, so add a waypoint
+                RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
+            }
+
+            _pilotNavigationJob = new Job(EngageCourse(fleetRadius), toStart: true, jobCompleted: (wasKilled) => {
                 if (!wasKilled) {
                     HandleDestinationReached();
                 }
             });
+
+            if (_gameMgr.IsPaused) {
+                _pilotNavigationJob.Pause();
+                D.Log("{0} has paused PilotNavigationJob immediately after starting it.", Name);
+            }
         }
 
         #region Course Execution Coroutines
@@ -847,29 +884,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// entry and exit points. This coroutine will add obstacle detours as waypoints as it encounters them.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator EngageCourse() {
+        private IEnumerator EngageCourse(float fleetRadius) {
             //D.Log("{0}.EngageCourse() has begun.", _fleet.FullName);
             int targetDestinationIndex = Course.Count - 1;
-            _currentWaypointIndex = 1;  // skip the course start position as the fleet is already there
+            D.Assert(_currentWaypointIndex == 1);  // already set prior to the start of the Job
             INavigableTarget currentWaypoint = Course[_currentWaypointIndex];
-            //D.Log("{0} first waypoint in multi-waypoint course is {1}.", Name, currentWaypoint.Position);
+            D.Log("{0} first waypoint in multi-waypoint course is {1}.", Name, currentWaypoint.Position);
 
             float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target is a StationaryLocation
             if (_currentWaypointIndex == targetDestinationIndex) {
                 castingDistanceSubtractor = Target.RadiusAroundTargetContainingKnownObstacles + TargetCastingDistanceBuffer;
             }
 
-            float maxDistanceTraveledBeforeNextCheck = _gameTime.DeltaTimeOrPaused * TravelSpeed.GetUnitsPerHour(_fleet.Data) * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
-            float fleetRadius = _fleet.Data.UnitMaxFormationRadius;
             INavigableTarget detour;
-            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
-                // but there is an obstacle, so add a waypoint
-                RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
-                currentWaypoint = detour;
-                targetDestinationIndex = Course.Count - 1;
-                castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
-            }
             _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
 
             while (_currentWaypointIndex <= targetDestinationIndex) {
@@ -884,6 +911,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     }
                     D.Log("{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
                         _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, Course[_currentWaypointIndex].FullName);
+
+                    float maxDistanceTraveledBeforeNextCheck = _gameTime.DeltaTimeOrPaused * TravelSpeed.GetUnitsPerHour(_fleet.Data) * _gameTime.GameSpeedAdjustedHoursPerSecond;
+                    float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
+
 
                     currentWaypoint = Course[_currentWaypointIndex];
                     if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
@@ -953,7 +984,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             float cumTime = Constants.ZeroF;
             while (!_fleet.IsHeadingConfirmed) {
                 // wait here until the fleet is aligned
-                cumTime += GameTime.Instance.DeltaTimeOrPaused;
+                cumTime += _gameTime.DeltaTimeOrPaused;
                 D.Assert(cumTime < allowedTime, "{0}'s WaitWhileShipsAlignToRequestedHeading coroutine exceeded AllowedTime of {1:0.##}.", Name, allowedTime);
                 yield return null;
             }

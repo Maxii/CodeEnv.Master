@@ -48,6 +48,8 @@ namespace CodeEnv.Master.GameContent {
         public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
         public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
 
+        public static float SlowestGameSpeedMultiplier = GameSpeed.Slowest.SpeedMultiplier();
+
         #endregion
 
         public event EventHandler dateChanged;

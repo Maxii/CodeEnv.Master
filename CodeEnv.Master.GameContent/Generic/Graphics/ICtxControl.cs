@@ -14,12 +14,18 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using System;
+
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Interface for Context Menu Controls.
     /// </summary>
     public interface ICtxControl {
+
+        event EventHandler showBegun;
+
+        event EventHandler hideComplete;
 
         /// <summary>
         /// Flag indicating whether this context menu is currently showing.

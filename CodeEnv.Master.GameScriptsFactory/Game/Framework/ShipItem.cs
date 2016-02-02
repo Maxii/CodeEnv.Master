@@ -1584,9 +1584,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <param name="orderSource">The order source.</param>
         /// <param name="onHeadingConfirmed">Delegate that fires when the ship arrives on the new heading.</param>
         internal void ChangeHeading(Vector3 newHeading, OrderSource orderSource, Action onHeadingConfirmed = null) {
-            IsAutoPilotEngaged = false;
+            IsAutoPilotEngaged = false; // kills ChangeHeading job if autopilot running
+            if (IsHeadingJobRunning) {
+                D.Warn("{0} received 2 sequential ChangeHeading orders from Captain.", _ship.FullName);
+                _headingJob.Kill(); // kills ChangeHeading job if 2 sequential ChangeHeading orders from Captain
+            }
             _orderSource = orderSource;
-
             ChangeHeading_Internal(newHeading, onHeadingConfirmed);
         }
 
@@ -1621,6 +1624,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                         onHeadingConfirmed();
                     }
                 }
+                else {
+                    // Two killed scenerios: both from Captain 1) ChangeHeading order while in AutoPilot, 2) sequential ChangeHeading orders
+                    D.Assert(!IsAutoPilotEngaged);
+                }
             });
         }
 
@@ -1632,14 +1639,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private IEnumerator ExecuteHeadingChange(float allowedTime) {
             //D.Log("{0} initiating turn to heading {1} at {2:0.} degrees/hour.", Name, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
             float cumTime = Constants.ZeroF;
-            float cumAllowedDegrees = Constants.ZeroF;
+            //float cumAllowedDegrees = Constants.ZeroF;
             Quaternion startingRotation = _ship.transform.rotation;
             Quaternion requestedHeadingRotation = Quaternion.LookRotation(_ship.Data.RequestedHeading);
             while (!_ship.IsHeadingConfirmed) {
                 var deltaTime = _gameTime.DeltaTimeOrPaused;
-                float maxTurnRateInDegreesPerSec = _ship.Data.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                float allowedTurnDegrees = maxTurnRateInDegreesPerSec * deltaTime;
-                cumAllowedDegrees += allowedTurnDegrees;
+                float allowedTurnDegrees = _ship.Data.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+                //cumAllowedDegrees += allowedTurnDegrees;
                 Quaternion inprocessRotation = Quaternion.RotateTowards(_ship.transform.rotation, requestedHeadingRotation, allowedTurnDegrees);
 
                 //if (_ship.IsHQ) {
@@ -1683,7 +1689,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private void EngageEnginesAtTravelSpeed() {
             D.Assert(IsAutoPilotEngaged);
             //D.Log("{0} autoPilot is engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
-            _engineRoom.ChangeSpeed(TravelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
+            _engineRoom.ChangeSpeed(TravelSpeed, TravelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
             __TryReportSpeedProgression(TravelSpeed);
         }
 
@@ -1699,11 +1705,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             IsAutoPilotEngaged = false;
             _orderSource = orderSource;
             _lastSpeedOverride = newSpeed;
-            _engineRoom.ChangeSpeed(newSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
-            if (newSpeed == Speed.EmergencyStop) {
-                D.Assert(!_shipRigidbody.isKinematic);
-                _shipRigidbody.velocity = Vector3.zero;
-            }
+            _engineRoom.ChangeSpeed(newSpeed, newSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
             __TryReportSpeedProgression(newSpeed);
         }
 
@@ -1736,8 +1738,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         }
 
         private IEnumerator __ContinuouslyReportSpeedProgression(Speed constantSpeed) {
+#pragma warning disable 0219    // OPTIMIZE
             string desiredSpeedText = "{0}'s Speed setting = {1}({2:0.###})".Inject(_ship.FullName, constantSpeed.GetValueName(), constantSpeed.GetUnitsPerHour(null, _ship.Data));
             float currentSpeed;
+#pragma warning restore 0219
             int fixedUpdateCount = 0;
             while ((currentSpeed = _ship.Data.CurrentSpeed) > Constants.ZeroF) {
                 //D.Log(desiredSpeedText + " ActualSpeed = {0:0.###}, FixedUpdateCount = {1}.", currentSpeed, fixedUpdateCount);
@@ -1902,7 +1906,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// </summary>
         internal void HandleDeath() {
             D.Assert(!IsAutoPilotEngaged);  // should already be disengaged by Moving_ExitState if needed if in Dead_EnterState
-            if (_headingJob != null && _headingJob.IsRunning) {
+            if (IsHeadingJobRunning) {
                 _headingJob.Kill();
             }
             _engineRoom.TerminateAllPropulsion();
@@ -2072,7 +2076,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private void RefreshEngineRoomSpeedValues(Speed speed) {
             //D.Log("{0} is refreshing engineRoom speed values.", _ship.FullName);
             var speedInUnitsPerHour = speed.GetUnitsPerHour(_ship.Command.Data, _ship.Data);
-            _engineRoom.ChangeSpeed(speedInUnitsPerHour);
+            _engineRoom.ChangeSpeed(speed, speedInUnitsPerHour);
         }
 
         /// <summary>
@@ -2462,19 +2466,31 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// <summary>
             /// Exposed method allowing the ShipHelm to change speed.
             /// </summary>
-            /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
-            internal void ChangeSpeed(float newSpeedRequest) {
-                //D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2:0.##}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
+            /// <param name="newSpeed">The new speed.</param>
+            /// <param name="newSpeedValue">The new speed value in units per hour.</param>
+            internal void ChangeSpeed(Speed newSpeed, float newSpeedValue) {
+                //D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
+                //_shipData.FullName, _shipData.CurrentSpeed, newSpeed.GetEnumAttributeText(), newSpeedValue);
 
-                if (Mathfx.Approx(newSpeedRequest, _shipData.RequestedSpeed, .01F)) {
-                    //D.Log("{0}'s speed request of {1:0.##} units/hour is a duplicate.", _shipData.FullName, newSpeedRequest);
+                float previousRequestedSpeed = _shipData.RequestedSpeed;
+                _shipData.RequestedSpeed = newSpeedValue;
+
+                if (newSpeed == Speed.EmergencyStop) {
+                    D.Log("{0} received ChangeSpeed to {1}!", _shipData.FullName, Speed.EmergencyStop.GetEnumAttributeText());
+                    TerminateAllPropulsion();
+                    _shipRigidbody.velocity = Vector3.zero;
                     return;
                 }
-                _shipData.RequestedSpeed = newSpeedRequest;
+
+                if (Mathfx.Approx(newSpeedValue, previousRequestedSpeed, .01F)) {
+                    D.Log("{0} is ignoring speed request of {1:0.##} units/hour as it is a duplicate.", _shipData.FullName, newSpeedValue);
+                    return;
+                }
+
                 if (IsCollisionAvoidanceEngaged) {
                     return; // once CA is no longer engaged, ResumePropulsionAtRequestedSpeed() will be called
                 }
-                EngageOrContinuePropulsion(newSpeedRequest);
+                EngageOrContinuePropulsion(newSpeedValue);
             }
 
             internal void HandleTurnCompleted() {
@@ -2540,7 +2556,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// <returns></returns>
             private float CalcForwardPropulsionPowerFor(float requestedSpeed) {
                 var forwardPropulsionPower = requestedSpeed * _shipRigidbody.drag * _shipData.Mass;
-                D.Assert(forwardPropulsionPower <= _shipData.FullPropulsionPower, "{0}: Calculated EnginePower {1:0.##} exceeds FullEnginePower {2:0.##}.".Inject(_shipData.FullName, forwardPropulsionPower, _shipData.FullPropulsionPower));
+                D.Assert(forwardPropulsionPower.IsLessThanOrEqualTo(_shipData.FullPropulsionPower, .01F), "{0}: Calculated EnginePower {1:0.##} exceeds FullEnginePower {2:0.##}.".Inject(_shipData.FullName, forwardPropulsionPower, _shipData.FullPropulsionPower));
                 //D.Log("{0} forwardPropulsionPower before recalc = {1:0.##}., after = {2:0.##}.", _shipData.FullName, _forwardPropulsionPower, forwardPropulsionPower);
                 return forwardPropulsionPower;
             }
@@ -2550,6 +2566,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
                 if (!IsForwardPropulsionEngaged) {
                     //D.Log("{0} is engaging forward propulsion.", _shipData.FullName);
+                    D.Assert(CurrentForwardSpeed.IsLessThanOrEqualTo(_shipData.RequestedSpeed, .01F), "{0}: CurrentForwardSpeed {1:0.##} > RequestedSpeed {2:0.##}.", _shipData.FullName, CurrentForwardSpeed, _shipData.RequestedSpeed);
                     _forwardPropulsionJob = new Job(OperateForwardPropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
                         D.Assert(jobWasKilled);
                         //D.Log("{0} has ended forward propulsion.", _shipData.FullName);
@@ -2565,7 +2582,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// </summary>
             /// <returns></returns>
             private IEnumerator OperateForwardPropulsion() {
-                D.Assert(CurrentForwardSpeed <= _shipData.RequestedSpeed);
                 yield return new WaitForFixedUpdate();  // UNCLEAR required so first ApplyThrust will be applied in fixed update?
                 while (true) {
                     ApplyForwardThrust();
@@ -2589,7 +2605,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// </summary>
             private void DisengageForwardPropulsion() {
                 if (IsForwardPropulsionEngaged) {
-                    D.Log("{0}: Disengaging ForwardPropulsion.", _shipData.FullName);
+                    //D.Log("{0}: Disengaging ForwardPropulsion.", _shipData.FullName);
                     _forwardPropulsionJob.Kill();
                 }
             }
@@ -2602,7 +2618,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 DisengageForwardPropulsion();
 
                 if (!IsReversePropulsionEngaged) {
-                    D.Log("{0} is engaging reverse propulsion.", _shipData.FullName);
+                    //D.Log("{0} is engaging reverse propulsion.", _shipData.FullName);
+                    D.Assert(CurrentForwardSpeed > _shipData.RequestedSpeed, "{0}: CurrentForwardSpeed {1.0.##} <= RequestedSpeed {2:0.##}.", _shipData.FullName, CurrentForwardSpeed, _shipData.RequestedSpeed);
                     _reversePropulsionJob = new Job(OperateReversePropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
                             // ReverseEngines completed naturally and should engage forward engines unless RequestedSpeed is zero
@@ -2618,7 +2635,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             }
 
             private IEnumerator OperateReversePropulsion() {
-                D.Assert(CurrentForwardSpeed > _shipData.RequestedSpeed);
                 yield return new WaitForFixedUpdate();  // UNCLEAR required so first ApplyThrust will be applied in fixed update?
                 while (CurrentForwardSpeed > _shipData.RequestedSpeed) {
                     ApplyReverseThrust();
@@ -2641,7 +2657,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// </summary>
             private void DisengageReversePropulsion() {
                 if (IsReversePropulsionEngaged) {
-                    D.Log("{0}: Disengaging ReversePropulsion.", _shipData.FullName);
+                    //D.Log("{0}: Disengaging ReversePropulsion.", _shipData.FullName);
                     _reversePropulsionJob.Kill();
                 }
             }
@@ -2651,11 +2667,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             #region Drift Correction
 
             private void EngageOrContinueDriftCorrection() {
-                if (_driftCorrectionJob == null || !_driftCorrectionJob.IsRunning) {
+                if (!IsDriftCorrectionEngaged) {
                     _driftCorrectionJob = new Job(OperateDriftCorrectionThrusters(), toStart: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
                             D.Log("{0}: DriftCorrection completed normally. Negating remaining drift.", _shipData.FullName);
-                            _shipRigidbody.velocity = _shipTransform.TransformDirection(new Vector3(Constants.ZeroF, Constants.ZeroF, _shipRigidbody.velocity.z));
+                            Vector3 localVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
+                            Vector3 localVelocityWithoutDrift = localVelocity.SetX(Constants.ZeroF);
+                            localVelocityWithoutDrift = localVelocityWithoutDrift.SetY(Constants.ZeroF);
+                            _shipRigidbody.velocity = _shipTransform.TransformDirection(localVelocityWithoutDrift);
                         }
                         else {
                             D.Log("{0}: DriftCorrection killed.", _shipData.FullName);
@@ -2677,8 +2696,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     fixedUpdateCount++;
                     yield return new WaitForFixedUpdate();
                 }
-                //D.Log("{0}: DriftCorrection completed. Remaining DriftVelocity/sec before negation = {1}, CumDriftDistanceDuringCorrection = {2}.", _shipData.FullName, currentDriftVelocityPerSec.ToPreciseString(), cumDriftDistanceDuringCorrection);
-                //_shipRigidbody.velocity = _shipTransform.TransformDirection(new Vector3(Constants.ZeroF, Constants.ZeroF, _shipRigidbody.velocity.z));
+                D.Log("{0}: Cumulative Drift during Correction = {1:0.##}.", _shipData.FullName, cumDriftDistanceDuringCorrection);
             }
 
             private void ApplyDriftCorrection(Vector2 driftVelocityPerSec) {
@@ -2696,7 +2714,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
             #region Collision Avoidance 
 
+#pragma warning disable 0414    // OPTIMIZE
+
             private Vector3 __caPreviousPosition;
+
+#pragma warning restore 0414
 
             private void EngageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
                 D.Assert(!_caPropulsionJobs.ContainsKey(obstacle));

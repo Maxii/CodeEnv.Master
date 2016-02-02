@@ -106,12 +106,16 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         set { base.Weapon = value; }
     }
 
+#pragma warning disable 0414    // OPTIMIZE
+
     /// <summary>
     /// The elevation the turret barrel rests at when not in use. 
     /// Currently initialized to facing forward in the case of turrets on top, bottom, port and starboard,
     /// and facing downward for any forward and aft turrets. Not currently used. // IMPROVE
     /// </summary>
     private Quaternion _barrelRestElevation;
+
+#pragma warning restore 0414
 
     /// <summary>
     /// The allowed number of degrees the barrel elevation angle can deviate from maximum.
@@ -301,8 +305,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             float deltaTime = _gameTime.DeltaTimeOrPaused;
             if (!isHubRotationCompleted) {
                 //Quaternion previousHubRotation = hub.rotation;
-                float hubRotationRateInDegreesPerSecond = HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                float allowedHubRotationChange = hubRotationRateInDegreesPerSecond * deltaTime;
+                float allowedHubRotationChange = HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
                 _hub.rotation = Quaternion.RotateTowards(_hub.rotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, hub.rotation);
                 //D.Log("{0}: AllowedHabRotationChange = {1}, ActualHabRotationChange = {2}.", Name, allowedHabRotationChange, rotationChangeInDegrees);
@@ -310,8 +313,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             }
 
             if (!isBarrelElevationCompleted) {
-                float barrelElevationRateInDegreesPerSecond = BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                float allowedBarrelElevationChange = barrelElevationRateInDegreesPerSecond * deltaTime;
+                float allowedBarrelElevationChange = BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
                 _barrel.localRotation = Quaternion.RotateTowards(_barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
                 isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
             }

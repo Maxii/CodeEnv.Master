@@ -104,7 +104,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeNonpersistentReferences() {
-        D.Log("{0}_{1} is [re]initializing nonpersistent references.", GetType().Name, InstanceCount);
+        //D.Log("{0}_{1} is [re]initializing nonpersistent references.", GetType().Name, InstanceCount);
         InitializeUIEventDispatcher();
         if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
             _playerViews = PlayerViews.Instance;
@@ -113,7 +113,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeUIEventDispatcher() {
-        UIEventDispatcher = UICamera.first; //UIRoot.list.Single().gameObject.GetSingleComponentInChildren<UICamera>();
+        UIEventDispatcher = UICamera.first;
 
         //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
         UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
@@ -688,6 +688,12 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         UICamera.onDrag -= DraggingEventHandler;
         UICamera.onDragEnd -= DragEndEventHandler;
         UICamera.onPress -= PressEventHandler;
+        //if (UICamera.onHover != null) {
+        //    D.Log("{0}: {1}.onHover delegate subscribers: {2}.", GetType().Name, typeof(UICamera).Name, UICamera.onHover.GetInvocationList().Concatenate());
+        //}
+        //else {
+        //    D.Log("{0}: UICamera.onHover is null.", GetType().Name);
+        //}
     }
 
     #endregion

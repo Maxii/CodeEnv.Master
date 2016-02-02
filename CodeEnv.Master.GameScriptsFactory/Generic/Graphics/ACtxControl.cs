@@ -57,6 +57,10 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private static CtxMenu _generalCtxMenu;
     private static string _setOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
 
+    public event EventHandler showBegun;
+
+    public event EventHandler hideComplete;
+
     public bool IsShowing { get; private set; }
 
     protected abstract string OperatorName { get; }
@@ -278,7 +282,20 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     #region Event and Property Change Handlers
 
+    protected void OnShowBegun() {
+        if (showBegun != null) {
+            showBegun(this, new EventArgs());
+        }
+    }
+
+    protected void OnHideComplete() {
+        if (hideComplete != null) {
+            hideComplete(this, new EventArgs());
+        }
+    }
+
     private void ShowCtxMenuEventHandler() {
+        OnShowBegun();
         //D.Log("{0}.{1}: Subscriber count to ShowCtxMenuEventHandler = {2}.", OperatorName, GetType().Name, _ctxObject.onShow.Count);
         switch (_accessSource) {
             case CtxAccessSource.SelectedItem:
@@ -344,6 +361,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         _optimalFocusDistanceItemID = Constants.Zero;
         _remotePlayerOwnedSelectedItem = null;
         _accessSource = CtxAccessSource.None;
+        OnHideComplete();
     }
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {

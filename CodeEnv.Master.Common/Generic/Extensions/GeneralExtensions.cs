@@ -23,7 +23,7 @@ namespace CodeEnv.Master.Common {
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Text;
-
+    using UnityEngine;
     /// <summary>
     /// General purpose Extensions. 
     /// </summary>
@@ -247,6 +247,36 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static bool ApproxEquals(this float source, float value) {
             return Mathfx.Approx(source, value, UnityConstants.FloatEqualityPrecision);
+        }
+
+        /// <summary>
+        ///  Tests if <c>value</c> is &gt;= <c>targetValue</c> within the provided acceptableRange. 
+        ///  Useful in dealing with floating point imprecision.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="targetValue">The targetValue.</param>
+        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
+        /// <returns></returns>
+        public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float acceptableRange) {
+            if (value > targetValue) {
+                return true;
+            }
+            return ((Mathf.Abs(value - targetValue) < acceptableRange));
+        }
+
+        /// <summary>
+        ///  Tests if <c>value</c> is &lt;= <c>targetValue</c> within the provided acceptableRange. 
+        ///  Useful in dealing with floating point imprecision.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="targetValue">The targetValue.</param>
+        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
+        /// <returns></returns>
+        public static bool IsLessThanOrEqualTo(this float value, float targetValue, float acceptableRange) {
+            if (value < targetValue) {
+                return true;
+            }
+            return ((Mathf.Abs(value - targetValue) < acceptableRange));
         }
 
         /// <summary>
