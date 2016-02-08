@@ -34,6 +34,13 @@ internal abstract class ANavigator : IDisposable {
 
     protected const float WaypointCastingDistanceSubtractor = Constants.ZeroF;
 
+    /// <summary>
+    /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
+    /// must be used. Logic: If the req'd turn to reach the detour is sharp (above this value), then
+    /// we are either very close or the obstacle is very large so it is time to redirect around the obstacle.
+    /// </summary>
+    protected const float DetourTurnAngleThreshold = 15F;
+
     private static IList<Speed> _inValidAutoPilotSpeeds = new List<Speed>() {
         Speed.None,
         Speed.EmergencyStop,
@@ -212,20 +219,17 @@ internal abstract class ANavigator : IDisposable {
     /// </summary>
     /// <param name="destination">The current destination. May be the Target, waypoint or an obstacle detour.</param>
     /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid detecting any ObstacleZoneCollider around the destination.</param>
-    /// <param name="closeEnoughDistanceToUtilizeMobileObstacleDetours">The distance that is close enough to start utilizing mobile obstacle detours.</param>
-    /// <param name="fleetRadius">The collision clearance reqd by ship or fleet.</param>
     /// <param name="detour">The obstacle detour.</param>
     /// <param name="formationOffset">The formation offset.</param>
     /// <returns>
-    ///   <c>true</c> if an obstacle was found, false if the way is clear.
+    ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
     /// </returns>
-    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, float closeEnoughDistanceToUtilizeMobileObstacleDetours, float fleetRadius, out INavigableTarget detour, Vector3 formationOffset = default(Vector3)) {
+    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, out INavigableTarget detour, Vector3 formationOffset = default(Vector3)) {
         int iterationCount = Constants.Zero;
-        return TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, formationOffset, out detour, ref iterationCount);
+        return TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, formationOffset, out detour, ref iterationCount);
     }
 
-    private bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, float closeEnoughDistanceToUtilizeMobileObstacleDetours, float fleetRadius, Vector3 formationOffset, out INavigableTarget detour, ref int iterationCount) {
-        D.Assert(closeEnoughDistanceToUtilizeMobileObstacleDetours > Constants.ZeroF);
+    private bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, Vector3 formationOffset, out INavigableTarget detour, ref int iterationCount) {
         D.AssertWithException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
         detour = null;
         Vector3 vectorToDestination = (destination.Position + formationOffset) - Position;
@@ -244,21 +248,17 @@ internal abstract class ANavigator : IDisposable {
             var obstacleZoneGo = hitInfo.collider.gameObject;
             var obstacleZoneHitDistance = hitInfo.distance;
             IAvoidableObstacle obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
-            D.Log("{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}, FormationOffset = {6}, CastSubtractor = {7:0.#}, FleetRadius = {8:0.#}.",
-            Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance, formationOffset, castingDistanceSubtractor, fleetRadius);
+            D.Log("{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}, FormationOffset = {6}, CastSubtractor = {7:0.#}.",
+                Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance, formationOffset, castingDistanceSubtractor);
 
-            if (obstacle.IsMobile && obstacleZoneHitDistance > closeEnoughDistanceToUtilizeMobileObstacleDetours) {
-                // obstacle is mobile and too far away to bother generating a detour
-                D.Log("{0} is ignoring obstacle {1} as it is mobile and zone is beyond {2:0.#} units away.", Name, obstacle.FullName, closeEnoughDistanceToUtilizeMobileObstacleDetours);
+            if (!TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detour)) {
                 return false;
             }
 
-            detour = GenerateDetourAroundObstacle(obstacle, hitInfo, fleetRadius, formationOffset);
-
             INavigableTarget newDetour;
             float detourCastingDistanceSubtractor = Constants.ZeroF;  // obstacle detours don't have ObstacleZones
-            if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, formationOffset, out newDetour, ref iterationCount)) {
-                D.Warn("{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
+            if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, formationOffset, out newDetour, ref iterationCount)) {
+                D.Log("{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
                 detour = newDetour;
             }
             return true;
@@ -266,11 +266,20 @@ internal abstract class ANavigator : IDisposable {
         return false;
     }
 
-    private INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius, Vector3 formationOffset) {
+    protected INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius, Vector3 formationOffset) {
         Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius, formationOffset);
         D.Log("{0} has created a detour at {1} to get by {2}.", Name, detourPosition, obstacle.FullName);
         return new StationaryLocation(detourPosition);
     }
+
+    /// <summary>
+    /// Tries to generate a detour around the provided obstacle. Returns <c>true</c> if a detour was generated, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="obstacle">The obstacle.</param>
+    /// <param name="zoneHitInfo">The zone hit information.</param>
+    /// <param name="detour">The detour.</param>
+    /// <returns></returns>
+    protected abstract bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out INavigableTarget detour);
 
     /// <summary>
     /// Refreshes the course.

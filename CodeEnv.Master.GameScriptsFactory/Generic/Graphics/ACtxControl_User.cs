@@ -41,8 +41,8 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     private Stack<CtxMenu> _unusedSubMenus;
 
-    public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, bool toOffsetMenu)
-        : base(ctxObjectGO, uniqueSubmenusReqd, toOffsetMenu) { }
+    public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)
+        : base(ctxObjectGO, uniqueSubmenusReqd, menuPosition) { }
 
     protected override void PopulateMenu_SelectedItemAccess() {
         base.PopulateMenu_SelectedItemAccess();

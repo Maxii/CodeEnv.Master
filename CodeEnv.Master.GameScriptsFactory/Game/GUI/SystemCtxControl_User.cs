@@ -62,7 +62,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     private SettlementCmdItem _settlement;
 
     public SystemCtxControl_User(SystemItem system)
-        : base(system.gameObject, uniqueSubmenusReqd: 1, toOffsetMenu: false) {
+        : base(system.gameObject, uniqueSubmenusReqd: 1, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
         D.Assert(_settlement != null);
@@ -124,7 +124,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // not really needed
         switch (directive) {
             case FleetDirective.Repair:
-                var fleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+                var fleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
                 return fleet.Data.UnitHealth == Constants.OneHundredPercent && fleet.Data.Health == Constants.OneHundredPercent;
             case FleetDirective.Disband:
             case FleetDirective.Refit:
@@ -166,7 +166,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = directive.EqualsAnyOf(FleetDirective.Disband, FleetDirective.Refit, FleetDirective.Repair) ? _settlement as INavigableTarget : _systemMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
@@ -175,7 +175,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _settlement;
-        var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
+        var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 

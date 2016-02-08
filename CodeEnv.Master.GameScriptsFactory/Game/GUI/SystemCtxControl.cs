@@ -40,7 +40,7 @@ public class SystemCtxControl : ACtxControl {
     private SystemItem _systemMenuOperator;
 
     public SystemCtxControl(SystemItem system)
-        : base(system.gameObject, uniqueSubmenusReqd: Constants.One, toOffsetMenu: false) {
+        : base(system.gameObject, uniqueSubmenusReqd: Constants.One, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
     }
 
@@ -76,16 +76,31 @@ public class SystemCtxControl : ACtxControl {
 
     protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
         base.HandleMenuSelection_RemoteFleetAccess(itemID);
+        IssueFleetOrder(itemID);
+    }
 
+    private void IssueFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _systemMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Targeting OrbitalPlane point Archive
+
+    // Approach used to allow "System" target to be any point on the OrbitalPlane
+    //private void IssueFleetOrder(int itemID) {
+    //    var directive = (FleetDirective)_directiveLookup[itemID];
+    //    INavigableTarget target = new StationaryLocation(_lastPressReleasePosition);
+    //    var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+    //    remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
+    //}
+
+    #endregion
 
 }
 

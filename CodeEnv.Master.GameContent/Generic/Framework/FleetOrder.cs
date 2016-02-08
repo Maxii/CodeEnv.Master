@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         public FleetDirective Directive { get; private set; }
 
         public FleetOrder(FleetDirective directive, INavigableTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
-            D.Assert(target == null || !(target is StationaryLocation));    // Fleet targets should never be a StationaryLocation
+            D.Assert(target == null || (!(target is FleetFormationStation) && !(target is IUnitElementItem)));
             Directive = directive;
             Target = target;
             Speed = speed;

@@ -367,6 +367,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
+    /// Gets the sector containing the provided worldPoint.
+    /// Warning: Can be null while debugging as only a limited number of sectors are 'built'
+    /// to reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="worldPoint">The world point.</param>
+    /// <returns></returns>
+    public SectorItem GetSectorContaining(Vector3 worldPoint) {
+        var index = GetSectorIndex(worldPoint);
+        return GetSector(index);
+    }
+
+    /// <summary>
     /// Gets the SpaceTopography value associated with this location in worldspace.
     /// </summary>
     /// <param name="worldLocation">The world location.</param>

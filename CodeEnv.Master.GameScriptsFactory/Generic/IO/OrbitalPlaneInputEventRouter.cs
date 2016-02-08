@@ -62,7 +62,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
     private void InputModePropChangedHandler() {
         var inputMode = _inputMgr.InputMode;
-        if (_spawnOccludedObjectChecksJob != null && _spawnOccludedObjectChecksJob.IsRunning) {
+        //if (IsSpawnOccludedObjectChecksJobRunning) {
             // currently checking for occluded objects while hovering over orbitalPlane
             switch (inputMode) {
                 case GameInputMode.NoInput:
@@ -70,6 +70,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 case GameInputMode.FullPopup:
                     EnableOnHoverCheckingForOccludedObjects(false);
                     break;
+                case GameInputMode.Lobby:
                 case GameInputMode.Normal:
                     // do nothing
                     break;
@@ -77,11 +78,13 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
             }
-        }
+        //}
     }
 
     private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler(Vector2 moveDelta) {
-        //D.Log("{0}.MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler() called.", GetType().Name);
+        if(_inputMgr.InputMode == GameInputMode.PartialPopup) {
+            D.Log("{0}.MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler() called. CurrentTouch = {1}.", Name, UICamera.currentTouch.current.name);
+        }
         CheckForOccludedObjectAndProcessOnHoverNotifications();
     }
 
@@ -104,6 +107,10 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 D.Log("{0} received OnHover(false) while in {1}.{2}.",
                     Name, typeof(GameInputMode).Name, GameInputMode.PartialPopup.GetEnumAttributeText());
                 //EnableOnHoverCheckingForOccludedObjects(false); // kills any spawn Job still operating
+            }
+            else {
+                D.Warn("{0} received OnHover(true) while in {1}.{2}.", 
+                    Name, typeof(GameInputMode).Name, GameInputMode.PartialPopup.GetEnumAttributeText());
             }
             return;
         }
@@ -376,6 +383,9 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
             // C# GOTCHA! You can subscribe to a delegate using a Lambda expression...
             //UICamera.onMouseMove += (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
+            if(UICamera.onMouseMove != null) {
+                D.Warn("{0} erroneously subscribing to UICamera.onMouseMove when already subscribed.", Name);
+            }
             UICamera.onMouseMove += MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler;
         }
         else {
@@ -385,6 +395,9 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             // ... but you CAN'T unsubscribe from a delegate using a Lambda expression! There is no error, it just doesn't work!
             //UICamera.onMouseMove -= (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
             UICamera.onMouseMove -= MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler;
+            if(UICamera.onMouseMove != null) {
+                D.Log("{0}: UICamera.onMouseMove invocation list length = {1}.", Name, UICamera.onMouseMove.GetInvocationList().Length);
+            }
         }
     }
 

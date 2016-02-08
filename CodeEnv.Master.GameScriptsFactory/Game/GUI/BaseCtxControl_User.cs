@@ -63,7 +63,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_User(AUnitBaseCmdItem baseCmd)
-        : base(baseCmd.gameObject, uniqueSubmenusReqd: 1, toOffsetMenu: false) {
+        : base(baseCmd.gameObject, uniqueSubmenusReqd: 1, menuPosition: MenuPositionMode.Over) {
         _baseMenuOperator = baseCmd;
     }
 
@@ -127,7 +127,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // not really needed as base returns false
         switch (directive) {
             case FleetDirective.Repair:
-                var fleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+                var fleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
                 return fleet.Data.UnitHealth == Constants.OneHundredPercent && fleet.Data.Health == Constants.OneHundredPercent;
             case FleetDirective.Disband:
             case FleetDirective.Refit:
@@ -169,7 +169,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
@@ -178,7 +178,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;
-        var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
+        var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 

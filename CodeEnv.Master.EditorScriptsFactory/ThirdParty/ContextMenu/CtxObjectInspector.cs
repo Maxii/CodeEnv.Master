@@ -33,37 +33,46 @@ public class CtxObjectInspector : ACtxMenuItemInspector {
         NGUIEditorTools.RegisterUndo("Context Object Change", _contextObject);
     }
 
-    public override void OnInspectorGUI() {
+    public override void OnInspectorGUI() { // Note: All my context menu setup options are managed by CtxControl scripts
         _contextObject = target as CtxObject;
 
-        EditorGUIUtility.labelWidth = 100f;
+        //EditorGUIUtility.labelWidth = 100f;
 
-        CtxMenu contextMenu = (CtxMenu)EditorGUILayout.ObjectField("Context Menu", _contextObject.contextMenu, typeof(CtxMenu), true);
+        //CtxMenu contextMenu = (CtxMenu)EditorGUILayout.ObjectField("Context Menu", _contextObject.contextMenu, typeof(CtxMenu), true);
 
-        if (_contextObject.contextMenu != contextMenu) {
-            RegisterUndo();
-            _contextObject.contextMenu = contextMenu;
-        }
+        //if (_contextObject.contextMenu != contextMenu) {
+        //    RegisterUndo();
+        //    _contextObject.contextMenu = contextMenu;
+        //}
 
-        bool toOffsetMenu = EditorGUILayout.Toggle("Offset Menu", _contextObject.toOffsetMenu);
-        if (_contextObject.toOffsetMenu != toOffsetMenu) {
-            RegisterUndo();
-            _contextObject.toOffsetMenu = toOffsetMenu;
-        }
+        //bool toPositionMenuAtCursor = EditorGUILayout.Toggle("Cursor Menu", _contextObject.toPositionMenuAtCursor);
+        //if(_contextObject.toPositionMenuAtCursor != toPositionMenuAtCursor) {
+        //    RegisterUndo();
+        //    _contextObject.toPositionMenuAtCursor = toPositionMenuAtCursor;
+        //}
 
-        NGUIEditorTools.DrawEvents("On Selection", _contextObject, _contextObject.onSelection);
-        NGUIEditorTools.DrawEvents("On Show", _contextObject, _contextObject.onShow);
-        NGUIEditorTools.DrawEvents("On Hide", _contextObject, _contextObject.onHide);
+        //if(!toPositionMenuAtCursor) {
+        //    bool toOffsetMenu = EditorGUILayout.Toggle("Offset Menu", _contextObject.toOffsetMenu);
+        //    if (_contextObject.toOffsetMenu != toOffsetMenu) {
+        //        RegisterUndo();
+        //        _contextObject.toOffsetMenu = toOffsetMenu;
+        //    }
+        //}
 
-        if (_contextObject.contextMenu != null) {
-            EditMenuItemList(ref _contextObject.menuItems, _contextObject.contextMenu.atlas, true, ref _contextObject.isEditingItems);
-        }
-        else {
-            EditorGUILayout.HelpBox("You need to reference a context menu for this component to work properly.", MessageType.Warning);
-        }
 
-        if (GUI.changed) {
-            EditorUtility.SetDirty(target);
-        }
+        //NGUIEditorTools.DrawEvents("On Selection", _contextObject, _contextObject.onSelection);
+        //NGUIEditorTools.DrawEvents("On Show", _contextObject, _contextObject.onShow);
+        //NGUIEditorTools.DrawEvents("On Hide", _contextObject, _contextObject.onHide);
+
+        //if (_contextObject.contextMenu != null) {
+        //    EditMenuItemList(ref _contextObject.menuItems, _contextObject.contextMenu.atlas, true, ref _contextObject.isEditingItems);
+        //}
+        //else {
+        //    EditorGUILayout.HelpBox("You need to reference a context menu for this component to work properly.", MessageType.Warning);
+        //}
+
+        //if (GUI.changed) {
+        //    EditorUtility.SetDirty(target);
+        //}
     }
 }

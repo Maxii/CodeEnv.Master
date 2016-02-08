@@ -35,10 +35,13 @@ public class MovingOrbitSimulator : OrbitSimulator {
     /// to simulate the orbit of anything attached around the object orbited.
     /// </summary>
     /// <param name="deltaTimeSinceLastUpdate">The delta time (zero if paused) since last update.</param>
-    protected override void UpdateOrbit(float deltaTimeSinceLastUpdate) {
+    protected sealed override void UpdateOrbit(float deltaTimeSinceLastUpdate) {
         float angleStep = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
         transform.RotateAround(transform.position, axisOfOrbit, angleStep);
+        UpdateOther();
     }
+
+    protected virtual void UpdateOther() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

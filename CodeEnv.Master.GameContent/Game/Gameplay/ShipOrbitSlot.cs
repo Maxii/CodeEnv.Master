@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrbitSlot : AOrbitSlot {
 
+        private const float TravelDirectionAlignmentThreshold = 0.33F;
+
         public IShipOrbitable OrbitedObject { get; private set; }
 
         private IShipOrbitSimulator _orbitSimulator;
@@ -63,13 +65,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ship">The ship.</param>
         /// <returns></returns>
         public IShipOrbitSimulator PrepareToAssumeOrbit(IShipItem ship) {
-            if (_orbitSimulator == null) {
-                D.Assert(_orbitingShips.Count == Constants.Zero);
-                GameObject orbitedObjectGo = OrbitedObject.transform.gameObject;
-                _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbitSimulator") as IShipOrbitSimulator;
-            }
+            D.Assert(_orbitSimulator != null);  // if null, then CheckPositionForOrbit wasn't used
             _orbitingShips.Add(ship);
-            _orbitSimulator.IsActivelyOrbiting = true;
             D.Log("{0} is preparing to assume orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
@@ -93,32 +90,81 @@ namespace CodeEnv.Master.GameContent {
                     ship.FullName, OrbitedObject.FullName, shipOrbitRadius, this);
             }
             if (_orbitingShips.Count == Constants.Zero) {
-                _orbitSimulator.IsActivelyOrbiting = false;
                 D.Log("Destroying {0}'s {1}.", OrbitedObject.FullName, typeof(IOrbitSimulator).Name);
-                GameObject.Destroy(_orbitSimulator.transform.gameObject);
+                UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IShipOrbitSimulator>(_orbitSimulator);
                 _orbitSimulator = null;
                 // IMPROVE could also keep it around for future uses as rigidbody.isKinematic = true so not using up physics engine cycles
             }
         }
 
         /// <summary>
-        /// Checks the position of the ship relative to the orbit slot. Returns <c>true</c> if within the orbit slot
-        /// and false if not. <c>distanceToMeanRadiusOrbit</c> is a signed value indicating how far away the
-        /// ship is from the orbit's mean radius. A negative value indicates that the ship is inside the mean, 
-        /// positive outside.
+        /// Tries to get approach direction and speed. Returns <c>true</c> if an approach was calculated and returned,
+        /// <c>false</c> if no approach is possible as the ship is already within the orbit slot.
         /// </summary>
         /// <param name="ship">The ship.</param>
-        /// <param name="distanceToOrbit">A signed value indicating how far away the
-        /// ship is from the orbit's mean radius. A negative value indicates that the ship is inside the mean, positive outside.</param>
+        /// <param name="approachDirection">The approach direction.</param>
+        /// <param name="approachSpeed">The approach speed.</param>
         /// <returns></returns>
-        public bool CheckPositionForOrbit(IShipItem ship, out float distanceToOrbit) {
-            float shipDistance = Vector3.Distance(ship.Position, OrbitedObject.Position);
-            distanceToOrbit = shipDistance - MeanRadius;
-            if (Contains(shipDistance)) {
-                return true;
+        public bool TryGetApproach(IShipItem ship, out Vector3 approachDirection, out Speed approachSpeed) {
+            if (_orbitSimulator == null) {
+                D.Assert(_orbitingShips.Count == Constants.Zero);
+                GameObject orbitedObjectGo = OrbitedObject.transform.gameObject;
+                _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(orbitedObjectGo, IsOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbitSimulator") as IShipOrbitSimulator;
+                _orbitSimulator.IsActivelyOrbiting = true;
             }
-            D.Log("{0}'s distance {1:0.#} from {2} is not within {2}'s {3}.", ship.FullName, shipDistance, OrbitedObject.FullName, this);
-            return false;
+
+            float shipDistanceToOrbitedObject;
+            if(CheckPositionForOrbit(ship, out shipDistanceToOrbitedObject)) {
+                approachDirection = Vector3.zero;
+                approachSpeed = Speed.None;
+                return false;
+            }
+
+            Vector3 directionToOrbitedObject = (OrbitedObject.Position - ship.Position).normalized;
+            float distanceToOrbitSlotMean = shipDistanceToOrbitedObject - MeanRadius;
+            approachDirection = distanceToOrbitSlotMean > Constants.ZeroF ? directionToOrbitedObject : -directionToOrbitedObject;
+            approachSpeed = Speed.StationaryOrbit;
+            var movingShipOrbitSimulator = _orbitSimulator as IMovingShipOrbitSimulator;
+            if (movingShipOrbitSimulator != null) {
+                Vector3 orbitSlotTravelDirection = movingShipOrbitSimulator.DirectionOfTravel;
+                var directionAlignment = Vector3.Dot(approachDirection, orbitSlotTravelDirection);   // 1 = same, -1 = opposite, 0 = orthoganol
+                if (directionAlignment < Constants.ZeroF) {
+                    // orbitSlot is moving towards the ship
+                    approachSpeed = Speed.StationaryOrbit;
+                }
+                else if (directionAlignment < TravelDirectionAlignmentThreshold) {
+                    // orbitSlot moving orthogonal to or partially away from the ship
+                    approachSpeed = Speed.MovingOrbit;
+                }
+                else {
+                    // orbitSlot moving mostly away from the ship
+                    approachSpeed = Speed.Slow;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Checks the ship's position to see if it is within the OrbitSlot. Returns <c>true</c> if the ship
+        /// has arrived within the orbit slot, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="ship">The ship.</param>
+        /// <returns></returns>
+        public bool CheckPositionForOrbit(IShipItem ship) {
+            float unused;
+            return CheckPositionForOrbit(ship, out unused);
+        }
+
+        /// <summary>
+        /// Checks the ship's position to see if it is within the OrbitSlot. Returns <c>true</c> if the ship
+        /// has arrived within the orbit slot, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="ship">The ship.</param>
+        /// <param name="shipDistanceToOrbitedObject">The ship distance to orbited object. Always valid.</param>
+        /// <returns></returns>
+        private bool CheckPositionForOrbit(IShipItem ship, out float shipDistanceToOrbitedObject) {
+            shipDistanceToOrbitedObject = Vector3.Distance(ship.Position, OrbitedObject.Position);
+            return Contains(shipDistanceToOrbitedObject);
         }
 
         public override string ToString() {

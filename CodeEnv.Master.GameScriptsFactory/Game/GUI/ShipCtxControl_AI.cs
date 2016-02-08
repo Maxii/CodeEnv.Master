@@ -29,7 +29,7 @@ public class ShipCtxControl_AI : ACtxControl {
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_AI(ShipItem ship)
-        : base(ship.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
+        : base(ship.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _shipMenuOperator = ship;
     }
 

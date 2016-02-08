@@ -40,7 +40,7 @@ public class UniverseCenterCtxControl : ACtxControl {
     private UniverseCenterItem _universeCenterMenuOperator;
 
     public UniverseCenterCtxControl(UniverseCenterItem universeCenter)
-        : base(universeCenter.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
+        : base(universeCenter.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _universeCenterMenuOperator = universeCenter;
     }
 
@@ -77,7 +77,7 @@ public class UniverseCenterCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _universeCenterMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

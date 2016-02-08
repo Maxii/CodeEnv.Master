@@ -30,7 +30,7 @@ public class FacilityCtxControl : ACtxControl {
     private FacilityItem _facilityMenuOperator;
 
     public FacilityCtxControl(FacilityItem facility)
-        : base(facility.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
+        : base(facility.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _facilityMenuOperator = facility;
     }
 

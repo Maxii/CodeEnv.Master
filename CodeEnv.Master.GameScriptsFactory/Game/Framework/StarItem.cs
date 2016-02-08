@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -45,6 +46,8 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public ISystemItem System { get; private set; }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
+
+    public IList<StationaryLocation> PatrolPoints { get { return System.PatrolPoints; } }
 
     private DetectionHandler _detectionHandler;
     private SphereCollider _primaryCollider;

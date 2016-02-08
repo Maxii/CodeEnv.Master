@@ -28,16 +28,16 @@ namespace CodeEnv.Master.GameContent {
         Transform transform { get; }
 
         /// <summary>
+        /// Flag indicating whether the IOrbitSimulator is actively orbiting around its orbited object.
+        /// </summary>
+        bool IsActivelyOrbiting { get; set; }
+
+        /// <summary>
         /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling.
         /// </summary>
         /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
         /// <returns></returns>
         float GetRelativeOrbitSpeed(float radius);
-
-        /// <summary>
-        /// Flag indicating whether the IOrbitSimulator is actively orbiting around its orbited object.
-        /// </summary>
-        bool IsActivelyOrbiting { get; set; }
 
     }
 }

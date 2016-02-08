@@ -46,19 +46,22 @@ namespace CodeEnv.Master.GameContent {
         Docking,
 
         /// <summary>
-        /// A constant speed value suitable for inserting the ship into orbit around a stationary object.
+        /// A constant speed value suitable for inserting the ship into orbit around a stationary object
+        /// or a moving object that is moving towards the ship.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
         StationaryOrbit,
 
         /// <summary>
-        /// A constant speed value suitable for inserting the ship into orbit around a moving object.
+        /// A constant speed value suitable for inserting the ship into orbit around a moving object that is
+        /// moving orthogonal to or partially away from the ship.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
         MovingOrbit,
 
         /// <summary>
-        /// A constant speed value suitable for movement between local destinations.
+        /// A constant speed value suitable for movement between local destinations. Also used to insert
+        /// the ship into orbit around a moving object that is moving mostly away from the ship.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
         Slow,

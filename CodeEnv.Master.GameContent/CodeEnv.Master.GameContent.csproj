@@ -323,6 +323,7 @@
     <Compile Include="Generic\Framework\IAvoidableObstacle.cs" />
     <Compile Include="Generic\Framework\IFormationMgrClient.cs" />
     <Compile Include="Generic\Framework\IObstacle.cs" />
+    <Compile Include="Generic\Framework\IMovingShipOrbitSimulator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

@@ -67,6 +67,16 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
+    private IList<StationaryLocation> _patrolPoints;
+    public IList<StationaryLocation> PatrolPoints {
+        get {
+            if(_patrolPoints == null) {
+                _patrolPoints = InitializePatrolPoints();
+            }
+            return _patrolPoints;
+        }
+    }
+
     private ITrackingWidget _trackingLabel;
     private MeshCollider _orbitalPlaneCollider;
 
@@ -176,6 +186,16 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
         D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         AssessIsDiscernibleToUser();
         D.Assert(_hasInitOnFirstDiscernibleToUserRun);
+    }
+
+    private IList<StationaryLocation> InitializePatrolPoints() {
+        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
+        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
+        var patrolPoints = new List<StationaryLocation>(8);
+        foreach(Vector3 point in points) {
+            patrolPoints.Add(new StationaryLocation(point));
+        }
+        return patrolPoints;
     }
 
     private void ShowTrackingLabel(bool toShow) {

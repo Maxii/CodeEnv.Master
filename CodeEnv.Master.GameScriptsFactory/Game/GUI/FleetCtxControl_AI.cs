@@ -46,7 +46,7 @@ public class FleetCtxControl_AI : ACtxControl {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_AI(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: false) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
     }
 
@@ -75,10 +75,10 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_fleetMenuOperator.Owner);
+                return !_remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_fleetMenuOperator.Owner);
             case FleetDirective.Move:
             case FleetDirective.Guard:
-                return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_fleetMenuOperator.Owner);
+                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_fleetMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -87,7 +87,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsRemoteBaseMenuItemDisabled(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Attack:
-                return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_fleetMenuOperator.Owner);
+                return !_remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_fleetMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -102,7 +102,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _fleetMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
@@ -111,7 +111,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         IUnitAttackableTarget target = _fleetMenuOperator;
-        var remoteBase = _remotePlayerOwnedSelectedItem as AUnitBaseCmdItem;
+        var remoteBase = _remoteUserOwnedSelectedItem as AUnitBaseCmdItem;
         remoteBase.CurrentOrder = new BaseOrder(directive, target);
     }
 

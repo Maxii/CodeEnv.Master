@@ -86,7 +86,6 @@ namespace CodeEnv.Master.GameContent {
 
         public string FullName { get { return string.Format("{0}[{1}]", GetType().Name, Position); } }
 
-        // OPTIMIZE consider letting this be settable so navigator's don't have to create a new one every time
         public Vector3 Position { get; private set; }
 
         public bool IsMobile { get { return false; } }

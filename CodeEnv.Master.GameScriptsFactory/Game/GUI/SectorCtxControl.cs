@@ -42,7 +42,7 @@ public class SectorCtxControl : ACtxControl {
     private SectorItem _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
-        : base(sectorExaminer.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
+        : base(sectorExaminer.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _sectorExaminerMenuOperator = sectorExaminer;
     }
 
@@ -66,11 +66,11 @@ public class SectorCtxControl : ACtxControl {
             case FleetDirective.Patrol:
                 return false;
             case FleetDirective.Explore:
-                return true; // IMPROVE _sectorItem.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+                return false; // IMPROVE _sectorItem.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
                 return false;
             case FleetDirective.Guard:
-                return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_sector.Owner);
+                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_sector.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -85,7 +85,7 @@ public class SectorCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _sector;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

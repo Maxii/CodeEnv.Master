@@ -35,6 +35,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float UnitMaxFormationRadius { get; set; }
 
+        /// <summary>
+        /// The radius of the Command, aka the radius of the HQElement.
+        /// </summary>
         public float Radius { get { return HQElementData.HullDimensions.magnitude / 2F; } }
 
         public new CameraUnitCmdStat CameraStat { get { return base.CameraStat as CameraUnitCmdStat; } }

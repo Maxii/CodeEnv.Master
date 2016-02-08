@@ -279,43 +279,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     private void CurrentOrderPropChangedHandler() {
-        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
-            Return();
-        }
-
-        if (CurrentOrder != null) {
-            Data.Target = CurrentOrder.Target;  // can be null
-
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
-            FleetDirective order = CurrentOrder.Directive;
-            switch (order) {
-                case FleetDirective.Attack:
-                    CurrentState = FleetState.ExecuteAttackOrder;
-                    break;
-                case FleetDirective.Join:
-                    CurrentState = FleetState.ExecuteJoinFleetOrder;
-                    break;
-                case FleetDirective.Move:
-                    CurrentState = FleetState.ExecuteMoveOrder;
-                    break;
-                case FleetDirective.Scuttle:
-                    KillUnit();
-                    break;
-                case FleetDirective.Explore:
-                case FleetDirective.StopAttack:
-                case FleetDirective.Disband:
-                case FleetDirective.Guard:
-                case FleetDirective.Patrol:
-                case FleetDirective.Refit:
-                case FleetDirective.Repair:
-                case FleetDirective.Retreat:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetValueName());
-                    break;
-                case FleetDirective.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
+        ProcessOrder();
     }
 
     private void FullSpeedPropChangedHandler() {
@@ -333,6 +297,50 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     #endregion
+
+    private void ProcessOrder() {
+        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
+            Return();
+        }
+
+        if (CurrentOrder != null) {
+            Data.Target = CurrentOrder.Target;  // can be null
+
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            FleetDirective order = CurrentOrder.Directive;
+            switch (order) {
+                case FleetDirective.Move:
+                    CurrentState = FleetState.ExecuteMoveOrder;
+                    break;
+                case FleetDirective.Attack:
+                    CurrentState = FleetState.ExecuteAttackOrder;
+                    break;
+                case FleetDirective.Guard:
+                    CurrentState = FleetState.ExecuteGuardOrder;
+                    break;
+                case FleetDirective.Patrol:
+                    CurrentState = FleetState.ExecutePatrolOrder;
+                    break;
+                case FleetDirective.Join:
+                    CurrentState = FleetState.ExecuteJoinFleetOrder;
+                    break;
+                case FleetDirective.Scuttle:
+                    KillUnit();
+                    break;
+                case FleetDirective.Explore:
+                case FleetDirective.StopAttack:
+                case FleetDirective.Disband:
+                case FleetDirective.Refit:
+                case FleetDirective.Repair:
+                case FleetDirective.Retreat:
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetValueName());
+                    break;
+                case FleetDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+        }
+    }
 
     #region StateMachine
 
@@ -379,12 +387,40 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        //D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
-        _moveTarget = CurrentOrder.Target;
+        //D.Log("{0}.ExecuteMoveOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+
+        var orderTgt = CurrentOrder.Target;
+        var systemTarget = orderTgt as SystemItem;
+        if (systemTarget != null) {
+            // move target is a system
+            if (Topography == Topography.System) {
+                // fleet is currently in a system
+                var fleetSystem = SectorGrid.Instance.GetSectorContaining(Position).System;
+                if (fleetSystem == systemTarget) {
+                    // move target of a system from inside the same system is the closest patrol point within that system
+                    _moveTarget = GetClosestPatrolPoint(systemTarget.PatrolPoints);
+                }
+            }
+        }
+        else {
+            var sectorTarget = orderTgt as SectorItem;
+            if (sectorTarget != null) {
+                // target is a sector
+                var fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
+                if (fleetSector == sectorTarget) {
+                    // move target of a sector from inside the same sector is the closest patrol point with that sector
+                    _moveTarget = GetClosestPatrolPoint(sectorTarget.PatrolPoints);
+                }
+            }
+        }
+        if (_moveTarget == null) {
+            _moveTarget = orderTgt;
+        }
+
         _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here - move error or not, we idle
+        // Return()s here
 
         if (_isDestinationUnreachable) {
             //TODO how to handle move errors?
@@ -455,6 +491,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             mortalMoveTarget.deathOneShot -= TargetDeathEventHandler;
         }
         _moveTarget = null;
+        _moveSpeed = Speed.None;
         _navigator.DisengageAutoPilot();
     }
 
@@ -468,19 +505,106 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #endregion
 
-    #region Patrol
+    #region ExecutePatrolOrder
 
-    void GoPatrol_EnterState() { }
+    IEnumerator ExecutePatrolOrder_EnterState() {
+        D.Log("{0}.ExecutePatrolOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        var orderTgt = CurrentOrder.Target;
+        var systemTarget = orderTgt as SystemItem;
+        if (systemTarget != null) {
+            // patrol target of a system is the closest patrol point within the system
+            _moveTarget = GetClosestPatrolPoint(systemTarget.PatrolPoints);
+        }
+        else {
+            var sectorTarget = orderTgt as SectorItem;
+            if (sectorTarget != null) {
+                // patrol target of a sector is the closest patrol point within the sector
+                _moveTarget = GetClosestPatrolPoint(sectorTarget.PatrolPoints);
+            }
+        }
+        if (_moveTarget == null) {
+            _moveTarget = orderTgt;
+        }
 
-    void Patrolling_EnterState() { }
+        _moveSpeed = CurrentOrder.Speed;
+        Call(FleetState.Moving);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+        // Return()s here
+
+        if (_isDestinationUnreachable) {
+            //TODO how to handle move errors?
+            D.Error("{0} move order to {1} is unreachable.", FullName, CurrentOrder.Target.FullName);
+            CurrentState = FleetState.Idling;
+        }
+
+
+        yield return null;
+    }
+
+    void ExecutePatrolOrder_ExitState() {
+        _isDestinationUnreachable = false;
+    }
 
     #endregion
 
-    #region Guard
+    #region Patrolling
 
-    void GoGuard_EnterState() { }
+    void Patrolling_EnterState() { }
 
-    void Guarding_EnterState() { }
+    void Patrolling_ExitState() { }
+
+    #endregion
+
+    #region ExecuteGuardOrder
+
+    IEnumerator ExecuteGuardOrder_EnterState() {
+        D.Log("{0}.ExecuteGuardOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        var orderTgt = CurrentOrder.Target;
+        var systemTarget = orderTgt as SystemItem;
+        if (systemTarget != null) {
+            // guard target of a system is the closest patrol point within the system
+            _moveTarget = GetClosestPatrolPoint(systemTarget.PatrolPoints);
+        }
+        else {
+            var sectorTarget = orderTgt as SectorItem;
+            if (sectorTarget != null) {
+                // guard target of a sector is the closest patrol point within the sector
+                _moveTarget = GetClosestPatrolPoint(sectorTarget.PatrolPoints);
+            }
+        }
+        if (_moveTarget == null) {
+            _moveTarget = orderTgt;
+        }
+
+        _moveSpeed = CurrentOrder.Speed;
+        Call(FleetState.Moving);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+        // Return()s here
+
+        if (_isDestinationUnreachable) {
+            CurrentState = FleetState.Idling;
+            yield break;
+        }
+
+        CurrentState = FleetState.Guarding;
+    }
+
+    void ExecuteGuardOrder_ExitState() {
+        _isDestinationUnreachable = false;
+    }
+
+    #endregion
+
+    #region Guarding
+
+    void Guarding_EnterState() {
+        LogEvent();
+        // TODO needs to detect enemy with own sensors
+    }
+
+    void Guarding_ExitState() {
+
+    }
 
     #endregion
 
@@ -498,6 +622,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         _moveSpeed = Speed.FleetFull;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
+        // Return()s here
+
         if (_isDestinationUnreachable) {
             CurrentState = FleetState.Idling;
             yield break;
@@ -510,11 +636,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         Call(FleetState.Attacking);
         yield return null;  // required immediately after Call() to avoid FSM bug
+        // Return()s here
         CurrentState = FleetState.Idling;
     }
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
+        _moveTarget = null;
+        _moveSpeed = Speed.None;
         _isDestinationUnreachable = false;
     }
 
@@ -648,6 +777,40 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // the final waypoint is not close enough and we can't directly approach the Destination
         RelayToCurrentState();
     }
+
+    private StationaryLocation GetClosestPatrolPoint(IList<StationaryLocation> patrolPoints) {
+        return patrolPoints.MinBy(pp => Vector3.SqrMagnitude(pp.Position - Position));
+    }
+
+    /// <summary>
+    /// Determines the appropriate move target from the provided orderTarget;
+    /// <remarks>System or Sector targets can have multiple move destinations depending on circumstances. </remarks>
+    /// </summary>
+    /// <param name="orderTarget">The order target.</param>
+    /// <returns></returns>
+    //private INavigableTarget DetermineMoveTarget(INavigableTarget orderTarget) {
+    //    var systemTarget = orderTarget as SystemItem;
+    //    if (systemTarget != null) {
+    //        // target is a system
+    //        if (Topography == Topography.System) {
+    //            // fleet is currently in a system
+    //            var fleetSystem = SectorGrid.Instance.GetSectorContaining(Position).System;
+    //            if (fleetSystem == systemTarget) {
+    //                // system fleet is currently in is also the target so move to a patrol point in the system
+    //                return GetClosestPatrolPoint(systemTarget.PatrolPoints);
+    //            }
+    //        }
+    //    }
+    //    var sectorTarget = orderTarget as SectorItem;
+    //    if (sectorTarget != null) {
+    //        // target is a sector
+    //        var fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
+    //        if (fleetSector == sectorTarget) {
+    //            return GetClosestPatrolPoint(sectorTarget.PatrolPoints);
+    //        }
+    //    }
+    //    return orderTarget;
+    //}
 
     #endregion
 
@@ -803,7 +966,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed to travel at.</param>
         internal void PlotCourse(INavigableTarget target, Speed speed) {
-            D.Assert(!(target is StationaryLocation) && !(target is MovingLocation) && !(target is FleetFormationStation) && !(target is AUnitElementItem));
+            D.Assert(!(target is FleetFormationStation) && !(target is AUnitElementItem));
             RecordAutoPilotCourseValues(target, speed, OrderSource.UnitCommand);
             ResetCourseReplotValues();
             GenerateCourse();
@@ -846,25 +1009,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
             // ***************************************************************************************************************************
             // The following initial Obstacle Check has been extracted from the PilotNavigationJob to accommodate a Fleet Move Cmd issued 
-            // via ContextMenu while Paused. It uses a dummy deltaTime to calc when to utilize a detour around a mobile obstacle, 
-            // starts the Job and then immediately pauses it. This test for an obstacle prior to the Job starting allows the 
-            // Course plot display to show the detour around the obstacle (if one is found) rather than show a course plot into an obstacle.
+            // via ContextMenu while Paused. It starts the Job and then immediately pauses it. This test for an obstacle prior to the Job 
+            // starting allows the Course plot display to show the detour around the obstacle (if one is found) rather than show a 
+            // course plot into an obstacle.
             // ***************************************************************************************************************************
-            float deltaTime = _gameTime.DeltaTimeOrPaused;
-            if (_gameMgr.IsPaused) {
-                deltaTime = 1F / 25F;   // HACK deltaTime for 25 FPS
-            }
-
-            float maxDistanceTraveledBeforeNextCheck = deltaTime * TravelSpeed.GetUnitsPerHour(_fleet.Data) * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
-            float fleetRadius = _fleet.Data.UnitMaxFormationRadius;
             INavigableTarget detour;
-            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
+            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour)) {
                 // but there is an obstacle, so add a waypoint
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
             }
 
-            _pilotNavigationJob = new Job(EngageCourse(fleetRadius), toStart: true, jobCompleted: (wasKilled) => {
+            _pilotNavigationJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
                 if (!wasKilled) {
                     HandleDestinationReached();
                 }
@@ -884,7 +1039,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// entry and exit points. This coroutine will add obstacle detours as waypoints as it encounters them.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator EngageCourse(float fleetRadius) {
+        private IEnumerator EngageCourse() {
             //D.Log("{0}.EngageCourse() has begun.", _fleet.FullName);
             int targetDestinationIndex = Course.Count - 1;
             D.Assert(_currentWaypointIndex == 1);  // already set prior to the start of the Job
@@ -912,18 +1067,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     D.Log("{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
                         _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, Course[_currentWaypointIndex].FullName);
 
-                    float maxDistanceTraveledBeforeNextCheck = _gameTime.DeltaTimeOrPaused * TravelSpeed.GetUnitsPerHour(_fleet.Data) * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                    float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
-
-
                     currentWaypoint = Course[_currentWaypointIndex];
-                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour)) {
+                    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour)) {
                         // there is an obstacle enroute to the next waypoint, so use the detour provided instead
                         RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                         currentWaypoint = detour;
                         targetDestinationIndex = Course.Count - 1;
                         castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
-                        // IMPROVE validate that the detour provided does not itself leave us with another obstacle to encounter
                     }
                     _fleet.__IssueShipMovementOrders(currentWaypoint, TravelSpeed);
                 }
@@ -1020,10 +1170,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         #endregion
 
-        private void HandleCourseChanged() {
-            _fleet.AssessShowCoursePlot();
-        }
-
         #region Event and Property Change Handlers
 
         private void FlagshipReachedDestinationHandler(object sender, EventArgs e) {
@@ -1062,6 +1208,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
         }
 
+        private void HandleCourseChanged() {
+            _fleet.AssessShowCoursePlot();
+        }
+
         private void HandleCoursePlotFailure() {
             if (_isCourseReplot) {
                 D.Warn("{0}'s course to {1} couldn't be replotted.", Name, Target.FullName);
@@ -1083,6 +1233,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             base.HandleDestinationUnreachable();
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
             _fleet.UponDestinationUnreachable();
+        }
+
+        protected override bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out INavigableTarget detour) {
+            detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _fleet.Data.UnitMaxFormationRadius, Vector3.zero);
+            if (obstacle.IsMobile) {
+                Vector3 detourBearing = (detour.Position - Position).normalized;
+                float reqdTurnAngleToDetour = Vector3.Angle(_fleet.Data.CurrentHeading, detourBearing);
+                if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
+                    // Note: can't use a distance check here as Fleets don't check for obstacles based on time.
+                    // They only check when embarking on a new course leg
+                    D.Log("{0} has declined to generate a detour around mobile obstacle {1}. Reqd Turn = {2:0.#} degrees.", Name, obstacle.FullName, reqdTurnAngleToDetour);
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -1432,15 +1597,20 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// </summary>
         Moving,
 
-        GoPatrol,
+        /// <summary>
+        /// State that executes the FleetOrder Patrol which encompasses Moving and Patrolling.
+        /// </summary>
+        ExecutePatrolOrder,
         Patrolling,
 
-        GoGuard,
+        /// <summary>
+        /// State that executes the FleetOrder Guard which encompasses Moving and Guarding.
+        /// </summary>
+        ExecuteGuardOrder,
         Guarding,
 
         /// <summary>
-        /// State that executes the FleetOrder Attack which encompasses Moving
-        /// and Attacking.
+        /// State that executes the FleetOrder Attack which encompasses Moving and Attacking.
         /// </summary>
         ExecuteAttackOrder,
         Attacking,

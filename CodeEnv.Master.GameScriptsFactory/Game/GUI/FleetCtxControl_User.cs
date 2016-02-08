@@ -60,7 +60,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 4, toOffsetMenu: false) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 4, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
     }
 
@@ -161,7 +161,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _fleetMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 
@@ -170,7 +170,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
         var directive = (ShipDirective)_directiveLookup[itemID];
         INavigableTarget target = _fleetMenuOperator;
-        var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
+        var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
     }
 

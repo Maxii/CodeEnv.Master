@@ -17,8 +17,10 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Class for AItems that are Sectors.
@@ -53,6 +55,16 @@ public class SectorItem : AItem, ISectorItem {
 
     public override float Radius { get { return TempGameValues.SectorSideLength / 2F; } }   // the radius of the sphere inscribed inside a sector box
 
+    private IList<StationaryLocation> _patrolPoints;
+    public IList<StationaryLocation> PatrolPoints {
+        get {
+            if (_patrolPoints == null) {
+                _patrolPoints = InitializePatrolPoints();
+            }
+            return _patrolPoints;
+        }
+    }
+
     #region Initialization
 
     protected override void InitializeOnData() {
@@ -66,9 +78,23 @@ public class SectorItem : AItem, ISectorItem {
 
     public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+    #region Event and Property Change Handlers
+
     private void SystemPropChangedHandler() {
         Data.SystemData = System.Data;
         // The owner of a sector and all it's celestial objects is determined by the ownership of the System, if any
+    }
+
+    #endregion
+
+    private IList<StationaryLocation> InitializePatrolPoints() {
+        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
+        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
+        var patrolPoints = new List<StationaryLocation>(8);
+        foreach (Vector3 point in points) {
+            patrolPoints.Add(new StationaryLocation(point));
+        }
+        return patrolPoints;
     }
 
     #region Cleanup

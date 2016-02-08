@@ -41,7 +41,7 @@ public class PlanetoidCtxControl : ACtxControl {
     private APlanetoidItem _planetoidMenuOperator;
 
     public PlanetoidCtxControl(APlanetoidItem planetoid)
-        : base(planetoid.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
+        : base(planetoid.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _planetoidMenuOperator = planetoid;
     }
 
@@ -61,13 +61,13 @@ public class PlanetoidCtxControl : ACtxControl {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
+                return !_remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
             case FleetDirective.Explore:
                 return _planetoidMenuOperator.GetUserIntelCoverage() == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
                 return false;
             case FleetDirective.Guard:
-                return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
+                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -82,7 +82,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _planetoidMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

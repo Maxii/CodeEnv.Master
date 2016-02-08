@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Depth { get; private set; }
 
-        protected bool _isOrbitedObjectMobile;
+        public bool IsOrbitedObjectMobile { get; private set; }
 
         protected GameTimeDuration _orbitPeriod;
 
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
             OuterRadius = outerRadius;
             MeanRadius = innerRadius + (outerRadius - innerRadius) / 2F;
             Depth = outerRadius - innerRadius;
-            _isOrbitedObjectMobile = isOrbitedObjectMobile;
+            IsOrbitedObjectMobile = isOrbitedObjectMobile;
             _orbitPeriod = orbitPeriod;
         }
 

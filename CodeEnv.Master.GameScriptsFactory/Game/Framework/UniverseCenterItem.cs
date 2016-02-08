@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -36,6 +37,16 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     private UniverseCenterPublisher _publisher;
     public UniverseCenterPublisher Publisher {
         get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data, this); }
+    }
+
+    private IList<StationaryLocation> _patrolPoints;
+    public IList<StationaryLocation> PatrolPoints {
+        get {
+            if (_patrolPoints = null) {
+                _patrolPoints = InitializePatrolPoints();
+            }
+            return _patrolPoints;
+        }
     }
 
     private DetectionHandler _detectionHandler;
@@ -115,6 +126,17 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     #endregion
+
+    private IList<StationaryLocation> InitializePatrolPoints() {
+        float radiusOfSphereContainingPatrolPoints = Data.HighOrbitRadius * 2F;
+        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
+        var patrolPoints = new List<StationaryLocation>(8);
+        foreach (Vector3 point in points) {
+            patrolPoints.Add(new StationaryLocation(point));
+        }
+        return patrolPoints;
+    }
+
 
     #region Cleanup
 

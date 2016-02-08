@@ -97,7 +97,19 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// <summary>
     /// The user-owned Item that is selected and remotely accessing this Menu.
     /// </summary>
-    protected ADiscernibleItem _remotePlayerOwnedSelectedItem;
+    protected ADiscernibleItem _remoteUserOwnedSelectedItem;
+
+    /// <summary>
+    /// The last press release position in world space. Acquired from UICamera,
+    /// indicates where the user was pointing just prior to when the 
+    /// context menu starts coming up. Only recorded if the context menu actually
+    /// is going to show. Useful in conjunction with CtxObject.toPositionMenuAtCursor
+    /// as this indicates where in world space the user was pointing to when they
+    /// brought up the menu to give an order. Was used by SystemCtxControl to issue
+    /// a Fleet move order to a point on the OrbitalPlane, but abandoned as most points
+    /// on the orbital plane are going to be overrun by orbiting planets.
+    /// </summary>
+    protected Vector3 _lastPressReleasePosition;
     protected CtxObject _ctxObject;
     private int _optimalFocusDistanceItemID;
     private int _uniqueSubmenusReqd;
@@ -109,18 +121,35 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     /// <param name="ctxObjectGO">The gameObject where the desired CtxObject is located.</param>
     /// <param name="uniqueSubmenusReqd">The number of unique submenus reqd by this CtxControl.</param>
-    /// <param name="toOffsetMenu">if set to <c>true</c> the menu will be offset to avoid covering the object.</param>
-    public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenusReqd, bool toOffsetMenu) {
+    /// <param name="menuPosition">The position to place the menu.</param>
+    public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition) {
         //D.Log("Creating {0} for {1}.", GetType().Name, ctxObjectGO.name);
         _gameMgr = GameManager.Instance;
         _uniqueSubmenusReqd = uniqueSubmenusReqd;   // done this way to avoid CA2214 - accessing a virtual property from constructor
-        InitializeContextMenu(ctxObjectGO, toOffsetMenu);
+        InitializeContextMenu(ctxObjectGO, menuPosition);
         Subscribe();
     }
 
-    private void InitializeContextMenu(GameObject ctxObjectGO, bool toOffsetMenu) {    // IMPROVE use of strings
+    private void InitializeContextMenu(GameObject ctxObjectGO, MenuPositionMode menuPosition) {    // IMPROVE use of strings
         _ctxObject = UnityUtility.ValidateComponentPresence<CtxObject>(ctxObjectGO);
-        _ctxObject.toOffsetMenu = toOffsetMenu; // IMPROVE could be determined by testing for collider
+
+        switch (menuPosition) {
+            case MenuPositionMode.Over:
+                _ctxObject.toOffsetMenu = false;
+                _ctxObject.toPositionMenuAtCursor = false;
+                break;
+            case MenuPositionMode.Offset:
+                _ctxObject.toOffsetMenu = true;
+                _ctxObject.toPositionMenuAtCursor = false;
+                break;
+            case MenuPositionMode.AtCursor:
+                _ctxObject.toOffsetMenu = false;
+                _ctxObject.toPositionMenuAtCursor = true;
+                break;
+            case MenuPositionMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(menuPosition));
+        }
 
         // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
         // Accordingly, the work around is 1) to either use the editor to set the items using a CtxMenu dedicated to ships, or 2) have this already dedicated 
@@ -192,7 +221,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
             if (TryIsSelectedItemAccessAttempted(selectedItem)) {
                 // the local item that operates this context menu is selected
                 _accessSource = CtxAccessSource.SelectedItem;
-                _remotePlayerOwnedSelectedItem = null;
+                _remoteUserOwnedSelectedItem = null;
                 toShow = true;
             }
             else {
@@ -200,7 +229,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 if (TryIsRemoteFleetAccessAttempted(selectedItem, out selectedFleet)) {
                     // a remote player owned fleet is selected
                     _accessSource = CtxAccessSource.RemoteFleet;
-                    _remotePlayerOwnedSelectedItem = selectedFleet;
+                    _remoteUserOwnedSelectedItem = selectedFleet;
                     toShow = true;
                 }
                 else {
@@ -208,7 +237,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                     if (TryIsRemoteBaseAccessAttempted(selectedItem, out selectedBase)) {
                         // a remote player owned base is selected
                         _accessSource = CtxAccessSource.RemoteBase;
-                        _remotePlayerOwnedSelectedItem = selectedBase;
+                        _remoteUserOwnedSelectedItem = selectedBase;
                         toShow = true;
                     }
                     else {
@@ -216,12 +245,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                         if (TryIsRemoteShipAccessAttempted(selectedItem, out selectedShip)) {
                             // a remote player owned ship is selected
                             _accessSource = CtxAccessSource.RemoteShip;
-                            _remotePlayerOwnedSelectedItem = selectedShip;
+                            _remoteUserOwnedSelectedItem = selectedShip;
                             toShow = true;
                         }
                         else {
                             _accessSource = CtxAccessSource.None;
-                            _remotePlayerOwnedSelectedItem = null;
+                            _remoteUserOwnedSelectedItem = null;
                         }
                     }
                 }
@@ -229,6 +258,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         }
         //D.Log("{0}.{1}.TryShowContextMenu called. Resulting AccessSource = {2}.", OperatorName, GetType().Name, _accessSource.GetValueName());
         if (toShow) {
+            _lastPressReleasePosition = UICamera.lastWorldPosition;
             Show(true);
         }
         return toShow;
@@ -359,7 +389,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
         _nextAvailableItemId = Constants.Zero;
         _optimalFocusDistanceItemID = Constants.Zero;
-        _remotePlayerOwnedSelectedItem = null;
+        _remoteUserOwnedSelectedItem = null;
         _accessSource = CtxAccessSource.None;
         OnHideComplete();
     }
@@ -570,6 +600,26 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         /// This menu has been opened while a player-owned Base that doesn't operate the menu is selected.
         /// </summary>
         RemoteBase
+    }
+
+    public enum MenuPositionMode {
+
+        None,
+
+        /// <summary>
+        /// Positions the menu relative to the Item's position.
+        /// </summary>
+        Over,
+
+        /// <summary>
+        /// Positions the menu to avoid covering the Item.
+        /// </summary>
+        Offset,
+
+        /// <summary>
+        /// Positions the menu at the cursor.
+        /// </summary>
+        AtCursor
     }
 
     #endregion

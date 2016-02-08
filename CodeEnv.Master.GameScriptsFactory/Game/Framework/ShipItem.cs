@@ -639,13 +639,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         //D.Log("{0}.AssumingOrbit_EnterState called.", FullName);
         D.Assert(_currentOrIntendedOrbitSlot != null);
         D.Assert(!_isInOrbit);
-        Helm.ChangeSpeed(Speed.Stop);
-        float distanceToMeanOrbit;
-        if (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
-            Vector3 targetDirection = (_currentOrIntendedOrbitSlot.OrbitedObject.Position - Position).normalized;
-            Vector3 orbitSlotDirection = distanceToMeanOrbit > Constants.ZeroF ? targetDirection : -targetDirection;
+        Vector3 orbitSlotDirection;
+        Speed approachSpeed;
+        if (_currentOrIntendedOrbitSlot.TryGetApproach(this, out orbitSlotDirection, out approachSpeed)) {
             Helm.ChangeHeading(orbitSlotDirection, OrderSource.ElementCaptain, onHeadingConfirmed: () => {
-                Speed approachSpeed = _currentOrIntendedOrbitSlot.OrbitedObject.IsMobile ? Speed.MovingOrbit : Speed.StationaryOrbit;
                 Helm.ChangeSpeed(approachSpeed);
                 D.Log("{0} initiating approach to orbit around {1} at Speed {2}.", FullName, _currentOrIntendedOrbitSlot.OrbitedObject.FullName, approachSpeed.GetEnumAttributeText());
             });
@@ -655,12 +652,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             D.Log("{0} is within the orbit slot.", FullName);
         }
 
-        float cumWaitTime = Constants.ZeroF;
-        while (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
+        float allowedWaitTimeInSecs = 10F / GameTime.SlowestGameSpeedMultiplier;   // so accommodates GameSpeed.Slowest
+        float cumWaitTimeInSecs = Constants.ZeroF;
+        while (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this)) {
             // wait until we are inside the orbit slot
-            cumWaitTime += _gameTime.DeltaTimeOrPaused;
-            if (cumWaitTime > 15F) {    // IMPROVE this could trip on GameSpeed.Slowest
-                D.Warn("{0}.AssumingOrbit taking a long time. DistanceToMeanOrbit = {1:0.0000}.", FullName, distanceToMeanOrbit);
+            cumWaitTimeInSecs += _gameTime.DeltaTimeOrPaused;
+            if (cumWaitTimeInSecs > allowedWaitTimeInSecs) {
+                D.Warn("{0}.AssumingOrbit taking a long time at ApproachSpeed {1}.", FullName, approachSpeed.GetEnumAttributeText());
+                cumWaitTimeInSecs = Constants.ZeroF;
             }
             yield return null;
         }
@@ -1112,14 +1111,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             return false;
         }
         D.Assert(!FormationStation.IsOnStation, "{0} is already OnStation!", FullName);
-        if (Command.HQElement.Helm.IsAutoPilotEngaged) {
-            // Flagship still has a destination so don't bother
-            D.Log("Flagship {0} is still underway, so {1} will not attempt to resume its station.", Command.HQElement.FullName, FullName);
-            return false;
-        }
         if (_isInOrbit) {
             // ship is in orbit  
             D.Log("{0} is in orbit and will not attempt to resume its station.", FullName);
+            return false;
+        }
+        if (Command.HQElement.Helm.IsAutoPilotEngaged) {
+            // Flagship still has a destination so don't bother
+            D.Log("Flagship {0} is still underway, so {1} will not attempt to resume its station.", Command.HQElement.FullName, FullName);
             return false;
         }
 
@@ -1335,13 +1334,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             }
 
             float castingDistanceSubtractor = _targetCloseEnoughDistance + TargetCastingDistanceBuffer;
-            float maxDistanceTraveledBeforeNextCheck = _travelSpeedInUnitsPerSecond * _navValues.ObstacleAvoidanceCheckPeriod;
-            float distanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
-            float fleetRadius = _ship.Command.Data.UnitMaxFormationRadius;
             Vector3 formationOffset = _orderSource == OrderSource.UnitCommand ? _fstOffset : Vector3.zero;
 
             INavigableTarget detour;
-            if (TryCheckForObstacleEnrouteTo(Target, castingDistanceSubtractor, distanceToUtilizeMobileObstacleDetours, fleetRadius, out detour, formationOffset)) {
+            if (TryCheckForObstacleEnrouteTo(Target, castingDistanceSubtractor, out detour, formationOffset)) {
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 InitiateCourseToTargetVia(detour);
             }
@@ -1502,11 +1498,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         #region Course Execution Coroutines
 
         private IEnumerator CheckForObstacles(INavigableTarget destination, float castingDistanceSubtractor, CourseRefreshMode courseRefreshMode, Vector3 formationOffset) {
-            float fleetRadius = _ship.Command.Data.UnitMaxFormationRadius;
-            float maxDistanceTraveledBeforeNextCheck = _travelSpeedInUnitsPerSecond * _navValues.ObstacleAvoidanceCheckPeriod;
-            float closeEnoughDistanceToUtilizeMobileObstacleDetours = maxDistanceTraveledBeforeNextCheck * 10F;
             INavigableTarget detour;
-            while (!TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, closeEnoughDistanceToUtilizeMobileObstacleDetours, fleetRadius, out detour, formationOffset)) {
+            while (!TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, out detour, formationOffset)) {
                 yield return new WaitForSeconds(_navValues.ObstacleAvoidanceCheckPeriod);
             }
             RefreshCourse(courseRefreshMode, detour);
@@ -1945,6 +1938,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             }
         }
 
+        private void HandleCourseChanged() {
+            _ship.AssessShowCoursePlot();
+        }
+
         #region Event and Property Change Handlers
 
         private void GameSpeedPropChangedHandler() {
@@ -1978,8 +1975,25 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         #endregion
 
-        private void HandleCourseChanged() {
-            _ship.AssessShowCoursePlot();
+        protected override bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out INavigableTarget detour) {
+            Vector3 formationOffset = _orderSource == OrderSource.UnitCommand ? _fstOffset : Vector3.zero;
+            detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _ship.Command.Data.UnitMaxFormationRadius, formationOffset);
+            if (obstacle.IsMobile) {
+                Vector3 detourBearing = (detour.Position - Position).normalized;
+                float reqdTurnAngleToDetour = Vector3.Angle(_ship.Data.CurrentHeading, detourBearing);
+                if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
+                    // angle is still shallow but short remaining distance might require use of a detour
+                    float maxDistanceTraveledBeforeNextObstacleCheck = _travelSpeedInUnitsPerSecond * _navValues.ObstacleAvoidanceCheckPeriod;
+                    float obstacleDistanceThresholdRequiringDetour = maxDistanceTraveledBeforeNextObstacleCheck * 2F;
+                    float distanceToObstacleZone = zoneHitInfo.distance;
+                    if(distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
+                        return true;
+                    }
+                    D.Log("{0} has declined to generate a detour around mobile obstacle {1}. Reqd Turn = {2:0.#} degrees.", Name, obstacle.FullName, reqdTurnAngleToDetour);
+                    return false;
+                }
+            }
+            return true;
         }
 
         protected override void PauseJobs(bool toPause) {

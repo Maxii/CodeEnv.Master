@@ -71,11 +71,21 @@ public class CtxObject : AMonoBase {
     public int buttonNumber = 0;  // not used as all click management handled by my CtxControl classes
 
     /// <summary>
+    /// If this is true the menu will be positioned next to the cursor. Its actual
+    /// position is determined by the menu pivot. For example, a pivot of
+    /// Left will cause the menu to be positioned to the right of the cursor, while a
+    /// pivot of Bottom will cause the menu to be positioned above the cursor.
+    /// <remarks>If true, toOffsetMenu is not used.</remarks>
+    /// </summary>
+    public bool toPositionMenuAtCursor = false;
+
+    /// <summary>
     /// If this is true the menu will be offset so as not to obscure the object
     /// it is attached to. The object must have a collider for this to work. The
     /// offset direction is determined by the menu pivot. For example, a pivot of
     /// Left will cause the menu to be offset to the right of the object, while a
     /// pivot of Bottom will cause the menu to be offset above the object.
+    /// <remarks>If toPositionMenuAtCursor is true, toOffsetMenu is not used.</remarks>
     /// </summary>
     public bool toOffsetMenu = false;
 
@@ -96,8 +106,16 @@ public class CtxObject : AMonoBase {
     [HideInInspector]
     public bool isEditingItems = false;
 
+    /// <summary>
+    /// The menu's position in screen space (defined in pixels). Z is ignored.
+    /// <remarks>Warning: this value is invalid once the menu has been opened as it calculates a screen space location
+    /// at the moment it is called. The screen may have rotated and/or the cursor moved.</remarks>
+    /// </summary>
     private Vector3 MenuPosition {
         get {
+            if(toPositionMenuAtCursor) {
+                return Input.mousePosition;
+            }
             if (contextMenu != null && contextMenu.style == CtxMenu.Style.Pie) {
                 // Pie style is never offset so position on the objects origin position
                 return Camera.main.WorldToScreenPoint(transform.position);
@@ -117,6 +135,27 @@ public class CtxObject : AMonoBase {
             return Camera.main.WorldToScreenPoint(transform.position);
         }
     }
+    //private Vector3 MenuPosition {
+    //    get {
+    //        if (contextMenu != null && contextMenu.style == CtxMenu.Style.Pie) {
+    //            // Pie style is never offset so position on the objects origin position
+    //            return Camera.main.WorldToScreenPoint(transform.position);
+    //        }
+    //        if (toOffsetMenu) {
+    //            // not a pie and user wants to offset the menu
+    //            var collider = GetComponent<Collider>();
+    //            if (collider == null) {
+    //                D.WarnContext(gameObject, "No collider present to enable {0}.{1}.offsetMenu functionality.", name, GetType().Name);
+    //                return Camera.main.WorldToScreenPoint(transform.position);
+    //            }
+    //            // For the offset case we need to determine the screen-space bounds of this object and then offset the menu pivot 
+    //            // to one side of the object bounds. Note that CtxMenu itself may adjust the position in order to keep the menu contents on screen.
+    //            return CtxHelper.ComputeMenuPosition(contextMenu, CtxHelper.ComputeScreenSpaceBounds(collider.bounds, Camera.main), false);
+    //        }
+    //        // not a pie and user doesn't want to offset the menu
+    //        return Camera.main.WorldToScreenPoint(transform.position);
+    //    }
+    //}
 
     /// <summary>
     /// Shows the context menu associated with this object. If you are handling

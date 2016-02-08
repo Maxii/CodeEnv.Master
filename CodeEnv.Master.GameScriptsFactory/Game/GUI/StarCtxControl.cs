@@ -41,7 +41,7 @@ public class StarCtxControl : ACtxControl {
     private StarItem _starMenuOperator;
 
     public StarCtxControl(StarItem star)
-        : base(star.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: true) {
+        : base(star.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _starMenuOperator = star;
     }
 
@@ -68,7 +68,7 @@ public class StarCtxControl : ACtxControl {
             case FleetDirective.Move:
                 return false;
             case FleetDirective.Guard:
-                return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_starMenuOperator.Owner);
+                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_starMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -83,7 +83,7 @@ public class StarCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _starMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

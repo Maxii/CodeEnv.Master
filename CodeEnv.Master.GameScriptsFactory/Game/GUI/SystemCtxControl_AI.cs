@@ -41,7 +41,7 @@ public class SystemCtxControl_AI : ACtxControl {
     private SettlementCmdItem _settlement;
 
     public SystemCtxControl_AI(SystemItem system)
-        : base(system.gameObject, uniqueSubmenusReqd: Constants.Zero, toOffsetMenu: false) {
+        : base(system.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
         D.Assert(_settlement != null);
@@ -63,12 +63,13 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
+                return !_remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
             case FleetDirective.Explore:
                 return false; //TODO _systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
+                return false;
             case FleetDirective.Guard:
-                return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
+                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -83,7 +84,7 @@ public class SystemCtxControl_AI : ACtxControl {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = directive == FleetDirective.Attack ? _settlement as INavigableTarget : _systemMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
+        var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

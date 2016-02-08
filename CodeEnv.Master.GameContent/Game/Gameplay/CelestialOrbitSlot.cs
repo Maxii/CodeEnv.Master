@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
             if (_orbitSimulator != null) {
                 D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.", orbitingObject.name, _orbitedObject.name, _orbitSimulator.transform.name);
             }
-            _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(_orbitedObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbitSimulatorName);
+            _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(_orbitedObject, IsOrbitedObjectMobile, false, _orbitPeriod, orbitSimulatorName);
             UnityUtility.AttachChildToParent(orbitingObject.gameObject, _orbitSimulator.transform.gameObject);
             orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
             return _orbitSimulator;
