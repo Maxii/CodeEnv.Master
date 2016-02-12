@@ -62,6 +62,10 @@ internal abstract class ANavigator : IDisposable {
                 _isAutoPilotEngaged = value;
                 IsAutoPilotEngagedPropChangedHandler();
             }
+            else {
+                string msg = _isAutoPilotEngaged ? "engage" : "disengage";
+                D.Log("{0} attempting to {1} autoPilot when autoPilot state = {1}.", Name, msg);
+            }
         }
     }
 
@@ -85,6 +89,8 @@ internal abstract class ANavigator : IDisposable {
     /// The name of this Navigator's client.
     /// </summary>
     protected abstract string Name { get; }
+
+    protected abstract bool ToShowDLog { get; }
 
     /// <summary>
     /// The current worldspace location of the point on the Target this Navigator's client is trying to reach.
@@ -156,7 +162,7 @@ internal abstract class ANavigator : IDisposable {
     /// <returns></returns>
     protected virtual void CleanupAnyRemainingAutoPilotJobs() {
         if (IsPilotNavigationJobRunning) {
-            //D.Log("{0} AutoPilot disengaging.", Name);
+            //D.Log(ToShowDLog, "{0} AutoPilot disengaging.", Name);
             _pilotNavigationJob.Kill();
         }
     }
@@ -185,7 +191,7 @@ internal abstract class ANavigator : IDisposable {
                 _pilotNavigationJob.Pause();
             }
             else {
-                D.Log("{0} is unpausing NavigationJob.", Name);
+                D.Log(ToShowDLog, "{0} is unpausing NavigationJob.", Name);
                 _pilotNavigationJob.Unpause();
             }
         }
@@ -200,12 +206,12 @@ internal abstract class ANavigator : IDisposable {
         RefreshCourse(CourseRefreshMode.ClearCourse);
         _orderSource = OrderSource.None;
         TravelSpeed = Speed.None;
-        // Note: I'm leaving Target valid for now when disengaged as it is my principal record
+        // IMPROVE I'm leaving Target valid for now when disengaged as it is my principal record
         // of where I am currently located when the autoPilot arrives and disengages
     }
 
     protected virtual void HandleDestinationReached() {
-        //D.Log("{0} at {1} reached Destination {2} \nat {3}. Actual proximity: {4:0.0000} units.", Name, Position, Target.FullName, TargetPoint, TargetPointDistance);
+        //D.Log(ToShowDLog, "{0} at {1} reached Destination {2} \nat {3}. Actual proximity: {4:0.0000} units.", Name, Position, Target.FullName, TargetPoint, TargetPointDistance);
         RefreshCourse(CourseRefreshMode.ClearCourse);
     }
 
@@ -248,7 +254,7 @@ internal abstract class ANavigator : IDisposable {
             var obstacleZoneGo = hitInfo.collider.gameObject;
             var obstacleZoneHitDistance = hitInfo.distance;
             IAvoidableObstacle obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
-            D.Log("{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}, FormationOffset = {6}, CastSubtractor = {7:0.#}.",
+            D.Log(ToShowDLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}, FormationOffset = {6}, CastSubtractor = {7:0.#}.",
                 Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance, formationOffset, castingDistanceSubtractor);
 
             if (!TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detour)) {
@@ -258,7 +264,7 @@ internal abstract class ANavigator : IDisposable {
             INavigableTarget newDetour;
             float detourCastingDistanceSubtractor = Constants.ZeroF;  // obstacle detours don't have ObstacleZones
             if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, formationOffset, out newDetour, ref iterationCount)) {
-                D.Log("{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
+                D.Log(ToShowDLog, "{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
                 detour = newDetour;
             }
             return true;
@@ -268,7 +274,7 @@ internal abstract class ANavigator : IDisposable {
 
     protected INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius, Vector3 formationOffset) {
         Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius, formationOffset);
-        D.Log("{0} has created a detour at {1} to get by {2}.", Name, detourPosition, obstacle.FullName);
+        //D.Log(ToShowDLog, "{0} has created a detour at {1} to get by {2}.", Name, detourPosition, obstacle.FullName);
         return new StationaryLocation(detourPosition);
     }
 

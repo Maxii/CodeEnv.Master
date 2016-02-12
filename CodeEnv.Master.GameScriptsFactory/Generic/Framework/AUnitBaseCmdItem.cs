@@ -98,7 +98,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
             Return();
         }
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(toShowDLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             BaseDirective order = CurrentOrder.Directive;
             switch (order) {
                 case BaseDirective.Attack:
@@ -165,9 +165,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region ExecuteAttackOrder
 
     protected IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState called.", Data.Name);
+        D.Log(toShowDLog, "{0}.ExecuteAttackOrder_EnterState beginning execution.", Data.Name);
         Call(BaseState.Attacking);
-        yield return null;  // required immediately after Call() to avoid FSM bug
+        yield return null;   // required so Return()s here
         CurrentState = BaseState.Idling;
     }
 

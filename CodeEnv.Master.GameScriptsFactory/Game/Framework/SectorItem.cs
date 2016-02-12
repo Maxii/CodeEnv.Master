@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AItems that are Sectors.
 /// </summary>
-public class SectorItem : AItem, ISectorItem {
+public class SectorItem : AItem, ISectorItem, IPatrollable {
 
     private static string _toStringFormat = "{0}{1}";
 
@@ -55,21 +55,21 @@ public class SectorItem : AItem, ISectorItem {
 
     public override float Radius { get { return TempGameValues.SectorSideLength / 2F; } }   // the radius of the sphere inscribed inside a sector box
 
-    private IList<StationaryLocation> _patrolPoints;
-    public IList<StationaryLocation> PatrolPoints {
-        get {
-            if (_patrolPoints == null) {
-                _patrolPoints = InitializePatrolPoints();
-            }
-            return _patrolPoints;
-        }
-    }
-
     #region Initialization
 
     protected override void InitializeOnData() {
         _hudManager = new ItemHudManager(Publisher);
         // Note: There is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
+    }
+
+    private IList<StationaryLocation> InitializePatrolPoints() {
+        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
+        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
+        var patrolPoints = new List<StationaryLocation>(8);
+        foreach (Vector3 point in points) {
+            patrolPoints.Add(new StationaryLocation(point));
+        }
+        return patrolPoints;
     }
 
     #endregion
@@ -86,16 +86,6 @@ public class SectorItem : AItem, ISectorItem {
     }
 
     #endregion
-
-    private IList<StationaryLocation> InitializePatrolPoints() {
-        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
-        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
-        var patrolPoints = new List<StationaryLocation>(8);
-        foreach (Vector3 point in points) {
-            patrolPoints.Add(new StationaryLocation(point));
-        }
-        return patrolPoints;
-    }
 
     #region Cleanup
 
@@ -121,6 +111,19 @@ public class SectorItem : AItem, ISectorItem {
 
     #endregion
 
+    #region IPatrollable Members
+
+    private IList<StationaryLocation> _patrolPoints;
+    public IList<StationaryLocation> PatrolPoints {
+        get {
+            if (_patrolPoints == null) {
+                _patrolPoints = InitializePatrolPoints();
+            }
+            return new List<StationaryLocation>(_patrolPoints);
+        }
+    }
+
+    #endregion
 
 }
 

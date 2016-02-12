@@ -38,6 +38,14 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
     private bool IsSpawnOccludedObjectChecksJobRunning { get { return _spawnOccludedObjectChecksJob != null && _spawnOccludedObjectChecksJob.IsRunning; } }
 
+    /// <summary>
+    /// Flag indicating that this orbital plane has already received OnHover(true) without an intervening OnHover(false). 
+    /// Used to filter out the duplicate OnHover(true) events which I don't expect Ngui to remedy.
+    /// <remarks>Ngui sends a duplicate OnHover(true) everytime the gameObject is clicked. According to ArenMook, 
+    /// this is intended to regain some unknown OnHover state that was overridden by the click. The original 
+    /// design was based on the erroneous understanding that between every true there will always be a false.</remarks>
+    /// </summary>
+    private bool _isAlreadyHovering = false;
     private GameObject _systemItemGo;
     private GameInputHelper _inputHelper;
     private InputManager _inputMgr;
@@ -62,29 +70,24 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
     private void InputModePropChangedHandler() {
         var inputMode = _inputMgr.InputMode;
-        //if (IsSpawnOccludedObjectChecksJobRunning) {
-            // currently checking for occluded objects while hovering over orbitalPlane
-            switch (inputMode) {
-                case GameInputMode.NoInput:
-                case GameInputMode.PartialPopup:
-                case GameInputMode.FullPopup:
-                    EnableOnHoverCheckingForOccludedObjects(false);
-                    break;
-                case GameInputMode.Lobby:
-                case GameInputMode.Normal:
-                    // do nothing
-                    break;
-                case GameInputMode.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
-            }
-        //}
+        switch (inputMode) {
+            case GameInputMode.NoInput:
+            case GameInputMode.PartialPopup:
+            case GameInputMode.FullPopup:
+                EnableOnHoverCheckingForOccludedObjects(false);
+                break;
+            case GameInputMode.Lobby:
+            case GameInputMode.Normal:
+                // do nothing
+                break;
+            case GameInputMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
+        }
     }
 
     private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler(Vector2 moveDelta) {
-        if(_inputMgr.InputMode == GameInputMode.PartialPopup) {
-            D.Log("{0}.MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler() called. CurrentTouch = {1}.", Name, UICamera.currentTouch.current.name);
-        }
+        D.Assert(_inputMgr.InputMode == GameInputMode.Normal);
         CheckForOccludedObjectAndProcessOnHoverNotifications();
     }
 
@@ -94,26 +97,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     // will send out an OnHover(false) when it sees the collider disappear.
 
     private void HoverEventHandler(bool isOver) {
-        D.Log("{0}.OnHover({1}) received.", Name, isOver);
-        if (_inputMgr.InputMode == GameInputMode.PartialPopup) {
-            // OnHover(true) events immediately follow PressRelease events which can open a ContextMenu. If the menu is opened,
-            // it changes InputMode to PartialPopup which eliminates subsequent mouse events by setting the EventDispatcher's
-            // eventReceiverMask to Zero. However, the OnHover(true) event for this collider is already queued to send, so the 
-            // eventReceiverMask does not stop this particular event. If it tries to check for an occluded object, 
-            // TryCheckForOccludedObject's Assert will fail.
-
-            D.Assert(!IsSpawnOccludedObjectChecksJobRunning, "{0} spawnOccludedObjectChecksJob is running.", Name);
-            if (!isOver) {
-                D.Log("{0} received OnHover(false) while in {1}.{2}.",
-                    Name, typeof(GameInputMode).Name, GameInputMode.PartialPopup.GetEnumAttributeText());
-                //EnableOnHoverCheckingForOccludedObjects(false); // kills any spawn Job still operating
-            }
-            else {
-                D.Warn("{0} received OnHover(true) while in {1}.{2}.", 
-                    Name, typeof(GameInputMode).Name, GameInputMode.PartialPopup.GetEnumAttributeText());
-            }
-            return;
-        }
+        //D.Log("{0}.OnHover({1}) received.", Name, isOver);
         if (AssessOnHoverEvent(isOver)) {
             _inputHelper.Notify(_systemItemGo, "OnHover", isOver);
         }
@@ -125,8 +109,9 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             // Click events immediately follow PressRelease events which can open a ContextMenu. If the menu is opened,
             // it changes InputMode to PartialPopup which eliminates subsequent mouse events by setting the EventDispatcher's
             // eventReceiverMask to Zero. However, the Click event for this collider is already queued to send, so the 
-            // eventReceiverMask has no affect on this particular event. If it tries to check for an occluded object, 
+            // eventReceiverMask has no affect on this particular event. If allowed to check for an occluded object, 
             // TryCheckForOccludedObject's Assert will fail.
+            //D.Log("{0}.OnClick() received while in {1}.{2}.", Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());
             return;
         }
         GameObject occludedObject;
@@ -140,7 +125,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private void DoubleClickEventHandler() {
         //D.Log("{0}.OnDoubleClick() received.", Name);
         D.Warn(_inputMgr.InputMode == GameInputMode.PartialPopup, "{0}.OnDoubleClick() received while in {1}.{2}.",
-            Name, typeof(GameInputMode).Name, GameInputMode.PartialPopup.GetEnumAttributeText());   // UNCLEAR whether this can occur
+            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());   // OPTIMIZE I haven't seen this occur so far
         GameObject occludedObject;
         if (TryCheckForOccludedObject(out occludedObject)) {
             _inputHelper.Notify(occludedObject, "OnDoubleClick");
@@ -186,9 +171,9 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
      *  system. The TryCheckForOccludedObject() method tests for and returns the 
      *  occluded object found, if any. If an object is found, it is notified of the event.
      *  
-     * This is sufficient for all event types except OnHover. The Ngui Event system only 
+     * This is sufficient for all event types except OnHover. The Ngui Event system  
      * generates OnHover events when it detects a different object under the mouse. This
-     * means OnHover events are only generated twice per object - once when the object
+     * means OnHover events are typically generated twice per object - once when the object
      * is first detected under the mouse [OnHover(true)], and once when the same object
      * is no longer detected under the mouse [OnHover(false)]. Because of this, an object
      * that is occluded cannot be detected because the object under the mouse doesn't 
@@ -198,6 +183,14 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
      * and an elapsed time approach. The elapsed time approach is needed because some 
      * occluded objects move on their own (eg - fleets and planetoids) and can move under 
      * (or away from) the mouse by themselves without any required user mouse movement.
+     *
+     * Note: An additional OnHover(true) event is also generated each time the mouse is clicked.
+     * According to Ngui's ArenMook, this is done to regain the proper state that was overwritten 
+     * by OnClick. I think the state he is referring too is within Ngui, but whether true or not
+     * this behaviour is intended so he isn't going to change it. That duplicate OnHover(true)
+     * creates difficulties as I use OnHover(isOver) to switch the OnHoverOccludedObjectChecking
+     * System on and off. Accordingly, I've had to filter out those duplicate OnHover(true)s 
+     * using the field _isAlreadyHovering.
      */
 
     /// <summary>
@@ -263,6 +256,19 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     /// <param name="isOver">if set to <c>true</c> [is over].</param>
     /// <returns></returns>
     private bool AssessOnHoverEvent(bool isOver) {
+        if (_isAlreadyHovering && isOver) {
+            // duplicate isOver = true so ignore
+            //D.Log("{0} received duplicate OnHover(true). Ignoring.", Name);
+            return false;
+        }
+        _isAlreadyHovering = isOver;
+
+        if (isOver) {
+            D.Assert(_inputMgr.InputMode == GameInputMode.Normal, "{0} received OnHover(true) during {1}.{2}.",
+                Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());
+        }
+
+
         EnableOnHoverCheckingForOccludedObjects(isOver);
         bool toExecuteNormalOnHover = false;
         if (isOver) {
@@ -365,6 +371,15 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     }
 
     /// <summary>
+    /// Debug flag indicating whether this instance has subscribed to the mouse move delegate.
+    /// Used as a double check to Assert that multiple subscriptions aren't occuring from
+    /// this instance as there isn't another way to tell. Note: this delegate is static and
+    /// therefore can be subscribed to by each instance so checking for number of subscriptions in
+    /// the InvocationList won't work.
+    /// </summary>
+    private bool __isSubscribedToMouseMove = false;
+
+    /// <summary>
     ///  Enables continuous checking for occluded objects over time (currently every second)
     ///  and each time the mouse moves. Used to work around the fact that UICamera only sends 
     ///  OnHover events when the object under the mouse changes. This way, the check for an occluded 
@@ -373,7 +388,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     /// </summary>
     /// <param name="toEnable">if set to <c>true</c> enable checking. If false, disables it.</param>
     private void EnableOnHoverCheckingForOccludedObjects(bool toEnable) {
-        D.Log("{0}.EnableOnHoverCheckingForOccludedObjects({1}) called.", Name, toEnable);
+        //D.Log("{0}.EnableOnHoverCheckingForOccludedObjects({1}) called.", Name, toEnable);
         if (toEnable) {
             CheckForOccludedObjectAndProcessOnHoverNotifications();
 
@@ -381,24 +396,25 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 _spawnOccludedObjectChecksJob = new Job(SpawnOnHoverOccludedObjectChecks(), toStart: true);
             }
 
+            D.Assert(!__isSubscribedToMouseMove);
             // C# GOTCHA! You can subscribe to a delegate using a Lambda expression...
             //UICamera.onMouseMove += (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
-            if(UICamera.onMouseMove != null) {
-                D.Warn("{0} erroneously subscribing to UICamera.onMouseMove when already subscribed.", Name);
-            }
             UICamera.onMouseMove += MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler;
         }
         else {
             if (IsSpawnOccludedObjectChecksJobRunning) {
                 _spawnOccludedObjectChecksJob.Kill();
             }
+
             // ... but you CAN'T unsubscribe from a delegate using a Lambda expression! There is no error, it just doesn't work!
             //UICamera.onMouseMove -= (moveDelta) => MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler();
             UICamera.onMouseMove -= MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler;
-            if(UICamera.onMouseMove != null) {
-                D.Log("{0}: UICamera.onMouseMove invocation list length = {1}.", Name, UICamera.onMouseMove.GetInvocationList().Length);
-            }
+
+            //if(UICamera.onMouseMove != null) {
+            //    D.Log("{0}: UICamera.onMouseMove invocation list length = {1}.", Name, UICamera.onMouseMove.GetInvocationList().Length);
+            //}
         }
+        __isSubscribedToMouseMove = toEnable;
     }
 
     /// <summary>

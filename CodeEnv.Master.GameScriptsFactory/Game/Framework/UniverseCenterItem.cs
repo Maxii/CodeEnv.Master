@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle {
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IPatrollable {
 
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
@@ -37,16 +37,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     private UniverseCenterPublisher _publisher;
     public UniverseCenterPublisher Publisher {
         get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data, this); }
-    }
-
-    private IList<StationaryLocation> _patrolPoints;
-    public IList<StationaryLocation> PatrolPoints {
-        get {
-            if (_patrolPoints = null) {
-                _patrolPoints = InitializePatrolPoints();
-            }
-            return _patrolPoints;
-        }
     }
 
     private DetectionHandler _detectionHandler;
@@ -99,6 +89,16 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         return new UniverseCenterDisplayManager(gameObject);
     }
 
+    private IList<StationaryLocation> InitializePatrolPoints() {
+        float radiusOfSphereContainingPatrolPoints = Data.HighOrbitRadius * 2F;
+        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
+        var patrolPoints = new List<StationaryLocation>(8);
+        foreach (Vector3 point in points) {
+            patrolPoints.Add(new StationaryLocation(point));
+        }
+        return patrolPoints;
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -126,17 +126,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     #endregion
-
-    private IList<StationaryLocation> InitializePatrolPoints() {
-        float radiusOfSphereContainingPatrolPoints = Data.HighOrbitRadius * 2F;
-        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
-        var patrolPoints = new List<StationaryLocation>(8);
-        foreach (Vector3 point in points) {
-            patrolPoints.Add(new StationaryLocation(point));
-        }
-        return patrolPoints;
-    }
-
 
     #region Cleanup
 
@@ -198,6 +187,20 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     #region IHighlightable Members
 
     public override float HoverHighlightRadius { get { return Radius + 10F; } }
+
+    #endregion
+
+    #region IPatrollable Members
+
+    private IList<StationaryLocation> _patrolPoints;
+    public IList<StationaryLocation> PatrolPoints {
+        get {
+            if (_patrolPoints == null) {
+                _patrolPoints = InitializePatrolPoints();
+            }
+            return new List<StationaryLocation>(_patrolPoints);
+        }
+    }
 
     #endregion
 

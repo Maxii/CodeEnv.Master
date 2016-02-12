@@ -14,16 +14,15 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-using System.Collections.Generic;
-using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
+
+    using System.Collections.Generic;
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Interface for easy access to SystemItems.
     /// </summary>
     public interface ISystemItem : IDiscernibleItem {
-
-        IList<StationaryLocation> PatrolPoints { get; }
 
         /// <summary>
         /// Called by User's PlayerKnowledge when the User first discovers this system.

@@ -87,7 +87,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Radius * 2F;
-        //D.Log("{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
+        //D.Log(toShowDLog, "{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
         D.Warn(_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius, "{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.",
             FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
         // Static trigger collider (no rigidbody) is OK as a ship's CollisionDetectionCollider has a kinematic rigidbody
@@ -123,7 +123,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(toShowDLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FacilityDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FacilityDirective.Attack:
@@ -220,15 +220,14 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region Idling
 
-    IEnumerator Idling_EnterState() {
-        //D.Log("{0}.Idling_EnterState called.", FullName);
+    void Idling_EnterState() {
+        LogEvent();
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
+                D.Log(toShowDLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
-                yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
         }
         //TODO register as available
@@ -253,7 +252,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     private IElementAttackableTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
+        D.Log(toShowDLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
         _ordersTarget = CurrentOrder.Target;
 
         while (_ordersTarget.IsOperational) {
@@ -282,9 +281,9 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log("{0}.ExecuteRepairOrder_EnterState called.", FullName);
+        D.Log(toShowDLog, "{0}.ExecuteRepairOrder_EnterState called.", FullName);
         Call(FacilityState.Repairing);
-        yield return null;  // required immediately after Call() to avoid FSM bug
+        yield return null;  // required so Return()s here
     }
 
     void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -302,14 +301,14 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        //D.Log("{0}.Repairing_EnterState called.", FullName);
+        D.Log(toShowDLog, "{0}.Repairing_EnterState beginning execution.", FullName);
         StartEffect(EffectID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
-            //D.Log("{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            //D.Log(toShowDLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
             yield return new WaitForSeconds(10F);
         }
 
@@ -318,7 +317,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
-        D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        D.Log(toShowDLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
         Return();

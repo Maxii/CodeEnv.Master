@@ -29,6 +29,8 @@ using UnityEngine;
 /// </summary>
 public abstract class ACtxControl : ICtxControl, IDisposable {
 
+    private const string SetOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
+
     /// <summary>
     /// The subMenu (CtxMenu) objects available for use. These submenus
     /// are currently very generic and are configured programmatically to show the submenu items desired.
@@ -55,7 +57,6 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     private static bool _isStaticallySubscribed;
     private static CtxMenu _generalCtxMenu;
-    private static string _setOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
 
     public event EventHandler showBegun;
 
@@ -405,7 +406,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void AddOptimalFocusDistanceItemToMenu() {
         _optimalFocusDistanceItemID = _nextAvailableItemId;
         CtxMenu.Item optimalFocusDistanceItem = new CtxMenu.Item() {
-            text = _setOptimalFocusDistanceItemText,
+            text = SetOptimalFocusDistanceItemText,
             id = _optimalFocusDistanceItemID
         };
         // many SelectedItems will not offer any other menuItems to select

@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
+public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatrollable {
 
     public bool IsTrackingLabelEnabled { private get; set; }
 
@@ -66,16 +66,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
     public override float Radius { get { return Data.Radius; } }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
-
-    private IList<StationaryLocation> _patrolPoints;
-    public IList<StationaryLocation> PatrolPoints {
-        get {
-            if(_patrolPoints == null) {
-                _patrolPoints = InitializePatrolPoints();
-            }
-            return _patrolPoints;
-        }
-    }
 
     private ITrackingWidget _trackingLabel;
     private MeshCollider _orbitalPlaneCollider;
@@ -129,6 +119,16 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
 
     protected override ADisplayManager InitializeDisplayManager() {
         return new SystemDisplayManager(gameObject);
+    }
+
+    private IList<StationaryLocation> InitializePatrolPoints() {
+        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
+        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
+        var patrolPoints = new List<StationaryLocation>(8);
+        foreach (Vector3 point in points) {
+            patrolPoints.Add(new StationaryLocation(point));
+        }
+        return patrolPoints;
     }
 
     #endregion
@@ -186,16 +186,6 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
         D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         AssessIsDiscernibleToUser();
         D.Assert(_hasInitOnFirstDiscernibleToUserRun);
-    }
-
-    private IList<StationaryLocation> InitializePatrolPoints() {
-        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
-        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
-        var patrolPoints = new List<StationaryLocation>(8);
-        foreach(Vector3 point in points) {
-            patrolPoints.Add(new StationaryLocation(point));
-        }
-        return patrolPoints;
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -272,6 +262,20 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest {
     public override float RadiusAroundTargetContainingKnownObstacles { get { return Radius; } }
 
     public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) { return Radius; }
+
+    #endregion
+
+    #region IPatrollable Members
+
+    private IList<StationaryLocation> _patrolPoints;
+    public IList<StationaryLocation> PatrolPoints {
+        get {
+            if (_patrolPoints == null) {
+                _patrolPoints = InitializePatrolPoints();
+            }
+            return new List<StationaryLocation>(_patrolPoints);
+        }
+    }
 
     #endregion
 

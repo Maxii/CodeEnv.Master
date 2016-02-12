@@ -61,21 +61,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         get { return _publisher = _publisher ?? new FleetPublisher(Data, this); }
     }
 
-    /// <summary>
-    /// The stations in this fleet's formation.
-    /// </summary>
-    //private IList<FormationStationMonitor> _formationStations;
     private VelocityRay _velocityRay;
     private CoursePlotLine _coursePlotLine;
     private FleetNavigator _navigator;
     private FixedJoint _hqJoint;
 
     #region Initialization
-
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
-        //_formationStations = new List<FormationStationMonitor>();
-    }
 
     protected override AFormationManager InitializeFormationMgr() {
         return new FleetFormationManager(this);
@@ -116,8 +107,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     #endregion
-
-
 
     public override void CommenceOperations() {
         base.CommenceOperations();
@@ -175,16 +164,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // Note: Assigning connectedBody links the two rigidbodies at their current relative positions. Therefore the Cmd must be
         // relocated to the HQElement before the joint is made. Making the joint does not itself relocate Cmd to the newly connectedBody
         _hqJoint.connectedBody = HQElement.gameObject.GetSafeComponent<Rigidbody>();
-        //D.Log("{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, transform.position);
+        //D.Log(toShowDLog, "{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, transform.position);
     }
 
     public void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
         var localTgtBearing = transform.InverseTransformDirection((target.Position - Position).normalized);
-        D.Log("{0} issuing Ship move orders. Target: {1} at LocalBearing {2}, Speed = {3}.", FullName, target.FullName, localTgtBearing, speed.GetValueName());
+        D.Log(toShowDLog, "{0} issuing Ship move orders. Target: {1} at LocalBearing {2}, Speed = {3}.", FullName, target.FullName, localTgtBearing, speed.GetValueName());
         var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.UnitCommand, target, speed);
         Elements.ForAll(e => {
             var ship = e as ShipItem;
-            //D.Log("{0} issuing Move order to {1}. Target = {2}.", FullName, ship.FullName, target.FullName);
+            //D.Log(toShowDLog, "{0} issuing Move order to {1}. Target = {2}.", FullName, ship.FullName, target.FullName);
             ship.CurrentOrder = shipMoveToOrder;
         });
     }
@@ -260,7 +249,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 _coursePlotLine = new CoursePlotLine(name, course, 1F, GameColor.Yellow);
             }
             else {
-                //D.Log("{0} attempting to update {1}. PointsCount = {2}, ProposedCount = {3}.",
+                //D.Log(toShowDLog, "{0} attempting to update {1}. PointsCount = {2}, ProposedCount = {3}.",
                 //    FullName, typeof(CoursePlotLine).Name, _coursePlotLine.Points.Length, course.Count);
                 _coursePlotLine.UpdateCourse(course);
             }
@@ -306,7 +295,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (CurrentOrder != null) {
             Data.Target = CurrentOrder.Target;  // can be null
 
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(toShowDLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FleetDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FleetDirective.Move:
@@ -348,7 +337,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         get { return (FleetState)base.CurrentState; }
         protected set {
             if (base.CurrentState != null && CurrentState == value) {
-                //D.Log("{0} is setting {1} to the same value {2} it is already in.", FullName, typeof(FleetState).Name, value.GetValueName());
+                //D.Log(toShowDLog, "{0} is setting {1} to the same value {2} it is already in.", FullName, typeof(FleetState).Name, value.GetValueName());
                 if (CurrentState != FleetState.ExecuteMoveOrder) {  // ExecuteMoveOrder initiated thru ContextMenu is to be expected
                     D.Warn("{0} received a duplicate change {1} to {2} order.", FullName, typeof(FleetState).Name, value.GetValueName());
                 }
@@ -387,7 +376,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        //D.Log("{0}.ExecuteMoveOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        D.Log(toShowDLog, "{0}.ExecuteMoveOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
 
         var orderTgt = CurrentOrder.Target;
         var systemTarget = orderTgt as SystemItem;
@@ -419,8 +408,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null;  // required so Return()s here
 
         if (_isDestinationUnreachable) {
             //TODO how to handle move errors?
@@ -508,40 +496,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     #region ExecutePatrolOrder
 
     IEnumerator ExecutePatrolOrder_EnterState() {
-        D.Log("{0}.ExecutePatrolOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        D.Log(toShowDLog, "{0}.ExecutePatrolOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         var orderTgt = CurrentOrder.Target;
-        var systemTarget = orderTgt as SystemItem;
-        if (systemTarget != null) {
-            // patrol target of a system is the closest patrol point within the system
-            _moveTarget = GetClosestPatrolPoint(systemTarget.PatrolPoints);
-        }
-        else {
-            var sectorTarget = orderTgt as SectorItem;
-            if (sectorTarget != null) {
-                // patrol target of a sector is the closest patrol point within the sector
-                _moveTarget = GetClosestPatrolPoint(sectorTarget.PatrolPoints);
-            }
-        }
-        if (_moveTarget == null) {
-            _moveTarget = orderTgt;
-        }
+        var patrollableTarget = orderTgt as IPatrollable;
+        D.Assert(patrollableTarget != null, "{0}: {1} is not {2}.", FullName, orderTgt.FullName, typeof(IPatrollable).Name);
+        _moveTarget = GetClosestPatrolPoint(patrollableTarget.PatrolPoints);
 
         _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null; // required so Return()s here
 
         if (_isDestinationUnreachable) {
             //TODO how to handle move errors?
-            D.Error("{0} move order to {1} is unreachable.", FullName, CurrentOrder.Target.FullName);
+            D.Error("{0} move order to {1} is unreachable.", FullName, orderTgt.FullName);
             CurrentState = FleetState.Idling;
         }
 
-
-        yield return null;
+        CurrentState = FleetState.Patrolling;
     }
 
     void ExecutePatrolOrder_ExitState() {
+        LogEvent();
         _isDestinationUnreachable = false;
     }
 
@@ -549,37 +524,57 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #region Patrolling
 
-    void Patrolling_EnterState() { }
+    IEnumerator Patrolling_EnterState() {
+        D.Log(toShowDLog, "{0}.Patrolling_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        var patrolPoints = (CurrentOrder.Target as IPatrollable).PatrolPoints;  // IPatrollable.PatrolPoints is a copied list
+        var currentPatrolPoint = GetClosestPatrolPoint(patrolPoints);
+        bool isRemoved = patrolPoints.Remove(currentPatrolPoint);
+        D.Assert(isRemoved);
+        var shuffledPatrolPoints = patrolPoints.Shuffle();
+        var patrolPointQueue = new Queue<StationaryLocation>(shuffledPatrolPoints);
+        patrolPointQueue.Enqueue(currentPatrolPoint);   // shuffled queue with current point at end
 
-    void Patrolling_ExitState() { }
+        bool isReadyForNextPatrolPoint = true;
+        while (isReadyForNextPatrolPoint) {
+            var nextPatrolPoint = patrolPointQueue.Dequeue();
+            _moveTarget = nextPatrolPoint;
+            patrolPointQueue.Enqueue(nextPatrolPoint);
+            _moveSpeed = Speed.FleetOneThird;
+            isReadyForNextPatrolPoint = false;
+            Call(FleetState.Moving);
+            yield return null;    // required so Return()s here
+            if (_isDestinationUnreachable) {
+                //TODO how to handle move errors?
+                D.Error("{0} move order to {1} is unreachable.", FullName, _moveTarget.FullName);
+                CurrentState = FleetState.Idling;
+            }
+            isReadyForNextPatrolPoint = true;
+        }
+    }
+
+    void Patrolling_ExitState() {
+        LogEvent();
+        _isDestinationUnreachable = false;
+    }
 
     #endregion
 
     #region ExecuteGuardOrder
 
     IEnumerator ExecuteGuardOrder_EnterState() {
-        D.Log("{0}.ExecuteGuardOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        D.Log(toShowDLog, "{0}.ExecuteGuardOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         var orderTgt = CurrentOrder.Target;
-        var systemTarget = orderTgt as SystemItem;
-        if (systemTarget != null) {
-            // guard target of a system is the closest patrol point within the system
-            _moveTarget = GetClosestPatrolPoint(systemTarget.PatrolPoints);
+        var patrollableTgt = orderTgt as IPatrollable;
+        if (patrollableTgt != null) {
+            _moveTarget = GetClosestPatrolPoint(patrollableTgt.PatrolPoints);
         }
         else {
-            var sectorTarget = orderTgt as SectorItem;
-            if (sectorTarget != null) {
-                // guard target of a sector is the closest patrol point within the sector
-                _moveTarget = GetClosestPatrolPoint(sectorTarget.PatrolPoints);
-            }
-        }
-        if (_moveTarget == null) {
             _moveTarget = orderTgt;
         }
 
         _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null;  // required so Return()s here
 
         if (_isDestinationUnreachable) {
             CurrentState = FleetState.Idling;
@@ -590,6 +585,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     void ExecuteGuardOrder_ExitState() {
+        LogEvent();
         _isDestinationUnreachable = false;
     }
 
@@ -603,7 +599,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     void Guarding_ExitState() {
-
+        LogEvent();
     }
 
     #endregion
@@ -617,12 +613,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        //D.Log("{0}.ExecuteAttackOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        D.Log(toShowDLog, "{0}.ExecuteAttackOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = Speed.FleetFull;
         Call(FleetState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null;  // required so Return()s here
 
         if (_isDestinationUnreachable) {
             CurrentState = FleetState.Idling;
@@ -635,8 +630,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
 
         Call(FleetState.Attacking);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null;  // required so Return()s here
         CurrentState = FleetState.Idling;
     }
 
@@ -700,11 +694,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     #region ExecuteJoinFleetOrder
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
-        D.Log("{0}.ExecuteJoinFleetOrder_EnterState called.", FullName);
+        D.Log(toShowDLog, "{0}.ExecuteJoinFleetOrder_EnterState beginning execution.", FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = Speed.FleetStandard;
         Call(FleetState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
+        yield return null;  // required so Return()s here
         if (_isDestinationUnreachable) {
             CurrentState = FleetState.Idling;
             yield break;
@@ -782,36 +776,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         return patrolPoints.MinBy(pp => Vector3.SqrMagnitude(pp.Position - Position));
     }
 
-    /// <summary>
-    /// Determines the appropriate move target from the provided orderTarget;
-    /// <remarks>System or Sector targets can have multiple move destinations depending on circumstances. </remarks>
-    /// </summary>
-    /// <param name="orderTarget">The order target.</param>
-    /// <returns></returns>
-    //private INavigableTarget DetermineMoveTarget(INavigableTarget orderTarget) {
-    //    var systemTarget = orderTarget as SystemItem;
-    //    if (systemTarget != null) {
-    //        // target is a system
-    //        if (Topography == Topography.System) {
-    //            // fleet is currently in a system
-    //            var fleetSystem = SectorGrid.Instance.GetSectorContaining(Position).System;
-    //            if (fleetSystem == systemTarget) {
-    //                // system fleet is currently in is also the target so move to a patrol point in the system
-    //                return GetClosestPatrolPoint(systemTarget.PatrolPoints);
-    //            }
-    //        }
-    //    }
-    //    var sectorTarget = orderTarget as SectorItem;
-    //    if (sectorTarget != null) {
-    //        // target is a sector
-    //        var fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
-    //        if (fleetSector == sectorTarget) {
-    //            return GetClosestPatrolPoint(sectorTarget.PatrolPoints);
-    //        }
-    //    }
-    //    return orderTarget;
-    //}
-
     #endregion
 
     #endregion
@@ -825,6 +789,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// </summary>
     /// <param name="fleetIsAlignedCallback">The fleet is aligned callback.</param>
     internal void WaitForFleetToAlign(Action fleetIsAlignedCallback) {
+        D.Assert(fleetIsAlignedCallback != null);
         _navigator.WaitForFleetToAlign(fleetIsAlignedCallback);
     }
 
@@ -833,9 +798,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// delegate that registered the callback. Returns <c>true</c> if the callback was removed, <c>false</c> otherwise.
     /// </summary>
     /// <param name="shipCallbackDelegate">The callback delegate from the ship. Can be null.</param>
+    /// <param name="shipName">Name of the ship for debugging.</param>
     /// <returns></returns>
-    internal bool TryRemoveFleetIsAlignedCallback(Action shipCallbackDelegate) {
-        return _navigator.TryRemoveFleetIsAlignedCallback(shipCallbackDelegate);
+    internal bool TryRemoveFleetIsAlignedCallback(Action shipCallbackDelegate, string shipName) {
+        D.Assert(shipCallbackDelegate != null);
+        return _navigator.TryRemoveFleetIsAlignedCallback(shipCallbackDelegate, shipName);
     }
 
     #region Cleanup
@@ -892,12 +859,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         FleetFormationStation station = ship.FormationStation;
         if (station == null) {
             // the ship does not yet have a formation station so make one
-            //D.Log("{0} is adding a new FormationStation.", ship.FullName);
+            //D.Log(toShowDLog, "{0} is adding a new FormationStation.", ship.FullName);
             station = new FleetFormationStation(ship, stationOffset);
             ship.FormationStation = station;
         }
         else {
-            //D.Log("{0} already has a FormationStation.", ship.FullName);
+            //D.Log(toShowDLog, "{0} already has a FormationStation.", ship.FullName);
             station.StationOffset = stationOffset;
         }
     }
@@ -930,6 +897,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
 
         private bool IsWaitForFleetToAlignJobRunning { get { return _waitForFleetToAlignJob != null && _waitForFleetToAlignJob.IsRunning; } }
+
+        protected override bool ToShowDLog { get { return _fleet.toShowDLog; } }
 
         private Action _fleetIsAlignedCallbacks;
         private Job _waitForFleetToAlignJob;
@@ -996,8 +965,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private void InitiateCourseToTarget() {
             D.Assert(!IsPilotNavigationJobRunning);
             D.Assert(!_hasFlagshipReachedDestination);
-            D.Log("{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
-            //D.Log("{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
+            D.Log(ToShowDLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, Target.FullName, TargetPointDistance, TravelSpeed.GetEnumAttributeText(), TravelSpeed.GetUnitsPerHour(_fleet.Data, null));
+            //D.Log(ToShowDLog, "{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
 
             _currentWaypointIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
             INavigableTarget currentWaypoint = Course[_currentWaypointIndex];   // skip the course start position as the fleet is already there
@@ -1027,7 +996,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
             if (_gameMgr.IsPaused) {
                 _pilotNavigationJob.Pause();
-                D.Log("{0} has paused PilotNavigationJob immediately after starting it.", Name);
+                D.Log(ToShowDLog, "{0} has paused PilotNavigationJob immediately after starting it.", Name);
             }
         }
 
@@ -1040,11 +1009,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageCourse() {
-            //D.Log("{0}.EngageCourse() has begun.", _fleet.FullName);
+            //D.Log(ToShowDLog, "{0}.EngageCourse() has begun.", _fleet.FullName);
             int targetDestinationIndex = Course.Count - 1;
             D.Assert(_currentWaypointIndex == 1);  // already set prior to the start of the Job
             INavigableTarget currentWaypoint = Course[_currentWaypointIndex];
-            D.Log("{0} first waypoint in multi-waypoint course is {1}.", Name, currentWaypoint.Position);
+            D.Log(ToShowDLog, "{0} first waypoint in multi-waypoint course is {1}.", Name, currentWaypoint.Position);
 
             float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target is a StationaryLocation
             if (_currentWaypointIndex == targetDestinationIndex) {
@@ -1064,7 +1033,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     else if (_currentWaypointIndex > targetDestinationIndex) {
                         continue;   // conclude coroutine
                     }
-                    D.Log("{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
+                    D.Log(ToShowDLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
                         _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, Course[_currentWaypointIndex].FullName);
 
                     currentWaypoint = Course[_currentWaypointIndex];
@@ -1102,7 +1071,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _fleetIsAlignedCallbacks += fleetIsAlignedCallback;
             if (!IsWaitForFleetToAlignJobRunning) {
                 float allowedTime = CalcMaxSecsReqdForFleetToAlign();
-                //D.Log("{0}: Time allowed for coroutine to wait for fleet to align for departure before error = {1:0.##} secs.", FullName, allowedTime);
+                //D.Log(ToShowDLog, "{0}: Time allowed for coroutine to wait for fleet to align for departure before error = {1:0.##} secs.", FullName, allowedTime);
                 _waitForFleetToAlignJob = new Job(WaitWhileShipsAlignToRequestedHeading(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
                     if (jobWasKilled) {
                         D.Assert(_fleetIsAlignedCallbacks == null);  // only killed when all waiting delegates from ships removed
@@ -1111,7 +1080,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         D.Assert(_fleetIsAlignedCallbacks != null);  // completed normally so there must be a ship to notify
                         int delegateCount;
                         D.Warn((delegateCount = _fleetIsAlignedCallbacks.GetInvocationList().Count()) < _fleet.Elements.Count,
-                            "{0}'s FleetIsAligned delegate count {1} < element count {2}.", Name, delegateCount, _fleet.Elements.Count);
+                            "{0} has completed WaitForFleetToAlign Job but ship delegate count {1} < element count {2}.", Name, delegateCount, _fleet.Elements.Count);
                         _fleetIsAlignedCallbacks();
                         _fleetIsAlignedCallbacks = null;
                     }
@@ -1121,7 +1090,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         private float CalcMaxSecsReqdForFleetToAlign() {
             float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
-            //D.Log("{0}'s lowest ship turn rate = {1:0.##} Degrees/Hr.", Name, lowestShipTurnrate);
+            //D.Log(ToShowDLog, "{0}'s lowest ship turn rate = {1:0.##} Degrees/Hr.", Name, lowestShipTurnrate);
             return GameUtility.CalcMaxReqdSecsToCompleteRotation(lowestShipTurnrate, ShipItem.ShipHelm.MaxReqdHeadingChange);
         }
 
@@ -1138,7 +1107,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 D.Assert(cumTime < allowedTime, "{0}'s WaitWhileShipsAlignToRequestedHeading coroutine exceeded AllowedTime of {1:0.##}.", Name, allowedTime);
                 yield return null;
             }
-            //D.Log("{0}'s WaitWhileShipsAlignToRequestedHeading coroutine completed. AllowedTime = {1:0.##}, TimeTaken = {2:0.##}, .", Name, allowedTime, cumTime);
+            //D.Log(ToShowDLog, "{0}'s WaitWhileShipsAlignToRequestedHeading coroutine completed. AllowedTime = {1:0.##}, TimeTaken = {2:0.##}, .", Name, allowedTime, cumTime);
         }
 
         private void KillWaitForFleetToAlignJob() {
@@ -1152,18 +1121,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// delegate that registered the callback. Returns <c>true</c> if the callback was removed, <c>false</c> otherwise.
         /// </summary>
         /// <param name="shipCallbackDelegate">The callback delegate from the ship. Can be null.</param>
+        /// <param name="shipName">Name of the ship for debugging.</param>
         /// <returns></returns>
-        internal bool TryRemoveFleetIsAlignedCallback(Action shipCallbackDelegate) {
+        internal bool TryRemoveFleetIsAlignedCallback(Action shipCallbackDelegate, string shipName) {
             bool delegateWasRemoved = false;
             if (_fleetIsAlignedCallbacks != null) {
                 D.Assert(IsWaitForFleetToAlignJobRunning);
+                delegateWasRemoved = _fleetIsAlignedCallbacks.GetInvocationList().Contains(shipCallbackDelegate);
+                D.Warn(!delegateWasRemoved, "{0}: Attempt to remove {1}'s FleetIsAlignedCallbackDelegate that is not present.", Name, shipName);
                 _fleetIsAlignedCallbacks = Delegate.Remove(_fleetIsAlignedCallbacks, shipCallbackDelegate) as Action;
                 if (_fleetIsAlignedCallbacks == null) {
                     // delegate invocation list is now empty
                     KillWaitForFleetToAlignJob();
                 }
-                // IMPROVE technically not always true as callbackDelegate may not be present and Remove() won't tell us that
-                delegateWasRemoved = true;
             }
             return delegateWasRemoved;
         }
@@ -1173,7 +1143,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         #region Event and Property Change Handlers
 
         private void FlagshipReachedDestinationHandler(object sender, EventArgs e) {
-            D.Log("{0} reporting that Flagship {1} has reached destination.", Name, _fleet.HQElement.FullName);
+            D.Log(ToShowDLog, "{0} reporting that Flagship {1} has reached destination.", Name, _fleet.HQElement.FullName);
             _hasFlagshipReachedDestination = true;
         }
 
@@ -1185,7 +1155,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
             ConstructCourse(path.vectorPath);
             HandleCourseChanged();
-            //D.Log("{0}'s waypoint course to {1} is: {2}.", ClientName, Target.FullName, Course.Concatenate());
+            //D.Log(ToShowDLog, "{0}'s waypoint course to {1} is: {2}.", ClientName, Target.FullName, Course.Concatenate());
             //PrintNonOpenSpaceNodes(path);
 
             if (_isCourseReplot) {
@@ -1243,7 +1213,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
                     // Note: can't use a distance check here as Fleets don't check for obstacles based on time.
                     // They only check when embarking on a new course leg
-                    D.Log("{0} has declined to generate a detour around mobile obstacle {1}. Reqd Turn = {2:0.#} degrees.", Name, obstacle.FullName, reqdTurnAngleToDetour);
+                    D.Log(ToShowDLog, "{0} has declined to generate a detour around mobile obstacle {1}. Reqd Turn = {2:0.#} degrees.", Name, obstacle.FullName, reqdTurnAngleToDetour);
                     return false;
                 }
             }
@@ -1289,12 +1259,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             if (fleetSystem != null) {
                 if (fleetSystem == targetSystem) {
                     // the target and fleet are in the same system so exit and entry points aren't needed
-                    //D.Log("{0} and target {1} are both within System {2}.", _fleet.DisplayName, Target.FullName, fleetSystem.FullName);
+                    //D.Log(ToShowDLog, "{0} and target {1} are both within System {2}.", _fleet.DisplayName, Target.FullName, fleetSystem.FullName);
                     return;
                 }
                 Vector3 fleetSystemExitPt = MyMath.FindClosestPointOnSphereTo(Position, fleetSystem.Position, fleetSystem.Radius);
                 Course.Insert(1, new StationaryLocation(fleetSystemExitPt));
-                D.Log("{0} adding SystemExit Waypoint {1} for System {2}.", Name, fleetSystemExitPt, fleetSystem.FullName);
+                D.Log(ToShowDLog, "{0} adding SystemExit Waypoint {1} for System {2}.", Name, fleetSystemExitPt, fleetSystem.FullName);
             }
 
             if (targetSystem != null) {
@@ -1310,7 +1280,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     targetSystemEntryPt = MyMath.FindClosestPointOnSphereTo(TargetPoint, targetSystem.Position, targetSystem.Radius);
                 }
                 Course.Insert(Course.Count - 1, new StationaryLocation(targetSystemEntryPt));
-                D.Log("{0} adding SystemEntry Waypoint {1} for System {2}.", Name, targetSystemEntryPt, targetSystem.FullName);
+                D.Log(ToShowDLog, "{0} adding SystemEntry Waypoint {1} for System {2}.", Name, targetSystemEntryPt, targetSystem.FullName);
             }
         }
 
@@ -1321,7 +1291,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="waypoint">The waypoint.</param>
         /// <exception cref="System.NotImplementedException"></exception>
         protected override void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null) {
-            //D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
+            //D.Log(ToShowDLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.Assert(waypoint == null);
@@ -1350,14 +1320,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
             }
-            //D.Log("CourseCountAfter = {0}.", Course.Count);
+            //D.Log(ToShowDLog, "CourseCountAfter = {0}.", Course.Count);
             HandleCourseChanged();
         }
 
         private void GenerateCourse() {
             Vector3 start = Position;
             string replot = _isCourseReplot ? "RE-plotting" : "plotting";
-            D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", Name, replot, Target.FullName, start, TargetPoint);
+            D.Log(ToShowDLog, "{0} is {1} course to {2}. Start = {3}, Destination = {4}.", Name, replot, Target.FullName, start, TargetPoint);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
             //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points
@@ -1368,18 +1338,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             NNConstraint constraint = new NNConstraint();
             constraint.constrainTags = true;
             if (constraint.constrainTags) {
-                //D.Log("Pathfinding's Tag constraint activated.");
+                //D.Log(ToShowDLog, "Pathfinding's Tag constraint activated.");
             }
             else {
-                //D.Log("Pathfinding's Tag constraint deactivated.");
+                //D.Log(ToShowDLog, "Pathfinding's Tag constraint deactivated.");
             }
 
             constraint.constrainDistance = false;    // default is true // experimenting with no constraint
             if (constraint.constrainDistance) {
-                //D.Log("Pathfinding's MaxNearestNodeDistance constraint activated. Value = {0}.", AstarPath.active.maxNearestNodeDistance);
+                //D.Log(ToShowDLog, "Pathfinding's MaxNearestNodeDistance constraint activated. Value = {0}.", AstarPath.active.maxNearestNodeDistance);
             }
             else {
-                //D.Log("Pathfinding's MaxNearestNodeDistance constraint deactivated.");
+                //D.Log(ToShowDLog, "Pathfinding's MaxNearestNodeDistance constraint deactivated.");
             }
             path.nnConstraint = constraint;
 

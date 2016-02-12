@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle {
+public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IPatrollable {
 
     public StarCategory category = StarCategory.None;
 
@@ -46,8 +46,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public ISystemItem System { get; private set; }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
-
-    public IList<StationaryLocation> PatrolPoints { get { return System.PatrolPoints; } }
 
     private DetectionHandler _detectionHandler;
     private SphereCollider _primaryCollider;
@@ -238,5 +236,10 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #endregion
 
+    #region IPatrollable Members
+
+    public IList<StationaryLocation> PatrolPoints { get { return (System as IPatrollable).PatrolPoints; } }
+
+    #endregion
 }
 

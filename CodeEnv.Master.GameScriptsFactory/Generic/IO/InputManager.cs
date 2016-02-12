@@ -688,12 +688,6 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         UICamera.onDrag -= DraggingEventHandler;
         UICamera.onDragEnd -= DragEndEventHandler;
         UICamera.onPress -= PressEventHandler;
-        //if (UICamera.onHover != null) {
-        //    D.Log("{0}: {1}.onHover delegate subscribers: {2}.", GetType().Name, typeof(UICamera).Name, UICamera.onHover.GetInvocationList().Concatenate());
-        //}
-        //else {
-        //    D.Log("{0}: UICamera.onHover is null.", GetType().Name);
-        //}
     }
 
     #endregion

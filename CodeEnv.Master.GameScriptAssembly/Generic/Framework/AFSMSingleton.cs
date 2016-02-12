@@ -238,9 +238,11 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        //Create the interruptable coroutines
-        enterStateCoroutine = new InterruptableCoroutine(this);
+        // I changed the order in which these are called. If left as it was, if ExitState() was IEnumerable
+        // along with EnterState(), then the EnterState would be executed before ExitState. I never saw this as
+        // a problem as all my ExitState()s return void.
         exitStateCoroutine = new InterruptableCoroutine(this);
+        enterStateCoroutine = new InterruptableCoroutine(this);
     }
 
     #region Default Implementations Of Delegates
@@ -390,6 +392,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
         }
+
+        ChangingState();    // my addition to keep lastState in sync
+
         if (_stack.Count > 0) {
             state = _stack.Pop();
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
@@ -410,6 +415,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             exitStateCoroutine.Run(state.exitStateEnumerator);
 
         }
+
+        ChangingState();    // my addition to keep lastState in sync
+
         if (_stack.Count > 0) {
             state = _stack.Pop();
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
@@ -433,13 +441,16 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// Configures the state machine for the current state
     /// </summary>
     protected void ConfigureCurrentState() {
+        bool exitStateMethodReturnsIEnumerator = false;
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
+            exitStateMethodReturnsIEnumerator = state.exitState.Method.ReturnType == typeof(IEnumerator);
             exitStateCoroutine.Run(state.exitState());
         }
 
         GetStateMethods();
 
+        bool enterStateMethodReturnsVoid = false;
         if (state.enterState != null) {
             //var statePriorToEnterStateExecution = state.currentState;
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
@@ -451,8 +462,10 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             //        D.Warn("{0} has changed state from {1} to {2} while in a void EnterState.", GetType().Name, statePriorToEnterStateExecution, state.currentState);
             //    }
             //}
+            enterStateMethodReturnsVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
             enterStateCoroutine.Run(state.enterStateEnumerator);
         }
+        __ValidateMethodReturnTypes(exitStateMethodReturnsIEnumerator, enterStateMethodReturnsVoid);    // a little late but better than nothing
     }
 
     //Retrieves all of the methods for the current state
@@ -529,6 +542,14 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             lookup[methodRoot] = returnValue;
         }
         return returnValue as R;
+    }
+
+    private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
+        if (exitStateMethodReturnsIEnumerator && enterStateMethodReturnsVoid) {
+            string lastStateMsg = lastState != null ? lastState.ToString() : "null";
+            string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(GetType().Name, lastStateMsg, CurrentState.ToString());
+            throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
+        }
     }
 
     #region Pass On Methods

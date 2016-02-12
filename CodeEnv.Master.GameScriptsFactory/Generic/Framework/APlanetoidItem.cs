@@ -145,7 +145,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     private void CurrentStatePropChangedHandler() {
-        //D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
+        //D.Log(toShowDLog, "{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
         switch (CurrentState) {
             case PlanetoidState.Idling:
                 break;
@@ -206,10 +206,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            D.Log("{0} has been hit but incurred no damage.", FullName);
+            D.Log(toShowDLog, "{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        D.Log(toShowDLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);

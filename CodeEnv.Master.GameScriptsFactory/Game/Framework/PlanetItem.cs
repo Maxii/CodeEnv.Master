@@ -76,7 +76,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
         var iconInfo = RefreshIconInfo();
         if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
             UnsubscribeToIconEvents(DisplayMgr.Icon);
-            //D.Log("{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+            //D.Log(toShowDLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
             DisplayMgr.IconInfo = iconInfo;
             SubscribeToIconEvents(DisplayMgr.Icon);
         }

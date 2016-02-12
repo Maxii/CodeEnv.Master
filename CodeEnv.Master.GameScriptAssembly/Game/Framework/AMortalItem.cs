@@ -27,6 +27,12 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItem : AIntelItem, IMortalItem {
 
+    /// <summary>
+    /// Debug flag indicating whether to show the D.Log for this item.
+    /// <remarks>Requires #define DEBUG_LOG to be compiled.</remarks>
+    /// </summary>
+    public bool toShowDLog = false;
+
     public event EventHandler deathOneShot;
 
     public new AMortalItemData Data {
@@ -219,9 +225,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
     public override void LogEvent() {
-        if (DebugSettings.Instance.EnableEventLogging) {
+        if (DebugSettings.Instance.EnableEventLogging && toShowDLog) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
-            Debug.Log("{0}.{1}.{2}() called.".Inject(FullName, GetType().Name, stackFrame.GetMethod().Name));
+            string name = Utility.CheckForContent(FullName) ? FullName : transform.name + "(from transform)";
+            Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
         }
     }
 

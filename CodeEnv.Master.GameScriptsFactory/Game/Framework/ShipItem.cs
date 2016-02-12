@@ -124,7 +124,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         _collisionDetectionZoneCollider.enabled = false;
         _collisionDetectionZoneCollider.isTrigger = true;
         _collisionDetectionZoneCollider.radius = Radius * 2F;
-        //D.Log("{0} ShipCollisionDetectionZoneRadius = {1:0.##}.", FullName, _collisionDetectionZoneCollider.radius);
+        //D.Log(toShowDLog, "{0} ShipCollisionDetectionZoneRadius = {1:0.##}.", FullName, _collisionDetectionZoneCollider.radius);
         D.Warn(_collisionDetectionZoneCollider.radius > TempGameValues.LargestShipCollisionDetectionZoneRadius, "{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.",
             FullName, _collisionDetectionZoneCollider.radius, TempGameValues.LargestShipCollisionDetectionZoneRadius);
 
@@ -196,68 +196,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         // Keep the collisionDetection Collider enabled to keep other ships from flying through this exploding ship
     }
 
-    private void CurrentOrderPropChangedHandler() {
-        //TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-        if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingOrbit) {
-            Return();
-            // I expect the assert below to fail when either CalledState_ExitState() or CallingState_EnterState() returns IEnumerable.  Return() above executes
-            // CalledState_ExitState() first, then continues execution of CallingState_EnterState() from the point after it executed Call(CalledState). 
-            // If CalledState_ExitState() or CallingState_EnterState() returns void, the method will be executed immediately before the code below is executed. 
-            // This is good. If either returns IEnumerable, the method will be executed the next time Update() is run, which means after all the code below is executed! 
-            // The StateMachine gets lost, without indicating an error and nothing more will happen.
-            // 
-            // I expect the answer to this is to defer the execution of the code below for one frame using a WaitJob, when Return() is called.
-            D.Assert(CurrentState != ShipState.Moving && CurrentState != ShipState.Repairing && CurrentState != ShipState.AssumingOrbit);
-        }
-
-        if (CurrentOrder != null) {
-            //D.Log("{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
-            if (Data.Target == null || !Data.Target.Equals(CurrentOrder.Target)) {   // OPTIMIZE     avoids Property equal warning
-                Data.Target = CurrentOrder.Target;  // can be null
-                if (CurrentOrder.Target != null) {
-                    //D.Log("{0}'s new target for order {1} is {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentOrder.Target.FullName);
-                }
-            }
-
-            ShipDirective order = CurrentOrder.Directive;
-            switch (order) {
-                case ShipDirective.Attack:
-                    CurrentState = ShipState.ExecuteAttackOrder;
-                    break;
-                case ShipDirective.StopAttack:
-                    // issued when peace declared while attacking
-                    CurrentState = ShipState.Idling;
-                    break;
-                case ShipDirective.Entrench:
-                    CurrentState = ShipState.Entrenching;
-                    break;
-                case ShipDirective.Move:
-                    CurrentState = ShipState.ExecuteMoveOrder;
-                    break;
-                case ShipDirective.Repair:
-                    CurrentState = ShipState.ExecuteRepairOrder;
-                    break;
-                case ShipDirective.Join:
-                    CurrentState = ShipState.ExecuteJoinFleetOrder;
-                    break;
-                case ShipDirective.AssumeStation:
-                    CurrentState = ShipState.ExecuteAssumeStationOrder;
-                    break;
-                case ShipDirective.Scuttle:
-                    IsOperational = false;
-                    break;
-                case ShipDirective.Disband:
-                case ShipDirective.Refit:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, order.GetValueName());
-                    break;
-                case ShipDirective.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-            //D.Log("{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentState.GetValueName());
-        }
-    }
-
     #region Orbiting
 
     /// <summary>
@@ -282,7 +220,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 }
             }
             orbitSlot = objectToOrbit.ShipOrbitSlot;
-            //D.Log("{0} should begin to assume orbit around {1}.", FullName, objectToOrbit.FullName);
+            //D.Log(toShowDLog, "{0} should begin to assume orbit around {1}.", FullName, objectToOrbit.FullName);
             return true;
         }
         return false;
@@ -296,7 +234,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         var orbitSimulator = orbitSlot.PrepareToAssumeOrbit(this);
         _orbitSimulatorJoint = gameObject.AddComponent<FixedJoint>();
         _orbitSimulatorJoint.connectedBody = orbitSimulator.Rigidbody;
-        D.Log("{0} has assumed orbit around {1}.", FullName, orbitSlot.OrbitedObject.FullName);
+        D.Log(toShowDLog, "{0} has assumed orbit around {1}.", FullName, orbitSlot.OrbitedObject.FullName);
 
         AMortalItem mortalOrbitedObject = orbitSlot.OrbitedObject as AMortalItem;
         if (mortalOrbitedObject != null) {
@@ -332,7 +270,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     ///   <c>true</c> if the ship should break orbit.
     /// </returns>
     private bool AssessWhetherToBreakOrbit(ShipOrbitSlot orbitSlot) {
-        //D.Log("{0}.AssessWhetherToBreakOrbit() called.", FullName);
+        //D.Log(toShowDLog, "{0}.AssessWhetherToBreakOrbit() called.", FullName);
         D.Assert(_isInOrbit);
         // currently, the only condition where the ship wouldn't leave orbit is if it is attacking the planetoid it is orbiting
         if (CurrentState == ShipState.ExecuteAttackOrder) {
@@ -426,7 +364,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 _coursePlotLine = new CoursePlotLine(name, course);
             }
             else {
-                //D.Log("{0} attempting to update {1}. PointsCount = {2}, ProposedCount = {3}.",
+                //D.Log(toShowDLog, "{0} attempting to update {1}. PointsCount = {2}, ProposedCount = {3}.",
                 //    FullName, typeof(CoursePlotLine).Name, _coursePlotLine.Points.Length, course.Count);
                 _coursePlotLine.UpdateCourse(course);
             }
@@ -488,6 +426,85 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         }
     }
 
+    private void CollisionDetectionZoneExitEventHandler(Collider otherObstacleZoneCollider) {
+        if (otherObstacleZoneCollider == _collisionDetectionZoneCollider) {
+            D.Warn("{0} exiting its own CollisionDetectionCollider?!", FullName);
+            return;
+        }
+        if (IsOperational) {
+            Helm.HandlePendingCollisionAverted(otherObstacleZoneCollider);
+        }
+    }
+
+    private void CurrentOrderPropChangedHandler() {
+        ProcessOrder();
+    }
+
+    #endregion
+
+    private void ProcessOrder() {
+        //TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+        if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingOrbit) {
+            Return();
+            // I expect the assert below to fail when either CalledState_ExitState() or CallingState_EnterState() returns IEnumerator.  
+            // Return() above executes CalledState_ExitState() first, then continues execution of CallingState_EnterState() from the point 
+            // after it executed Call(CalledState). If CalledState_ExitState() or CallingState_EnterState() returns void, the method will 
+            // be executed immediately before the code below is executed. This is good. If either returns IEnumerator, the method will be 
+            // executed the next time Update() is run, which means after all the code below is executed! 
+            // The StateMachine gets lost, without indicating an error and nothing more will happen.
+            // 
+            // I expect the answer to this is to defer the execution of the code below for one frame using a WaitJob, when Return() is called.
+            D.Assert(CurrentState != ShipState.Moving && CurrentState != ShipState.Repairing && CurrentState != ShipState.AssumingOrbit);
+        }
+
+        if (CurrentOrder != null) {
+            //D.Log(toShowDLog, "{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
+            if (Data.Target == null || !Data.Target.Equals(CurrentOrder.Target)) {   // OPTIMIZE     avoids Property equal warning
+                Data.Target = CurrentOrder.Target;  // can be null
+                if (CurrentOrder.Target != null) {
+                    //D.Log(toShowDLog, "{0}'s new target for order {1} is {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentOrder.Target.FullName);
+                }
+            }
+
+            ShipDirective order = CurrentOrder.Directive;
+            switch (order) {
+                case ShipDirective.Attack:
+                    CurrentState = ShipState.ExecuteAttackOrder;
+                    break;
+                case ShipDirective.StopAttack:
+                    // issued when peace declared while attacking
+                    CurrentState = ShipState.Idling;
+                    break;
+                case ShipDirective.Entrench:
+                    CurrentState = ShipState.Entrenching;
+                    break;
+                case ShipDirective.Move:
+                    CurrentState = ShipState.ExecuteMoveOrder;
+                    break;
+                case ShipDirective.Repair:
+                    CurrentState = ShipState.ExecuteRepairOrder;
+                    break;
+                case ShipDirective.Join:
+                    CurrentState = ShipState.ExecuteJoinFleetOrder;
+                    break;
+                case ShipDirective.AssumeStation:
+                    CurrentState = ShipState.ExecuteAssumeStationOrder;
+                    break;
+                case ShipDirective.Scuttle:
+                    IsOperational = false;
+                    break;
+                case ShipDirective.Disband:
+                case ShipDirective.Refit:
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, order.GetValueName());
+                    break;
+                case ShipDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+            D.Log(toShowDLog, "{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder.Directive.GetValueName(), CurrentState.GetValueName());
+        }
+    }
+
     private void __WarnOnOrbitalEncounter(Collider obstacleZoneColliderEncountered) {
         string orbitStateMsg = null;
         if (CurrentState == ShipState.AssumingOrbit) {
@@ -499,18 +516,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         D.Warn(orbitStateMsg != null, "{0} has recorded a pending collision with {1} while {2} orbit.", FullName, obstacleZoneColliderEncountered.name, orbitStateMsg);
     }
 
-
-    private void CollisionDetectionZoneExitEventHandler(Collider otherObstacleZoneCollider) {
-        if (otherObstacleZoneCollider == _collisionDetectionZoneCollider) {
-            D.Warn("{0} exiting its own CollisionDetectionCollider?!", FullName);
-            return;
-        }
-        if (IsOperational) {
-            Helm.HandlePendingCollisionAverted(otherObstacleZoneCollider);
-        }
-    }
-
-    #endregion
 
     #region StateMachine
 
@@ -538,8 +543,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     #region Idling
 
-    IEnumerator Idling_EnterState() {
-        //D.Log("{0}.Idling_EnterState called.", FullName);
+    void Idling_EnterState() {
+        LogEvent();
         Data.Target = null; // temp to remove target from data after order has been completed or failed
 
         if (CurrentOrder != null) {
@@ -547,7 +552,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
                 D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
-                yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
+                return;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
         }
 
@@ -560,11 +565,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         }
         else {
             if (!IsHQ) {
-                //D.Log("{0} is already on station.", FullName);
+                D.Log(toShowDLog, "{0} is already on station.", FullName);
             }
         }
         //TODO register as available
-        yield return null;
     }
 
     void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -586,14 +590,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     #region ExecuteAssumeStationOrder
 
-    IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
-        D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
+    IEnumerator ExecuteAssumeStationOrder_EnterState() {
+        D.Log(toShowDLog, "{0}.ExecuteAssumeStationOrder_EnterState beginning execution.", FullName);
         _moveSpeed = CurrentOrder.Speed;
         _moveTarget = FormationStation as INavigableTarget;
         _orderSource = CurrentOrder.Source;
         Call(ShipState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null;  // required so Return()s here
+
         if (!FormationStation.IsOnStation) {
             D.Warn("{0} has exited 'Moving' to station without being on station.", FullName);
         }
@@ -602,7 +606,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             yield break;
         }
         Helm.ChangeSpeed(Speed.EmergencyStop);
-        //D.Log("{0} has assumed its formation station.", FullName);
+        //D.Log(toShowDLog, "{0} has assumed its formation station.", FullName);
 
         float cumWaitTime = Constants.ZeroF;
         while (!Command.HQElement.IsHeadingConfirmed) {
@@ -614,7 +618,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         Vector3 flagshipBearing = Command.HQElement.Data.RequestedHeading;
         Helm.ChangeHeading(flagshipBearing, CurrentOrder.Source, onHeadingConfirmed: () => {
-            //D.Log("{0} has aligned heading with Flagship {1}.", FullName, Command.HQElement.FullName);
+            //D.Log(toShowDLog, "{0} has aligned heading with Flagship {1}.", FullName, Command.HQElement.FullName);
             CurrentState = ShipState.Idling;
         });
     }
@@ -636,7 +640,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     private bool _isInOrbit;
 
     IEnumerator AssumingOrbit_EnterState() {
-        //D.Log("{0}.AssumingOrbit_EnterState called.", FullName);
+        //D.Log(toShowDLog, "{0}.AssumingOrbit_EnterState beginning execution.", FullName);
         D.Assert(_currentOrIntendedOrbitSlot != null);
         D.Assert(!_isInOrbit);
         Vector3 orbitSlotDirection;
@@ -644,12 +648,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         if (_currentOrIntendedOrbitSlot.TryGetApproach(this, out orbitSlotDirection, out approachSpeed)) {
             Helm.ChangeHeading(orbitSlotDirection, OrderSource.ElementCaptain, onHeadingConfirmed: () => {
                 Helm.ChangeSpeed(approachSpeed);
-                D.Log("{0} initiating approach to orbit around {1} at Speed {2}.", FullName, _currentOrIntendedOrbitSlot.OrbitedObject.FullName, approachSpeed.GetEnumAttributeText());
+                D.Log(toShowDLog, "{0} initiating approach to orbit around {1} at Speed {2}.", FullName, _currentOrIntendedOrbitSlot.OrbitedObject.FullName, approachSpeed.GetEnumAttributeText());
             });
             yield return null;  // allows heading coroutine to engage and change IsBearingConfirmed to false
         }
         else {
-            D.Log("{0} is within the orbit slot.", FullName);
+            D.Log(toShowDLog, "{0} is within the orbit slot.", FullName);
         }
 
         float allowedWaitTimeInSecs = 10F / GameTime.SlowestGameSpeedMultiplier;   // so accommodates GameSpeed.Slowest
@@ -677,21 +681,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     #region ExecuteMoveOrder
 
-    IEnumerator ExecuteMoveOrder_EnterState() { // cannot return void as code after Call() executes without waiting for a Return()
-        //D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
+    IEnumerator ExecuteMoveOrder_EnterState() {
+        D.Log(toShowDLog, "{0}.ExecuteMoveOrder_EnterState beginning execution.", FullName);
         TryBreakOrbit();
 
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
         _orderSource = OrderSource.UnitCommand;
 
-        if (IsHQ) {
-            //D.Log("{0} calling {1}.{2}. Target: {3}, Speed: {4}, OrderSource: {5}.", FullName, typeof(ShipState).Name,
-            //ShipState.Moving.GetEnumAttributeText(), _moveTarget.FullName, _moveSpeed.GetEnumAttributeText(), _orderSource.GetEnumAttributeText());
-        }
+        D.Log(toShowDLog, "{0} calling {1}.{2}. Target: {3}, Speed: {4}, OrderSource: {5}.", FullName, typeof(ShipState).Name,
+        ShipState.Moving.GetEnumAttributeText(), _moveTarget.FullName, _moveSpeed.GetEnumAttributeText(), _orderSource.GetEnumAttributeText());
 
         Call(ShipState.Moving);
-        yield return null;  // not reqd as Moving_EnterState() executes immediately and Return()s here?
+        yield return null;  // required so Return()s here
 
         if (_isDestinationUnreachable) {
             __HandleDestinationUnreachable();
@@ -700,9 +702,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         if (AssessWhetherToAssumeOrbit(out _currentOrIntendedOrbitSlot)) {
             Call(ShipState.AssumingOrbit);
-            yield return null;  // 1 frame delay reqd to allow Call()ed EnterState() to execute during next Update()
-            // Return()s here
+            yield return null;    // required so Return()s here
         }
+        D.Log(toShowDLog, "{0}.ExecuteMoveOrder_EnterState is about to set State to {1}.", FullName, ShipState.Idling.GetEnumAttributeText());
         CurrentState = ShipState.Idling;
     }
 
@@ -820,21 +822,21 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     private IElementAttackableTarget _primaryTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        //D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
+        D.Log(toShowDLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
 
         TryBreakOrbit();
 
         _ordersTarget = CurrentOrder.Target as IUnitAttackableTarget;
         while (_ordersTarget.IsOperational) {
             if (TryPickPrimaryTarget(out _primaryTarget)) {
-                //D.Log("{0} picked {1} as Primary Target.", FullName, _primaryTarget.FullName);
+                //D.Log(toShowDLog, "{0} picked {1} as Primary Target.", FullName, _primaryTarget.FullName);
                 // target found within sensor range
                 _primaryTarget.deathOneShot += TargetDeathEventHandler;
                 _moveTarget = _primaryTarget;
                 _moveSpeed = Speed.Full;
                 _orderSource = OrderSource.ElementCaptain;
                 Call(ShipState.Moving);
-                yield return null;  // Return()s here
+                yield return null;    // required so Return()s here
                 if (_isDestinationUnreachable) {
                     __HandleDestinationUnreachable();
                     yield break;
@@ -866,8 +868,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     }
 
     void ExecuteAttackOrder_UponTargetDeath(IMortalItem deadTarget) {
-        D.Assert(_primaryTarget == deadTarget);
         LogEvent();
+        D.Assert(_primaryTarget == deadTarget);
         _primaryTarget = null;  // tells EnterState it can stop waiting for targetDeath and pick another primary target
     }
 
@@ -954,15 +956,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        //D.Log("{0}.ExecuteRepairOrder_EnterState called.", FullName);
+        D.Log(toShowDLog, "{0}.ExecuteRepairOrder_EnterState beginning execution.", FullName);
         TryBreakOrbit();
 
         _moveSpeed = Speed.Full;
         _moveTarget = CurrentOrder.Target;
         _orderSource = OrderSource.ElementCaptain;  // UNCLEAR what if the fleet issued the fleet-wide repair order?
         Call(ShipState.Moving);
-        yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here
+        yield return null;  // required so Return()s here
+
         if (_isDestinationUnreachable) {
             //TODO how to handle move errors?
             CurrentState = ShipState.Idling;
@@ -971,12 +973,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         if (AssessWhetherToAssumeOrbit(out _currentOrIntendedOrbitSlot)) {
             Call(ShipState.AssumingOrbit);
-            yield return null;  // required immediately after Call() to avoid FSM bug
-            // Return()s here
+            yield return null;   // required so Return()s here
         }
 
         Call(ShipState.Repairing);
-        yield return null;  // required immediately after Call() to avoid FSM bug
+        yield return null;    // required so Return()s here
         CurrentState = ShipState.Idling;
     }
 
@@ -996,7 +997,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.Repairing_EnterState called.", FullName);
+        D.Log(toShowDLog, "{0}.Repairing_EnterState beginning execution.", FullName);
         //_helm.ChangeSpeed(Speed.Stop);    // ship is already stopped
         StartEffect(EffectID.Repairing);
 
@@ -1004,7 +1005,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
-            //D.Log("{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            //D.Log(toShowDLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
             yield return new WaitForSeconds(10F);
         }
 
@@ -1014,7 +1015,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
         Data.IsFtlDamaged = false;
-        //D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        //D.Log(toShowDLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
         Return();
@@ -1113,12 +1114,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         D.Assert(!FormationStation.IsOnStation, "{0} is already OnStation!", FullName);
         if (_isInOrbit) {
             // ship is in orbit  
-            D.Log("{0} is in orbit and will not attempt to resume its station.", FullName);
+            D.Log(toShowDLog, "{0} is in orbit and will not attempt to resume its station.", FullName);
             return false;
         }
         if (Command.HQElement.Helm.IsAutoPilotEngaged) {
             // Flagship still has a destination so don't bother
-            D.Log("Flagship {0} is still underway, so {1} will not attempt to resume its station.", Command.HQElement.FullName, FullName);
+            D.Log(toShowDLog, "Flagship {0} is still underway, so {1} will not attempt to resume its station.", Command.HQElement.FullName, FullName);
             return false;
         }
 
@@ -1252,6 +1253,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         private bool IsHeadingJobRunning { get { return _headingJob != null && _headingJob.IsRunning; } }
 
+        protected override bool ToShowDLog { get { return _ship.toShowDLog; } }
+
         /// <summary>
         /// Delegate pointing to an anonomous method handling work after the fleet has aligned for departure.
         /// <remarks>This reference is necessary to allow removal of the callback from Fleet.WaitForFleetToAlign()
@@ -1278,7 +1281,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private NavigationValues _navValues;
         private float _targetCloseEnoughDistance;
         private ShipItem _ship;
-        private Rigidbody _shipRigidbody;
         private EngineRoom _engineRoom;
         private Job _pilotObstacleCheckJob;
         private Job _headingJob;
@@ -1292,8 +1294,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         internal ShipHelm(ShipItem ship, Rigidbody shipRigidbody)
             : base() {
             _ship = ship;
-            _shipRigidbody = shipRigidbody;
-            _engineRoom = new EngineRoom(ship.Data, shipRigidbody);
+            _engineRoom = new EngineRoom(ship, shipRigidbody);
             Subscribe();
         }
 
@@ -1328,7 +1329,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             base.EngageAutoPilot_Internal();
             // before anything, check to see if we are already there
             if (TargetPointDistance < _targetCloseEnoughDistance) {
-                //D.Log("{0} TargetDistance = {1}, TargetCloseEnoughDistance = {2}.", Name, TargetPointDistance, _targetCloseEnoughDistance);
+                //D.Log(ToShowDLog, "{0} TargetDistance = {1}, TargetCloseEnoughDistance = {2}.", Name, TargetPointDistance, _targetCloseEnoughDistance);
                 HandleDestinationReached();
                 return;
             }
@@ -1354,7 +1355,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             if (IsHeadingJobRunning) {
                 _headingJob.Kill();
             }
-            _ship.Command.TryRemoveFleetIsAlignedCallback(_executeWhenFleetIsAligned);
+            if (_executeWhenFleetIsAligned != null) {
+                _ship.Command.TryRemoveFleetIsAlignedCallback(_executeWhenFleetIsAligned, Name);
+                _executeWhenFleetIsAligned = null;
+            }
         }
 
         /// <summary>
@@ -1366,7 +1370,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private void InitiateCourseToTargetVia(INavigableTarget obstacleDetour) {
             D.Assert(!IsPilotNavigationJobRunning);
             D.Assert(!IsPilotObstacleCheckJobRunning);
-            //D.Log("{0} initiating course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
+            D.Assert(_executeWhenFleetIsAligned == null);
+            //D.Log(ToShowDLog, "{0} initiating course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
             //Name, Target.FullName, TargetPoint, obstacleDetour.FullName, Vector3.Distance(Position, obstacleDetour.Position));
 
             Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
@@ -1374,8 +1379,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             if (_orderSource == OrderSource.UnitCommand) {
                 ChangeHeading_Internal(newHeading);
 
+                D.Log(ToShowDLog, "{0} assigning _executeWhenFleetIsAligned delegate.", Name);
                 _executeWhenFleetIsAligned = () => {
-                    //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
+                    //D.Log(ToShowDLog, "{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
                     EngageEnginesAtTravelSpeed();
                     // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
                     InitiateNavigationTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance, onArrival: () => {
@@ -1407,15 +1413,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private void InitiateDirectCourseToTarget() {
             D.Assert(!IsPilotNavigationJobRunning);
             D.Assert(!IsPilotObstacleCheckJobRunning);
-            //D.Log("{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
+            D.Assert(_executeWhenFleetIsAligned == null);
+            //D.Log(ToShowDLog, "{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
             //Name, Target.FullName, TargetPoint, TargetPointDistance, _ship.IsHeadingConfirmed);
 
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             if (_orderSource == OrderSource.UnitCommand) {
                 ChangeHeading_Internal(targetPtBearing);
 
+                D.Log(ToShowDLog, "{0} assigning _executeWhenFleetIsAligned delegate.", Name);
                 _executeWhenFleetIsAligned = () => {
-                    //D.Log("{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
+                    //D.Log(ToShowDLog, "{0} reports {1} ready for departure.", Name, _ship.Command.DisplayName);
                     EngageEnginesAtTravelSpeed();
                     InitiateNavigationTo(Target, _targetCloseEnoughDistance, _fstOffset, onArrival: () => {
                         HandleDestinationReached();
@@ -1427,7 +1435,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             }
             else {
                 ChangeHeading_Internal(targetPtBearing, onHeadingConfirmed: () => {
-                    //D.Log("{0} is initiating direct course to {1}.", Name, Target.FullName);
+                    //D.Log(ToShowDLog, "{0} is initiating direct course to {1}.", Name, Target.FullName);
                     EngageEnginesAtTravelSpeed();
                     InitiateNavigationTo(Target, _targetCloseEnoughDistance, onArrival: () => {
                         HandleDestinationReached();
@@ -1443,12 +1451,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// </summary>
         private void ResumeDirectCourseToTarget() {
             CleanupAnyRemainingAutoPilotJobs();   // always called while already engaged
-            //D.Log("{0} beginning prep to resume direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
+            //D.Log(ToShowDLog, "{0} beginning prep to resume direct course to {1} at {2}. \nDistance to target = {3:0.0}. IsHeadingConfirmed = {4}.",
             //Name, Target.FullName, TargetPoint, TargetPointDistance, _ship.IsHeadingConfirmed);
 
             Vector3 targetPtBearing = (TargetPoint - Position).normalized;
             ChangeHeading_Internal(targetPtBearing, onHeadingConfirmed: () => {
-                //D.Log("{0} is now on heading to reach {1}.", Name, Target.FullName);
+                //D.Log(ToShowDLog, "{0} is now on heading to reach {1}.", Name, Target.FullName);
                 InitiateNavigationTo(Target, _targetCloseEnoughDistance, _fstOffset, onArrival: () => {
                     HandleDestinationReached();
                 });
@@ -1464,12 +1472,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// If they didn't, adding the offset after the fact could result in that new detour being inside the obstacle.</param>
         private void ContinueCourseToTargetVia(INavigableTarget obstacleDetour) {
             CleanupAnyRemainingAutoPilotJobs();   // always called while already engaged
-            //D.Log("{0} continuing course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
+            //D.Log(ToShowDLog, "{0} continuing course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
             //Name, Target.FullName, TargetPoint, obstacleDetour.FullName, Vector3.Distance(Position, obstacleDetour.Position));
 
             Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
             ChangeHeading_Internal(newHeading, onHeadingConfirmed: () => {
-                //D.Log("{0} is now on heading to reach obstacle detour {1}.", Name, obstacleDetour.FullName);
+                //D.Log(ToShowDLog, "{0} is now on heading to reach obstacle detour {1}.", Name, obstacleDetour.FullName);
 
                 // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
                 InitiateNavigationTo(obstacleDetour, TempGameValues.WaypointCloseEnoughDistance, onArrival: () => {
@@ -1515,7 +1523,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <returns></returns>
         private IEnumerator EngageDirectCourseTo(INavigableTarget destination, float closeEnoughDistance, Vector3 formationOffset) {
             float distanceToDest = Vector3.Distance(Position, destination.Position + formationOffset);
-            //D.Log("{0} powering up. Distance to {1} = {2:0.0}.", Name, destination.FullName, distanceToCurrentDest);
+            //D.Log(ToShowDLog, "{0} powering up. Distance to {1} = {2:0.0}.", Name, destination.FullName, distanceToCurrentDest);
 
             bool checkProgressContinuously = false;
             float continuousProgressCheckDistanceThreshold;
@@ -1525,10 +1533,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             bool isDestinationADetour = destination != Target;
 
             while (distanceToDest > closeEnoughDistance) {
-                //D.Log("{0} distance to {1} = {2:0.0}. CloseEnough = {3:0.0}.", Name, destination.FullName, distanceToCurrentDest, closeEnoughDistance);
+                //D.Log(ToShowDLog, "{0} distance to {1} = {2:0.0}. CloseEnough = {3:0.0}.", Name, destination.FullName, distanceToCurrentDest, closeEnoughDistance);
                 Vector3 correctedHeading;
                 if (TryCheckForCourseCorrection(destination, out correctedHeading, formationOffset)) {
-                    //D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
+                    //D.Log(ToShowDLog, "{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
                     ChangeHeading_Internal(correctedHeading, onHeadingConfirmed: () => {
                         // no need to 'resume' orderSpeed as currentSpeed from turn slowdown no longer used
                     });
@@ -1556,13 +1564,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
                     checkProgressContinuously = distanceToDest <= continuousProgressCheckDistanceThreshold;
                     if (checkProgressContinuously) {
-                        D.Log("{0} now checking progress continuously.", Name);
+                        D.Log(ToShowDLog, "{0} now checking progress continuously.", Name);
                         progressCheckPeriod = Constants.ZeroF;
                     }
                 }
                 yield return new WaitForSeconds(progressCheckPeriod);
             }
-            D.Log("{0} has arrived at {1}.", Name, destination.FullName);
+            D.Log(ToShowDLog, "{0} has arrived at {1}.", Name, destination.FullName);
         }
 
         #endregion
@@ -1595,13 +1603,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             newHeading.ValidateNormalized();
 
             if (newHeading.IsSameDirection(_ship.Data.RequestedHeading, AllowedHeadingDeviation)) {
-                //D.Log("{0} ignoring a very small ChangeHeading request of {1:0.0000} degrees.", Name, Vector3.Angle(_ship.Data.RequestedHeading, newHeading));
+                //D.Log(ToShowDLog, "{0} ignoring a very small ChangeHeading request of {1:0.0000} degrees.", Name, Vector3.Angle(_ship.Data.RequestedHeading, newHeading));
                 if (onHeadingConfirmed != null) {
                     onHeadingConfirmed();
                 }
                 return;
             }
-            //D.Log("{0} received ChangeHeading to {1}(local) from {2}.", Name, _ship.transform.InverseTransformDirection(newHeading), _orderSource.GetEnumAttributeText());
+            //D.Log(ToShowDLog, "{0} received ChangeHeading to {1}(local) from {2}.", Name, _ship.transform.InverseTransformDirection(newHeading), _orderSource.GetEnumAttributeText());
 
             D.Assert(!IsHeadingJobRunning, "{0}.ChangeHeading Job should not be running.", Name);
 
@@ -1610,7 +1618,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             float allowedTime = GameUtility.CalcMaxReqdSecsToCompleteRotation(_ship.Data.MaxTurnRate, MaxReqdHeadingChange);
             _headingJob = new Job(ExecuteHeadingChange(allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
                 if (!jobWasKilled) {
-                    //D.Log("{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
+                    //D.Log(ToShowDLog, "{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
                     //Name, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
                     _engineRoom.HandleTurnCompleted();
                     if (onHeadingConfirmed != null) {
@@ -1641,17 +1649,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 //cumAllowedDegrees += allowedTurnDegrees;
                 Quaternion inprocessRotation = Quaternion.RotateTowards(_ship.transform.rotation, requestedHeadingRotation, allowedTurnDegrees);
 
-                //if (_ship.IsHQ) {
                 //    var degreesRotated = Quaternion.Angle(_ship.transform.rotation, inprocessRotation);
-                //    D.Log("HQ Ship {0}: AllowedTurnDegrees = {1:0.##}, ActualTurnDegrees = {2:0.##}.", _ship.FullName, allowedTurnDegrees, degreesRotated);
-                //}
+                //    D.Log(ToShowDLog, "{0}: AllowedTurnDegrees = {1:0.##}, ActualTurnDegrees = {2:0.##}.", _ship.FullName, allowedTurnDegrees, degreesRotated);
                 _ship.transform.rotation = inprocessRotation;
                 cumTime += deltaTime;
                 D.Assert(cumTime < allowedTime, "{0}.ExecuteHeadingChange of {1:0.##} degrees exceeded allowed time: Taken {2:0.##} > Allowed {3:0.##} secs.",
                     Name, Quaternion.Angle(startingRotation, requestedHeadingRotation), cumTime, allowedTime);
                 yield return null; // WARNING: must count frames between passes if use yield return WaitForSeconds()
             }
-            //D.Log("{0}: Rotation completed. AllowedDegrees = {1:0.##}, ActualDegrees = {2:0.##}, AllowedTime = {3:0.##}, ActualTime = {4:0.##}.", 
+            //D.Log(ToShowDLog, "{0}: Rotation completed. AllowedDegrees = {1:0.##}, ActualDegrees = {2:0.##}, AllowedTime = {3:0.##}, ActualTime = {4:0.##}.", 
             //Name, cumAllowedDegrees, Quaternion.Angle(startingRotation, _ship.transform.rotation), cumTime, allowedTime);
         }
 
@@ -1681,7 +1687,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// </summary>
         private void EngageEnginesAtTravelSpeed() {
             D.Assert(IsAutoPilotEngaged);
-            //D.Log("{0} autoPilot is engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
+            //D.Log(ToShowDLog, "{0} autoPilot is engaging engines at speed {1}.", _ship.FullName, TravelSpeed.GetValueName());
             _engineRoom.ChangeSpeed(TravelSpeed, TravelSpeed.GetUnitsPerHour(_ship.Command.Data, _ship.Data));
             __TryReportSpeedProgression(TravelSpeed);
         }
@@ -1694,7 +1700,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <param name="orderSource">The order source.</param>
         internal void ChangeSpeed(Speed newSpeed, OrderSource orderSource = OrderSource.ElementCaptain) {
             D.Assert(newSpeed != default(Speed));
-            //D.Log("{0} disengaging autopilot and changing speed to {1}.", Name, newSpeed.GetValueName());
+            //D.Log(ToShowDLog, "{0} disengaging autopilot and changing speed to {1}.", Name, newSpeed.GetValueName());
             IsAutoPilotEngaged = false;
             _orderSource = orderSource;
             _lastSpeedOverride = newSpeed;
@@ -1711,7 +1717,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private Vector3 __positionWhenReportingBegun;
 
         private void __TryReportSpeedProgression(Speed newSpeed) {
-            //D.Log("{0}.TryReportSpeedProgression({1}) called.", Name, newSpeed.GetValueName());
+            //D.Log(ToShowDLog, "{0}.TryReportSpeedProgression({1}) called.", Name, newSpeed.GetValueName());
             if (__constantValueSpeeds.Contains(newSpeed)) {
                 __ReportSpeedProgression(newSpeed);
             }
@@ -1737,7 +1743,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 #pragma warning restore 0219
             int fixedUpdateCount = 0;
             while ((currentSpeed = _ship.Data.CurrentSpeed) > Constants.ZeroF) {
-                //D.Log(desiredSpeedText + " ActualSpeed = {0:0.###}, FixedUpdateCount = {1}.", currentSpeed, fixedUpdateCount);
+                //D.Log(ToShowDLog, desiredSpeedText + " ActualSpeed = {0:0.###}, FixedUpdateCount = {1}.", currentSpeed, fixedUpdateCount);
                 fixedUpdateCount++;
                 yield return new WaitForFixedUpdate();
             }
@@ -1753,7 +1759,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         private void __ReportDistanceTraveled() {
             Vector3 distanceTraveledVector = _ship.transform.InverseTransformDirection(Position - __positionWhenReportingBegun);
-            D.Log("{0} changed local position by {1} while reporting speed progression.", _ship.FullName, distanceTraveledVector);
+            D.Log(ToShowDLog, "{0} changed local position by {1} while reporting speed progression.", _ship.FullName, distanceTraveledVector);
         }
 
         #endregion
@@ -1986,10 +1992,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     float maxDistanceTraveledBeforeNextObstacleCheck = _travelSpeedInUnitsPerSecond * _navValues.ObstacleAvoidanceCheckPeriod;
                     float obstacleDistanceThresholdRequiringDetour = maxDistanceTraveledBeforeNextObstacleCheck * 2F;
                     float distanceToObstacleZone = zoneHitInfo.distance;
-                    if(distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
+                    if (distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
                         return true;
                     }
-                    D.Log("{0} has declined to generate a detour around mobile obstacle {1}. Reqd Turn = {2:0.#} degrees.", Name, obstacle.FullName, reqdTurnAngleToDetour);
+                    D.Log(ToShowDLog, "{0} has declined to generate a detour around mobile obstacle {1}. Reqd Turn = {2:0.#} degrees.", Name, obstacle.FullName, reqdTurnAngleToDetour);
                     return false;
                 }
             }
@@ -2037,9 +2043,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 // don't bother checking if in process of turning
                 return false;
             }
-            //D.Log("{0} is checking its course.", Name);
+            //D.Log(ToShowDLog, "{0} is checking its course.", Name);
             Vector3 currentDestBearing = (currentDestination.Position + destOffset - Position).normalized;
-            //D.Log("{0}'s angle between correct heading and requested heading is {1}.", Name, Vector3.Angle(currentDestBearing, _ship.Data.RequestedHeading));
+            //D.Log(ToShowDLog, "{0}'s angle between correct heading and requested heading is {1}.", Name, Vector3.Angle(currentDestBearing, _ship.Data.RequestedHeading));
             if (!currentDestBearing.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
                 correctedHeading = currentDestBearing;
                 return true;
@@ -2088,7 +2094,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// </summary>
         /// <param name="speed">The speed.</param>
         private void RefreshEngineRoomSpeedValues(Speed speed) {
-            //D.Log("{0} is refreshing engineRoom speed values.", _ship.FullName);
+            //D.Log(ToShowDLog, "{0} is refreshing engineRoom speed values.", _ship.FullName);
             var speedInUnitsPerHour = speed.GetUnitsPerHour(_ship.Command.Data, _ship.Data);
             _engineRoom.ChangeSpeed(speed, speedInUnitsPerHour);
         }
@@ -2100,7 +2106,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <param name="waypoint">The optional waypoint, typically a detour to avoid an obstacle.</param>
         /// <exception cref="System.NotImplementedException"></exception>
         protected override void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null) {
-            //D.Log("{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
+            //D.Log(ToShowDLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.Assert(waypoint == null);
@@ -2131,7 +2137,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
             }
-            //D.Log("CourseCountAfter = {0}.", Course.Count);
+            //D.Log(ToShowDLog, "CourseCountAfter = {0}.", Course.Count);
             HandleCourseChanged();
         }
 
@@ -2424,6 +2430,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
             private bool IsDriftCorrectionEngaged { get { return _driftCorrectionJob != null && _driftCorrectionJob.IsRunning; } }
 
+            private bool ToShowDLog { get { return _ship.toShowDLog; } }
+
             /// <summary>
             /// Gets the ship's speed in Units per second at this instant. This value already
             /// has current GameSpeed factored in, aka the value will already be larger 
@@ -2453,6 +2461,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
             private float _gameSpeedMultiplier;
             private Vector3 _velocityOnPause;
+            private ShipItem _ship;
             private ShipData _shipData;
             private Rigidbody _shipRigidbody;
             private Transform _shipTransform;
@@ -2460,14 +2469,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             private GameManager _gameMgr;
             private GameTime _gameTime;
 
-            public EngineRoom(ShipData data, Rigidbody shipRigidbody) {
-                _shipData = data;
+            public EngineRoom(ShipItem ship, Rigidbody shipRigidbody) {
+                _ship = ship;
+                _shipData = ship.Data;
                 _shipRigidbody = shipRigidbody;
                 _shipTransform = shipRigidbody.transform;
                 _gameMgr = GameManager.Instance;
                 _gameTime = GameTime.Instance;
                 _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-                //D.Log("{0}.EngineRoom._gameSpeedMultiplier is {1}.", ship.FullName, _gameSpeedMultiplier);
+                //D.Log(ToShowDLog, "{0}.EngineRoom._gameSpeedMultiplier is {1}.", ship.FullName, _gameSpeedMultiplier);
                 Subscribe();
             }
 
@@ -2483,21 +2493,21 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// <param name="newSpeed">The new speed.</param>
             /// <param name="newSpeedValue">The new speed value in units per hour.</param>
             internal void ChangeSpeed(Speed newSpeed, float newSpeedValue) {
-                //D.Log("{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
+                //D.Log(ToShowDLog, "{0}'s current speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
                 //_shipData.FullName, _shipData.CurrentSpeed, newSpeed.GetEnumAttributeText(), newSpeedValue);
 
                 float previousRequestedSpeed = _shipData.RequestedSpeed;
                 _shipData.RequestedSpeed = newSpeedValue;
 
                 if (newSpeed == Speed.EmergencyStop) {
-                    D.Log("{0} received ChangeSpeed to {1}!", _shipData.FullName, Speed.EmergencyStop.GetEnumAttributeText());
+                    D.Log(ToShowDLog, "{0} received ChangeSpeed to {1}!", _shipData.FullName, Speed.EmergencyStop.GetEnumAttributeText());
                     TerminateAllPropulsion();
                     _shipRigidbody.velocity = Vector3.zero;
                     return;
                 }
 
                 if (Mathfx.Approx(newSpeedValue, previousRequestedSpeed, .01F)) {
-                    D.Log("{0} is ignoring speed request of {1:0.##} units/hour as it is a duplicate.", _shipData.FullName, newSpeedValue);
+                    D.Log(ToShowDLog, "{0} is ignoring speed request of {1:0.##} units/hour as it is a duplicate.", _shipData.FullName, newSpeedValue);
                     return;
                 }
 
@@ -2571,7 +2581,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             private float CalcForwardPropulsionPowerFor(float requestedSpeed) {
                 var forwardPropulsionPower = requestedSpeed * _shipRigidbody.drag * _shipData.Mass;
                 D.Assert(forwardPropulsionPower.IsLessThanOrEqualTo(_shipData.FullPropulsionPower, .01F), "{0}: Calculated EnginePower {1:0.##} exceeds FullEnginePower {2:0.##}.".Inject(_shipData.FullName, forwardPropulsionPower, _shipData.FullPropulsionPower));
-                //D.Log("{0} forwardPropulsionPower before recalc = {1:0.##}., after = {2:0.##}.", _shipData.FullName, _forwardPropulsionPower, forwardPropulsionPower);
+                //D.Log(ToShowDLog, "{0} forwardPropulsionPower before recalc = {1:0.##}., after = {2:0.##}.", _shipData.FullName, _forwardPropulsionPower, forwardPropulsionPower);
                 return forwardPropulsionPower;
             }
 
@@ -2579,15 +2589,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 DisengageReversePropulsion();
 
                 if (!IsForwardPropulsionEngaged) {
-                    //D.Log("{0} is engaging forward propulsion.", _shipData.FullName);
+                    //D.Log(ToShowDLog, "{0} is engaging forward propulsion.", _shipData.FullName);
                     D.Assert(CurrentForwardSpeed.IsLessThanOrEqualTo(_shipData.RequestedSpeed, .01F), "{0}: CurrentForwardSpeed {1:0.##} > RequestedSpeed {2:0.##}.", _shipData.FullName, CurrentForwardSpeed, _shipData.RequestedSpeed);
                     _forwardPropulsionJob = new Job(OperateForwardPropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
                         D.Assert(jobWasKilled);
-                        //D.Log("{0} has ended forward propulsion.", _shipData.FullName);
+                        //D.Log(ToShowDLog, "{0} has ended forward propulsion.", _shipData.FullName);
                     });
                 }
                 else {
-                    //D.Log("{0} is continuing forward propulsion.", _shipData.FullName);
+                    //D.Log(ToShowDLog, "{0} is continuing forward propulsion.", _shipData.FullName);
                 }
             }
 
@@ -2610,8 +2620,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             private void ApplyForwardThrust() {
                 Vector3 adjustedFwdThrust = _localSpaceForward * _forwardPropulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 _shipRigidbody.AddRelativeForce(adjustedFwdThrust, ForceMode.Force);
-                //D.Log("{0}.Speed is now {1:0.####}.", _shipData.FullName, _shipData.CurrentSpeed);
-                //D.Log("{0}: DriftVelocity/sec during forward thrust = {1}.", _shipData.FullName, CurrentDriftVelocityPerSec.ToPreciseString());
+                //D.Log(ToShowDLog, "{0}.Speed is now {1:0.####}.", _shipData.FullName, _shipData.CurrentSpeed);
+                //D.Log(ToShowDLog, "{0}: DriftVelocity/sec during forward thrust = {1}.", _shipData.FullName, CurrentDriftVelocityPerSec.ToPreciseString());
             }
 
             /// <summary>
@@ -2619,7 +2629,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// </summary>
             private void DisengageForwardPropulsion() {
                 if (IsForwardPropulsionEngaged) {
-                    //D.Log("{0}: Disengaging ForwardPropulsion.", _shipData.FullName);
+                    //D.Log(ToShowDLog, "{0}: Disengaging ForwardPropulsion.", _shipData.FullName);
                     _forwardPropulsionJob.Kill();
                 }
             }
@@ -2632,7 +2642,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 DisengageForwardPropulsion();
 
                 if (!IsReversePropulsionEngaged) {
-                    //D.Log("{0} is engaging reverse propulsion.", _shipData.FullName);
+                    //D.Log(ToShowDLog, "{0} is engaging reverse propulsion.", _shipData.FullName);
                     D.Assert(CurrentForwardSpeed > _shipData.RequestedSpeed, "{0}: CurrentForwardSpeed {1.0.##} <= RequestedSpeed {2:0.##}.", _shipData.FullName, CurrentForwardSpeed, _shipData.RequestedSpeed);
                     _reversePropulsionJob = new Job(OperateReversePropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
@@ -2644,7 +2654,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     });
                 }
                 else {
-                    //D.Log("{0} is continuing reverse propulsion.", _shipData.FullName);
+                    //D.Log(ToShowDLog, "{0} is continuing reverse propulsion.", _shipData.FullName);
                 }
             }
 
@@ -2657,13 +2667,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 // the final thrust in reverse took us below our desired forward speed, so set it there
                 var requestedForwardVelocity = _shipData.RequestedSpeed * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 _shipRigidbody.velocity = _shipTransform.TransformDirection(new Vector3(Constants.ZeroF, Constants.ZeroF, requestedForwardVelocity));
-                //D.Log("{0} has completed reverse propulsion. CurrentVelocity = {1}.", _shipData.FullName, _shipRigidbody.velocity);
+                //D.Log(ToShowDLog, "{0} has completed reverse propulsion. CurrentVelocity = {1}.", _shipData.FullName, _shipRigidbody.velocity);
             }
 
             private void ApplyReverseThrust() {
                 Vector3 adjustedReverseThrust = -_localSpaceForward * _shipData.FullPropulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
                 _shipRigidbody.AddRelativeForce(adjustedReverseThrust * _acceleratedReverseThrustFactor, ForceMode.Force);
-                //D.Log("{0}: DriftVelocity/sec during reverse thrust = {1}.", _shipData.FullName, CurrentDriftVelocityPerSec.ToPreciseString());
+                //D.Log(ToShowDLog, "{0}: DriftVelocity/sec during reverse thrust = {1}.", _shipData.FullName, CurrentDriftVelocityPerSec.ToPreciseString());
             }
 
             /// <summary>
@@ -2671,7 +2681,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// </summary>
             private void DisengageReversePropulsion() {
                 if (IsReversePropulsionEngaged) {
-                    //D.Log("{0}: Disengaging ReversePropulsion.", _shipData.FullName);
+                    //D.Log(ToShowDLog, "{0}: Disengaging ReversePropulsion.", _shipData.FullName);
                     _reversePropulsionJob.Kill();
                 }
             }
@@ -2684,21 +2694,21 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 if (!IsDriftCorrectionEngaged) {
                     _driftCorrectionJob = new Job(OperateDriftCorrectionThrusters(), toStart: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
-                            D.Log("{0}: DriftCorrection completed normally. Negating remaining drift.", _shipData.FullName);
+                            D.Log(ToShowDLog, "{0}: DriftCorrection completed normally. Negating remaining drift.", _shipData.FullName);
                             Vector3 localVelocity = _shipTransform.InverseTransformDirection(_shipRigidbody.velocity);
                             Vector3 localVelocityWithoutDrift = localVelocity.SetX(Constants.ZeroF);
                             localVelocityWithoutDrift = localVelocityWithoutDrift.SetY(Constants.ZeroF);
                             _shipRigidbody.velocity = _shipTransform.TransformDirection(localVelocityWithoutDrift);
                         }
                         else {
-                            D.Log("{0}: DriftCorrection killed.", _shipData.FullName);
+                            D.Log(ToShowDLog, "{0}: DriftCorrection killed.", _shipData.FullName);
                         }
                     });
                 }
             }
 
             private IEnumerator OperateDriftCorrectionThrusters() {
-                D.Log("{0}: Initiating DriftCorrection.", _shipData.FullName);
+                D.Log(ToShowDLog, "{0}: Initiating DriftCorrection.", _shipData.FullName);
                 yield return new WaitForFixedUpdate();  // UNCLEAR required so first ApplyDriftCorrection will be applied in fixed update?
                 Vector2 cumDriftDistanceDuringCorrection = Vector2.zero;
                 int fixedUpdateCount = 0;
@@ -2710,7 +2720,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     fixedUpdateCount++;
                     yield return new WaitForFixedUpdate();
                 }
-                D.Log("{0}: Cumulative Drift during Correction = {1:0.##}.", _shipData.FullName, cumDriftDistanceDuringCorrection);
+                D.Log(ToShowDLog, "{0}: Cumulative Drift during Correction = {1:0.##}.", _shipData.FullName, cumDriftDistanceDuringCorrection);
             }
 
             private void ApplyDriftCorrection(Vector2 driftVelocityPerSec) {
@@ -2719,7 +2729,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
             private void DisengageDriftCorrectionThrusters() {
                 if (IsDriftCorrectionEngaged) {
-                    D.Log("{0}: Disengaging DriftCorrection Thrusters.", _shipData.FullName);
+                    D.Log(ToShowDLog, "{0}: Disengaging DriftCorrection Thrusters.", _shipData.FullName);
                     _driftCorrectionJob.Kill();
                 }
             }
@@ -2751,7 +2761,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 yield return new WaitForFixedUpdate(); // UNCLEAR required so first ApplyPropulsion will be applied in fixed update?
                 while (true) {
                     ApplyCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision);
-                    //D.Log("{0}: While avoiding collision, distance traveled = {1:0.###}.", _shipData.FullName, (_shipData.Position - __caPreviousPosition).magnitude);
+                    //D.Log(ToShowDLog, "{0}: While avoiding collision, distance traveled = {1:0.###}.", _shipData.FullName, (_shipData.Position - __caPreviousPosition).magnitude);
                     __caPreviousPosition = _shipData.Position;
                     yield return new WaitForFixedUpdate();
                 }
@@ -2771,7 +2781,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             }
 
             private void DisengageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
-                D.Assert(_caPropulsionJobs.ContainsKey(obstacle));
+                D.Assert(_caPropulsionJobs.ContainsKey(obstacle), "{0}: Obstacle {1} not present.", _shipData.Name, obstacle.FullName);
 
                 _caPropulsionJobs[obstacle].Kill();
                 _caPropulsionJobs.Remove(obstacle);
@@ -2806,10 +2816,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             private void PauseVelocity(bool toPause) {
                 if (toPause) {
                     _velocityOnPause = _shipRigidbody.velocity;
-                    //D.Log("{0}.Rigidbody.velocity = {1}, .isKinematic changing to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
+                    //D.Log(ToShowDLog, "{0}.Rigidbody.velocity = {1}, .isKinematic changing to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
                     _shipRigidbody.isKinematic = true;  // immediately stops rigidbody (rigidbody.velocity = 0) and puts it to sleep. Data.CurrentSpeed reports speed correctly when paused
-                    //D.Log("{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
-                    //D.Log("{0}.Rigidbody.isSleeping = {1}.", _shipData.FullName, _shipRigidbody.IsSleeping());
+                    //D.Log(ToShowDLog, "{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", _shipData.FullName, _shipRigidbody.velocity.ToPreciseString());
+                    //D.Log(ToShowDLog, "{0}.Rigidbody.isSleeping = {1}.", _shipData.FullName, _shipRigidbody.IsSleeping());
                 }
                 else {
                     _shipRigidbody.isKinematic = false;
@@ -3311,7 +3321,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     #region ITopographyChangeListener Members
 
     public void HandleTopographyChanged(Topography newTopography) {
-        //D.Log("{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
+        //D.Log(toShowDLog, "{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
         Data.Topography = newTopography;
     }
 
@@ -3338,7 +3348,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         float elapsedTime = currentTime - __lastTime;
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;
-        D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
+        D.Log(toShowDLog, "{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
             FullName, _rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
     }
 
@@ -3346,7 +3356,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         SphereCollider sphereCollider = collision.collider as SphereCollider;
         CapsuleCollider capsuleCollider = collision.collider as CapsuleCollider;
         string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((capsuleCollider != null) ? "radius = " + capsuleCollider.radius : "size = " + (collision.collider as BoxCollider).size.ToPreciseString());
-        D.Log("While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
+        D.Log(toShowDLog, "While {0}, {1} collided with {2}. Resulting AngularVelocity = {3}. {4}Distance between objects = {5}, {6} collider {7}.",
             CurrentState.GetValueName(), FullName, collision.collider.name, _rigidbody.angularVelocity, Constants.NewLine, (Position - collision.collider.transform.position).magnitude, collision.collider.name, colliderSizeMsg);
 
         //foreach (ContactPoint contact in collision.contacts) {

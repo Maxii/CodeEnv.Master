@@ -113,7 +113,7 @@ public class CtxObject : AMonoBase {
     /// </summary>
     private Vector3 MenuPosition {
         get {
-            if(toPositionMenuAtCursor) {
+            if (toPositionMenuAtCursor) {
                 return Input.mousePosition;
             }
             if (contextMenu != null && contextMenu.style == CtxMenu.Style.Pie) {
@@ -135,27 +135,6 @@ public class CtxObject : AMonoBase {
             return Camera.main.WorldToScreenPoint(transform.position);
         }
     }
-    //private Vector3 MenuPosition {
-    //    get {
-    //        if (contextMenu != null && contextMenu.style == CtxMenu.Style.Pie) {
-    //            // Pie style is never offset so position on the objects origin position
-    //            return Camera.main.WorldToScreenPoint(transform.position);
-    //        }
-    //        if (toOffsetMenu) {
-    //            // not a pie and user wants to offset the menu
-    //            var collider = GetComponent<Collider>();
-    //            if (collider == null) {
-    //                D.WarnContext(gameObject, "No collider present to enable {0}.{1}.offsetMenu functionality.", name, GetType().Name);
-    //                return Camera.main.WorldToScreenPoint(transform.position);
-    //            }
-    //            // For the offset case we need to determine the screen-space bounds of this object and then offset the menu pivot 
-    //            // to one side of the object bounds. Note that CtxMenu itself may adjust the position in order to keep the menu contents on screen.
-    //            return CtxHelper.ComputeMenuPosition(contextMenu, CtxHelper.ComputeScreenSpaceBounds(collider.bounds, Camera.main), false);
-    //        }
-    //        // not a pie and user doesn't want to offset the menu
-    //        return Camera.main.WorldToScreenPoint(transform.position);
-    //    }
-    //}
 
     /// <summary>
     /// Shows the context menu associated with this object. If you are handling
@@ -163,8 +142,8 @@ public class CtxObject : AMonoBase {
     /// </summary>
     public void ShowMenu() {
         if (contextMenu != null) {
-            EventDelegate.Add(contextMenu.onSelection, MenuSelectionEventHandler);  //EventDelegate.Add(contextMenu.onSelection, OnMenuSelect);
-            EventDelegate.Add(contextMenu.onHide, HideMenuEventHandler, true);  //EventDelegate.Add(contextMenu.onHide, OnHide, true);
+            EventDelegate.Add(contextMenu.onSelection, MenuSelectionEventHandler);
+            EventDelegate.Add(contextMenu.onHide, HideMenuEventHandler, true);
 
             current = this;
             EventDelegate.Execute(onShow);
@@ -336,8 +315,8 @@ public class CtxObject : AMonoBase {
 
     protected override void Cleanup() {
         if (contextMenu != null) {
-            EventDelegate.Remove(contextMenu.onSelection, MenuSelectionEventHandler);    // gets removed OnHide so probably not necessary 
-            EventDelegate.Remove(contextMenu.onHide, HideMenuEventHandler);   // oneShot so probably not necessary                                                                  
+            EventDelegate.Remove(contextMenu.onSelection, MenuSelectionEventHandler);   // OPTIMIZE gets removed OnHide so probably not necessary 
+            EventDelegate.Remove(contextMenu.onHide, HideMenuEventHandler);             // OPTIMIZE oneShot so probably not necessary                                                                  
         }
     }
 
