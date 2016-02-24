@@ -255,9 +255,10 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="targetValue">The targetValue.</param>
-        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
+        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.
+        /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
-        public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float acceptableRange) {
+        public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
             if (value > targetValue) {
                 return true;
             }
@@ -270,9 +271,10 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="targetValue">The targetValue.</param>
-        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
+        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.
+        /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
-        public static bool IsLessThanOrEqualTo(this float value, float targetValue, float acceptableRange) {
+        public static bool IsLessThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
             if (value < targetValue) {
                 return true;
             }

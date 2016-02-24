@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System.Collections;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -26,7 +26,26 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class VelocityRay : A3DVectrosityBase {
 
+        private bool IsRefreshSpeedValueJobRunning { get { return _refreshSpeedValueJob != null && _refreshSpeedValueJob.IsRunning; } }
+
         private Reference<float> _speed;
+
+        /// <summary>
+        /// Job that refreshes _point3[1] with the current speed value. This refresh must occur 
+        /// before LateUpdate so Draw3DAuto which uses LateUpdate will always have a current value.
+        /// </summary>
+        private Job _refreshSpeedValueJob;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VelocityRay"/> class with the DynamicObjectsFolder
+        /// as the line parent, a line width of 1 and color White.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="target">The transform that this VelocityRay emanates from in the scene.</param>
+        /// <param name="speed">The potentially changing speed as a reference.</param>
+        public VelocityRay(string name, Transform target, Reference<float> speed)
+            : this(name, target, speed, References.DynamicObjectsFolder.Folder) {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VelocityRay" /> class.
@@ -34,22 +53,43 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="target">The transform that this VelocityRay emanates from in the scene.</param>
         /// <param name="speed">The potentially changing speed as a reference.</param>
-        /// <param name="width">The width.</param>
-        /// <param name="color">The color.</param>
-        public VelocityRay(string name, Transform target, Reference<float> speed, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new List<Vector3>(2), target, LineType.Discrete, width, color) {
+        /// <param name="lineParent">The line parent.</param>
+        /// <param name="width">The width. Default is 1 pixel.</param>
+        /// <param name="color">The color. Default is Gray.</param>
+        public VelocityRay(string name, Transform target, Reference<float> speed, Transform lineParent, float width = 1F, GameColor color = GameColor.White)
+            : base(name, new List<Vector3>(2), target, lineParent, LineType.Discrete, width, color) {
             _speed = speed;
         }
 
-        public override void Show(bool toShow) {
-            base.Show(toShow);
-            //D.Log("{0}.Show({1}) called. Target: {2}.", GetType().Name, toShow, _target.name);
+        protected override void HandleLineActivated() {
+            base.HandleLineActivated();
+            D.Assert(IsLineActive);
+            D.Assert(!IsRefreshSpeedValueJobRunning);
+            _refreshSpeedValueJob = new Job(UpdateSpeed(), toStart: true, jobCompleted: (jobWasKilled) => {
+                D.Assert(jobWasKilled);
+                // TODO
+            });
         }
 
-        protected override void Draw3D() {
-            //D.Log("{0}.Draw3D() called. Capacity = {1}, Count = {2}, SpeedValue = {3}.", GetType().Name, _line.points3.Capacity, _line.points3.Count, _speed.Value);
-            _line.points3[1] = Vector3.forward * _speed.Value;
-            base.Draw3D();
+        private IEnumerator UpdateSpeed() {
+            while (true) {
+                _line.points3[1] = Vector3.forward * _speed.Value;
+                yield return null;  // Updates speed value just before every Draw3DAuto.LateUpdate draw call    
+            }   //yield return new WaitForFixedUpdate();  // also tried this, but no difference I can tell
+        }
+
+        protected override void HandleLineDeactivated() {
+            base.HandleLineDeactivated();
+            D.Assert(!IsLineActive);
+            D.Assert(IsRefreshSpeedValueJobRunning);
+            _refreshSpeedValueJob.Kill();
+        }
+
+        protected override void Cleanup() {
+            base.Cleanup();
+            if (_refreshSpeedValueJob != null) {
+                _refreshSpeedValueJob.Dispose();
+            }
         }
 
         public override string ToString() {

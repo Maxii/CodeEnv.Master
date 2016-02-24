@@ -53,6 +53,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\_Debug\DrawSphereGizmo.cs" />
+    <Compile Include="Generic\_Debug\DebugValues.cs" />
+    <Compile Include="Game\Framework\FleetFormationStation.cs" />
     <Compile Include="Generic\Framework\AMonoBaseSingleton.cs" />
     <Compile Include="Game\Framework\SensorRangeMonitor.cs" />
     <Compile Include="Generic\Framework\ADetectableRangeMonitor.cs" />
@@ -63,7 +66,7 @@
     <Compile Include="Generic\Graphics\DestroyEffectOnCompletion.cs" />
     <Compile Include="Game\Framework\AIntelItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />
-    <Compile Include="Generic\_Debug\DrawTriggerCollider.cs" />
+    <Compile Include="Generic\_Debug\DrawColliderGizmo.cs" />
     <Compile Include="Game\Framework\MovingOrbitSimulator.cs" />
     <Compile Include="Game\Framework\MovingShipOrbitSimulator.cs" />
     <Compile Include="Game\Framework\OrbitSimulator.cs" />

@@ -30,17 +30,29 @@ namespace CodeEnv.Master.GameContent {
 
         public INavigableTarget Target { get; private set; }
 
+        public OrderSource Source { get; private set; }
+
         public FleetDirective Directive { get; private set; }
 
-        public FleetOrder(FleetDirective directive, INavigableTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
-            D.Assert(target == null || (!(target is FleetFormationStation) && !(target is IUnitElementItem)));
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FleetOrder" /> class.
+        /// </summary>
+        /// <param name="directive">The order directive.</param>
+        /// <param name="source">The source of this order.</param>
+        /// <param name="target">The target of this order. Default is null.</param>
+        /// <param name="speed">The speed this order should be executed at, if applicable.</param>
+        /// <param name="standoffDistance">The standoff distance.</param>
+        public FleetOrder(FleetDirective directive, OrderSource source, INavigableTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
+            D.Assert(target == null || (!(target is IFleetFormationStation) && !(target is IUnitElementItem)));
+            D.Assert(source != OrderSource.Captain);
             Directive = directive;
+            Source = source;
             Target = target;
             Speed = speed;
             StandoffDistance = standoffDistance;
         }
 
-        public override string ToString() {
+        public override string ToString() {// IMPROVE
             return new ObjectAnalyzer().ToString(this);
         }
 

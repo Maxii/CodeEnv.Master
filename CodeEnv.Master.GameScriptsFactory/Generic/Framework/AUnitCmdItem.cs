@@ -36,6 +36,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     public bool IsTrackingLabelEnabled { private get; set; }
 
+    public bool __ShowHQDebugLog { get; set; }
+
     public IconInfo IconInfo {
         get {
             if (DisplayMgr == null) {
@@ -235,7 +237,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     public void HandleSubordinateElementDeath(IUnitElementItem deadSubordinateElement) {
-        D.Log(toShowDLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
+        D.Log(showDebugLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
         RemoveElement(deadSubordinateElement as AUnitElementItem);
     }
 
@@ -271,6 +273,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         }
     }
 
+    protected override void HandleIntelCoverageChanged() {
+        base.HandleIntelCoverageChanged();
+        AssessIcon();   // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
+    }
+
     #region Event and Property Change Handlers
 
     protected virtual void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
@@ -278,6 +285,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         var previousHQElement = HQElement;
         if (previousHQElement != null) {
             previousHQElement.Data.IsHQ = false;
+            // don't remove previousHQElement.showDebugLog if ShowHQDebugLog as its probably dieing
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
@@ -289,6 +297,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     private void HQElementPropChangedHandler() {
         HQElement.Data.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
+        if (__ShowHQDebugLog) { HQElement.showDebugLog = true; }
         //D.Log(toShowDLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
@@ -317,11 +326,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
     }
 
-    protected override void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
-        base.UserIntelCoverageChangedEventHandler(sender, e);
-        AssessIcon();   // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
-    }
-
     private void ElementUserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
         AssessIcon();
     }
@@ -348,11 +352,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    private void UponTargetDeath(IMortalItem deadTarget) {
-        RelayToCurrentState(deadTarget);
-    }
+    private void UponTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
     protected void UponEffectFinished(EffectID effectID) { RelayToCurrentState(effectID); }
+
+    protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
     #endregion
 

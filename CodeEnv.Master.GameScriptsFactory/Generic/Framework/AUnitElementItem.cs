@@ -126,7 +126,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     public override void CommenceOperations() {
         base.CommenceOperations();
         _primaryCollider.enabled = true;
-        __ShowDLogForHQOnly();
     }
 
     /// <summary>
@@ -508,7 +507,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
-        D.Log(toShowDLog, "{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
+        D.Log(showDebugLog, "{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
     }
 
     #endregion
@@ -527,6 +526,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         return RelayToCurrentState(firingSolutions);
     }
+
+    protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
     #endregion
 
@@ -596,10 +597,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #region Debug
 
-    private void __ShowDLogForHQOnly() {
-        toShowDLog = IsHQ;
-    }
-
     #endregion
 
     #region IElementAttackableTarget Members
@@ -638,7 +635,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             //D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log(toShowDLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        D.Log(showDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
 
         bool isCmdHit = false;
         float damageSeverity;

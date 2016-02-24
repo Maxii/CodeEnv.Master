@@ -8,15 +8,7 @@
       <PropertyName>EnableFpsReadout</PropertyName>
       <PropertyValue>true</PropertyValue>
     </Setting>
-    <Setting>
-      <PropertyName>UnlockAllItems</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>DisableEnemies</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
+     <Setting>
       <PropertyName>DisableGui</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
@@ -26,10 +18,6 @@
     </Setting>
     <Setting>
       <PropertyName>AllPlayersInvulnerable</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>DisableAllGameplay</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
@@ -43,26 +31,6 @@
     <Setting>
       <PropertyName>EnableVerboseDebugLog</PropertyName>
       <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>EnableShipVelocityRays</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>EnableFleetVelocityRays</PropertyName>
-      <PropertyValue>true</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>EnableFleetCourseDisplay</PropertyName>
-      <PropertyValue>true</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>EnableShipCourseDisplay</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>AllowEnemyOrders</PropertyName>
-      <PropertyValue>true</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>AllIntelCoverageComprehensive</PropertyName>
@@ -87,9 +55,3 @@
 </Values>
 <!-- Elements are only empty if they are in the format <ElementName/> -->
 
-<!--
-    <Setting>
-      <PropertyName>StopShipMovement</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
--->

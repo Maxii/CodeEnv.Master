@@ -30,9 +30,9 @@ using UnityEngine;
 public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     /// <summary>
-    /// The directives available for execution when accessing the context menu of the selected item.
+    /// The directives available for execution when the user operator of the menu is the Item selected.
     /// </summary>
-    protected abstract IEnumerable<T> SelectedItemDirectives { get; }
+    protected abstract IEnumerable<T> UserMenuOperatorDirectives { get; }
 
     /// <summary>
     /// Gets the Item to measure from when determining which IUnitTargets are closest.
@@ -44,20 +44,20 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)
         : base(ctxObjectGO, uniqueSubmenusReqd, menuPosition) { }
 
-    protected override void PopulateMenu_SelectedItemAccess() {
-        base.PopulateMenu_SelectedItemAccess();
+    protected override void PopulateMenu_UserMenuOperatorIsSelected() {
+        base.PopulateMenu_UserMenuOperatorIsSelected();
 
         _unusedSubMenus = new Stack<CtxMenu>(_availableSubMenus);
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        foreach (T directive in SelectedItemDirectives) {
+        foreach (T directive in UserMenuOperatorDirectives) {
             var topLevelItem = new CtxMenu.Item() {
                 text = Enums<T>.GetName(directive)
                 // setting the ID value is deferred until we know whether it is a submenu (in which case it is set to -1)
             };
 
-            topLevelItem.isDisabled = IsSelectedItemMenuItemDisabled(directive);
+            topLevelItem.isDisabled = IsUserMenuOperatorMenuItemDisabledFor(directive);
             if (!topLevelItem.isDisabled) {
-                topLevelItem.isDisabled = TryPopulateItemSubMenu_SelectedItemAccess(topLevelItem, directive);
+                topLevelItem.isDisabled = TryPopulateItemSubMenu_UserMenuOperatorIsSelected(topLevelItem, directive);
             }
             //D.Log("{0}.{1} disabled state is {2}.", GetType().Name, topLevelItem.text, topLevelItem.isDisabled);
             if (!topLevelItem.isSubmenu) {
@@ -73,12 +73,12 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     }
 
     /// <summary>
-    /// Returns the initial disabled state of the SelectedItem menu item associated with this directive prior to attempting to
+    /// Returns the initial disabled state of the MenuOperator menu item associated with this directive prior to attempting to
     /// populate a submenu for the same menu item. Default implementation returns false, aka not disabled.
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <returns></returns>
-    protected virtual bool IsSelectedItemMenuItemDisabled(T directive) {
+    protected virtual bool IsUserMenuOperatorMenuItemDisabledFor(T directive) {
         return false;
     }
 
@@ -89,9 +89,9 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="topLevelItem">The item.</param>
     /// <param name="directive">The directive.</param>
     /// <returns></returns>
-    private bool TryPopulateItemSubMenu_SelectedItemAccess(CtxMenu.Item topLevelItem, T directive) {
+    private bool TryPopulateItemSubMenu_UserMenuOperatorIsSelected(CtxMenu.Item topLevelItem, T directive) {
         IEnumerable<IUnitAttackableTarget> targets;
-        if (TryGetSubMenuUnitTargets_SelectedItemAccess(directive, out targets)) {
+        if (TryGetSubMenuUnitTargets_MenuOperatorIsSelected(directive, out targets)) {
             // directive requires a submenu, although targets maybe empty
             var targetsStack = new Stack<IUnitAttackableTarget>(targets);
             int submenuItemCount = targetsStack.Count;
@@ -130,7 +130,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets.</param>
     /// <returns></returns>
-    protected virtual bool TryGetSubMenuUnitTargets_SelectedItemAccess(T directive, out IEnumerable<IUnitAttackableTarget> targets) {
+    protected virtual bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(T directive, out IEnumerable<IUnitAttackableTarget> targets) {
         targets = Enumerable.Empty<IUnitAttackableTarget>();
         return false;
     }

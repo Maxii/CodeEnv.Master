@@ -33,7 +33,7 @@ public abstract class ACreator : AMonoBase {
     public __DiploStateWithUser ownerRelationshipWithUser;
 
     public bool isCompositionPreset;
-    public int maxElementsInRandomUnit = 8;
+    public int elementsInRandomUnit = 8;
 
     public bool toDelayOperations;
     public bool toDelayBuild;
@@ -51,6 +51,7 @@ public abstract class ACreator : AMonoBase {
     public int countermeasuresPerCmd = 2;
 
     public bool enableTrackingLabel = false;
+    public bool showHQDebugLog = false;
 
     #region Nested Classes
 

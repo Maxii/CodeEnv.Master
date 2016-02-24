@@ -34,24 +34,6 @@ namespace CodeEnv.Master.Common {
             private set { _enableFpsReadout = value; }
         }
 
-        private bool _unlockAllItems;
-        public bool UnlockAllItems {
-            get {
-                CheckValuesInitialized();
-                return _unlockAllItems;
-            }
-            private set { _unlockAllItems = value; }
-        }
-
-        private bool _disableEnemies;
-        public bool DisableEnemies {
-            get {
-                CheckValuesInitialized();
-                return _disableEnemies;
-            }
-            private set { _disableEnemies = value; }
-        }
-
         private bool _disableGui;
         public bool DisableGui {
             get {
@@ -77,15 +59,6 @@ namespace CodeEnv.Master.Common {
                 return _allPlayersInvulnerable;
             }
             private set { _allPlayersInvulnerable = value; }
-        }
-
-        private bool _disableAllGameplay;
-        public bool DisableAllGameplay {
-            get {
-                CheckValuesInitialized();
-                return _disableAllGameplay;
-            }
-            private set { _disableAllGameplay = value; }
         }
 
         private bool _forceFpsToTarget;
@@ -128,62 +101,6 @@ namespace CodeEnv.Master.Common {
                 return _enableVerboseDebugLog;
             }
             private set { _enableVerboseDebugLog = value; }
-        }
-
-        private bool _enableShipVelocityRays;
-        public bool EnableShipVelocityRays {
-            get {
-                CheckValuesInitialized();
-                return _enableShipVelocityRays;
-            }
-            private set { _enableShipVelocityRays = value; }
-        }
-
-        private bool _enableFleetVelocityRays;
-        public bool EnableFleetVelocityRays {
-            get {
-                CheckValuesInitialized();
-                return _enableFleetVelocityRays;
-            }
-            private set { _enableFleetVelocityRays = value; }
-        }
-
-        private bool _enableFleetCourseDisplay;
-        public bool EnableFleetCourseDisplay {
-            get {
-                CheckValuesInitialized();
-                return _enableFleetCourseDisplay;
-            }
-            private set { _enableFleetCourseDisplay = value; }
-        }
-
-        private bool _enableShipCourseDisplay;
-        public bool EnableShipCourseDisplay {
-            get {
-                CheckValuesInitialized();
-                return _enableShipCourseDisplay;
-            }
-            private set { _enableShipCourseDisplay = value; }
-        }
-
-        //private bool _stopShipMovement;
-        //public bool StopShipMovement {
-        //    get {
-        //        if (!isPropertyValuesInitialized) {
-        //            InitializePropertyValues();
-        //        }
-        //        return _stopShipMovement;
-        //    }
-        //    private set { _stopShipMovement = value; }
-        //}
-
-        private bool _allowEnemyOrders;
-        public bool AllowEnemyOrders {
-            get {
-                CheckValuesInitialized();
-                return _allowEnemyOrders;
-            }
-            private set { _allowEnemyOrders = value; }
         }
 
         private bool _allIntelCoverageComprehensive;

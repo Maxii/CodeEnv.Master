@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public CubeWireframe(string name, Transform target, Vector3 cubeSize, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new List<Vector3>(24), target, LineType.Discrete, width, color) {
+            : base(name, new List<Vector3>(24), target, References.DynamicObjectsFolder.Folder, LineType.Discrete, width, color) {
             Arguments.ValidateNotNull(target);
             _size = cubeSize;
         }
@@ -60,16 +60,28 @@ namespace CodeEnv.Master.GameContent {
             _centerPoint.color = Color.ToUnityColor();    // color removed from constructor in Vectrosity 4.0
 
             _centerPoint.drawTransform = _target; // _line.Draw3D(_target);  removed by Vectrosity 3.0
+            _centerPoint.active = false;
         }
 
-        public override void Show(bool toShow) {
-            base.Show(toShow);
-            _centerPoint.active = toShow;
+        protected override void HandleLineActivated() {
+            base.HandleLineActivated();
+            D.Assert(!_centerPoint.active);
+            _centerPoint.active = true;
+            if (!_centerPoint.isAutoDrawing) {
+                _centerPoint.Draw3DAuto();
+            }
         }
 
-        protected override void Draw3D() {
-            base.Draw3D();
-            _centerPoint.Draw3D();    // _line.Draw3D(_target);  removed by Vectrosity 3.0
+        protected override void AssignParent(Transform lineParent) {
+            base.AssignParent(lineParent);
+            D.Assert(_centerPoint.active);
+            _centerPoint.rectTransform.SetParent(lineParent, worldPositionStays: true);
+        }
+
+        protected override void HandleLineDeactivated() {
+            base.HandleLineDeactivated();
+            D.Assert(_centerPoint.active);
+            _centerPoint.active = false;
         }
 
         #region Event and Property Change Handlers
@@ -84,6 +96,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Cleanup() {
             base.Cleanup();
+            if (_centerPoint != null && _centerPoint.isAutoDrawing) {
+                _centerPoint.StopDrawing3DAuto();
+            }
             VectorLine.Destroy(ref _centerPoint);
         }
 

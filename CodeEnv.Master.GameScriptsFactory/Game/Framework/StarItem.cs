@@ -85,6 +85,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
         Vector3 obstacleZoneCenter = Position + _obstacleZoneCollider.center;
         _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.HighOrbitRadius);
+        InitializeDebugShowObstacleZone();
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -166,6 +167,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         if (_detectionHandler != null) {
             _detectionHandler.Dispose();
         }
+        CleanupDebugShowObstacleZone();
     }
 
     protected override void Unsubscribe() {
@@ -191,6 +193,39 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug Show Obstacle Zones
+
+    private void InitializeDebugShowObstacleZone() {
+        DebugValues debugValues = DebugValues.Instance;
+        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        if (debugValues.ShowObstacleZones) {
+            EnableDebugShowObstacleZone(true);
+        }
+    }
+
+    private void EnableDebugShowObstacleZone(bool toEnable) {
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        drawCntl.Color = Color.red;
+        drawCntl.enabled = toEnable;
+    }
+
+    private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
+        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+    }
+
+    private void CleanupDebugShowObstacleZone() {
+        var debugValues = DebugValues.Instance;
+        if (debugValues != null) {
+            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+        }
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+        if (drawCntl != null) {
+            Destroy(drawCntl);
+        }
+    }
+
+    #endregion
 
     #region IShipOrbitable Members
 

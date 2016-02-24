@@ -98,7 +98,7 @@
     <Compile Include="Generic\Extensions\MyNguiUtilities.cs" />
     <Compile Include="Generic\Framework\AOrdnance.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />
-    <Compile Include="Generic\Framework\ANavigator.cs" />
+    <Compile Include="Generic\Framework\AAutoPilot.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuElement.cs" />
     <Compile Include="Generic\Graphics\ATextTooltip.cs" />
     <Compile Include="Generic\Graphics\ACtxControl_User.cs" />

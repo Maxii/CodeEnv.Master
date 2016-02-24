@@ -53,7 +53,6 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Framework\FleetFormationStation.cs" />
     <Compile Include="Generic\Framework\AFormationManager.cs" />
     <Compile Include="Game\Framework\FleetFormationManager.cs" />
     <Compile Include="Generic\Framework\FormationFactory.cs" />
@@ -306,7 +305,6 @@
     <Compile Include="Game\Framework\ShipDesign.cs" />
     <Compile Include="Generic\IO\AProjectileWeaponStat.cs" />
     <Compile Include="Generic\Framework\ITopographyChangeListener.cs" />
-    <Compile Include="Generic\Extensions\OrderSourceExtensions.cs" />
     <Compile Include="Generic\IO\MissileWeaponStat.cs" />
     <Compile Include="Game\Gameplay\PlayersKnowledge.cs" />
     <Compile Include="Generic\IO\ProjectileWeaponStat.cs" />
@@ -325,6 +323,7 @@
     <Compile Include="Generic\Framework\IObstacle.cs" />
     <Compile Include="Generic\Framework\IMovingShipOrbitSimulator.cs" />
     <Compile Include="Generic\Framework\IPatrollable.cs" />
+    <Compile Include="Generic\Framework\IFleetFormationStation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

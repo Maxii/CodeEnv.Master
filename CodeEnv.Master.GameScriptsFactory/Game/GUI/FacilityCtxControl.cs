@@ -34,7 +34,7 @@ public class FacilityCtxControl : ACtxControl {
         _facilityMenuOperator = facility;
     }
 
-    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_facilityMenuOperator.IsSelected) {
             D.Assert(_facilityMenuOperator == selected as FacilityItem);
             return true;
@@ -42,7 +42,7 @@ public class FacilityCtxControl : ACtxControl {
         return false;
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         _facilityMenuOperator.OptimalCameraViewingDistance = _facilityMenuOperator.Position.DistanceToCamera();
     }
 

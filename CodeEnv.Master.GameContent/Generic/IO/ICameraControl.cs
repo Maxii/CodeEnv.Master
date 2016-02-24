@@ -56,6 +56,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float DistanceToCameraTarget { get; }
 
+        Camera MainCamera_Near { get; }
+
+        Camera MainCamera_Far { get; }
+
     }
 }
 

@@ -52,9 +52,12 @@ namespace CodeEnv.Master.GameContent {
 
         public List<float> Widths { get; set; }
 
+        private bool IsDrawCirclesJobRunning { get { return _drawCirclesJob != null && _drawCirclesJob.IsRunning; } }
+
         private bool[] _circlesToShow;
         private int _segmentsPerCircle = 30;
         private int _circleSeparation = 3;
+        private Job _drawCirclesJob;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HighlightCircle"/> class.
@@ -88,6 +91,7 @@ namespace CodeEnv.Master.GameContent {
             if (VectorLine.canvas == null) {
                 D.Log("Initializing HighlightCircle Camera and RenderMode.");
                 VectorLine.SetCanvasCamera(References.GuiCameraControl.GuiCamera);  // sets up the canvas
+                D.Log("{0}: Canvas RenderMode is now {1}.", LineName, VectorLine.canvas.renderMode.GetValueName());
                 //VectorLine.canvas.renderMode = RenderMode.ScreenSpaceCamera;    // SetCanvasCamera() sets mode to ScreenSpaceCamera
                 VectorLine.canvas.planeDistance = 1;
                 VectorLine.canvas.sortingOrder = -1;
@@ -108,15 +112,15 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (toShow) {
-                _drawJob = _drawJob ?? new Job(DrawCircles(), toStart: true, jobCompleted: delegate {
-                    D.Log("{0}.Job(DrawCircles()) completed.", LineName);
+                _drawCirclesJob = _drawCirclesJob ?? new Job(DrawCircles(), toStart: true, jobCompleted: (jobWasKilled) => {
+                    D.Assert(jobWasKilled);
                     //TODO
                 });
                 AddCircle(index);
                 _line.active = true;
             }
             else {
-                if (_drawJob != null && _drawJob.IsRunning) {
+                if (IsDrawCirclesJobRunning) {
                     RemoveCircle(index);
                 }
             }
@@ -127,11 +131,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private IEnumerator DrawCircles() {
-            //D.Log("{0} totalLinePoints = {1}.", GetType().Name, _line.points2.Count);
+            //D.Log("{0} totalLinePoints = {1}.", LineName, _line.points2.Count);
             while (true) {
                 Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
                 float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
-                //float distanceToCamera = Camera.main.transform.InverseTransformPoint(Target.position).z;
                 for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
                     if (_circlesToShow[circleIndex]) {
                         float radius = (NormalizedRadius / distanceToCamera) + (circleIndex * _circleSeparation);
@@ -143,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
                     // might be not showing requiring a start and end point each for first and third circle
                 }
                 _line.Draw();
-                yield return null;
+                yield return new WaitForEndOfFrame();
             }
         }
 
@@ -176,8 +179,8 @@ namespace CodeEnv.Master.GameContent {
 
                 if (_circlesToShow.Where(cShowing => cShowing == true).IsNullOrEmpty()) {
                     D.Log("Line {0} no longer active.", LineName);
-                    _drawJob.Kill();
-                    _drawJob = null;
+                    _drawCirclesJob.Kill();
+                    _drawCirclesJob = null;
                     _line.active = false;
                 }
             }
@@ -226,6 +229,13 @@ namespace CodeEnv.Master.GameContent {
             else {
                 D.Warn("{0} width count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, widthCount, MaxCircles, Widths[0]);
                 _line.SetWidth(Widths[0]);
+            }
+        }
+
+        protected override void Cleanup() {
+            base.Cleanup();
+            if (_drawCirclesJob != null) {
+                _drawCirclesJob.Dispose();
             }
         }
 

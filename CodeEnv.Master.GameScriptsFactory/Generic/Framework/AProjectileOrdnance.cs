@@ -53,6 +53,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected Vector3 _launchPosition;
     protected float _gameSpeedMultiplier;
 
+    private bool _isVelocityOnPauseRecorded;
     private Vector3 _velocityOnPause;
 
     protected override void Awake() {
@@ -189,12 +190,16 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
         if (_gameMgr.IsPaused) {
+            D.Assert(!_isVelocityOnPauseRecorded);
             _velocityOnPause = _rigidbody.velocity;
+            _isVelocityOnPauseRecorded = true;
             _rigidbody.isKinematic = true;
         }
         else {
             _rigidbody.isKinematic = false;
+            D.Assert(_isVelocityOnPauseRecorded);
             _rigidbody.velocity = _velocityOnPause;
+            _isVelocityOnPauseRecorded = false;
             _rigidbody.WakeUp();
         }
     }
@@ -203,7 +208,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
-            D.Assert(_velocityOnPause != default(Vector3), "{0} has not yet recorded VelocityOnPause.".Inject(transform.name));
+            D.Assert(_isVelocityOnPauseRecorded, "{0} has not yet recorded VelocityOnPause.".Inject(transform.name));
             _velocityOnPause *= gameSpeedChangeRatio;
         }
         else {

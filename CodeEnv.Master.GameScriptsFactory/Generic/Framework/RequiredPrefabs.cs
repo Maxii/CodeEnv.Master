@@ -70,6 +70,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
     public SectorItem sector;
+    public FleetFormationStation fleetFormationStation;
 
     [Header("Orbiters")]
     public OrbitSimulator orbiter;

@@ -105,7 +105,8 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         LogEvent();
         var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.HullCategory));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
-        _command.HQElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
+        var hqElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
+        _command.HQElement = hqElement;
     }
 
     protected override void __IssueFirstUnitOrder(Action onCompleted) {

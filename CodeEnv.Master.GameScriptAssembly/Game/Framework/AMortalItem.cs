@@ -31,7 +31,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// Debug flag indicating whether to show the D.Log for this item.
     /// <remarks>Requires #define DEBUG_LOG to be compiled.</remarks>
     /// </summary>
-    public bool toShowDLog = false;
+    public bool showDebugLog = false;
 
     public event EventHandler deathOneShot;
 
@@ -225,7 +225,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
     public override void LogEvent() {
-        if (DebugSettings.Instance.EnableEventLogging && toShowDLog) {
+        if (DebugSettings.Instance.EnableEventLogging && showDebugLog) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
             string name = Utility.CheckForContent(FullName) ? FullName : transform.name + "(from transform)";
             Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));

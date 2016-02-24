@@ -40,7 +40,7 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {
             EditorGUI.indentLevel++;
-            creator.maxElementsInRandomUnit = EditorGUILayout.IntSlider("Max Unit Elements", creator.maxElementsInRandomUnit, 1, GetMaxElements());
+            creator.elementsInRandomUnit = EditorGUILayout.IntSlider("Element Count", creator.elementsInRandomUnit, 1, GetMaxElements());
             EditorGUI.indentLevel--;
         }
 
@@ -62,6 +62,7 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("CMs/Cmd", creator.countermeasuresPerCmd, 0, 3);
 
         creator.enableTrackingLabel = GUILayout.Toggle(creator.enableTrackingLabel, "Enable Tracking Label");
+        creator.showHQDebugLog = GUILayout.Toggle(creator.showHQDebugLog, "Show HQ DebugLog");
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

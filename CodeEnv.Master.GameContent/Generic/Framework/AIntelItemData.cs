@@ -70,9 +70,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="initialcoverage">The initial coverage.</param>
         /// <returns></returns>
-        //protected virtual AIntel MakeIntel(IntelCoverage initialcoverage) {
-        //    return new Intel(initialcoverage);
-        //}
         protected virtual AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new Intel();
             intel.InitializeCoverage(initialcoverage);

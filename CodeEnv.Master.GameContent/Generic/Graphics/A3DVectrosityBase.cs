@@ -27,6 +27,33 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class A3DVectrosityBase : AVectrosityBase {
 
+        #region LineManager Relocation Archive
+
+        /******************************************************************************************
+        * IDEA: I can relocate the Vectrosity LineManager to wherever I want to cleanup my root
+        * heirarchy. The code below works fine. However, when the scene is about to change I would 
+        * then have to move it back to the root so it's DontDestroyOnLoad would work. Otherwise,
+        * LineManager is destroyed and will not be recreated when the next scene appears causing
+        * a Unity error when the new Vectrosity objects created in the new scene try to access it.
+        * This will involve a fair amount of work (like I did in SystemCreator) to make sure the
+        * correct static states are handled, along with alot of event subscriptions from all these
+        * Vectrosity3D objects. The benefit is small so I've commented all this out for now.
+        *******************************************************************************************/
+
+        //private static bool _isLineManagerRelocated = false;
+
+        //private static void RelocateLineManager() {
+        //    if (!_isLineManagerRelocated) {
+        //        LineManager vectrosityLineMgr = GameObject.FindObjectOfType<LineManager>();
+        //        if (vectrosityLineMgr != null) {
+        //            vectrosityLineMgr.transform.parent = References.DynamicObjectsFolder.Folder;
+        //            _isLineManagerRelocated = true;
+        //        }
+        //    }
+        //}
+
+        #endregion
+
         private GameColor _color;
         public GameColor Color {
             get { return _color; }
@@ -47,6 +74,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
         private LineType _lineType;
+        private Transform _lineParent;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="A3DVectrosityBase" /> class.
@@ -54,16 +82,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="points">The points.</param>
         /// <param name="target">The transform that this line follows in the scene.</param>
+        /// <param name="lineParent">The line parent.</param>
         /// <param name="lineType">Type of the line.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public A3DVectrosityBase(string name, List<Vector3> points, Transform target, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
+        public A3DVectrosityBase(string name, List<Vector3> points, Transform target, Transform lineParent, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
             : base(name) {
             _points = points;
             _target = target;
+            _lineParent = lineParent;
             _lineType = lineType;
             _lineWidth = width;
             _color = color;
+            VectorLine.SetCamera3D(References.MainCameraControl.MainCamera_Far);    // eliminates most jitter
         }
 
         protected virtual void Initialize() {
@@ -81,39 +112,63 @@ namespace CodeEnv.Master.GameContent {
             _line.layer = (int)Layers.TransparentFX;    // make the line visible to the mainCamera. line.layer added in Vectrosity 5.0
 
             if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
+            _line.active = false;
+            //RelocateLineManager();    // see Relocate LineManager Archive
         }
 
         /// <summary>
         /// Shows or hides a VectorLine that moves with the provided <c>target</c> if not null.
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
-        public virtual void Show(bool toShow) {
-            if (_line == null) {
-                Initialize();
-            }
-            if (_drawJob != null && _drawJob.IsRunning) {
-                _drawJob.Kill();
-                _drawJob = null;
+        public void Show(bool toShow) {
+            if (IsShowing == toShow) {
+                //D.Log("{0}.Show({1}) is a duplicate.", GetType().Name, toShow);
+                return;
             }
 
             if (toShow) {
-                _drawJob = new Job(DrawLine(), toStart: true, jobCompleted: delegate {
-                    //TODO
-                });
+                if (_line == null) {
+                    Initialize();
+                }
+                D.Assert(!IsLineActive);
+                _line.active = true;
+                HandleLineActivated();
+                AssignParent(_lineParent);
+                if (!_line.isAutoDrawing) {
+                    _line.Draw3DAuto();
+                }
             }
-            _line.active = toShow;
+            else {
+                D.Assert(IsLineActive);
+                _line.active = false;
+                HandleLineDeactivated();
+            }
         }
 
-        private IEnumerator DrawLine() {
-            while (true) {
-                Draw3D();
-                yield return null;
-            }
+        /// <summary>
+        /// Assigns the provided parent to this VectorLine object. Derived classes
+        /// that add other VectorLine objects (like points) to this line should override
+        /// this method and assign the parent to their object using
+        /// VectorLine.rectTransform.SetParent(lineParent, worldPositionStays: true);
+        /// </summary>
+        /// <param name="lineParent">The line parent.</param>
+        protected virtual void AssignParent(Transform lineParent) {
+            D.Assert(IsLineActive);
+            _line.Draw3D();   // Eric5h5: Active line must be drawn once before the parent can be set
+            _line.rectTransform.SetParent(lineParent, worldPositionStays: true);
         }
 
-        protected virtual void Draw3D() {
-            _line.Draw3D();  // _line.Draw3D(_target);  removed by Vectrosity 3.0
-        }
+        /// <summary>
+        /// Hook that is called immediately after the VectorLine _line is activated.
+        /// Default does nothing.
+        /// </summary>
+        protected virtual void HandleLineActivated() { }
+
+        /// <summary>
+        /// Hook that is called immediately after the VectorLine _line is de-activated.
+        /// Default does nothing.
+        /// </summary>
+        protected virtual void HandleLineDeactivated() { }
 
         #region Event and Property Change Handlers
 
@@ -132,12 +187,19 @@ namespace CodeEnv.Master.GameContent {
         private void PointsPropChangedHandler() {
             if (_line != null) {
                 _line.points3.Clear();  //_line.Resize(Points); removed by Vectrosity 4.0
-                D.Log("{0}.PointsPropChangedHandler called. Adding {1} points.", GetType().Name, Points.Count);
+                D.Log("{0}.PointsPropChangedHandler called. Adding {1} points.", LineName, Points.Count);
                 _line.points3.AddRange(Points);
             }
         }
 
         #endregion
+
+        protected override void Cleanup() {
+            if (_line != null && _line.isAutoDrawing) {
+                _line.StopDrawing3DAuto();  // stop auto drawing before _line destroyed
+            }
+            base.Cleanup();
+        }
 
     }
 }

@@ -56,10 +56,13 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
         IsDiscernibleToUser = isInMainCameraLOS && GetUserIntelCoverage() != IntelCoverage.None;
     }
 
-
     #region Event and Property Change Handlers
 
-    protected virtual void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
+    private void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
+        if (!IsOperational) {
+            // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
+            return;
+        }
         D.Log("{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, GetUserIntelCoverage().GetValueName());
         AssessIsDiscernibleToUser();
         if (IsHudShowing) {
@@ -68,9 +71,15 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
         }
         var toEnableDisplayMgr = GetUserIntelCoverage() != IntelCoverage.None;
         DisplayMgr.EnableDisplay(toEnableDisplayMgr);
+        HandleIntelCoverageChanged();
     }
 
     #endregion
+
+    /// <summary>
+    /// Hook for handling a change in IntelCoverage for derived classes.
+    /// </summary>
+    protected virtual void HandleIntelCoverageChanged() { }
 
     #region Cleanup
 

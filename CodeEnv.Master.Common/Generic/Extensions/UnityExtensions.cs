@@ -280,14 +280,6 @@ namespace CodeEnv.Master.Common {
             return t.position.DistanceToCamera();
         }
 
-        public static int DistanceToCameraInt(this GameObject go) {
-            return go.transform.DistanceToCameraInt();
-        }
-
-        public static int DistanceToCameraInt(this Transform t) {
-            return (int)Math.Round(t.DistanceToCamera());
-        }
-
         #endregion
 
         /// <summary>

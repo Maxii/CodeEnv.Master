@@ -39,7 +39,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     [System.Obsolete]
     public void AddOrdnanceLaunchedFromInsideMonitor(IInterceptableOrdnance ordnance) {
         D.Assert(ordnance.IsOperational);
-        D.Log("{0} is adding {1} to detected items as it was fired from inside this monitor's collider.", Name, ordnance.Name);
+        D.Log(ShowDebugLog, "{0} is adding {1} to detected items as it was fired from inside this monitor's collider.", Name, ordnance.Name);
         AddDetectedObject(ordnance);
     }
 
@@ -49,13 +49,13 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
         var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
-        D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
+        D.Log(ShowDebugLog, "{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
         if (newlyDetectedOrdnance.Owner == Owner) {
             // its one of ours
             if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
                 // ... and its not a danger so ignore it
                 RemoveDetectedObject(newlyDetectedOrdnance);
-                D.Log("{0} removed detected item {1} owned by us moving away.", Name, newlyDetectedOrdnance.FullName);
+                D.Log(ShowDebugLog, "{0} removed detected item {1} owned by us moving away.", Name, newlyDetectedOrdnance.FullName);
                 return;
             }
         }
@@ -105,7 +105,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
     private void ThreatDeathEventHandler(object sender, EventArgs e) {
         IOrdnance deadThreat = sender as IOrdnance;
-        //D.Log("{0} received threatDeath event for {1}.", Name, deadThreat.Name);
+        //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", Name, deadThreat.Name);
         RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
     }
 

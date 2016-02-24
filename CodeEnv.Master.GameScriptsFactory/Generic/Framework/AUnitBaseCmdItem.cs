@@ -85,8 +85,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
     /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
     /// </summary>
-    protected void KillUnit() {
-        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.UnitCommand);
+    protected void ScuttleUnit() {
+        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.CmdStaff);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
     }
 
@@ -94,11 +94,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region Event and Property Change Handlers
 
     protected void CurrentOrderPropChangedHandler() {
-        if (CurrentState == BaseState.Attacking) {
-            Return();
-        }
+        HandleNewOrder();
+    }
+
+    private void HandleNewOrder() {
+
+        UponNewOrderReceived();
+        D.Assert(CurrentState != BaseState.Attacking);
+
+        //if (CurrentState == BaseState.Attacking) {
+        //    Return();
+        //}
         if (CurrentOrder != null) {
-            D.Log(toShowDLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(showDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             BaseDirective order = CurrentOrder.Directive;
             switch (order) {
                 case BaseDirective.Attack:
@@ -107,7 +115,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
                 case BaseDirective.StopAttack:
                     break;
                 case BaseDirective.Scuttle:
-                    KillUnit();
+                    ScuttleUnit();
                     break;
 
                 case BaseDirective.Repair:
@@ -148,12 +156,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #endregion
 
-    #region Idle
+    #region Idling
 
     protected void Idling_EnterState() {
         LogEvent();
         // register as available
     }
+
+    void Idling_UponNewOrderReceived() { }  // temp to avoid RelayToCurrentState "cant find method" warnings
 
     protected void Idling_ExitState() {
         LogEvent();
@@ -165,11 +175,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region ExecuteAttackOrder
 
     protected IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log(toShowDLog, "{0}.ExecuteAttackOrder_EnterState beginning execution.", Data.Name);
+        D.Log(showDebugLog, "{0}.ExecuteAttackOrder_EnterState beginning execution.", Data.Name);
         Call(BaseState.Attacking);
         yield return null;   // required so Return()s here
         CurrentState = BaseState.Idling;
     }
+
+    void ExecuteAttackOrder_UponNewOrderReceived() { }  // temp to avoid RelayToCurrentState "cant find method" warnings
 
     protected void ExecuteAttackOrder_ExitState() {
         LogEvent();
@@ -185,13 +197,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         LogEvent();
         _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
         _attackTarget.deathOneShot += TargetDeathEventHandler;
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.UnitCommand, _attackTarget);
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.CmdStaff, _attackTarget);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
     protected void Attacking_UponTargetDeath(IMortalItem deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _attackTarget.FullName, deadTarget.FullName));
+        Return();
+    }
+
+    void Attacking_UponNewOrderReceived() {
+        LogEvent();
         Return();
     }
 

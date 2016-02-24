@@ -29,28 +29,45 @@ using UnityEngine;
 /// </summary>
 public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
-    private static FleetDirective[] _menuOperatorDirectivesAvailable = new FleetDirective[] {   FleetDirective.Join,
-                                                                                                FleetDirective.Repair,
-                                                                                                FleetDirective.Disband,
-                                                                                                FleetDirective.Refit,
-                                                                                                FleetDirective.Scuttle };
+    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
+        {FleetDirective.Join, Speed.None },
+        {FleetDirective.AssumeFormation, Speed.None },
+        {FleetDirective.Repair, Speed.FleetStandard },
+        {FleetDirective.Disband, Speed.FleetStandard },
+        {FleetDirective.Refit, Speed.FleetStandard },
+        {FleetDirective.Scuttle, Speed.None },
+        {FleetDirective.Move, Speed.FleetStandard },
+        {FleetDirective.Guard, Speed.FleetStandard }
+    };
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Join,
-                                                                                                FleetDirective.Move,
-                                                                                                FleetDirective.Guard };
+    // OPTIMIZE
+    private static IDictionary<ShipDirective, Speed> _userShipSpeedLookup = new Dictionary<ShipDirective, Speed>() {
+        {ShipDirective.Join, Speed.None },
+    };
 
-    private static ShipDirective[] _remoteShipDirectivesAvailable = new ShipDirective[] { ShipDirective.Join };
+    private static FleetDirective[] _userMenuOperatorDirectives = new FleetDirective[] {    FleetDirective.Join,
+                                                                                            FleetDirective.AssumeFormation,
+                                                                                            FleetDirective.Repair,
+                                                                                            FleetDirective.Disband,
+                                                                                            FleetDirective.Refit,
+                                                                                            FleetDirective.Scuttle };
 
-    protected override IEnumerable<FleetDirective> SelectedItemDirectives {
-        get { return _menuOperatorDirectivesAvailable; }
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Join,
+                                                                                            FleetDirective.Move,
+                                                                                            FleetDirective.Guard };
+
+    private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Join };
+
+    protected override IEnumerable<FleetDirective> UserMenuOperatorDirectives {
+        get { return _userMenuOperatorDirectives; }
     }
 
-    protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
-        get { return _remoteFleetDirectivesAvailable; }
+    protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
+        get { return _userRemoteFleetDirectives; }
     }
 
-    protected override IEnumerable<ShipDirective> RemoteShipDirectives {
-        get { return _remoteShipDirectivesAvailable; }
+    protected override IEnumerable<ShipDirective> UserRemoteShipDirectives {
+        get { return _userRemoteShipDirectives; }
     }
 
     protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
@@ -64,7 +81,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         _fleetMenuOperator = fleetCmd;
     }
 
-    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_fleetMenuOperator.IsSelected) {
             D.Assert(_fleetMenuOperator == selected as FleetCmdItem);
             return true;
@@ -72,21 +89,22 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         return false;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+    protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override bool TryIsRemoteShipAccessAttempted(ISelectable selected, out ShipItem selectedShip) {
+    protected override bool TryIsSelectedItemUserRemoteShip(ISelectable selected, out ShipItem selectedShip) {
         selectedShip = selected as ShipItem;
         return selectedShip != null && selectedShip.Owner.IsUser;
     }
 
-    protected override bool IsSelectedItemMenuItemDisabled(FleetDirective directive) {
+    protected override bool IsUserMenuOperatorMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Repair:
                 return _fleetMenuOperator.Data.Health == Constants.OneHundredPercent && _fleetMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
             case FleetDirective.Join:
+            case FleetDirective.AssumeFormation:
             case FleetDirective.Refit:
             case FleetDirective.Disband:
             case FleetDirective.Scuttle:
@@ -103,7 +121,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets.</param>
     /// <returns></returns>
-    protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(FleetDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(FleetDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case FleetDirective.Join:
                 targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(b => b.Owner.IsUser).Except(_fleetMenuOperator).Cast<IUnitAttackableTarget>();
@@ -114,6 +132,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsUser).Cast<IUnitAttackableTarget>();
                 return true;
             case FleetDirective.Scuttle:
+            case FleetDirective.AssumeFormation:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();
                 return false;
             default:
@@ -121,7 +140,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         }
     }
 
-    protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // not really needed
+    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {  // not really needed
         switch (directive) {
             case FleetDirective.Join:
             case FleetDirective.Move:
@@ -132,7 +151,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         }
     }
 
-    protected override bool IsRemoteShipMenuItemDisabled(ShipDirective directive) {   // not really needed
+    protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {   // not really needed
         switch (directive) {
             case ShipDirective.Join:
                 return false;
@@ -141,37 +160,49 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         }
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         _fleetMenuOperator.OptimalCameraViewingDistance = _fleetMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {
-        base.HandleMenuSelection_SelectedItemAccess(itemID);
+    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+        IssueFleetMenuOperatorOrder(itemID);
+    }
 
+    protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
+        base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
+        IssueRemoteFleetOrder(itemID);
+    }
+
+    protected override void HandleMenuPick_UserRemoteShipIsSelected(int itemID) {
+        base.HandleMenuPick_UserRemoteShipIsSelected(itemID);
+        IssueRemoteShipOrder(itemID);
+    }
+
+    private void IssueFleetMenuOperatorOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
+        Speed speed = _userFleetSpeedLookup[directive];
         IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.FullName, directive.GetValueName(), msg);
-        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, target, Speed.FleetTwoThirds);
+        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
     }
 
-    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
-        base.HandleMenuSelection_RemoteFleetAccess(itemID);
-
+    private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
+        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
     }
 
-    protected override void HandleMenuSelection_RemoteShipAccess(int itemID) {
-        base.HandleMenuSelection_RemoteShipAccess(itemID);
-
+    private void IssueRemoteShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
+        Speed speed = _userShipSpeedLookup[directive];
         INavigableTarget target = _fleetMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target, speed);
     }
 
     public override string ToString() {

@@ -51,17 +51,17 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        D.Log("{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
+        D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
-            D.Log("{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
+            D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
             return;
         }
 
         var detectedObject = other.GetComponent<IDetectableType>();
         if (detectedObject != null) {
-            D.Log("{0} detected {1} at {2:0.} units.", Name, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
+            D.Log(ShowDebugLog, "{0} detected {1} at {2:0.} units.", Name, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
             if (!detectedObject.IsOperational) {
-                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
+                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
                 return;
             }
             AddDetectedObject(detectedObject);
@@ -70,21 +70,21 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        //D.Log("{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
+        //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
-            D.Log("{0}.OnTriggerExit() ignored TriggerCollider {1}.", Name, other.name);
+            D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", Name, other.name);
             return;
         }
 
         var lostDetectionObject = other.GetComponent<IDetectableType>();
         if (lostDetectionObject != null) {
-            D.Log("{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
+            D.Log(ShowDebugLog, "{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
             RemoveDetectedObject(lostDetectionObject);
         }
     }
 
-    protected sealed override void IsOperationalPropChangedHandler() {
-        //D.Log("{0}.IsOperationPropChangedHandler() called. IsOperational: {1}.", Name, IsOperational);
+    protected override void IsOperationalPropChangedHandler() {
+        //D.Log(ShowDebugLog, "{0}.IsOperationPropChangedHandler() called. IsOperational: {1}.", Name, IsOperational);
         if (IsOperational) {
             AcquireAllDetectableObjecsInRange();
         }
@@ -149,7 +149,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         D.Assert(detectedObject.IsOperational);
         if (!_objectsDetected.Contains(detectedObject)) {
             _objectsDetected.Add(detectedObject);
-            D.Log("{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
+            D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
             HandleDetectedObjectAdded(detectedObject);
         }
     }
@@ -161,19 +161,19 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected void RemoveDetectedObject(IDetectableType previouslyDetectedObject) {
         bool isRemoved = _objectsDetected.Remove(previouslyDetectedObject);
         if (isRemoved) {
-            D.Log("{0} has removed {1}. Items remaining = {2}.", Name, previouslyDetectedObject.FullName, _objectsDetected.Select(i => i.FullName).Concatenate());
+            D.Log(ShowDebugLog, "{0} has removed {1}. Items remaining = {2}.", Name, previouslyDetectedObject.FullName, _objectsDetected.Select(i => i.FullName).Concatenate());
             if (previouslyDetectedObject.IsOperational) {
-                D.Log("{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName, Vector3.Distance(previouslyDetectedObject.Position, transform.position));
+                D.Log(ShowDebugLog, "{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName, Vector3.Distance(previouslyDetectedObject.Position, transform.position));
             }
             else {
-                D.Log("{0} no longer tracking dead {1} {2}.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
+                D.Log(ShowDebugLog, "{0} no longer tracking dead {1} {2}.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
             }
             HandleDetectedObjectRemoved(previouslyDetectedObject);
         }
         else {
             // Note: Sometimes OnTriggerExit fires when an object is destroyed within the collider's radius. However, it is not reliable
             // so I remove it manually when I detect the object's death (prior to its destruction). When this happens, the object will no longer be present to be removed.
-            D.Log("{0} reports {1} {2} not present to be removed.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
+            D.Log(ShowDebugLog, "{0} reports {1} {2} not present to be removed.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
         }
     }
 
@@ -217,15 +217,15 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         D.Assert(_objectsDetected.Count == Constants.Zero);
         __objectsDetectedViaWorkaround.Clear();
 
-        D.Log("{0}.BulkDetectAllCollidersInRange() called.", Name);
+        D.Log(ShowDebugLog, "{0}.BulkDetectAllCollidersInRange() called.", Name);
         var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
         var allDetectableObjectsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
         foreach (var detectableObject in allDetectableObjectsInRange) {
             if (!detectableObject.IsOperational) {
-                D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectableObject.FullName);
+                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectableObject.FullName);
                 continue;
             }
-            D.Log("{0}'s bulk detection method is adding {1}.", Name, detectableObject.FullName);
+            D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", Name, detectableObject.FullName);
             __objectsDetectedViaWorkaround.Add(detectableObject);
             AddDetectedObject(detectableObject);
         }

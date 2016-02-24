@@ -251,7 +251,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null && _changeHeadingJob.IsRunning) {
             _changeHeadingJob.Kill();   // Note: no timeout issue w/killing job as allowedTime recalc'd
         }
-        float allowedTime = GameUtility.CalcMaxReqdSecsToCompleteRotation(TurnRate, MaxReqdHeadingChange);
+        float allowedTime = GameUtility.CalcMaxSecsReqdToCompleteRotation(TurnRate, MaxReqdHeadingChange) * TempGameValues.__AllowedTurnTimeBufferFactor;
         _changeHeadingJob = new Job(ChangeHeading(newHeading, allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
             if (!IsOperational) { return; } // missile is or about to be destroyed
             if (jobWasKilled) {
@@ -283,7 +283,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
             //D.Log("{0} actual heading after turn step: {1}.", Name, Heading);
             cumTime += deltaTime; // WARNING: works only with yield return null;
-            D.Assert(cumTime < allowedTime, "CumTime {0:0.##} > AllowedTime {1:0.##}.".Inject(cumTime, allowedTime));
+            D.Assert(cumTime <= allowedTime, "{0} exceeded AllowedTime {1:0.##} while turning.", Name, allowedTime);
             yield return null;
         }
         //D.Log("{0} has completed heading change of {1:0.#} degrees. Turn Duration = {2:0.##}.", Name, angle, cumTime);

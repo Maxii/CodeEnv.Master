@@ -196,6 +196,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeadCode", "DeadCode", "{F1
 		DeadCode\FleetCmdView_Player.cs = DeadCode\FleetCmdView_Player.cs
 		DeadCode\FleetCommand.cs = DeadCode\FleetCommand.cs
 		DeadCode\FleetComposition.cs = DeadCode\FleetComposition.cs
+		DeadCode\FleetFormationStation2.cs = DeadCode\FleetFormationStation2.cs
 		DeadCode\FleetGraphics.cs = DeadCode\FleetGraphics.cs
 		DeadCode\FleetGuiHudTextFactory.cs = DeadCode\FleetGuiHudTextFactory.cs
 		DeadCode\FleetIconInfo.cs = DeadCode\FleetIconInfo.cs

@@ -137,6 +137,18 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     /// <summary>
+    /// The MainCamera for objects that are close.
+    /// NearClipPlane: .01, FarClipPlane: 1 - 10.
+    /// </summary>
+    public Camera MainCamera_Near { get; private set; }
+
+    /// <summary>
+    /// The MainCamera for objects that are far.
+    /// NearClipPlane: 1 - 10, FarClipPlane: UniverseDiameter, up to 100K
+    /// </summary>
+    public Camera MainCamera_Far { get; private set; }
+
+    /// <summary>
     /// The distance from the camera's target point to the camera's focal plane.
     /// </summary>
     public float DistanceToCameraTarget { get { return _targetPoint.DistanceToCamera(); } }
@@ -170,17 +182,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private SectorGrid _sectorGrid;
     private GameManager _gameMgr;
 
-    /// <summary>
-    /// The MainCamera for objects that are close.
-    /// NearClipPlane = .01, FarClipPlane = 100.
-    /// </summary>
-    private Camera _mainCamera_Near;
-
-    /// <summary>
-    /// The MainCamera for objects that are far.
-    /// NearClipPlane = 100, FarClipPlane = UniverseDiameter, up to ~ 100K
-    /// </summary>
-    private Camera _mainCamera_Far;
     private Camera[] _mainCameras;
 
     private IList<IDisposable> _subscriptions;
@@ -281,9 +282,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void InitializeReferences() {
         //if (LevelSerializer.IsDeserializing) { return; }
-        _mainCamera_Near = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
-        _mainCamera_Far = gameObject.GetSingleComponentInChildren<Camera>(excludeSelf: true);
-        _mainCameras = new Camera[] { _mainCamera_Near, _mainCamera_Far };
+        MainCamera_Near = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
+        MainCamera_Far = gameObject.GetSingleComponentInChildren<Camera>(excludeSelf: true);
+        _mainCameras = new Camera[] { MainCamera_Near, MainCamera_Far };
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _inputMgr = InputManager.Instance;
         _sectorGrid = SectorGrid.Instance;
@@ -296,9 +297,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, IsResetOnFocusEnabledPropChangedHandler));
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, IsZoomOutOnCursorEnabledPropChangedHandler));
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, IsRunningPropChangedHandler));
-        //_gameMgr.onGameStateChanged += OnGameStateChanged;
         _gameMgr.gameStateChanged += GameStateChangedEventHandler;
-        //_inputMgr.onUnconsumedPressDown += UnconsumedPressDownHandler;
         _inputMgr.unconsumedPress += UnconsumedPressEventHandler;
     }
 
@@ -327,19 +326,19 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         // DEPTH IS IMPORTANT Camera with lower depth draws first
         // Ngui GuiCamera depth = 1
-        _mainCamera_Near.depth = -1F;
-        _mainCamera_Far.depth = -2F;
+        MainCamera_Near.depth = -1F;
+        MainCamera_Far.depth = -2F;
         // SpaceUnity skybox camera depth = -3F
 
         // MainCamera_Near will always be set to depth only. 
-        _mainCamera_Near.clearFlags = CameraClearFlags.Depth;
+        MainCamera_Near.clearFlags = CameraClearFlags.Depth;
         // MainCamera_Far must be set manually during development. Set it to Depth also if SpaceUnity skybox is active, otherwise Skybox or SolidColor if not
 
         // IMPORTANT Max far to near clip plane ratio <= 10,000
-        _mainCamera_Near.nearClipPlane = 0.01F;
-        _mainCamera_Near.farClipPlane = _mainCamera_Near.nearClipPlane * CameraMaxClippingPlaneRatio;
-        _mainCamera_Far.nearClipPlane = _mainCamera_Near.farClipPlane;
-        _mainCamera_Far.farClipPlane = Mathf.Min(_mainCamera_Far.nearClipPlane * CameraMaxClippingPlaneRatio, _universeRadius * 2F);
+        MainCamera_Far.farClipPlane = _universeRadius * 2F;
+        MainCamera_Far.nearClipPlane = (MainCamera_Far.farClipPlane / CameraMaxClippingPlaneRatio);
+        MainCamera_Near.farClipPlane = MainCamera_Far.nearClipPlane + 1F;   // HACK 1F is overlap
+        MainCamera_Near.nearClipPlane = 0.01F;
 
         RefreshCamerasFOV();
 
@@ -363,7 +362,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     /// <param name="fov">The fov.</param>
     private void RefreshCamerasFOV(float fov = CameraFieldOfView_Default) {
-        if (!_mainCamera_Near.fieldOfView.ApproxEquals(fov)) {
+        if (!MainCamera_Near.fieldOfView.ApproxEquals(fov)) {
             _mainCameras.ForAll(cam => cam.fieldOfView = fov);
         }
     }
@@ -1562,7 +1561,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
 
         // scroll event with a null target so position the dummyTarget
-        return PlaceDummyTargetAtUniverseEdgeInDirection(_mainCamera_Near.ScreenPointToRay(screenPoint).direction);
+        return PlaceDummyTargetAtUniverseEdgeInDirection(MainCamera_Near.ScreenPointToRay(screenPoint).direction);
     }
 
 
@@ -1577,7 +1576,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <c>false</c> if the Target remains the same (or if the dummyTarget, its location remains the same).
     /// </returns>
     private bool TrySetZoomTargetAt(Vector3 screenPoint) {
-        Ray ray = _mainCamera_Near.ScreenPointToRay(screenPoint);   // Use _mainCamera_Near as ray is cast starting at camera's nearClipPlane
+        Ray ray = MainCamera_Near.ScreenPointToRay(screenPoint);   // Use _mainCamera_Near as ray is cast starting at camera's nearClipPlane
         RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, InputManager.WorldEventDispatcherMask_NormalInput);
 
         var eligibleIctHits = ConvertToEligibleICameraTargetableHits(hits);

@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
+    public float sectorVisibilityDepth = 2F;
+
     public IList<SectorItem> AllSectors { get { return _sectors.Values.ToList(); } }
 
     /// <summary>
@@ -42,7 +44,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// </summary>
     public IList<Vector3> SectorCorners { get { return _worldVertexLocations; } }
 
-    public float sectorVisibilityDepth = 2F;
+    protected bool IsGridWireframeShowing { get { return _gridWireframe != null && _gridWireframe.IsShowing; } }
 
     private GFRectGrid _grid;
     private Vector3 _gridVertexToBoxOffset = new Vector3(0.5F, 0.5F, 0.5F);
@@ -142,22 +144,15 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void CameraSectorIndexPropChangedHandler() {
-        // Note: not subscribed unless in SectorViewMode so no need to test for it
-        if (_gridWireframe != null) {
-            List<Vector3> gridPoints;
-            if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe.Points = gridPoints;
-            }
-        }
-        else {
-            // we are in the right mode, but the wireframe is still null, so continue to try to generate and show it
-            ShowSectorGrid(true);
-        }
+        D.Assert(PlayerViews.Instance.ViewMode == PlayerViewMode.SectorView);   // not subscribed unless in SectorViewMode
+        D.Assert(IsGridWireframeShowing);
+        //D.Log("{0}: CameraSectorIndex has changed. Generating new gridpoints.", GetType().Name);
+        _gridWireframe.Points = GenerateGridPoints(MainCameraControl.Instance.SectorIndex);
     }
 
     #endregion
 
-    private bool TryGenerateGridPoints(Index3D cameraSectorIndex, out List<Vector3> gridPoints) {
+    private List<Vector3> GenerateGridPoints(Index3D cameraSectorIndex) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
         Vector3 tempPosition = transform.position;
         transform.position = Vector3.zero;
@@ -185,13 +180,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         Vector3 renderTo = new Vector3(xRenderTo, yRenderTo, zRenderTo);
         //D.Log("CameraGridLoc {2}, RenderFrom {0}, RenderTo {1}.", renderFrom, renderTo, gridLocOfCamera);
 
-        gridPoints = _grid.GetVectrosityPoints(renderFrom, renderTo);
+        List<Vector3> gridPoints = _grid.GetVectrosityPoints(renderFrom, renderTo);
         transform.position = tempPosition;
-        bool hasPoints = !gridPoints.IsNullOrEmpty<Vector3>();
-        if (!hasPoints) {
-            D.Warn("No grid points to render.");
-        }
-        return hasPoints;
+        D.Assert(gridPoints.Any(), "{0}: No grid points to render.", GetType().Name);
+        return gridPoints;
     }
 
     /// <summary>
@@ -361,7 +353,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     public SectorItem GetSector(Index3D index) {
         SectorItem sector;
         if (!TryGetSector(index, out sector)) {
-            D.Warn("No Sector at {0}, returning null.", index);
+            D.Warn("{0}: No Sector at {1}, returning null.", GetType().Name, index);
         }
         return sector;
     }
@@ -461,16 +453,23 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     public void ShowSectorGrid(bool toShow) {
-        if (_gridWireframe == null) {
-            List<Vector3> gridPoints;
-            if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
-            }
+        if (IsGridWireframeShowing == toShow) {
+            return;
         }
-
-        if (_gridWireframe != null) {
-            _gridWireframe.Show(toShow);
+        if (toShow) {
+            D.Assert(!IsGridWireframeShowing);
+            List<Vector3> gridPoints = GenerateGridPoints(MainCameraControl.Instance.SectorIndex);
+            _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
+            _gridWireframe.Show(true);
         }
+        else {
+            D.Assert(IsGridWireframeShowing);
+            _gridWireframe.Show(false);
+            _gridWireframe.Dispose();
+            _gridWireframe = null;
+        }
+        //string msg = toShow ? "making new GridWireframe" : "destroying existing GridWireframe";
+        //D.Log("{0} is {1}.", GetType().Name, msg);
     }
 
     protected override void Cleanup() {

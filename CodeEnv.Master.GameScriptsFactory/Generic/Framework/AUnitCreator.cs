@@ -275,6 +275,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         LogEvent();
         _elements = MakeElements();
         _command = MakeCommand(_owner);
+        _command.__ShowHQDebugLog = showHQDebugLog;
         AddElements();
         AssignHQElement();
     }
@@ -539,7 +540,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
 
     private IList<ElementHullStatType> CreateRandomElementHullStats() {
         LogEvent();
-        int elementCount = RandomExtended.Range(1, maxElementsInRandomUnit);
+        int elementCount = elementsInRandomUnit;
         //D.Log("{0} Element count is {1}.", UnitName, elementCount);
         var elementHullStats = new List<ElementHullStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {

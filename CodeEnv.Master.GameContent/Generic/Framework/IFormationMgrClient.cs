@@ -25,6 +25,12 @@ namespace CodeEnv.Master.GameContent {
 
         AUnitCmdItemData Data { get; }
 
+        /// <summary>
+        /// Positions the element in the formation at this world space offset
+        /// relative to the HQ/Cmd.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="stationOffset">The station offset.</param>
         void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset);
 
         /// <summary>

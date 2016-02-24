@@ -194,7 +194,9 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case ContentID.CameraDistance:
                     isSuccess = true;
-                    colorizedText = _phrase.Inject(GetFormat(contentID).Inject(References.MainCameraControl.DistanceToCameraTarget));
+                    colorizedText = _phrase.Inject(GetFormat(contentID).Inject(report.__PositionForCameraDistance.DistanceToCamera()));
+                    // This approach returns the distance to DummyTarget in Item tooltip after doing a Freeform zoom on open space
+                    // colorizedText = _phrase.Inject(GetFormat(contentID).Inject(References.MainCameraControl.DistanceToCameraTarget));
                     break;
                 default:
                     colorizedText = null;

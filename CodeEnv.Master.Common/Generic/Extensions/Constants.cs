@@ -96,13 +96,9 @@ namespace CodeEnv.Master.Common {
         public const string GamePeriodHoursOnlyFormat = "{0:D2} hours";
 
         // Common Strings
-        public static string UserCurrentWorkingDirectoryPath {
-            get { return System.Environment.CurrentDirectory; }
-        }
+        public static string UserCurrentWorkingDirectoryPath { get { return System.Environment.CurrentDirectory; } }
 
-        public static string NewLine {
-            get { return System.Environment.NewLine; }
-        }
+        public static string NewLine { get { return System.Environment.NewLine; } } // "\n"
         public const string Empty = "";
         public const string Space = " ";
         public const string Period = ".";

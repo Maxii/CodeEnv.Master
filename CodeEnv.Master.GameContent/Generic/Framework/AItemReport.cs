@@ -23,6 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemReport {
 
+        /// <summary>
+        /// Debug. The position of the Item for reporting the camera distance.
+        /// </summary>
+        public Vector3 __PositionForCameraDistance { get; private set; }
+
         public string Name { get; protected set; }
 
         /// <summary>
@@ -52,6 +57,7 @@ namespace CodeEnv.Master.GameContent {
         public AItemReport(Player player, IItem item) {
             Player = player;
             Item = item;
+            __PositionForCameraDistance = item.Position;
         }
 
     }

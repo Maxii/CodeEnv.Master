@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
-        private static string _toStringFormat = "Directive: {0}, Source: {1}, Target: {2}, Speed: {3}, StandingOrder: {4}.";
+        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, Speed: {3}, StandingOrder: {4}.";
 
         public ShipOrder StandingOrder { get; set; }
 
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         public INavigableTarget Target { get; private set; }
 
         /// <summary>
-        /// Flag indicating the source of this order. 
+        /// The source of this order. 
         /// </summary>
         public OrderSource Source { get; private set; }
 
@@ -42,31 +42,31 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipOrder" /> class.
         /// </summary>
-        /// <param name="directive">The order.</param>
+        /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
-        /// <param name="target">The target.</param>
-        /// <param name="speed">The speed.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source = OrderSource.ElementCaptain, INavigableTarget target = null, Speed speed = Speed.None) {
+        /// <param name="destination">The Vector3 destination of this order.</param>
+        /// <param name="speed">The speed this order should be executed at, if applicable.</param>
+        public ShipOrder(ShipDirective directive, OrderSource source, Vector3 destination, Speed speed)
+            : this(directive, source, new StationaryLocation(destination), speed) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FleetOrder" /> class.
+        /// </summary>
+        /// <param name="directive">The order directive.</param>
+        /// <param name="source">The source of this order.</param>
+        /// <param name="target">The target of this order. Default is null.</param>
+        /// <param name="speed">The speed this order should be executed at, if applicable.</param>
+        public ShipOrder(ShipDirective directive, OrderSource source, INavigableTarget target = null, Speed speed = Speed.None) {
             Directive = directive;
             Source = source;
             Target = target;
             Speed = speed;
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ShipOrder" /> class.
-        /// </summary>
-        /// <param name="order">The order.</param>
-        /// <param name="source">The source of this order.</param>
-        /// <param name="destination">The destination location.</param>
-        /// <param name="speed">The speed.</param>
-        public ShipOrder(ShipDirective order, OrderSource source, Vector3 destination, Speed speed)
-            : this(order, source, new StationaryLocation(destination), speed) { }
-
         public override string ToString() {
             string targetText = Target != null ? Target.FullName : "null";
             string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "null";
-            return _toStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(), standingOrderText);
+            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(), standingOrderText);
         }
 
     }

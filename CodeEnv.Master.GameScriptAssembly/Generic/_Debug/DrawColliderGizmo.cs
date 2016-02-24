@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DrawTriggerCollider.cs
-// Draws a Gizmo wire outline of the trigger collider(s) that are attached to the gameObject this script is attached too
+// File: DrawColliderGizmo.cs
+// Draws a Gizmo wire outline of the collider(s) that are attached to the gameObject this script is attached too.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,12 +20,12 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Draws a Gizmo wire outline of the trigger collider(s) that are attached 
+/// Draws a Gizmo wire outline of the collider(s) that are attached 
 /// to the gameObject this script is attached too.
 /// <remarks>Derived from RyanMeier.</remarks>
 /// <see cref="http://www.ryan-meier.com/blog"/>
 /// </summary>
-public class DrawTriggerCollider : AMonoBase {
+public class DrawColliderGizmo : AMonoBase {
 
 #pragma warning disable 0414
     [SerializeField]
@@ -40,6 +40,10 @@ public class DrawTriggerCollider : AMonoBase {
 
     [SerializeField]
     private Color _color = Color.white;
+    public Color Color {
+        get { return _color; }
+        set { _color = value; }
+    }
 
     private BoxCollider _boxCollider;
     public BoxCollider BoxCollider {
@@ -73,12 +77,12 @@ public class DrawTriggerCollider : AMonoBase {
         Color oldColor = Gizmos.color;
         Gizmos.color = _color;
         if (BoxCollider != null) {
-            var colliderCenter = transform.position + BoxCollider.center;   // can't use transform as DrawGizmos called when not playing
+            var colliderCenter = transform.position + BoxCollider.center;
             var colliderSize = new Vector3(BoxCollider.size.x, BoxCollider.size.y, BoxCollider.size.z);
             Gizmos.DrawWireCube(colliderCenter, colliderSize);
         }
         if (SphereCollider != null) {
-            var colliderCenter = transform.position + SphereCollider.center;    // can't use transform as DrawGizmos called when not playing
+            var colliderCenter = transform.position + SphereCollider.center;
             Gizmos.DrawWireSphere(colliderCenter, SphereCollider.radius);
         }
         Gizmos.color = oldColor;

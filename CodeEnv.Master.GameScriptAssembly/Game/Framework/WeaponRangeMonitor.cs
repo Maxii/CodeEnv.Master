@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -33,7 +33,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
 
     public new IUnitElementItem ParentItem {
         get { return base.ParentItem as IUnitElementItem; }
-        set { base.ParentItem = value as AItem; }
+        set { base.ParentItem = value as AMortalItem; }
     }
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // targets (elements and planetoids) have rigidbodies
@@ -53,7 +53,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
     }
 
     protected override void HandleDetectedObjectAdded(IElementAttackableTarget newlyDetectedItem) {
-        D.Log("{0} detected and added {1}.", Name, newlyDetectedItem.FullName);
+        D.Log(ShowDebugLog, "{0} detected and added {1}.", Name, newlyDetectedItem.FullName);
         newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
         newlyDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
         if (newlyDetectedItem.Owner.IsEnemyOf(Owner)) {
@@ -62,10 +62,10 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
     }
 
     protected override void HandleDetectedObjectRemoved(IElementAttackableTarget lostDetectionItem) {
-        D.Log("{0} lost detection and removed {1}.", Name, lostDetectionItem.FullName);
+        D.Log(ShowDebugLog, "{0} lost detection and removed {1}.", Name, lostDetectionItem.FullName);
         lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
         lostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
-        //D.Log("{0} removed {1} death subscription.", Name, lostDetectionItem.FullName);
+        //D.Log(ShowDebugLog, "{0} removed {1} death subscription.", Name, lostDetectionItem.FullName);
         if (lostDetectionItem.Owner.IsEnemyOf(Owner)) {
             RemoveEnemy(lostDetectionItem);
         }

@@ -70,7 +70,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// The directives available for execution by a user-owned remote fleet, if any.
     /// Default is empty. Derived classes should override to provide any directives.
     /// </summary>
-    protected virtual IEnumerable<FleetDirective> RemoteFleetDirectives {
+    protected virtual IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return Enumerable.Empty<FleetDirective>(); }
     }
 
@@ -78,7 +78,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// The directives available for execution by a user-owned remote ship, if any.
     /// Default is empty. Derived classes should override to provide any directives.
     /// </summary>
-    protected virtual IEnumerable<ShipDirective> RemoteShipDirectives {
+    protected virtual IEnumerable<ShipDirective> UserRemoteShipDirectives {
         get { return Enumerable.Empty<ShipDirective>(); }
     }
 
@@ -86,7 +86,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// The directives available for execution by a user-owned remote base, if any.
     /// Default is empty. Derived classes should override to provide any directives.
     /// </summary>
-    protected virtual IEnumerable<BaseDirective> RemoteBaseDirectives {
+    protected virtual IEnumerable<BaseDirective> UserRemoteBaseDirectives {
         get { return Enumerable.Empty<BaseDirective>(); }
     }
 
@@ -114,7 +114,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected CtxObject _ctxObject;
     private int _optimalFocusDistanceItemID;
     private int _uniqueSubmenusReqd;
-    private CtxAccessSource _accessSource;
+    private CtxMenuOpenedMode _menuOpenedMode;
     private GameManager _gameMgr;
 
     /// <summary>
@@ -215,42 +215,48 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         Show(false);
     }
 
+    /// <summary>
+    /// Tries to show this Item's context menu appropriate to the Item that is
+    /// currently selected, if any. Returns <c>true</c> if the context menu was shown.
+    /// </summary>
+    /// <remarks>remote* = an item that is not the item that owns this menu.</remarks>
+    /// <returns></returns>
     public bool TryShowContextMenu() {
         bool toShow = false;
         var selectedItem = SelectionManager.Instance.CurrentSelection;
         if (selectedItem != null) {
-            if (TryIsSelectedItemAccessAttempted(selectedItem)) {
-                // the local item that operates this context menu is selected
-                _accessSource = CtxAccessSource.SelectedItem;
+            if (TryIsSelectedItemMenuOperator(selectedItem)) {
+                // the item that operates this context menu is selected
+                _menuOpenedMode = CtxMenuOpenedMode.MenuOperatorIsSelected;
                 _remoteUserOwnedSelectedItem = null;
                 toShow = true;
             }
             else {
                 FleetCmdItem selectedFleet;
-                if (TryIsRemoteFleetAccessAttempted(selectedItem, out selectedFleet)) {
-                    // a remote player owned fleet is selected
-                    _accessSource = CtxAccessSource.RemoteFleet;
+                if (TryIsSelectedItemUserRemoteFleet(selectedItem, out selectedFleet)) {
+                    // a remote* user owned fleet is selected
+                    _menuOpenedMode = CtxMenuOpenedMode.UserRemoteFleetIsSelected;
                     _remoteUserOwnedSelectedItem = selectedFleet;
                     toShow = true;
                 }
                 else {
                     AUnitBaseCmdItem selectedBase;
-                    if (TryIsRemoteBaseAccessAttempted(selectedItem, out selectedBase)) {
-                        // a remote player owned base is selected
-                        _accessSource = CtxAccessSource.RemoteBase;
+                    if (TryIsSelectedItemUserRemoteBase(selectedItem, out selectedBase)) {
+                        // a remote* user owned base is selected
+                        _menuOpenedMode = CtxMenuOpenedMode.UserRemoteBaseIsSelected;
                         _remoteUserOwnedSelectedItem = selectedBase;
                         toShow = true;
                     }
                     else {
                         ShipItem selectedShip;
-                        if (TryIsRemoteShipAccessAttempted(selectedItem, out selectedShip)) {
-                            // a remote player owned ship is selected
-                            _accessSource = CtxAccessSource.RemoteShip;
+                        if (TryIsSelectedItemUserRemoteShip(selectedItem, out selectedShip)) {
+                            // a remote* user owned ship is selected
+                            _menuOpenedMode = CtxMenuOpenedMode.UserRemoteShipIsSelected;
                             _remoteUserOwnedSelectedItem = selectedShip;
                             toShow = true;
                         }
                         else {
-                            _accessSource = CtxAccessSource.None;
+                            _menuOpenedMode = CtxMenuOpenedMode.None;
                             _remoteUserOwnedSelectedItem = null;
                         }
                     }
@@ -271,42 +277,42 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     /// <param name="selected">The Item currently selected.</param>
     /// <returns></returns>
-    protected virtual bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected virtual bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         return false;
     }
 
     /// <summary>
-    /// Called when this menu is right clicked while an Item is selected, returns <c>true</c> if the Item selected is a player-owned, remote fleet.
+    /// Called when this menu is right clicked while an Item is selected, returns <c>true</c> if the Item selected is a user-owned, remote fleet.
     /// Default implementation is to return false. Derived classes should override this behaviour to enable the type of access their menu supports.
     /// </summary>
     /// <param name="selected">The Item currently selected.</param>
-    /// <param name="selectedFleet">The player-owned, selected fleet, if any.</param>
+    /// <param name="selectedFleet">The user-owned, selected fleet, if any.</param>
     /// <returns></returns>
-    protected virtual bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+    protected virtual bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = null;
         return false;
     }
 
     /// <summary>
-    /// Called when this menu is right clicked while an Item is selected, returns <c>true</c> if the Item selected is a player-owned, remote base.
+    /// Called when this menu is right clicked while an Item is selected, returns <c>true</c> if the Item selected is a user-owned, remote base.
     /// Default implementation is to return false. Derived classes should override this behaviour to enable the type of access their menu supports.
     /// </summary>
     /// <param name="selected">The Item currently selected.</param>
-    /// <param name="selectedBase">The player-owned, selected base, if any.</param>
+    /// <param name="selectedBase">The user-owned, selected base, if any.</param>
     /// <returns></returns>
-    protected virtual bool TryIsRemoteBaseAccessAttempted(ISelectable selected, out AUnitBaseCmdItem selectedBase) {
+    protected virtual bool TryIsSelectedItemUserRemoteBase(ISelectable selected, out AUnitBaseCmdItem selectedBase) {
         selectedBase = null;
         return false;
     }
 
     /// <summary>
-    /// Called when this menu is right clicked while an Item is selected, returns <c>true</c> if the Item selected is a player-owned, remote ship.
+    /// Called when this menu is right clicked while an Item is selected, returns <c>true</c> if the Item selected is a user-owned, remote ship.
     /// Default implementation is to return false. Derived classes should override this behaviour to enable the type of access their menu supports.
     /// </summary>
     /// <param name="selected">The Item currently selected.</param>
-    /// <param name="selectedShip">The player-owned, selected ship.</param>
+    /// <param name="selectedShip">The user-owned, selected ship.</param>
     /// <returns></returns>
-    protected virtual bool TryIsRemoteShipAccessAttempted(ISelectable selected, out ShipItem selectedShip) {
+    protected virtual bool TryIsSelectedItemUserRemoteShip(ISelectable selected, out ShipItem selectedShip) {
         selectedShip = null;
         return false;
     }
@@ -328,23 +334,23 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void ShowCtxMenuEventHandler() {
         OnShowBegun();
         //D.Log("{0}.{1}: Subscriber count to ShowCtxMenuEventHandler = {2}.", OperatorName, GetType().Name, _ctxObject.onShow.Count);
-        switch (_accessSource) {
-            case CtxAccessSource.SelectedItem:
-                PopulateMenu_SelectedItemAccess();
+        switch (_menuOpenedMode) {
+            case CtxMenuOpenedMode.MenuOperatorIsSelected:
+                PopulateMenu_UserMenuOperatorIsSelected();
                 AddOptimalFocusDistanceItemToMenu();
                 break;
-            case CtxAccessSource.RemoteShip:
-                PopulateMenu_RemoteShipAccess();
+            case CtxMenuOpenedMode.UserRemoteShipIsSelected:
+                PopulateMenu_UserRemoteShipIsSelected();
                 break;
-            case CtxAccessSource.RemoteFleet:
-                PopulateMenu_RemoteFleetAccess();
+            case CtxMenuOpenedMode.UserRemoteFleetIsSelected:
+                PopulateMenu_UserRemoteFleetIsSelected();
                 break;
-            case CtxAccessSource.RemoteBase:
-                PopulateMenu_RemoteBaseAccess();
+            case CtxMenuOpenedMode.UserRemoteBaseIsSelected:
+                PopulateMenu_UserRemoteBaseIsSelected();
                 break;
-            case CtxAccessSource.None:
+            case CtxMenuOpenedMode.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_accessSource));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_menuOpenedMode));
         }
         IsShowing = true;
         InputManager.Instance.InputMode = GameInputMode.PartialPopup;
@@ -353,27 +359,27 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void CtxMenuSelectionEventHandler() {
         int menuItemID = _ctxObject.selectedItem;
-        switch (_accessSource) {
-            case CtxAccessSource.SelectedItem:
+        switch (_menuOpenedMode) {
+            case CtxMenuOpenedMode.MenuOperatorIsSelected:
                 if (menuItemID == _optimalFocusDistanceItemID) {
-                    HandleMenuSelection_OptimalFocusDistance();
+                    HandleMenuPick_OptimalFocusDistance();
                 }
                 else {
-                    HandleMenuSelection_SelectedItemAccess(menuItemID);
+                    HandleMenuPick_UserMenuOperatorIsSelected(menuItemID);
                 }
                 break;
-            case CtxAccessSource.RemoteFleet:
-                HandleMenuSelection_RemoteFleetAccess(menuItemID);
+            case CtxMenuOpenedMode.UserRemoteFleetIsSelected:
+                HandleMenuPick_UserRemoteFleetIsSelected(menuItemID);
                 break;
-            case CtxAccessSource.RemoteShip:
-                HandleMenuSelection_RemoteShipAccess(menuItemID);
+            case CtxMenuOpenedMode.UserRemoteShipIsSelected:
+                HandleMenuPick_UserRemoteShipIsSelected(menuItemID);
                 break;
-            case CtxAccessSource.RemoteBase:
-                HandleMenuSelection_RemoteBaseAccess(menuItemID);
+            case CtxMenuOpenedMode.UserRemoteBaseIsSelected:
+                HandleMenuPick_UserRemoteBaseIsSelected(menuItemID);
                 break;
-            case CtxAccessSource.None:
+            case CtxMenuOpenedMode.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_accessSource));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_menuOpenedMode));
         }
     }
 
@@ -391,7 +397,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         _nextAvailableItemId = Constants.Zero;
         _optimalFocusDistanceItemID = Constants.Zero;
         _remoteUserOwnedSelectedItem = null;
-        _accessSource = CtxAccessSource.None;
+        _menuOpenedMode = CtxMenuOpenedMode.None;
         OnHideComplete();
     }
 
@@ -401,8 +407,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     #endregion
 
-    protected virtual void PopulateMenu_SelectedItemAccess() { }
+    protected virtual void PopulateMenu_UserMenuOperatorIsSelected() { }
 
+    /// <summary>
+    /// Adds the optimal focus distance item to the menu operator menu without regard
+    /// to whether the MenuOperator is owned by the user.
+    /// </summary>
     private void AddOptimalFocusDistanceItemToMenu() {
         _optimalFocusDistanceItemID = _nextAvailableItemId;
         CtxMenu.Item optimalFocusDistanceItem = new CtxMenu.Item() {
@@ -416,9 +426,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         _nextAvailableItemId++; // probably not necessary as this is the last item being added
     }
 
-    protected virtual void PopulateMenu_RemoteFleetAccess() {   // IMPROVE temp virtual to allow SectorCtxControl to override
+    protected virtual void PopulateMenu_UserRemoteFleetIsSelected() {   // IMPROVE temp virtual to allow SectorCtxControl to override
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        foreach (var directive in RemoteFleetDirectives) {
+        foreach (var directive in UserRemoteFleetDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
                 text = directive.GetValueName(),
@@ -428,16 +438,16 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
             _directiveLookup.Add(topLevelItemID, directive);
             _nextAvailableItemId++;
 
-            topLevelItem.isDisabled = IsRemoteFleetMenuItemDisabled(directive);
+            topLevelItem.isDisabled = IsUserRemoteFleetMenuItemDisabledFor(directive);
         }
         _ctxObject.menuItems = topLevelMenuItems.ToArray();
     }
 
-    protected virtual bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) { return false; }
+    protected virtual bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) { return false; }
 
-    private void PopulateMenu_RemoteShipAccess() {
+    private void PopulateMenu_UserRemoteShipIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        foreach (var directive in RemoteShipDirectives) {
+        foreach (var directive in UserRemoteShipDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
                 text = directive.GetValueName(),
@@ -447,16 +457,16 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
             _directiveLookup.Add(topLevelItemID, directive);
             _nextAvailableItemId++;
 
-            topLevelItem.isDisabled = IsRemoteShipMenuItemDisabled(directive);
+            topLevelItem.isDisabled = IsUserRemoteShipMenuItemDisabledFor(directive);
         }
         _ctxObject.menuItems = topLevelMenuItems.ToArray();
     }
 
-    protected virtual bool IsRemoteShipMenuItemDisabled(ShipDirective directive) { return false; }
+    protected virtual bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) { return false; }
 
-    private void PopulateMenu_RemoteBaseAccess() {
+    private void PopulateMenu_UserRemoteBaseIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
-        foreach (var directive in RemoteBaseDirectives) {
+        foreach (var directive in UserRemoteBaseDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
                 text = directive.GetValueName(),
@@ -466,22 +476,22 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
             _directiveLookup.Add(topLevelItemID, directive);
             _nextAvailableItemId++;
 
-            topLevelItem.isDisabled = IsRemoteBaseMenuItemDisabled(directive);
+            topLevelItem.isDisabled = IsUserRemoteBaseMenuItemDisabledFor(directive);
         }
         _ctxObject.menuItems = topLevelMenuItems.ToArray();
     }
 
-    protected virtual bool IsRemoteBaseMenuItemDisabled(BaseDirective directive) { return false; }
+    protected virtual bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) { return false; }
 
-    protected virtual void HandleMenuSelection_SelectedItemAccess(int itemID) { }
+    protected virtual void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) { }
 
-    protected virtual void HandleMenuSelection_RemoteFleetAccess(int itemID) { }
+    protected virtual void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) { }
 
-    protected virtual void HandleMenuSelection_RemoteShipAccess(int itemID) { }
+    protected virtual void HandleMenuPick_UserRemoteShipIsSelected(int itemID) { }
 
-    protected virtual void HandleMenuSelection_RemoteBaseAccess(int itemID) { }
+    protected virtual void HandleMenuPick_UserRemoteBaseIsSelected(int itemID) { }
 
-    protected abstract void HandleMenuSelection_OptimalFocusDistance();
+    protected abstract void HandleMenuPick_OptimalFocusDistance();
 
     private void CleanupMenuArrays() {
         _generalCtxMenu.items = new CtxMenu.Item[0];
@@ -576,31 +586,33 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     #region Nested Classes
 
     /// <summary>
-    /// The player-owned source of the Right Click opening this Context Menu.
+    /// The kind of item that is currently Selected when this Context Menu is opened.
     /// </summary>
-    public enum CtxAccessSource {
+    public enum CtxMenuOpenedMode {
 
         None,
 
         /// <summary>
-        /// This menu has been opened while the player-owned Item that operates the menu is selected.
+        /// This menu has been opened while the Item that operates the menu is Selected. Can be User
+        /// or AI owned as some choices on the SelectedItem's menu are independant of owner. Best current
+        /// example is the menu choice that allows the camera's OptimalFocusDistance to be set.
         /// </summary>
-        SelectedItem,
+        MenuOperatorIsSelected,
 
         /// <summary>
-        /// This menu has been opened while a player-owned Ship that doesn't operate the menu is selected.
+        /// This menu has been opened while a user-owned Ship that doesn't operate the menu is Selected.
         /// </summary>
-        RemoteShip,
+        UserRemoteShipIsSelected,
 
         /// <summary>
-        /// This menu has been opened while a player-owned Fleet that doesn't operate the menu is selected.
+        /// This menu has been opened while a user-owned Fleet that doesn't operate the menu is Selected.
         /// </summary>
-        RemoteFleet,
+        UserRemoteFleetIsSelected,
 
         /// <summary>
-        /// This menu has been opened while a player-owned Base that doesn't operate the menu is selected.
+        /// This menu has been opened while a user-owned Base that doesn't operate the menu is Selected.
         /// </summary>
-        RemoteBase
+        UserRemoteBaseIsSelected
     }
 
     public enum MenuPositionMode {

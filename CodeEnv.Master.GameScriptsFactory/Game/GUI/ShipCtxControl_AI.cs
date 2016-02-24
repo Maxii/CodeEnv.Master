@@ -33,7 +33,7 @@ public class ShipCtxControl_AI : ACtxControl {
         _shipMenuOperator = ship;
     }
 
-    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_shipMenuOperator.IsSelected) {
             D.Assert(_shipMenuOperator == selected as ShipItem);
             return true;
@@ -41,7 +41,7 @@ public class ShipCtxControl_AI : ACtxControl {
         return false;
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
     }
 

@@ -239,15 +239,15 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     public void TraverseTo(LosWeaponFiringSolution firingSolution) {
-        float maxReqdSecsToTraverse = CalcMaxReqdSecondsToTraverse();
+        float maxReqdSecsToTraverse = CalcMaxSecsReqdToTraverse();
         Traverse(firingSolution, maxReqdSecsToTraverse);
     }
 
-    private float CalcMaxReqdSecondsToTraverse() {
-        float secsReqdToExecuteMaxHubRotationChange = GameUtility.CalcMaxReqdSecsToCompleteRotation(HubRotationRate, HubMaxRotationTraversal);
-        float secsReqdToExecuteMaxBarrelElevationChange = GameUtility.CalcMaxReqdSecsToCompleteRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
+    private float CalcMaxSecsReqdToTraverse() {
+        float secsReqdToExecuteMaxHubRotationChange = GameUtility.CalcMaxSecsReqdToCompleteRotation(HubRotationRate, HubMaxRotationTraversal);
+        float secsReqdToExecuteMaxBarrelElevationChange = GameUtility.CalcMaxSecsReqdToCompleteRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
         float maxReqdSecsToTraverse = Mathf.Max(secsReqdToExecuteMaxHubRotationChange, secsReqdToExecuteMaxBarrelElevationChange) * AllowedTraverseTimeBufferFactor;
-        return maxReqdSecsToTraverse;
+        return maxReqdSecsToTraverse * TempGameValues.__AllowedTurnTimeBufferFactor;
     }
 
     /// <summary>
@@ -320,7 +320,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
             cumTime += deltaTime;
-            D.Assert(cumTime < allowedTime, "{0}: CumTime {1:0.##} > AllowedTime {2:0.##}.".Inject(Name, cumTime, allowedTime));
+            D.Assert(cumTime <= allowedTime, "{0}: Exceeded AllowedTime {1:0.##} while traversing.", Name, allowedTime);
             yield return null; // Note: see Navigator.ExecuteHeadingChange() if wish to use WaitForSeconds() or WaitForFixedUpdate()
         }
         //D.Log("{0} completed Traverse Job. Duration = {1:0.####} GameTimeSecs.", Name, cumTime);

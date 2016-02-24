@@ -94,6 +94,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
         Vector3 zoneCenter = Position + _obstacleZoneCollider.center;
         _detourGenerator = new DetourGenerator(zoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+        InitializeDebugShowObstacleZone();
     }
 
     #endregion
@@ -115,15 +116,21 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Event and Property Change Handlers
 
     private void CurrentOrderPropChangedHandler() {
-        //TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-        if (CurrentState == FacilityState.Repairing) {
-            Return();
-            // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
-            // I'm deferring doing that right now as it is unclear how Attacking will evolve
-        }
+        HandleNewOrder();
+    }
+
+    private void HandleNewOrder() {
+        ////TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+        //if (CurrentState == FacilityState.Repairing) {
+        //    Return();
+        //    // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
+        //    // I'm deferring doing that right now as it is unclear how Attacking will evolve
+        //}
+        UponNewOrderReceived();
+        D.Assert(CurrentState != FacilityState.Repairing);
 
         if (CurrentOrder != null) {
-            D.Log(toShowDLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(showDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FacilityDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FacilityDirective.Attack:
@@ -164,7 +171,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
-            if (CurrentOrder.Source != OrderSource.ElementCaptain) {
+            if (CurrentOrder.Source != OrderSource.Captain) {
                 // the current order is from the Captain's superior so retain it
                 standingOrder = CurrentOrder;
             }
@@ -173,7 +180,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
                 standingOrder = CurrentOrder.StandingOrder;
             }
         }
-        FacilityOrder newOrder = new FacilityOrder(order, OrderSource.ElementCaptain, target) {
+        FacilityOrder newOrder = new FacilityOrder(order, OrderSource.Captain, target) {
             StandingOrder = standingOrder
         };
         CurrentOrder = newOrder;
@@ -220,14 +227,15 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region Idling
 
-    void Idling_EnterState() {
-        LogEvent();
+    IEnumerator Idling_EnterState() {
+        D.Log(showDebugLog, "{0}.Idling_EnterState() beginning execution.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
-            if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log(toShowDLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
+            if (CurrentOrder.Source == OrderSource.Captain && CurrentOrder.StandingOrder != null) {
+                D.Log(showDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
+                yield return null;
             }
         }
         //TODO register as available
@@ -239,6 +247,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
+    void Idling_UponNewOrderReceived() { }    // temp to avoid RelayToCurrentState "cant find method" warnings
+
     void Idling_ExitState() {
         LogEvent();
         //TODO register as unavailable
@@ -248,14 +258,13 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region ExecuteAttackOrder
 
-    private IUnitAttackableTarget _ordersTarget;
-    private IElementAttackableTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IElementAttackableTarget _fsmPrimaryAttackTgt; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log(toShowDLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
-        _ordersTarget = CurrentOrder.Target;
+        D.Log(showDebugLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
 
-        while (_ordersTarget.IsOperational) {
+        IUnitAttackableTarget attackTgtFromOrder = CurrentOrder.Target;
+        while (attackTgtFromOrder.IsOperational) {
             //TODO Primary target needs to be picked, and if it dies, its death handled ala ShipItem
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
@@ -266,14 +275,15 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     void ExecuteAttackOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
-        var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _primaryTarget);
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions, _fsmPrimaryAttackTgt);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
+    void ExecuteAttackOrder_UponNewOrderReceived() { }    // temp to avoid RelayToCurrentState "cant find method" warnings
+
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
-        _primaryTarget = null;
-        _ordersTarget = null;
+        _fsmPrimaryAttackTgt = null;
     }
 
     #endregion
@@ -281,7 +291,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log(toShowDLog, "{0}.ExecuteRepairOrder_EnterState called.", FullName);
+        D.Log(showDebugLog, "{0}.ExecuteRepairOrder_EnterState called.", FullName);
         Call(FacilityState.Repairing);
         yield return null;  // required so Return()s here
     }
@@ -292,6 +302,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
+    void ExecuteRepairOrder_UponNewOrderReceived() { }    // temp to avoid RelayToCurrentState "cant find method" warnings
+
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
     }
@@ -301,7 +313,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log(toShowDLog, "{0}.Repairing_EnterState beginning execution.", FullName);
+        D.Log(showDebugLog, "{0}.Repairing_EnterState beginning execution.", FullName);
         StartEffect(EffectID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
@@ -317,7 +329,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
-        D.Log(toShowDLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        D.Log(showDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
         Return();
@@ -327,6 +339,11 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
+    }
+
+    void Repairing_UponNewOrderReceived() {
+        LogEvent();
+        Return();
     }
 
     void Repairing_ExitState() {
@@ -414,11 +431,49 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region Cleanup
 
+    protected override void Cleanup() {
+        base.Cleanup();
+        CleanupDebugShowObstacleZone();
+    }
+
     #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug Show Obstacle Zones
+
+    private void InitializeDebugShowObstacleZone() {
+        DebugValues debugValues = DebugValues.Instance;
+        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        if (debugValues.ShowObstacleZones) {
+            EnableDebugShowObstacleZone(true);
+        }
+    }
+
+    private void EnableDebugShowObstacleZone(bool toEnable) {
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        drawCntl.Color = Color.red;
+        drawCntl.enabled = toEnable;
+    }
+
+    private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
+        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+    }
+
+    private void CleanupDebugShowObstacleZone() {
+        var debugValues = DebugValues.Instance;
+        if (debugValues != null) {
+            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+        }
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+        if (drawCntl != null) {
+            Destroy(drawCntl);
+        }
+    }
+
+    #endregion
 
     #region INavigableTarget Members
 

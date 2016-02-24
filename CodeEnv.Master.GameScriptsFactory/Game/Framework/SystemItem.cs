@@ -183,6 +183,10 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
     /// AssessDiscernibleToUser() since SystemItem is not an ADiscernibleItem.
     /// </summary>
     public void HandleUserDiscoveryOfSystem() {
+        if (!IsOperational) {
+            // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
+            return;
+        }
         D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         AssessIsDiscernibleToUser();
         D.Assert(_hasInitOnFirstDiscernibleToUserRun);
@@ -261,7 +265,9 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     public override float RadiusAroundTargetContainingKnownObstacles { get { return Radius; } }
 
-    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) { return Radius; }
+    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
+        return Radius + shipCollisionAvoidanceRadius;   // keeps ship outside of gravity well, aka Topography.System
+    }
 
     #endregion
 

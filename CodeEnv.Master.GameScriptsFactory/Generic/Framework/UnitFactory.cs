@@ -49,6 +49,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _weaponRangeMonitorPrefab;
     private GameObject _sensorRangeMonitorPrefab;
 
+    private GameObject _fleetFormationStationPrefab;
+
     private UnitFactory() {
         Initialize();
     }
@@ -72,6 +74,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         _missileTubePrefab = reqdPrefabs.missileTube;
         _losTurretPrefab = reqdPrefabs.losTurret;
+
+        _fleetFormationStationPrefab = reqdPrefabs.fleetFormationStation.gameObject;
     }
 
     /// <summary>
@@ -623,6 +627,20 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         monitor.Add(sensor);
         return monitor;
+    }
+
+    /// <summary>
+    /// Returns a fleet formation station as a child of fleetCmd whose localPosition is localOffset.
+    /// </summary>
+    /// <param name="fleetCmd">The fleet command.</param>
+    /// <param name="localOffset">The local offset.</param>
+    /// <returns></returns>
+    public FleetFormationStation MakeFleetFormationStation(IFleetCmdItem fleetCmd, Vector3 localOffset) {
+        var fleetCmdItem = fleetCmd as FleetCmdItem;
+        var stationGo = UnityUtility.AddChild(fleetCmdItem.gameObject, _fleetFormationStationPrefab);
+        FleetFormationStation station = stationGo.GetSafeComponent<FleetFormationStation>();
+        station.LocalOffset = localOffset;
+        return station;
     }
 
     public override string ToString() {

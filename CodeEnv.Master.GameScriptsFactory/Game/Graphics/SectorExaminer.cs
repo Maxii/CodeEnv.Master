@@ -51,6 +51,10 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         private set { SetProperty<Index3D>(ref _currentSectorIndex, value, "CurrentSectorIndex", CurrentSectorIndexPropChangedHandler); }
     }
 
+    private bool IsSectorViewJobRunning { get { return _sectorViewJob != null && _sectorViewJob.IsRunning; } }
+
+    private bool IsSectorWireframeShowing { get { return _wireframe != null && _wireframe.IsShowing; } }
+
     private float _distanceToHighlightedSector;
     private SectorGrid _sectorGrid;
     private CubeWireframe _wireframe;
@@ -137,10 +141,14 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             case PlayerViewMode.NormalView:
                 // turn off wireframe, sectorID label, collider, contextMenu and Hud
                 DynamicallySubscribe(false);
-                if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
+                if (IsSectorViewJobRunning) {
                     _sectorViewJob.Kill();
                     _sectorViewJob = null;
+                }
+                if (IsSectorWireframeShowing) {
                     ShowSector(false);
+                    _wireframe.Dispose();
+                    _wireframe = null;
                 }
                 _collider.enabled = false;
                 if (_ctxControl.IsShowing) { _ctxControl.Hide(); }
@@ -202,7 +210,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         return sectorIDLabel;
     }
 
-    private IEnumerator ShowSectorUnderMouse() {
+    private IEnumerator ShowSectorUnderMouse() {    // IMPROVE use UICamera.onMouseMove
         while (true) {
             if (!_ctxControl.IsShowing) {   // don't change highlighted sector while context menu is showing
 
@@ -213,7 +221,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 bool toShow;
                 SectorItem notUsed;
                 if (toShow = _sectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
-                    if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {    // avoid the SetProperty equivalent warnings
+                    if (CurrentSectorIndex != sectorIndexUnderMouse) {    // avoid the SetProperty equivalent warnings
                         CurrentSectorIndex = sectorIndexUnderMouse;
                     }
                 }
@@ -225,13 +233,14 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void ShowSector(bool toShow) {
         //D.Log("ShowSector({0})", toShow);
-        if (!toShow && _wireframe == null) {
+        if (toShow == IsSectorWireframeShowing) {
             return;
         }
-        if (_wireframe == null) {
-            _wireframe = new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F, color: TempGameValues.SectorHighlightColor);
-        }
-        if (_sectorIDLabel == null) {
+
+        if (toShow) {
+            if (_wireframe == null) {
+                _wireframe = new CubeWireframe("SectorWireframe", transform, TempGameValues.SectorSize, width: 2F, color: TempGameValues.SectorHighlightColor);
+            }
             UpdateSectorIDLabel();
         }
         _wireframe.Show(toShow);

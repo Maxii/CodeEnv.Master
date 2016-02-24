@@ -219,7 +219,7 @@ namespace CodeEnv.Master.GameContent {
         private float _gameInstanceTimeCurrentPauseBegan;
 
         /// <summary>
-        /// The number of seconds this GameInstance has been running since it was started. 
+        /// The number of "game" seconds this GameInstance has been running since it was started. 
         /// Accounts for changes in gameSpeed and pausing as it is used to calculate the CurrentDate.
         /// </summary>
         private float _currentDateTime;
@@ -251,34 +251,6 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions = new List<IDisposable>();
             _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangingHandler));
             _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, IsRunningPropChangedHandler));
-        }
-
-        private void IsRunningPropChangedHandler() {
-            //D.Log("{0}.IsRunningPropChangedHandler() called. IsRunning = {1}.", GetType().Name, _gameMgr.IsRunning);
-            if (_gameMgr.IsRunning) {
-                D.Assert(!_gameMgr.IsPaused);    // my practice - set IsRunning to true, THEN pause when isPauseOnLoad option enabled
-                _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
-                _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
-                // no reason to call RefreshCurrentDateTime here as it will get called as soon as CurrentDate is requested
-            }
-        }
-
-        private void IsPausedPropChangingHandler(bool isPausing) {
-            if (_gameMgr.IsRunning) {
-                if (isPausing) {
-                    // we are about to pause
-                    RefreshCurrentDateTime();   // refresh CurrentDateTime before pausing
-                    _gameInstanceTimeCurrentPauseBegan = GameInstanceTime;
-                }
-                else {
-                    // we are about to resume play
-                    float gameInstanceTimeInCurrentPause = GameInstanceTime - _gameInstanceTimeCurrentPauseBegan;
-                    _cumGameInstanceTimePaused += gameInstanceTimeInCurrentPause;
-                    //D.Log("CurrentUnitySessionTimeGameInstanceBegan = {0:0.00}, GameInstanceTimeCurrentPauseBegan = {1:0.00}", _currentUnitySessionTimeWhenGameInstanceBegan, _gameInstanceTimeCurrentPauseBegan);
-                    //D.Log("GameInstanceTimeInCurrentPause = {0:0.00}, GameInstanceTime = {1:0.00}.", gameInstanceTimeInCurrentPause, GameInstanceTime);
-                    _gameInstanceTimeCurrentPauseBegan = Constants.ZeroF;
-                }
-            }
         }
 
         public void PrepareToBeginNewGame() {
@@ -329,8 +301,38 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void IsRunningPropChangedHandler() {
+            //D.Log("{0}.IsRunningPropChangedHandler() called. IsRunning = {1}.", GetType().Name, _gameMgr.IsRunning);
+            if (_gameMgr.IsRunning) {
+                D.Assert(!_gameMgr.IsPaused);    // my practice - set IsRunning to true, THEN pause when isPauseOnLoad option enabled
+                _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
+                _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
+                // no reason to call RefreshCurrentDateTime here as it will get called as soon as CurrentDate is requested
+            }
+        }
+
+        private void IsPausedPropChangingHandler(bool isPausing) {
+            if (_gameMgr.IsRunning) {
+                if (isPausing) {
+                    // we are about to pause
+                    RefreshCurrentDateTime();   // refresh CurrentDateTime before pausing
+                    _gameInstanceTimeCurrentPauseBegan = GameInstanceTime;
+                }
+                else {
+                    // we are about to resume play
+                    float gameInstanceTimeInCurrentPause = GameInstanceTime - _gameInstanceTimeCurrentPauseBegan;
+                    _cumGameInstanceTimePaused += gameInstanceTimeInCurrentPause;
+                    //D.Log("CurrentUnitySessionTimeGameInstanceBegan = {0:0.00}, GameInstanceTimeCurrentPauseBegan = {1:0.00}", _currentUnitySessionTimeWhenGameInstanceBegan, _gameInstanceTimeCurrentPauseBegan);
+                    //D.Log("GameInstanceTimeInCurrentPause = {0:0.00}, GameInstanceTime = {1:0.00}.", gameInstanceTimeInCurrentPause, GameInstanceTime);
+                    _gameInstanceTimeCurrentPauseBegan = Constants.ZeroF;
+                }
+            }
+        }
+
         private void GameSpeedPropChangingHandler(GameSpeed proposedSpeed) {
-            RefreshCurrentDateTime();
+            if (!_gameMgr.IsPaused) {
+                RefreshCurrentDateTime();
+            }
         }
 
         private void GameSpeedPropChangedHandler() {

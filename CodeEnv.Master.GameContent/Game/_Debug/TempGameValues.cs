@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         public const float __ReqdMissileTravelDistanceBeforePushover = 0.2F;
 
+        public const float __AllowedTurnTimeBufferFactor = 1.05F;
+
         public const int MaxLosWeaponsForAnyElement = 12;
 
         public const int MaxMissileWeaponsForAnyElement = 6;

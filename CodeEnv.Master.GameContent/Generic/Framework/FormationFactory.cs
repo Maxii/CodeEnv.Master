@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Generates the specified formation for the largest possible Starbase. 
-        /// Returns the relative positions (to HQ) of the facilities that surround the HQ facility.
+        /// Returns the world space relative positions (to HQ) of the facilities that surround the HQ facility.
         /// Does NOT include the relative position of the HQElement which by definition is Vector3.zero.
         /// </summary>
         /// <param name="formation">The formation.</param>
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Generates the specified formation for the largest possible Settlement. 
-        /// Returns the relative positions (to HQ) of the facilities that surround the HQ facility.
+        /// Returns the world space relative positions (to HQ) of the facilities that surround the HQ facility.
         /// Does NOT include the relative position of the HQElement which by definition is Vector3.zero.
         /// </summary>
         /// <param name="formation">The formation.</param>
@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Generates the specified formation for the largest possible Fleet. 
-        /// Returns the relative positions (to HQ) of the ships that surround the HQ Flagship.
+        /// Returns the world space relative positions (to HQ) of the ships that surround the HQ Flagship.
         /// Does NOT include the relative position of the HQElement which by definition is Vector3.zero.
         /// </summary>
         /// <param name="formation">The formation.</param>
@@ -105,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Generates a globular formation for a Unit. Returns a list of the relative position
+        /// Generates a globular formation for a Unit. Returns a list of the world space relative position
         /// (offset relative to the position of the HQElement) of each formation station, 
         /// not including the HQElement's formation station.
         /// </summary>
@@ -164,7 +164,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Generates a circular formation for a Unit in the xz plane. Returns a list of the relative position
+        /// Generates a circular formation for a Unit in the xz plane. Returns a list of the world space relative position
         /// (offset relative to the position of the HQElement) of each formation station, 
         /// not including the HQElement's formation station.
         /// </summary>

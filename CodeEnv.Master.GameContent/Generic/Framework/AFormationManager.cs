@@ -28,9 +28,17 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract int MaxElementCountPerUnit { get; }
 
-        private Formation _currentFormation;
+        /// <summary>
+        /// The world space formation station offsets for all positions in the formation
+        /// except the HQ position.
+        /// </summary>
         private IList<Vector3> _nonHQFormationStationOffsets;
+
+        /// <summary>
+        /// The world space offsets of each formation station, keyed by the element that occupies the station.
+        /// </summary>
         private IDictionary<IUnitElementItem, Vector3> _occupiedFormationStationOffsetLookup;
+        private Formation _currentFormation;
         private IFormationMgrClient _unitCmd;
 
         public AFormationManager(IFormationMgrClient unitCmd) {

@@ -43,6 +43,8 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// If <c>condition</c> is <c>true</c>, sends the composite message format string to the Unity.Debug log.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="format">The format.</param>
@@ -68,6 +70,8 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// If the condition is true, sends the specified msg to the Unity.Debug log.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="context">The context.</param>
@@ -92,6 +96,8 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// If <c>condition</c> is <c>true</c>, sends the composite message format string to the Unity.Debug warning log.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="format">The composite message format string.</param>
@@ -117,6 +123,8 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// If <c>condition</c> is <c>true</c>, sends the specified message to the Unity.Debug warning log
         /// with a ping connection to <c>context</c>.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="context">The object that sent the message.</param>
@@ -152,6 +160,8 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Tests the specified condition and logs the provided message as an Error if it fails.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="context">The context object.</param>
@@ -168,6 +178,8 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Tests the specified condition and logs the provided message as an Error if it fails.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if <c>true</c> the assert passes.</param>
         /// <param name="format">The composite message format string.</param>
@@ -207,6 +219,8 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Tests the specified condition and if it fails raises an exception that is gauranteed to
         /// stop the editor, even if in an infinite loop.
+        /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
+        /// </remarks>
         /// </summary>
         /// <param name="condition">if <c>true</c> the assert passes.</param>
         /// <param name="format">The composite message format string.</param>

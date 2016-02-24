@@ -165,7 +165,7 @@ public class SystemCreator : AMonoBase {
 
     #region Event and Property Change Handlers
 
-    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+    private static void SceneLoadedEventHandler(object sender, EventArgs e) {
         CleanupStaticMembers();
     }
 

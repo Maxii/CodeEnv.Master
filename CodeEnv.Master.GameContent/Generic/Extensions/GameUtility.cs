@@ -96,7 +96,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="rotationRateInDegreesPerHour">The rotation rate in degrees per hour.</param>
         /// <param name="maxRotationReqdInDegrees">The maximum rotation reqd in degrees. Default is 180 degrees.</param>
         /// <returns></returns>
-        public static float CalcMaxReqdSecsToCompleteRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
+        public static float CalcMaxSecsReqdToCompleteRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
             float hoursPerSecAtSlowestGameSpeed = GameTime.SlowestGameSpeedMultiplier * GameTime.HoursPerSecond;
             return (maxRotationReqdInDegrees / rotationRateInDegreesPerHour) / hoursPerSecAtSlowestGameSpeed;
         }

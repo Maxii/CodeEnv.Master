@@ -380,7 +380,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         GetStateMethods();
         if (state.enterState != null) {
             state.enterStateEnumerator = state.enterState();
-            enterStateCoroutine.Run(state.enterStateEnumerator);
+            enterStateCoroutine.Run(state.enterStateEnumerator);    // must call as null stops any prior IEnumerator still running
         }
     }
 
@@ -390,7 +390,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     public virtual void Return() {
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
-            exitStateCoroutine.Run(state.exitStateEnumerator);
+            exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
         }
 
         ChangingState();    // my addition to keep lastState in sync
@@ -412,7 +412,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     public virtual void Return(E baseState) {
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
-            exitStateCoroutine.Run(state.exitStateEnumerator);
+            exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
 
         }
 
@@ -445,27 +445,17 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
             exitStateMethodReturnsIEnumerator = state.exitState.Method.ReturnType == typeof(IEnumerator);
-            exitStateCoroutine.Run(state.exitState());
+            exitStateCoroutine.Run(state.exitState());  // must call as null stops any prior IEnumerator still running
         }
 
         GetStateMethods();
 
-        bool enterStateMethodReturnsVoid = false;
         if (state.enterState != null) {
-            //var statePriorToEnterStateExecution = state.currentState;
+            bool enterStateMethodReturnsVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
+            __ValidateMethodReturnTypes(exitStateMethodReturnsIEnumerator, enterStateMethodReturnsVoid);
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
-            // This warning should no longer be necessary as the derived class AFSMSingleton_NoCall validates that no new state is set in a void State_EnterState() method
-            //if (state.enterStateEnumerator == null) {
-            //    D.Log("{0}'s State {1} has a null enterStateEnumerator indicating a method that returns void.", GetType().Name, state.currentState);
-            //    if (!state.currentState.Equals(statePriorToEnterStateExecution)) {
-            //        // when this happens, the stateChanged event that follows after the enterState() method has executed will show the newest state, not the state that caused the event
-            //        D.Warn("{0} has changed state from {1} to {2} while in a void EnterState.", GetType().Name, statePriorToEnterStateExecution, state.currentState);
-            //    }
-            //}
-            enterStateMethodReturnsVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
-            enterStateCoroutine.Run(state.enterStateEnumerator);
+            enterStateCoroutine.Run(state.enterStateEnumerator);    // must call as null stops any prior IEnumerator still running
         }
-        __ValidateMethodReturnTypes(exitStateMethodReturnsIEnumerator, enterStateMethodReturnsVoid);    // a little late but better than nothing
     }
 
     //Retrieves all of the methods for the current state

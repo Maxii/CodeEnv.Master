@@ -28,15 +28,14 @@ namespace CodeEnv.Master.GameContent {
 
         public Texture texture;
 
-        public bool IsShowing {
-            get {
-                if (_line == null || _drawJob == null) { return false; }
-                return _line.active && _drawJob.IsRunning;
-            }
-        }
+        public bool IsShowing { get { return IsLineActive; } }
 
-        // Note: Ability to assign a Vectrosity object to a designated Parent removed as Vectrosity 4.0's
-        // use of Unity 4.6's new UICanvas requires that the objects be children of the canvas
+        /*****************************************************************************************************
+        * Parenting: Ability to assign a 2D Vectrosity object to a designated Parent removed as Vectrosity 4.0's
+        * use of Unity 4.6's new UICanvas requires that the objects be children of the canvas. Per Eric5h5:
+        * 3D lines can be assigned to a parent using VectorLine.rectTransform.SetParent(), but it must be 
+        * done after the active line has been drawn.
+        ******************************************************************************************************/
 
         private string _lineName;
         public string LineName {
@@ -44,7 +43,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _lineName, value, "LineName", LineNamePropChangedHandler); }
         }
 
-        protected Job _drawJob;
+        protected bool IsLineActive { get { return _line != null && _line.active; } }
+
         protected VectorLine _line;
 
         /// <summary>
@@ -67,9 +67,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void Cleanup() {
             VectorLine.Destroy(ref _line);
-            if (_drawJob != null) {
-                _drawJob.Dispose();
-            }
         }
 
         #region IDisposable

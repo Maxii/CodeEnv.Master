@@ -100,21 +100,44 @@ public abstract class AFSMSingleton_NoCall<T, E> : AFSMSingleton<T, E>
 
     #region Debug
 
-    private bool __isOnCurrentStateChangingProcessed;
+    // WARNING: Making a state change directly or indirectly (e.g. thru another method or issuing an order) from a void EnterState() method
+    // will cause the state machine to lose its place. This even occurs if the state change is the last line of code in the EnterState().
+    // What happens: when the void EnterState() executes, it executes in ConfigureCurrentState(). When that void EnterState() changes
+    // the state during that execution, CurrentState_set is called. This occurs before EnterState() and ConfigureCurrentState() completes. 
+    // The 'return to here to complete' code pointer remembers it has more code in EnterState() and then ConfigureCurrentState() to execute. 
+    // As a result of CurrentState_set, ConfigureCurrentState() is called again but for the new state. This ConfigureCurrentState() call 
+    // is executed all the way through, including executing ExitState() and executing (or scheduling for execution via coroutine) EnterState().
+    // Once this ConfigureCurrentState() completes execution, the remainder of CurrentState_set is completed. It is at this stage, that
+    // the code execution path returns to finishing the original EnterState(). Once this is finished, the next line of code to execute is 
+    // back to the original ConfigureCurrentState() to finish up which includes calling Run(IEnumerator). Unfortunately, since the 
+    // original EnterState() returns void, the IEnumerator is null and it overwrites the previously scheduled (but not yet executed) new
+    // EnterState() which then never executes. The state machine is still operational, but it has missed executing a method it was supposed
+    // to execute. It will however respond to a new state change.
+
+    // A similar problem occurs if the state machine supports state change notification events. Changing state while executing 
+    // CurrentState_set means the first state change notification that occurs is the new state, not the state that caused CurrentState_set
+    // to be called again. In otherwords, the state change notifications get out of sync. This problem is not present in 
+    // AMortalItemStateMachine as it doesn't support state change notifications.
+
+    private bool __hasCurrentState_setFinishedWithoutInterveningSet = true;
 
     /// <summary>
     /// Validates that a void State_EnterState() method (called in ConfigureCurrentState()) does not attempt to set a new state.
     /// Note: State_EnterState() methods that return IEnumerator that set a new state value should not fail this test as 
-    /// the coroutine is not immediately run, allowing the CurrentState's OnChanging and OnChanged notification events to complete
-    /// processing before the state change is made.
+    /// the coroutine that executes the EnterState() is only run after CurrentState_set completes.
     /// </summary>
     private void __ValidateNoNewStateSetDuringEnterState(E incomingState) {
-        D.Assert(!__isOnCurrentStateChangingProcessed, "{0} should not change state to {1} while executing {2}_EnterState().".Inject(GetType().Name, incomingState, CurrentState));
-        __isOnCurrentStateChangingProcessed = true;
+        //D.Log("{0}.__ValidateNoNewStateSetDuringEnterState() called. CurrentState = {1}, IncomingState = {2}.", GetType().Name, CurrentState, incomingState);
+        if (!__hasCurrentState_setFinishedWithoutInterveningSet) {
+            D.Error("{0} cannot change state to {1} while executing {2}_EnterState().", GetType().Name, incomingState, CurrentState);
+            return;
+        }
+        __hasCurrentState_setFinishedWithoutInterveningSet = false;
     }
 
     private void __ResetStateChangeValidationTest() {
-        __isOnCurrentStateChangingProcessed = false;
+        //D.Log("{0}.__ResetStateChangeValidationTest() called. CurrentState = {1}.", GetType().Name, CurrentState);
+        __hasCurrentState_setFinishedWithoutInterveningSet = true;
     }
 
     #endregion

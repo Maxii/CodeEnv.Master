@@ -28,12 +28,19 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SectorCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Patrol,
-                                                                                                FleetDirective.Move,
-                                                                                                FleetDirective.Explore,
-                                                                                                FleetDirective.Guard };
-    protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
-        get { return _remoteFleetDirectivesAvailable; }
+    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
+        {FleetDirective.Move, Speed.FleetStandard },
+        {FleetDirective.Guard, Speed.FleetStandard },
+        {FleetDirective.Explore, Speed.FleetTwoThirds },
+        {FleetDirective.Patrol, Speed.FleetOneThird }
+    };
+
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {    FleetDirective.Patrol,
+                                                                                           FleetDirective.Move,
+                                                                                           FleetDirective.Explore,
+                                                                                           FleetDirective.Guard };
+    protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
+        get { return _userRemoteFleetDirectives; }
     }
 
     protected override string OperatorName { get { return _sector.FullName; } }
@@ -46,27 +53,26 @@ public class SectorCtxControl : ACtxControl {
         _sectorExaminerMenuOperator = sectorExaminer;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+    protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override void PopulateMenu_RemoteFleetAccess() {
+    protected override void PopulateMenu_UserRemoteFleetIsSelected() {
         var sectorIndex = _sectorExaminerMenuOperator.CurrentSectorIndex;
         if (!SectorGrid.Instance.TryGetSector(sectorIndex, out _sector)) {
             D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorIndex, GetType().Name);
             // no sectorItem present underneath this examiner so don't build the menu
             return;
         }
-        base.PopulateMenu_RemoteFleetAccess();
+        base.PopulateMenu_UserRemoteFleetIsSelected();
     }
 
-    protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
+    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
-            case FleetDirective.Patrol:
-                return false;
             case FleetDirective.Explore:
-                return false; // IMPROVE _sectorItem.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+            // IMPROVE _sectorItem.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+            case FleetDirective.Patrol:
             case FleetDirective.Move:
                 return false;
             case FleetDirective.Guard:
@@ -76,17 +82,21 @@ public class SectorCtxControl : ACtxControl {
         }
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         throw new NotImplementedException("SectorExaminer is not selectable or focusable.");
     }
 
-    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
-        base.HandleMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
+        base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
+        IssueRemoteFleetOrder(itemID);
+    }
 
+    private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
+        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _sector;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
     }
 
     public override string ToString() {

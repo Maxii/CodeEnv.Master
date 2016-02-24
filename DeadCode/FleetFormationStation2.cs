@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetFormationStation.cs
+// File: FleetFormationStation2.cs
 // Formation station for a ship in a Fleet formation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,8 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Formation station for a ship in a Fleet formation.
     /// </summary>
-    public class FleetFormationStation : INavigableTarget {
+    [System.Obsolete]
+    public class FleetFormationStation2 : INavigableTarget {
 
         private static string _nameFormat = "{0}.{1}";
 
@@ -45,11 +46,11 @@ namespace CodeEnv.Master.GameContent {
         public Vector3 VectorToStation { get { return Position - _assignedShip.Position; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetFormationStation"/> class.
+        /// Initializes a new instance of the <see cref="FleetFormationStation2"/> class.
         /// </summary>
         /// <param name="assignedShip">The assigned ship.</param>
         /// <param name="stationOffset">The station offset.</param>
-        public FleetFormationStation(IShipItem assignedShip, Vector3 stationOffset) {
+        public FleetFormationStation2(IShipItem assignedShip, Vector3 stationOffset) {
             _assignedShip = assignedShip;
             _fleetCmd = assignedShip.Command;
             StationOffset = stationOffset;

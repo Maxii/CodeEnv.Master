@@ -27,12 +27,19 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SystemCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move,
-                                                                                                FleetDirective.Guard,
-                                                                                                FleetDirective.Explore,
-                                                                                                FleetDirective.Patrol };
-    protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
-        get { return _remoteFleetDirectivesAvailable; }
+    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
+        {FleetDirective.Move, Speed.FleetStandard },
+        {FleetDirective.Guard, Speed.FleetStandard },
+        {FleetDirective.Explore, Speed.FleetTwoThirds },
+        {FleetDirective.Patrol, Speed.FleetOneThird }
+    };
+
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Move,
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.Explore,
+                                                                                            FleetDirective.Patrol };
+    protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
+        get { return _userRemoteFleetDirectives; }
     }
 
     protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
@@ -44,7 +51,7 @@ public class SystemCtxControl : ACtxControl {
         _systemMenuOperator = system;
     }
 
-    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
             D.Assert(_systemMenuOperator == selected as SystemItem);
             return true;
@@ -52,38 +59,39 @@ public class SystemCtxControl : ACtxControl {
         return false;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+    protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
+    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
+            //TODO
             case FleetDirective.Move:
             case FleetDirective.Guard:
             case FleetDirective.Patrol:
-                //TODO
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         _systemMenuOperator.OptimalCameraViewingDistance = _systemMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
-        base.HandleMenuSelection_RemoteFleetAccess(itemID);
-        IssueFleetOrder(itemID);
+    protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
+        base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
+        IssueRemoteFleetOrder(itemID);
     }
 
-    private void IssueFleetOrder(int itemID) {
+    private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
+        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
     }
 
     public override string ToString() {

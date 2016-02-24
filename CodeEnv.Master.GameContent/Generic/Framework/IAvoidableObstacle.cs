@@ -31,7 +31,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="zoneHitInfo">The zone hit information.</param>
         /// <param name="fleetRadius">The fleet radius.</param>
-        /// <param name="formationOffset">The formation offset.</param>
+        /// <param name="formationOffset">The formation offset. This is NOT the ship's targetDestinationOffset as 
+        /// detours around obstacles should be executed in full formation, if applicable.</param>
         /// <returns></returns>
         Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset);
 

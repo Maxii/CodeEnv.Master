@@ -29,12 +29,20 @@ using UnityEngine;
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
-    private static ShipDirective[] _selectedItemDirectivesAvailable = new ShipDirective[] {     ShipDirective.Join,
-                                                                                                ShipDirective.Disband,
-                                                                                                ShipDirective.Refit,
-                                                                                                ShipDirective.Scuttle };
-    protected override IEnumerable<ShipDirective> SelectedItemDirectives {
-        get { return _selectedItemDirectivesAvailable; }
+    // OPTIMIZE
+    private static IDictionary<ShipDirective, Speed> _userShipSpeedLookup = new Dictionary<ShipDirective, Speed>() {
+        {ShipDirective.Join, Speed.None },
+        {ShipDirective.Disband, Speed.None },
+        {ShipDirective.Refit, Speed.None },
+        {ShipDirective.Scuttle, Speed.None },
+    };
+
+    private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[] {  ShipDirective.Join,
+                                                                                        ShipDirective.Disband,
+                                                                                        ShipDirective.Refit,
+                                                                                        ShipDirective.Scuttle };
+    protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
+        get { return _userMenuOperatorDirectives; }
     }
 
     protected override ADiscernibleItem ItemForFindClosest { get { return _shipMenuOperator; } }
@@ -48,7 +56,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         _shipMenuOperator = ship;
     }
 
-    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_shipMenuOperator.IsSelected) {
             D.Assert(_shipMenuOperator == selected as ShipItem);
             return true;
@@ -56,7 +64,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         return false;
     }
 
-    protected override bool IsSelectedItemMenuItemDisabled(ShipDirective directive) {
+    protected override bool IsUserMenuOperatorMenuItemDisabledFor(ShipDirective directive) {
         switch (directive) {
             case ShipDirective.Refit:
             //TODO
@@ -76,7 +84,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets.</param>
     /// <returns></returns>
-    protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(ShipDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(ShipDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case ShipDirective.Join:
                 targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(f => f.Owner.IsUser).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
@@ -93,19 +101,23 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         }
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuSelection_SelectedItemAccess(int itemID) {
-        base.HandleMenuSelection_SelectedItemAccess(itemID);
+    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+        IssueShipMenuOperatorOrder(itemID);
+    }
 
+    private void IssueShipMenuOperatorOrder(int itemID) {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
+        Speed speed = _userShipSpeedLookup[directive];
         IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.UnitCommand, target);
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target, speed);
     }
 
     public override string ToString() {

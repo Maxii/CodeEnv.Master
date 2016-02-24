@@ -23,12 +23,20 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
-        ElementCaptain,
+        /// <summary>
+        /// The Captain of a Unit Element.
+        /// </summary>
+        Captain,
 
-        UnitCommand
+        /// <summary>
+        /// The Command Staff of a Unit.
+        /// </summary>
+        CmdStaff,
 
-        // User  // Dropped as ShipHelm needs to know which type of Speed
-        // used based off of OrderSource
+        /// <summary>
+        /// The User.
+        /// </summary>
+        User
 
     }
 }

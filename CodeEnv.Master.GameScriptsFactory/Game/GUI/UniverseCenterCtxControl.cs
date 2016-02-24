@@ -28,11 +28,17 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class UniverseCenterCtxControl : ACtxControl {
 
-    private static FleetDirective[] _remoteFleetDirectivesAvailable = new FleetDirective[] {    FleetDirective.Move,
-                                                                                                FleetDirective.Patrol,
-                                                                                                FleetDirective.Guard };
-    protected override IEnumerable<FleetDirective> RemoteFleetDirectives {
-        get { return _remoteFleetDirectivesAvailable; }
+    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
+        {FleetDirective.Move, Speed.FleetStandard },
+        {FleetDirective.Guard, Speed.FleetStandard },
+        {FleetDirective.Patrol, Speed.FleetOneThird }
+    };
+
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Move,
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.Guard };
+    protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
+        get { return _userRemoteFleetDirectives; }
     }
 
     protected override string OperatorName { get { return _universeCenterMenuOperator.FullName; } }
@@ -44,7 +50,7 @@ public class UniverseCenterCtxControl : ACtxControl {
         _universeCenterMenuOperator = universeCenter;
     }
 
-    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_universeCenterMenuOperator.IsSelected) {
             D.Assert(_universeCenterMenuOperator == selected as UniverseCenterItem);
             return true;
@@ -52,12 +58,12 @@ public class UniverseCenterCtxControl : ACtxControl {
         return false;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+    protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // OPTIMIZE not really needed
+    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {  // OPTIMIZE not really needed
         switch (directive) {
             case FleetDirective.Patrol:
             case FleetDirective.Move:
@@ -68,17 +74,21 @@ public class UniverseCenterCtxControl : ACtxControl {
         }
     }
 
-    protected override void HandleMenuSelection_OptimalFocusDistance() {
+    protected override void HandleMenuPick_OptimalFocusDistance() {
         _universeCenterMenuOperator.OptimalCameraViewingDistance = _universeCenterMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuSelection_RemoteFleetAccess(int itemID) {
-        base.HandleMenuSelection_RemoteFleetAccess(itemID);
+    protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
+        base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
+        IssueRemoteFleetOrder(itemID);
+    }
 
+    private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
+        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _universeCenterMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
     }
 
     public override string ToString() {

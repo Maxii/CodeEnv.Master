@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         public IUnitAttackableTarget Target { get; private set; }
 
         /// <summary>
-        /// Flag indicating the source of this order. 
+        /// The source of this order. 
         /// </summary>
         public OrderSource Source { get; private set; }
 
@@ -37,16 +37,16 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityOrder" /> class.
         /// </summary>
-        /// <param name="directive">The order.</param>
+        /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
-        /// <param name="target">The target.</param>
-        public FacilityOrder(FacilityDirective directive, OrderSource source = OrderSource.ElementCaptain, IUnitAttackableTarget target = null) {
+        /// <param name="target">The target of this order. Default is null.</param>
+        public FacilityOrder(FacilityDirective directive, OrderSource source, IUnitAttackableTarget target = null) {
             Directive = directive;
             Source = source;
             Target = target;
         }
 
-        public override string ToString() {
+        public override string ToString() {// IMPROVE
             return new ObjectAnalyzer().ToString(this);
         }
 

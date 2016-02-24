@@ -132,7 +132,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             D.Warn("No valid HQElements for {0} found.", UnitName);
             candidateHQElements = _command.Elements;
         }
-        _command.HQElement = RandomExtended.Choice(candidateHQElements) as ShipItem;
+        var hqElement = RandomExtended.Choice(candidateHQElements) as ShipItem;
+        _command.HQElement = hqElement;
     }
 
     protected override bool DeployUnit() {
@@ -194,7 +195,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
         }
         D.Log("{0} destination is {1}.", UnitName, destination.FullName);
-        _command.CurrentOrder = new FleetOrder(FleetDirective.Move, destination, Speed.FleetStandard);
+        _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination, Speed.FleetStandard);
     }
 
     private void __GetFleetAttackUnderway() {
@@ -223,7 +224,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
         }
         D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
-        _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);
+        _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
     }
 
     protected override int GetMaxLosWeaponsAllowed(ShipHullCategory hullCategory) {

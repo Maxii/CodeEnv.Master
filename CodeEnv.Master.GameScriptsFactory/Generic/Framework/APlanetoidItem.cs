@@ -81,6 +81,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         _obstacleZoneCollider.isTrigger = true;
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
         D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        InitializeDebugShowObstacleZone();
     }
 
     protected override void InitializeOnFirstDiscernibleToUser() {
@@ -187,6 +188,40 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         if (_detectionHandler != null) {
             _detectionHandler.Dispose();
         }
+        CleanupDebugShowObstacleZone();
+    }
+
+    #endregion
+
+    #region Debug Show Obstacle Zones
+
+    private void InitializeDebugShowObstacleZone() {
+        DebugValues debugValues = DebugValues.Instance;
+        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        if (debugValues.ShowObstacleZones) {
+            EnableDebugShowObstacleZone(true);
+        }
+    }
+
+    private void EnableDebugShowObstacleZone(bool toEnable) {
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        drawCntl.Color = Color.red;
+        drawCntl.enabled = toEnable;
+    }
+
+    private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
+        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+    }
+
+    private void CleanupDebugShowObstacleZone() {
+        var debugValues = DebugValues.Instance;
+        if (debugValues != null) {
+            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+        }
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+        if (drawCntl != null) {
+            Destroy(drawCntl);
+        }
     }
 
     #endregion
@@ -206,10 +241,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            D.Log(toShowDLog, "{0} has been hit but incurred no damage.", FullName);
+            D.Log(showDebugLog, "{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log(toShowDLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        D.Log(showDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);

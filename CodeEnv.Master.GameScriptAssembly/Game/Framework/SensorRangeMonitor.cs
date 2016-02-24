@@ -19,7 +19,9 @@
 using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Detects ISensorDetectable Items that enter and exit the range of its sensors and notifies each with an HandleDetectionBy() or HandleDetectionLostBy() event.
@@ -34,7 +36,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     public new IUnitCmdItem ParentItem {
         get { return base.ParentItem as IUnitCmdItem; }
-        set { base.ParentItem = value as AItem; }
+        set { base.ParentItem = value as AMortalItem; }
     }
 
     /// <summary>
@@ -47,6 +49,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         AttackableEnemyTargetsDetected = new List<IElementAttackableTarget>();
+        InitializeDebugShowSensor();
     }
 
     /// <summary>
@@ -92,7 +95,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         var mortalItem = lostDetectionItem as IMortalItem;
         if (mortalItem != null) {
             mortalItem.deathOneShot -= DetectedItemDeathEventHandler;
-            //D.Log("{0} removed {1} death subscription.", Name, mortalItem.FullName);
+            //D.Log(ShowDebugLog, "{0} removed {1} death subscription.", Name, mortalItem.FullName);
             var enemyTarget = mortalItem as IElementAttackableTarget;
             if (enemyTarget != null && enemyTarget.Owner.IsEnemyOf(Owner)) {
                 RemoveEnemy(enemyTarget);
@@ -102,7 +105,6 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     }
 
     #region Event and Property Change Handlers
-
 
     /// <summary>
     /// Called when the owner of a detectedItem changes.
@@ -148,6 +150,11 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         RemoveDetectedObject(deadDetectedItem as ISensorDetectable);
     }
 
+    protected override void IsOperationalPropChangedHandler() {
+        base.IsOperationalPropChangedHandler();
+        HandleDebugSensorIsOperationalChanged();
+    }
+
     #endregion
 
     private void AddEnemy(IElementAttackableTarget enemyTarget) {
@@ -186,11 +193,68 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
             // HandleDetectionLostBy() calls which results in NRExceptions from Singleton managers like GameTime which have already CleanedUp.
             IsOperational = false;
         }
+        CleanupDebugShowSensor();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug Show Sensors
+
+    private void InitializeDebugShowSensor() {
+        DebugValues debugValues = DebugValues.Instance;
+        debugValues.showSensorsChanged += ShowDebugSensorsChangedEventHandler;
+        if (debugValues.ShowSensors) {
+            EnableDebugShowSensor(true);
+        }
+    }
+
+    private void EnableDebugShowSensor(bool toEnable) {
+        DrawColliderGizmo drawCntl = gameObject.AddMissingComponent<DrawColliderGizmo>();
+        drawCntl.Color = IsOperational ? DetermineRangeColor() : Color.red;
+        drawCntl.enabled = toEnable;
+    }
+
+    private void HandleDebugSensorIsOperationalChanged() {
+        DebugValues debugValues = DebugValues.Instance;
+        if (debugValues.ShowSensors) {
+            DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
+            drawCntl.Color = IsOperational ? DetermineRangeColor() : Color.red;
+        }
+    }
+
+    private void ShowDebugSensorsChangedEventHandler(object sender, EventArgs e) {
+        EnableDebugShowSensor(DebugValues.Instance.ShowSensors);
+    }
+
+    private Color DetermineRangeColor() {
+        switch (RangeCategory) {
+            case RangeCategory.Short:
+                return Color.blue;
+            case RangeCategory.Medium:
+                return Color.cyan;
+            case RangeCategory.Long:
+                return Color.gray;
+            case RangeCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(RangeCategory));
+        }
+    }
+
+    private void CleanupDebugShowSensor() {
+        var debugValues = DebugValues.Instance;
+        if (debugValues != null) {
+            debugValues.showSensorsChanged -= ShowDebugSensorsChangedEventHandler;
+        }
+        DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
+        if (drawCntl != null) {
+            Destroy(drawCntl);
+        }
+    }
+
+    #endregion
+
 
 }
 

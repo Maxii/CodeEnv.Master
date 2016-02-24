@@ -42,6 +42,13 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     /// </summary>
     public RangeCategory RangeCategory { get; private set; }
 
+    public new AMortalItem ParentItem {
+        get { return base.ParentItem as AMortalItem; }
+        set { base.ParentItem = value; }
+    }
+
+    protected bool ShowDebugLog { get { return ParentItem.showDebugLog; } }
+
     /// <summary>
     /// The ranged equipment associated with this monitor.
     /// </summary>
