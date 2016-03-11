@@ -245,10 +245,12 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <typeparam name="I">The Interface type.</typeparam>
         /// <param name="i">The Interface instance.</param>
+        /// <param name="delayInSeconds">The delay in seconds.</param>
+        /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
         /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
-        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i) where I : class {
+        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i, float delayInSeconds = 0F, Action onCompletion = null) where I : class {
             if (CheckNotNullOrAlreadyDestroyed<I>(i)) {
-                GameObject.Destroy((i as Component).gameObject);
+                Destroy((i as Component).gameObject, delayInSeconds, onCompletion);
             }
         }
 
@@ -256,6 +258,12 @@ namespace CodeEnv.Master.Common {
             Destroy(gameObject, Constants.ZeroF);
         }
 
+        /// <summary>
+        /// Destroys the specified game object.
+        /// </summary>
+        /// <param name="gameObject">The game object.</param>
+        /// <param name="delayInSeconds">The delay in seconds.</param>
+        /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
         public static void Destroy(GameObject gameObject, float delayInSeconds, Action onCompletion = null) {
             //GameObject.Destroy(gameObject, delayInSeconds);
             if (gameObject == null) {

@@ -19,13 +19,19 @@
 using System;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// APlanetoidItems that are Planets.
 /// </summary>
-public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
+public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExplorable {
+
+    /// <summary>
+    /// The moons that orbit this planet. Can be empty but never null.
+    /// </summary>
+    public MoonItem[] ChildMoons { get; private set; }
 
     public new PlanetData Data {
         get { return base.Data as PlanetData; }
@@ -37,15 +43,6 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
     private DetourGenerator _detourGenerator;
 
     #region Initialization
-
-    protected override void InitializeOnData() {
-        base.InitializeOnData();
-        InitializeShipOrbitSlot();
-    }
-
-    private void InitializeShipOrbitSlot() {
-        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
-    }
 
     protected override void InitializeObstacleZone() {
         base.InitializeObstacleZone();
@@ -66,6 +63,20 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
         iconEventListener.onClick += ClickEventHandler;
         iconEventListener.onDoubleClick += DoubleClickEventHandler;
         iconEventListener.onPress += PressEventHandler;
+    }
+
+    private ShipOrbitSlot InitializeShipOrbitSlot() {
+        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
+
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        RecordAnyChildMoons();
+    }
+
+    private void RecordAnyChildMoons() {
+        ChildMoons = gameObject.GetComponentsInChildren<MoonItem>();
+        //D.Log(showDebugLog && ChildMoons.Any(), "{0} recorded {1} child moons.", FullName, ChildMoons.Count());
     }
 
     #endregion
@@ -92,14 +103,37 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
         return new IconInfo("Icon02", AtlasID.Contextual, iconColor);
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
-        var moons = transform.GetComponentsInChildren<MoonItem>();
-        if (moons.Any()) {
-            // since the planet is on its way to destruction, the moons need to show their destruction too
-            moons.ForAll(moon => moon.HandlePlanetDying());
+    public override void HandleEffectFinished(EffectID effectID) {
+        base.HandleEffectFinished(effectID);
+        //D.Log(showDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
+        switch (effectID) {
+            case EffectID.Dying:
+                if (ChildMoons.Any()) {
+                    // planet has completed showing its death so moons need to show theirs too
+                    ChildMoons.ForAll(moon => {
+                        moon.effectFinished += MoonDeathEffectFinishedEventHandler; // no unsubscribing needed as all are destroyed
+                        moon.HandlePlanetDying();
+                    });
+                }
+                else {
+                    DestroyMe();
+                }
+                break;
+            case EffectID.Hit:
+                break;
+            case EffectID.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(effectID));
         }
-        //TODO consider destroying the orbiter object and separating it from the OrbitSlot
+    }
+
+    private int _deadMoonCount;
+    private void HandleMoonDeathEffectFinished() {
+        _deadMoonCount++;
+        if (_deadMoonCount == ChildMoons.Count()) {
+            // this is the last moon to die
+            DestroyMe();
+        }
     }
 
     #region Event and Property Change Handlers
@@ -107,6 +141,11 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
     protected override void OwnerPropChangedHandler() {
         base.OwnerPropChangedHandler();
         AssessIcon();
+    }
+
+    private void MoonDeathEffectFinishedEventHandler(object sender, EffectEventArgs e) {
+        D.Assert(e.EffectID == EffectID.Dying);
+        HandleMoonDeathEffectFinished();
     }
 
     #endregion
@@ -139,7 +178,17 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
 
     #region IShipOrbitable Members
 
-    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+    private ShipOrbitSlot _shipOrbitSlot;
+    public ShipOrbitSlot ShipOrbitSlot {
+        get {
+            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
+            return _shipOrbitSlot;
+        }
+    }
+
+    public bool IsOrbitAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
+    }
 
     #endregion
 
@@ -161,6 +210,23 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable {
 
     public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
         return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius, formationOffset);
+    }
+
+    #endregion
+
+    #region IShipExplorable Members
+
+    public bool IsFullyExploredBy(Player player) {
+        return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
+    }
+
+    public bool IsExplorationAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
+    }
+
+    public void RecordExplorationCompletedBy(Player player) {
+        SetIntelCoverage(player, IntelCoverage.Comprehensive);
+        ChildMoons.ForAll(moon => moon.SetIntelCoverage(player, IntelCoverage.Comprehensive));
     }
 
     #endregion

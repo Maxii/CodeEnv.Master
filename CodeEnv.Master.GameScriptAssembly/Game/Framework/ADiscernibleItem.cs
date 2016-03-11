@@ -27,6 +27,9 @@ using UnityEngine;
 /// </summary>
 public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsClient, ISelectable {
 
+    public event EventHandler<EffectEventArgs> effectStarting;
+    public event EventHandler<EffectEventArgs> effectFinished;
+
     private bool _isDiscernibleToUser;
     public bool IsDiscernibleToUser {
         get { return _isDiscernibleToUser; }
@@ -84,7 +87,6 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
         EffectsMgr = InitializeEffectsManager();
         _highlighter = InitializeHighlighter();
-        _ctxControl = InitializeContextMenu(Owner);
         _hasInitOnFirstDiscernibleToUserRun = true;
     }
 
@@ -100,6 +102,12 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         return new Highlighter(this);
     }
 
+    /// <summary>
+    /// Initializes the context menu. Called when the ContextMenu for this
+    /// item is first used and/or when the owner changes.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <returns></returns>
     protected abstract ICtxControl InitializeContextMenu(Player owner);
 
     #endregion
@@ -154,9 +162,12 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     /// </remarks>
     protected abstract void ShowSelectedItemHud();
 
-    public virtual void HandleEffectFinished(EffectID effectID) { }
+    public virtual void HandleEffectFinished(EffectID effectID) {
+        OnEffectFinished(effectID);
+    }
 
     protected void StartEffect(EffectID effectID) {
+        OnEffectStarting(effectID);
         if (IsVisualDetailDiscernibleToUser) {
             D.Assert(EffectsMgr != null);   // if DisplayMgr is initialized, so is EffectsMgr
             EffectsMgr.StartEffect(effectID);
@@ -193,8 +204,8 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     protected override void OwnerPropChangingHandler(Player newOwner) {
         base.OwnerPropChangingHandler(newOwner);
-        if (_hasInitOnFirstDiscernibleToUserRun) {
-            D.Assert(_ctxControl != null);
+        if (_ctxControl != null) {
+            D.Assert(_hasInitOnFirstDiscernibleToUserRun);
             if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
                 // Kind of owner (NoPlayer, AI or User) has changed so generate a new ctxControl -
                 // aka, a change from one AI player to another does not necessitate a change
@@ -330,6 +341,10 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected virtual void HandleRightPressRelease() {
         if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
+            if (_ctxControl == null) {
+                D.Assert(_hasInitOnFirstDiscernibleToUserRun);
+                _ctxControl = InitializeContextMenu(Owner);
+            }
             _ctxControl.TryShowContextMenu();
         }
     }
@@ -360,6 +375,18 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         DoubleClickEventHandler(gameObject);
     }
 
+    private void OnEffectStarting(EffectID effectID) {
+        if (effectStarting != null) {
+            effectStarting(this, new EffectEventArgs(effectID));
+        }
+    }
+
+    private void OnEffectFinished(EffectID effectID) {
+        if (effectFinished != null) {
+            effectFinished(this, new EffectEventArgs(effectID));
+        }
+    }
+
     #endregion
 
     #region Cleanup
@@ -368,6 +395,19 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         base.Cleanup();
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
+        }
+    }
+
+    #endregion
+
+    #region Nested Classes
+
+    public class EffectEventArgs : EventArgs {
+
+        public EffectID EffectID { get; private set; }
+
+        public EffectEventArgs(EffectID effectID) {
+            EffectID = effectID;
         }
     }
 

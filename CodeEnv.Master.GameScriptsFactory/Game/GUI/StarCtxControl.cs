@@ -28,20 +28,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class StarCtxControl : ACtxControl {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard },
-        {FleetDirective.Explore, Speed.FleetTwoThirds },
-        {FleetDirective.Patrol, Speed.FleetOneThird }
-    };
-
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Move,
-                                                                                            FleetDirective.Patrol,
-                                                                                            FleetDirective.Guard,
-                                                                                            FleetDirective.Explore };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
+                                                                                        FleetDirective.FullSpeedMove,
+                                                                                        FleetDirective.Patrol,
+                                                                                        FleetDirective.Guard,
+                                                                                        FleetDirective.Explore };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
+
+    protected override AItem ItemForDistanceMeasurements { get { return _starMenuOperator; } }
 
     protected override string OperatorName { get { return _starMenuOperator.FullName; } }
 
@@ -68,13 +64,17 @@ public class StarCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-                // IMPROVE exploring a star is always available? needed to initiate explore of unknown system?
-                return false;
+                // A fleet may explore a star (system) if not at war and not already explored
+                return (_starMenuOperator.System as IFleetExplorable).IsFullyExploredBy(_user) ||
+                    _starMenuOperator.Owner.IsAtWarWith(_user);
             case FleetDirective.Patrol:
+            // A fleet may patrol any star (system) without regard to Diplo state
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
+                // A fleet may move to any star without regard to Diplo state
                 return false;
             case FleetDirective.Guard:
-                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_starMenuOperator.Owner);
+                return _user.IsEnemyOf(_starMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -91,10 +91,12 @@ public class StarCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _starMenuOperator;
+        if (directive == FleetDirective.Explore) {
+            target = _starMenuOperator.System as INavigableTarget;
+        }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

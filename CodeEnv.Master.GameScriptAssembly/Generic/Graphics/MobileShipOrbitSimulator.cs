@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MovingShipOrbitSimulator.cs
-// Class that simulates the movement of ships orbiting around an IShipOrbitable object that itself moves.
+// File: MobileShipOrbitSimulator.cs
+// Simulates orbiting around a mobile parent of any ships attached by a fixed joint.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,28 +16,22 @@
 
 // default namespace
 
-using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class that simulates the movement of ships orbiting around an IShipOrbitable object that itself moves.
-/// Assumes this script is attached to an otherwise empty gameobject [the orbiterGO] whose parent is the IShipOrbitable object
-/// being orbited. The position of this orbiterGO should be coincident with that of the IShipOrbitable object being orbited. The
-/// ships that are orbiting are either parented to this orbiterGO or attached with a fixed joint, thus simulating orbital movement by 
-/// rotating the orbiterGO.
+/// Simulates orbiting around a mobile parent of any ships attached by a fixed joint.
+/// This is also an INavigableTarget which allows it to be used as a destination by a Ship's AutoPilot.
 /// </summary>
-public class MovingShipOrbitSimulator : MovingOrbitSimulator, IMovingShipOrbitSimulator {
-
-    public Rigidbody Rigidbody { get; private set; }
+public class MobileShipOrbitSimulator : ShipOrbitSimulator, IMobileShipOrbitSimulator {
 
     /// <summary>
-    /// The direction in worldspace this MovingShipOrbitSimulator is currently traveling.
+    /// The worldspace direction of travel of the OrbitedObject around which this simulator is rotating.
     /// </summary>
     public Vector3 DirectionOfTravel {
         get {
-            D.Assert(IsActivelyOrbiting);   // Ships always actively orbit. _previousPosition not valid without it
+            D.Assert(OrbitSlot.ToOrbit);   // Ships always actively orbit. _previousPosition not valid without it
             return (transform.position - _previousPosition).normalized;
         }
     }
@@ -51,14 +45,16 @@ public class MovingShipOrbitSimulator : MovingOrbitSimulator, IMovingShipOrbitSi
 
     protected override void Awake() {
         base.Awake();
-        Rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        Rigidbody.isKinematic = true;
-        Rigidbody.useGravity = false;
         _previousPosition = transform.position;
     }
 
-    protected override void UpdateOther() {
-        base.UpdateOther();
+    /// <summary>
+    /// Updates the rotation of this simulator around its current location in worldspace.
+    /// </summary>
+    /// <param name="deltaTimeSinceLastUpdate">The delta time (zero if paused) since last update.</param>
+    protected override void UpdateOrbit(float deltaTimeSinceLastUpdate) {
+        float angleStep = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
+        transform.RotateAround(transform.position, _axisOfOrbit, angleStep);
         _previousPosition = transform.position;
     }
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMovingShipOrbitSimulator.cs
-// Interface for easy access to MovingShipOrbitSimulator objects.
+// File: IShipExplorable.cs
+// Interface for Items that can only be explored by individual ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,16 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for easy access to MovingShipOrbitSimulator objects.
+    /// Interface for Items that can only be explored by individual ships.
     /// </summary>
-    public interface IMovingShipOrbitSimulator : IShipOrbitSimulator {
+    public interface IShipExplorable : IExplorable {
 
-        Vector3 DirectionOfTravel { get; }
+        /// <summary>
+        /// Tells the item the player has fully explored it.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        void RecordExplorationCompletedBy(Player player);
 
     }
 }

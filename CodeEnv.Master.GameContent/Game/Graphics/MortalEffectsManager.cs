@@ -28,6 +28,7 @@ namespace CodeEnv.Master.GameContent {
             : base(effectsClient) { }
 
         public override void StartEffect(EffectID effectID) {
+            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(MortalEffectsManager).Name, effectID.GetValueName());
             if (effectID == EffectID.Dying) {
                 _effectsClient.DisplayMgr.EnableDisplay(toEnable: false, isDead: true);
 
@@ -35,9 +36,10 @@ namespace CodeEnv.Master.GameContent {
                 GameObject explosionSFXGo = _generalFactory.MakeAutoDestruct3DAudioSFXInstance("ExplosionSFX", _effectsClient.Position);
                 References.SFXManager.PlaySFX(explosionSFXGo, SfxGroupID.Explosions);
 
-                var explosion = _generalFactory.MakeExplosionInstance(_effectsClient.Radius, _effectsClient.Position);
+                var explosion = _generalFactory.MakeAutoDestructExplosionInstance(_effectsClient.Radius, _effectsClient.Position);
                 explosion.Play(withChildren: true);
                 WaitJobUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, onWaitFinished: delegate {
+                    //D.Log("{0}.{1} explosion particle system has completed.", _effectsClient.FullName, GetType().Name);
                     _effectsClient.HandleEffectFinished(effectID);
                 });
                 return;

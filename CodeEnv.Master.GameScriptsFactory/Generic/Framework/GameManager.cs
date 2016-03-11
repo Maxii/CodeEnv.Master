@@ -161,7 +161,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public PlayerKnowledge UserPlayerKnowledge { get { return PlayersKnowledge.GetUserKnowledge(); } }
 
-    //protected override bool IsPersistentAcrossScenes { get { return true; } }
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
     private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;

@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
             MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
             Mass = sData.Mass;
             MaxTurnRate = sData.MaxTurnRate;
-            FullSpeed = sData.FullSpeed;
+            FullSpeed = sData.FullSpeedValue;
             Expense = sData.Expense;
         }
 
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
             base.AssignIncrementalValues_IntelCoverageBasic(data);
             var sData = data as ShipData;
             Name = sData.Name;
-            CurrentSpeed = sData.CurrentSpeed;
+            CurrentSpeed = sData.CurrentSpeedValue;
         }
 
         public override string ToString() {

@@ -34,6 +34,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     /// </summary>
     public Transform UnitContainer { get; private set; }
 
+    public abstract bool IsAvailable { get; }
+
     public bool IsTrackingLabelEnabled { private get; set; }
 
     public bool __ShowHQDebugLog { get; set; }
@@ -61,11 +63,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", HQElementPropChangedHandler, HQElementPropChangingHandler); }
     }
 
+    public IList<AUnitElementItem> AvailableNonHQElements { get { return NonHQElements.Where(e => e.IsAvailable).ToList(); } }
+
+    public IList<AUnitElementItem> AvailableElements { get { return Elements.Where(e => e.IsAvailable).ToList(); } }
+
+    public IList<AUnitElementItem> NonHQElements { get { return Elements.Except(HQElement).ToList(); } }    // OPTIMIZE
+
     public IList<AUnitElementItem> Elements { get; private set; }
 
     public IList<ISensorRangeMonitor> SensorRangeMonitors { get; private set; }
 
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
+
+    protected PlayerKnowledge _ownerKnowledge;
 
     private AFormationManager _formationMgr;
     private ITrackingWidget _trackingLabel;
@@ -127,12 +137,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         iconEventListener.onPress += PressEventHandler;
     }
 
-    #endregion
-
-    public override void CommenceOperations() {
-        base.CommenceOperations();
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        _ownerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(Owner);
         AssessIcon();
     }
+
+    #endregion
 
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
@@ -237,8 +248,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     public void HandleSubordinateElementDeath(IUnitElementItem deadSubordinateElement) {
-        D.Log(showDebugLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
+        D.Log(ShowDebugLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
         RemoveElement(deadSubordinateElement as AUnitElementItem);
+        // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
+        UponSubordinateElementDeath(deadSubordinateElement as AUnitElementItem);
     }
 
     protected abstract void AttachCmdToHQElement();
@@ -278,6 +291,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         AssessIcon();   // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
     }
 
+    protected override void HandleDeath() {
+        base.HandleDeath();
+    }
+
     #region Event and Property Change Handlers
 
     protected virtual void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
@@ -297,7 +314,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     private void HQElementPropChangedHandler() {
         HQElement.Data.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
-        if (__ShowHQDebugLog) { HQElement.showDebugLog = true; }
+        if (__ShowHQDebugLog) { HQElement.ShowDebugLog = true; }
         //D.Log(toShowDLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
@@ -344,12 +361,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     # region StateMachine Support Methods
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected void Dead_ExitState() {
+        D.Error("{0}.Dead_ExitState should not occur.", FullName);
     }
 
-    protected void Dead_ExitState() {
-        D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
+    private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        RelayToCurrentState(deadSubordinateElement);
     }
 
     private void UponTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
@@ -480,7 +497,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         set { base.OptimalCameraViewingDistance = value; }
     }
 
-    public override bool IsRetainedFocusEligible { get { return GetUserIntelCoverage() != IntelCoverage.None; } }
+    public override bool IsRetainedFocusEligible { get { return UserIntelCoverage != IntelCoverage.None; } }
 
     #endregion
 

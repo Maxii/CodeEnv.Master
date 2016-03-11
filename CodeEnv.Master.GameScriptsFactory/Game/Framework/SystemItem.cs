@@ -26,9 +26,14 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatrollable {
+public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatrollable, IFleetExplorable {
 
     public bool IsTrackingLabelEnabled { private get; set; }
+
+    /// <summary>
+    ///  The orbit slot within this system that any current or future settlement can occupy. 
+    /// </summary>
+    public CelestialOrbitSlot SettlementOrbitSlot { get; set; }
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -56,6 +61,10 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         }
     }
 
+    public IList<PlanetItem> Planets { get; private set; }
+
+    public IList<MoonItem> Moons { get; private set; }
+
     public IList<APlanetoidItem> Planetoids { get; private set; }
 
     private SystemPublisher _publisher;
@@ -74,7 +83,9 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        Planetoids = new List<APlanetoidItem>();
+        Planetoids = new List<APlanetoidItem>();    // OPTIMIZE size of each of these lists
+        Planets = new List<PlanetItem>();
+        Moons = new List<MoonItem>();
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
@@ -133,9 +144,38 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     #endregion
 
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        if (Settlement != null) {
+            SettlementOrbitSlot.OrbitSimulator.IsActivated = true;
+        }
+    }
+
     public void AddPlanetoid(APlanetoidItem planetoid) {
+        D.Assert(!planetoid.IsOperational);
         Planetoids.Add(planetoid);
+        var planet = planetoid as PlanetItem;
+        if (planet != null) {
+            Planets.Add(planet);
+        }
+        else {
+            Moons.Add(planetoid as MoonItem);
+        }
         Data.AddPlanetoid(planetoid.Data);
+    }
+
+    public void RemovePlanetoid(APlanetoidItem planetoid) {
+        D.Assert(!planetoid.IsOperational);
+        bool isRemoved = Planetoids.Remove(planetoid);
+        var planet = planetoid as PlanetItem;
+        if (planet != null) {
+            isRemoved = isRemoved & Planets.Remove(planet);
+        }
+        else {
+            isRemoved = isRemoved & Moons.Remove(planetoid as MoonItem);
+        }
+        isRemoved = isRemoved & Data.RemovePlanetoid(planetoid.Data);
+        D.Assert(isRemoved);
     }
 
     public SystemReport GetUserReport() { return Publisher.GetUserReport(); }
@@ -159,37 +199,21 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     private void AttachSettlement(SettlementCmdItem settlementCmd) {
         Transform settlementUnit = settlementCmd.UnitContainer;
-        var orbitSimulator = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement OrbitSimulator"); // IMPROVE the only remaining OrbitSlot held in Data
-        orbitSimulator.IsActivelyOrbiting = settlementCmd.__OrbitSimulatorMoves;
-        // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
+        SettlementOrbitSlot.AssumeOrbit(settlementUnit);
+        if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in AOrbitSlot
+            SettlementOrbitSlot.OrbitSimulator.IsActivated = true;
+        }
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
 
     protected override void AssessIsDiscernibleToUser() {
-        // a System is not discernible to the User unless it is visible to the camera AND the User has discovered it
-        var isDiscoveredByUser = _gameMgr.UserPlayerKnowledge.HasKnowledgeOf(this);
-        var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
-        //D.Log("{0}.AssessDiscernibleToUser() called. InMainCameraLOS = {1}, UserHasDiscovered = {2}.", FullName, isInMainCameraLOS, isDiscoveredByUser);
-        IsDiscernibleToUser = isInMainCameraLOS && isDiscoveredByUser;
+        // all players including User are now aware of the existence of all systems just like stars
+        var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
+        IsDiscernibleToUser = isInMainCameraLOS;
     }
 
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, GetUserReport());
-    }
-
-    /// <summary>
-    /// Called by User's PlayerKnowledge when the User first discovers this system.
-    /// Note: This is the replacement for ADiscernibleItem.UserIntelCoveragePropChangedHandler() calling 
-    /// AssessDiscernibleToUser() since SystemItem is not an ADiscernibleItem.
-    /// </summary>
-    public void HandleUserDiscoveryOfSystem() {
-        if (!IsOperational) {
-            // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
-            return;
-        }
-        D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
-        AssessIsDiscernibleToUser();
-        D.Assert(_hasInitOnFirstDiscernibleToUserRun);
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -206,17 +230,18 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
     }
 
     private void SettlementPropChangedHandler() {
-        SettlementCmdData settlementData = null;
         if (Settlement != null) {
             Settlement.ParentSystem = this;
-            settlementData = Settlement.Data;
+            Data.SettlementData = Settlement.Data;
             AttachSettlement(Settlement);
         }
         else {
             // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
-            Data.SettlementOrbitSlot.DestroyOrbitSimulator();
+            // Choose to deactivate or destroy but not both
+            //SettlementOrbitSlot.OrbitSimulator.IsActivated = false;   // TODO make a choice between the two
+            SettlementOrbitSlot.DestroyOrbitSimulator();
+            Data.SettlementData = null;
         }
-        Data.SettlementData = settlementData;
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
 
@@ -281,6 +306,20 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
             }
             return new List<StationaryLocation>(_patrolPoints);
         }
+    }
+
+    #endregion
+
+    #region IFleetExplorable Members
+
+    public bool IsFullyExploredBy(Player player) {
+        bool isStarExplored = Star.IsFullyExploredBy(player);
+        bool areAllPlanetsExplored = Planets.All(p => p.IsFullyExploredBy(player));
+        return isStarExplored && areAllPlanetsExplored;
+    }
+
+    public bool IsExplorationAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
     }
 
     #endregion

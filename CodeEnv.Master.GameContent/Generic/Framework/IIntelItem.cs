@@ -23,9 +23,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IIntelItem : IDiscernibleItem {
 
+        IntelCoverage UserIntelCoverage { get; }
+
         IntelCoverage GetIntelCoverage(Player player);
 
-        bool SetIntelCoverage(Player player, IntelCoverage coverage);
+        /// <summary>
+        /// Sets the intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
+        /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
+        /// the item to regress its IntelCoverage.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <param name="newCoverage">The new coverage.</param>
+        /// <returns></returns>
+        bool SetIntelCoverage(Player player, IntelCoverage newCoverage);
 
     }
 }

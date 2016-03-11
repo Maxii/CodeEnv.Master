@@ -28,20 +28,17 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class PlanetoidCtxControl : ACtxControl {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard },
-        {FleetDirective.Attack, Speed.FleetFull },
-        {FleetDirective.Explore, Speed.FleetTwoThirds }
-    };
+    // No Explore available as Fleets only explore Systems, Sectors and UniverseCenter
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
+                                                                                        FleetDirective.Move,
+                                                                                        FleetDirective.Attack,
+                                                                                        FleetDirective.Guard };
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Move,
-                                                                                            FleetDirective.Attack,
-                                                                                            FleetDirective.Guard,
-                                                                                            FleetDirective.Explore };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
+
+    protected override AItem ItemForDistanceMeasurements { get { return _planetoidMenuOperator; } }
 
     protected override string OperatorName { get { return _planetoidMenuOperator.FullName; } }
 
@@ -65,19 +62,35 @@ public class PlanetoidCtxControl : ACtxControl {
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
+    protected override void PopulateMenu_UserMenuOperatorIsSelected() {
+        base.PopulateMenu_UserMenuOperatorIsSelected();
+        __PopulateDieMenu();
+    }
+
+    private void __PopulateDieMenu() {
+        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
+            text = "Die",
+            id = -1
+        }};
+    }
+
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
-            case FleetDirective.Explore:
-                return _planetoidMenuOperator.GetUserIntelCoverage() == IntelCoverage.Comprehensive;
+                return !_user.IsEnemyOf(_planetoidMenuOperator.Owner);
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
                 return false;
             case FleetDirective.Guard:
-                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
+                return _user.IsEnemyOf(_planetoidMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+    }
+
+    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+        __TellPlanetoidToDie();
     }
 
     protected override void HandleMenuPick_OptimalFocusDistance() {
@@ -91,10 +104,13 @@ public class PlanetoidCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _planetoidMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+    }
+
+    private void __TellPlanetoidToDie() {
+        _planetoidMenuOperator.__Die();
     }
 
     public override string ToString() {

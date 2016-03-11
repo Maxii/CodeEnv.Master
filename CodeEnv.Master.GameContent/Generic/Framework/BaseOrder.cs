@@ -25,6 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         public IUnitAttackableTarget Target { get; private set; }
 
+        /// <summary>
+        /// The source of this order.
+        /// </summary>
         public OrderSource Source { get; private set; }
 
         public BaseDirective Directive { get; private set; }

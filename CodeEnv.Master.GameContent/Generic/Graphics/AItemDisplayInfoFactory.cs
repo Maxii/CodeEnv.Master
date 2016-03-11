@@ -50,13 +50,13 @@ namespace CodeEnv.Master.GameContent {
                 {ContentID.UnitCurrentHitPts, "UnitCurrentHitPts: {0}"},
                 {ContentID.UnitMaxHitPts, "UnitMaxHitPts: {0}"},
                 {ContentID.UnitHealth, "UnitHealth: {0}, UnitMaxHP: {1}"},
-                {ContentID.UnitFullSpeed, "UnitFullSpeed: {0}"},
+                {ContentID.UnitFullSpeed, "UnitFullSpeedValue: {0}"},
                 {ContentID.UnitMaxTurnRate, "UnitMaxTurnRate:  {0}"},
 
                 {ContentID.Target, "Target: {0}"},
                 {ContentID.TargetDistance, "TargetDistance: {0}"},
                 {ContentID.CurrentSpeed, "Speed: {0}"},
-                {ContentID.FullSpeed, "FullSpeed: {0}"},
+                {ContentID.FullSpeed, "FullSpeedValue: {0}"},
                 {ContentID.MaxTurnRate, "MaxTurnRate: {0}"},
                 {ContentID.CombatStance, "Stance: {0}"},
 

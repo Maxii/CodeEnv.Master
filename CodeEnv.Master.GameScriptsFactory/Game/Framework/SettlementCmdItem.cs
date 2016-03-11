@@ -41,14 +41,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         }
     }
 
-    /// <summary>
-    /// Temporary flag set from SettlementCreator indicating whether
-    /// this Settlement should move around it's star or stay in one location.
-    /// IMPROVE no known way to switch the ICameraFollowable interface 
-    /// on or off.
-    /// </summary>
-    public bool __OrbitSimulatorMoves { get; set; }
-
     private SettlementPublisher _publisher;
     public SettlementPublisher Publisher {
         get { return _publisher = _publisher ?? new SettlementPublisher(Data, this); }
@@ -112,7 +104,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     #region INavigableTarget Members
 
-    public override bool IsMobile { get { return __OrbitSimulatorMoves; } }
+    public override bool IsMobile { get { return ParentSystem.SettlementOrbitSlot.ToOrbit; } }
 
     #endregion
 

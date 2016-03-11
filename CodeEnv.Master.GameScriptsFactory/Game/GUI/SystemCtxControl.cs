@@ -27,20 +27,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SystemCtxControl : ACtxControl {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard },
-        {FleetDirective.Explore, Speed.FleetTwoThirds },
-        {FleetDirective.Patrol, Speed.FleetOneThird }
-    };
-
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Move,
-                                                                                            FleetDirective.Guard,
-                                                                                            FleetDirective.Explore,
-                                                                                            FleetDirective.Patrol };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
+                                                                                        FleetDirective.FullSpeedMove,
+                                                                                        FleetDirective.Guard,
+                                                                                        FleetDirective.Explore,
+                                                                                        FleetDirective.Patrol };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
+
+    protected override AItem ItemForDistanceMeasurements { get { return _systemMenuOperator; } }
 
     protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
 
@@ -67,8 +63,9 @@ public class SystemCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-            //TODO
+                return (_systemMenuOperator as IFleetExplorable).IsFullyExploredBy(_user);
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
             case FleetDirective.Guard:
             case FleetDirective.Patrol:
                 return false;
@@ -88,10 +85,9 @@ public class SystemCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

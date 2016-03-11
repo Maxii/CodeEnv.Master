@@ -21,17 +21,15 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items that can be orbited by ships.
     /// </summary>
-    public interface IShipOrbitable {
+    public interface IShipOrbitable : INavigableTarget {
 
         ShipOrbitSlot ShipOrbitSlot { get; }
 
-        string FullName { get; }
-
-        Vector3 Position { get; }
+        Player Owner { get; }
 
         Transform transform { get; }
 
-        bool IsMobile { get; }
+        bool IsOrbitAllowedBy(Player player);
 
     }
 }

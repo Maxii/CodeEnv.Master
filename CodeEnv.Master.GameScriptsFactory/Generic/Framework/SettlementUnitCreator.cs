@@ -30,8 +30,6 @@ using UnityEngine;
 /// </summary>
 public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCategory, FacilityData, FacilityHullStat, SettlementCmdItem> {
 
-    public bool orbitMoves; // Has Editor
-
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override FacilityHullStat CreateElementHullStat(FacilityHullCategory hullCat, string elementName) {
@@ -92,7 +90,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
         else {
             cmd = _factory.MakeInstance(cmdStat, cameraStat, countermeasures, owner, gameObject);
         }
-        cmd.__OrbitSimulatorMoves = orbitMoves;
         cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;
     }

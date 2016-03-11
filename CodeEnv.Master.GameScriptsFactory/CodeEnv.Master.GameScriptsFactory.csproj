@@ -56,7 +56,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\GUI\FacilityCtxControl.cs" />
+    <Compile Include="Game\GUI\FacilityCtxControl_User.cs" />
+    <Compile Include="Game\GUI\FacilityCtxControl_AI.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />
     <Compile Include="Game\Framework\ShipItem.cs" />
     <Compile Include="Game\Gameplay\LOSTurret.cs" />

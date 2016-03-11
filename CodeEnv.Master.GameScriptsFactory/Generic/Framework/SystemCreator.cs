@@ -422,11 +422,13 @@ public class SystemCreator : AMonoBase {
         var shuffledMidStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
         var shuffledOuterStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
 
-        CelestialOrbitSlot[] allSystemOrbitSlots = GenerateAllSystemOrbitSlots(out _systemOrbitSlotDepth);
-
         // reserve a slot for a future Settlement
         int settlementOrbitSlotIndex = shuffledMidStack.Pop();
-        _system.Data.SettlementOrbitSlot = allSystemOrbitSlots[settlementOrbitSlotIndex];
+
+        CelestialOrbitSlot[] allSystemOrbitSlots = GenerateAllSystemOrbitSlots(settlementOrbitSlotIndex, out _systemOrbitSlotDepth);
+
+        _system.SettlementOrbitSlot = allSystemOrbitSlots[settlementOrbitSlotIndex];
+        //_system.Data.SettlementOrbitSlot = allSystemOrbitSlots[settlementOrbitSlotIndex];
 
         // now divy up the remaining slots among the planets
         IList<PlanetItem> planetsToDestroy = null;
@@ -460,10 +462,9 @@ public class SystemCreator : AMonoBase {
             if (TryFindOrbitSlot(out slotIndex, slots)) {
                 CelestialOrbitSlot orbitSlotForPlanet = allSystemOrbitSlots[slotIndex];
                 string name = SystemName + Constants.Space + _planetNumbers[slotIndex];
-                string orbitSimulatorName = name + " OrbitSimulator";
-                orbitSlotForPlanet.AssumeOrbit(planet.transform, orbitSimulatorName);
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = name;
+                orbitSlotForPlanet.AssumeOrbit(planet.transform);
                 D.Warn(planet.ShipOrbitSlot.OuterRadius > _systemOrbitSlotDepth, "{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}."
                     , GetType().Name, planet.FullName, planet.ShipOrbitSlot.OuterRadius, _systemOrbitSlotDepth);
                 //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, slotIndex, SystemName);
@@ -559,9 +560,8 @@ public class SystemCreator : AMonoBase {
                         string name = planet.Data.Name + _moonLetters[slotIndex];
                         moon.Data.Name = name;
                         GameTimeDuration orbitPeriod = _minMoonOrbitPeriod + (slotIndex * _moonOrbitPeriodIncrement);
-                        var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet.gameObject, true, orbitPeriod);
-                        string orbitSimulatorName = name + " OrbitSimulator";
-                        moonOrbitSlot.AssumeOrbit(moon.transform, orbitSimulatorName);
+                        var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet.gameObject, planet.IsMobile, orbitPeriod);
+                        moonOrbitSlot.AssumeOrbit(moon.transform);
                         //D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, slotIndex, planet.FullName);
 
                         startDepthForMoonOrbitSlot = endDepthForMoonOrbitSlot;
@@ -661,7 +661,7 @@ public class SystemCreator : AMonoBase {
     /// Note: These are system orbit slots that can be occupied by planets and settlements.
     /// </summary>
     /// <returns></returns>
-    private CelestialOrbitSlot[] GenerateAllSystemOrbitSlots(out float systemOrbitSlotDepth) {
+    private CelestialOrbitSlot[] GenerateAllSystemOrbitSlots(int settlementOrbitSlotIndex, out float systemOrbitSlotDepth) {
         D.Assert(_star.Radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(_star.FullName));   // confirm the star's Awake() has run so Radius is valid
         float sysOrbitSlotsStartRadius = _star.ShipOrbitSlot.OuterRadius;
         float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - sysOrbitSlotsStartRadius;
@@ -677,7 +677,8 @@ public class SystemCreator : AMonoBase {
             GameObject planetsFolder = _system.transform.FindChild("Planets").gameObject;
             // planetsFolder used in place of _system so orbiters don't inherit the layer of the system
             D.Assert(planetsFolder != null);    // in case I accidently change name of PlanetsFolder
-            allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, planetsFolder, _system.IsMobile, orbitPeriod);
+            bool toActivelyOrbit = slotIndex == settlementOrbitSlotIndex ? TempGameValues.DoSettlementsActivelyOrbit : true;
+            allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, planetsFolder, _system.IsMobile, orbitPeriod, toActivelyOrbit);
         }
         return allOrbitSlots;
     }

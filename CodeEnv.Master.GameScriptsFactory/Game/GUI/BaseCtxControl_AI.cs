@@ -27,18 +27,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class BaseCtxControl_AI : ACtxControl {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard },
-        {FleetDirective.Attack, Speed.FleetFull }
-    };
-
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Attack,
                                                                                         FleetDirective.Move,
+                                                                                        FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Guard };
+
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
+
+    protected override AItem ItemForDistanceMeasurements { get { return _baseMenuOperator; } }
 
     protected override string OperatorName { get { return _baseMenuOperator.FullName; } }
 
@@ -65,11 +63,12 @@ public class BaseCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_baseMenuOperator.Owner);
+                return !_user.IsEnemyOf(_baseMenuOperator.Owner);
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
                 return false;
             case FleetDirective.Guard:
-                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_baseMenuOperator.Owner);
+                return _user.IsEnemyOf(_baseMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -86,10 +85,9 @@ public class BaseCtxControl_AI : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _baseMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

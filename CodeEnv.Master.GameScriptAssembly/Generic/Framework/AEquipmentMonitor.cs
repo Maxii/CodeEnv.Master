@@ -47,7 +47,7 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         set { base.ParentItem = value; }
     }
 
-    protected bool ShowDebugLog { get { return ParentItem.showDebugLog; } }
+    protected bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
 
     /// <summary>
     /// The ranged equipment associated with this monitor.

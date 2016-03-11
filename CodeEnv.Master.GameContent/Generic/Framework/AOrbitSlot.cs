@@ -27,6 +27,12 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AOrbitSlot {
 
         /// <summary>
+        /// Indicates whether the OrbitSimulator created by this OrbitSlot should rotate
+        /// when activated.
+        /// </summary>
+        public bool ToOrbit { get; private set; }
+
+        /// <summary>
         /// The slot's closest distance from the body orbited.
         /// </summary>
         public float InnerRadius { get; private set; }
@@ -48,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsOrbitedObjectMobile { get; private set; }
 
-        protected GameTimeDuration _orbitPeriod;
+        public GameTimeDuration OrbitPeriod { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AOrbitSlot" /> struct.
@@ -57,7 +63,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="outerRadius">The furthest distance from the body orbited.</param>
         /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is orbited object mobile].</param>
         /// <param name="orbitPeriod">The orbit period.</param>
-        public AOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameTimeDuration orbitPeriod) {
+        /// <param name="toOrbit">if set to <c>true</c> the orbitSimulator will rotate if activated.</param>
+        public AOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameTimeDuration orbitPeriod, bool toOrbit) {
             Arguments.Validate(innerRadius != outerRadius);
             Arguments.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
             Arguments.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);
@@ -67,16 +74,8 @@ namespace CodeEnv.Master.GameContent {
             MeanRadius = innerRadius + (outerRadius - innerRadius) / 2F;
             Depth = outerRadius - innerRadius;
             IsOrbitedObjectMobile = isOrbitedObjectMobile;
-            _orbitPeriod = orbitPeriod;
-        }
-
-        /// <summary>
-        /// Determines whether [contains] [the specified orbit radius].
-        /// </summary>
-        /// <param name="orbitRadius">The orbit radius.</param>
-        /// <returns></returns>
-        protected bool Contains(float orbitRadius) {
-            return Utility.IsInRange(orbitRadius, InnerRadius, OuterRadius);
+            OrbitPeriod = orbitPeriod;
+            ToOrbit = toOrbit;
         }
 
     }

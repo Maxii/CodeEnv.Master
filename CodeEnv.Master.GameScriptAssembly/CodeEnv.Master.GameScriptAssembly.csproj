@@ -67,10 +67,6 @@
     <Compile Include="Game\Framework\AIntelItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />
     <Compile Include="Generic\_Debug\DrawColliderGizmo.cs" />
-    <Compile Include="Game\Framework\MovingOrbitSimulator.cs" />
-    <Compile Include="Game\Framework\MovingShipOrbitSimulator.cs" />
-    <Compile Include="Game\Framework\OrbitSimulator.cs" />
-    <Compile Include="Game\Framework\ShipOrbitSimulator.cs" />
     <Compile Include="Game\Framework\TopographyMonitor.cs" />
     <Compile Include="Game\Framework\WeaponRangeMonitor.cs" />
     <Compile Include="Game\_Debug\DynamicObjectsFolder.cs" />
@@ -93,6 +89,10 @@
     <Compile Include="Generic\IO\GuiCameraControl.cs" />
     <Compile Include="Generic\_Debug\Logger.cs" />
     <Compile Include="Generic\_Debug\NguiEventLogger.cs" />
+    <Compile Include="Generic\Graphics\MobileOrbitSimulator.cs" />
+    <Compile Include="Generic\Graphics\MobileShipOrbitSimulator.cs" />
+    <Compile Include="Generic\Graphics\OrbitSimulator.cs" />
+    <Compile Include="Generic\Graphics\ShipOrbitSimulator.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\JobRunner.cs" />

@@ -27,11 +27,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemData : ADiscernibleItemData, IDisposable {
 
-        /// <summary>
-        ///  The orbit slot within this system that any current or future settlement can occupy. 
-        /// </summary>
-        public CelestialOrbitSlot SettlementOrbitSlot { get; set; }
-
         public float Radius { get { return TempGameValues.SystemRadius; } }
 
         private int _capacity;

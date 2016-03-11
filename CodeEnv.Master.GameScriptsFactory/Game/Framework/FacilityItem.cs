@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle {
 
+    public override bool IsAvailable { get { return CurrentState == FacilityState.Idling; } }
+
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
@@ -79,7 +81,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
         D.Assert(owner != TempGameValues.NoPlayer);
-        return new FacilityCtxControl(this);
+        return owner.IsUser ? new FacilityCtxControl_User(this) as ICtxControl : new FacilityCtxControl_AI(this);
     }
 
     private void InitializeObstacleZone() {
@@ -119,18 +121,32 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         HandleNewOrder();
     }
 
+    #endregion
+
+    protected override void SetDeadState() {
+        CurrentState = FacilityState.Dead;
+    }
+
+    protected override void HandleDeath() {
+        base.HandleDeath();
+        // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
+    }
+
+    protected override IconInfo MakeIconInfo() {
+        var report = GetUserReport();
+        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
+        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
+    }
+
     private void HandleNewOrder() {
-        ////TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-        //if (CurrentState == FacilityState.Repairing) {
-        //    Return();
-        //    // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
-        //    // I'm deferring doing that right now as it is unclear how Attacking will evolve
-        //}
-        UponNewOrderReceived();
+        // Pattern that handles Call()ed states that goes more than one layer deep
+        while (CurrentState == FacilityState.Repairing) {
+            UponNewOrderReceived();
+        }
         D.Assert(CurrentState != FacilityState.Repairing);
 
         if (CurrentOrder != null) {
-            D.Log(showDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             FacilityDirective order = CurrentOrder.Directive;
             switch (order) {
                 case FacilityDirective.Attack:
@@ -159,8 +175,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         }
     }
 
-    #endregion
-
     /// <summary>
     /// The Captain uses this method to issue orders.
     /// </summary>
@@ -186,21 +200,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         CurrentOrder = newOrder;
     }
 
-    protected override void SetDeadState() {
-        CurrentState = FacilityState.Dead;
-    }
-
-    protected override void HandleDeath() {
-        base.HandleDeath();
-        // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
-    }
-
-    protected override IconInfo MakeIconInfo() {
-        var report = GetUserReport();
-        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
-    }
-
     #region StateMachine
 
     public new FacilityState CurrentState {
@@ -211,6 +210,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
             }
             base.CurrentState = value;
         }
+    }
+
+    protected new FacilityState LastState {
+        get { return base.LastState != null ? (FacilityState)base.LastState : default(FacilityState); }
     }
 
     #region None
@@ -228,17 +231,16 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log(showDebugLog, "{0}.Idling_EnterState() beginning execution.", FullName);
+        D.Log(ShowDebugLog, "{0}.Idling_EnterState() beginning execution.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.Captain && CurrentOrder.StandingOrder != null) {
-                D.Log(showDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
+                D.Log(ShowDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield return null;
             }
         }
-        //TODO register as available
     }
 
     void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -247,11 +249,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void Idling_UponNewOrderReceived() { }    // temp to avoid RelayToCurrentState "cant find method" warnings
-
     void Idling_ExitState() {
         LogEvent();
-        //TODO register as unavailable
     }
 
     #endregion
@@ -261,7 +260,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     private IElementAttackableTarget _fsmPrimaryAttackTgt; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log(showDebugLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
+        D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
 
         IUnitAttackableTarget attackTgtFromOrder = CurrentOrder.Target;
         while (attackTgtFromOrder.IsOperational) {
@@ -279,8 +278,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteAttackOrder_UponNewOrderReceived() { }    // temp to avoid RelayToCurrentState "cant find method" warnings
-
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
         _fsmPrimaryAttackTgt = null;
@@ -291,7 +288,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log(showDebugLog, "{0}.ExecuteRepairOrder_EnterState called.", FullName);
+        D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_EnterState called.", FullName);
         Call(FacilityState.Repairing);
         yield return null;  // required so Return()s here
     }
@@ -302,8 +299,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteRepairOrder_UponNewOrderReceived() { }    // temp to avoid RelayToCurrentState "cant find method" warnings
-
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
     }
@@ -313,7 +308,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log(showDebugLog, "{0}.Repairing_EnterState beginning execution.", FullName);
+        D.Log(ShowDebugLog, "{0}.Repairing_EnterState beginning execution.", FullName);
         StartEffect(EffectID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
@@ -329,7 +324,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
-        D.Log(showDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
         Return();
@@ -399,7 +394,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
-        __DestroyMe();
+        DestroyMe();
     }
 
     #endregion
@@ -516,8 +511,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         Idling,
 
         ExecuteAttackOrder,
-
-        //Attacking,
 
         Repairing,
 

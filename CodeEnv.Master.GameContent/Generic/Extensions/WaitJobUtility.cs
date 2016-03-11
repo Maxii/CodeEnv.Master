@@ -179,9 +179,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Waits while a condition exists, then executes the onWaitFinished delegate.
+        /// Waits until waitWhileCondition turns <c>false</c>, then executes the onWaitFinished delegate.
         /// </summary>
-        /// <param name="waitWhileCondition">The condition that continues the wait.</param>
+        /// <param name="waitWhileCondition">The <c>true</c> condition that continues the wait.</param>
         /// <param name="onWaitFinished">The delegate to execute when the wait is finished.
         /// The signature is onWaitFinished(jobWasKilled).</param>
         /// <returns></returns>

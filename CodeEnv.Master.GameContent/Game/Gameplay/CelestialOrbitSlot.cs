@@ -26,11 +26,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CelestialOrbitSlot : AOrbitSlot {
 
-        private GameObject _orbitedObject;
-        private IOrbitSimulator _orbitSimulator;
+        public GameObject OrbitedObject { get; private set; }
+
+        public IOrbitSimulator OrbitSimulator { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CelestialOrbitSlot"/> class.
+        /// Initializes a new instance of the <see cref="CelestialOrbitSlot" /> class.
         /// WARNING: The orbiter and all its children (the actual orbiting object) will assume the layer of the orbitedObject.
         /// </summary>
         /// <param name="innerRadius">The inner radius.</param>
@@ -38,52 +39,35 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="orbitedObject">The GameObject being orbited.</param>
         /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is orbited object mobile].</param>
         /// <param name="orbitPeriod">The orbit period.</param>
-        public CelestialOrbitSlot(float innerRadius, float outerRadius, GameObject orbitedObject, bool isOrbitedObjectMobile, GameTimeDuration orbitPeriod)
-            : base(innerRadius, outerRadius, isOrbitedObjectMobile, orbitPeriod) {
-            _orbitedObject = orbitedObject;
+        /// <param name="toOrbit">if set to <c>true</c> the orbit simulator will rotate if activated.</param>
+        public CelestialOrbitSlot(float innerRadius, float outerRadius, GameObject orbitedObject, bool isOrbitedObjectMobile, GameTimeDuration orbitPeriod, bool toOrbit = true)
+            : base(innerRadius, outerRadius, isOrbitedObjectMobile, orbitPeriod, toOrbit) {
+            OrbitedObject = orbitedObject;
         }
 
         /// <summary>
         /// The orbitingObject assumes an orbit around the preset OrbitedObject,
-        /// beginning at a random point on the meanRadius of this orbit slot. Returns the newly instantiated
-        /// IOrbitSimulator, parented to the OrbitedObject and the parent of <c>orbitingObject</c>.
+        /// beginning at a random point on the meanRadius of this orbit slot. 
         /// </summary>
         /// <param name="orbitingObject">The object that wants to assume an orbit.</param>
-        /// <param name="orbitSimulatorName">Name of the object created to simulate orbit movement.</param>
         /// <returns></returns>
-        public IOrbitSimulator AssumeOrbit(Transform orbitingObject, string orbitSimulatorName = "") {
-            D.Log("{0}.AssumeOrbit({1}) called.", _orbitedObject.name, orbitingObject.name);
-            D.Assert(orbitingObject.GetComponent<IShipItem>() == null, "OrbitingObject {0} can't be a ship.", orbitingObject.name);
-            if (_orbitSimulator != null) {
-                D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.", orbitingObject.name, _orbitedObject.name, _orbitSimulator.transform.name);
-            }
-            _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(_orbitedObject, IsOrbitedObjectMobile, false, _orbitPeriod, orbitSimulatorName);
-            UnityUtility.AttachChildToParent(orbitingObject.gameObject, _orbitSimulator.transform.gameObject);
+        public void AssumeOrbit(Transform orbitingObject) {
+            D.Log("{0}.AssumeOrbit({1}) called.", OrbitedObject.name, orbitingObject.name);
+            OrbitSimulator = References.GeneralFactory.InstallCelestialObjectInOrbit(orbitingObject.gameObject, this);
             orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
-            return _orbitSimulator;
         }
 
         /// <summary>
-        /// Destroys the orbiter object referenced by this CelestialOrbitSlot.
+        /// Destroys the orbit simulator referenced by this CelestialOrbitSlot once the
+        /// simulator has no more children.
         /// </summary>
         public void DestroyOrbitSimulator() {
-            D.Assert(_orbitSimulator != null, "Attempting to destroy a non-existant {0} around {1}.".Inject(typeof(IOrbitSimulator).Name, _orbitedObject.name));
-            new Job(DestroyOrbitSimulatorWhenEmpty(), toStart: true, jobCompleted: (wasKilled) => {
-                D.Log("{0} around {1} destroyed.", typeof(IOrbitSimulator).Name, _orbitedObject.name);
+            D.Assert(OrbitSimulator != null, "Attempting to destroy a non-existant {0} around {1}.".Inject(typeof(IOrbitSimulator).Name, OrbitedObject.name));
+            WaitJobUtility.WaitWhileCondition(new Reference<bool>(() => OrbitSimulator.transform.childCount > Constants.Zero), onWaitFinished: (jobWasKilled) => {
+                UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(OrbitSimulator);
+                OrbitSimulator = null;
+                D.Log("{0} around {1} destroyed.", typeof(IOrbitSimulator).Name, OrbitedObject.name);
             });
-        }
-
-        private IEnumerator DestroyOrbitSimulatorWhenEmpty() {
-            var cumTime = 0F;
-            while (_orbitSimulator.transform.childCount > Constants.Zero) {
-                cumTime += Time.deltaTime;
-                if (cumTime > 6F) {
-                    D.WarnContext(_orbitSimulator.transform, "{0} around {1} still waiting for destruction.", _orbitSimulator.transform.name, _orbitedObject.name);
-                }
-                yield return null;
-            }
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(_orbitSimulator);
-            _orbitSimulator = null;
         }
 
         /// <summary>

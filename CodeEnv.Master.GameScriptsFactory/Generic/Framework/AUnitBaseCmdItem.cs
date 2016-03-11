@@ -29,6 +29,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbitable {
 
+    public override bool IsAvailable { get { return CurrentState == BaseState.Idling; } }
+
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
         get { return _currentOrder; }
@@ -44,17 +46,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
-        InitializeShipOrbitSlot();
         CurrentState = BaseState.None;
-    }
-
-    private void InitializeShipOrbitSlot() {
-        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
         D.Assert(owner != TempGameValues.NoPlayer);
         return owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
+    }
+
+    private ShipOrbitSlot InitializeShipOrbitSlot() {
+        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     #endregion
@@ -85,11 +86,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
     /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
     /// </summary>
-    protected void ScuttleUnit() {
+    private void ScuttleUnit() {
         var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.CmdStaff);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
     }
-
 
     #region Event and Property Change Handlers
 
@@ -97,27 +97,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         HandleNewOrder();
     }
 
-    private void HandleNewOrder() {
+    #endregion
 
-        UponNewOrderReceived();
+    private void HandleNewOrder() {
+        // Pattern that handles Call()ed states that goes more than one layer deep
+        while (CurrentState == BaseState.Attacking) {
+            UponNewOrderReceived();
+        }
         D.Assert(CurrentState != BaseState.Attacking);
 
-        //if (CurrentState == BaseState.Attacking) {
-        //    Return();
-        //}
         if (CurrentOrder != null) {
-            D.Log(showDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
             BaseDirective order = CurrentOrder.Directive;
             switch (order) {
                 case BaseDirective.Attack:
                     CurrentState = BaseState.ExecuteAttackOrder;
                     break;
-                case BaseDirective.StopAttack:
-                    break;
                 case BaseDirective.Scuttle:
                     ScuttleUnit();
                     break;
-
+                case BaseDirective.StopAttack:
                 case BaseDirective.Repair:
                 case BaseDirective.Refit:
                 case BaseDirective.Disband:
@@ -130,8 +129,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
-    #endregion
-
     #region StateMachine
 
     public new BaseState CurrentState {
@@ -142,6 +139,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
             }
             base.CurrentState = value;
         }
+    }
+
+    protected new BaseState LastState {
+        get { return base.LastState != null ? (BaseState)base.LastState : default(BaseState); }
     }
 
     #region None
@@ -160,14 +161,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected void Idling_EnterState() {
         LogEvent();
-        // register as available
     }
-
-    void Idling_UponNewOrderReceived() { }  // temp to avoid RelayToCurrentState "cant find method" warnings
 
     protected void Idling_ExitState() {
         LogEvent();
-        // register as unavailable
     }
 
     #endregion
@@ -175,13 +172,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region ExecuteAttackOrder
 
     protected IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log(showDebugLog, "{0}.ExecuteAttackOrder_EnterState beginning execution.", Data.Name);
+        D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_EnterState beginning execution.", Data.Name);
         Call(BaseState.Attacking);
         yield return null;   // required so Return()s here
         CurrentState = BaseState.Idling;
     }
-
-    void ExecuteAttackOrder_UponNewOrderReceived() { }  // temp to avoid RelayToCurrentState "cant find method" warnings
 
     protected void ExecuteAttackOrder_ExitState() {
         LogEvent();
@@ -191,19 +186,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #region Attacking
 
-    IUnitAttackableTarget _attackTarget;
+    private IUnitAttackableTarget _fsmAttackTarget;
 
     protected void Attacking_EnterState() {
         LogEvent();
-        _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
-        _attackTarget.deathOneShot += TargetDeathEventHandler;
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.CmdStaff, _attackTarget);
+        _fsmAttackTarget = CurrentOrder.Target as IUnitAttackableTarget;
+        _fsmAttackTarget.deathOneShot += TargetDeathEventHandler;
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.CmdStaff, _fsmAttackTarget);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
     protected void Attacking_UponTargetDeath(IMortalItem deadTarget) {
         LogEvent();
-        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _attackTarget.FullName, deadTarget.FullName));
+        D.Assert(_fsmAttackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmAttackTarget.FullName, deadTarget.FullName));
         Return();
     }
 
@@ -214,15 +209,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.deathOneShot -= TargetDeathEventHandler;
-        _attackTarget = null;
+        _fsmAttackTarget.deathOneShot -= TargetDeathEventHandler;
+        _fsmAttackTarget = null;
     }
 
     #endregion
 
     #region Repair
-
-    protected void GoRepair_EnterState() { }
 
     protected void Repairing_EnterState() { }
 
@@ -230,15 +223,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #region Refit
 
-    protected void GoRefit_EnterState() { }
-
     protected void Refitting_EnterState() { }
 
     #endregion
 
     #region Disband
-
-    protected void GoDisband_EnterState() { }
 
     protected void Disbanding_EnterState() { }
 
@@ -260,7 +249,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     protected void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         D.Assert(effectID == EffectID.Dying);
-        __DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // long wait so last element can play death effect
+        DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // HACK long wait so last element can play death effect
     }
 
     #endregion
@@ -284,7 +273,17 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #region IShipOrbitable Members
 
-    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+    private ShipOrbitSlot _shipOrbitSlot;
+    public ShipOrbitSlot ShipOrbitSlot {
+        get {
+            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
+            return _shipOrbitSlot;
+        }
+    }
+
+    public bool IsOrbitAllowedBy(Player player) {
+        return !Owner.IsEnemyOf(player);
+    }
 
     #endregion
 
@@ -325,11 +324,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         ExecuteAttackOrder,
         Attacking,
 
-        GoRepair,
         Repairing,
-        GoRefit,
         Refitting,
-        GoDisband,
         Disbanding,
         Dead
 

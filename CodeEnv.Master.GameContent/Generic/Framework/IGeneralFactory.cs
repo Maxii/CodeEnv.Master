@@ -24,24 +24,33 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IGeneralFactory {
 
+
         /// <summary>
-        /// Makes the appropriate instance of IOrbitSimulator parented to <c>parent</c> and not yet enabled.
+        /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitSlot
+        /// and returns the IOrbitSimulator parent created.
+        /// Note: Clients are responsible for positioning the orbitingObject relative to the IOrbitSimulator
+        /// parent by setting its localPosition.
         /// </summary>
-        /// <param name="parent">The GameObject the IOrbitSimulator should be parented too.</param>
-        /// <param name="isParentMobile">if set to <c>true</c> [is parent mobile].</param>
-        /// <param name="isForShips">if set to <c>true</c> [is for ships].</param>
-        /// <param name="orbitPeriod">The orbit period.</param>
-        /// <param name="name">Name to be applied to the OrbitSimulator gameObject.</param>
+        /// <param name="orbitingObject">The orbiting object.</param>
+        /// <param name="orbitSlot">The orbit slot.</param>
         /// <returns></returns>
-        IOrbitSimulator MakeOrbitSimulatorInstance(GameObject parent, bool isParentMobile, bool isForShips, GameTimeDuration orbitPeriod, string name = "");
+        IOrbitSimulator InstallCelestialObjectInOrbit(GameObject orbitingObject, CelestialOrbitSlot orbitSlot);
+
+        /// <summary>
+        /// Makes and returns an instance of IShipOrbitSimulator for this ShipOrbitSlot.
+        /// </summary>
+        /// <param name="orbitSlot">The orbit slot.</param>
+        /// <returns></returns>
+        IShipOrbitSimulator MakeShipOrbitSimulatorInstance(ShipOrbitSlot orbitSlot);
 
         /// <summary>
         /// Makes an instance of an explosion, scaled to work with the item it is being applied too.
+        /// Parented to the DynamicObjectsFolder. Destroys itself when completed.
         /// </summary>
         /// <param name="itemRadius">The item radius.</param>
         /// <param name="itemPosition">The item position.</param>
         /// <returns></returns>
-        ParticleSystem MakeExplosionInstance(float itemRadius, Vector3 itemPosition);
+        ParticleSystem MakeAutoDestructExplosionInstance(float itemRadius, Vector3 itemPosition);
 
         /// <summary>
         /// Makes a GameObject that will auto destruct when its AudioSource (added by client) finishes playing. The position

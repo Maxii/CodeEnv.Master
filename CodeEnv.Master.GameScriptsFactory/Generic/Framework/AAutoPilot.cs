@@ -44,9 +44,7 @@ internal abstract class AAutoPilot : IDisposable {
 
     private static Speed[] _inValidAutoPilotSpeeds = {  Speed.None,
                                                         Speed.EmergencyStop,
-                                                        Speed.Stop,
-                                                        Speed.StationaryOrbit,
-                                                        Speed.MovingOrbit
+                                                        Speed.Stop
                                                     };
 
     private bool _isAutoPilotEngaged;

@@ -88,8 +88,8 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Provides for the application of a work action to all the elements in an IEnumerable sourceSequence.
-        /// If sourceSequence is null or empty, simply returns.
+        /// Provides for the application of a work action to all the elements in an IEnumerable source sequence.
+        /// Throws an exception of source sequence is null. If it is empty, the method simply returns.
         /// Syntax: <code>sequenceOfTypeT.ForAll((T n) => Console.WriteLine(n.ToString()));</code> read as
         /// "For each element in the T sourceSequence, write the string version to the console."
         /// OPTIMIZE use MoreLinq.ForEach()? What about when the action modifies the underlying IEnumerable?
@@ -98,10 +98,6 @@ namespace CodeEnv.Master.Common {
         /// <param name="sequence">The Sequence of Type T calling the extension.</param>
         /// <param name="actionToExecute">The work to perform on the sequence, usually expressed in lambda form.</param>
         public static void ForAll<T>(this IEnumerable<T> sequence, Action<T> actionToExecute) {
-            //if (sourceSequence.IsNullOrEmpty()) { return; }
-            //foreach (T item in sourceSequence.ToList<T>()) {   // ToList avoids exceptions when the sequence is modified by the action
-            //    actionToExecute(item);
-            //}
             Arguments.ValidateNotNull(sequence);
             Arguments.ValidateNotNull(actionToExecute);
             sequence.ToList<T>().ForEach(actionToExecute);

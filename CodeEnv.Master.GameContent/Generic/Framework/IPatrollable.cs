@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items that are patrollable by Fleets.
     /// </summary>
-    public interface IPatrollable {
+    public interface IPatrollable : INavigableTarget {
 
         /// <summary>
         /// Returns a copy of the list of Patrol Points around this IPatrollable Item.

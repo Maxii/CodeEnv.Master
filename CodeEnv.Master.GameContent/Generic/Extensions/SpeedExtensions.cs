@@ -41,13 +41,13 @@ namespace CodeEnv.Master.GameContent {
 
             float fleetFullSpeed = Constants.ZeroF;
             if (fleetData != null) {
-                fleetFullSpeed = fleetData.UnitFullSpeed;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
+                fleetFullSpeed = fleetData.UnitFullSpeedValue;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                 //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fleetFullSpeed);
             }
 
             float shipFullSpeed = Constants.ZeroF;
             if (shipData != null) {
-                shipFullSpeed = shipData.FullSpeed; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
+                shipFullSpeed = shipData.FullSpeedValue; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                 //D.Log("{0}.FullSpeed = {1} units/hour. FtlAvailable = {2}.", shipData.FullName, shipFullSpeed, shipData.IsFtlAvailableForUse);
             }
 
@@ -104,6 +104,50 @@ namespace CodeEnv.Master.GameContent {
             }
             D.Assert(result != Constants.ZeroF, "Error: ShipData or FleetData is null.");
             return result;
+        }
+
+        /// <summary>
+        /// Tries to increase the ship speed by one step above the source speed. Returns
+        /// <c>true</c> if successful, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="sourceShipSpeed">The ship speed.</param>
+        /// <param name="newShipSpeed">The new ship speed.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static bool TryIncreaseShipSpeed(this Speed sourceShipSpeed, out Speed newShipSpeed) {
+            D.Assert(sourceShipSpeed != Speed.None && sourceShipSpeed != Speed.EmergencyStop && sourceShipSpeed != Speed.Stop && sourceShipSpeed != Speed.FleetSlow &&
+                sourceShipSpeed != Speed.FleetOneThird && sourceShipSpeed != Speed.FleetTwoThirds && sourceShipSpeed != Speed.FleetStandard && sourceShipSpeed != Speed.FleetFull);
+            newShipSpeed = Speed.None;
+
+            switch (sourceShipSpeed) {
+                case Speed.Docking:
+                    newShipSpeed = Speed.StationaryOrbit;
+                    return true;
+                case Speed.StationaryOrbit:
+                    newShipSpeed = Speed.MovingOrbit;
+                    return true;
+                case Speed.MovingOrbit:
+                    newShipSpeed = Speed.Slow;
+                    return true;
+                case Speed.Slow:
+                    newShipSpeed = Speed.OneThird;
+                    return true;
+                case Speed.OneThird:
+                    newShipSpeed = Speed.TwoThirds;
+                    return true;
+                case Speed.TwoThirds:
+                    newShipSpeed = Speed.Standard;
+                    return true;
+                case Speed.Standard:
+                    newShipSpeed = Speed.Full;
+                    return true;
+                case Speed.Full:
+                    return false;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sourceShipSpeed));
+            }
+
+
         }
 
         /// <summary>

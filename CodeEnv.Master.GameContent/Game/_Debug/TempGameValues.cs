@@ -16,13 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
     public static class TempGameValues {
+
+        public const bool DoSettlementsActivelyOrbit = false;
 
         public const float WaypointCloseEnoughDistance = 2F;
 

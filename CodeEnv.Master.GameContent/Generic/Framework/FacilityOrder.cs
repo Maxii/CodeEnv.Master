@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
             Target = target;
         }
 
-        public override string ToString() {// IMPROVE
+        public override string ToString() { // IMPROVE
             return new ObjectAnalyzer().ToString(this);
         }
 

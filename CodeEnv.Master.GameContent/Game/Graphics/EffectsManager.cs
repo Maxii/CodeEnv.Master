@@ -38,6 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="effectID">The effect identifier.</param>
         public virtual void StartEffect(EffectID effectID) {
+            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(EffectsManager).Name, effectID.GetValueName());
             _effectsClient.HandleEffectFinished(effectID);
         }
 

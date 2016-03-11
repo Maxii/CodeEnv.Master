@@ -131,7 +131,6 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, INavigab
     public float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
         D.Assert(AssignedShip.CollisionDetectionZoneRadius.ApproxEquals(shipCollisionDetectionRadius));   // its the same ship
         return Radius - shipCollisionDetectionRadius;   // entire shipCollisionDetectionZone is within the FormationStation 'sphere' defined by Radius
-
     }
 
     #endregion

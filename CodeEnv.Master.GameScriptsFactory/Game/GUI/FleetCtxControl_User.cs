@@ -29,31 +29,22 @@ using UnityEngine;
 /// </summary>
 public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Join, Speed.None },
-        {FleetDirective.AssumeFormation, Speed.None },
-        {FleetDirective.Repair, Speed.FleetStandard },
-        {FleetDirective.Disband, Speed.FleetStandard },
-        {FleetDirective.Refit, Speed.FleetStandard },
-        {FleetDirective.Scuttle, Speed.None },
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard }
-    };
-
-    // OPTIMIZE
-    private static IDictionary<ShipDirective, Speed> _userShipSpeedLookup = new Dictionary<ShipDirective, Speed>() {
-        {ShipDirective.Join, Speed.None },
-    };
-
     private static FleetDirective[] _userMenuOperatorDirectives = new FleetDirective[] {    FleetDirective.Join,
                                                                                             FleetDirective.AssumeFormation,
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.Explore,
+                                                                                            FleetDirective.Attack,
                                                                                             FleetDirective.Repair,
                                                                                             FleetDirective.Disband,
                                                                                             FleetDirective.Refit,
+                                                                                            FleetDirective.Withdraw,
+                                                                                            FleetDirective.Retreat,
                                                                                             FleetDirective.Scuttle };
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Join,
                                                                                             FleetDirective.Move,
+                                                                                            FleetDirective.FullSpeedMove,
                                                                                             FleetDirective.Guard };
 
     private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Join };
@@ -70,9 +61,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         get { return _userRemoteShipDirectives; }
     }
 
-    protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
+    protected override AItem ItemForDistanceMeasurements { get { return _fleetMenuOperator; } }
 
-    protected override ADiscernibleItem ItemForFindClosest { get { return _fleetMenuOperator; } }
+    protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
 
     private FleetCmdItem _fleetMenuOperator;
 
@@ -105,7 +96,13 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 return _fleetMenuOperator.Data.Health == Constants.OneHundredPercent && _fleetMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
             case FleetDirective.Join:
             case FleetDirective.AssumeFormation:
+            case FleetDirective.Patrol:
+            case FleetDirective.Guard:
+            case FleetDirective.Explore:
+            case FleetDirective.Attack:
             case FleetDirective.Refit:
+            case FleetDirective.Withdraw:   // TODO should be in battle
+            case FleetDirective.Retreat:    // TODO should be in battle
             case FleetDirective.Disband:
             case FleetDirective.Scuttle:
                 return false;
@@ -113,27 +110,50 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
-
     /// <summary>
-    /// Returns <c>true</c> if the item associated with this directive can have a submenu and targets, 
-    /// <c>false</c> otherwise. Returns the targets for the subMenu if any were found. Default implementation is false and none.
+    /// Returns <c>true</c> if the menu item associated with this directive supports a submenu for listing target choices,
+    /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
     /// </summary>
     /// <param name="directive">The directive.</param>
-    /// <param name="targets">The targets.</param>
+    /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
-    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(FleetDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
+    /// <exception cref="System.NotImplementedException"></exception>
+    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(FleetDirective directive, out IEnumerable<INavigableTarget> targets) {
         switch (directive) {
             case FleetDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(b => b.Owner.IsUser).Except(_fleetMenuOperator).Cast<IUnitAttackableTarget>();
+                targets = _userKnowledge.MyFleets.Except(_fleetMenuOperator).Cast<INavigableTarget>();
+                return true;
+            case FleetDirective.Patrol:
+                // Note: Easy access to patrol friendly systems. Other patrol targets should be explicitly chosen by user
+                targets = _userKnowledge.Systems.Where(sys => _fleetMenuOperator.Owner.IsFriendlyWith(sys.Owner)).Cast<INavigableTarget>();
+                return true;
+            case FleetDirective.Guard:
+                // Note: Easy access to guard my systems and starbases. Other guard targets should be explicitly chosen by user
+                targets = _userKnowledge.MySystems.Cast<INavigableTarget>().Union(_userKnowledge.MyStarbases.Cast<INavigableTarget>());
+                return true;
+            case FleetDirective.Explore:
+                // Note: Easy access to explore systems allowing exploration that need it. Other exploration targets should be explicitly chosen by user
+                var systems = _userKnowledge.Systems.Cast<IFleetExplorable>();
+                var systemsAllowingExploration = systems.Where(sys => sys.IsExplorationAllowedBy(_fleetMenuOperator.Owner));
+                var systemsNeedingExploration = systemsAllowingExploration.Where(sys => !sys.IsFullyExploredBy(_fleetMenuOperator.Owner)).Cast<INavigableTarget>();
+                targets = systemsNeedingExploration;
+                return true;
+            case FleetDirective.Attack:
+                // Note: Easy access to attack fleets and bases of war opponents. Other attack targets should be explicitly chosen by user
+                var knownFleetsAtWar = _userKnowledge.Fleets.Where(f => _fleetMenuOperator.Owner.IsAtWarWith(f.Owner));
+                var knownBasesAtWar = _userKnowledge.Bases.Where(b => _fleetMenuOperator.Owner.IsAtWarWith(b.Owner));
+                targets = knownFleetsAtWar.Cast<INavigableTarget>().Union(knownBasesAtWar.Cast<INavigableTarget>());
                 return true;
             case FleetDirective.Repair:
             case FleetDirective.Refit:
             case FleetDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsUser).Cast<IUnitAttackableTarget>();
+            case FleetDirective.Withdraw:   // TODO away from enemy
+            case FleetDirective.Retreat:    // TODO away from enemy
+                targets = _userKnowledge.MyBases.Cast<INavigableTarget>();
                 return true;
             case FleetDirective.Scuttle:
             case FleetDirective.AssumeFormation:
-                targets = Enumerable.Empty<IUnitAttackableTarget>();
+                targets = Enumerable.Empty<INavigableTarget>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -144,6 +164,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         switch (directive) {
             case FleetDirective.Join:
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
             case FleetDirective.Guard:
                 return false;
             default:
@@ -151,7 +172,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         }
     }
 
-    protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {   // not really needed
+    protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {
         switch (directive) {
             case ShipDirective.Join:
                 return false;
@@ -181,28 +202,25 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private void IssueFleetMenuOperatorOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
-        IUnitAttackableTarget target;
+        INavigableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.FullName, directive.GetValueName(), msg);
-        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     private void IssueRemoteShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        Speed speed = _userShipSpeedLookup[directive];
         INavigableTarget target = _fleetMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target, speed);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

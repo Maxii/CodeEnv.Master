@@ -108,13 +108,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         }
     }
 
-    protected override void Start() {
-        base.Start();
-        InitializeContextMenu();
-    }
-
-    private void InitializeContextMenu() {
-        _ctxControl = new SectorCtxControl(this);
+    private SectorCtxControl InitializeContextMenu() {
+        return new SectorCtxControl(this);
     }
 
     #region Event and Property Change Handlers
@@ -183,6 +178,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void HandleRightPressRelease() {
         if (!_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
+            if (_ctxControl == null) {
+                _ctxControl = InitializeContextMenu();
+            }
             _ctxControl.TryShowContextMenu();
         }
     }

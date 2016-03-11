@@ -21,8 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IMoonItem : IPlanetoidItem {
 
-        IPlanetItem ParentPlanet { get; }
-
     }
 }
 

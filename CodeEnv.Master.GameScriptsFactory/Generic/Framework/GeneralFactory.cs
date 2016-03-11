@@ -27,10 +27,10 @@ using UnityEngine;
 /// </summary>
 public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory, IDisposable {
 
-    private OrbitSimulator _orbiterPrefab;
-    private MovingOrbitSimulator _movingOrbiterPrefab;
-    private ShipOrbitSimulator _orbiterForShipsPrefab;
-    private MovingShipOrbitSimulator _movingOrbiterForShipsPrefab;
+    private OrbitSimulator _immobileCelestialOrbitSimPrefab;
+    private MobileOrbitSimulator _mobileCelestialOrbitSimPrefab;
+    private ShipOrbitSimulator _immobileShipOrbitSimPrefab;
+    private MobileShipOrbitSimulator _mobileShipOrbitSimPrefab;
 
     private GameObject _dynamicObjectsFolderGo;
 
@@ -39,54 +39,73 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     }
 
     protected sealed override void Initialize() {
-        _orbiterPrefab = RequiredPrefabs.Instance.orbiter;
-        _movingOrbiterPrefab = RequiredPrefabs.Instance.movingOrbiter;
-        _orbiterForShipsPrefab = RequiredPrefabs.Instance.orbiterForShips;
-        _movingOrbiterForShipsPrefab = RequiredPrefabs.Instance.movingOrbiterForShips;
+        _immobileCelestialOrbitSimPrefab = RequiredPrefabs.Instance.orbitSimulator;
+        _mobileCelestialOrbitSimPrefab = RequiredPrefabs.Instance.mobileOrbitSimulator;
+        _immobileShipOrbitSimPrefab = RequiredPrefabs.Instance.shipOrbitSimulator;
+        _mobileShipOrbitSimPrefab = RequiredPrefabs.Instance.mobileShipOrbitSimulator;
 
         _dynamicObjectsFolderGo = DynamicObjectsFolder.Instance.gameObject;
     }
 
     /// <summary>
-    /// Makes the appropriate instance of IOrbiter parented to <c>parent</c> and not yet enabled.
+    /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitSlot
+    /// and returns the IOrbitSimulator parent created.
+    /// Note: Clients are responsible for positioning the orbitingObject relative to the IOrbitSimulator
+    /// parent by setting its localPosition.
     /// </summary>
-    /// <param name="parent">The GameObject the IOrbiter should be parented too.</param>
-    /// <param name="isParentMobile">if set to <c>true</c> [is parent mobile].</param>
-    /// <param name="isForShips">if set to <c>true</c> [is for ships].</param>
-    /// <param name="orbitPeriod">The orbit period.</param>
-    /// <param name="orbiterName">Name of the orbiter.</param>
+    /// <param name="orbitingObject">The orbiting object.</param>
+    /// <param name="orbitSlot">The orbit slot.</param>
     /// <returns></returns>
-    public IOrbitSimulator MakeOrbitSimulatorInstance(GameObject parent, bool isParentMobile, bool isForShips, GameTimeDuration orbitPeriod, string orbiterName = "") {
-        GameObject orbiterPrefab = null;
-        if (isParentMobile) {
-            orbiterPrefab = isForShips ? _movingOrbiterForShipsPrefab.gameObject : _movingOrbiterPrefab.gameObject;
+    public IOrbitSimulator InstallCelestialObjectInOrbit(GameObject orbitingObject, CelestialOrbitSlot orbitSlot) {
+        GameObject orbitSimGo;
+        if (orbitSlot.OrbitSimulator == null) {
+            GameObject orbitSimPrefab = orbitSlot.IsOrbitedObjectMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
+            orbitSimGo = UnityUtility.AddChild(orbitSlot.OrbitedObject, orbitSimPrefab);
+            var orbitSim = orbitSimGo.GetSafeComponent<OrbitSimulator>();
+            orbitSim.OrbitSlot = orbitSlot;
         }
         else {
-            orbiterPrefab = isForShips ? _orbiterForShipsPrefab.gameObject : _orbiterPrefab.gameObject;
+            orbitSimGo = orbitSlot.OrbitSimulator.transform.gameObject;
+            D.Assert(orbitSimGo.transform.childCount == Constants.Zero);
         }
-        string name = orbiterName.IsNullOrEmpty() ? orbiterPrefab.name : orbiterName;
-        GameObject orbiterCloneGo = UnityUtility.AddChild(parent, orbiterPrefab);
-        orbiterCloneGo.name = name;
-        var orbiter = orbiterCloneGo.GetSafeInterface<IOrbitSimulator>();
-        orbiter.OrbitPeriod = orbitPeriod;
-        return orbiter;
+        orbitSimGo.name = orbitingObject.name + Constants.Space + typeof(OrbitSimulator).Name;
+        UnityUtility.AttachChildToParent(orbitingObject, orbitSimGo);
+        return orbitSimGo.GetSafeInterface<IOrbitSimulator>();
+    }
+
+    /// <summary>
+    /// Makes and returns an instance of IShipOrbitSimulator for this ShipOrbitSlot.
+    /// </summary>
+    /// <param name="orbitSlot">The orbit slot.</param>
+    /// <returns></returns>
+    public IShipOrbitSimulator MakeShipOrbitSimulatorInstance(ShipOrbitSlot orbitSlot) {
+        D.Assert(orbitSlot.OrbitSimulator == null);
+        GameObject orbitSimPrefab = orbitSlot.IsOrbitedObjectMobile ? _mobileShipOrbitSimPrefab.gameObject : _immobileShipOrbitSimPrefab.gameObject;
+        GameObject orbitSimGo = UnityUtility.AddChild(orbitSlot.OrbitedObject.transform.gameObject, orbitSimPrefab);
+        var orbitSim = orbitSimGo.GetSafeComponent<ShipOrbitSimulator>();
+        orbitSim.OrbitSlot = orbitSlot;
+        orbitSimGo.name = orbitSlot.OrbitedObject.FullName + Constants.Space + typeof(ShipOrbitSlot).Name;  // OPTIMIZE
+        return orbitSim;
     }
 
     /// <summary>
     /// Makes an instance of an explosion, scaled to work with the item it is being applied too.
+    /// Parented to the DynamicObjectsFolder. Destroys itself when completed.
     /// </summary>
     /// <param name="itemRadius">The item radius.</param>
     /// <param name="itemPosition">The item position.</param>
     /// <returns></returns>
-    public ParticleSystem MakeExplosionInstance(float itemRadius, Vector3 itemPosition) {
+    public ParticleSystem MakeAutoDestructExplosionInstance(float itemRadius, Vector3 itemPosition) {
         var explosionPrefab = RequiredPrefabs.Instance.explosion;
-        var explosionClone = UnityUtility.AddChild(_dynamicObjectsFolderGo, explosionPrefab.gameObject);
-        explosionClone.layer = (int)Layers.TransparentFX;
-        explosionClone.transform.position = itemPosition;
+        GameObject explosionGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, explosionPrefab.gameObject);
+        explosionGo.layer = (int)Layers.TransparentFX;
+        explosionGo.transform.position = itemPosition;
 
-        var explosionScaleControl = explosionClone.GetSafeComponent<VisualEffectScale>();
+        var explosionScaleControl = explosionGo.GetSafeComponent<VisualEffectScale>();
+        var destroyOnCompletionComponent = UnityUtility.ValidateComponentPresence<DestroyEffectOnCompletion>(explosionGo);
+        D.Assert(destroyOnCompletionComponent.effectType == DestroyEffectOnCompletion.EffectType.Particle);
         explosionScaleControl.ItemRadius = itemRadius;
-        return explosionClone.GetComponent<ParticleSystem>();
+        return explosionGo.GetComponent<ParticleSystem>();
     }
 
     /// <summary>

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: OrbitSimulator.cs
-// Class that simulates the movement of an object orbiting around a stationary location. 
+// Simulates orbiting around an immobile parent of any children of the simulator.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,38 +23,41 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class that simulates the movement of an object orbiting around a stationary location. 
-/// Assumes this script is attached to an otherwise empty gameobject [the orbiterGO] whose parent is the object
-/// being orbited. The position of this orbiterGO should be coincident with that of the object being orbited. The
-/// object that is orbiting can either be parented to this orbiterGO or tied to it with a fixed joint,
-/// thus simulating orbital movement by rotating the orbiterGO.
+/// Simulates orbiting around an immobile parent of any children of the simulator.
 /// </summary>
 public class OrbitSimulator : AMonoBase, IOrbitSimulator {
-
-    private bool _isActivelyOrbiting;
-    /// <summary>
-    /// Flag indicating whether the OrbitSimulator is actively moving around its orbited object.
-    /// </summary>
-    public bool IsActivelyOrbiting {
-        get { return _isActivelyOrbiting; }
-        set { SetProperty<bool>(ref _isActivelyOrbiting, value, "IsActivelyOrbiting", IsActivelyOrbitingPropChangedHandler); }
-    }
-
-    /// <summary>
-    /// The duration of one 360 degree orbit around the orbited object.
-    /// </summary>
-    public GameTimeDuration OrbitPeriod { get; set; }
-
-    /// <summary>
-    /// The axis of orbit in local space.
-    /// </summary>
-    public Vector3 axisOfOrbit = Vector3.up;
 
     /// <summary>
     /// The relative orbit speed of the object around the location. A value of 1 means
     /// an orbit will take one OrbitPeriod.
     /// </summary>
-    public float relativeOrbitRate = 1.0F;
+    [SerializeField]
+    private float _relativeOrbitRate = 1.0F;
+
+    private bool _isActivated;
+    /// <summary>
+    /// Control for activating this OrbitSimulator. Activating the simulator does not necessarily
+    /// cause the simulator to rotate as it may be set by the OrbitSlot to not rotate.
+    /// </summary>
+    public bool IsActivated {
+        get { return _isActivated; }
+        set { SetProperty<bool>(ref _isActivated, value, "IsActivated", IsActivatedPropChangedHandler); }
+    }
+
+    private AOrbitSlot _orbitSlot;
+    public AOrbitSlot OrbitSlot {
+        protected get { return _orbitSlot; }
+        set {
+            D.Assert(_orbitSlot == null);   // one time only
+            _orbitSlot = value;
+            OrbitSlotPropSetHandler();
+        }
+    }
+
+    /// <summary>
+    /// The axis of orbit in local space.
+    /// </summary>
+    protected Vector3 _axisOfOrbit = Vector3.up;
 
     /// <summary>
     /// The rate this OrbitSimulator orbits around the orbited object in degrees per hour.
@@ -84,11 +87,21 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
-    protected override void Start() {
-        base.Start();
-        D.Assert(OrbitPeriod != default(GameTimeDuration), "{0}.{1}.OrbitPeriod has not been set.".Inject(transform.name, GetType().Name));
-        _orbitRateInDegreesPerHour = relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitPeriod.TotalInHours;
-        //D.Log("OrbitRateInDegreesPerHour = {0:0.#}, OrbitPeriodInTotalHours = {1:0.}.", _orbitRateInDegreesPerHour, OrbitPeriod.TotalInHours);
+    /// <summary>
+    /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling 
+    /// in Units per hour. This value is always relative to the body being orbited.
+    /// e.g. the speed of a planet around a system is relative to an unmoving system, so this value
+    /// is the speed the planet is traveling in the universe. Conversely, the speed of a moon around a planet
+    /// is relative to the moving planet, so the value returned for the moon does not account for the 
+    /// speed of the planet.
+    /// </summary>
+    /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
+    /// <returns></returns>
+    public float GetRelativeOrbitSpeed(float radius) {
+        if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
+            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitSlot.OrbitPeriod.TotalInHours / _relativeOrbitRate);
+        }
+        return _orbitSpeedInUnitsPerHour;
     }
 
     protected override void OccasionalUpdate() {
@@ -105,12 +118,13 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// <param name="deltaTimeSinceLastUpdate">The delta time (zero if paused) since last update.</param>
     protected virtual void UpdateOrbit(float deltaTimeSinceLastUpdate) {
         float degreesToRotate = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
-        transform.Rotate(axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
+        transform.Rotate(_axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
     }
 
     #region Event and Property Change Handlers
 
-    private void IsActivelyOrbitingPropChangedHandler() {
+    private void IsActivatedPropChangedHandler() {
+        D.Assert(_gameMgr.IsRunning);
         AssessEnabled();
     }
 
@@ -118,10 +132,14 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         AssessEnabled();
     }
 
+    private void OrbitSlotPropSetHandler() {
+        _orbitRateInDegreesPerHour = _relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitSlot.OrbitPeriod.TotalInHours;
+    }
+
     #endregion
 
     private void AssessEnabled() {
-        enabled = IsActivelyOrbiting && !_gameMgr.IsPaused;
+        enabled = OrbitSlot.ToOrbit && IsActivated && !_gameMgr.IsPaused;
     }
 
     protected override void Cleanup() {
@@ -137,26 +155,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IOrbitSimulator Members
-
-    /// <summary>
-    /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling 
-    /// in Units per hour. This value is always relative to the body being orbited.
-    /// e.g. the speed of a planet around a system is relative to an unmoving system, so this value
-    /// is the speed the planet is traveling in the universe. Conversely, the speed of a moon around a planet
-    /// is relative to the moving planet, so the value returned for the moon does not account for the 
-    /// speed of the planet.
-    /// </summary>
-    /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
-    /// <returns></returns>
-    public float GetRelativeOrbitSpeed(float radius) {
-        if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
-            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitPeriod.TotalInHours / relativeOrbitRate);
-        }
-        return _orbitSpeedInUnitsPerHour;
-    }
-
-    #endregion
 
 }
 

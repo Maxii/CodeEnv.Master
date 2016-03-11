@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IEffectsClient.cs
-//  Interface for the Item that is the client of this EffectsManager.
+// File: IFleetExplorable.cs
+// Interface for Items that can only be explored by FleetCmds.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,22 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for the Item that is the client of this EffectsManager.
+    /// Interface for Items that can only be explored by FleetCmds.
     /// </summary>
-    public interface IEffectsClient {
-
-        string FullName { get; }
-
-        ADisplayManager DisplayMgr { get; }
-
-        Vector3 Position { get; }
-
-        float Radius { get; }
-
-        void HandleEffectFinished(EffectID effectID);
+    public interface IFleetExplorable : IExplorable {
 
     }
 }

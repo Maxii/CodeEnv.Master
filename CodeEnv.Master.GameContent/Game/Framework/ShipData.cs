@@ -91,10 +91,10 @@ namespace CodeEnv.Master.GameContent {
         /// Readonly. Gets the current speed of the ship in Units per hour. Whether paused or at a GameSpeed
         /// other than Normal (x1), this property always returns the value assuming not paused with GameSpeed.Normal.
         /// </summary>
-        public float CurrentSpeed {
+        public float CurrentSpeedValue {
             get {
                 if (_gameMgr.IsPaused) {
-                    return _currentSpeedOnPause;
+                    return _currentSpeedValueOnPause;
                 }
                 else {
                     var speedInGameSpeedAdjustedUnitsPerSec = _shipRigidbody.velocity.magnitude;
@@ -104,17 +104,26 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _requestedSpeed;
+        private float _requestedSpeedValue;
         /// <summary>
         /// The desired speed this ship should be traveling at in Units per hour. 
         /// The thrust of the ship will be adjusted to accelerate or decelerate to this speed.
         /// </summary>
-        public float RequestedSpeed {
-            get { return _requestedSpeed; }
+        public float RequestedSpeedValue {
+            get { return _requestedSpeedValue; }
             set {
-                D.Assert(value <= FullSpeed, "{0} RequestedSpeed {1} > FullSpeed {2}.".Inject(FullName, value, FullSpeed));
-                SetProperty<float>(ref _requestedSpeed, value, "RequestedSpeed");
+                D.Warn(value > FullSpeedValue, "{0} RequestedSpeedValue {1:0.0000} > FullSpeedValue {2:0.0000}.", FullName, value, FullSpeedValue);
+                SetProperty<float>(ref _requestedSpeedValue, value, "RequestedSpeedValue");
             }
+        }
+
+        private Speed _requestedSpeed;
+        /// <summary>
+        /// The desired speed setting this ship should be traveling at. 
+        /// </summary>
+        public Speed RequestedSpeed {
+            get { return _requestedSpeed; }
+            set { SetProperty<Speed>(ref _requestedSpeed, value, "RequestedSpeed"); }
         }
 
         /// <summary>
@@ -163,10 +172,10 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum speed that the ship can currently achieve in units per hour.
         /// </summary>
-        private float _fullSpeed;
-        public float FullSpeed {
-            get { return _fullSpeed; }
-            private set { SetProperty<float>(ref _fullSpeed, value, "FullSpeed"); }
+        private float _fullSpeedValue;
+        public float FullSpeedValue {
+            get { return _fullSpeedValue; }
+            private set { SetProperty<float>(ref _fullSpeedValue, value, "FullSpeedValue"); }
         }
 
         /// <summary>
@@ -183,7 +192,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The speed of the ship in units per hour when it was paused.
         /// </summary>
-        private float _currentSpeedOnPause;
+        private float _currentSpeedValueOnPause;
         private IList<IDisposable> _subscriptions;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
@@ -267,7 +276,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void IsPausedPropChangingHandler(bool isPausing) {
             if (isPausing) {
-                _currentSpeedOnPause = CurrentSpeed;
+                _currentSpeedValueOnPause = CurrentSpeedValue;
             }
         }
 
@@ -281,7 +290,7 @@ namespace CodeEnv.Master.GameContent {
         /// Refreshes the full speed value the ship is capable of achieving.
         /// </summary>
         private void RefreshFullSpeedValue() {
-            FullSpeed = IsFtlOperational ? FullFtlPropulsionPower / (Mass * _shipRigidbody.drag) : FullStlPropulsionPower / (Mass * _shipRigidbody.drag);
+            FullSpeedValue = IsFtlOperational ? FullFtlPropulsionPower / (Mass * _shipRigidbody.drag) : FullStlPropulsionPower / (Mass * _shipRigidbody.drag);
         }
 
         private void AssessIsFtlOperational() {

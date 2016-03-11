@@ -28,18 +28,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class UniverseCenterCtxControl : ACtxControl {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard },
-        {FleetDirective.Patrol, Speed.FleetOneThird }
-    };
-
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Move,
-                                                                                            FleetDirective.Patrol,
-                                                                                            FleetDirective.Guard };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
+                                                                                        FleetDirective.FullSpeedMove,
+                                                                                        FleetDirective.Patrol,
+                                                                                        FleetDirective.Guard,
+                                                                                        FleetDirective.Explore};
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
+
+    protected override AItem ItemForDistanceMeasurements { get { return _universeCenterMenuOperator; } }
 
     protected override string OperatorName { get { return _universeCenterMenuOperator.FullName; } }
 
@@ -63,12 +61,15 @@ public class UniverseCenterCtxControl : ACtxControl {
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {  // OPTIMIZE not really needed
+    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Patrol:
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
             case FleetDirective.Guard:
                 return false;
+            case FleetDirective.Explore:
+                return (_universeCenterMenuOperator as IFleetExplorable).IsFullyExploredBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -85,10 +86,9 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _universeCenterMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

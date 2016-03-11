@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AItems that are Sectors.
 /// </summary>
-public class SectorItem : AItem, ISectorItem, IPatrollable {
+public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable {
 
     private static string _toStringFormat = "{0}{1}";
 
@@ -121,6 +121,18 @@ public class SectorItem : AItem, ISectorItem, IPatrollable {
             }
             return new List<StationaryLocation>(_patrolPoints);
         }
+    }
+
+    #endregion
+
+    #region IFleetExplorable Members
+
+    public bool IsFullyExploredBy(Player player) {
+        return System != null ? System.IsFullyExploredBy(player) : true;
+    }
+
+    public bool IsExplorationAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
     }
 
     #endregion

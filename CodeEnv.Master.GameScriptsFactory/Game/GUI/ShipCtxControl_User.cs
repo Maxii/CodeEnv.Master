@@ -29,23 +29,15 @@ using UnityEngine;
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
-    // OPTIMIZE
-    private static IDictionary<ShipDirective, Speed> _userShipSpeedLookup = new Dictionary<ShipDirective, Speed>() {
-        {ShipDirective.Join, Speed.None },
-        {ShipDirective.Disband, Speed.None },
-        {ShipDirective.Refit, Speed.None },
-        {ShipDirective.Scuttle, Speed.None },
-    };
-
     private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[] {  ShipDirective.Join,
+                                                                                        ShipDirective.Withdraw,
                                                                                         ShipDirective.Disband,
-                                                                                        ShipDirective.Refit,
                                                                                         ShipDirective.Scuttle };
     protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
         get { return _userMenuOperatorDirectives; }
     }
 
-    protected override ADiscernibleItem ItemForFindClosest { get { return _shipMenuOperator; } }
+    protected override AItem ItemForDistanceMeasurements { get { return _shipMenuOperator; } }
 
     protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
 
@@ -66,9 +58,9 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(ShipDirective directive) {
         switch (directive) {
-            case ShipDirective.Refit:
-            //TODO
             case ShipDirective.Join:
+            case ShipDirective.Withdraw:
+            //TODO
             case ShipDirective.Disband:
             case ShipDirective.Scuttle:
                 return false;
@@ -78,23 +70,24 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     }
 
     /// <summary>
-    /// Returns <c>true</c> if the item associated with this directive can have a submenu and targets, 
-    /// <c>false</c> otherwise. Returns the targets for the subMenu if any were found. Default implementation is false and none.
+    /// Returns <c>true</c> if the menu item associated with this directive supports a submenu for listing target choices,
+    /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
     /// </summary>
     /// <param name="directive">The directive.</param>
-    /// <param name="targets">The targets.</param>
+    /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
-    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(ShipDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
+    /// <exception cref="System.NotImplementedException"></exception>
+    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableTarget> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(f => f.Owner.IsUser).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
+                targets = _userKnowledge.MyFleets.Except(_shipMenuOperator.Command).Cast<INavigableTarget>();
                 return true;
-            case ShipDirective.Refit:
             case ShipDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsUser).Cast<IUnitAttackableTarget>();
+                targets = _userKnowledge.MyBases.Cast<INavigableTarget>();
                 return true;
+            case ShipDirective.Withdraw:
             case ShipDirective.Scuttle:
-                targets = Enumerable.Empty<IUnitAttackableTarget>();
+                targets = Enumerable.Empty<INavigableTarget>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -112,12 +105,11 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private void IssueShipMenuOperatorOrder(int itemID) {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
-        Speed speed = _userShipSpeedLookup[directive];
-        IUnitAttackableTarget target;
+        INavigableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target, speed);
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

@@ -28,20 +28,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SectorCtxControl : ACtxControl {
 
-    private static IDictionary<FleetDirective, Speed> _userFleetSpeedLookup = new Dictionary<FleetDirective, Speed>() {
-        {FleetDirective.Move, Speed.FleetStandard },
-        {FleetDirective.Guard, Speed.FleetStandard },
-        {FleetDirective.Explore, Speed.FleetTwoThirds },
-        {FleetDirective.Patrol, Speed.FleetOneThird }
-    };
-
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {    FleetDirective.Patrol,
                                                                                            FleetDirective.Move,
+                                                                                           FleetDirective.FullSpeedMove,
                                                                                            FleetDirective.Explore,
                                                                                            FleetDirective.Guard };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
+
+    protected override AItem ItemForDistanceMeasurements { get { return _sector; } }
 
     protected override string OperatorName { get { return _sector.FullName; } }
 
@@ -71,12 +67,13 @@ public class SectorCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-            // IMPROVE _sectorItem.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+                return !(_sector as IFleetExplorable).IsExplorationAllowedBy(_user) || (_sector as IFleetExplorable).IsFullyExploredBy(_user);
             case FleetDirective.Patrol:
             case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
                 return false;
             case FleetDirective.Guard:
-                return _remoteUserOwnedSelectedItem.Owner.IsEnemyOf(_sector.Owner);
+                return _user.IsEnemyOf(_sector.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -93,10 +90,9 @@ public class SectorCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        Speed speed = _userFleetSpeedLookup[directive];
         INavigableTarget target = _sector;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target, speed);
+        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     public override string ToString() {

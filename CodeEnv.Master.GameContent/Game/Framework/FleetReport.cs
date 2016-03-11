@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             FleetCmdData fData = data as FleetCmdData;
-            UnitFullSpeed = fData.UnitFullSpeed;
+            UnitFullSpeed = fData.UnitFullSpeedValue;
             UnitMaxTurnRate = fData.UnitMaxTurnRate;
         }
 
@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
             base.AssignIncrementalValues_IntelCoverageBroad(data);
             FleetCmdData fData = data as FleetCmdData;
             Target = fData.Target;
-            CurrentSpeed = fData.CurrentSpeed;
+            CurrentSpeed = fData.CurrentSpeedValue;
         }
 
         public override string ToString() {

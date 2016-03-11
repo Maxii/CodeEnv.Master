@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IPatrollable {
+public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IPatrollable, IShipExplorable {
 
     public StarCategory category = StarCategory.None;
 
@@ -57,7 +57,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     protected override void InitializeOnData() {
         base.InitializeOnData();
         InitializePrimaryCollider();
-        InitializeShipOrbitSlot();
         InitializeObstacleZone();
         D.Assert(category == Data.Category);
         System = gameObject.GetSingleComponentInParents<SystemItem>();
@@ -69,10 +68,6 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         _primaryCollider.enabled = false;
         _primaryCollider.isTrigger = false;
         _primaryCollider.radius = Data.Radius;
-    }
-
-    private void InitializeShipOrbitSlot() {
-        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     private void InitializeObstacleZone() {
@@ -107,6 +102,10 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         iconEventListener.onClick += ClickEventHandler;
         iconEventListener.onDoubleClick += DoubleClickEventHandler;
         iconEventListener.onPress += PressEventHandler;
+    }
+
+    private ShipOrbitSlot InitializeShipOrbitSlot() {
+        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     #endregion
@@ -229,7 +228,17 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #region IShipOrbitable Members
 
-    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+    private ShipOrbitSlot _shipOrbitSlot;
+    public ShipOrbitSlot ShipOrbitSlot {
+        get {
+            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
+            return _shipOrbitSlot;
+        }
+    }
+
+    public bool IsOrbitAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
+    }
 
     #endregion
 
@@ -276,5 +285,22 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
     public IList<StationaryLocation> PatrolPoints { get { return (System as IPatrollable).PatrolPoints; } }
 
     #endregion
+
+    #region IShipExplorable Members
+
+    public bool IsFullyExploredBy(Player player) {
+        return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
+    }
+
+    public bool IsExplorationAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
+    }
+
+    public void RecordExplorationCompletedBy(Player player) {
+        SetIntelCoverage(player, IntelCoverage.Comprehensive);
+    }
+
+    #endregion
+
 }
 

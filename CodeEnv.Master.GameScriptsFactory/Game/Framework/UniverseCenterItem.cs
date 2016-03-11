@@ -25,7 +25,8 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IPatrollable {
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle,
+    IPatrollable, IFleetExplorable, IShipExplorable {
 
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
@@ -49,7 +50,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     protected override void InitializeOnData() {
         base.InitializeOnData();
         InitializePrimaryCollider();
-        InitializeShipOrbitSlot();
         InitializeObstacleZone();
         _detectionHandler = new DetectionHandler(this);
     }
@@ -59,10 +59,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         _primaryCollider.enabled = false;
         _primaryCollider.isTrigger = false;
         _primaryCollider.radius = Data.Radius;
-    }
-
-    private void InitializeShipOrbitSlot() {
-        ShipOrbitSlot = new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     private void InitializeObstacleZone() {
@@ -98,6 +94,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
             patrolPoints.Add(new StationaryLocation(point));
         }
         return patrolPoints;
+    }
+
+    private ShipOrbitSlot InitializeShipOrbitSlot() {
+        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     #endregion
@@ -179,7 +179,17 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IShipOrbitable Members
 
-    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+    private ShipOrbitSlot _shipOrbitSlot;
+    public ShipOrbitSlot ShipOrbitSlot {
+        get {
+            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
+            return _shipOrbitSlot;
+        }
+    }
+
+    public bool IsOrbitAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
+    }
 
     #endregion
 
@@ -238,6 +248,24 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     #endregion
+
+    #region IFleetExplorable, IShipExplorable Members
+
+    public bool IsFullyExploredBy(Player player) {
+        return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
+    }
+
+    public bool IsExplorationAllowedBy(Player player) {
+        // currently owner can only be NoPlayer which by definition is not at war with anyone
+        return !Owner.IsAtWarWith(player);
+    }
+
+    public void RecordExplorationCompletedBy(Player player) {
+        SetIntelCoverage(player, IntelCoverage.Comprehensive);
+    }
+
+    #endregion
+
 
 }
 

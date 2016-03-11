@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FacilityCtxControl.cs
-// Context Menu Control for <see cref="FacilityItem"/>.
+// File: FacilityCtxControl_AI.cs
+// Context Menu Control for <see cref="FacilityItem"/> for AI owned Facilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,16 +20,17 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Context Menu Control for <see cref="FacilityItem"/>.
-/// No distinction between AI and User owned.    
+/// Context Menu Control for <see cref="FacilityItem"/> for AI owned Facilities.
 /// </summary>
-public class FacilityCtxControl : ACtxControl {
+public class FacilityCtxControl_AI : ACtxControl {
 
     protected override string OperatorName { get { return _facilityMenuOperator.FullName; } }
 
+    protected override AItem ItemForDistanceMeasurements { get { return _facilityMenuOperator; } }
+
     private FacilityItem _facilityMenuOperator;
 
-    public FacilityCtxControl(FacilityItem facility)
+    public FacilityCtxControl_AI(FacilityItem facility)
         : base(facility.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _facilityMenuOperator = facility;
     }

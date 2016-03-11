@@ -28,6 +28,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlayerKnowledge : IDisposable {
 
+        private const string NameFormat = "{0}'s {1}";
+
+        private string Name { get { return NameFormat.Inject(Player.LeaderName, typeof(PlayerKnowledge).Name); } }
+
         public Player Player { get; private set; }
 
         public IUniverseCenterItem UniverseCenter { get; private set; }
@@ -52,6 +56,8 @@ namespace CodeEnv.Master.GameContent {
         public IEnumerable<IPlanetoidItem> Planetoids { get { return _planetoids; } }
 
         public IEnumerable<IPlanetoidItem> MyPlanetoids { get { return _planetoids.Where(p => p.Owner == Player); } }
+
+        public IEnumerable<IStarItem> MyStars { get { return _stars.Where(s => s.Owner == Player); } }
 
         /// <summary>
         /// The Stars this player has knowledge of.
@@ -131,12 +137,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="item">The item.</param>
         /// <returns></returns>
         public bool HasKnowledgeOf(IDiscernibleItem item) {
-            if (item is ISystemItem) {
-                return _systems.Contains(item as ISystemItem);
-            }
-            if (item is IStarItem) {
-                return _stars.Contains(item as IStarItem);
-            }
+            Arguments.ValidateNotNull(item);
             if (item is IPlanetoidItem) {
                 return _planetoids.Contains(item as IPlanetoidItem);
             }
@@ -146,22 +147,127 @@ namespace CodeEnv.Master.GameContent {
             if (item is IUnitCmdItem) {
                 return _commands.Contains(item as IUnitCmdItem);
             }
+            if (item is IUniverseCenterItem) {
+                D.Assert(UniverseCenter == item);
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
+                return true;
+            }
+            if (item is IStarItem) {
+                D.Assert(_stars.Contains(item as IStarItem));
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
+                return true;
+            }
+            if (item is ISystemItem) {
+                D.Assert(_systems.Contains(item as ISystemItem));
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
+                return true;
+            }
             return false;
         }
 
         /// <summary>
-        /// Gets the closest base owned by this player to <c>worldPosition</c>, if any. Can be null.
+        /// Tries to find the closest item of Type T owned by this player to <c>worldPosition</c>, if any. 
+        /// Returns <c>true</c> if one was found, <c>false</c> otherwise.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="worldPosition">The world position.</param>
-        /// <param name="exludedBases">The bases to exclude from consideration, if any.</param>
+        /// <param name="closestItem">The returned closest item. Null if returns <c>false</c>.</param>
+        /// <param name="excludedItems">The items to exclude, if any.</param>
         /// <returns></returns>
-        public IBaseCmdItem GetMyClosestBase(Vector3 worldPosition, params IBaseCmdItem[] exludedBases) {
-            IBaseCmdItem closestBase = null;
-            var candidates = MyBases.Except(exludedBases);
-            if (candidates.Any()) {
-                closestBase = candidates.MinBy(cmd => Vector3.SqrMagnitude(cmd.Position - worldPosition));
+        public bool TryFindMyClosestItem<T>(Vector3 worldPosition, out T closestItem, params T[] excludedItems) where T : IItem {
+            Type tType = typeof(T);
+            IEnumerable<T> itemCandidates = null;
+            if (tType == typeof(IStarbaseCmdItem)) {
+                itemCandidates = MyStarbases.Cast<T>();
             }
-            return closestBase;
+            else if (tType == typeof(ISettlementCmdItem)) {
+                itemCandidates = MySettlements.Cast<T>();
+            }
+            else if (tType == typeof(IBaseCmdItem)) {
+                itemCandidates = MyBases.Cast<T>();
+            }
+            else if (tType == typeof(IFleetCmdItem)) {
+                itemCandidates = MyFleets.Cast<T>();
+            }
+            else if (tType == typeof(ISystemItem)) {
+                itemCandidates = MySystems.Cast<T>();
+            }
+            else if (tType == typeof(IPlanetItem)) {
+                itemCandidates = MyPlanets.Cast<T>();
+            }
+            else if (tType == typeof(IMoonItem)) {
+                itemCandidates = MyMoons.Cast<T>();
+            }
+            else if (tType == typeof(IPlanetoidItem)) {
+                itemCandidates = MyPlanetoids.Cast<T>();
+            }
+            else if (tType == typeof(IStarItem)) {
+                itemCandidates = MyStars.Cast<T>();
+            }
+            else {
+                D.Error("Unanticipated Type {0}.", tType.Name);
+            }
+
+            itemCandidates = itemCandidates.Except(excludedItems);
+            if (itemCandidates.Any()) {
+                closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestItem = default(T);
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to find the closest known item of Type T to <c>worldPosition</c>, if any. 
+        /// Returns <c>true</c> if one was found, <c>false</c> otherwise. The result will be 
+        /// an item owned by the Player if that is closest.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestItem">The returned closest item. Null if returns <c>false</c>.</param>
+        /// <param name="excludedItems">The items to exclude, if any.</param>
+        /// <returns></returns>
+        public bool TryFindClosestKnownItem<T>(Vector3 worldPosition, out T closestItem, params T[] excludedItems) where T : IItem {
+            Type tType = typeof(T);
+            IEnumerable<T> itemCandidates = null;
+            if (tType == typeof(IStarbaseCmdItem)) {
+                itemCandidates = Starbases.Cast<T>();
+            }
+            else if (tType == typeof(ISettlementCmdItem)) {
+                itemCandidates = Settlements.Cast<T>();
+            }
+            else if (tType == typeof(IBaseCmdItem)) {
+                itemCandidates = Bases.Cast<T>();
+            }
+            else if (tType == typeof(IFleetCmdItem)) {
+                itemCandidates = Fleets.Cast<T>();
+            }
+            else if (tType == typeof(ISystemItem)) {
+                itemCandidates = Systems.Cast<T>();
+            }
+            else if (tType == typeof(IPlanetItem)) {
+                itemCandidates = Planets.Cast<T>();
+            }
+            else if (tType == typeof(IMoonItem)) {
+                itemCandidates = Moons.Cast<T>();
+            }
+            else if (tType == typeof(IPlanetoidItem)) {
+                itemCandidates = Planetoids.Cast<T>();
+            }
+            else if (tType == typeof(IStarItem)) {
+                itemCandidates = Stars.Cast<T>();
+            }
+            else {
+                D.Error("Unanticipated Type {0}.", tType.Name);
+            }
+
+            itemCandidates = itemCandidates.Except(excludedItems);
+            if (itemCandidates.Any()) {
+                closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestItem = default(T);
+            return false;
         }
 
         /// <summary>
@@ -171,22 +277,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectedItem">The detected item.</param>
         public void HandleItemDetection(IIntelItem detectedItem) {
-            D.Assert(detectedItem.IsOperational, "{0}: NonOperational Item {1} erroneously detected.", GetType().Name, detectedItem.FullName);
-            D.Log("{0}'s {1} is adding {2}.", Player.LeaderName, GetType().Name, detectedItem.FullName);
+            D.Assert(detectedItem is ISensorDetectable);
+            D.Assert(detectedItem.IsOperational, "{0}: NonOperational Item {1} erroneously detected.", Name, detectedItem.FullName);
+            if (detectedItem is IStarItem || detectedItem is IUniverseCenterItem) {
+                return; // these are added at startup and never removed so no need to add again
+            }
+            D.Log("{0} is adding {1}.", Name, detectedItem.FullName);
             if (detectedItem is IUnitElementItem) {
                 AddElement(detectedItem as IUnitElementItem);
             }
             else if (detectedItem is IPlanetoidItem) {
                 AddPlanetoid(detectedItem as IPlanetoidItem);
             }
-            else if (detectedItem is IStarItem) {
-                AddStar(detectedItem as IStarItem);
-            }
-            else if (detectedItem is IUniverseCenterItem) {
-                AddUniverseCenter(detectedItem as IUniverseCenterItem);
-            }
             else {
-                D.Warn("{0}'s {1} cannot yet add {2}.", Player.LeaderName, GetType().Name, detectedItem.FullName);
+                D.Warn("{0} cannot yet add {1}.", Name, detectedItem.FullName);
             }
         }
 
@@ -196,6 +300,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectedItem">The detected item.</param>
         public void HandleItemDetectionLost(IIntelItem detectedItem) {
+            D.Assert(detectedItem is ISensorDetectable);
             var element = detectedItem as IUnitElementItem;
             if (element != null) {
                 // no need to test element for death as it gets removed when
@@ -212,47 +317,33 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddStar(IStarItem star) {
-            var playerIntelCoverage = star.GetIntelCoverage(Player);
-            D.Assert(playerIntelCoverage != IntelCoverage.None);
-            if (playerIntelCoverage > IntelCoverage.Basic) {
-                D.Log("{0}'s {1}: IntelCoverage for {2} = {3}.", Player.LeaderName, GetType().Name, star.FullName, playerIntelCoverage.GetValueName());
-                AddSystem(star.System);
-            }
-
-            bool isAdded = _stars.Add(star);
-            if (!isAdded) {
-                D.Log("{0}'s {1} tried to add Star {2} it already has.", Player.LeaderName, GetType().Name, star.FullName);
-                return;
-            }
+            // A Star should only be added once when all players get Basic IntelCoverage of all stars
+            D.Assert(_stars.Add(star), "{0} tried to add Star {1} it already has.", Name, star.FullName);
+            D.Assert(star.GetIntelCoverage(Player) == IntelCoverage.Basic);
+            AddSystem(star.System);
         }
 
         public void AddUniverseCenter(IUniverseCenterItem universeCenter) {
-            if (UniverseCenter != null) {
-                D.Log("{0}'s {1} tried to add {2} it already has.", Player.LeaderName, GetType().Name, universeCenter.FullName);
-                return;
-            }
+            D.Assert(UniverseCenter == null);   // should only be added once when all players get Basic IntelCoverage of UCenter
+            D.Assert(universeCenter.GetIntelCoverage(Player) == IntelCoverage.Basic);
             UniverseCenter = universeCenter;
         }
 
         private void AddPlanetoid(IPlanetoidItem planetoid) {
             bool isAdded = _planetoids.Add(planetoid);
             if (!isAdded) {
-                D.Log("{0}'s {1} tried to add Planet {2} it already has.", Player.LeaderName, GetType().Name, planetoid.FullName);
+                D.Log("{0} tried to add Planet {1} it already has.", Name, planetoid.FullName);
                 return;
             }
-
             D.Assert(planetoid.GetIntelCoverage(Player) > IntelCoverage.None);
-            AddSystem(planetoid.ParentSystem);
         }
 
         private void AddElement(IUnitElementItem element) {
             var isAdded = _elements.Add(element);
             if (!isAdded) {
-                D.Log("{0}'s {1} tried to add Element {2} it already has.", Player.LeaderName, GetType().Name, element.FullName);
+                D.Log("{0} tried to add Element {1} it already has.", Name, element.FullName);
                 return;
             }
-
-
             element.isHQChanged += ElementIsHQChangedEventHandler;
 
             D.Assert(element.GetIntelCoverage(Player) > IntelCoverage.None);
@@ -280,24 +371,17 @@ namespace CodeEnv.Master.GameContent {
         private void AddCommand(IUnitCmdItem command) {
             var isAdded = _commands.Add(command);
             D.Assert(isAdded);  // Cmd cannot already be present. If adding due to a change in an element's IsHQ state, then previous HQElement removed Cmd before this Add
-            D.Log("{0}'s {1} has added Command {2}.", Player.LeaderName, GetType().Name, command.FullName);
+            D.Log("{0} has added Command {1}.", Name, command.FullName);
         }
 
         private void RemoveCommand(IUnitCmdItem command) {
             var isRemoved = _commands.Remove(command);
             D.Assert(isRemoved);
-            D.Log("{0}'s {1} has removed Command {2}.", Player.LeaderName, GetType().Name, command.FullName);
+            D.Log("{0} has removed Command {1}.", Name, command.FullName);
         }
 
         private void AddSystem(ISystemItem system) {
-            var isAdded = _systems.Add(system); // adding system can fail as it can already be present from the discovery of other members
-            if (isAdded) {
-                D.Log("{0}'s {1} has added System {2}.", Player.LeaderName, GetType().Name, system.FullName);
-                if (Player.IsUser) {
-                    // the User just discovered this system for the first time
-                    system.HandleUserDiscoveryOfSystem();
-                }
-            }
+            D.Assert(_systems.Add(system), "{0} tried to add System {1} it already has.", Name, system.FullName);
         }
 
         /// <summary>
@@ -309,7 +393,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="element">The element.</param>
         private void RemoveElement(IUnitElementItem element) {
             var isRemoved = _elements.Remove(element);
-            D.Assert(isRemoved, "{0}'s {1} could not remove Element {2}.".Inject(Player.LeaderName, GetType().Name, element.FullName));
+            D.Assert(isRemoved, "{0} could not remove Element {1}.", Name, element.FullName);
 
             element.isHQChanged -= ElementIsHQChangedEventHandler;
             if (element.IsHQ) {
@@ -325,23 +409,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="deadPlanetoid">The dead planetoid.</param>
         private void RemoveDeadPlanetoid(IPlanetoidItem deadPlanetoid) {
+            D.Assert(!deadPlanetoid.IsOperational);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
-            D.Assert(isRemoved, "{0}'s {1} could not remove Planetoid {2}.".Inject(Player.LeaderName, GetType().Name, deadPlanetoid.FullName));
-            var system = deadPlanetoid.ParentSystem;
-            if (ShouldSystemBeRemoved(system)) {
-                _systems.Remove(system);
-            }
-        }
-
-        /// <summary>
-        /// Determines if the System should be removed from the player's knowledge.
-        /// </summary>
-        /// <param name="system">The system.</param>
-        /// <returns></returns>
-        private bool ShouldSystemBeRemoved(ISystemItem system) {
-            var remainingKnownPlanetoidsInSystem = _planetoids.Where(p => p.ParentSystem == system);
-            var knownStarInSystem = _stars.SingleOrDefault(star => star.System == system);
-            return knownStarInSystem == null && !remainingKnownPlanetoidsInSystem.Any();
+            D.Assert(isRemoved, "{0} could not remove Planetoid {1}.", Name, deadPlanetoid.FullName);
         }
 
         private void Cleanup() {

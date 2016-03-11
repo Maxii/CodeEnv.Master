@@ -113,6 +113,14 @@ namespace CodeEnv.Master.GameContent {
             return IsRelationship(player, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
         }
 
+        public bool IsAtWarWith(Player player) {
+            return IsRelationship(player, DiplomaticRelationship.War);
+        }
+
+        public bool IsFriendlyWith(Player player) {
+            return IsRelationship(player, DiplomaticRelationship.Self, DiplomaticRelationship.Ally, DiplomaticRelationship.Friend);
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

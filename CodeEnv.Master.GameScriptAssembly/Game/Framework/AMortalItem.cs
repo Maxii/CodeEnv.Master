@@ -27,13 +27,19 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItem : AIntelItem, IMortalItem {
 
-    /// <summary>
-    /// Debug flag indicating whether to show the D.Log for this item.
-    /// <remarks>Requires #define DEBUG_LOG to be compiled.</remarks>
-    /// </summary>
-    public bool showDebugLog = false;
 
     public event EventHandler deathOneShot;
+
+    /// <summary>
+    /// Debug flag in editor indicating whether to show the D.Log for this item.
+    /// <remarks>Requires #define DEBUG_LOG for D.Log() to be compiled.</remarks>
+    /// </summary>
+    [SerializeField]
+    private bool _showDebugLog = false;
+    public bool ShowDebugLog {
+        get { return _showDebugLog; }
+        set { _showDebugLog = value; }
+    }
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -128,7 +134,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     protected sealed override void IsOperationalPropChangedHandler() {
         base.IsOperationalPropChangedHandler();
         if (!IsOperational) {
-            D.Log("{0} is initiating death sequence.", FullName);
+            D.Log(ShowDebugLog, "{0} is initiating death sequence.", FullName);
             SetDeadState();
             PrepareForDeathNotification();
             OnDeath();
@@ -203,8 +209,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #endregion
 
-    protected void __DestroyMe(float delay = 0F, Action onCompletion = null) {
-        UnityUtility.Destroy(gameObject, delay, onCompletion);
+    /// <summary>
+    /// Destroys this GameObject.
+    /// </summary>
+    /// <param name="delayInSeconds">The delay in seconds.</param>
+    /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
+    protected virtual void DestroyMe(float delayInSeconds = 0F, Action onCompletion = null) {
+        UnityUtility.Destroy(gameObject, delayInSeconds, onCompletion);
     }
 
     #region Cleanup
@@ -225,7 +236,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
     public override void LogEvent() {
-        if (DebugSettings.Instance.EnableEventLogging && showDebugLog) {
+        if (DebugSettings.Instance.EnableEventLogging && ShowDebugLog) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
             string name = Utility.CheckForContent(FullName) ? FullName : transform.name + "(from transform)";
             Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));

@@ -105,7 +105,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         base.CommenceOperations();
         _primaryCollider.enabled = true;
         _obstacleZoneCollider.enabled = true;
-        PlaceParentOrbiterInMotion(true);
+        ActivateParentOrbitSimulator(true);
         CurrentState = PlanetoidState.Idling;
     }
 
@@ -117,7 +117,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         SelectedItemHudWindow.Instance.Show(FormID.SelectedPlanetoid, GetUserReport());
     }
 
+    /// <summary>
+    /// Debug test method used by PlanetoidCtxControl to kill planets and moons.
+    /// </summary>
+    public void __Die() {
+        IsOperational = false;
+    }
+
     protected sealed override void SetDeadState() {
+        //D.Log(showDebugLog, "{0} is setting Dead state.", FullName);
         CurrentState = PlanetoidState.Dead;
     }
 
@@ -126,11 +134,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
         // in-route ordnance to show its impact effect while the item is showing its death.
         // Also keep the ObstacleZoneCollider enabled to keep ships from flying through the exploding planetoid.
-        PlaceParentOrbiterInMotion(false);
+        ActivateParentOrbitSimulator(false);
     }
 
-    private void PlaceParentOrbiterInMotion(bool toOrbit) {
-        transform.parent.GetComponent<IOrbitSimulator>().IsActivelyOrbiting = toOrbit;
+    private void ActivateParentOrbitSimulator(bool toActivate) {
+        // moons have 2 IOrbitSims in parents
+        transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>().IsActivated = toActivate;
     }
 
     #region Event and Property Change Handlers
@@ -146,7 +155,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     private void CurrentStatePropChangedHandler() {
-        //D.Log(toShowDLog, "{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
+        D.Log(ShowDebugLog, "{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
         switch (CurrentState) {
             case PlanetoidState.Idling:
                 break;
@@ -162,19 +171,14 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region State Machine Support Methods
 
-    public override void HandleEffectFinished(EffectID effectID) {
-        base.HandleEffectFinished(effectID);
-        switch (CurrentState) {
-            case PlanetoidState.Dead:
-                __DestroyMe(3F);
-                break;
-            case PlanetoidState.Idling:
-                // do nothing
-                break;
-            case PlanetoidState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentState));
-        }
+    /// <summary>
+    /// Destroys this Planetoid, including the parent IOrbitSimulator and any children.
+    /// </summary>
+    /// <param name="delayInSeconds">The delay in seconds.</param>
+    /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
+    protected override void DestroyMe(float delayInSeconds = 0F, Action onCompletion = null) {
+        IOrbitSimulator parentOrbitSimulator = transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>();
+        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(parentOrbitSimulator, delayInSeconds, onCompletion);
     }
 
     #endregion
@@ -241,10 +245,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            D.Log(showDebugLog, "{0} has been hit but incurred no damage.", FullName);
+            D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log(showDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);

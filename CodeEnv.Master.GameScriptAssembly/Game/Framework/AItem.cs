@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -99,7 +99,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         base.Awake();
         InitializeOnAwake();
         Subscribe();
-        enabled = false;    // IsOperational = false;   would trigger OnIsOperationalChanged()
+        enabled = false;
     }
 
     protected virtual void InitializeOnAwake() {
@@ -132,12 +132,19 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         base.Start();
     }
 
+    /// <summary>
+    /// The final Initialization opportunity. The first method called from CommenceOperations,
+    /// BEFORE IsOperational is set to true.
+    /// </summary>
+    protected virtual void FinalInitialize() { }
+
     #endregion
 
     /// <summary>
     /// Called when the Item should start operations, typically once the game is running.
     /// </summary>
     public virtual void CommenceOperations() {
+        FinalInitialize();
         Data.CommenceOperations();
     }
 

@@ -47,32 +47,34 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. The current speed of the Flagship of the Fleet in Units per hour, normalized for game speed.
+        /// Readonly. The real-time speed of the Flagship in Units per hour, normalized for game speed.
         /// </summary>
-        public float CurrentSpeed { get { return HQElementData.CurrentSpeed; } }
+        public float CurrentSpeedValue { get { return HQElementData.CurrentSpeedValue; } }
 
         /// <summary>
-        /// Readonly. The requested speed of the Flagship in Units per hour.
+        /// Readonly. The requested speed of the Flagship in Units per hour, normalized for game speed.
         /// </summary>
-        public float RequestedSpeed { get { return HQElementData.RequestedSpeed; } }
+        public float RequestedSpeedValue { get { return HQElementData.RequestedSpeedValue; } }
+
+        // Note: RequestedSpeed not currently present as it would be confusing to show ShipSpeeds from HQElement
 
         /// <summary>
-        /// Readonly. The normalized requested heading of the Flagship in worldspace coordinates.
+        /// Readonly. The requested heading of the Flagship in worldspace coordinates.
         /// </summary>
         public Vector3 RequestedHeading { get { return HQElementData.RequestedHeading; } }
 
         /// <summary>
-        /// Readonly. The real-time, normalized heading of the Flagship in worldspace coordinates. Equivalent to transform.forward.
+        /// Readonly. The real-time heading of the Flagship in worldspace coordinates. Equivalent to transform.forward.
         /// </summary>
         public Vector3 CurrentHeading { get { return HQElementData.CurrentHeading; } }
 
-        private float _unitFullSpeed;
+        private float _unitFullSpeedValue;
         /// <summary>
         /// The maximum sustainable speed of the fleet in units per hour.
         /// </summary>
-        public float UnitFullSpeed {
-            get { return _unitFullSpeed; }
-            private set { SetProperty<float>(ref _unitFullSpeed, value, "UnitFullSpeed"); }
+        public float UnitFullSpeedValue {
+            get { return _unitFullSpeedValue; }
+            private set { SetProperty<float>(ref _unitFullSpeedValue, value, "UnitFullSpeedValue"); }
         }
 
         private float _unitMaxTurnRate;
@@ -140,7 +142,7 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshFullSpeed() {
             if (ElementsData.Any()) {
                 //D.Log("{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
-                UnitFullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
+                UnitFullSpeedValue = ElementsData.Min(eData => (eData as ShipData).FullSpeedValue);
             }
         }
 
@@ -154,7 +156,7 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             ShipData shipData = elementData as ShipData;
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, ShipFullSpeedPropChangedHandler));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeedValue, ShipFullSpeedPropChangedHandler));
         }
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {

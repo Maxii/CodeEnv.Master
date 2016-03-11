@@ -31,7 +31,7 @@ using UnityEngine;
 /// as Call() and Return() make changes without going through CurrentState.set.
 /// </summary>
 /// <typeparam name="T">The Type of the derived class.</typeparam>
-/// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
+/// <typeparam name="E">The State Type being used, typically an enum type.</typeparam>
 public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     where T : AMonoSingleton<T>
     where E : struct {
@@ -347,11 +347,11 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         }
     }
 
-    [HideInInspector]
     /// <summary>
-    /// The last state.
+    /// The state previous to CurrentState.
+    /// WARNING: DONOT CHANGE OBJECT TO E AS MONO COMPILER THROWS UP WITH NO ERROR MESSAGE!
     /// </summary>
-    public object lastState;
+    protected object LastState { get; private set; }
 
     //Stack of the previous running states
     private Stack<State> _stack = new Stack<State>();
@@ -393,12 +393,19 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
         }
 
-        ChangingState();    // my addition to keep lastState in sync
+        // My ChangingState() addition moved below as CurrentState doesn't change if state calling Return() wasn't Call()ed
 
         if (_stack.Count > 0) {
+            ChangingState();    // my addition to keep lastState in sync
             state = _stack.Pop();
+            //D.Log(toShowDLog, "{0} setting up resumption of {1}_EnterState() in Return(). MethodName: {2}.", FullName, CurrentState.ToString(), state.enterState.Method.Name);
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             _timeEnteredState = Time.time - state.time;
+        }
+        else {
+            D.Error("{0} StateMachine: Return() called from state {1} that wasn't Call()ed.", GetType().Name, state.currentState.ToString());
+            // UNCLEAR CurrentState remains the same, but it has already run it's ExitState(). What does that mean?
+            // Shouldn't ExitState() run only if _stack.Count > 0? -> Return() is ignored if state wasn't Call()ed
         }
     }
 
@@ -424,16 +431,18 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
         }
         else {
+            D.Warn("{0} StateMachine: Return({1}) called from state {2} that wasn't Call()ed.",
+                GetType().Name, baseState.ToString(), state.currentState.ToString());
             CurrentState = baseState;
         }
         _timeEnteredState = Time.time - state.time;
     }
 
     /// <summary>
-    /// Caches previous states
+    /// Caches previous states.
     /// </summary>
     protected void ChangingState() {
-        lastState = state.currentState;
+        LastState = state.currentState;
         _timeEnteredState = Time.time;
     }
 
@@ -536,7 +545,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
         if (exitStateMethodReturnsIEnumerator && enterStateMethodReturnsVoid) {
-            string lastStateMsg = lastState != null ? lastState.ToString() : "null";
+            string lastStateMsg = LastState != null ? LastState.ToString() : "null";
             string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(GetType().Name, lastStateMsg, CurrentState.ToString());
             throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
         }

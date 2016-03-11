@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: IShipOrbitSimulator.cs
-// Interface for easy access to ShipOrbitSimulator objects.
+// Interface for easy access to ShipOrbitSimulator instances.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for easy access to ShipOrbitSimulator objects.
+    /// Interface for easy access to ShipOrbitSimulator instances.
     /// </summary>
     public interface IShipOrbitSimulator : IOrbitSimulator {
 

@@ -25,6 +25,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
+    public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
+
     public new AIntelItemData Data {
         get { return base.Data as AIntelItemData; }
         set { base.Data = value; }
@@ -43,17 +45,23 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     #endregion
 
-    public IntelCoverage GetUserIntelCoverage() { return Data.GetIntelCoverage(_gameMgr.UserPlayer); }
-
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
-    public bool SetIntelCoverage(Player player, IntelCoverage coverage) {
-        return Data.SetIntelCoverage(player, coverage);
+    /// <summary>
+    /// Sets the intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
+    /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
+    /// the item to regress its IntelCoverage.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="newCoverage">The new coverage.</param>
+    /// <returns></returns>
+    public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+        return Data.SetIntelCoverage(player, newCoverage);
     }
 
     protected override void AssessIsDiscernibleToUser() {
-        var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
-        IsDiscernibleToUser = isInMainCameraLOS && GetUserIntelCoverage() != IntelCoverage.None;
+        var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
+        IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage != IntelCoverage.None;
     }
 
     #region Event and Property Change Handlers
@@ -63,13 +71,13 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        D.Log("{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, GetUserIntelCoverage().GetValueName());
+        D.Log("{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, UserIntelCoverage.GetValueName());
         AssessIsDiscernibleToUser();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
-        var toEnableDisplayMgr = GetUserIntelCoverage() != IntelCoverage.None;
+        var toEnableDisplayMgr = UserIntelCoverage != IntelCoverage.None;
         DisplayMgr.EnableDisplay(toEnableDisplayMgr);
         HandleIntelCoverageChanged();
     }

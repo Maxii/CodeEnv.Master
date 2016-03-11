@@ -30,6 +30,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     public event EventHandler isHQChanged;
 
+    /// <summary>
+    /// Indicates whether this element is available for a new assignment.
+    /// <remarks>Typically, an element that is available is Idling.</remarks>
+    /// </summary>
+    public abstract bool IsAvailable { get; }
+
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
@@ -53,6 +59,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
     protected IList<IShield> _shields = new List<IShield>();
     protected Rigidbody _rigidbody;
+    protected PlayerKnowledge _ownerKnowledge;
+
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
@@ -119,6 +127,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         iconEventListener.onClick += ClickEventHandler;
         iconEventListener.onDoubleClick += DoubleClickEventHandler;
         iconEventListener.onPress += PressEventHandler;
+    }
+
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        _ownerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(Owner);
     }
 
     #endregion
@@ -507,7 +520,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
-        D.Log(showDebugLog, "{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
+        D.Log(ShowDebugLog, "{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
     }
 
     #endregion
@@ -635,7 +648,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             //D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log(showDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
 
         bool isCmdHit = false;
         float damageSeverity;

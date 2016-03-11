@@ -27,18 +27,13 @@ using UnityEngine;
 /// </summary>
 public class MoonItem : APlanetoidItem, IMoonItem {
 
-    public IPlanetItem ParentPlanet { get; private set; }
+    public PlanetItem ParentPlanet { get; private set; }
 
     public float ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
 
     private bool _isParentPlanetDying;
 
     #region Initialization
-
-    protected override void InitializeOnData() {
-        base.InitializeOnData();
-        ParentPlanet = gameObject.GetSingleInterfaceInParents<IPlanetItem>();
-    }
 
     protected override void InitializeObstacleZone() {
         base.InitializeObstacleZone();
@@ -49,12 +44,16 @@ public class MoonItem : APlanetoidItem, IMoonItem {
         return new MoonDisplayManager(gameObject);
     }
 
-    #endregion
-
-    protected override void HandleDeath() {
-        base.HandleDeath();
-        //TODO consider destroying the orbiter object and separating it from the OrbitSlot
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        RecordParentPlanet();
     }
+
+    private void RecordParentPlanet() {
+        ParentPlanet = gameObject.GetSingleComponentInParents<PlanetItem>();
+    }
+
+    #endregion
 
     protected override void HandleDeathWhileIsFocus() {
         if (!_isParentPlanetDying) {
@@ -77,16 +76,16 @@ public class MoonItem : APlanetoidItem, IMoonItem {
 
     public override void HandleEffectFinished(EffectID effectID) {
         base.HandleEffectFinished(effectID);
-        switch (CurrentState) {
-            case PlanetoidState.Dead:
-                if (!_isParentPlanetDying) {  // if the planet dying is the cause of this moons death, than let the planet destroy all the game objects
-                    __DestroyMe(3F);
+        switch (effectID) {
+            case EffectID.Dying:
+                if (!_isParentPlanetDying) {
+                    // if the planet dying is the cause of this moons death, than the planet will destroy all the game objects
+                    DestroyMe();
                 }
                 break;
-            case PlanetoidState.Idling:
-                // do nothing
+            case EffectID.Hit:
                 break;
-            case PlanetoidState.None:
+            case EffectID.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentState));
         }

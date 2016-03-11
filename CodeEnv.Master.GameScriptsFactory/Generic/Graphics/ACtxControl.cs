@@ -32,6 +32,16 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private const string SetOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
 
     /// <summary>
+    /// The format for a top-level menu item containing only the name of the directive.
+    /// </summary>
+    private const string TopLevelMenuItemTextFormat = "{0}";
+
+    /// <summary>
+    /// The format for a top-level menu item used as a label to show the distance to the selected item.
+    /// </summary>
+    private const string SelectedItemDistanceTextFormat = "Selected Item Distance: {0:0.}";
+
+    /// <summary>
     /// The subMenu (CtxMenu) objects available for use. These submenus
     /// are currently very generic and are configured programmatically to show the submenu items desired.
     /// 
@@ -41,11 +51,6 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// held by item.submenuItems, not the submenu object itself.]
     /// </summary>
     protected static List<CtxMenu> _availableSubMenus = new List<CtxMenu>();
-
-    /// <summary>
-    /// Lookup table for IUnitTargets for this item, keyed by the ID of the item selected.
-    /// </summary>
-    protected static IDictionary<int, IUnitAttackableTarget> _unitTargetLookup = new Dictionary<int, IUnitAttackableTarget>();
 
     /// <summary>
     /// Lookup table for the directive associated with the menu item selected, keyed by the ID of the menu item selected.
@@ -91,7 +96,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     /// <summary>
-    /// The _lowest unused item ID available for assignment to menu items.
+    /// The Item to measure from when determining the distance to a provided target.
+    /// </summary>
+    protected abstract AItem ItemForDistanceMeasurements { get; }
+
+    /// <summary>
+    /// The lowest unused item ID available for assignment to menu items.
     /// </summary>
     protected int _nextAvailableItemId;
 
@@ -99,6 +109,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// The user-owned Item that is selected and remotely accessing this Menu.
     /// </summary>
     protected ADiscernibleItem _remoteUserOwnedSelectedItem;
+
 
     /// <summary>
     /// The last press release position in world space. Acquired from UICamera,
@@ -111,11 +122,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// on the orbital plane are going to be overrun by orbiting planets.
     /// </summary>
     protected Vector3 _lastPressReleasePosition;
+    protected Player _user;
     protected CtxObject _ctxObject;
+    private GameManager _gameMgr;
     private int _optimalFocusDistanceItemID;
     private int _uniqueSubmenusReqd;
     private CtxMenuOpenedMode _menuOpenedMode;
-    private GameManager _gameMgr;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ACtxControl" /> class.
@@ -126,13 +138,14 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition) {
         //D.Log("Creating {0} for {1}.", GetType().Name, ctxObjectGO.name);
         _gameMgr = GameManager.Instance;
+        _user = _gameMgr.UserPlayer;
         _uniqueSubmenusReqd = uniqueSubmenusReqd;   // done this way to avoid CA2214 - accessing a virtual property from constructor
         InitializeContextMenu(ctxObjectGO, menuPosition);
         Subscribe();
     }
 
     private void InitializeContextMenu(GameObject ctxObjectGO, MenuPositionMode menuPosition) {    // IMPROVE use of strings
-        _ctxObject = UnityUtility.ValidateComponentPresence<CtxObject>(ctxObjectGO);
+        _ctxObject = ctxObjectGO.AddMissingComponent<CtxObject>();
 
         switch (menuPosition) {
             case MenuPositionMode.Over:
@@ -385,19 +398,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void HideCtxMenuEventHandler() {
         //D.Log("{0}.{1}.HideCtxMenuEventHandler called.", OperatorName, GetType().Name);
-        IsShowing = false;
-        _gameMgr.RequestPauseStateChange(toPause: false);
-        InputManager.Instance.InputMode = GameInputMode.Normal;
-
-        _unitTargetLookup.Clear();
-        _directiveLookup.Clear();
-
-        CleanupMenuArrays();    // not really needed as all CtxMenu.Item arrays get assigned new arrays when used again
-
-        _nextAvailableItemId = Constants.Zero;
-        _optimalFocusDistanceItemID = Constants.Zero;
-        _remoteUserOwnedSelectedItem = null;
-        _menuOpenedMode = CtxMenuOpenedMode.None;
+        HandleHideCtxMenu();
         OnHideComplete();
     }
 
@@ -406,6 +407,21 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     #endregion
+
+    protected virtual void HandleHideCtxMenu() {
+        IsShowing = false;
+        _gameMgr.RequestPauseStateChange(toPause: false);
+        InputManager.Instance.InputMode = GameInputMode.Normal;
+
+        _directiveLookup.Clear();
+
+        CleanupMenuArrays();    // not really needed as all CtxMenu.Item arrays get assigned new arrays when used again
+
+        _nextAvailableItemId = Constants.Zero;
+        _optimalFocusDistanceItemID = Constants.Zero;
+        _remoteUserOwnedSelectedItem = null;
+        _menuOpenedMode = CtxMenuOpenedMode.None;
+    }
 
     protected virtual void PopulateMenu_UserMenuOperatorIsSelected() { }
 
@@ -428,10 +444,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected virtual void PopulateMenu_UserRemoteFleetIsSelected() {   // IMPROVE temp virtual to allow SectorCtxControl to override
         var topLevelMenuItems = new List<CtxMenu.Item>();
+        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceLabel();
+        topLevelMenuItems.Add(selectedItemDistanceLabel);
         foreach (var directive in UserRemoteFleetDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = directive.GetValueName(),
+                text = TopLevelMenuItemTextFormat.Inject(directive.GetValueName()),
                 id = topLevelItemID
             };
             topLevelMenuItems.Add(topLevelItem);
@@ -447,10 +465,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void PopulateMenu_UserRemoteShipIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
+        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceLabel();
+        topLevelMenuItems.Add(selectedItemDistanceLabel);
         foreach (var directive in UserRemoteShipDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = directive.GetValueName(),
+                text = TopLevelMenuItemTextFormat.Inject(directive.GetValueName()),
                 id = topLevelItemID
             };
             topLevelMenuItems.Add(topLevelItem);
@@ -466,10 +486,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void PopulateMenu_UserRemoteBaseIsSelected() {
         var topLevelMenuItems = new List<CtxMenu.Item>();
+        var selectedItemDistanceLabel = CreateRemoteSelectedItemDistanceLabel();
+        topLevelMenuItems.Add(selectedItemDistanceLabel);
         foreach (var directive in UserRemoteBaseDirectives) {
             int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = directive.GetValueName(),
+                text = TopLevelMenuItemTextFormat.Inject(directive.GetValueName()),
                 id = topLevelItemID
             };
             topLevelMenuItems.Add(topLevelItem);
@@ -492,6 +514,20 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected virtual void HandleMenuPick_UserRemoteBaseIsSelected(int itemID) { }
 
     protected abstract void HandleMenuPick_OptimalFocusDistance();
+
+    protected float GetDistanceTo(INavigableTarget target) {
+        return Vector3.Distance(ItemForDistanceMeasurements.Position, target.Position);
+    }
+
+    private CtxMenu.Item CreateRemoteSelectedItemDistanceLabel() {
+        float distanceToSelectedItem = GetDistanceTo(_remoteUserOwnedSelectedItem);
+        var menuItem = new CtxMenu.Item() {
+            text = SelectedItemDistanceTextFormat.Inject(distanceToSelectedItem)
+        };
+        menuItem.id = -1;   // needed to get spacing right
+        menuItem.isDisabled = true;
+        return menuItem;
+    }
 
     private void CleanupMenuArrays() {
         _generalCtxMenu.items = new CtxMenu.Item[0];

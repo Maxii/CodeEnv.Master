@@ -24,6 +24,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class ShipCtxControl_AI : ACtxControl {
 
+    protected override AItem ItemForDistanceMeasurements { get { return _shipMenuOperator; } }
+
     protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
 
     private ShipItem _shipMenuOperator;

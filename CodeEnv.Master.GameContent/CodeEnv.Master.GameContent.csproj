@@ -56,6 +56,7 @@
     <Compile Include="Generic\Framework\AFormationManager.cs" />
     <Compile Include="Game\Framework\FleetFormationManager.cs" />
     <Compile Include="Generic\Framework\FormationFactory.cs" />
+    <Compile Include="Generic\Framework\IShipOrbitSimulator.cs" />
     <Compile Include="Generic\IO\CameraUnitCmdStat.cs" />
     <Compile Include="Generic\IO\ACameraItemStat.cs" />
     <Compile Include="Generic\Framework\ADiscernibleItemData.cs" />
@@ -209,8 +210,6 @@
     <Compile Include="Generic\Framework\NoPlayer.cs" />
     <Compile Include="Generic\IO\PlanetoidStat.cs" />
     <Compile Include="Generic\Framework\IShipOrbitable.cs" />
-    <Compile Include="Generic\Framework\IOrbitSimulator.cs" />
-    <Compile Include="Generic\Framework\IShipOrbitSimulator.cs" />
     <Compile Include="Generic\Framework\IGeneralFactory.cs" />
     <Compile Include="Game\Gameplay\CelestialOrbitSlot.cs" />
     <Compile Include="Generic\Framework\IUsefulTools.cs" />
@@ -321,9 +320,13 @@
     <Compile Include="Generic\Framework\IAvoidableObstacle.cs" />
     <Compile Include="Generic\Framework\IFormationMgrClient.cs" />
     <Compile Include="Generic\Framework\IObstacle.cs" />
-    <Compile Include="Generic\Framework\IMovingShipOrbitSimulator.cs" />
     <Compile Include="Generic\Framework\IPatrollable.cs" />
     <Compile Include="Generic\Framework\IFleetFormationStation.cs" />
+    <Compile Include="Generic\Framework\IMobileShipOrbitSimulator.cs" />
+    <Compile Include="Generic\Framework\IOrbitSimulator.cs" />
+    <Compile Include="Generic\Framework\IExplorable.cs" />
+    <Compile Include="Generic\Framework\IFleetExplorable.cs" />
+    <Compile Include="Generic\Framework\IShipExplorable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

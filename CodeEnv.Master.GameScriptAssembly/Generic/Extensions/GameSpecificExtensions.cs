@@ -28,27 +28,29 @@ public static class GameSpecificExtensions {
 
     /// <summary>
     /// Finds the IUnitTarget closest to <c>item</c> from those targets provided. Throws an
-    /// InvalidOperationException if <c>unitTargets</c> is empty.
+    /// InvalidOperationException if <c>unitTargets</c> is empty. Deprecated => Use PlayerKnowledge...
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="item">The item to measure from.</param>
     /// <param name="unitTargets">The unitTargets to search.</param>
     /// <returns></returns>
-    public static IUnitAttackableTarget FindClosest<T>(this T item, IEnumerable<IUnitAttackableTarget> unitTargets)
-        where T : ADiscernibleItem {
+    [System.Obsolete("Use PlayerKnowledge.GetClosest...")]
+    public static INavigableTarget FindClosest<T>(this T item, IEnumerable<INavigableTarget> unitTargets)
+    where T : AItem {
         return unitTargets.MinBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
 
     /// <summary>
     /// Finds the IUnitTarget furthest away from <c>item</c> from those targets provided. Throws an
-    /// InvalidOperationException if <c>unitTargets</c> is empty.
+    /// InvalidOperationException if <c>unitTargets</c> is empty. Deprecated => Use PlayerKnowledge...
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="item">The item to measure from.</param>
     /// <param name="unitTargets">The unitTargets to search.</param>
     /// <returns></returns>
-    public static IUnitAttackableTarget FindFurthest<T>(this T item, IEnumerable<IUnitAttackableTarget> unitTargets)
-        where T : ADiscernibleItem {
+    [System.Obsolete("Use PlayerKnowledge.GetFurthest...")]
+    public static INavigableTarget FindFurthest<T>(this T item, IEnumerable<INavigableTarget> unitTargets)
+    where T : AItem {
         return unitTargets.MaxBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
 
