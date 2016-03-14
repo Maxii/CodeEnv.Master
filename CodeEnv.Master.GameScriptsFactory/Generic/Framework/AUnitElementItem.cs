@@ -44,7 +44,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     public override float Radius {
         get {
             var radius = Data.HullDimensions.magnitude / 2F;
-            //D.Log(toShowDLog, "{0} Radius = {1:0.##}.", FullName, radius);
+            //D.Log(ShowDebugLog, "{0} Radius = {1:0.##}.", FullName, radius);
             return radius;
         }
     }
@@ -249,7 +249,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             D.Assert(beamOrdnance != null);
             beamOrdnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
         }
-        //D.Log(toShowDLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
+        //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
          * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
          * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
@@ -418,7 +418,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             var iconInfo = RefreshIconInfo();
             if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
                 UnsubscribeToIconEvents(DisplayMgr.Icon);
-                //D.Log(toShowDLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
                 DisplayMgr.IconInfo = iconInfo;
                 SubscribeToIconEvents(DisplayMgr.Icon);
             }
@@ -553,25 +553,25 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         var undamagedWeapons = Data.Weapons.Where(w => !w.IsDamaged);
         undamagedWeapons.ForAll(w => {
             w.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
-            //D.Log(toShowDLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
+            //D.Log(ShowDebugLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
         });
 
         var undamagedSensors = Data.Sensors.Where(s => !s.IsDamaged);
         undamagedSensors.ForAll(s => {
             s.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
-            //D.Log(toShowDLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
+            //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
         });
 
         var undamagedActiveCMs = Data.ActiveCountermeasures.Where(cm => !cm.IsDamaged);
         undamagedActiveCMs.ForAll(cm => {
             cm.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
-            //D.Log(toShowDLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", FullName, cm.Name);
+            //D.Log(ShowDebugLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", FullName, cm.Name);
         });
 
         var undamagedGenerators = Data.ShieldGenerators.Where(gen => !gen.IsDamaged);
         undamagedGenerators.ForAll(gen => {
             gen.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
-            //D.Log(toShowDLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
+            //D.Log(ShowDebugLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
         });
     }
 

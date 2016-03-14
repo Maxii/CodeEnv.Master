@@ -67,13 +67,15 @@ public class SectorCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-                return !(_sector as IFleetExplorable).IsExplorationAllowedBy(_user) || (_sector as IFleetExplorable).IsFullyExploredBy(_user);
-            case FleetDirective.Patrol:
+                var explorableSector = _sector as IFleetExplorable;
+                return !explorableSector.IsExploringAllowedBy(_user) || explorableSector.IsFullyExploredBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
+            case FleetDirective.Patrol:
+                return !(_sector as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return _user.IsEnemyOf(_sector.Owner);
+                return !(_sector as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

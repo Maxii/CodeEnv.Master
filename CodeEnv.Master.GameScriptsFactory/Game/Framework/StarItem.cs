@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IPatrollable, IShipExplorable {
+public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
     public StarCategory category = StarCategory.None;
 
@@ -236,7 +236,7 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         }
     }
 
-    public bool IsOrbitAllowedBy(Player player) {
+    public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }
 
@@ -280,19 +280,13 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
 
     #endregion
 
-    #region IPatrollable Members
-
-    public IList<StationaryLocation> PatrolPoints { get { return (System as IPatrollable).PatrolPoints; } }
-
-    #endregion
-
     #region IShipExplorable Members
 
     public bool IsFullyExploredBy(Player player) {
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
     }
 
-    public bool IsExplorationAllowedBy(Player player) {
+    public bool IsExploringAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }
 

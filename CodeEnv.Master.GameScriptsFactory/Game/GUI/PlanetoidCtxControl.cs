@@ -31,25 +31,24 @@ public class PlanetoidCtxControl : ACtxControl {
     // No Explore available as Fleets only explore Systems, Sectors and UniverseCenter
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Move,
-                                                                                        FleetDirective.Attack,
-                                                                                        FleetDirective.Guard };
+                                                                                        FleetDirective.Attack };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _planetoidMenuOperator; } }
+    protected sealed override AItem ItemForDistanceMeasurements { get { return _planetoidMenuOperator; } }
 
-    protected override string OperatorName { get { return _planetoidMenuOperator.FullName; } }
+    protected sealed override string OperatorName { get { return _planetoidMenuOperator.FullName; } }
 
-    private APlanetoidItem _planetoidMenuOperator;
+    protected APlanetoidItem _planetoidMenuOperator;
 
     public PlanetoidCtxControl(APlanetoidItem planetoid)
         : base(planetoid.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _planetoidMenuOperator = planetoid;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected sealed override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
         if (_planetoidMenuOperator.IsSelected) {
             D.Assert(_planetoidMenuOperator == selected as APlanetoidItem);
             return true;
@@ -57,12 +56,12 @@ public class PlanetoidCtxControl : ACtxControl {
         return false;
     }
 
-    protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
+    protected sealed override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
-    protected override void PopulateMenu_UserMenuOperatorIsSelected() {
+    protected sealed override void PopulateMenu_UserMenuOperatorIsSelected() {
         base.PopulateMenu_UserMenuOperatorIsSelected();
         __PopulateDieMenu();
     }
@@ -81,23 +80,21 @@ public class PlanetoidCtxControl : ACtxControl {
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
-            case FleetDirective.Guard:
-                return _user.IsEnemyOf(_planetoidMenuOperator.Owner);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
 
-    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
+    protected sealed override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
         __TellPlanetoidToDie();
     }
 
-    protected override void HandleMenuPick_OptimalFocusDistance() {
+    protected sealed override void HandleMenuPick_OptimalFocusDistance() {
         _planetoidMenuOperator.OptimalCameraViewingDistance = _planetoidMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
+    protected sealed override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
         IssueRemoteFleetOrder(itemID);
     }

@@ -69,14 +69,15 @@ public class SystemCtxControl_AI : ACtxControl {
             case FleetDirective.Attack:
                 return !_user.IsEnemyOf(_systemMenuOperator.Owner);
             case FleetDirective.Explore:
-                return !(_systemMenuOperator as IFleetExplorable).IsExplorationAllowedBy(_user) ||
-                    (_systemMenuOperator as IFleetExplorable).IsFullyExploredBy(_user);
-            case FleetDirective.Patrol:
+                var explorableSystem = _systemMenuOperator as IFleetExplorable;
+                return !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
+            case FleetDirective.Patrol:
+                return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return _user.IsEnemyOf(_systemMenuOperator.Owner);
+                return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

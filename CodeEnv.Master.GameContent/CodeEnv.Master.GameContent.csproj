@@ -239,7 +239,7 @@
     <Compile Include="Generic\Graphics\HighlightID.cs" />
     <Compile Include="Generic\Graphics\IHighlightable.cs" />
     <Compile Include="Generic\Graphics\IHighlighter.cs" />
-    <Compile Include="Generic\Framework\MovingLocation.cs" />
+    <Compile Include="Generic\Framework\MobileLocation.cs" />
     <Compile Include="Generic\Framework\IOrdnance.cs" />
     <Compile Include="Generic\Graphics\ISFXManager.cs" />
     <Compile Include="Generic\Graphics\IBillboard.cs" />
@@ -327,6 +327,7 @@
     <Compile Include="Generic\Framework\IExplorable.cs" />
     <Compile Include="Generic\Framework\IFleetExplorable.cs" />
     <Compile Include="Generic\Framework\IShipExplorable.cs" />
+    <Compile Include="Generic\Framework\IGuardable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

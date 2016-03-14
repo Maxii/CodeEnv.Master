@@ -161,7 +161,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         //TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
-            //D.Log(toShowDLog, "{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
+            //D.Log(ShowDebugLog, "{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
             AttachSensorsToMonitors(unattachedSensors.ToList());
             // WARNING: IEnumerable<T> lazy evaluation GOTCHA! The IEnumerable unattachedSensors at this point (after AttachSensorsToMonitors
             // completes) no longer points to any sensors as they would now all be attached. This is because the IEnumerable is not an 
@@ -212,7 +212,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
             if (!isRangeMonitorStillInUse) {
                 monitor.Reset();
                 SensorRangeMonitors.Remove(monitor);
-                //D.Log(toShowDLog, "{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
+                //D.Log(ShowDebugLog, "{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
                 UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
             }
         });
@@ -266,7 +266,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         var iconInfo = RefreshIconInfo();
         if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
             UnsubscribeToIconEvents(DisplayMgr.Icon);
-            //D.Log(toShowDLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
             DisplayMgr.IconInfo = iconInfo;
             SubscribeToIconEvents(DisplayMgr.Icon);
         }
@@ -279,7 +279,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     protected abstract IconInfo MakeIconInfo();
 
     private void ShowTrackingLabel(bool toShow) {
-        //D.Log(toShowDLog, "{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
+        //D.Log(ShowDebugLog, "{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
         if (IsTrackingLabelEnabled) {
             _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             _trackingLabel.Show(toShow);
@@ -302,7 +302,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         var previousHQElement = HQElement;
         if (previousHQElement != null) {
             previousHQElement.Data.IsHQ = false;
-            // don't remove previousHQElement.showDebugLog if ShowHQDebugLog as its probably dieing
+            // don't remove previousHQElement.ShowDebugLog if ShowHQDebugLog as its probably dieing
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
@@ -315,7 +315,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         HQElement.Data.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
         if (__ShowHQDebugLog) { HQElement.ShowDebugLog = true; }
-        //D.Log(toShowDLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
+        //D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
         if (DisplayMgr != null) {
@@ -388,12 +388,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     /// <param name="elementDamageSeverity">The severity of the damage sustained by the HQ Element.</param>
     /// <returns></returns>
     public bool __CheckForDamage(bool isHQElementAlive, DamageStrength elementDamageSustained, float elementDamageSeverity) {
-        //D.Log(toShowDLog, "{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
+        //D.Log(ShowDebugLog, "{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
         //FullName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
         var cmdMissedChance = Constants.OneHundredPercent - elementDamageSeverity;
         bool missed = (isHQElementAlive) ? RandomExtended.Chance(cmdMissedChance) : false;
         if (missed) {
-            //D.Log(toShowDLog, "{0} avoided a hit.", FullName);
+            //D.Log(ShowDebugLog, "{0} avoided a hit.", FullName);
         }
         else {
             TakeHit(elementDamageSustained);
@@ -478,10 +478,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     public override string DisplayName { get { return Data.ParentName; } }
 
-    // override reqd as AMortalItem base version accesses AItemData, not ACommandData
-    // since ACommandData.Topography must use new rather than override
-    //public override Topography Topography { get { return Data.Topography; } } // override reason no longer true?
-
     #endregion
 
     #region ICameraFocusable Members
@@ -513,7 +509,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     public virtual void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
         (element as AUnitElementItem).transform.position = HQElement.Position + stationOffset;
-        //D.Log(toShowDLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.", element.FullName, element.Position, stationOffset, HQElement.FullName, HQElement.Position);
+        //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.", element.FullName, element.Position, stationOffset, HQElement.FullName, HQElement.Position);
     }
 
     public virtual void CleanupAfterFormationChanges() { }

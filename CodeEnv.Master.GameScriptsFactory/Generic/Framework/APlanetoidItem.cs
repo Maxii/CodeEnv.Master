@@ -26,7 +26,8 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IUnitAttackableTarget, IElementAttackableTarget, ISensorDetectable, IAvoidableObstacle {
+public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IUnitAttackableTarget, IElementAttackableTarget,
+    ISensorDetectable, IAvoidableObstacle {
 
     /// <summary>
     /// Gets the maximum possible orbital speed of a planetoid in Units per hour, 
@@ -125,7 +126,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     protected sealed override void SetDeadState() {
-        //D.Log(showDebugLog, "{0} is setting Dead state.", FullName);
+        //D.Log(ShowDebugLog, "{0} is setting Dead state.", FullName);
         CurrentState = PlanetoidState.Dead;
     }
 
@@ -292,7 +293,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
         _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
     }
-
 
     #endregion
 

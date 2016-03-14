@@ -28,10 +28,14 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class StarCtxControl : ACtxControl {
 
+    // Note: Stars are not IFleetExplorable, IPatrollable or IGuardable but the Star's System is. The Directives Patrol, Guard 
+    // and Explore here for a remote user-owned fleet are simply a convenience for the user to execute a Directive on the System.
+
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
+                                                                                        FleetDirective.Orbit,
                                                                                         FleetDirective.Explore };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -64,17 +68,19 @@ public class StarCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-                // A fleet may explore a star (system) if not at war and not already explored
-                return (_starMenuOperator.System as IFleetExplorable).IsFullyExploredBy(_user) ||
-                    _starMenuOperator.Owner.IsAtWarWith(_user);
-            case FleetDirective.Patrol:
-            // A fleet may patrol any star (system) without regard to Diplo state
+                // A fleet may explore a star(system) if not at war and not already explored
+                var explorableSystem = _starMenuOperator.System as IFleetExplorable;
+                return explorableSystem.IsFullyExploredBy(_user) || !explorableSystem.IsExploringAllowedBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 // A fleet may move to any star without regard to Diplo state
                 return false;
+            case FleetDirective.Patrol:
+                return !(_starMenuOperator.System as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return _user.IsEnemyOf(_starMenuOperator.Owner);
+                return !(_starMenuOperator.System as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.Orbit:
+                return !(_starMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -92,7 +98,7 @@ public class StarCtxControl : ACtxControl {
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _starMenuOperator;
-        if (directive == FleetDirective.Explore) {
+        if (directive == FleetDirective.Explore || directive == FleetDirective.Guard || directive == FleetDirective.Patrol) {
             target = _starMenuOperator.System as INavigableTarget;
         }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

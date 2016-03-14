@@ -69,6 +69,10 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
+    protected override ICtxControl InitializeContextMenu(Player owner) {
+        return new PlanetCtxControl(this);
+    }
+
     protected override void FinalInitialize() {
         base.FinalInitialize();
         RecordAnyChildMoons();
@@ -76,7 +80,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
 
     private void RecordAnyChildMoons() {
         ChildMoons = gameObject.GetComponentsInChildren<MoonItem>();
-        //D.Log(showDebugLog && ChildMoons.Any(), "{0} recorded {1} child moons.", FullName, ChildMoons.Count());
+        //D.Log(ShowDebugLog && ChildMoons.Any(), "{0} recorded {1} child moons.", FullName, ChildMoons.Count());
     }
 
     #endregion
@@ -87,7 +91,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         var iconInfo = RefreshIconInfo();
         if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
             UnsubscribeToIconEvents(DisplayMgr.Icon);
-            //D.Log(toShowDLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
             DisplayMgr.IconInfo = iconInfo;
             SubscribeToIconEvents(DisplayMgr.Icon);
         }
@@ -105,7 +109,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
 
     public override void HandleEffectFinished(EffectID effectID) {
         base.HandleEffectFinished(effectID);
-        //D.Log(showDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
+        //D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
         switch (effectID) {
             case EffectID.Dying:
                 if (ChildMoons.Any()) {
@@ -186,7 +190,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         }
     }
 
-    public bool IsOrbitAllowedBy(Player player) {
+    public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }
 
@@ -220,7 +224,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
     }
 
-    public bool IsExplorationAllowedBy(Player player) {
+    public bool IsExploringAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }
 

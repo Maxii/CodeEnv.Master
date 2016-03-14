@@ -32,6 +32,7 @@ public class UniverseCenterCtxControl : ACtxControl {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
+                                                                                        FleetDirective.Orbit,
                                                                                         FleetDirective.Explore};
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -63,13 +64,19 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
-            case FleetDirective.Patrol:
+            // Note: UCenter has no owner and therefore by definition is explorable, guardable and patrollable
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-            case FleetDirective.Guard:
                 return false;
+            case FleetDirective.Patrol:
+                return !(_universeCenterMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
+            case FleetDirective.Guard:
+                return !(_universeCenterMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
             case FleetDirective.Explore:
-                return (_universeCenterMenuOperator as IFleetExplorable).IsFullyExploredBy(_user);
+                var explorableUCenter = _universeCenterMenuOperator as IFleetExplorable;
+                return explorableUCenter.IsFullyExploredBy(_user) || !explorableUCenter.IsExploringAllowedBy(_user);
+            case FleetDirective.Orbit:
+                return !(_universeCenterMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

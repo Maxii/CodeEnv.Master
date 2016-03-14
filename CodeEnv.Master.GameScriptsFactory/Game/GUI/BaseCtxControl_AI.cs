@@ -30,7 +30,9 @@ public class BaseCtxControl_AI : ACtxControl {
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Attack,
                                                                                         FleetDirective.Move,
                                                                                         FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Guard };
+                                                                                        FleetDirective.Patrol,
+                                                                                        FleetDirective.Guard,
+                                                                                        FleetDirective.Orbit };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -67,8 +69,12 @@ public class BaseCtxControl_AI : ACtxControl {
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
+            case FleetDirective.Patrol:
+                return !(_baseMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return _user.IsEnemyOf(_baseMenuOperator.Owner);
+                return !(_baseMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.Orbit:
+                return (_baseMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

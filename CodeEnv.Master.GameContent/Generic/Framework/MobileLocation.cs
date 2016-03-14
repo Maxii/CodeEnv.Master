@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MovingLocation.cs
-// An INavigableTarget wrapping a moving location.
+// File: MobileLocation.cs
+// An INavigableTarget wrapping a mobile location in world space.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// An INavigableTarget wrapping a moving location.
+    /// An INavigableTarget wrapping a mobile location in world space.
     /// </summary>
-    public class MovingLocation : INavigableTarget {
+    public class MobileLocation : INavigableTarget {
 
         private Reference<Vector3> _movingPosition;
 
-        public MovingLocation(Reference<Vector3> movingPosition) {
+        public MobileLocation(Reference<Vector3> movingPosition) {
             _movingPosition = movingPosition;
         }
 

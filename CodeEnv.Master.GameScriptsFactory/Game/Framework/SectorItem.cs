@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AItems that are Sectors.
 /// </summary>
-public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable {
+public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IGuardable {
 
     private static string _toStringFormat = "{0}{1}";
 
@@ -62,15 +62,26 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable {
         // Note: There is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
     }
 
-    private IList<StationaryLocation> InitializePatrolPoints() {
-        float radiusOfSphereContainingPatrolPoints = Radius / 2F;
-        var points = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolPoints);
-        var patrolPoints = new List<StationaryLocation>(8);
-        foreach (Vector3 point in points) {
-            patrolPoints.Add(new StationaryLocation(point));
+    private IList<StationaryLocation> InitializePatrolStations() {
+        float radiusOfSphereContainingPatrolStations = Radius / 2F;
+        var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
+        var patrolStations = new List<StationaryLocation>(8);
+        foreach (Vector3 loc in stationLocations) {
+            patrolStations.Add(new StationaryLocation(loc));
         }
-        return patrolPoints;
+        return patrolStations;
     }
+
+    private IList<StationaryLocation> InitializeGuardStations() {
+        var guardStations = new List<StationaryLocation>(2);
+        float distanceFromPosition = Radius / 5F;   // HACK
+        var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
+        var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
+        guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
+        guardStations.Add(new StationaryLocation(Position + localPointBelowPosition));
+        return guardStations;
+    }
+
 
     #endregion
 
@@ -113,14 +124,36 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable {
 
     #region IPatrollable Members
 
-    private IList<StationaryLocation> _patrolPoints;
-    public IList<StationaryLocation> PatrolPoints {
+    private IList<StationaryLocation> _patrolStations;
+    public IList<StationaryLocation> PatrolStations {
         get {
-            if (_patrolPoints == null) {
-                _patrolPoints = InitializePatrolPoints();
+            if (_patrolStations == null) {
+                _patrolStations = InitializePatrolStations();
             }
-            return new List<StationaryLocation>(_patrolPoints);
+            return new List<StationaryLocation>(_patrolStations);
         }
+    }
+
+    public bool IsPatrollingAllowedBy(Player player) {
+        return !player.IsEnemyOf(Owner);
+    }
+
+    #endregion
+
+    #region IGuardable
+
+    private IList<StationaryLocation> _guardStations;
+    public IList<StationaryLocation> GuardStations {
+        get {
+            if (_guardStations == null) {
+                _guardStations = InitializeGuardStations();
+            }
+            return new List<StationaryLocation>(_guardStations);
+        }
+    }
+
+    public bool IsGuardingAllowedBy(Player player) {
+        return !player.IsEnemyOf(Owner);
     }
 
     #endregion
@@ -131,7 +164,7 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable {
         return System != null ? System.IsFullyExploredBy(player) : true;
     }
 
-    public bool IsExplorationAllowedBy(Player player) {
+    public bool IsExploringAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }
 

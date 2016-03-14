@@ -222,9 +222,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     protected override void Cleanup() {
         base.Cleanup();
-        //if (_showingJob != null) {
-        //    _showingJob.Dispose();
-        //}
         Data.Dispose();
     }
 

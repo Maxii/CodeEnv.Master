@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipOrbitable.cs
-// Interface for Items that can be orbited by ships.
+// File: IGuardable.cs
+// Interface for Items that can be guarded at GuardStations.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,16 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for Items that can be orbited by ships.
+    /// Interface for Items that can be guarded at GuardStations.
     /// </summary>
-    public interface IShipOrbitable : INavigableTarget {
+    public interface IGuardable : INavigableTarget {
 
-        ShipOrbitSlot ShipOrbitSlot { get; }
+        IList<StationaryLocation> GuardStations { get; }
 
-        Player Owner { get; }
-
-        Transform transform { get; }
-
-        bool IsOrbitingAllowedBy(Player player);
+        bool IsGuardingAllowedBy(Player player);
 
     }
 }

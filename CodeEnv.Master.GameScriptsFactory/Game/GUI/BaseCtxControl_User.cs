@@ -39,7 +39,9 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
                                                                                         FleetDirective.Repair,
                                                                                         FleetDirective.Move,
                                                                                         FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Guard };
+                                                                                        FleetDirective.Patrol,
+                                                                                        FleetDirective.Guard,
+                                                                                        FleetDirective.Orbit };
 
     private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Disband };
 
@@ -128,8 +130,13 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case FleetDirective.Refit:
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-            case FleetDirective.Guard:
                 return false;
+            case FleetDirective.Patrol:
+                return !(_baseMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
+            case FleetDirective.Guard:
+                return !(_baseMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.Orbit:
+                return !(_baseMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

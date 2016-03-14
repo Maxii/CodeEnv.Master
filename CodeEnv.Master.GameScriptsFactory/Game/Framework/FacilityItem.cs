@@ -89,7 +89,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Radius * 2F;
-        //D.Log(toShowDLog, "{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
+        //D.Log(ShowDebugLog, "{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
         D.Warn(_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius, "{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.",
             FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
         // Static trigger collider (no rigidbody) is OK as a ship's CollisionDetectionCollider has a kinematic rigidbody
@@ -315,7 +315,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
-            //D.Log(toShowDLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
             yield return new WaitForSeconds(10F);
         }
 

@@ -24,10 +24,12 @@ namespace CodeEnv.Master.GameContent {
     public interface IPatrollable : INavigableTarget {
 
         /// <summary>
-        /// Returns a copy of the list of Patrol Points around this IPatrollable Item.
+        /// Returns a copy of the list of Patrol Stations around this IPatrollable Item.
         /// <remarks>A copy allows the list to be modified without affecting the original list.</remarks>
         /// </summary>
-        IList<StationaryLocation> PatrolPoints { get; }
+        IList<StationaryLocation> PatrolStations { get; }
+
+        bool IsPatrollingAllowedBy(Player player);
 
     }
 }

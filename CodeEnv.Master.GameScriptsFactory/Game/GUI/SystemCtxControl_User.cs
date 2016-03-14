@@ -92,7 +92,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Repair:
                 return _settlement.Data.Health == Constants.OneHundredPercent && _settlement.Data.UnitHealth == Constants.OneHundredPercent;
             case BaseDirective.Refit:
-                //TODO under attack?
+            //TODO under attack?
             case BaseDirective.Attack:
                 return false;
             default:
@@ -133,9 +133,11 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
             case FleetDirective.Refit:
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-            case FleetDirective.Guard:
-            case FleetDirective.Patrol:
                 return false;
+            case FleetDirective.Patrol:
+                return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
+            case FleetDirective.Guard:
+                return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

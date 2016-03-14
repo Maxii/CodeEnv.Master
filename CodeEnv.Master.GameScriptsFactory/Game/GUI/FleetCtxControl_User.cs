@@ -34,6 +34,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                                                                                             FleetDirective.Patrol,
                                                                                             FleetDirective.Guard,
                                                                                             FleetDirective.Explore,
+                                                                                            FleetDirective.Orbit,
                                                                                             FleetDirective.Attack,
                                                                                             FleetDirective.Repair,
                                                                                             FleetDirective.Disband,
@@ -44,8 +45,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Join,
                                                                                             FleetDirective.Move,
-                                                                                            FleetDirective.FullSpeedMove,
-                                                                                            FleetDirective.Guard };
+                                                                                            FleetDirective.FullSpeedMove };
 
     private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Join };
 
@@ -99,6 +99,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
             case FleetDirective.Explore:
+            case FleetDirective.Orbit:
             case FleetDirective.Attack:
             case FleetDirective.Refit:
             case FleetDirective.Withdraw:   // TODO should be in battle
@@ -128,15 +129,18 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = _userKnowledge.Systems.Where(sys => _fleetMenuOperator.Owner.IsFriendlyWith(sys.Owner)).Cast<INavigableTarget>();
                 return true;
             case FleetDirective.Guard:
-                // Note: Easy access to guard my systems and starbases. Other guard targets should be explicitly chosen by user
-                targets = _userKnowledge.MySystems.Cast<INavigableTarget>().Union(_userKnowledge.MyStarbases.Cast<INavigableTarget>());
+                // Note: Easy access to guard my systems and bases. Other guard targets should be explicitly chosen by user
+                targets = _userKnowledge.MySystems.Cast<INavigableTarget>().Union(_userKnowledge.MyBases.Cast<INavigableTarget>());
                 return true;
             case FleetDirective.Explore:
                 // Note: Easy access to explore systems allowing exploration that need it. Other exploration targets should be explicitly chosen by user
                 var systems = _userKnowledge.Systems.Cast<IFleetExplorable>();
-                var systemsAllowingExploration = systems.Where(sys => sys.IsExplorationAllowedBy(_fleetMenuOperator.Owner));
+                var systemsAllowingExploration = systems.Where(sys => sys.IsExploringAllowedBy(_fleetMenuOperator.Owner));
                 var systemsNeedingExploration = systemsAllowingExploration.Where(sys => !sys.IsFullyExploredBy(_fleetMenuOperator.Owner)).Cast<INavigableTarget>();
                 targets = systemsNeedingExploration;
+                return true;
+            case FleetDirective.Orbit:
+                targets = _userKnowledge.MyBases.Cast<INavigableTarget>().Union(_userKnowledge.MyPlanets.Cast<INavigableTarget>());
                 return true;
             case FleetDirective.Attack:
                 // Note: Easy access to attack fleets and bases of war opponents. Other attack targets should be explicitly chosen by user

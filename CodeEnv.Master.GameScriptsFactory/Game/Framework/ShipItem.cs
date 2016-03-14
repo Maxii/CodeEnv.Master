@@ -120,7 +120,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         _collisionDetectionZoneCollider.enabled = false;
         _collisionDetectionZoneCollider.isTrigger = true;
         _collisionDetectionZoneCollider.radius = Radius * 2F;
-        //D.Log(showDebugLog, "{0} ShipCollisionDetectionZoneRadius = {1:0.##}.", FullName, _collisionDetectionZoneCollider.radius);
+        //D.Log(ShowDebugLog, "{0} ShipCollisionDetectionZoneRadius = {1:0.##}.", FullName, _collisionDetectionZoneCollider.radius);
         D.Warn(_collisionDetectionZoneCollider.radius > TempGameValues.LargestShipCollisionDetectionZoneRadius, "{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.",
             FullName, _collisionDetectionZoneCollider.radius, TempGameValues.LargestShipCollisionDetectionZoneRadius);
 
@@ -278,12 +278,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
-        while (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingOrbit
-            || CurrentState == ShipState.ExecuteAssumeOrbit) {
+        while (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingOrbit) {
             UponNewOrderReceived();
         }
-        D.Assert(CurrentState != ShipState.Moving && CurrentState != ShipState.Repairing && CurrentState != ShipState.AssumingOrbit
-            && CurrentState != ShipState.ExecuteAssumeOrbit);
+        D.Assert(CurrentState != ShipState.Moving && CurrentState != ShipState.Repairing && CurrentState != ShipState.AssumingOrbit);
 
         if (CurrentOrder != null) {
             D.Log(ShowDebugLog, "{0} received new order {1}. CurrentState = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
@@ -333,7 +331,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
-            //D.Log(showDebugLog, "{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
+            //D.Log(ShowDebugLog, "{0}.CurrentState after Order {1} = {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
         }
     }
 
@@ -352,7 +350,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             return;
         }
         if (directive == ShipDirective.Move) {
-            if (target is StationaryLocation || target is MovingLocation) {
+            if (target is StationaryLocation || target is MobileLocation) {
                 return;
             }
             if (target is ISectorItem) {
@@ -552,7 +550,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         //TODO //ShipHelm.AutoPilotMoveMode.FleetMove;   //  Currently only CmdStaff or User can issue an order to move
         _fsmMoveMode = CurrentOrder.Source == OrderSource.Captain ? ShipHelm.AutoPilotMoveMode.ShipMove : ShipHelm.AutoPilotMoveMode.FleetMove;
 
-        //D.Log(showDebugLog, "{0} calling {1}.{2}. Target: {3}, Speed: {4}, MoveMode: {5}.", FullName, typeof(ShipState).Name,
+        //D.Log(ShowDebugLog, "{0} calling {1}.{2}. Target: {3}, Speed: {4}, MoveMode: {5}.", FullName, typeof(ShipState).Name,
         //ShipState.Moving.GetValueName(), _fsmOrderExecutionTgt.FullName, _fsmMoveSpeed.GetValueName(), _fsmMoveMode.GetValueName());
 
         Call(ShipState.Moving);
@@ -563,13 +561,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             yield return null;
         }
 
-        // TODO Removed to keep ships from automatically assuming orbit which screws up Explore
-        // Inprocess of retargeting Move destinations to Guard Points when an item is the Move destination
-        //if (TryAssessWhetherToAssumeOrbitAround(_fsmMoveTgt, out _fsmShipOrbitSlot)) {
-        //    Call(ShipState.AssumingOrbit);
-        //    yield return null;    // required so Return()s here
-        //}
-        //D.Log(showDebugLog, "{0}.ExecuteMoveOrder_EnterState is about to set State to {1}.", FullName, ShipState.Idling.GetValueName());
+        if (_fsmMoveTgt is IShipOrbitable || _fsmMoveTgt is MoonItem) {
+            // arrived at a base, star, planet, uCenter or moon so don't drift into it
+            Helm.ChangeSpeed(Speed.EmergencyStop);
+        }
+
+        //D.Log(ShowDebugLog, "{0}.ExecuteMoveOrder_EnterState is about to set State to {1}.", FullName, ShipState.Idling.GetValueName());
         CurrentState = ShipState.Idling;
     }
 
@@ -657,10 +654,25 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         TryBreakOrbit();    // If Explore ordered while in orbit, TryAssess..() throws Assert
 
-        bool isAllowedToOrbit = TryAssessWhetherToAssumeOrbitAround(exploreTgt, out _fsmShipOrbitSlot);
+        var orbitTgt = exploreTgt as IShipOrbitable;
+        bool isAllowedToOrbit = __TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot);
         D.Assert(isAllowedToOrbit); // ValidateExplore checks right to explore which is same criteria as right to orbit
 
-        Call(ShipState.ExecuteAssumeOrbit);    // moves to target and assumes orbit
+        _fsmMoveTgt = exploreTgt;
+        _fsmMoveMode = ShipHelm.AutoPilotMoveMode.ShipMove;
+        _fsmMoveSpeed = Speed.Standard; // IMPROVE based on distance
+        Call(ShipState.Moving);
+        yield return null;  // required so Return()s here
+
+        D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteExploreOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
+
+        if (!__TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
+            // unsuccessful going into orbit of orbitTgt so _fsmShipOrbitSlot is null
+            CurrentState = ShipState.Idling;
+            yield return null;
+        }
+
+        Call(ShipState.AssumingOrbit);
         yield return null;  // required so Return()s here
 
         if (IsInOrbit) {
@@ -707,7 +719,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 isValid = false;
             }
         }
-        if (!exploreTgt.IsExplorationAllowedBy(Owner)) {
+        if (!exploreTgt.IsExploringAllowedBy(Owner)) {
             D.Warn("{0} Explore order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
                 FullName, exploreTgt.FullName, exploreTgt.Owner.LeaderName, Owner.GetRelations(exploreTgt.Owner).GetValueName());
             isValid = false;
@@ -732,71 +744,44 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     IEnumerator ExecuteAssumeOrbitOrder_EnterState() {
         D.Log(ShowDebugLog, "{0}.ExecuteAssumeOrbitOrder_EnterState beginning execution.", FullName);
-        Call(ShipState.ExecuteAssumeOrbit);
-        yield return null;  // required so Return()s here
-
-        CurrentState = ShipState.Idling;
-    }
-
-    void ExecuteAssumeOrbitOrder_ExitState() {
-        LogEvent();
-    }
-
-    #endregion
-
-    #region ExecuteAssumeOrbit
-
-    IEnumerator ExecuteAssumeOrbit_EnterState() {
-        D.Log(ShowDebugLog, "{0}.ExecuteAssumeOrbit_EnterState beginning execution.", FullName);
-        var orbitTgt = CurrentOrder.Target as IShipOrbitable;
-        if (IsInOrbit && _fsmShipOrbitSlot.OrbitedObject == orbitTgt) {
-            // we are already in orbit around the orbit target
-            D.Log(ShowDebugLog, "{0} is already in orbit around new Orbit Target {1}.", FullName, orbitTgt.FullName);
-            // successfully in orbit of orbitTgt so don't null _fsmShipOrbitSlot
-            Return();
-            D.Error("If reach here, then yield return null; needs to follow Return() in IEnumerator methods when Return() is not last line.");
-        }
 
         TryBreakOrbit();    // TryAssess...() will fail Assert if already in orbit
 
-        if (!TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
+        var orbitTgt = CurrentOrder.Target as IShipOrbitable;
+        if (!__TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
             // unsuccessful going into orbit of orbitTgt so _fsmShipOrbitSlot is null
-            Return();
-            D.Error("If reach here, then yield return null; needs to follow Return() in IEnumerator methods when Return() is not last line.");
+            CurrentState = ShipState.Idling;
+            yield return null;
         }
 
         _fsmMoveTgt = orbitTgt;
-        _fsmMoveSpeed = Speed.Standard; // IMPROVE based on distance
-        _fsmMoveMode = ShipHelm.AutoPilotMoveMode.ShipMove;
+        _fsmMoveSpeed = CurrentOrder.Source == OrderSource.Captain ? Speed.Standard : Speed.FleetStandard; ; // IMPROVE based on distance
+        _fsmMoveMode = CurrentOrder.Source == OrderSource.Captain ? ShipHelm.AutoPilotMoveMode.ShipMove : ShipHelm.AutoPilotMoveMode.FleetMove;
         Call(ShipState.Moving);
         yield return null;  // required so Return()s here
 
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteAssumeOrbit target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
 
-        if (!TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
+        if (!__TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
             // unsuccessful going into orbit of orbitTgt so _fsmShipOrbitSlot is null
-            Return();
-            D.Error("If reach here, then yield return null; needs to follow Return() in IEnumerator methods when Return() is not last line.");
+            CurrentState = ShipState.Idling;
+            yield return null;
         }
 
         Call(ShipState.AssumingOrbit);
         yield return null;  // required so Return()s here
 
-        Return();
+        // Whether we were successful assuming orbit or not, we Idle
+        CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAssumeOrbit_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+    void ExecuteAssumeOrbitOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    void ExecuteAssumeOrbit_UponNewOrderReceived() {
-        LogEvent();
-        Return();
-    }
-
-    private bool TryValidateRightToOrbit(IShipOrbitable orbitTgt, out ShipOrbitSlot shipOrbitSlot) {
+    private bool __TryValidateRightToOrbit(IShipOrbitable orbitTgt, out ShipOrbitSlot shipOrbitSlot) {
         bool isOrbitTgtStillOKToOrbit = TryAssessWhetherToAssumeOrbitAround(orbitTgt, out shipOrbitSlot);
         if (!isOrbitTgtStillOKToOrbit) {
             D.Warn("{0}'s intention to orbit {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
@@ -807,7 +792,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         return true;
     }
 
-    void ExecuteAssumeOrbit_ExitState() {
+    void ExecuteAssumeOrbitOrder_ExitState() {
         LogEvent();
         _fsmIsMoveTgtUnreachable = false;   // OPTIMIZE not needed as can't be unreachable
         _fsmMoveTgt = null;
@@ -831,10 +816,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         D.Assert(!IsInOrbit);
 
         IShipOrbitable orbitTgt = _fsmShipOrbitSlot.OrbitedObject;
-        if (!TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
+        if (!__TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
             // unsuccessful going into orbit of orbitTgt so _fsmShipOrbitSlot is null
             Return();
-            D.Error("If reach here, then yield return null; needs to follow Return() in IEnumerator methods when Return() is not last line.");
+            yield return null;
         }
 
         if (_fsmShipOrbitSlot.TryDetermineOrbitAchievableViaAutoPilot(this, out _fsmMoveSpeed)) {
@@ -842,10 +827,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             _fsmMoveMode = ShipHelm.AutoPilotMoveMode.ShipMove;
             Call(ShipState.Moving);
             yield return null;  // required so Return()s here
-            if (!TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
+            if (!__TryValidateRightToOrbit(orbitTgt, out _fsmShipOrbitSlot)) {
                 // unsuccessful going into orbit of orbitTgt so _fsmShipOrbitSlot is null
                 Return();
-                D.Error("If reach here, then yield return null; needs to follow Return() in IEnumerator methods when Return() is not last line.");
+                yield return null;
             }
         }
         else {
@@ -916,7 +901,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         IUnitAttackableTarget attackTgtFromOrder = CurrentOrder.Target as IUnitAttackableTarget;
         while (attackTgtFromOrder.IsOperational) {
             if (TryPickPrimaryTarget(attackTgtFromOrder, out _fsmPrimaryAttackTgt)) {
-                //D.Log(showDebugLog, "{0} picked {1} as primary attack target.", FullName, _fsmPrimaryAttackTgt.FullName);
+                //D.Log(ShowDebugLog, "{0} picked {1} as primary attack target.", FullName, _fsmPrimaryAttackTgt.FullName);
                 // target found within sensor range
                 _fsmPrimaryAttackTgt.deathOneShot += FsmTargetDeathEventHandler;
                 _fsmMoveTgt = _fsmPrimaryAttackTgt;
@@ -1039,8 +1024,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             yield return null;   // required so Return()s here
         }
 
+        // Whether successful in assuming orbit or not, we begin repairs
         Call(ShipState.Repairing);
         yield return null;    // required so Return()s here
+
         CurrentState = ShipState.Idling;
     }
 
@@ -1068,7 +1055,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
-            //D.Log(showDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
             yield return new WaitForSeconds(10F);
         }
 
@@ -1078,7 +1065,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
         Data.IsFtlDamaged = false;
-        //D.Log(showDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        //D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffect(EffectID.Repairing);
         Return();
@@ -1210,7 +1197,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 D.Assert(_ownerKnowledge.HasKnowledgeOf(objectToOrbit as IDiscernibleItem));  // ship very close so should know. UNCLEAR Dead sensors?, sensors w/FleetCmd
             }
 
-            if (objectToOrbit.IsOrbitAllowedBy(Owner)) {
+            if (objectToOrbit.IsOrbitingAllowedBy(Owner)) {
                 shipOrbitSlot = objectToOrbit.ShipOrbitSlot;
                 return true;
             }
@@ -1594,18 +1581,27 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         Idling,
 
+        /// <summary>
+        /// Callable only.
+        /// </summary>
         Moving,
         ExecuteMoveOrder,
 
         ExecuteExploreOrder,
         ExecuteAttackOrder,
         ExecuteRepairOrder,
+        /// <summary>
+        /// Callable only.
+        /// </summary>
         Repairing,
         ExecuteJoinFleetOrder,
         ExecuteAssumeStationOrder,
         ExecuteAssumeOrbitOrder,
-        ExecuteAssumeOrbit,
+        /// <summary>
+        /// Callable only.
+        /// </summary>
         AssumingOrbit,
+        //ExecuteAssumeOrbit,
 
         //Entrenching,
         Retreating,
@@ -2446,7 +2442,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         private Vector3 DetermineTargetOffset(INavigableTarget target, Vector3 shipFormationOffset) {
             D.Assert(_moveMode == AutoPilotMoveMode.FleetMove);
             D.Assert(!(target is FleetFormationStation));
-            if (target is StationaryLocation || target is MovingLocation || target is FleetCmdItem || target is SystemItem || target is SectorItem) {
+            if (target is StationaryLocation || target is MobileLocation || target is FleetCmdItem || target is SystemItem || target is SectorItem) {
                 // ship will stay in formation when it arrives
                 return shipFormationOffset;
             }
@@ -2565,7 +2561,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// Refreshes the course.
         /// </summary>
         /// <param name="mode">The mode.</param>
-        /// <param name="waypoint">The optional waypoint, typically a detour to avoid an obstacle.</param>
+        /// <param name="waypoint">The optional waypoint. When not null, this is always a StationaryLocation detour to avoid an obstacle.</param>
         /// <exception cref="System.NotImplementedException"></exception>
         protected override void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null) {
             //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
@@ -2576,7 +2572,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     AutoPilotCourse.Add(_ship);
                     INavigableTarget courseTgt;
                     if (AutoPilotTarget.IsMobile) {
-                        courseTgt = new MovingLocation(new Reference<Vector3>(() => AutoPilotTgtPtPosition));
+                        courseTgt = new MobileLocation(new Reference<Vector3>(() => AutoPilotTgtPtPosition));
                     }
                     else {
                         courseTgt = new StationaryLocation(AutoPilotTgtPtPosition);
@@ -2584,17 +2580,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     AutoPilotCourse.Add(courseTgt);  // includes fstOffset
                     break;
                 case CourseRefreshMode.AddWaypoint:
-                    D.Assert(waypoint != null);
+                    D.Assert(waypoint is StationaryLocation);
                     AutoPilotCourse.Insert(AutoPilotCourse.Count - 1, waypoint);    // changes Course.Count
                     break;
                 case CourseRefreshMode.ReplaceObstacleDetour:
-                    D.Assert(waypoint != null);
+                    D.Assert(waypoint is StationaryLocation);
                     D.Assert(AutoPilotCourse.Count == 3);
                     AutoPilotCourse.RemoveAt(AutoPilotCourse.Count - 2);          // changes Course.Count
                     AutoPilotCourse.Insert(AutoPilotCourse.Count - 1, waypoint);    // changes Course.Count
                     break;
                 case CourseRefreshMode.RemoveWaypoint:
-                    D.Assert(waypoint != null);
+                    D.Assert(waypoint is StationaryLocation);
                     D.Assert(AutoPilotCourse.Count == 3);
                     bool isRemoved = AutoPilotCourse.Remove(waypoint);     // Course.RemoveAt(Course.Count - 2);  // changes Course.Count
                     D.Assert(isRemoved);
@@ -3867,7 +3863,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     #region ITopographyChangeListener Members
 
     public void HandleTopographyChanged(Topography newTopography) {
-        //D.Log(showDebugLog, "{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
+        //D.Log(ShowDebugLog, "{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
         Data.Topography = newTopography;
     }
 

@@ -62,13 +62,16 @@ public class SystemCtxControl : ACtxControl {
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
+            // Note: Systems without an owner are by definition explorable, guardable and patrollable
             case FleetDirective.Explore:
-                return (_systemMenuOperator as IFleetExplorable).IsFullyExploredBy(_user);
+                var explorableSystem = _systemMenuOperator as IFleetExplorable;
+                return explorableSystem.IsFullyExploredBy(_user) || !explorableSystem.IsExploringAllowedBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-            case FleetDirective.Guard:
             case FleetDirective.Patrol:
-                return false;
+                return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
+            case FleetDirective.Guard:
+                return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

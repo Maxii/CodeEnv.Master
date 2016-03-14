@@ -224,6 +224,7 @@
     <Compile Include="Game\GUI\SelectedStarForm.cs" />
     <Compile Include="Game\GUI\SelectedUniverseCenterForm.cs" />
     <Compile Include="Game\GUI\ShipCtxControl_AI.cs" />
+    <Compile Include="Game\GUI\PlanetCtxControl.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenu.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuButton.cs" />

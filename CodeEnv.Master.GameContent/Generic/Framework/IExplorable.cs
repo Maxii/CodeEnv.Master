@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        bool IsExplorationAllowedBy(Player player);
+        bool IsExploringAllowedBy(Player player);
 
 
     }

@@ -290,7 +290,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// Refreshes the course.
     /// </summary>
     /// <param name="mode">The mode.</param>
-    /// <param name="waypoint">The waypoint.</param>
+    /// <param name="waypoint">The optional waypoint.</param>
     protected abstract void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null);
 
     protected virtual void Cleanup() {

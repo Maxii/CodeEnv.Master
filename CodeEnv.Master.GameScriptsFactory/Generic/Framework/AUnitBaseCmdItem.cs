@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -27,7 +28,7 @@ using UnityEngine;
 /// <summary>
 ///  Abstract class for AUnitCmdItem's that are Base Commands.
 /// </summary>
-public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbitable {
+public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbitable, IGuardable, IPatrollable {
 
     public override bool IsAvailable { get { return CurrentState == BaseState.Idling; } }
 
@@ -56,6 +57,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     private ShipOrbitSlot InitializeShipOrbitSlot() {
         return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    }
+
+    private IList<StationaryLocation> InitializePatrolStations() {
+        float radiusOfSphereContainingPatrolStations = Data.HighOrbitRadius * 5F; // HACK
+        var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
+        var patrolStations = new List<StationaryLocation>(8);
+        foreach (Vector3 loc in stationLocations) {
+            patrolStations.Add(new StationaryLocation(loc));
+        }
+        return patrolStations;
+    }
+
+    private IList<StationaryLocation> InitializeGuardStations() {
+        var guardStations = new List<StationaryLocation>(2);
+        float distanceFromPosition = Data.HighOrbitRadius * 2F;   // HACK
+        var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
+        var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
+        guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
+        guardStations.Add(new StationaryLocation(Position + localPointBelowPosition));
+        return guardStations;
     }
 
     #endregion
@@ -281,7 +302,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
-    public bool IsOrbitAllowedBy(Player player) {
+    public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsEnemyOf(player);
     }
 
@@ -308,6 +329,43 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
         return Data.HighOrbitRadius + shipCollisionAvoidanceRadius; // OPTIMIZE shipRadius value needed?
+    }
+
+    #endregion
+
+
+    #region IPatrollable Members
+
+    private IList<StationaryLocation> _patrolStations;
+    public IList<StationaryLocation> PatrolStations {
+        get {
+            if (_patrolStations == null) {
+                _patrolStations = InitializePatrolStations();
+            }
+            return new List<StationaryLocation>(_patrolStations);
+        }
+    }
+
+    public bool IsPatrollingAllowedBy(Player player) {
+        return !player.IsEnemyOf(Owner);
+    }
+
+    #endregion
+
+    #region IGuardable
+
+    private IList<StationaryLocation> _guardStations;
+    public IList<StationaryLocation> GuardStations {
+        get {
+            if (_guardStations == null) {
+                _guardStations = InitializeGuardStations();
+            }
+            return new List<StationaryLocation>(_guardStations);
+        }
+    }
+
+    public bool IsGuardingAllowedBy(Player player) {
+        return !player.IsEnemyOf(Owner);
     }
 
     #endregion

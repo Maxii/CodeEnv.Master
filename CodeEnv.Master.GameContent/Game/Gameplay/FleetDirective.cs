@@ -43,18 +43,23 @@ namespace CodeEnv.Master.GameContent {
         FullSpeedMove,
 
         /// <summary>
-        /// Fleets can patrol any IPatrollable target including Systems, Sectors, Stars and the UniverseCenter. Diplomatic state 
-        /// with the owner, if any, is not a factor. When a fleet is ordered to patrol the fleet will move to the target's 
-        /// closest patrol point and initiate a patrol pattern encompassing the other patrol points of the target. If the patrol
-        /// target is a Star, the patrol points of the Star's system are used.
+        /// Fleets can orbit Bases, Stars, Planets and the UniverseCenter. 
+        /// Diplomatic state with the owner, if any, cannot be at war, and with Bases cannot be an enemy.
+        /// </summary>
+        Orbit,
+
+        /// <summary>
+        /// Fleets can patrol any IPatrollable target including Bases, Systems, Sectors and the UniverseCenter. 
+        /// Diplomatic state with the owner, if any, cannot be an enemy. When a fleet is ordered to patrol the 
+        /// fleet will move to the target's closest patrol station and initiate a patrol pattern encompassing 
+        /// the other patrol stations of the target. 
         /// </summary>
         Patrol,
 
         /// <summary>
-        /// Fleets can guard Units (Fleets and Bases), Planetoids, Stars, Systems, Sectors and the UniverseCenter. 
-        /// Diplomatic state with the owner, if any, cannot be an enemy. If a system, sector or the UniverseCenter
-        /// is designated as the target to guard, the fleet will move to it's closest patrol point to guard. 
-        /// If a Star is designated as the guard target, the fleet will move to the System's closest patrol point.
+        /// Fleets can guard any IGuardable target including Bases, Systems, Sectors and the UniverseCenter. 
+        /// Diplomatic state with the owner, if any, cannot be an enemy. When a fleet is ordered to guard a target, the fleet
+        /// will move to the target's closest guard station and reside there waiting for an enemy to be detected.
         /// </summary>
         Guard,
 
