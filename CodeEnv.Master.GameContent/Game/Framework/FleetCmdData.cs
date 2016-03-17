@@ -29,11 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new CameraFleetCmdStat CameraStat { get { return base.CameraStat as CameraFleetCmdStat; } }
 
-        private INavigableTarget _target;
-        public INavigableTarget Target {
-            get { return _target; }
-            set { SetProperty<INavigableTarget>(ref _target, value, "Target"); }
-        }
+        public INavigableTarget Target { get; set; }
 
         private FleetCategory _category;
         public FleetCategory Category {

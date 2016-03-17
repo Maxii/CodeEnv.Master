@@ -716,17 +716,17 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             //Loop forever
             while (true) {
                 //Check if we have a current coroutine
-                //D.Log(ToShowDLog, "Updating {0}.Run(). Frame: {1}.", Name, Time.frameCount);
+                //D.Log(ShowDebugLog, "Updating {0}.Run(). Frame: {1}.", Name, Time.frameCount);
                 if (_enumerator != null) {
-                    //D.Log(ToShowDLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                    //D.Log(ShowDebugLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
                     //Make a copy of the enumerator in case it changes
                     var enm = _enumerator;
                     //Execute the next step of the coroutine    
-                    //D.Log(ToShowDLog, "{0} code block is about to execute. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                    //D.Log(ShowDebugLog, "{0} code block is about to execute. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
                     // MoveNext executes the code block up to the next yield or the end of the method. Returns true when it finds a yield at the end
                     // of the code block, false if no yield indicating no more code remaining to execute
                     var valid = _enumerator.MoveNext();
-                    //D.Log(ToShowDLog, "{0} after MoveNext(). State: {1}, Valid = {2}, Frame: {3}.", Name, ApplicableStateName, valid, Time.frameCount);
+                    //D.Log(ShowDebugLog, "{0} after MoveNext(). State: {1}, Valid = {2}, Frame: {3}.", Name, ApplicableStateName, valid, Time.frameCount);
                     // See if the enumerator has changed. This only happens as a result of the just executed code block changing state.
                     if (enm == _enumerator) {
                         //If this is the same enumerator
@@ -743,7 +743,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             }
                             //Check if it is a yield instruction
                             else if (result is YieldInstruction) {  // a YieldInstruction is the parent of the WaitFor... classes
-                                //D.Log(ToShowDLog, "{0} CodeBlock is YieldInstruction. State: {1}.", Name, ApplicableStateName); 
+                                //D.Log(ShowDebugLog, "{0} CodeBlock is YieldInstruction. State: {1}.", Name, ApplicableStateName); 
                                 //To be able to interrupt yield instructions we need to run them as a separate coroutine and wait for them
                                 _stack.Push(_enumerator);
                                 //Create the coroutine to wait for the yieldinstruction
@@ -752,7 +752,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             }
                             // Otherwise return the value return by the yield (typically null, aka yield return null)
                             else {
-                                //D.Log(ToShowDLog, "{0} returning _enumerator.Current. Next comment from {1} should be from frame after this. Frame: {2}.",
+                                //D.Log(ShowDebugLog, "{0} returning _enumerator.Current. Next comment from {1} should be from frame after this. Frame: {2}.",
                                 //    Name, typeof(InterruptableCoroutine).Name, Time.frameCount);
                                 yield return _enumerator.Current;
                             }
@@ -774,27 +774,38 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             }
                             else {
                                 //Ensure we don't use this enumerator again
-                                if (_enumerator != enm) {   // D doesn't like this inside method as _fsm.CurrentState or LastState starts out null
-                                    D.Error("{0} attempting to null _enumerator that has changed. ApplicableState: {1}, _enumerator is null: {2}, enm is null: {3}, CurrentState: {4}, LastState: {5}.",
-                                    Name, ApplicableStateName, _enumerator == null, enm == null, _fsm.CurrentState.ToString(), _fsm.LastState.ToString());
+
+                                //if (_enumerator != enm) {   // D doesn't like this inside method as _fsm.CurrentState or LastState starts out null
+                                //    D.Error("{0} attempting to null _enumerator that has changed. ApplicableState: {1}, _enumerator is null: {2}, enm is null: {3}, CurrentState: {4}, LastState: {5}.",
+                                //    Name, ApplicableStateName, _enumerator == null, enm == null, _fsm.CurrentState.ToString(), _fsm.LastState.ToString());
+                                //}
+
+                                // Note: Nulling _enumerator after _enumerator has just changed will result in the new _enumerator NOT 
+                                // executing with no reported error. This occurred when I placed a yield return null at end of 
+                                // Idling_EnterState causing _enumerator to be nulled one frame later, sometimes just after _enumerator 
+                                // was set to ExecuteMoveOrder_EnterState. _enumerator is nulled when it is no longer valid (execution 
+                                // of last code block finished). This occurs 1 frame after it becomes invalid. As all enumerators become 
+                                // invalid, it is possible _enumerator could be externally changed during this frame - from an
+                                // order change for instance. This happens during patrolling for instance when completion of the previous
+                                // patrol move sets the state to Idling, followed a frame later by a state change to ExecuteMoveOrder as
+                                // a result of an order from fleet to make the next move of the patrol pattern. enm is Idling_EnterState, 
+                                // and the new _enumerator is ExecuteMoveOrder_EnterState. Without this equality filter below, 
+                                // ExecuteMoveOrder_EnterState never executes as it is set to null here. The state remains ExecuteMoveOrder
+                                // but with its EnterState having not run, the state machine is lost. 
+                                if (_enumerator == enm) {
+                                    // _enumerator hasn't been changed externally during the frame it took to get here so it is OK to null
+                                    _enumerator = null;
                                 }
-                                // Nulling _enumerator after _enumerator has just changed will result in the new _enumerator not executing with no error.
-                                // This occurred when I placed a yield return null at end of Idling_EnterState causing _enumerator to be nulled
-                                // one frame later, sometimes just after _enumerator was set to ExecuteMoveOrder_EnterState. _enumerator is nulled when
-                                // it is no longer valid (execution of last code block finished). This occurs 1 frame after it becomes invalid. As
-                                // all enumerators become invalid, it is possible _enumerator could be externally changed during this frame - from an
-                                // order change for instance. If this fires, I should consider adding a filter that will only null _enumerator if it
-                                // hasn't changed, ie. _enumerator == enm.
-                                _enumerator = null;
-                                //D.Log(ToShowDLog, "{0}.Run() _enumerator set to null. Frame: {1}.", Name, Time.frameCount);
+                                //D.Log(ShowDebugLog, "{0}.Run() _enumerator set to null. Frame: {1}.", Name, Time.frameCount);
 
                             }
                             // Starts at top again without waiting for the next frame
                         }
                     }
                     else {
-                        //_enumerator changed by MoveNext() executed code assigning a new state 
-                        //D.Log(ToShowDLog, "{0}.Run()._enumerator has changed. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                        //_enumerator changed by MoveNext() executed code assigning a new state. _enumerator here will be null if the
+                        // Enter/ExitState() method of the new state returns void
+                        //D.Log(ShowDebugLog, "{0}.Run()._enumerator has changed. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
                         yield return null;
                     }
                 }
@@ -827,9 +838,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         /// </param>
         public void Run(IEnumerator enm, Stack<IEnumerator> stack = null) {
             //string msg = enm != null ? "IEnumerator" : "NULL_IEnumerator";
-            //D.Log(ToShowDLog, "{0}.Run({1}) called. CurrentState: {2}, Frame: {3}.", Name, msg, CurrentStateName, Time.frameCount);
+            //D.Log(ShowDebugLog, "{0}.Run({1}) called. CurrentState: {2}, Frame: {3}.", Name, msg, CurrentStateName, Time.frameCount);
             //if (msg == "NULL_IEnumerator") {
-            //    D.Log(ToShowDLog, "{0}.Run() was called with null IEnumerator so has already executed. {0} will not execute.", Name);
+            //    D.Log(ShowDebugLog, "{0}.Run() was called with null IEnumerator so has already executed. {0} will not execute.", Name);
             //}
             _enumerator = enm;
             if (stack != null) {

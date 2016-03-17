@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using UnityEngine;
 
     /// <summary>
@@ -24,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     public interface IShipOrbitable : INavigableTarget {
 
         ShipOrbitSlot ShipOrbitSlot { get; }
+
+        IList<StationaryLocation> EmergencyGatherStations { get; }
 
         Player Owner { get; }
 

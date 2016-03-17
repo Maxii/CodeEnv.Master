@@ -172,10 +172,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// </summary>
     /// <param name="exploringShip">The exploring ship.</param>
     /// <param name="exploreTgt">The explore target.</param>
-    /// <param name="isExploreSuccessful">if set to <c>true</c> the exploration was successfully completed, 
+    /// <param name="isExploreAttemptSuccessful">if set to <c>true</c> the exploration was successfully completed, 
     /// <c>false</c> if the exploration failed.</param>
-    internal void HandleShipExplorationFinished(ShipItem exploringShip, IShipExplorable exploreTgt, bool isExploreSuccessful) {
-        UponShipExplorationFinished(exploringShip, exploreTgt, isExploreSuccessful);
+    internal void HandleShipExploreAttemptFinished(ShipItem exploringShip, IShipExplorable exploreTgt, bool isExploreAttemptSuccessful) {
+        UponShipExploreAttemptFinished(exploringShip, exploreTgt, isExploreAttemptSuccessful);
+    }
+
+    internal void HandleShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
+        UponShipOrbitAttemptFinished(ship, isOrbitAttemptSuccessful);
     }
 
     protected override void SetDeadState() {
@@ -227,10 +231,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
-        while (CurrentState == FleetState.Moving || CurrentState == FleetState.Patrolling || CurrentState == FleetState.AssumingFormation) {
+        while (CurrentState == FleetState.Moving || CurrentState == FleetState.Patrolling || CurrentState == FleetState.AssumingFormation
+            || CurrentState == FleetState.AssumingOrbit) {
             UponNewOrderReceived();
         }
-        D.Assert(CurrentState != FleetState.Moving && CurrentState != FleetState.Patrolling && CurrentState != FleetState.AssumingFormation);
+        D.Assert(CurrentState != FleetState.Moving && CurrentState != FleetState.Patrolling && CurrentState != FleetState.AssumingFormation
+            && CurrentState != FleetState.AssumingOrbit);
 
         if (CurrentOrder != null) {
             Data.Target = CurrentOrder.Target;  // can be null
@@ -337,6 +343,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     IEnumerator ExecuteAssumeFormationOrder_EnterState() {
         D.Log(ShowDebugLog, "{0}.ExecuteAssumeFormationOrder_EnterState beginning execution.", FullName);
 
+        if (CurrentOrder.Target != null) {
+            StationaryLocation assumeFormationTarget = (StationaryLocation)CurrentOrder.Target;
+            _fsmMoveTgt = assumeFormationTarget;
+            _fsmMoveSpeed = Speed.Standard; // IMPROVE
+            Call(FleetState.Moving);
+            yield return null;  // reqd so Return()s here
+
+            D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteAssumeFormationOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
+        }
+
         Call(FleetState.AssumingFormation);
         yield return null;
 
@@ -426,7 +442,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _fsmMoveTgt = orderTgt;
         }
 
-        _fsmMoveSpeed = Speed.FleetFull;
+        _fsmMoveSpeed = Speed.Full;
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
@@ -451,6 +467,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Log(ShowDebugLog, "{0}.ExecuteMoveOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
 
         var orderTgt = CurrentOrder.Target;
+        SectorItem sectorTarget = null;
         var systemTarget = orderTgt as SystemItem;
         if (systemTarget != null) {
             // move target is a system
@@ -458,18 +475,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 // fleet is currently in a system
                 var fleetSystem = SectorGrid.Instance.GetSectorContaining(Position).System;
                 if (fleetSystem == systemTarget) {
-                    // move target of a system from inside the same system is the closest patrol point within that system
+                    // move target of a system from inside the same system is the closest GuardStation within that system
                     _fsmMoveTgt = GetClosest(systemTarget.GuardStations);
                 }
             }
         }
         else {
-            var sectorTarget = orderTgt as SectorItem;
+            sectorTarget = orderTgt as SectorItem;
             if (sectorTarget != null) {
                 // target is a sector
                 var fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
                 if (fleetSector == sectorTarget) {
-                    // move target of a sector from inside the same sector is the closest patrol point with that sector
+                    // move target of a sector from inside the same sector is the closest GuardStation within that sector
                     _fsmMoveTgt = GetClosest(sectorTarget.GuardStations);
                 }
             }
@@ -478,7 +495,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _fsmMoveTgt = orderTgt;
         }
 
-        _fsmMoveSpeed = Speed.FleetStandard;
+        _fsmMoveSpeed = Speed.Standard;
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
@@ -486,7 +503,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             HandleDestinationUnreachable(_fsmMoveTgt);
             yield return null;
         }
+
+        if (AssessWhetherToAssumeFormation()) {
+            Call(FleetState.AssumingFormation);
+            yield return null;  // reqd so Return()s here
+        }
         CurrentState = FleetState.Idling;
+    }
+
+    private bool AssessWhetherToAssumeFormation() {
+        if (_fsmMoveTgt is SystemItem || _fsmMoveTgt is SectorItem || _fsmMoveTgt is StationaryLocation || _fsmMoveTgt is FleetCmdItem) {
+            return true;
+        }
+        return false;
     }
 
     void ExecuteMoveOrder_ExitState() {
@@ -582,13 +611,28 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         var orbitTgt = CurrentOrder.Target as IShipOrbitable;
         D.Assert(orbitTgt != null);
         if (!__ValidateOrbit(orbitTgt)) {
-            // hasn't started moving anywhere yet so just Idle
-            CurrentState = FleetState.Idling;
+            // no need for a assumeFormationTgt as we haven't moved to the orbitTgt yet
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
             yield return null;
         }
 
-        ShipOrder assumeOrbitOrder = new ShipOrder(ShipDirective.AssumeOrbit, CurrentOrder.Source, orbitTgt);
-        Elements.ForAll(e => (e as ShipItem).CurrentOrder = assumeOrbitOrder);
+        _fsmMoveSpeed = Speed.Standard;  // IMPROVE pick speed based on distance to move target
+        _fsmMoveTgt = orbitTgt;
+        Call(FleetState.Moving);
+        yield return null;  // reqd so Return()s here
+
+        D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteOrbitOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
+
+        if (!__ValidateOrbit(orbitTgt)) {
+            StationaryLocation assumeFormationTgt = GetClosest(orbitTgt.EmergencyGatherStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+            yield return null;
+        }
+
+        Call(FleetState.AssumingOrbit);
+        yield return null;  // reqd so Return()s here
+
+        CurrentState = FleetState.Idling;
     }
 
     /// <summary>
@@ -611,6 +655,60 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     void ExecuteOrbitOrder_ExitState() {
         LogEvent();
+        _fsmMoveTgt = null;
+        _fsmIsMoveTgtUnreachable = false;
+    }
+
+    #endregion
+
+    #region AssumingOrbit
+
+    private int _fsmShipCountWaitingToOrbit;
+
+    void AssumingOrbit_EnterState() {
+        LogEvent();
+        D.Assert(_fsmShipCountWaitingToOrbit == Constants.Zero);
+        _fsmShipCountWaitingToOrbit = Elements.Count;
+        IShipOrbitable orbitTgt = _fsmMoveTgt as IShipOrbitable;
+
+        var shipAssumeOrbitOrder = new ShipOrder(ShipDirective.AssumeOrbit, CurrentOrder.Source, orbitTgt);
+        Elements.ForAll(e => {
+            var ship = e as ShipItem;
+            D.Log(ShowDebugLog, "{0} issuing {1} order to {2}.", FullName, ShipDirective.AssumeOrbit.GetValueName(), ship.FullName);
+            ship.CurrentOrder = shipAssumeOrbitOrder;
+        });
+    }
+
+    void AssumingOrbit_UponShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
+        if (isOrbitAttemptSuccessful) {
+            _fsmShipCountWaitingToOrbit--;
+            if (_fsmShipCountWaitingToOrbit == Constants.Zero) {
+                Return();
+            }
+        }
+        else {
+            // a ship's orbit attempt failed so ships are no longer allowed to orbit the orbitTgt
+            IShipOrbitable orbitTgt = _fsmMoveTgt as IShipOrbitable;
+            StationaryLocation assumeFormationTgt = GetClosest(orbitTgt.EmergencyGatherStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, CurrentOrder.Source, assumeFormationTgt);
+        }
+    }
+
+    void AssumingOrbit_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        _fsmShipCountWaitingToOrbit--;
+        if (_fsmShipCountWaitingToOrbit == Constants.Zero) {
+            Return();
+        }
+    }
+
+    void AssumingOrbit_UponNewOrderReceived() {
+        LogEvent();
+        Return();
+    }
+
+    void AssumingOrbit_ExitState() {
+        LogEvent();
+        _fsmShipCountWaitingToOrbit = Constants.Zero;
     }
 
     #endregion
@@ -623,19 +721,22 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Log(ShowDebugLog, "{0}.ExecuteExploreOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         var exploreTgt = CurrentOrder.Target as IFleetExplorable;
         D.Assert(exploreTgt != null);
+        StationaryLocation assumeFormationTgt;
         if (!__ValidateExplore(exploreTgt)) {
+            // no need for a assumeFormationTgt as we haven't moved to the exploreTgt yet
             CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
             yield return null;
         }
 
         _fsmMoveTgt = exploreTgt;
-        _fsmMoveSpeed = Speed.FleetStandard;
+        _fsmMoveSpeed = Speed.Standard; // IMPROVE pick speed based on distance to move target
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteExploreOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
         if (!__ValidateExplore(exploreTgt)) {
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+            assumeFormationTgt = GetClosest(exploreTgt.EmergencyGatherStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
             yield return null;
         }
 
@@ -665,10 +766,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             // if exploration fails, an AssumeFormation order will be issued ending this state
             yield return null;
         }
-        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+        assumeFormationTgt = GetClosest(exploreTgt.EmergencyGatherStations);
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
     }
 
-    void ExecuteExploreOrder_UponShipExplorationFinished(ShipItem ship, IShipExplorable exploreTgt, bool isSuccessful) {
+    void ExecuteExploreOrder_UponShipExploreAttemptFinished(ShipItem ship, IShipExplorable exploreTgt, bool isSuccessful) {
         LogEvent();
         ISystemItem system;
         if (TryGetSystem(exploreTgt, out system)) {
@@ -680,11 +782,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 if (!wasAssigned) {
                     if (ship.IsHQ) {
                         // no point in telling HQ to assume station, but with no more explore assignment, it should
-                        // return to the closest system patrol point so the other ships assume station there
-                        var systemPatrolPoints = (system as IPatrollable).PatrolStations;
-                        var closestPatrolPoint = systemPatrolPoints.MinBy(ppt => Vector3.SqrMagnitude(ppt.Position - ship.Position));
-                        var speed = ShipItem.DetermineShipSpeedToReachTarget(closestPatrolPoint, ship);
-                        ship.CurrentOrder = new ShipOrder(ShipDirective.Move, OrderSource.Captain, closestPatrolPoint, speed);  //FIXME
+                        // return to the closest gather station so the other ships assume station there
+                        IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
+                        var closestGatherStation = GetClosest(fleetExploreTgt.EmergencyGatherStations);
+                        var speed = ShipItem.DetermineShipSpeedToReachTarget(closestGatherStation, ship);
+                        ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestGatherStation, speed, ShipMoveMode.ShipSpecific);  //FIXME
                     }
                     else {
                         ShipOrder assumeStationOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
@@ -694,7 +796,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
             else {
                 // exploration failed so have all ships resume formation
-                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+                IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
+                var assumeFormationTgt = GetClosest(fleetExploreTgt.EmergencyGatherStations);
+                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
             }
         }
         else {
@@ -819,15 +923,26 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Log(ShowDebugLog, "{0}.ExecutePatrolOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         var orderTgt = CurrentOrder.Target;
         var patrollableTgt = orderTgt as IPatrollable;
-        D.Assert(patrollableTgt != null, "{0}: {1} is not {2}.", FullName, orderTgt.FullName, typeof(IPatrollable).Name);
-        var patrolStations = patrollableTgt.PatrolStations;  // IPatrollable.PatrolStations is a copied list
-        _fsmMoveTgt = GetClosest(patrolStations);
+        D.Assert(patrollableTgt != null, "{0}: {1} is not {2}.", FullName, patrollableTgt.FullName, typeof(IPatrollable).Name);
 
-        _fsmMoveSpeed = Speed.FleetStandard;    // IMPROVE pick speed based on distance to move target
+        if (!__ValidatePatrol(patrollableTgt)) {
+            // no need for a assumeFormationTgt as we haven't moved to the patrollableTgt yet
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+            yield return null;
+        }
+
+        _fsmMoveTgt = GetClosest(patrollableTgt.PatrolStations);    // IPatrollable.PatrolStations is a copied list
+        _fsmMoveSpeed = Speed.Standard; // IMPROVE pick speed based on distance to move target
         Call(FleetState.Moving);
         yield return null; // required so Return()s here
 
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecutePatrolOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
+
+        if (!__ValidatePatrol(patrollableTgt)) {
+            StationaryLocation assumeFormationTgt = GetClosest(patrollableTgt.EmergencyGatherStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+            yield return null;
+        }
 
         Call(FleetState.Patrolling);
         yield return null;    // required so Return()s here
@@ -835,6 +950,24 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // The only way Patrolling state should return here is through the issuance of another order which should change state 
         // from ExecutePatrolOrder before this Warning is reached
         D.Warn("{0} reached end of {1}_EnterState() without another order being issued.", FullName, FleetState.ExecutePatrolOrder.GetValueName());
+    }
+
+    /// <summary>
+    /// Checks the continued validity of the current patrol order of target and warns
+    /// if no longer valid. If no longer valid, returns false whereon the fleet should take an action
+    /// reflecting that the order it was trying to execute is no longer valid.
+    /// <remarks>Check is necessary every time there is another decision to make while executing the order as
+    /// 1) the diplomatic state between the owners can change.</remarks>
+    /// </summary>
+    /// <param name="patrollableTgt">The target to patrol.</param>
+    private bool __ValidatePatrol(IPatrollable patrollableTgt) {
+        bool isValid = true;
+        if (!patrollableTgt.IsPatrollingAllowedBy(Owner)) {
+            D.Warn("{0} Patrol order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
+                FullName, patrollableTgt.FullName, patrollableTgt.Owner.LeaderName, Owner.GetRelations(patrollableTgt.Owner).GetValueName());
+            isValid = false;
+        }
+        return isValid;
     }
 
     void ExecutePatrolOrder_ExitState() {
@@ -849,34 +982,57 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     // Note: This state exists to differentiate between the Moving Call() from ExecutePatrolOrder which gets the
     // fleet to the patrol target, and the continuous Moving Call()s from Patrolling which moves the fleet between
-    // the patrol target's PatrolPoints. This distinction is important while Moving when an enemy is detected as
+    // the patrol target's PatrolStations. This distinction is important while Moving when an enemy is detected as
     // the behaviour that results is likely to be different -> detecting an enemy when moving to the target is likely
     // to be ignored, whereas detecting an enemy while actually patrolling the target is likely to result in an intercept.
 
     IEnumerator Patrolling_EnterState() {
-        D.Assert(_fsmMoveTgt is StationaryLocation);    // the _fsmMoveTgt while patrolling is a patrol point
+        D.Assert(_fsmMoveTgt is StationaryLocation);    // the _fsmMoveTgt while patrolling is a patrol station
 
-        var currentPatrolPoint = (StationaryLocation)_fsmMoveTgt;
-        var patrolStations = (CurrentOrder.Target as IPatrollable).PatrolStations;  // IPatrollable.PatrolPoints is a copied list
-        bool isRemoved = patrolStations.Remove(currentPatrolPoint);
+        var currentPatrolStation = (StationaryLocation)_fsmMoveTgt;
+        IPatrollable patrollableTgt = CurrentOrder.Target as IPatrollable;
+        var patrolStations = patrollableTgt.PatrolStations;  // IPatrollable.PatrolStations is a copied list
+        bool isRemoved = patrolStations.Remove(currentPatrolStation);
         D.Assert(isRemoved);
         var shuffledPatrolStations = patrolStations.Shuffle();
         var patrolStationQueue = new Queue<StationaryLocation>(shuffledPatrolStations);
-        patrolStationQueue.Enqueue(currentPatrolPoint);   // shuffled queue with current patrol point at end
-
-        bool isReadyForNextPatrolStation = true;
-        while (isReadyForNextPatrolStation) {
-            var nextPatrolStation = patrolStationQueue.Dequeue();
+        patrolStationQueue.Enqueue(currentPatrolStation);   // shuffled queue with current patrol station at end
+        Speed patrolSpeed = DetermineSpeedWhilePatrolling(patrollableTgt);
+        StationaryLocation nextPatrolStation;
+        while (true) {
+            nextPatrolStation = patrolStationQueue.Dequeue();
             _fsmMoveTgt = nextPatrolStation;
             patrolStationQueue.Enqueue(nextPatrolStation);
-            _fsmMoveSpeed = Speed.FleetOneThird;
-            isReadyForNextPatrolStation = false;
+            _fsmMoveSpeed = patrolSpeed;    // _fsmMoveSpeed set to None when exiting FleetState.Moving
             Call(FleetState.Moving);
             yield return null;    // required so Return()s here
 
             D.Assert(!_fsmIsMoveTgtUnreachable, "{0} Patrolling target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
-            isReadyForNextPatrolStation = true;
+
+            if (!__ValidatePatrol(patrollableTgt)) {
+                StationaryLocation assumeFormationTgt = GetClosest(patrollableTgt.EmergencyGatherStations);
+                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+                yield return null;
+            }
         }
+    }
+
+    private Speed DetermineSpeedWhilePatrolling(IPatrollable patrolTgt) {
+        Speed patrolSpeed = Speed.None;
+        if (patrolTgt is AUnitBaseCmdItem) {
+            patrolSpeed = Speed.Slow;
+        }
+        else if (patrolTgt is SystemItem) {
+            patrolSpeed = Speed.OneThird;
+        }
+        else if (patrolTgt is UniverseCenterItem) {
+            patrolSpeed = Speed.TwoThirds;
+        }
+        else {
+            D.Assert(patrolTgt is SectorItem);
+            patrolSpeed = Speed.Standard;
+        }
+        return patrolSpeed;
     }
 
     void Patrolling_UponEnemyDetected() {
@@ -903,13 +1059,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         var guardableTgt = orderTgt as IGuardable;
         _fsmMoveTgt = GetClosest(guardableTgt.GuardStations);
 
-        _fsmMoveSpeed = Speed.FleetStandard;        // IMPROVE pick speed based on distance to move target
+        _fsmMoveSpeed = Speed.Standard; // IMPROVE pick speed based on distance to move target
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} Guarding target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
 
-        Call(FleetState.AssumingFormation);
+        Call(FleetState.AssumingFormation); // avoids permanently leaving Guard state
         yield return null;
 
         // Fleet stays in Guard state, waiting to respond to UponEnemyDetected(), Ship is simply Idling
@@ -934,7 +1090,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         _fsmMoveTgt = CurrentOrder.Target;
 
-        _fsmMoveSpeed = Speed.FleetFull;
+        _fsmMoveSpeed = Speed.Full;
 
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
@@ -981,7 +1137,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         D.Log(ShowDebugLog, "{0}.ExecuteJoinFleetOrder_EnterState beginning execution.", FullName);
         _fsmMoveTgt = CurrentOrder.Target;
-        _fsmMoveSpeed = Speed.FleetStandard;    // IMPROVE pick speed by distance to fleetToJoin
+        _fsmMoveSpeed = Speed.Standard; // IMPROVE pick speed by distance to fleetToJoin
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
         if (_fsmIsMoveTgtUnreachable) {
@@ -1093,7 +1249,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         RelayToCurrentState(ship);
     }
 
-    private void UponShipExplorationFinished(ShipItem ship, IShipExplorable exploreTgt, bool isExplorationSuccessful) {
+    private void UponShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
+        RelayToCurrentState(ship, isOrbitAttemptSuccessful);
+    }
+
+    private void UponShipExploreAttemptFinished(ShipItem ship, IShipExplorable exploreTgt, bool isExplorationSuccessful) {
         RelayToCurrentState(ship, exploreTgt, isExplorationSuccessful);
     }
 
@@ -1103,16 +1263,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         return locations.MinBy(loc => Vector3.SqrMagnitude(loc.Position - Position));
     }
 
-    private void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
-        //var localTgtBearing = transform.InverseTransformDirection((target.Position - Position).normalized);
-        //D.Log(ShowDebugLog, "{0} issuing Ship move orders. Target: {1} at LocalBearing {2}, Speed = {3}.", FullName, target.FullName, localTgtBearing, speed.GetValueName());
-        var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.CmdStaff, target, speed);
-        Elements.ForAll(e => {
-            var ship = e as ShipItem;
-            //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target = {2}.", FullName, ship.FullName, target.FullName);
-            ship.CurrentOrder = shipMoveToOrder;
-        });
-    }
+    //private void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
+    //    //var localTgtBearing = transform.InverseTransformDirection((target.Position - Position).normalized);
+    //    //D.Log(ShowDebugLog, "{0} issuing Ship move orders. Target: {1} at LocalBearing {2}, Speed = {3}.", FullName, target.FullName, localTgtBearing, speed.GetValueName());
+    //    var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.CmdStaff, target, speed);
+    //    Elements.ForAll(e => {
+    //        var ship = e as ShipItem;
+    //        //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target = {2}.", FullName, ship.FullName, target.FullName);
+    //        ship.CurrentOrder = shipMoveToOrder;
+    //    });
+    //}
 
     /// <summary>
     /// Tries to get ships from the fleet using the criteria provided. Returns <c>false</c> if no ships
@@ -1419,6 +1579,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         ExecuteOrbitOrder,
 
+        AssumingOrbit,
+
         /// <summary>
         /// Call-only state that exists while an entire fleet is moving from one position to another.
         /// This can occur as part of the execution process for a number of FleetOrders.
@@ -1560,7 +1722,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private void InitiateCourseToTarget() {
             D.Assert(!IsAutoPilotNavJobRunning);
             D.Assert(!_hasFlagshipReachedDestination);
-            D.Log(ShowDebugLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", Name, AutoPilotTarget.FullName, AutoPilotTgtPtDistance, AutoPilotSpeed.GetEnumAttributeText(), AutoPilotSpeed.GetUnitsPerHour(_fleet.Data, null));
+            D.Log(ShowDebugLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).",
+    Name, AutoPilotTarget.FullName, AutoPilotTgtPtDistance, AutoPilotSpeed.GetEnumAttributeText(), AutoPilotSpeed.GetUnitsPerHour(ShipMoveMode.FleetWide, null, _fleet.Data));
+
+            ////D.Log(ShowDebugLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).", 
+            ////    Name, AutoPilotTarget.FullName, AutoPilotTgtPtDistance, AutoPilotSpeed.GetEnumAttributeText(), AutoPilotSpeed.GetUnitsPerHour(_fleet.Data, null));
             //D.Log(ShowDebugLog, "{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
 
             _currentWaypointIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
@@ -1616,7 +1782,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
 
             INavigableTarget detour;
-            _fleet.__IssueShipMovementOrders(currentWaypoint, AutoPilotSpeed);
+            IssueMoveOrderToAllShips(currentWaypoint);  //_fleet.__IssueShipMovementOrders(currentWaypoint, AutoPilotSpeed);
+
 
             while (_currentWaypointIndex <= targetDestinationIndex) {
                 if (_hasFlagshipReachedDestination) {
@@ -1639,7 +1806,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         targetDestinationIndex = AutoPilotCourse.Count - 1;
                         castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
                     }
-                    _fleet.__IssueShipMovementOrders(currentWaypoint, AutoPilotSpeed);
+                    IssueMoveOrderToAllShips(currentWaypoint);  //_fleet.__IssueShipMovementOrders(currentWaypoint, AutoPilotSpeed);
                 }
                 else if (IsCourseReplotNeeded) {
                     RegenerateCourse();
@@ -1831,6 +1998,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
             return true;
         }
+
+        private void IssueMoveOrderToAllShips(INavigableTarget target) {
+            var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, target, AutoPilotSpeed, ShipMoveMode.FleetWide);
+            _fleet.Elements.ForAll(e => {
+                var ship = e as ShipItem;
+                //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target: {2}, Speed: {3}.", _fleet.FullName, ship.FullName, target.FullName, speed.GetValueName());
+                ship.CurrentOrder = shipMoveToOrder;
+            });
+        }
+
 
         /// <summary>
         /// Constructs a new course for this fleet from the <c>astarFixedCourse</c> provided.

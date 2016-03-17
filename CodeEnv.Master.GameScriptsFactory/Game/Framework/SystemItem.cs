@@ -318,6 +318,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         }
     }
 
+    public IList<StationaryLocation> EmergencyGatherStations { get { return GuardStations; } }
+
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);
     }
@@ -350,6 +352,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         bool areAllPlanetsExplored = Planets.All(p => p.IsFullyExploredBy(player));
         return isStarExplored && areAllPlanetsExplored;
     }
+
+    // EmergencyGatherStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);

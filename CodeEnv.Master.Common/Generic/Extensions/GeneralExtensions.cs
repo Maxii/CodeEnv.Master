@@ -255,10 +255,8 @@ namespace CodeEnv.Master.Common {
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
         public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
-            if (value > targetValue) {
-                return true;
-            }
-            return ((Mathf.Abs(value - targetValue) < acceptableRange));
+            Arguments.ValidateNotNegative(acceptableRange);
+            return value >= targetValue - acceptableRange;
         }
 
         /// <summary>
@@ -271,10 +269,8 @@ namespace CodeEnv.Master.Common {
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
         public static bool IsLessThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
-            if (value < targetValue) {
-                return true;
-            }
-            return ((Mathf.Abs(value - targetValue) < acceptableRange));
+            Arguments.ValidateNotNegative(acceptableRange);
+            return value <= targetValue + acceptableRange;
         }
 
         /// <summary>

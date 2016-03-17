@@ -134,6 +134,8 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IG
         }
     }
 
+    public IList<StationaryLocation> EmergencyGatherStations { get { return GuardStations; } }
+
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);
     }
@@ -163,6 +165,8 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IG
     public bool IsFullyExploredBy(Player player) {
         return System != null ? System.IsFullyExploredBy(player) : true;
     }
+
+    // EmergencyGatherStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);

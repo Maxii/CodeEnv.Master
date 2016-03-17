@@ -14,12 +14,17 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+    using System.Collections.Generic;
+    using UnityEngine;
 
     /// <summary>
     /// Interface for Items that can only be explored by FleetCmds.
     /// </summary>
     public interface IFleetExplorable : IExplorable {
+
+        IList<StationaryLocation> EmergencyGatherStations { get; }
 
     }
 }

@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -189,6 +190,8 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
             return _shipOrbitSlot;
         }
     }
+
+    public IList<StationaryLocation> EmergencyGatherStations { get { return (ParentSystem as IGuardable).GuardStations; } }
 
     public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);

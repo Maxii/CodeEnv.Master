@@ -302,6 +302,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
+    public IList<StationaryLocation> EmergencyGatherStations { get { return GuardStations; } }
+
     public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsEnemyOf(player);
     }
@@ -333,7 +335,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #endregion
 
-
     #region IPatrollable Members
 
     private IList<StationaryLocation> _patrolStations;
@@ -345,6 +346,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
             return new List<StationaryLocation>(_patrolStations);
         }
     }
+
+    // EmergencyGatherStations - see IShipOrbitable
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);

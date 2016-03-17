@@ -156,7 +156,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = _userKnowledge.MyBases.Cast<INavigableTarget>();
                 return true;
             case FleetDirective.Scuttle:
-            case FleetDirective.AssumeFormation:
+            case FleetDirective.AssumeFormation:    // Note: Not going to offer EmergencyGatherStations as targets
                 targets = Enumerable.Empty<INavigableTarget>();
                 return false;
             default:

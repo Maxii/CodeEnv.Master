@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
             _orbitingShips.Add(ship);
             float shipDistance = Vector3.Distance(ship.Position, OrbitedObject.Position);
             float minOutsideOfOrbitCaptureRadius = OuterRadius - ship.CollisionDetectionZoneRadius;
-            D.Warn(shipDistance.IsGreaterThanOrEqualTo(minOutsideOfOrbitCaptureRadius, .01F), "{0} is assuming orbit around {1} but is not within {2:0.000}. Ship's current orbit distance is {3:0.000}.",
+            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is assuming orbit around {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
                 ship.FullName, OrbitedObject.FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
             shipJoint.connectedBody = OrbitSimulator.Rigidbody;
             //D.Log("{0} has assumed orbit around {1}.", ship.FullName, OrbitedObject.FullName);
@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} has left orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipDistance = Vector3.Distance(ship.Position, OrbitedObject.Position);
             float minOutsideOfOrbitCaptureRadius = OuterRadius - ship.CollisionDetectionZoneRadius;
-            D.Warn(shipDistance.IsGreaterThanOrEqualTo(minOutsideOfOrbitCaptureRadius, .01F), "{0} is leaving orbit of {1} but is not within {2:0.000}. Ship's current orbit distance is {3:0.000}.",
+            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
                 ship.FullName, OrbitedObject.FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
 
             if (_orbitingShips.Count == Constants.Zero) {

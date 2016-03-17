@@ -29,6 +29,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         IList<StationaryLocation> PatrolStations { get; }
 
+        IList<StationaryLocation> EmergencyGatherStations { get; }
+
+        Player Owner { get; }
+
         bool IsPatrollingAllowedBy(Player player);
 
     }

@@ -373,6 +373,8 @@
     <Compile Include="Game\Graphics\SystemDisplayManager.cs" />
     <Compile Include="Game\Framework\SettlementFormationManager.cs" />
     <Compile Include="Game\Framework\StarbaseFormationManager.cs" />
+    <Compile Include="Generic\Framework\ShipMoveMode.cs" />
+    <Compile Include="Generic\Framework\ShipMoveOrder.cs" />
     <Compile Include="ThirdParty\WaitJob.cs" />
     <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />

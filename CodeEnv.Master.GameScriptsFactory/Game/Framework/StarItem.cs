@@ -236,6 +236,8 @@ public class StarItem : AIntelItem, IStarItem, IShipOrbitable, ISensorDetectable
         }
     }
 
+    public IList<StationaryLocation> EmergencyGatherStations { get { return (System as IGuardable).GuardStations; } }
+
     public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }

@@ -198,6 +198,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         }
     }
 
+    public IList<StationaryLocation> EmergencyGatherStations { get { return GuardStations; } }
+
     public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);
     }
@@ -258,6 +260,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         }
     }
 
+    // EmergencyGatherStations - see IShipOrbitable
+
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);
     }
@@ -287,6 +291,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     public bool IsFullyExploredBy(Player player) {
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
     }
+
+    // EmergencyGatherStations - see IShipOrbitable
 
     public bool IsExploringAllowedBy(Player player) {
         // currently owner can only be NoPlayer which by definition is not at war with anyone

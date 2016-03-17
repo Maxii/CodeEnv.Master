@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Speed.cs
-// Enum specifying the different speed instructions a ship or fleet can give/receive.
+// Enum specifying the different speeds available to a ship or fleet.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,10 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum specifying the different speed instructions a ship or fleet can give/receive.
+    /// Enum specifying the different speeds available to a ship or fleet. The actual value in
+    /// Units per hour associated with each speed is a function of 1) this speed, 2) whether the move mode
+    /// is for an individual ship or for the fleet as a whole, and 3) the current full speed capability in
+    /// Units per hour of the ship or fleet.
     /// </summary>
     public enum Speed {
 
@@ -34,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// A constant speed value of zero, resulting eventually in a velocity of zero as their can be
-        /// some residual velocity retention for a short time.
+        /// some residual momentum for a short time.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
         Stop,
@@ -47,13 +50,13 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// A constant speed value suitable for inserting the ship into orbit around a stationary object
-        /// or a moving object that is moving towards the ship.
+        /// or a mobile object whose direction of travel is towards the ship.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
         StationaryOrbit,
 
         /// <summary>
-        /// A constant speed value suitable for inserting the ship into orbit around a moving object that is
+        /// A constant speed value suitable for inserting the ship into orbit around a mobile object that is
         /// moving orthogonal to or partially away from the ship.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
@@ -61,64 +64,38 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// A constant speed value suitable for movement between local destinations. Also used to insert
-        /// the ship into orbit around a moving object that is moving mostly away from the ship.
+        /// the ship into orbit around a mobile object that is moving mostly away from the ship.
         /// The speed value is not a function of the engine in use or Topographic density.
         /// </summary>
         Slow,
 
         /// <summary>
-        /// A constant speed value suitable for movement between local destinations.
-        /// The speed value is not a function of the engine in use or Topographic density.
-        /// </summary>
-        FleetSlow,
-
-        /// <summary>
-        /// 33% of Standard speed, 25% of Full. 
+        /// 33% of Standard speed, 25% of Full. If the ShipMoveMode is FleetWide, Full here refers to
+        /// the slowest FullSpeed found in all ships in the fleet.
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
         OneThird,
 
         /// <summary>
-        /// The slowest OneThird speed of any ship in the fleet.
-        /// The speed value is a direct function of the engine in use and Topographic density.
-        /// </summary>
-        FleetOneThird,
-
-        /// <summary>
-        /// 67% of Standard speed, 50% of Full.         
+        /// 67% of Standard speed, 50% of Full. If the ShipMoveMode is FleetWide, Full here refers to
+        /// the slowest FullSpeed found in all ships in the fleet.   
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
         TwoThirds,
 
         /// <summary>
-        /// The slowest TwoThirds speed of any ship in the fleet.
-        /// The speed value is a direct function of the engine in use and Topographic density.
-        /// </summary>
-        FleetTwoThirds,
-
-        /// <summary>
-        /// The most efficient speed, 100% of Standard, 75% of Full. 
+        /// The most efficient speed, 100% of Standard, 75% of Full. If the ShipMoveMode is FleetWide, Full here refers to
+        /// the slowest FullSpeed found in all ships in the fleet.
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
         Standard,
 
         /// <summary>
-        /// The slowest Standard speed of any ship in the fleet.
-        /// The speed value is a direct function of the engine in use and Topographic density.
-        /// </summary>
-        FleetStandard,
-
-        /// <summary>
-        /// The fastest speed, 133% of Standard, 100% of Full. 
+        /// The fastest speed, 133% of Standard, 100% of Full. If the ShipMoveMode is FleetWide, Full here refers to
+        /// the slowest FullSpeed found in all ships in the fleet.
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
         Full,
-
-        /// <summary>
-        /// The slowest Full speed of any ship in the fleet.
-        /// The speed value is a direct function of the engine in use and Topographic density.
-        /// </summary>
-        FleetFull
 
     }
 
