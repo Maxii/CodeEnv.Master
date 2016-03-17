@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="mode">The mode the ship is to move in.</param>
         public ShipMoveOrder(OrderSource source, INavigableTarget target, Speed speed, ShipMoveMode mode)
             : base(ShipDirective.Move, source, target) {
-            Arguments.ValidateNotNull(target);
+            Utility.ValidateNotNull(target);
             D.Assert(speed != Speed.None);
             D.Assert(mode != ShipMoveMode.None);
             Speed = speed;

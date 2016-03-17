@@ -298,7 +298,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     #region Event and Property Change Handlers
 
     protected virtual void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
-        Arguments.ValidateNotNull(newHQElement);
+        Utility.ValidateNotNull(newHQElement);
         var previousHQElement = HQElement;
         if (previousHQElement != null) {
             previousHQElement.Data.IsHQ = false;

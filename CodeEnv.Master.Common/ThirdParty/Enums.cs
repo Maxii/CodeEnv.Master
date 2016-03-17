@@ -160,7 +160,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         /// <exception cref="System.ArgumentException"></exception>
         public static E Parse(string enumName, bool ignoreCase) {
-            Arguments.ValidateForContent(enumName);
+            Utility.ValidateForContent(enumName);
             if (!ignoreCase) {
                 return Parse(enumName);
             }
@@ -194,7 +194,7 @@ namespace CodeEnv.Master.Common {
         /// fails, the value returned is the default value of E.</param>
         /// <returns><c>true</c> if successful.</returns>
         public static bool TryParse(string enumName, bool ignoreCase, out E returnValue) {
-            Arguments.ValidateForContent(enumName);
+            Utility.ValidateForContent(enumName);
             if (!ignoreCase) {
                 return TryParse(enumName, out returnValue);
             }

@@ -87,7 +87,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
 
     private void HealthPropSetHandler() {
         if (Health.HasValue) {
-            Arguments.ValidateForRange(Health.Value, Constants.ZeroF, Constants.OneF);
+            Utility.ValidateForRange(Health.Value, Constants.ZeroF, Constants.OneF);
         }
         _isHealthSet = true;
         if (AreAllValuesSet) {

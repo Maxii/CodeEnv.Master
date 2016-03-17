@@ -26,7 +26,7 @@ using UnityEngine;
 /// </summary>
 public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraControl {
 
-    private static LayerMask _guiCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UI);
+    private static LayerMask _guiCameraCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.UI);
 
     public Camera GuiCamera { get; private set; }
 

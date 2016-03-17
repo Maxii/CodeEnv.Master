@@ -65,10 +65,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="orbitPeriod">The orbit period.</param>
         /// <param name="toOrbit">if set to <c>true</c> the orbitSimulator will rotate if activated.</param>
         public AOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameTimeDuration orbitPeriod, bool toOrbit) {
-            Arguments.Validate(innerRadius != outerRadius);
-            Arguments.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
-            Arguments.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);
-            Arguments.Validate(orbitPeriod != default(GameTimeDuration));
+            Utility.Validate(innerRadius != outerRadius);
+            Utility.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
+            Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);
+            Utility.Validate(orbitPeriod != default(GameTimeDuration));
             InnerRadius = innerRadius;
             OuterRadius = outerRadius;
             MeanRadius = innerRadius + (outerRadius - innerRadius) / 2F;

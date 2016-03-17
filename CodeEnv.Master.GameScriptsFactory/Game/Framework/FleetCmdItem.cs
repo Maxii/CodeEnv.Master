@@ -450,6 +450,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             HandleDestinationUnreachable(_fsmMoveTgt);
             yield return null;
         }
+
+        if (AssessWhetherToAssumeFormationAfterMove()) {
+            Call(FleetState.AssumingFormation);
+            yield return null;  // reqd so Return()s here
+        }
         CurrentState = FleetState.Idling;
     }
 
@@ -504,14 +509,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             yield return null;
         }
 
-        if (AssessWhetherToAssumeFormation()) {
+        if (AssessWhetherToAssumeFormationAfterMove()) {
             Call(FleetState.AssumingFormation);
             yield return null;  // reqd so Return()s here
         }
         CurrentState = FleetState.Idling;
     }
 
-    private bool AssessWhetherToAssumeFormation() {
+    /// <summary>
+    /// Assesses whether to order the fleet to assume formation.
+    /// Typically called after a Move has been completed.
+    /// </summary>
+    /// <returns></returns>
+    private bool AssessWhetherToAssumeFormationAfterMove() {
         if (_fsmMoveTgt is SystemItem || _fsmMoveTgt is SectorItem || _fsmMoveTgt is StationaryLocation || _fsmMoveTgt is FleetCmdItem) {
             return true;
         }
@@ -624,7 +634,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteOrbitOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
 
         if (!__ValidateOrbit(orbitTgt)) {
-            StationaryLocation assumeFormationTgt = GetClosest(orbitTgt.EmergencyGatherStations);
+            StationaryLocation assumeFormationTgt = GetClosest(orbitTgt.LocalAssemblyStations);
             CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
             yield return null;
         }
@@ -689,7 +699,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         else {
             // a ship's orbit attempt failed so ships are no longer allowed to orbit the orbitTgt
             IShipOrbitable orbitTgt = _fsmMoveTgt as IShipOrbitable;
-            StationaryLocation assumeFormationTgt = GetClosest(orbitTgt.EmergencyGatherStations);
+            StationaryLocation assumeFormationTgt = GetClosest(orbitTgt.LocalAssemblyStations);
             CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, CurrentOrder.Source, assumeFormationTgt);
         }
     }
@@ -721,7 +731,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Log(ShowDebugLog, "{0}.ExecuteExploreOrder_EnterState beginning execution. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         var exploreTgt = CurrentOrder.Target as IFleetExplorable;
         D.Assert(exploreTgt != null);
-        StationaryLocation assumeFormationTgt;
+        StationaryLocation closestLocalAssyStation;
         if (!__ValidateExplore(exploreTgt)) {
             // no need for a assumeFormationTgt as we haven't moved to the exploreTgt yet
             CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
@@ -735,8 +745,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecuteExploreOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
         if (!__ValidateExplore(exploreTgt)) {
-            assumeFormationTgt = GetClosest(exploreTgt.EmergencyGatherStations);
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+            closestLocalAssyStation = GetClosest(exploreTgt.LocalAssemblyStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
             yield return null;
         }
 
@@ -766,8 +776,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             // if exploration fails, an AssumeFormation order will be issued ending this state
             yield return null;
         }
-        assumeFormationTgt = GetClosest(exploreTgt.EmergencyGatherStations);
-        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+        closestLocalAssyStation = GetClosest(exploreTgt.LocalAssemblyStations);
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
     }
 
     void ExecuteExploreOrder_UponShipExploreAttemptFinished(ShipItem ship, IShipExplorable exploreTgt, bool isSuccessful) {
@@ -784,9 +794,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         // no point in telling HQ to assume station, but with no more explore assignment, it should
                         // return to the closest gather station so the other ships assume station there
                         IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
-                        var closestGatherStation = GetClosest(fleetExploreTgt.EmergencyGatherStations);
-                        var speed = ShipItem.DetermineShipSpeedToReachTarget(closestGatherStation, ship);
-                        ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestGatherStation, speed, ShipMoveMode.ShipSpecific);  //FIXME
+                        var closestLocalAssyStation = GetClosest(fleetExploreTgt.LocalAssemblyStations);
+                        var speed = ShipItem.DetermineShipSpeedToReachTarget(closestLocalAssyStation, ship);
+                        ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, ShipMoveMode.ShipSpecific);  //FIXME
                     }
                     else {
                         ShipOrder assumeStationOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
@@ -797,8 +807,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             else {
                 // exploration failed so have all ships resume formation
                 IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
-                var assumeFormationTgt = GetClosest(fleetExploreTgt.EmergencyGatherStations);
-                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+                var closestLocalAssyStation = GetClosest(fleetExploreTgt.LocalAssemblyStations);
+                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
             }
         }
         else {
@@ -939,7 +949,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         D.Assert(!_fsmIsMoveTgtUnreachable, "{0} ExecutePatrolOrder target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
 
         if (!__ValidatePatrol(patrollableTgt)) {
-            StationaryLocation assumeFormationTgt = GetClosest(patrollableTgt.EmergencyGatherStations);
+            StationaryLocation assumeFormationTgt = GetClosest(patrollableTgt.LocalAssemblyStations);
             CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
             yield return null;
         }
@@ -1010,8 +1020,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             D.Assert(!_fsmIsMoveTgtUnreachable, "{0} Patrolling target {1} should always be reachable.", FullName, _fsmMoveTgt.FullName);
 
             if (!__ValidatePatrol(patrollableTgt)) {
-                StationaryLocation assumeFormationTgt = GetClosest(patrollableTgt.EmergencyGatherStations);
-                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+                StationaryLocation closestLocalAssyStation = GetClosest(patrollableTgt.LocalAssemblyStations);
+                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
                 yield return null;
             }
         }

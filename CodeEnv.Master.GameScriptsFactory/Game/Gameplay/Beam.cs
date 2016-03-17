@@ -27,7 +27,7 @@ using UnityEngine;
 /// </summary>
 public class Beam : AOrdnance, ITerminatableOrdnance {
 
-    private static LayerMask _beamImpactLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.Shields);
+    private static LayerMask _beamImpactLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.Shields);
 
     [SerializeField]
     private ParticleSystem _muzzleEffect = null;

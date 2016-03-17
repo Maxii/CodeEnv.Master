@@ -198,12 +198,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <summary>
     /// The layers the main 3DCameras are allowed to render.
     /// </summary>
-    private LayerMask _mainCamerasCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
+    private LayerMask _mainCamerasCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull,
         Layers.SystemOrbitalPlane, Layers.Projectiles, Layers.Shields); // UNCLEAR is DummyTarget and UniverseEdge needed here for a Raycast?
 
-    private LayerMask _universeEdgeOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
-    private LayerMask _dummyTargetOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
+    private LayerMask _universeEdgeOnlyMask = LayerMaskUtility.CreateInclusiveMask(Layers.UniverseEdge);
+    private LayerMask _dummyTargetOnlyMask = LayerMaskUtility.CreateInclusiveMask(Layers.DummyTarget);
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -637,7 +637,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Focusing_EnterState() {
         LogEvent();
-        Arguments.ValidateNotNull(_targetPoint);
+        Utility.ValidateNotNull(_targetPoint);
 
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -693,7 +693,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Focused_EnterState() {
         LogEvent();
-        Arguments.ValidateNotNull(_targetPoint);
+        Utility.ValidateNotNull(_targetPoint);
         // entered via OnFocusSelected AND IsResetOnFocusEnabled, OR after Focusing has completed
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -888,7 +888,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Freeform_EnterState() {
         LogEvent();
-        Arguments.ValidateNotNull(_targetPoint);
+        Utility.ValidateNotNull(_targetPoint);
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _distanceFromTarget;
         // no facing change

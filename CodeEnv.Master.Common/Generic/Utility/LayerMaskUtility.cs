@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: LayerMaskExtensions.cs
-// Extension access to manipulating and debugging LayerMasks.
+// File: LayerMaskUtility.cs
+// Utility to manipulate and debug LayerMasks. Contains Extensions.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,12 @@
 namespace CodeEnv.Master.Common {
 
     using System.Collections.Generic;
-
     using UnityEngine;
 
     /// <summary>
-    /// Extension access to manipulating and debugging LayerMasks.
+    /// Utility to manipulate and debug LayerMasks. Contains Extensions.
     /// </summary>
-    public static class LayerMaskExtensions {
+    public static class LayerMaskUtility {
 
         /// <summary>
         /// Creates a LayerMask that includes only the provided layers.

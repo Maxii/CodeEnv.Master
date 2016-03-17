@@ -46,7 +46,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Extensions\UnityUtility.cs" />
+    <Compile Include="Generic\Utility\UnityUtility.cs" />
     <Compile Include="Generic\Math\FloatEqualityComparer.cs" />
     <Compile Include="Generic\IO\AXmlReader.cs" />
     <Compile Include="Game\Gameplay\IntelCoverage.cs" />
@@ -72,9 +72,8 @@
     <Compile Include="Generic\Framework\Index3D.cs" />
     <Compile Include="ThirdParty\Reference.cs" />
     <Compile Include="ThirdParty\CustomStringComparer.cs" />
-    <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
-    <Compile Include="Generic\Extensions\UnityExtensions.cs" />
-    <Compile Include="Generic\Extensions\VectorExtensions.cs" />
+    <Compile Include="Generic\Utility\LayerMaskUtility.cs" />
+    <Compile Include="Generic\Utility\UnityExtensions.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
     <Compile Include="Generic\IO\AXmlPropertyReader.cs" />
     <Compile Include="Game\Gameplay\DiplomaticRelationship.cs" />
@@ -103,7 +102,6 @@
     <Compile Include="Generic\Framework\PauseState.cs" />
     <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />
     <Compile Include="Generic\IO\GraphicsOptionSettings.cs" />
-    <Compile Include="Generic\Extensions\MouseButtonExtensions.cs" />
     <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
     <Compile Include="Generic\Graphics\IconSection.cs" />
     <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
@@ -112,18 +110,15 @@
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\_Debug\ObjectAnalyzer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Generic\Extensions\EnumExtensions.cs" />
-    <Compile Include="Generic\Extensions\GeneralExtensions.cs" />
-    <Compile Include="Generic\Extensions\StringExtensions.cs" />
+    <Compile Include="Generic\Utility\GeneralExtensions.cs" />
     <Compile Include="ThirdParty\Enums.cs" />
     <Compile Include="Generic\Framework\EnumAttribute.cs" />
-    <Compile Include="Generic\Extensions\Arguments.cs" />
-    <Compile Include="Generic\Extensions\Constants.cs" />
-    <Compile Include="Generic\Extensions\Utility.cs">
+    <Compile Include="Generic\Utility\Constants.cs" />
+    <Compile Include="Generic\Utility\Utility.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Game\Framework\UniverseSize.cs" />
-    <Compile Include="Generic\Extensions\UnityConstants.cs" />
+    <Compile Include="Generic\Utility\UnityConstants.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
     <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />

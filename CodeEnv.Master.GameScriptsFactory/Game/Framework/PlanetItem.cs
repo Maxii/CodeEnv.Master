@@ -191,7 +191,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         }
     }
 
-    public IList<StationaryLocation> EmergencyGatherStations { get { return (ParentSystem as IGuardable).GuardStations; } }
+    public IList<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IGuardable).GuardStations; } }
 
     public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);

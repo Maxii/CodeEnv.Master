@@ -69,7 +69,7 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     /// </summary>
     /// <param name="defaultSelection">The optional default selection.</param>
     public void RefreshSelectionFromPreference(GameColor defaultSelection = default(GameColor)) {
-        Arguments.ValidateNotNullOrEmpty<string>(Choices);
+        Utility.ValidateNotNullOrEmpty<string>(Choices);
         DefaultSelection = defaultSelection != default(GameColor) ? defaultSelection.GetValueName() : null;
         _isSelectionEventsEnabled = false;
         TryMakePreferenceSelection();
@@ -85,14 +85,14 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     protected override void PopupListSelectionChangedEventHandler() {
         base.PopupListSelectionChangedEventHandler();
         RefreshLabelColor();
-        if(_isSelectionEventsEnabled) {
+        if (_isSelectionEventsEnabled) {
             OnUserSelectedColor();
         }
     }
 
     private void OnUserSelectedColor() {
         D.Assert(_isSelectionEventsEnabled);
-        if(userSelectedColor != null) {
+        if (userSelectedColor != null) {
             userSelectedColor(this, new EventArgs());
         }
     }

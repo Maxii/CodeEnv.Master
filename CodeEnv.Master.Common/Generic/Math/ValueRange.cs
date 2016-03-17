@@ -34,7 +34,7 @@ namespace CodeEnv.Master.Common {
 
         public ValueRange(T min, T max)
             : this() {
-            Arguments.Validate(IsValid(min, max));
+            Utility.Validate(IsValid(min, max));
             Minimum = min;
             Maximum = max;
         }

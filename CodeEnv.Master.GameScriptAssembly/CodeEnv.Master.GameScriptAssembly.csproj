@@ -79,7 +79,6 @@
     <Compile Include="Game\_Debug\UniverseFolder.cs" />
     <Compile Include="Generic\Framework\AFSMSingleton.cs" />
     <Compile Include="Generic\Framework\AFSMSingleton_NoCall.cs" />
-    <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
     <Compile Include="Generic\Framework\AMortalItemStateMachine.cs" />
     <Compile Include="Game\Framework\AMortalItem.cs" />
     <Compile Include="Game\Framework\ADiscernibleItem.cs" />
@@ -123,6 +122,7 @@
     <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
     <Folder Include="Generic\Math\" />
+    <Folder Include="Generic\Utility\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

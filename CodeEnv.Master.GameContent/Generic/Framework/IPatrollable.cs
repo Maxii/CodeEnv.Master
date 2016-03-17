@@ -29,7 +29,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         IList<StationaryLocation> PatrolStations { get; }
 
-        IList<StationaryLocation> EmergencyGatherStations { get; }
+        /// <summary>
+        /// A collection of assembly stations that are local to the item.
+        /// </summary>
+        IList<StationaryLocation> LocalAssemblyStations { get; }
 
         Player Owner { get; }
 

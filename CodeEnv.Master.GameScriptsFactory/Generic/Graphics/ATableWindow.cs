@@ -53,7 +53,7 @@ public abstract class ATableWindow : AGuiWindow {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        Arguments.ValidateNotNull(rowPrefab);
+        Utility.ValidateNotNull(rowPrefab);
         InitializeContentHolder();
         Subscribe();
     }

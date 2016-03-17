@@ -50,7 +50,7 @@ public class StarFlare : AMonoBase {
 
     private void CreateFlare() {
         Light[] lights = gameObject.GetComponentsInChildren<Light>();
-        Arguments.ValidateNotNullOrEmpty<Light>(lights);
+        Utility.ValidateNotNullOrEmpty<Light>(lights);
 
         int lightCount = lights.Length;
         if (lightCount == 1) {

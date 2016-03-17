@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fov">The fov.</param>
         public CameraUnitCmdStat(float minViewDistance, float optViewDistanceAdder, float fov)
             : base(minViewDistance, fov) {
-            Arguments.ValidateNotNegative(optViewDistanceAdder);
+            Utility.ValidateNotNegative(optViewDistanceAdder);
             OptimalViewingDistanceAdder = optViewDistanceAdder;
         }
 

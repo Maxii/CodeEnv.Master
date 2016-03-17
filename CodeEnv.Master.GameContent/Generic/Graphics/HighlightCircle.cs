@@ -76,9 +76,9 @@ namespace CodeEnv.Master.GameContent {
             IsRadiusDynamic = isRadiusDynamic;
             MaxCircles = maxCircles;
             Widths = new List<float>(maxCircles);
-            Widths.Populate<float>(width);
+            Widths.Fill<float>(width);
             Colors = new List<GameColor>(maxCircles);
-            Colors.Populate<GameColor>(color);
+            Colors.Fill<GameColor>(color);
             //InitializeCamera();
         }
 
@@ -104,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toShow">if set to <c>true</c> the circle with this index will show.</param>
         /// <param name="index">The index of the circle to show or hide.</param>
         public void Show(bool toShow, int index) {
-            Arguments.ValidateForRange(index, Constants.Zero, MaxCircles - 1);
+            Utility.ValidateForRange(index, Constants.Zero, MaxCircles - 1);
             if (_line == null) {
                 InitializeLine();
                 InitializeColors();

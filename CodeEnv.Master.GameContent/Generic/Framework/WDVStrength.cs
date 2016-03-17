@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
         /// The result of the operator.
         /// </returns>
         public static WDVStrength operator *(WDVStrength strength, float scaler) {
-            Arguments.ValidateNotNegative(scaler);
+            Utility.ValidateNotNegative(scaler);
             return new WDVStrength(strength.Category, strength.Value * scaler);
         }
 
@@ -129,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
         public WDVStrength(WDVCategory category, float value)
             : this() {
             D.Assert(category != WDVCategory.None);
-            Arguments.ValidateNotNegative(value);
+            Utility.ValidateNotNegative(value);
             Category = category;
             Value = value <= MaxValue ? value : MaxValue;
         }

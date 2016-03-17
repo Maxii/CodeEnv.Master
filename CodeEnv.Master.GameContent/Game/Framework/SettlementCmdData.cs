@@ -109,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void ApprovalPropChangedHandler() {
-            Arguments.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
+            Utility.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
         #endregion

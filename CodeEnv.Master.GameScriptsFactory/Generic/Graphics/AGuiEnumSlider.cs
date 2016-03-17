@@ -46,7 +46,7 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
         _slider.numberOfSteps = numberOfSliderSteps;
         _orderedEnumValues = enumValues.OrderBy(e => e).ToArray();    // assumes E has assigned values in ascending order
         //D.Log("T is {0}. OrderedTValues = {1}.", typeof(T).Name, _orderedTValues.Concatenate());
-        _orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
+        _orderedSliderStepValues = GenerateOrderedSliderStepValues(numberOfSliderSteps);
         //D.Log("OrderedSliderSteps = {0}.", _orderedSliderStepValues.Concatenate());
     }
 
@@ -82,7 +82,7 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
         float tolerance = 0.05F;
         float sliderValue = UISlider.current.value;
         int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
-        Arguments.ValidateNotNegative(index);
+        Utility.ValidateNotNegative(index);
         E enumValue = _orderedEnumValues[index];
         //D.Log("{0}.index = {1}, TValue = {2}.", GetType().Name, index, tValue);
         HandleSliderEnumValueChanged(enumValue);
@@ -91,6 +91,20 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
     #endregion
 
     protected abstract void HandleSliderEnumValueChanged(E value);
+
+    /// <summary>
+    /// Generates slider step values in ascending order based on the number of steps 
+    /// selected for the slider.
+    /// </summary>
+    /// <param name="numberOfSteps">The number of steps.</param>
+    /// <returns>An array of step values in ascending order.</returns>
+    protected float[] GenerateOrderedSliderStepValues(int numberOfSteps) {
+        float[] orderedSliderStepValues = new float[numberOfSteps];
+        for (int i = 0; i < numberOfSteps; i++) {
+            orderedSliderStepValues[i] = (float)i / (float)(numberOfSteps - 1);
+        }
+        return orderedSliderStepValues;
+    }
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

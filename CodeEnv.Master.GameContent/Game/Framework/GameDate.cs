@@ -141,9 +141,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="year">The year.</param>
         public GameDate(int hourOfDay, int dayOfYear, int year)
             : this() {
-            Arguments.ValidateForRange(hourOfDay, Constants.Zero, GameTime.HoursPerDay - 1);
-            Arguments.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);  // UNCLEAR is this range correct?
-            Arguments.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
+            Utility.ValidateForRange(hourOfDay, Constants.Zero, GameTime.HoursPerDay - 1);
+            Utility.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);  // UNCLEAR is this range correct?
+            Utility.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
             HourOfDay = hourOfDay;
             DayOfYear = dayOfYear;
             Year = year;

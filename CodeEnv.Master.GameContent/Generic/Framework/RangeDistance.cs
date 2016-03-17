@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="distance">The distance in units.</param>
         public RangeDistance(RangeCategory rangeCat, float distance)
             : this() {
-            Arguments.ValidateNotNegative(distance);
+            Utility.ValidateNotNegative(distance);
             switch (rangeCat) {
                 case RangeCategory.Short:
                     Short = distance;
@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="longDistance"><c>DistanceRange.Long</c> distance in units.</param>
         public RangeDistance(float shortDistance, float mediumDistance, float longDistance)
             : this() {
-            Arguments.ValidateNotNegative(shortDistance, mediumDistance, longDistance);
+            Utility.ValidateNotNegative(shortDistance, mediumDistance, longDistance);
             Short = shortDistance;
             Medium = mediumDistance;
             Long = longDistance;

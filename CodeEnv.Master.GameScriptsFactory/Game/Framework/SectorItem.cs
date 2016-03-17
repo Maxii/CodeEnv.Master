@@ -134,7 +134,7 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IG
         }
     }
 
-    public IList<StationaryLocation> EmergencyGatherStations { get { return GuardStations; } }
+    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);

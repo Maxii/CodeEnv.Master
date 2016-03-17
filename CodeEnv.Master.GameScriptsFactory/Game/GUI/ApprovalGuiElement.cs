@@ -50,7 +50,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
 
     private void ApprovalPropSetHandler() {
         if (Approval.HasValue) {
-            Arguments.ValidateForRange(Approval.Value, Constants.ZeroPercent, Constants.OneHundredPercent);
+            Utility.ValidateForRange(Approval.Value, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
         _isApprovalSet = true;
         if (AreAllValuesSet) {

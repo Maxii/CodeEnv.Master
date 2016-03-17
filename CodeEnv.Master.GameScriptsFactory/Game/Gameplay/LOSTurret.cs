@@ -72,7 +72,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     private static Quaternion _barrelMaxElevation = Quaternion.Euler(new Vector3(-BarrelMaxElevationAngle, Constants.ZeroF, Constants.ZeroF));
 
-    private static LayerMask _defaultOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
+    private static LayerMask _defaultOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
 
     //[FormerlySerializedAs("hub")]
     [SerializeField]

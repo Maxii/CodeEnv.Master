@@ -130,7 +130,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
     /// </summary>
     /// <param name="form">The form to activate.</param>
     private void ActivateForm(AForm form) {
-        Arguments.ValidateNotNull(form);
+        Utility.ValidateNotNull(form);
         DeactivateAllForms();
         NGUITools.SetActive(form.gameObject, true);
     }

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GenericExtensions.cs
+// File: GeneralExtensions.cs
 // General purpose Extensions. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -17,17 +17,146 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Text;
+    using LocalResources;
     using UnityEngine;
+
     /// <summary>
     /// General purpose Extensions. 
     /// </summary>
     public static class GeneralExtensions {
+
+        #region Enum Extensions
+
+        /// <summary>Gets the string name of the enum constant. Much faster than sourceEnumConstant.ToString().</summary>
+        /// <param name="sourceEnumConstant">The enum constant.</param>
+        /// <returns>The string name of this sourceEnumConstant. </returns>
+        /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>
+        public static string GetValueName(this Enum sourceEnumConstant) {
+            Type enumType = sourceEnumConstant.GetType();
+            return Enum.GetName(enumType, sourceEnumConstant);
+        }
+
+        /// <summary>
+        /// Gets the alternative text from the EnumAttribute if present. If not, the name is returned.
+        /// Commonly used to get a short abbreviation for the enum name, e.g. "O" for Organics, "CV" for Carrier.
+        /// </summary>
+        /// <param friendlyDescription="sourceEnumConstant">The named enum constant.</param>
+        /// <returns>Alternative text for the enum value if the <see cref="EnumAttribute"/> is present.</returns>
+        public static string GetEnumAttributeText(this Enum sourceEnumConstant) {
+            EnumAttribute attribute = GetAttribute(sourceEnumConstant);
+            if (attribute == null) {
+                return GetValueName(sourceEnumConstant);
+            }
+            return attribute.AttributeText;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="Enum" /> sourceEnumType to an <see cref="IList" /> 
+        /// compatible object of Descriptions.
+        /// </summary>
+        /// <param friendlyDescription="sourceEnumType">The <see cref="Enum"/> Type of the enum.</param>
+        /// <returns>An <see cref="IList"/> containing the enumerated
+        /// values (key) and descriptions of the provided Type.</returns>
+        public static IList GetDescriptions(this Type sourceEnumType) {
+            IList list = new ArrayList();
+            Array enumValues = Enum.GetValues(sourceEnumType);
+
+            foreach (Enum value in enumValues) {
+                list.Add(new KeyValuePair<Enum, string>(value, GetEnumAttributeText(value)));
+            }
+            return list;
+        }
+
+        private static EnumAttribute GetAttribute(Enum enumConstant) {
+            EnumAttribute attribute = Attribute.GetCustomAttribute(ForValue(enumConstant), typeof(EnumAttribute)) as EnumAttribute;
+            if (attribute == null) {
+                D.Warn(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetValueName(), typeof(EnumAttribute).Name));
+            }
+            return attribute;
+        }
+
+        private static MemberInfo ForValue(Enum enumConstant) {
+            Type enumType = enumConstant.GetType();
+            return enumType.GetField(Enum.GetName(enumType, enumConstant));
+        }
+
+        #endregion
+
+        #region String Extensions
+
+        /// <summary>
+        /// Inserts the ToString() version of the arguments provided into the calling string using string.Format().
+        /// Usage syntax: "The {0} jumped over the {1}.".Inject("Cat", "Moon");
+        /// </summary>
+        /// <param name="sourceText">The calling string.</param>
+        /// <param name="itemsToInject">The items to inject into the calling string. If the item is null, it is replaced by string.Empty</param>
+        /// <returns></returns>
+        /// <exception cref="System.FormatException"></exception>
+        public static string Inject(this string sourceText, params object[] itemsToInject) {
+            //  'this' sourceText can never be null without the CLR throwing a Null reference exception
+            Utility.ValidateForContent(sourceText);
+            // IMPROVE see Effective C#, Item 45 Minimize Boxing and Unboxing
+            return string.Format(CultureInfo.CurrentCulture, sourceText, itemsToInject);
+        }
+
+        /// <summary>
+        /// Adds the specified delimiter to each string item in the sequence except the last one.
+        /// </summary>
+        /// <param name="sequence">The string sequence.</param>
+        /// <param name="delimiter">The delimiter. Default is ",".</param>
+        /// <returns></returns>
+        public static IEnumerable<string> AddDelimiter(this IEnumerable<string> sequence, string delimiter = Constants.Comma) {
+            Utility.ValidateNotNull(sequence);
+            IList<string> delimitedList = new List<string>();
+            foreach (string item in sequence) {
+                delimitedList.Add(item + Constants.NewLine);
+            }
+            int lastItemIndex = delimitedList.Count - 1;
+            string lastItem = delimitedList[lastItemIndex];
+            string lastItemWithoutDelineationEnding = lastItem.Replace(Constants.NewLine, string.Empty);
+            delimitedList[lastItemIndex] = lastItemWithoutDelineationEnding;
+            return delimitedList;
+        }
+
+        /// <summary>
+        ///     Clears the contents of the string builder.
+        /// </summary>
+        /// <param name="sb">
+        ///     The <see cref="StringBuilder"/> to clear.
+        /// </param>
+        public static void Clear(this StringBuilder sb) {
+            sb.Length = 0;
+            sb.Capacity = 16;
+        }
+
+        /// <summary>
+        /// Removes the specified string (if present) from the source string and returns the result. 
+        /// Only the first instance of <c>stringToRemove</c> is removed. Case sensitive.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="stringToRemove">The string to remove.</param>
+        /// <returns></returns>
+        public static string Remove(this string source, string stringToRemove) {
+            int index = source.IndexOf(stringToRemove);
+            string result = index < 0 ? source : source.Remove(index, stringToRemove.Length);
+            if (source.Equals(result)) {
+                D.Warn("Attempted to remove string {0} from {1} but did not find it.", stringToRemove, source);
+            }
+            else {
+                D.Log("Removed string {0} from {1} resulting in {2}.", stringToRemove, source, result);
+            }
+            return result;
+        }
+
+        #endregion
 
         /// <summary>
         /// Allows syntax like: <c>if(reallyLongStringVariableName.EqualsAnyOf(string1, string2, string3)</c>, or
@@ -45,7 +174,7 @@ namespace CodeEnv.Master.Common {
             if (source is IEnumerable<T>) {
                 throw new ArgumentException("Source argument cannot be IEnumerable.");
             }
-            Arguments.ValidateNotNullOrEmpty(itemsToCompare);
+            Utility.ValidateNotNullOrEmpty(itemsToCompare);
             return itemsToCompare.Contains<T>(source);
         }
 
@@ -83,7 +212,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="itemsToPickFrom">The array of items of Type T to pick from.</param>
         /// <returns></returns>
         public static T OneOf<T>(this System.Random sourceRNG, params T[] itemsToPickFrom) {
-            Arguments.ValidateNotNullOrEmpty(itemsToPickFrom);
+            Utility.ValidateNotNullOrEmpty(itemsToPickFrom);
             return itemsToPickFrom[sourceRNG.Next(itemsToPickFrom.Length)];
         }
 
@@ -98,8 +227,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="sequence">The Sequence of Type T calling the extension.</param>
         /// <param name="actionToExecute">The work to perform on the sequence, usually expressed in lambda form.</param>
         public static void ForAll<T>(this IEnumerable<T> sequence, Action<T> actionToExecute) {
-            Arguments.ValidateNotNull(sequence);
-            Arguments.ValidateNotNull(actionToExecute);
+            Utility.ValidateNotNull(sequence);
+            Utility.ValidateNotNull(actionToExecute);
             sequence.ToList<T>().ForEach(actionToExecute);
             // Warning: Per Microsoft, modifying the underlying collection in the body of the action is not supported and causes undefined behaviour.
             // Starting in .Net 4.5, an InvalidOperationException will be thrown if this occurs. Prior to this no exception is thrown.
@@ -126,8 +255,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="threshold">The value above which no decimal point is included.</param>
         /// <returns></returns>
         public static string FormatValue(this float value, bool showZero = true, float threshold = 10F) {
-            Arguments.ValidateNotNegative(value);
-            Arguments.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
+            Utility.ValidateNotNegative(value);
+            Utility.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
 
             string formattedValue = string.Empty;
             if (value == Constants.ZeroF) {
@@ -255,7 +384,7 @@ namespace CodeEnv.Master.Common {
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
         public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
-            Arguments.ValidateNotNegative(acceptableRange);
+            Utility.ValidateNotNegative(acceptableRange);
             return value >= targetValue - acceptableRange;
         }
 
@@ -269,19 +398,19 @@ namespace CodeEnv.Master.Common {
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
         public static bool IsLessThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
-            Arguments.ValidateNotNegative(acceptableRange);
+            Utility.ValidateNotNegative(acceptableRange);
             return value <= targetValue + acceptableRange;
         }
 
         /// <summary>
-        /// Populates the collection with the provided T value. The number of slots
+        /// Fills the collection with the provided T value. The number of slots
         /// to populate is determined by quantity.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <param name="value">The value to populate with.</param>
         /// <param name="quantity">The quantity of slots in the collection that will be populated.</param>
-        public static void Populate<T>(this ICollection<T> list, T value, int quantity) {
+        public static void Fill<T>(this ICollection<T> list, T value, int quantity) {
             list.Clear();
             for (int i = 0; i < quantity; i++) {
                 list.Add(value);
@@ -289,33 +418,33 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Populates the collection with default(T) value. The number of slots
+        /// Fills the collection with default(T) value. The number of slots
         /// to populate is determined by quantity.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <param name="quantity">The quantity.</param>
-        public static void Populate<T>(this ICollection<T> list, int quantity) {
-            Populate<T>(list, default(T), quantity);
+        public static void Fill<T>(this ICollection<T> list, int quantity) {
+            Fill<T>(list, default(T), quantity);
         }
 
         /// <summary>
-        /// Populates the capacity of the List with the provided T value. 
+        /// Fills the capacity of the List with the provided T value. 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <param name="value">The value.</param>
-        public static void Populate<T>(this List<T> list, T value) {
-            Populate<T>(list, value, list.Capacity);
+        public static void Fill<T>(this List<T> list, T value) {
+            Fill<T>(list, value, list.Capacity);
         }
 
         /// <summary>
-        /// Populates the capacity of the List with default(T).
+        /// Fills the capacity of the List with default(T).
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
-        public static void Populate<T>(this List<T> list) {
-            Populate<T>(list, list.Capacity);
+        public static void Fill<T>(this List<T> list) {
+            Fill<T>(list, list.Capacity);
         }
 
         /// <summary>
@@ -328,7 +457,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="item">The item.</param>
         /// <returns></returns>
         public static T Next<T>(this IList<T> list, T item) {
-            Arguments.ValidateNotNullOrEmpty<T>(list);
+            Utility.ValidateNotNullOrEmpty<T>(list);
             T result = default(T);
             var nextIndex = list.IndexOf(item) + 1;
             if (nextIndex == list.Count) {
@@ -340,6 +469,64 @@ namespace CodeEnv.Master.Common {
             if (result.Equals(default(T))) {
                 string msg = result == null ? "null" : result.ToString();
                 D.Warn("Next result {0} is default of {1}.", msg, typeof(T).Name);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        public static float? NullableSum(this float? source, params float?[] args) {
+            var argList = new List<float?>(args);
+            argList.Add(source);
+            return argList.NullableSum();
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="sequence">The nullable values.</param>
+        /// <returns></returns>
+        public static float? NullableSum(this IEnumerable<float?> sequence) {
+            var result = sequence.Sum();
+            D.Assert(result.HasValue);  // Sum() will never return a null result
+            if (result.Value == Constants.ZeroF && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
+                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
+                result = null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        public static int? NullableSum(this int? source, params int?[] args) {
+            var argList = new List<int?>(args);
+            argList.Add(source);
+            return argList.NullableSum();
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="sequence">The nullable values.</param>
+        /// <returns></returns>
+        public static int? NullableSum(this IEnumerable<int?> sequence) {
+            var result = sequence.Sum();
+            D.Assert(result.HasValue);  // Sum() will never return a null result
+            if (result.Value == Constants.Zero && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
+                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
+                result = null;
             }
             return result;
         }
@@ -356,9 +543,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="propertySelector">The lambda property selector: pub => pub.Property</param>
         /// <param name="onChanged">The subsciber's no parameter/no return method to call when the property changed.</param>
         public static IDisposable SubscribeToPropertyChanged<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action onChanged) where TSource : INotifyPropertyChanged {
-            Arguments.ValidateNotNull(source);
-            Arguments.ValidateNotNull(propertySelector);
-            Arguments.ValidateNotNull(onChanged);
+            Utility.ValidateNotNull(source);
+            Utility.ValidateNotNull(propertySelector);
+            Utility.ValidateNotNull(onChanged);
 
             var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
             PropertyChangedEventHandler handler = (s, e) => {
@@ -386,9 +573,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="onChanging">The subsciber's one parameter/no return method to call when the property is in the process of changing.</param>
         /// <returns>IDisposable for Unsubscribing</returns>
         public static IDisposable SubscribeToPropertyChanging<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action<TProp> onChanging) where TSource : INotifyPropertyChanging {
-            Arguments.ValidateNotNull(source);
-            Arguments.ValidateNotNull(propertySelector);
-            Arguments.ValidateNotNull(onChanging);
+            Utility.ValidateNotNull(source);
+            Utility.ValidateNotNull(propertySelector);
+            Utility.ValidateNotNull(onChanging);
 
             var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
             PropertyChangingEventHandler handler = (s, e) => {

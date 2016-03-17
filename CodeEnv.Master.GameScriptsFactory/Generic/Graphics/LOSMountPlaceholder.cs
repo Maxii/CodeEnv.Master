@@ -36,7 +36,7 @@ public class LOSMountPlaceholder : AMountPlaceholder {
 
     protected override void Validate() {
         base.Validate();
-        Arguments.ValidateForRange(_minBarrelElevation, TempGameValues.MinimumBarrelElevationRange);
+        Utility.ValidateForRange(_minBarrelElevation, TempGameValues.MinimumBarrelElevationRange);
     }
 
     protected override void Cleanup() { }

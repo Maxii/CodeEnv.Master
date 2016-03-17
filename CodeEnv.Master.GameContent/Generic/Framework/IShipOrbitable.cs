@@ -26,7 +26,10 @@ namespace CodeEnv.Master.GameContent {
 
         ShipOrbitSlot ShipOrbitSlot { get; }
 
-        IList<StationaryLocation> EmergencyGatherStations { get; }
+        /// <summary>
+        /// A collection of assembly stations that are local to the item.
+        /// </summary>
+        IList<StationaryLocation> LocalAssemblyStations { get; }
 
         Player Owner { get; }
 

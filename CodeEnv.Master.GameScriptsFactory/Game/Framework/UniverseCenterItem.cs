@@ -198,7 +198,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         }
     }
 
-    public IList<StationaryLocation> EmergencyGatherStations { get { return GuardStations; } }
+    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     public bool IsOrbitingAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);

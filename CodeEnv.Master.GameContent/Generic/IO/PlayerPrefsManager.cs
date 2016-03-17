@@ -282,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void StoreStringPref(string key, string value) {
-            Arguments.ValidateForContent(value);
+            Utility.ValidateForContent(value);
             PlayerPrefs.SetString(key, Encrypt(value));
         }
 

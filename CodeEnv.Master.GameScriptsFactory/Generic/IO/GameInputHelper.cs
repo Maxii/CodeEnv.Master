@@ -115,7 +115,25 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     ///   <c>true</c> if the mouse button is being held down; otherwise, <c>false</c>.
     /// </returns>
     public bool IsMouseButtonDown(NguiMouseButton mouseButton) {
-        return Input.GetMouseButton(mouseButton.ToUnityMouseButton());
+        return Input.GetMouseButton(ConvertToUnityMouseButton(mouseButton));
+    }
+
+    /// <summary>
+    /// Returns the int value used by Unity to represent the provided NguiMouseButton.
+    /// </summary>
+    /// <param name="nguiMouseButton">The ngui mouse button.</param>
+    /// <returns></returns>
+    public int ConvertToUnityMouseButton(NguiMouseButton nguiMouseButton) {
+        return -1 - (int)nguiMouseButton;
+    }
+
+    /// <summary>
+    /// Returns the int value used by Ngui to represent the provided UnityMouseButton.
+    /// </summary>
+    /// <param name="unityMouseButton">The unity mouse button.</param>
+    /// <returns></returns>
+    public int ConvertToNguiMouseButton(UnityMouseButton unityMouseButton) {
+        return -((int)unityMouseButton + 1);
     }
 
     /// <summary>

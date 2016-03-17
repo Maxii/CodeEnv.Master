@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
         /// The result of the operator.
         /// </returns>
         public static DamageStrength operator *(DamageStrength strength, float scaler) {
-            Arguments.ValidateNotNegative(scaler);
+            Utility.ValidateNotNegative(scaler);
             var t = strength.Thermal * scaler;
             var a = strength.Atomic * scaler;
             var k = strength.Kinetic * scaler;
@@ -124,7 +124,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="value">The value.</param>
         public DamageStrength(DamageCategory damageCat, float value)
             : this() {
-            Arguments.ValidateNotNegative(value);
+            Utility.ValidateNotNegative(value);
             switch (damageCat) {
                 case DamageCategory.Thermal:
                     Thermal = value;
@@ -149,7 +149,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="kinetic"><c>DamageCategory.Kinetic</c> value.</param>
         public DamageStrength(float thermal, float atomic, float kinetic)
             : this() {
-            Arguments.ValidateNotNegative(thermal, atomic, kinetic);
+            Utility.ValidateNotNegative(thermal, atomic, kinetic);
             Thermal = thermal;
             Atomic = atomic;
             Kinetic = kinetic;

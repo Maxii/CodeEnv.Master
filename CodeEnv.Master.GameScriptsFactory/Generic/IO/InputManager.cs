@@ -35,14 +35,14 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// This covers the 'normal' game play case where the fixed UI elements should receive events.
     /// </summary>
     public static LayerMask UIEventDispatcherMask_NormalInput { get { return _uiEventDispatcherMask_NormalInput; } }
-    private static LayerMask _uiEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateInclusiveMask(Layers.UI);
+    private static LayerMask _uiEventDispatcherMask_NormalInput = LayerMaskUtility.CreateInclusiveMask(Layers.UI);
 
     /// <summary>
     /// The layers the World EventDispatcher (3D) is allowed to 'see' when determining whether to raise an event.
     /// This covers the 'normal' game play case where all world 3D objects in the scene should receive events.
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
-    private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
+    private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskUtility.CreateExclusiveMask(Layers.UniverseEdge,
         Layers.DeepSpace, Layers.UI, Layers.AvoidableObstacleZone, Layers.CollisionDetectionZone, Layers.Shields, Layers.IgnoreRaycast,
         Layers.Water);
 

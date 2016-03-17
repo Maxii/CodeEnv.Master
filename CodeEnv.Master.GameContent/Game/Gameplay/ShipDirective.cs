@@ -24,33 +24,31 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
-        /// Ships can assume their station in the fleet formation at any time and any location. When this order is given, 
+        /// Ships can attempt to assume their station in the fleet formation at any time and any location. When this order is given, 
         /// the ship attempts to move to its station within the formation. Only Fleet Cmd or the Ship's Captain may order a ship to assume
-        /// its station. The Captain may order it when the ship has idle time, the ship is not in orbit and Fleet Cmd is stationary, 
-        /// aka the formation station is not moving. Ships in orbit donot pay attention to formations. If this order is received 
+        /// its station. Ships in orbit donot pay attention to formations. If this order is received 
         /// from Fleet Cmd by a ship in orbit, the ship will immediately break orbit and move to their formation station.
         /// </summary>
         AssumeStation,
 
         /// <summary>
         /// Ships can assume orbit around any IShipOrbitable target including Bases, Planets, Stars and the UniverseCenter.
-        /// To be allowed to orbit, the owner of the orbit target cannot be at war with the ship's owner. In a Base, the
+        /// To be allowed to orbit, the owner of the orbit target cannot be at war with the ship's owner. For a Base, the
         /// base owner cannot be an enemy which includes being in a state of ColdWare with the ship's owner.
         /// </summary>
         AssumeOrbit,
 
         /// <summary>
         /// Ships can move to all INavigableTargets including Units (fleets and bases), Planetoids, Stars, Systems,
-        /// Sectors, the UniverseCenter, Waypoints and FormationStations. Ownership is not a factor. 
-        /// Only Fleet Cmd may order a ship to move. When moving, ships
-        /// automatically avoid obstacles by adding in a detour waypoint to avoid the obstacle before resuming its move
-        /// to its targeted destination.
+        /// Sectors, the UniverseCenter, Waypoints, OrbitSlots and FormationStations. Ownership is not a factor. 
+        /// Only Fleet Cmd or the User may order a ship to move. When moving, ships automatically avoid obstacles 
+        /// by adding in a detour waypoint to avoid the obstacle before resuming its move to its targeted destination.
         /// </summary>
         Move,
 
         /// <summary>
         /// Ships can attack Unit Elements (Ships and Facilities) and Planetoids owned by enemies of the ship's owner.
-        /// Only Fleet Cmd may order a ship to attack.
+        /// Only Fleet Cmd or the User may order a ship to attack.
         /// </summary>
         Attack,
 
@@ -105,9 +103,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Scuttle,
 
-        StopAttack,
-        //AssumeOrbit,
-        //Entrench,
+        StopAttack
 
 
     }

@@ -137,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="item">The item.</param>
         /// <returns></returns>
         public bool HasKnowledgeOf(IDiscernibleItem item) {
-            Arguments.ValidateNotNull(item);
+            Utility.ValidateNotNull(item);
             if (item is IPlanetoidItem) {
                 return _planetoids.Contains(item as IPlanetoidItem);
             }

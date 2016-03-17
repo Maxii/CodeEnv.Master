@@ -157,7 +157,7 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="T">The Type of AGameEvent.</typeparam>
         /// <param name="gameEvent">The instance of AGameEvent to raise.</param>
         public void Raise<T>(T gameEvent) where T : AGameEvent {
-            Arguments.ValidateNotNull(gameEvent);
+            Utility.ValidateNotNull(gameEvent);
 
             Delegate delegateWithInvocationList;
             if (listenerDelegates.TryGetValue(typeof(T), out delegateWithInvocationList)) {

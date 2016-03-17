@@ -160,7 +160,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="child">The child.</param>
         /// <param name="parent">The parent. If null, child becomes a root GameObject.</param>
         public static void AttachChildToParent(GameObject child, GameObject parent) {
-            Arguments.ValidateNotNull(child);
+            Utility.ValidateNotNull(child);
             Transform childTransform = child.transform;
             childTransform.parent = (parent != null) ? parent.transform : null;
             childTransform.localPosition = Vector3.zero;
@@ -361,7 +361,7 @@ namespace CodeEnv.Master.Common {
         /// signature is onWaitFinished(jobWasKilled).</param>
         /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
         public static Job WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
-            Arguments.ValidateNotNegative(framesToWait);
+            Utility.ValidateNotNegative(framesToWait);
             return new Job(WaitForFrames(framesToWait), toStart: true, jobCompleted: (wasKilled) => {
                 onWaitFinished(wasKilled);
             });

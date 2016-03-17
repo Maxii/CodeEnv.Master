@@ -109,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static GameTimeDuration operator *(int scaler, GameTimeDuration right) {
-            Arguments.ValidateNotNegative(scaler);
+            Utility.ValidateNotNegative(scaler);
             GameTimeDuration result = new GameTimeDuration();
             for (int i = 0; i < scaler; i++) {
                 result += right;
@@ -152,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hours">The hours. Number of hours is unlimited.</param>
         public GameTimeDuration(int hours)
             : this() {
-            Arguments.ValidateNotNegative(hours);
+            Utility.ValidateNotNegative(hours);
             Hours = hours % GameTime.HoursPerDay;
             int days = hours / GameTime.HoursPerDay;
             Days = days % GameTime.DaysPerYear;
@@ -167,8 +167,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="days">The days. Number of days is unlimited.</param>
         public GameTimeDuration(int hours, int days)
             : this() {
-            Arguments.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
-            Arguments.ValidateNotNegative(days);
+            Utility.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
+            Utility.ValidateNotNegative(days);
             Hours = hours;
             Days = days % GameTime.DaysPerYear;
             Years = days / GameTime.DaysPerYear;
@@ -183,9 +183,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="years">The years. Unlimited.</param>
         public GameTimeDuration(int hours, int days, int years)
             : this() {
-            Arguments.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
-            Arguments.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
-            Arguments.ValidateNotNegative(years);
+            Utility.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
+            Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
+            Utility.ValidateNotNegative(years);
             Hours = hours;
             Days = days;
             Years = years;

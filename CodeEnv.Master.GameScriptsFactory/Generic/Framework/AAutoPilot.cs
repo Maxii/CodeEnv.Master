@@ -40,7 +40,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// </summary>
     protected const float DetourTurnAngleThreshold = 15F;
 
-    private static LayerMask _avoidableObstacleZoneOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.AvoidableObstacleZone);
+    private static LayerMask _avoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
     private static Speed[] _inValidAutoPilotSpeeds = {  Speed.None,
                                                         Speed.EmergencyStop,
@@ -127,7 +127,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// <param name="autoPilotTgt">The target this AutoPilot is being engaged to reach.</param>
     /// <param name="autoPilotSpeed">The speed the autopilot should travel at.</param>
     protected void RecordAutoPilotCourseValues(INavigableTarget autoPilotTgt, Speed autoPilotSpeed) {
-        Arguments.ValidateNotNull(autoPilotTgt);
+        Utility.ValidateNotNull(autoPilotTgt);
         D.Assert(!_inValidAutoPilotSpeeds.Contains(autoPilotSpeed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, autoPilotSpeed.GetValueName()));
         AutoPilotTarget = autoPilotTgt;
         AutoPilotSpeed = autoPilotSpeed;

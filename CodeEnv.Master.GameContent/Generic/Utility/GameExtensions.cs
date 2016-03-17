@@ -35,64 +35,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source.</param>
         /// <param name="args">The arguments.</param>
         /// <returns></returns>
-        public static float? NullableSum(this float? source, params float?[] args) {
-            var argList = new List<float?>(args);
-            argList.Add(source);
-            return argList.NullableSum();
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="sequence">The nullable values.</param>
-        /// <returns></returns>
-        public static float? NullableSum(this IEnumerable<float?> sequence) {
-            var result = sequence.Sum();
-            D.Assert(result.HasValue);  // Sum() will never return a null result
-            if (result.Value == Constants.ZeroF && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
-                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
-                result = null;
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="args">The arguments.</param>
-        /// <returns></returns>
-        public static int? NullableSum(this int? source, params int?[] args) {
-            var argList = new List<int?>(args);
-            argList.Add(source);
-            return argList.NullableSum();
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="sequence">The nullable values.</param>
-        /// <returns></returns>
-        public static int? NullableSum(this IEnumerable<int?> sequence) {
-            var result = sequence.Sum();
-            D.Assert(result.HasValue);  // Sum() will never return a null result
-            if (result.Value == Constants.Zero && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
-                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
-                result = null;
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="args">The arguments.</param>
-        /// <returns></returns>
         public static ResourceYield? NullableSum(this ResourceYield? source, params ResourceYield?[] args) {
             var argList = new List<ResourceYield?>(args);
             argList.Add(source);
@@ -240,7 +182,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
         public static Color ToUnityColor(this GameColor gameColor, float alpha = 1F) {    // OPTIMIZE use Color32 
-            Arguments.ValidateForRange(alpha, Constants.ZeroF, Constants.OneF);
+            Utility.ValidateForRange(alpha, Constants.ZeroF, Constants.OneF);
             Color color;
             switch (gameColor) {
                 case GameColor.Black:
@@ -304,6 +246,36 @@ namespace CodeEnv.Master.GameContent {
             string colorHex = GameUtility.ColorToHex(color);
             string colorNgui = UnityConstants.NguiEmbeddedColorFormat.Inject(colorHex);
             return colorNgui + text + UnityConstants.NguiEmbeddedColorTerminator;
+        }
+
+        /// <summary>
+        /// Converts this SpeciesGuiSelection value to a Species value.
+        /// </summary>
+        /// <param name="speciesSelection">The species selection.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static Species Convert(this SpeciesGuiSelection speciesSelection) {
+            switch (speciesSelection) {
+                case SpeciesGuiSelection.Random:
+                    return Enums<Species>.GetRandom(excludeDefault: true);
+                case SpeciesGuiSelection.Human:
+                    return Species.Human;
+                case SpeciesGuiSelection.Borg:
+                    return Species.Borg;
+                case SpeciesGuiSelection.Dominion:
+                    return Species.Dominion;
+                case SpeciesGuiSelection.Klingon:
+                    return Species.Klingon;
+                case SpeciesGuiSelection.Ferengi:
+                    return Species.Ferengi;
+                case SpeciesGuiSelection.Romulan:
+                    return Species.Romulan;
+                case SpeciesGuiSelection.GodLike:
+                    return Species.GodLike;
+                case SpeciesGuiSelection.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(speciesSelection));
+            }
         }
 
     }

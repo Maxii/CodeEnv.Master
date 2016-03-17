@@ -201,7 +201,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     /// <param name="damageSeverity">The severity of the damage as a percentage of the item's hit points when hit.</param>
     protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
-        Arguments.ValidateForRange(damageSeverity, Constants.ZeroPercent, Constants.OneHundredPercent);
+        Utility.ValidateForRange(damageSeverity, Constants.ZeroPercent, Constants.OneHundredPercent);
         var passiveCmDamageChance = damageSeverity;
         var undamagedPassiveCMs = Data.PassiveCountermeasures.Where(cm => !cm.IsDamaged);
         undamagedPassiveCMs.ForAll(cm => cm.IsDamaged = RandomExtended.Chance(passiveCmDamageChance));

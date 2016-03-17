@@ -34,8 +34,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="minViewDistance">The minimum view distance.</param>
         /// <param name="fov">The fov.</param>
         public ACameraItemStat(float minViewDistance, float fov) {
-            Arguments.ValidateForRange(minViewDistance, Constants.ZeroF, Mathf.Infinity);
-            Arguments.ValidateForRange(fov, Constants.ZeroF, 180F);
+            Utility.ValidateForRange(minViewDistance, Constants.ZeroF, Mathf.Infinity);
+            Utility.ValidateForRange(fov, Constants.ZeroF, 180F);
             MinimumViewingDistance = minViewDistance;
             FieldOfView = fov;
         }

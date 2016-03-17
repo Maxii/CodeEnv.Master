@@ -96,7 +96,6 @@
     <Compile Include="Generic\Graphics\ACompositionGuiElement.cs" />
     <Compile Include="Game\GUI\FleetCompositionGuiElement.cs" />
     <Compile Include="Game\GUI\FleetsTableWindow.cs" />
-    <Compile Include="Generic\Extensions\MyNguiUtilities.cs" />
     <Compile Include="Generic\Framework\AOrdnance.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />
     <Compile Include="Generic\Framework\AAutoPilot.cs" />
@@ -212,7 +211,7 @@
     <Compile Include="Game\GUI\NewGameMenuLaunchButton.cs" />
     <Compile Include="Game\GUI\GuiPlayerIQPopupList.cs" />
     <Compile Include="Generic\IO\GuiUsernameInput.cs" />
-    <Compile Include="Generic\Extensions\MyNguiExtensions.cs" />
+    <Compile Include="Generic\Utility\MyNguiExtensions.cs" />
     <Compile Include="Game\GUI\ProductionGuiElement.cs" />
     <Compile Include="Game\GUI\StrengthGuiElement.cs" />
     <Compile Include="Game\Gameplay\ShipHull.cs" />

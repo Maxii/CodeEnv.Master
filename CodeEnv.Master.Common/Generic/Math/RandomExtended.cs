@@ -56,7 +56,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="power">The power.</param>
         /// <returns></returns>
         public static float RangeSkewed(float min, float max, float power) {
-            Arguments.ValidateNotNegative(max - min);
+            Utility.ValidateNotNegative(max - min);
             if (min == max) { return min; }
             return Mathf.Pow(Random.value, power) * (max - min) + min;
         }
@@ -86,7 +86,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="truePercentage">The probability of true being returned.</param>
         /// <returns></returns>
         public static bool Chance(float truePercentage) {
-            Arguments.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
+            Utility.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
             return truePercentage >= UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
@@ -98,7 +98,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="power">The power.</param>
         /// <returns></returns>
         public static bool ChanceSkewed(float truePercentage, float power) {
-            Arguments.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
+            Utility.ValidateForRange(truePercentage, Constants.ZeroPercent, Constants.OneHundredPercent);
             return truePercentage >= RangeSkewed(Constants.ZeroPercent, Constants.OneHundredPercent, power);
         }
 
