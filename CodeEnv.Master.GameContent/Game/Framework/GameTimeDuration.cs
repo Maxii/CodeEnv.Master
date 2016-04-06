@@ -19,15 +19,21 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Immutable data container struct that holds a duration of GameTime, a specific
     /// number of hours, days and years.
+    /// <remarks>WARNING: Not suitable for a dictionary key.</remarks>
     /// </summary>
     public struct GameTimeDuration : IEquatable<GameTimeDuration> {
 
-        public static GameTimeDuration OneDay = new GameTimeDuration(hours: 0, days: 1, years: 0);
-        public static GameTimeDuration OneYear = new GameTimeDuration(hours: 0, days: 0, years: 1);
+        public const string FullFormat = "{0} years, {1} days, {2:0.0} hours"; //= "{0} years, {1:D3} days, {2:D2} hours";
+        public const string NoYearsFormat = "{0} days, {1:0.0} hours";  //= "{0:D3} days, {1:D2} hours";
+        public const string HoursOnlyFormat = "{0:0.0} hours"; //= "{0:D2} hours";
+
+        public static GameTimeDuration OneDay = new GameTimeDuration(hours: 0F, days: 1, years: 0);
+        public static GameTimeDuration OneYear = new GameTimeDuration(hours: 0F, days: 0, years: 1);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
@@ -36,49 +42,25 @@ namespace CodeEnv.Master.GameContent {
         // see C# 4.0 In a Nutshell, page 254
 
         public static bool operator <(GameTimeDuration left, GameTimeDuration right) {
-            if (left.Years < right.Years) { return true; }
-            if (left.Years == right.Years) {
-                if (left.Days < right.Days) { return true; }
-                if (left.Days == right.Days) {
-                    if (left.Hours < right.Hours) { return true; }
-                }
-            }
-            return false;
+            return left.TotalInHours < right.TotalInHours - GameTime.HoursEqualTolerance;
         }
 
         public static bool operator <=(GameTimeDuration left, GameTimeDuration right) {
-            if (left.Years < right.Years) { return true; }
-            if (left.Years == right.Years) {
-                if (left.Days < right.Days) { return true; }
-                if (left.Days == right.Days) {
-                    if (left.Hours < right.Hours) { return true; }
-                    if (left.Hours == right.Hours) { return true; }
-                }
+            if (left < right) {
+                return true;
             }
-            return false;
+            return left.Equals(right);
         }
 
         public static bool operator >(GameTimeDuration left, GameTimeDuration right) {
-            if (left.Years > right.Years) { return true; }
-            if (left.Years == right.Years) {
-                if (left.Days > right.Days) { return true; }
-                if (left.Days == right.Days) {
-                    if (left.Hours > right.Hours) { return true; }
-                }
-            }
-            return false;
+            return left.TotalInHours > right.TotalInHours + GameTime.HoursEqualTolerance;
         }
 
         public static bool operator >=(GameTimeDuration left, GameTimeDuration right) {
-            if (left.Years > right.Years) { return true; }
-            if (left.Years == right.Years) {
-                if (left.Days > right.Days) { return true; }
-                if (left.Days == right.Days) {
-                    if (left.Hours > right.Hours) { return true; }
-                    if (left.Hours == right.Hours) { return true; }
-                }
+            if (left > right) {
+                return true;
             }
-            return false;
+            return left.Equals(right);
         }
 
         public static bool operator ==(GameTimeDuration left, GameTimeDuration right) {
@@ -96,8 +78,8 @@ namespace CodeEnv.Master.GameContent {
                 days = days % GameTime.DaysPerYear;
                 years++;
             }
-            int hours = left.Hours + right.Hours;
-            if (hours >= GameTime.HoursPerDay) {
+            float hours = left.Hours + right.Hours;
+            if (hours.IsGreaterThanOrEqualTo(GameTime.HoursPerDay)) {
                 hours = hours % GameTime.HoursPerDay;
                 days++;
                 if (days >= GameTime.DaysPerYear) {
@@ -121,7 +103,6 @@ namespace CodeEnv.Master.GameContent {
             return scaler * left;
         }
 
-
         // NOTE: no division or subtraction operators 
 
         #endregion
@@ -139,25 +120,21 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The hours setting of this duration. Note: The total duration is acquired using totalInHours.
         /// </summary>
-        public int Hours { get; private set; }
+        public float Hours { get; private set; }
 
         /// <summary>
         /// The total duration in hours.
         /// </summary>
-        public int TotalInHours { get; private set; }
+        public float TotalInHours { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the hours provided.
         /// </summary>
         /// <param name="hours">The hours. Number of hours is unlimited.</param>
-        public GameTimeDuration(int hours)
+        public GameTimeDuration(float hours)
             : this() {
             Utility.ValidateNotNegative(hours);
-            Hours = hours % GameTime.HoursPerDay;
-            int days = hours / GameTime.HoursPerDay;
-            Days = days % GameTime.DaysPerYear;
-            Years = days / GameTime.DaysPerYear;
-            TotalInHours = hours;
+            Initialize(hours);
         }
 
         /// <summary>
@@ -165,14 +142,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="hours">The hours. Must be less than the number of hours in a day.</param>
         /// <param name="days">The days. Number of days is unlimited.</param>
-        public GameTimeDuration(int hours, int days)
+        public GameTimeDuration(float hours, int days)
             : this() {
-            Utility.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
+            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
             Utility.ValidateNotNegative(days);
-            Hours = hours;
-            Days = days % GameTime.DaysPerYear;
-            Years = days / GameTime.DaysPerYear;
-            TotalInHours = (days * GameTime.HoursPerDay) + hours;
+            float totalHours = (days * GameTime.HoursPerDay) + hours;
+            Initialize(totalHours);
         }
 
         /// <summary>
@@ -181,15 +156,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hours">The hours. Must be less than the number of hours in a day.</param>
         /// <param name="days">The days. Must be less than the number of days in a year.</param>
         /// <param name="years">The years. Unlimited.</param>
-        public GameTimeDuration(int hours, int days, int years)
+        public GameTimeDuration(float hours, int days, int years)
             : this() {
-            Utility.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
+            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
             Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
             Utility.ValidateNotNegative(years);
-            Hours = hours;
-            Days = days;
-            Years = years;
-            TotalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+            float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+            Initialize(totalHours);
         }
 
         /// <summary>
@@ -207,28 +180,17 @@ namespace CodeEnv.Master.GameContent {
         public GameTimeDuration(GameDate startDate, GameDate endDate)
             : this() {
             GameUtility.ValidateForRange(startDate, GameDate.GameStartDate, GameDate.GameEndDate);
-            GameUtility.ValidateForRange(endDate, GameDate.GameStartDate, GameDate.GameEndDate);
-            //D.Assert(startDate != endDate);   // a GameTimeDuration of zero should be legal
+            GameUtility.ValidateForRange(endDate, startDate, GameDate.GameEndDate);
+            float totalHours = endDate.TotalHoursSinceGameStart - startDate.TotalHoursSinceGameStart;
+            Initialize(totalHours);
+        }
 
-            int years = endDate.Year - startDate.Year;
-            int days = endDate.DayOfYear - startDate.DayOfYear;
-            if (days < 0) {
-                years--;
-                days = GameTime.DaysPerYear + days;
-            }
-            int hours = endDate.HourOfDay - startDate.HourOfDay;
-            if (hours < 0) {
-                days--;
-                hours = GameTime.HoursPerDay + hours;
-                if (days < 0) {
-                    years--;
-                    days = GameTime.DaysPerYear + days;
-                }
-            }
-            Hours = hours;
-            Days = days;
-            Years = years;
-            TotalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+        private void Initialize(float totalHours) {
+            Hours = totalHours % GameTime.HoursPerDay;
+            int days = Mathf.FloorToInt(totalHours / GameTime.HoursPerDay);
+            Days = days % GameTime.DaysPerYear;
+            Years = days / GameTime.DaysPerYear;
+            TotalInHours = totalHours;
         }
 
         #region Object.Equals and GetHashCode Override
@@ -246,11 +208,10 @@ namespace CodeEnv.Master.GameContent {
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
         public override int GetHashCode() {
-            int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + Hours.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + Days.GetHashCode();
-            hash = hash * 31 + Years.GetHashCode();
-            hash = hash * 31 + TotalInHours.GetHashCode();
+            int hash = 17;
+            // Rule: If two things are equal then they MUST return the same value for GetHashCode()
+            // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
+            // I don't know how to do this when Hours uses Approx so I'll gaurantee it and live with conflicts
             return hash;
         }
 
@@ -259,18 +220,148 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             if (Years == Constants.Zero) {
                 if (Days == Constants.Zero) {
-                    return Constants.GamePeriodHoursOnlyFormat.Inject(Hours);
+                    return HoursOnlyFormat.Inject(Hours);
                 }
-                return Constants.GamePeriodNoYearsFormat.Inject(Days, Hours);
+                return NoYearsFormat.Inject(Days, Hours);
             }
-            return Constants.GamePeriodYearsFormat.Inject(Years, Days, Hours);
+            return FullFormat.Inject(Years, Days, Hours);
         }
 
         #region IEquatable<GameTimeDuration> Members
 
         public bool Equals(GameTimeDuration other) {
-            return Hours == other.Hours && Days == other.Days && Years == other.Years && TotalInHours == other.TotalInHours;
+            return Mathfx.Approx(TotalInHours, other.TotalInHours, GameTime.HoursEqualTolerance);
         }
+
+        #endregion
+
+        #region Prior Implementation Archive
+
+        //public static bool operator <(GameTimeDuration left, GameTimeDuration right) {
+        //    if (left.Years < right.Years) { return true; }
+        //    if (left.Years == right.Years) {
+        //        if (left.Days < right.Days) { return true; }
+        //        if (left.Days == right.Days) {
+        //            if (left.Hours < right.Hours - GameTime.HoursEqualTolerance) {
+        //                D.Assert(!left.Equals(right));
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    return false;
+        //}
+
+        //public static bool operator <=(GameTimeDuration left, GameTimeDuration right) {
+        //    if (left.Years < right.Years) { return true; }
+        //    if (left.Years == right.Years) {
+        //        if (left.Days < right.Days) { return true; }
+        //        if (left.Days == right.Days) {
+        //            if (left.Hours.IsLessThanOrEqualTo(right.Hours, GameTime.HoursEqualTolerance)) {
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    return false;
+        //}
+
+        //public static bool operator >(GameTimeDuration left, GameTimeDuration right) {
+        //    if (left.Years > right.Years) { return true; }
+        //    if (left.Years == right.Years) {
+        //        if (left.Days > right.Days) { return true; }
+        //        if (left.Days == right.Days) {
+        //            if (left.Hours > right.Hours + GameTime.HoursEqualTolerance) {
+        //                D.Assert(!left.Equals(right));
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    return false;
+        //}
+
+        //public static bool operator >=(GameTimeDuration left, GameTimeDuration right) {
+        //    if (left.Years > right.Years) { return true; }
+        //    if (left.Years == right.Years) {
+        //        if (left.Days > right.Days) { return true; }
+        //        if (left.Days == right.Days) {
+        //            if (left.Hours.IsGreaterThanOrEqualTo(right.Hours, GameTime.HoursEqualTolerance)) {
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    return false;
+        //}
+
+        //public GameTimeDuration(float hours)
+        //    : this() {
+        //    Utility.ValidateNotNegative(hours);
+        //    Hours = hours % GameTime.HoursPerDay;
+        //    int days = Mathf.FloorToInt(hours / GameTime.HoursPerDay);
+        //    Days = days % GameTime.DaysPerYear;
+        //    Years = days / GameTime.DaysPerYear;
+        //    TotalInHours = hours;
+        //}
+
+        //public GameTimeDuration(float hours, int days)
+        //    : this() {
+        //    Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
+        //    Utility.ValidateNotNegative(days);
+        //    Hours = hours;
+        //    Days = days % GameTime.DaysPerYear;
+        //    Years = days / GameTime.DaysPerYear;
+        //    TotalInHours = (days * GameTime.HoursPerDay) + hours;
+        //}
+
+        //public GameTimeDuration(float hours, int days, int years)
+        //    : this() {
+        //    Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
+        //    Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
+        //    Utility.ValidateNotNegative(years);
+        //    Hours = hours;
+        //    Days = days;
+        //    Years = years;
+        //    TotalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+        //}
+
+        //public GameTimeDuration(GameDate startDate, GameDate endDate)
+        //    : this() {
+        //    GameUtility.ValidateForRange(startDate, GameDate.GameStartDate, GameDate.GameEndDate);
+        //    GameUtility.ValidateForRange(endDate, GameDate.GameStartDate, GameDate.GameEndDate);
+
+        //    int years = endDate.Year - startDate.Year;
+        //    int days = endDate.DayOfYear - startDate.DayOfYear;
+        //    if (days < 0) {
+        //        years--;
+        //        days = GameTime.DaysPerYear + days;
+        //    }
+        //    float hours = endDate.HourOfDay - startDate.HourOfDay;
+        //    if (hours < 0F) {
+        //        days--;
+        //        hours = GameTime.HoursPerDay + hours;
+        //        if (days < 0) {
+        //            years--;
+        //            days = GameTime.DaysPerYear + days;
+        //        }
+        //    }
+        //    //Hours = hours;
+        //    //Days = days;
+        //    //Years = years;
+        //    //TotalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+        //    float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+        //    Initialize(totalHours);
+        //}
+
+        //public override int GetHashCode() {
+        //    int hash = 17;
+        //    hash = hash * 31 + Hours.GetHashCode(); // 31 = another prime number
+        //    hash = hash * 31 + Days.GetHashCode();
+        //    hash = hash * 31 + Years.GetHashCode();
+        //    hash = hash * 31 + TotalInHours.GetHashCode();
+        //    return hash;
+        //}
+
+        //public bool Equals(GameTimeDuration other) {
+        //    return Mathfx.Approx(Hours, other.Hours, GameTime.HoursEqualTolerance) && Days == other.Days && Years == other.Years;
+        //}
 
         #endregion
 

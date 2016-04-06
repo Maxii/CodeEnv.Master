@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// Class for orbit slots that know how to place an object into orbit around a Celestial object.
     /// These orbit slots are currently used to create orbits in Systems (aka 'around' a star) and around planets.
     /// </summary>
+    [System.Obsolete]
     public class CelestialOrbitSlot : AOrbitSlot {
 
         public GameObject OrbitedObject { get; private set; }
@@ -51,34 +52,34 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="orbitingObject">The object that wants to assume an orbit.</param>
         /// <returns></returns>
-        public void AssumeOrbit(Transform orbitingObject) {
-            D.Log("{0}.AssumeOrbit({1}) called.", OrbitedObject.name, orbitingObject.name);
-            OrbitSimulator = References.GeneralFactory.InstallCelestialObjectInOrbit(orbitingObject.gameObject, this);
-            orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
-        }
+        //public void AssumeOrbit(Transform orbitingObject) {
+        //    D.Log("{0}.AssumeOrbit({1}) called.", OrbitedObject.name, orbitingObject.name);
+        //    OrbitSimulator = References.GeneralFactory.InstallCelestialObjectInOrbit(orbitingObject.gameObject, this);
+        //    orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
+        //}
 
         /// <summary>
         /// Destroys the orbit simulator referenced by this CelestialOrbitSlot once the
         /// simulator has no more children.
         /// </summary>
-        public void DestroyOrbitSimulator() {
-            D.Assert(OrbitSimulator != null, "Attempting to destroy a non-existant {0} around {1}.".Inject(typeof(IOrbitSimulator).Name, OrbitedObject.name));
-            WaitJobUtility.WaitWhileCondition(new Reference<bool>(() => OrbitSimulator.transform.childCount > Constants.Zero), onWaitFinished: (jobWasKilled) => {
-                UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(OrbitSimulator);
-                OrbitSimulator = null;
-                D.Log("{0} around {1} destroyed.", typeof(IOrbitSimulator).Name, OrbitedObject.name);
-            });
-        }
+        //public void DestroyOrbitSimulator() {
+        //    D.Assert(OrbitSimulator != null, "Attempting to destroy a non-existant {0} around {1}.".Inject(typeof(IOrbitSimulator).Name, OrbitedObject.name));
+        //    WaitJobUtility.WaitWhileCondition(() => OrbitSimulator.transform.childCount > Constants.Zero, onWaitFinished: (jobWasKilled) => {
+        //        GameUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(OrbitSimulator);
+        //        OrbitSimulator = null;
+        //        D.Log("{0} around {1} destroyed.", typeof(IOrbitSimulator).Name, OrbitedObject.name);
+        //    });
+        //}
 
-        /// <summary>
-        /// Generates a random local position within the orbit slot at <c>MeanDistance</c> from the body orbited.
-        /// Use to set the local position of the orbiting object once attached to the orbiter.
-        /// </summary>
-        /// <returns></returns>
-        private Vector3 GenerateRandomLocalPositionWithinSlot() {
-            Vector2 pointOnCircle = RandomExtended.PointOnCircle(MeanRadius);
-            return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
-        }
+        ///// <summary>
+        ///// Generates a random local position within the orbit slot at <c>MeanDistance</c> from the body orbited.
+        ///// Use to set the local position of the orbiting object once attached to the orbiter.
+        ///// </summary>
+        ///// <returns></returns>
+        //private Vector3 GenerateRandomLocalPositionWithinSlot() {
+        //    Vector2 pointOnCircle = RandomExtended.PointOnCircle(MeanRadius);
+        //    return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
+        //}
 
         public override string ToString() {
             return "{0} [{1:0.#}-{2:0.#}]".Inject(GetType().Name, InnerRadius, OuterRadius);

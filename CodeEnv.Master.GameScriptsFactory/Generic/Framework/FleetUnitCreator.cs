@@ -202,13 +202,13 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         LogEvent();
         Player fleetOwner = _owner;
         var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
-        IEnumerable<IUnitAttackableTarget> attackTgts = fleetOwnerKnowledge.Starbases.Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
+        IEnumerable<IUnitAttackableTarget> attackTgts = fleetOwnerKnowledge.Starbases.Cast<IUnitAttackableTarget>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner));
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = fleetOwnerKnowledge.Settlements.Where(s => fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitAttackableTarget>();
+            attackTgts = fleetOwnerKnowledge.Settlements.Cast<IUnitAttackableTarget>().Where(s => s.IsAttackingAllowedBy(fleetOwner));
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = fleetOwnerKnowledge.Planets.Where(p => fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitAttackableTarget>();
+                attackTgts = fleetOwnerKnowledge.Planets.Cast<IUnitAttackableTarget>().Where(p => p.IsAttackingAllowedBy(fleetOwner));
                 if (attackTgts.IsNullOrEmpty()) {
                     D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
                     __GetFleetUnderway();
@@ -340,19 +340,19 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     private float __GetHullMass(ShipHullCategory hullCat) {
         switch (hullCat) {
             case ShipHullCategory.Frigate:
-                return 50F;
+                return 50F;                     // mass * drag = 2.5
             case ShipHullCategory.Destroyer:
             case ShipHullCategory.Support:
-                return 100F;
+                return 100F;                     // mass * drag = 8
             case ShipHullCategory.Cruiser:
             case ShipHullCategory.Colonizer:
             case ShipHullCategory.Science:
-                return 200F;
+                return 200F;                     // mass * drag = 20
             case ShipHullCategory.Dreadnaught:
             case ShipHullCategory.Troop:
-                return 400F;
+                return 400F;                     // mass * drag = 60
             case ShipHullCategory.Carrier:
-                return 500F;
+                return 500F;                     // mass * drag = 125
             case ShipHullCategory.Scout:
             case ShipHullCategory.Fighter:
             case ShipHullCategory.None:
@@ -407,7 +407,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         float hullMass = __GetHullMass(hull);   // most but not all of the mass of the ship
         float hullOpenSpaceDrag = __GetHullDrag(hull);
 
-        float reqdFullFtlPower = fullFtlSpeedTgt * hullMass * hullOpenSpaceDrag;
+        //float reqdFullFtlPower = fullFtlSpeedTgt * hullMass * hullOpenSpaceDrag;
+        float reqdFullFtlPower = GameUtility.CalculateReqdPropulsionPower(fullFtlSpeedTgt, hullMass, hullOpenSpaceDrag);
         return reqdFullFtlPower / TempGameValues.__StlToFtlPropulsionPowerFactor;
     }
 

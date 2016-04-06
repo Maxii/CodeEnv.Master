@@ -34,8 +34,7 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
         get { return _owner; }
         set {
             D.Assert(!_isOwnerSet);    // only happens once between Resets
-            _owner = value;
-            OwnerPropSetHandler();
+            SetProperty<Player>(ref _owner, value, "Owner", OwnerPropSetHandler);
         }
     }
 

@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CubeWireframe_Alt : APropertyChangeTracking {
 
-        private Transform _target;
-
         private GameColor _color;
         public GameColor Color {
             get { return _color; }
@@ -54,6 +52,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _lineName, value, "LineName", LineNamePropChangedHandler); }
         }
 
+        private Transform _target;
         private VectorLine _line;
         private Visibility _visibility;
 

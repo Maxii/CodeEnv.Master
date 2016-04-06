@@ -23,11 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetStat : PlanetoidStat {
 
-        public float LowOrbitRadius { get; private set; }
+        public float CloseOrbitInnerRadius { get; private set; }
 
-        public PlanetStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources, float lowOrbitRadius)
+        public PlanetStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources, float closeOrbitInnerRadius)
             : base(radius, mass, maxHitPts, category, capacity, resources) {
-            LowOrbitRadius = lowOrbitRadius;
+            CloseOrbitInnerRadius = closeOrbitInnerRadius;
         }
 
         public override string ToString() {

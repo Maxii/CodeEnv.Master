@@ -33,17 +33,17 @@ namespace CodeEnv.Master.GameContent {
         protected virtual IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
 
         protected IGameManager _gameMgr;
+
         private IDictionary<Player, AIntel> _playerIntelLookup;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AIntelItemData"/> class.
+        /// Initializes a new instance of the <see cref="AIntelItemData" /> class.
         /// </summary>
-        /// <param name="itemTransform">The item transform.</param>
-        /// <param name="name">The name.</param>
+        /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        public AIntelItemData(Transform itemTransform, string name, Player owner, ACameraItemStat cameraStat)
-            : base(itemTransform, name, owner, cameraStat) {
+        public AIntelItemData(IIntelItem item, Player owner, ACameraItemStat cameraStat)
+            : base(item, owner, cameraStat) {
             _gameMgr = References.GameManager;
             //InitializePlayersIntel(); now called by AIntelItem.InitializeOnData to move out of constructor
         }

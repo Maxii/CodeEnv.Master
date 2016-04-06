@@ -90,10 +90,11 @@ namespace CodeEnv.Master.Common {
         public const string CurrencyNumericFormat = "C02";
         public const string PercentNumericFormat = "P00";
 
-        public const string GameDateFormat = "{0}.{1:D3}.{2:D2}";
-        public const string GamePeriodYearsFormat = "{0} years, {1:D3} days, {2:D2} hours";
-        public const string GamePeriodNoYearsFormat = "{0:D3} days, {1:D2} hours";
-        public const string GamePeriodHoursOnlyFormat = "{0:D2} hours";
+        // 3.25.16 Moved to GameTime
+        //public const string GameCalenderDateFormat = "{0}.{1:D3}.{2:00.}";  //= "{0}.{1:D3}.{2:D2}";
+        //public const string GamePeriodYearsFormat = "{0} years, {1:D3} days, {2:00.#} hours"; //= "{0} years, {1:D3} days, {2:D2} hours";
+        //public const string GamePeriodNoYearsFormat = "{0:D3} days, {1:00.#} hours";  //= "{0:D3} days, {1:D2} hours";
+        //public const string GamePeriodHoursOnlyFormat = "{0:00.#} hours"; //= "{0:D2} hours";
 
         // Common Strings
         public static string UserCurrentWorkingDirectoryPath { get { return System.Environment.CurrentDirectory; } }
@@ -112,6 +113,8 @@ namespace CodeEnv.Master.Common {
         public const string Colon = ":";
         public const string QuestionMark = "?";
         public const string PercentSign = "%";
+        public const string LessThan = "<";
+        public const string GreaterThan = ">";
         /// <summary>
         /// The forward slash, aka division sign.
         /// </summary>

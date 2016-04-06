@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, ISensorDetectable, IAvoidableObstacle,
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle,
     IPatrollable, IFleetExplorable, IShipExplorable, IGuardable {
 
     public new UniverseCenterData Data {
@@ -44,6 +44,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     private SphereCollider _primaryCollider;
     private SphereCollider _obstacleZoneCollider;
     private DetourGenerator _detourGenerator;
+    private IList<IShipItem> _shipsInHighOrbit;
+    private IList<IShipItem> _shipsInCloseOrbit;
+    private Rigidbody _highOrbitRigidbody;
 
     #region Initialization
 
@@ -66,12 +69,17 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         D.Assert(_obstacleZoneCollider.gameObject.layer == (int)Layers.AvoidableObstacleZone);
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
-        _obstacleZoneCollider.radius = Data.LowOrbitRadius;
+        _obstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone collider has a kinematic rigidbody
         D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
-        Vector3 obstacleZoneCenter = Position + _obstacleZoneCollider.center;
-        _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.HighOrbitRadius);
+        InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
+    }
+
+    private void InitializeObstacleDetourGenerator() {
+        D.Assert(!IsMobile);
+        Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
+        _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -87,7 +95,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Data.HighOrbitRadius * 2F;
+        float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * 2F;
         var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
@@ -98,17 +106,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     private IList<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
-        float distanceFromPosition = Data.HighOrbitRadius * 2F; // HACK
+        float distanceFromPosition = Data.CloseOrbitOuterRadius * 2F; // HACK
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
         guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
         guardStations.Add(new StationaryLocation(Position + localPointBelowPosition));
         return guardStations;
-    }
-
-
-    private ShipOrbitSlot InitializeShipOrbitSlot() {
-        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
     }
 
     #endregion
@@ -190,21 +193,91 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     #region IShipOrbitable Members
 
-    private ShipOrbitSlot _shipOrbitSlot;
-    public ShipOrbitSlot ShipOrbitSlot {
-        get {
-            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
-            return _shipOrbitSlot;
+    public void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+        if (_shipsInHighOrbit == null) {
+            _shipsInHighOrbit = new List<IShipItem>();
         }
+        _shipsInHighOrbit.Add(ship);
+
+        if (_highOrbitRigidbody == null) {
+            _highOrbitRigidbody = gameObject.AddMissingComponent<Rigidbody>();
+            _highOrbitRigidbody.useGravity = false;
+            _highOrbitRigidbody.isKinematic = true;
+        }
+        shipOrbitJoint.connectedBody = _highOrbitRigidbody;
+    }
+
+    public bool IsHighOrbitAllowedBy(Player player) { return true; }
+
+    public bool IsInHighOrbit(IShipItem ship) {
+        if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
+    }
+
+    public void HandleBrokeOrbit(IShipItem ship) {
+        if (IsInHighOrbit(ship)) {
+            var isRemoved = _shipsInHighOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
+            return;
+        }
+        if (IsInCloseOrbit(ship)) {
+            D.Assert(_closeOrbitSimulator != null);
+            var isRemoved = _shipsInCloseOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
+            float shipDistance = Vector3.Distance(ship.Position, Position);
+            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius;
+            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+                ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            if (_shipsInCloseOrbit.Count == Constants.Zero) {
+                // Choose either to deactivate the OrbitSimulator or destroy it, but not both
+                CloseOrbitSimulator.IsActivated = false;
+                //DestroyOrbitSimulator();
+            }
+            return;
+        }
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
+    }
+
+    #endregion
+
+    #region IShipCloseOrbitable Members
+
+    public bool IsCloseOrbitAllowedBy(Player player) { return !Owner.IsAtWarWith(player); }
+
+    private IShipCloseOrbitSimulator _closeOrbitSimulator;
+    public IShipCloseOrbitSimulator CloseOrbitSimulator {
+        get {
+            if (_closeOrbitSimulator == null) {
+                OrbitData closeOrbitData = new OrbitData(gameObject, Data.CloseOrbitInnerRadius, Data.CloseOrbitOuterRadius, IsMobile);
+                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
+            }
+            return _closeOrbitSimulator;
+        }
+    }
+
+    public void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+        if (_shipsInCloseOrbit == null) {
+            _shipsInCloseOrbit = new List<IShipItem>();
+        }
+        _shipsInCloseOrbit.Add(ship);
+        shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
+    }
+
+    public bool IsInCloseOrbit(IShipItem ship) {
+        if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
     }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
-    public bool IsOrbitingAllowedBy(Player player) {
-        return !Owner.IsAtWarWith(player);
-    }
-
     #endregion
+
 
     #region ICameraFocusable Members
 
@@ -228,16 +301,16 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
 
     public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
 
-    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
-        return Data.HighOrbitRadius + shipCollisionAvoidanceRadius; // OPTIMIZE want shipRadius value as AvoidableObstacleZone ends at LowOrbitRadius?
+    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
+        return Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius;
     }
 
     #endregion
 
     #region IAvoidableObstacle Members
 
-    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
-        return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius, formationOffset);
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
+        return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
     }
 
     #endregion
@@ -260,7 +333,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         }
     }
 
-    // EmergencyGatherStations - see IShipOrbitable
+    // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);
@@ -292,7 +365,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitabl
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
     }
 
-    // EmergencyGatherStations - see IShipOrbitable
+    // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsExploringAllowedBy(Player player) {
         // currently owner can only be NoPlayer which by definition is not at war with anyone

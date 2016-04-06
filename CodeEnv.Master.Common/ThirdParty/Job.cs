@@ -37,7 +37,14 @@ namespace CodeEnv.Master.Common {
 
         public bool IsRunning { get; private set; }
 
-        public virtual bool IsPaused { get; private set; }
+        private bool _isPaused;
+        public bool IsPaused {
+            get { return _isPaused; }
+            set {
+                D.Assert(_isPaused != value, "{0} is trying to set IsPaused to value {1} it already has.", typeof(Job).Name, value);
+                _isPaused = value;
+            }
+        }
 
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
@@ -106,6 +113,17 @@ namespace CodeEnv.Master.Common {
             //}
             // ******************************************
 
+            // ************ My 3.24.16 Addition to support Killed Jobs ****************************
+            // Note: adding OnJobCompleted above to support child jobs and deleting the final OnJobCompleted
+            // resulted in OnJobCompleted never being called if a Job was killed.
+            if (_jobWasKilled) {    // filter keeps OnJobCompleted from being called twice when completing normally
+                OnJobCompleted();
+            }
+            // ************************************************************************************
+
+            // *************** My 3.24.16 Addition to allow GC of this Job instance ***************
+            jobRunner.StopCoroutine(_coroutine);
+            // ************************************************************************************
         }
 
         #region public API
@@ -159,14 +177,6 @@ namespace CodeEnv.Master.Common {
         //    yield return jobRunner.StartCoroutine(Run());
         //}
 
-        public virtual void Pause() {
-            IsPaused = true;
-        }
-
-        public virtual void Unpause() {
-            IsPaused = false;
-        }
-
         /// <summary>
         /// Stops this Job if running, along with all child jobs waiting.
         /// </summary>
@@ -175,7 +185,7 @@ namespace CodeEnv.Master.Common {
                 _jobWasKilled = true;
                 IsRunning = false;
             }
-            IsPaused = false;
+            _isPaused = false;
         }
 
         // IMPROVE This and KillInDays needs to use GameTime which includes gamespeed and pausing
@@ -208,10 +218,7 @@ namespace CodeEnv.Master.Common {
         }
 
         private void Cleanup() {
-            if (IsRunning) {
-                Kill();
-            }
-            // other cleanup here including any tracking Gui2D elements
+            Kill();
         }
 
         public override string ToString() {

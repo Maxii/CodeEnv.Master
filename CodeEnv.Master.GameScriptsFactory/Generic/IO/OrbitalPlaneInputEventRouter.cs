@@ -49,12 +49,14 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private GameObject _systemItemGo;
     private GameInputHelper _inputHelper;
     private InputManager _inputMgr;
+    private GameManager _gameMgr;
     private IList<IDisposable> _subscriptions;
 
     protected override void Awake() {
         base.Awake();
         _inputHelper = GameInputHelper.Instance;
         _inputMgr = InputManager.Instance;
+        _gameMgr = GameManager.Instance;
         _systemItemGo = gameObject.GetSingleComponentInParents<SystemItem>().gameObject;
         Subscribe();
     }
@@ -64,6 +66,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
     #region Event and Property Change Handlers
@@ -84,6 +87,10 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
         }
+    }
+
+    private void IsPausedPropChangedHandler() {
+        PauseJobs(_gameMgr.IsPaused);
     }
 
     private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler(Vector2 moveDelta) {
@@ -111,7 +118,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             // eventReceiverMask to Zero. However, the Click event for this collider is already queued to send, so the 
             // eventReceiverMask has no affect on this particular event. If allowed to check for an occluded object, 
             // TryCheckForOccludedObject's Assert will fail.
-            //D.Log("{0}.OnClick() received while in {1}.{2}.", Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());
+            //D.Log("{0}.OnClick() received while in {1}.{2}.", Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());
             return;
         }
         GameObject occludedObject;
@@ -125,7 +132,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private void DoubleClickEventHandler() {
         //D.Log("{0}.OnDoubleClick() received.", Name);
         D.Warn(_inputMgr.InputMode == GameInputMode.PartialPopup, "{0}.OnDoubleClick() received while in {1}.{2}.",
-            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());   // OPTIMIZE I haven't seen this occur so far
+            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());   // OPTIMIZE I haven't seen this occur so far
         GameObject occludedObject;
         if (TryCheckForOccludedObject(out occludedObject)) {
             _inputHelper.Notify(occludedObject, "OnDoubleClick");
@@ -218,7 +225,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         //eventDispatcher.eventReceiverMask = savedMask;
 
         D.Assert(_inputMgr.InputMode == GameInputMode.Normal, "{0}: {1} = {2}.",
-            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());  // Occlusion check should only occur during Normal InputMode
+            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());  // Occlusion check should only occur during Normal InputMode
 
         var maskWithoutOrbitalPlaneLayer = InputManager.WorldEventDispatcherMask_NormalInput.RemoveFromMask(orbitalPlaneLayer);
         bool isObjectOccluded = false;
@@ -265,7 +272,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
         if (isOver) {
             D.Assert(_inputMgr.InputMode == GameInputMode.Normal, "{0} received OnHover(true) during {1}.{2}.",
-                Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetEnumAttributeText());
+                Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());
         }
 
 
@@ -431,6 +438,13 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     #endregion
 
     #endregion
+
+    private void PauseJobs(bool toPause) {
+        if (IsSpawnOccludedObjectChecksJobRunning) {
+            // spawn job gets paused as its sole purpose is to show occluded objects that move on their own
+            _spawnOccludedObjectChecksJob.IsPaused = toPause;
+        }
+    }
 
     protected override void Cleanup() {
         EnableOnHoverCheckingForOccludedObjects(false);

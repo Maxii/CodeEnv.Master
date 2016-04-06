@@ -37,15 +37,16 @@ public class GuiDateReadout : AGuiLabelReadout {
     }
 
     private void Subscribe() {
-        //D.Log("{0} subscribing to {1}.dateChanged.", GetType().Name, typeof(GameTime).Name);
-        _gameTime.dateChanged += DateChangedEventHandler;
+        //D.Log("{0} subscribing to {1}.calenderDateChanged.", GetType().Name, typeof(GameTime).Name);
+        _gameTime.calenderDateChanged += CalenderDateChangedEventHandler;
     }
+
 
     #region Event and Property Change Handlers
 
-    private void DateChangedEventHandler(object sender, EventArgs e) {
-        string dateMsg = _gameTime.CurrentDate.ToString();
-        RefreshReadout(dateMsg);
+    private void CalenderDateChangedEventHandler(object sender, EventArgs e) {
+        string formattedCalenderDateText = _gameTime.CurrentDate.CalenderFormattedDate;
+        RefreshReadout(formattedCalenderDateText);
     }
 
     #endregion
@@ -55,7 +56,7 @@ public class GuiDateReadout : AGuiLabelReadout {
     }
 
     private void Unsubscribe() {
-        _gameTime.dateChanged -= DateChangedEventHandler;
+        _gameTime.calenderDateChanged -= CalenderDateChangedEventHandler;
     }
 
     public override string ToString() {

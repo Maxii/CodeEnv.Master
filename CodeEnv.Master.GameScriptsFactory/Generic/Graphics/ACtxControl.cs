@@ -347,27 +347,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void ShowCtxMenuEventHandler() {
         OnShowBegun();
         //D.Log("{0}.{1}: Subscriber count to ShowCtxMenuEventHandler = {2}.", OperatorName, GetType().Name, _ctxObject.onShow.Count);
-        switch (_menuOpenedMode) {
-            case CtxMenuOpenedMode.MenuOperatorIsSelected:
-                PopulateMenu_UserMenuOperatorIsSelected();
-                AddOptimalFocusDistanceItemToMenu();
-                break;
-            case CtxMenuOpenedMode.UserRemoteShipIsSelected:
-                PopulateMenu_UserRemoteShipIsSelected();
-                break;
-            case CtxMenuOpenedMode.UserRemoteFleetIsSelected:
-                PopulateMenu_UserRemoteFleetIsSelected();
-                break;
-            case CtxMenuOpenedMode.UserRemoteBaseIsSelected:
-                PopulateMenu_UserRemoteBaseIsSelected();
-                break;
-            case CtxMenuOpenedMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_menuOpenedMode));
-        }
-        IsShowing = true;
-        InputManager.Instance.InputMode = GameInputMode.PartialPopup;
-        _gameMgr.RequestPauseStateChange(toPause: true);
+        HandleShowCtxMenu();
     }
 
     private void CtxMenuSelectionEventHandler() {
@@ -407,6 +387,32 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     #endregion
+
+    private void HandleShowCtxMenu() {
+        _gameMgr.RequestPauseStateChange(toPause: true);
+        InputManager.Instance.InputMode = GameInputMode.PartialPopup;
+        switch (_menuOpenedMode) {
+            case CtxMenuOpenedMode.MenuOperatorIsSelected:
+                PopulateMenu_UserMenuOperatorIsSelected();
+                AddOptimalFocusDistanceItemToMenu();
+                break;
+            case CtxMenuOpenedMode.UserRemoteShipIsSelected:
+                PopulateMenu_UserRemoteShipIsSelected();
+                break;
+            case CtxMenuOpenedMode.UserRemoteFleetIsSelected:
+                PopulateMenu_UserRemoteFleetIsSelected();
+                break;
+            case CtxMenuOpenedMode.UserRemoteBaseIsSelected:
+                PopulateMenu_UserRemoteBaseIsSelected();
+                break;
+            case CtxMenuOpenedMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_menuOpenedMode));
+        }
+        IsShowing = true;
+        //InputManager.Instance.InputMode = GameInputMode.PartialPopup;
+        //_gameMgr.RequestPauseStateChange(toPause: true);
+    }
 
     protected virtual void HandleHideCtxMenu() {
         IsShowing = false;

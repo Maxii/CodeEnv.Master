@@ -65,21 +65,19 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="SystemData" /> class
         /// with the owner initialized to NoPlayer.
         /// </summary>
-        /// <param name="systemTransform">The system transform.</param>
+        /// <param name="system">The system.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        /// <param name="systemName">Name of the system.</param>
-        public SystemData(Transform systemTransform, CameraFocusableStat cameraStat, string systemName)
-            : this(systemTransform, cameraStat, systemName, TempGameValues.NoPlayer) { }
+        public SystemData(ISystemItem system, CameraFocusableStat cameraStat)
+            : this(system, cameraStat, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class.
         /// </summary>
-        /// <param name="systemTransform">The system transform.</param>
+        /// <param name="system">The system.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        /// <param name="systemName">Name of the system.</param>
         /// <param name="owner">The owner.</param>
-        public SystemData(Transform systemTransform, CameraFocusableStat cameraStat, string systemName, Player owner)
-            : base(systemTransform, systemName, owner, cameraStat) {
+        public SystemData(ISystemItem system, CameraFocusableStat cameraStat, Player owner)
+            : base(system, owner, cameraStat) {
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
             Topography = Topography.System;
             Subscribe();
@@ -242,7 +240,6 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-
         #region IDisposable
 
         private bool _alreadyDisposed = false;
@@ -282,8 +279,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-
 
     }
 }

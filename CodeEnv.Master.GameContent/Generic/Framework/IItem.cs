@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using Common;
     using UnityEngine;
 
     /// <summary>
@@ -45,6 +46,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         string FullName { get; }
         string DisplayName { get; }
+        string Name { get; }
+
+        Topography Topography { get; }
+
+        bool ShowDebugLog { get; }
 
     }
 }

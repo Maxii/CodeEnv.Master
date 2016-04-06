@@ -75,8 +75,8 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     [Header("Orbit Simulators")]
     public OrbitSimulator orbitSimulator;
     public MobileOrbitSimulator mobileOrbitSimulator;
-    public ShipOrbitSimulator shipOrbitSimulator;
-    public MobileShipOrbitSimulator mobileShipOrbitSimulator;
+    public ShipCloseOrbitSimulator shipCloseOrbitSimulator;
+    public MobileShipCloseOrbitSimulator mobileShipCloseOrbitSimulator;
 
     [Header("Commands")]
     public FleetCmdItem fleetCmd;

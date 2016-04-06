@@ -154,7 +154,7 @@
     <value>String {0} has no Enum counterpart.  Calling Method: {1}.</value>
   </data>
   <data name="NoExceptionExpected" xml:space="preserve">
-    <value>Expected no exception but got: {0}.  Calling Method: {1}.</value>
+    <value>Expected no exception but got: {0}.</value>
   </data>
   <data name="NotBoolean" xml:space="preserve">
     <value>The string {0} is not a boolean equivalent.  Calling Method: {1}.</value>

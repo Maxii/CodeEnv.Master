@@ -26,6 +26,8 @@ namespace CodeEnv.Master.Common {
 
         Coroutine StartCoroutine(IEnumerator coroutine);
 
+        void StopCoroutine(IEnumerator coroutine);
+
     }
 }
 

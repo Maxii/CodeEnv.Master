@@ -24,17 +24,14 @@ namespace CodeEnv.Master.GameContent {
     public interface IAvoidableObstacle : IObstacle {
 
         /// <summary>
-        /// Returns the detour to get by this avoidable obstacle. Detours always
-        /// account for the ship's offset in the formation. If a fleet or the Flagship, 
-        /// the offset will be Vector3.zero.
+        /// Returns the detour to get by this avoidable obstacle. Detours do not
+        /// account for a ship's formation station offset. Ship navigation handles that itself.
         /// </summary>
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="zoneHitInfo">The zone hit information.</param>
         /// <param name="fleetRadius">The fleet radius.</param>
-        /// <param name="formationOffset">The formation offset. This is NOT the ship's targetDestinationOffset as 
-        /// detours around obstacles should be executed in full formation, if applicable.</param>
         /// <returns></returns>
-        Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset);
+        Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius);
 
     }
 }

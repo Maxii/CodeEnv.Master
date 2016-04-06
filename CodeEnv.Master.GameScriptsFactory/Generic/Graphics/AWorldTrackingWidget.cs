@@ -26,8 +26,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AWorldTrackingWidget : ATrackingWidget {
 
-    protected Billboard _billboard;
-
     public override IWidgetTrackable Target {
         get { return base.Target; }
         set {
@@ -38,6 +36,8 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
             base.Target = value;
         }
     }
+
+    protected Billboard _billboard;
 
     protected override void Awake() {
         base.Awake();

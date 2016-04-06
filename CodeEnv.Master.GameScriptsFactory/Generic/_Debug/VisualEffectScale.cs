@@ -65,7 +65,7 @@ public class VisualEffectScale : AMonoBase {
     /// </summary>
     public float ItemRadius {
         get { return _itemRadius; }
-        set { _itemRadius = value; }
+        set { SetProperty<float>(ref _itemRadius, value, "ItemRadius"); }
     }
 
     private float _prevScale;

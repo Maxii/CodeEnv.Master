@@ -64,7 +64,8 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
             float radius = TempGameValues.UniverseCenterRadius;
             float lowOrbitRadius = radius + 5F;
             CameraFocusableStat cameraStat = __MakeCameraStat(radius, lowOrbitRadius);
-            UniverseCenterData data = new UniverseCenterData(UniverseCenter.transform, "UniverseCenter", cameraStat, radius, lowOrbitRadius);
+            UniverseCenter.Name = "UniverseCenter";
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter, cameraStat, radius, lowOrbitRadius);
             UniverseCenter.Data = data;
             // UC will be enabled when CommenceOperations() called
         }
@@ -85,7 +86,7 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
 
     private CameraFocusableStat __MakeCameraStat(float radius, float lowOrbitRadius) {
         float minViewDistance = radius + 1F;
-        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipOrbitSlotDepth;
+        float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipCloseOrbitSlotDepth;
         float optViewDistance = highOrbitRadius + 1F;
         return new CameraFocusableStat(minViewDistance, optViewDistance, fov: 80F);
     }

@@ -25,6 +25,10 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
+      <PropertyName>EnableCombatResultLogging</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
       <PropertyName>EnableEventLogging</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>

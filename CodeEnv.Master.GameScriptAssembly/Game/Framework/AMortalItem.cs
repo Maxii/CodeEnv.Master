@@ -27,19 +27,7 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItem : AIntelItem, IMortalItem {
 
-
     public event EventHandler deathOneShot;
-
-    /// <summary>
-    /// Debug flag in editor indicating whether to show the D.Log for this item.
-    /// <remarks>Requires #define DEBUG_LOG for D.Log() to be compiled.</remarks>
-    /// </summary>
-    [SerializeField]
-    private bool _showDebugLog = false;
-    public bool ShowDebugLog {
-        get { return _showDebugLog; }
-        set { _showDebugLog = value; }
-    }
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -110,16 +98,25 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;  // UNCLEAR can this wait until Dead_EnterState calls HandleDeath?
         }
+        if (IsHudShowing) {
+            ShowHud(false);
+        }
     }
 
     /// <summary>
-    /// Handles the death of this item when it is the focus. Allows override
-    /// by AUnitElementItem so it can assign its command as the focus to replace it.
+    /// Handles the death of this item when it is the focus. 
     /// </summary>
-    protected virtual void HandleDeathWhileIsFocus() {
+    private void HandleDeathWhileIsFocus() {
         D.Assert(IsFocus);
         References.MainCameraControl.CurrentFocus = null;
+        AssignAlternativeFocusOnDeath();
     }
+
+    /// <summary>
+    /// Hook that allows derived classes to assign an alternative focus 
+    /// when this mortal item dies while it is the focus.
+    /// </summary>
+    protected virtual void AssignAlternativeFocusOnDeath() { }
 
     #region Event and Property Change Handlers
 
@@ -212,10 +209,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// <summary>
     /// Destroys this GameObject.
     /// </summary>
-    /// <param name="delayInSeconds">The delay in seconds.</param>
+    /// <param name="delayInHours">The delay in hours.</param>
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
-    protected virtual void DestroyMe(float delayInSeconds = 0F, Action onCompletion = null) {
-        UnityUtility.Destroy(gameObject, delayInSeconds, onCompletion);
+    protected virtual void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
+        GameUtility.Destroy(gameObject, delayInHours, onCompletion);
     }
 
     #region Cleanup
@@ -229,14 +226,20 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #region Debug
 
+    private const string LogEventFormat = "{0}.{1}() beginning execution.";
+
     /// <summary>
-    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// Logs the method name called.
     /// </summary>
     public override void LogEvent() {
-        if (DebugSettings.Instance.EnableEventLogging && ShowDebugLog) {
+        if (_debugSettings.EnableEventLogging && ShowDebugLog) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = Utility.CheckForContent(FullName) ? FullName : transform.name + "(from transform)";
-            Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
+            string fullMethodName = stackFrame.GetMethod().ReflectedType.Name;
+            if (fullMethodName.Contains(Constants.LessThan)) {
+                string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
+                fullMethodName = coroutineMethodName;
+            }
+            Debug.Log(LogEventFormat.Inject(FullName, fullMethodName));
         }
     }
 

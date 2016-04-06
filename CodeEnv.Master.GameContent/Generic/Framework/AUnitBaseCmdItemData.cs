@@ -26,9 +26,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitBaseCmdItemData : AUnitCmdItemData {
 
-        public float LowOrbitRadius { get { return UnitMaxFormationRadius; } }
+        public float CloseOrbitInnerRadius { get { return UnitMaxFormationRadius; } }
 
-        public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
+        public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
         public new FacilityData HQElementData {
             protected get { return base.HQElementData as FacilityData; }
@@ -43,11 +43,11 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
 
-        public AUnitBaseCmdItemData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) { }
+        public AUnitBaseCmdItemData(IUnitCmdItem cmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmd, owner, cameraStat, passiveCMs, cmdStat) { }
 
         protected override void RefreshComposition() {
-            var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
+            var elementCategories = _elementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);
             UnitComposition = new BaseComposition(elementCategories);
         }
 

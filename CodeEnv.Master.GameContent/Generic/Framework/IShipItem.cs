@@ -17,13 +17,22 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     ///  Interface for all items that are ships.
     /// </summary>
     public interface IShipItem : IUnitElementItem {
 
+        Vector3 CurrentHeading { get; }
+
+        float CurrentSpeedValue { get; }
+
         float CollisionDetectionZoneRadius { get; }
+
+        void HandlePendingCollisionWith(IObstacle obstacle);
+
+        void HandlePendingCollisionAverted(IObstacle obstacle);
 
     }
 }

@@ -26,7 +26,7 @@ public class MobileOrbitSimulator : OrbitSimulator {
     /// <summary>
     /// Updates the rotation of this orbit simulator around its current location in worldspace.
     /// </summary>
-    /// <param name="deltaTimeSinceLastUpdate">The delta time (zero if paused) since last update.</param>
+    /// <param name="deltaTimeSinceLastUpdate">The delta time since last update.</param>
     protected override void UpdateOrbit(float deltaTimeSinceLastUpdate) {
         float angleStep = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
         transform.RotateAround(transform.position, _axisOfOrbit, angleStep);

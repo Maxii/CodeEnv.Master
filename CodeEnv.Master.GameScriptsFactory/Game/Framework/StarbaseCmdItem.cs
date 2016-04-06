@@ -17,10 +17,8 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -38,6 +36,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
     public StarbasePublisher Publisher {
         get { return _publisher = _publisher ?? new StarbasePublisher(Data, this); }
     }
+
+    private Rigidbody _highOrbitRigidbody;
 
     #region Initialization
 
@@ -72,6 +72,15 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 
+    protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
+        if (_highOrbitRigidbody == null) {
+            _highOrbitRigidbody = gameObject.AddMissingComponent<Rigidbody>();
+            _highOrbitRigidbody.useGravity = false;
+            _highOrbitRigidbody.isKinematic = true;
+        }
+        shipOrbitJoint.connectedBody = _highOrbitRigidbody;
+    }
+
     #region Cleanup
 
     #endregion
@@ -79,7 +88,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
 
 }
 

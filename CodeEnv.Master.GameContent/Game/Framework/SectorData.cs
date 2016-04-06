@@ -56,17 +56,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sectorTransform">The sector transform.</param>
         /// <param name="index">The index.</param>
-        public SectorData(Transform sectorTransform, Index3D index)
-            : this(sectorTransform, index, TempGameValues.NoPlayer) { }
+        public SectorData(ISectorItem sector, Index3D index)
+            : this(sector, index, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SectorData" /> class.
         /// </summary>
-        /// <param name="sectorTransform">The sector transform.</param>
+        /// <param name="sector">The sector.</param>
         /// <param name="index">The index.</param>
         /// <param name="owner">The owner.</param>
-        public SectorData(Transform sectorTransform, Index3D index, Player owner)
-            : base(sectorTransform, "Sector {0}".Inject(index), owner) {
+        public SectorData(ISectorItem sector, Index3D index, Player owner)
+            : base(sector, owner) {
             SectorIndex = index;
             Topography = Topography.OpenSpace;
         }

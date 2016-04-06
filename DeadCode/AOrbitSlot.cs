@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract base class for Celestial and Ship orbit slots that know how to place
     /// (and remove if applicable) objects into orbit.
     /// </summary>
+    [System.Obsolete]
     public abstract class AOrbitSlot {
 
         /// <summary>

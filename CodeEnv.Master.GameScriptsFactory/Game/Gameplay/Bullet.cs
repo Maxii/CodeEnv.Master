@@ -50,7 +50,7 @@ public class Bullet : AProjectileOrdnance {
     /// <summary>
     /// The drag of this projectile in Topography.OpenSpace.
     /// </summary>
-    public override float Drag { get { return Weapon.OrdnanceDrag; } }
+    public override float OpenSpaceDrag { get { return Weapon.OrdnanceDrag; } }
 
     public override float Mass { get { return Weapon.OrdnanceMass; } }
 
@@ -59,7 +59,7 @@ public class Bullet : AProjectileOrdnance {
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
         InitializeVelocity();
-        enabled = true; // enables Update()
+        enabled = true;
     }
 
     protected override void ValidateEffects() {
@@ -77,7 +77,7 @@ public class Bullet : AProjectileOrdnance {
     /// One-time initialization of the velocity of this 'bullet'.
     /// </summary>
     private void InitializeVelocity() {
-        _rigidbody.velocity = Heading * MaxSpeed;
+        _rigidbody.velocity = CurrentHeading * MaxSpeed * _gameTime.GameSpeedAdjustedHoursPerSecond;
     }
 
     protected override void AssessShowMuzzleEffects() {
@@ -120,10 +120,13 @@ public class Bullet : AProjectileOrdnance {
         }
     }
 
-    protected override Vector3 GetForceOfImpact() { return _rigidbody.velocity * _rigidbody.mass; }
-
     protected override float GetDistanceTraveled() {
         return Vector3.Distance(Position, _launchPosition);
+    }
+
+    protected override void PrepareForTermination() {
+        base.PrepareForTermination();
+        ShowOperatingEffects(false);
     }
 
     public override string ToString() {

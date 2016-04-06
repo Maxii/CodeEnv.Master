@@ -282,7 +282,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         if (_inputHelper.IsAnyMouseButtonDown) {
             return;
         }
-        WriteMessage(go.name + Constants.Space + delta);
+        LogEventArg(go.name + Constants.Space + delta);
         ICameraTargetable target = null;
         Vector3 hitPoint = Vector3.zero;
         if (go != UICamera.fallThrough) {
@@ -349,7 +349,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             //D.Log("DragStartEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
-        WriteMessage(go.name);
+        LogEventArg(go.name);
         // turn off the click notification that would normally occur once the drag is complete
         UICamera.currentTouch.clickNotification = UICamera.ClickNotification.None;
         IsDragging = true;
@@ -360,7 +360,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             //D.Log("DraggingEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
-        WriteMessage(go.name + Constants.Space + delta);
+        LogEventArg(go.name + Constants.Space + delta);
         _dragDelta += delta;
         IsDragValueWaiting = true;
     }
@@ -370,7 +370,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             //D.Log("DragEndEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
-        WriteMessage(go.name);
+        LogEventArg(go.name);
         // the drag has ended so clear any residual drag values that may not have qualified for use by CameraControl due to wrong button, etc.
         ClearDragValue();
         IsDragging = false;
@@ -617,36 +617,6 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     #endregion
 
-    private void WriteMessage(string arg = "") {
-        if (DebugSettings.Instance.EnableEventLogging) {
-            var stackFrame = new System.Diagnostics.StackFrame(1);
-            NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
-            string touchID = (button ?? NguiMouseButton.None).GetValueName();
-            string hoveredObject = UICamera.hoveredObject.name;
-            string camera = UICamera.currentCamera.name;
-            string screenPosition = UICamera.lastEventPosition.ToString();  // UICamera.lastTouchPosition.ToString();
-            UICamera.lastHit = new RaycastHit();    // clears any gameobject that was hit. Otherwise it is cached until the next hit
-            string msg = @"{0}.{1}({2}) event. MouseButton = {3}, HoveredObject = {4}, Camera = {5}, ScreenPosition = {6}."
-                .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, hoveredObject, camera, screenPosition);
-            Debug.Log(msg);
-        }
-    }
-
-    /// <summary>
-    ///Validates the 3 event dispatcher instances we currently have have not been destroyed.
-    ///This is accomplished by trying to access their gameObject. If they are destroyed, Unity will 
-    ///throw an error.
-    /// </summary>
-    private void __ValidateEventDispatchersNotDestroyed() {
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
-#pragma warning disable 0168
-            var dummy = UIEventDispatcher.gameObject;
-            WorldEventDispatchers.ForAll(wed => dummy = wed.gameObject);
-            //D.Log("{0} has validated all EventDispatchers are alive.", GetType().Name);
-#pragma warning restore 0168
-        }
-    }
-
     #region Cleanup
 
     protected override void Cleanup() {
@@ -695,6 +665,40 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    private void LogEventArg(string arg = "") {
+        if (_debugSettings.EnableEventLogging) {
+            var stackFrame = new System.Diagnostics.StackFrame(1);
+            NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
+            string touchID = (button ?? NguiMouseButton.None).GetValueName();
+            string hoveredObject = UICamera.hoveredObject.name;
+            string camera = UICamera.currentCamera.name;
+            string screenPosition = UICamera.lastEventPosition.ToString();  // UICamera.lastTouchPosition.ToString();
+            UICamera.lastHit = new RaycastHit();    // clears any gameobject that was hit. Otherwise it is cached until the next hit
+            string msg = @"{0}.{1}({2}) event. MouseButton = {3}, HoveredObject = {4}, Camera = {5}, ScreenPosition = {6}."
+                .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, hoveredObject, camera, screenPosition);
+            Debug.Log(msg);
+        }
+    }
+
+    /// <summary>
+    ///Validates the 3 event dispatcher instances we currently have have not been destroyed.
+    ///This is accomplished by trying to access their gameObject. If they are destroyed, Unity will 
+    ///throw an error.
+    /// </summary>
+    private void __ValidateEventDispatchersNotDestroyed() {
+        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+#pragma warning disable 0168
+            var dummy = UIEventDispatcher.gameObject;
+            WorldEventDispatchers.ForAll(wed => dummy = wed.gameObject);
+            //D.Log("{0} has validated all EventDispatchers are alive.", GetType().Name);
+#pragma warning restore 0168
+        }
+    }
+
+    #endregion
 
     #region Nested classes
 

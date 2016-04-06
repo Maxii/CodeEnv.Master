@@ -23,6 +23,10 @@ namespace CodeEnv.Master.GameContent {
 
         ISystemItem ParentSystem { get; }
 
+        IOrbitSimulator CelestialOrbitSimulator { get; }
+
+        PlanetoidReport GetReport(Player player);
+
     }
 }
 

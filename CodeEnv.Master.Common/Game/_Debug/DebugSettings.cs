@@ -77,6 +77,20 @@ namespace CodeEnv.Master.Common {
             private set { _forceFpsToTarget = value; }
         }
 
+        private bool _enableCombatResultLogging;
+
+        /// <summary>
+        /// Controls whether weapons will log CombatResults
+        /// to the Console.
+        /// </summary>
+        public bool EnableCombatResultLogging {
+            get {
+                CheckValuesInitialized();
+                return _enableCombatResultLogging;
+            }
+            private set { _enableCombatResultLogging = value; }
+        }
+
         private bool _enableEventLogging;
         /// <summary>
         /// Controls whether LogEvent() will print debug messages

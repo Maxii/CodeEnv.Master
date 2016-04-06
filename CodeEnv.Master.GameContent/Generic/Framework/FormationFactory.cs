@@ -124,7 +124,7 @@ namespace CodeEnv.Master.GameContent {
             IList<Vector3> stationPositions;
             bool isPositioningSuccess = TryPositionSpheresWithinGlobe(estGlobeRadius, formationStationRadius, maxElements, out stationPositions);
             while (!isPositioningSuccess) {
-                D.AssertWithException(iterateCount++ < 10, "{0}: Unable to generate globe formation. Largest Globe radius attempted = {1:0.#}.", GetType().Name, estGlobeRadius);
+                D.AssertException(iterateCount++ < 10, "{0}: Unable to generate globe formation. Largest Globe radius attempted = {1:0.#}.", GetType().Name, estGlobeRadius);
                 // try again with a larger radius
                 estGlobeRadius *= GlobeRadiusIterateMultiplierToMinimizeFormationRadius;
                 isPositioningSuccess = TryPositionSpheresWithinGlobe(estGlobeRadius, formationStationRadius, maxElements, out stationPositions);
@@ -164,7 +164,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Generates a circular formation for a Unit in the xz plane. Returns a list of the world space relative position
+        /// Generates a circular formation for a Unit in the xz plane. Returns a list of the relative position
         /// (offset relative to the position of the HQElement) of each formation station, 
         /// not including the HQElement's formation station.
         /// </summary>

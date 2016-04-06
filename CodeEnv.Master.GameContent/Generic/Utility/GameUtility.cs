@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -27,6 +27,32 @@ namespace CodeEnv.Master.GameContent {
     /// Collection of tools and utilities specific to the game.
     /// </summary>
     public static class GameUtility {
+
+        /// <summary>
+        /// Calculates and returns the maximum attainable speed from the provided values.
+        /// <remarks>See Flight.txt</remarks>
+        /// </summary>
+        /// <param name="maxPropulsionPower">The maximum propulsion power.</param>
+        /// <param name="mass">The mass.</param>
+        /// <param name="drag">The drag.</param>
+        /// <returns></returns>
+        public static float CalculateMaxAttainableSpeed(float maxPropulsionPower, float mass, float drag) {
+            D.Warn(drag * Time.fixedDeltaTime > 0.1F, "Values getting very high!");
+            return (maxPropulsionPower * ((1F / drag) - Time.fixedDeltaTime)) / mass;
+        }
+
+        /// <summary>
+        /// Calculates the reqd propulsion power to reach and maintain the desired speed.
+        /// <remarks>See Flight.txt</remarks>
+        /// </summary>
+        /// <param name="desiredSpeed">The desired speed to reach or maintain.</param>
+        /// <param name="mass">The mass.</param>
+        /// <param name="drag">The drag.</param>
+        /// <returns></returns>
+        public static float CalculateReqdPropulsionPower(float desiredSpeed, float mass, float drag) {
+            D.Warn(drag * Time.fixedDeltaTime > 0.1F, "Values getting very high!");
+            return (desiredSpeed * mass * drag) / (1F - (drag * Time.fixedDeltaTime));
+        }
 
         /// <summary>
         /// Derives the enum value of type E from within the provided name. Case insensitive.
@@ -88,18 +114,94 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the maximum required real-time seconds to complete a rotation.
-        /// <remarks>Typically used to calculate how long to allow a rotation coroutine to run before throwing an error.
-        /// This value is calculated using the slowest GameSpeed so GameSpeed reductions that occur during a rotation 
-        /// don't cause the job to exceed its allowed time.</remarks>
+        /// Calculates and returns the latest GameDate that this rotation shuold complete. Includes a small buffer.
+        /// <remarks>Typically used to calculate how long to allow a rotation coroutine to run before throwing a warning or error.
+        /// Use of a date in this manner handles GameSpeed changes and Pauses during the rotation.
+        /// </remarks>
         /// </summary>
         /// <param name="rotationRateInDegreesPerHour">The rotation rate in degrees per hour.</param>
-        /// <param name="maxRotationReqdInDegrees">The maximum rotation reqd in degrees. Default is 180 degrees.</param>
+        /// <param name="maxRotationReqdInDegrees">The maximum rotation reqd in degrees.</param>
         /// <returns></returns>
-        public static float CalcMaxSecsReqdToCompleteRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
-            float hoursPerSecAtSlowestGameSpeed = GameTime.SlowestGameSpeedMultiplier * GameTime.HoursPerSecond;
-            return (maxRotationReqdInDegrees / rotationRateInDegreesPerHour) / hoursPerSecAtSlowestGameSpeed;
+        public static GameDate CalcWarningDateForRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
+            float maxHoursReqdToCompleteRotation = maxRotationReqdInDegrees / rotationRateInDegreesPerHour;
+            float bufferedMaxHours = maxHoursReqdToCompleteRotation * TempGameValues.__AllowedTurnTimeBufferFactor;
+            var maxDurationFromCurrentDate = new GameTimeDuration(bufferedMaxHours);
+            return new GameDate(maxDurationFromCurrentDate);
         }
+
+        /// <summary>
+        /// Checks whether the MonoBehaviour Interface provided is not null or already destroyed.
+        /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
+        /// Returns <c>true</c> if not null and not destroyed, otherwise returns false.
+        /// </summary>
+        /// <typeparam name="I">The interface Type.</typeparam>
+        /// <param name="i">The interface.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
+        public static bool CheckNotNullOrAlreadyDestroyed<I>(I i) where I : class {
+            if (i != null) {
+                if (!(i is Component)) {
+                    throw new System.ArgumentException("Interface is of Type {0}, which is not a Component.".Inject(typeof(I).Name));
+                }
+                var c = i as Component;
+                if (c != null) {
+                    // i is not destroyed
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Destroys the gameObject associated with the Interface i, if i is not null or already destroyed.
+        /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
+        /// </summary>
+        /// <typeparam name="I">The Interface type.</typeparam>
+        /// <param name="i">The Interface instance.</param>
+        /// <param name="delayInSeconds">The delay in seconds.</param>
+        /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
+        /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
+        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i, float delayInHours = Constants.ZeroF, Action onCompletion = null) where I : class {
+            if (CheckNotNullOrAlreadyDestroyed<I>(i)) {
+                Destroy((i as Component).gameObject, delayInHours, onCompletion);
+            }
+        }
+
+        public static void Destroy(GameObject gameObject) {
+            Destroy(gameObject, Constants.ZeroF);
+        }
+
+        /// <summary>
+        /// Destroys the specified game object.
+        /// </summary>
+        /// <param name="gameObject">The game object.</param>
+        /// <param name="delayInSeconds">The delay in seconds.</param>
+        /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
+        public static void Destroy(GameObject gameObject, float delayInHours, Action onCompletion = null) {
+            if (gameObject == null) {
+                D.Warn("Trying to destroy a GameObject that has already been destroyed.");
+                if (onCompletion != null) { onCompletion(); }
+                return;
+            }
+            string goName = gameObject.name;
+            D.Log("Initiating destruction of {0} with delay of {1} hours.", goName, delayInHours);
+            if (delayInHours == Constants.ZeroF) {
+                // avoids launching a Job. Jobs don't provide call tracing in Console
+                GameObject.Destroy(gameObject);
+                if (onCompletion != null) { onCompletion(); }
+                return;
+            }
+            WaitJobUtility.WaitForHours(delayInHours, onWaitFinished: (jobWasKilled) => {
+                if (gameObject == null) {
+                    D.Warn("Trying to destroy GameObject {0} that has already been destroyed.", goName);
+                }
+                else {
+                    GameObject.Destroy(gameObject);
+                }
+                if (onCompletion != null) { onCompletion(); }
+            });
+        }
+
 
         // Note: WaitJobs moved to WaitJobUtility to allow auto job termination when a game instance ends (aka isRunning = false)
 

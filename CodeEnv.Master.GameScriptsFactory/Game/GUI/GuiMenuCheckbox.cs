@@ -40,11 +40,15 @@ public class GuiMenuCheckbox : AGuiMenuElement {
 
     public override GuiElementID ElementID { get { return _elementID; } }
 
+    private bool _defaultValue = false;
     /// <summary>
     /// The default value to use if there is no stored preference for this Checkbox.
     /// Default setting is <c>false</c>. 
     /// </summary>
-    protected bool DefaultValue { get; set; }
+    protected bool DefaultValue {
+        get { return _defaultValue; }
+        set { SetProperty<bool>(ref _defaultValue, value, "DefaultValue"); }
+    }
 
     protected sealed override string TooltipContent { get { return _tooltip; } }
 

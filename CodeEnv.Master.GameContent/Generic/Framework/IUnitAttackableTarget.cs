@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsOperational { get; }
 
+        bool IsAttackingAllowedBy(Player player);
+
     }
 }
 

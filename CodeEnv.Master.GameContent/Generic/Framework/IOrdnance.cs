@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         string Name { get; }
 
-        Vector3 Heading { get; }
+        Vector3 CurrentHeading { get; }
 
         Player Owner { get; }
 

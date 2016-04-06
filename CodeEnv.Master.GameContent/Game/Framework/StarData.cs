@@ -28,9 +28,9 @@ namespace CodeEnv.Master.GameContent {
 
         public float Radius { get; private set; }
 
-        public float LowOrbitRadius { get; private set; }
+        public float CloseOrbitInnerRadius { get; private set; }
 
-        public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
+        public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
         private string _parentName;
         public string ParentName {
@@ -62,24 +62,24 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="StarData" /> class
         /// with the owner initialized to NoPlayer.
         /// </summary>
-        /// <param name="starTransform">The star transform.</param>
+        /// <param name="star">The star.</param>
         /// <param name="starStat">The stat.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        public StarData(Transform starTransform, StarStat starStat, CameraFocusableStat cameraStat)
-            : this(starTransform, starStat, cameraStat, TempGameValues.NoPlayer) { }
+        public StarData(IStarItem star, StarStat starStat, CameraFocusableStat cameraStat)
+            : this(star, starStat, cameraStat, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData" /> class.
         /// </summary>
-        /// <param name="starTransform">The star transform.</param>
+        /// <param name="star">The star.</param>
         /// <param name="starStat">The stat.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public StarData(Transform starTransform, StarStat starStat, CameraFocusableStat cameraStat, Player owner)
-            : base(starTransform, starStat.Category.GetValueName(), owner, cameraStat) {
+        public StarData(IStarItem star, StarStat starStat, CameraFocusableStat cameraStat, Player owner)
+            : base(star, owner, cameraStat) {
             Category = starStat.Category;
             Radius = starStat.Radius;
-            LowOrbitRadius = starStat.LowOrbitRadius;
+            CloseOrbitInnerRadius = starStat.CloseOrbitInnerRadius;
             Capacity = starStat.Capacity;
             Resources = starStat.Resources;
             Topography = Topography.System;

@@ -27,19 +27,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : AUnitCmdItemData {
 
-        public new CameraFleetCmdStat CameraStat { get { return base.CameraStat as CameraFleetCmdStat; } }
-
-        public INavigableTarget Target { get; set; }
+        private INavigableTarget _target;
+        public INavigableTarget Target {
+            get { return _target; }
+            set {
+                if (_target == value) { return; }   // eliminates equality warning when targets are the same
+                SetProperty<INavigableTarget>(ref _target, value, "Target");
+            }
+        }
 
         private FleetCategory _category;
         public FleetCategory Category {
             get { return _category; }
             private set { SetProperty<FleetCategory>(ref _category, value, "Category"); }
-        }
-
-        public new ShipData HQElementData {
-            protected get { return base.HQElementData as ShipData; }
-            set { base.HQElementData = value; }
         }
 
         /// <summary>
@@ -90,28 +90,35 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return HQElementData.SectorIndex; } }
 
+        public new ShipData HQElementData {
+            protected get { return base.HQElementData as ShipData; }
+            set { base.HQElementData = value; }
+        }
+
+        public new CameraFleetCmdStat CameraStat { get { return base.CameraStat as CameraFleetCmdStat; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
-        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(Transform cmdTransform, Player owner, CameraFleetCmdStat cameraStat, UnitCmdStat cmdStat)
-            : this(cmdTransform, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public FleetCmdData(IFleetCmdItem fleetCmd, Player owner, CameraFleetCmdStat cameraStat, UnitCmdStat cmdStat)
+            : this(fleetCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData" /> class.
         /// </summary>
-        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(Transform cmdTransform, Player owner, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) {
+        public FleetCmdData(IFleetCmdItem fleetCmd, Player owner, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(fleetCmd, owner, cameraStat, passiveCMs, cmdStat) {
         }
 
         public override void AddElement(AUnitElementItemData elementData) {
@@ -125,7 +132,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void RefreshComposition() {
-            var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.HullCategory);
+            var elementCategories = _elementsData.Cast<ShipData>().Select(sd => sd.HullCategory);
             UnitComposition = new FleetComposition(elementCategories);
         }
 
@@ -136,15 +143,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RefreshFullSpeed() {
-            if (ElementsData.Any()) {
+            if (_elementsData.Any()) {
                 //D.Log("{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
-                UnitFullSpeedValue = ElementsData.Min(eData => (eData as ShipData).FullSpeedValue);
+                UnitFullSpeedValue = _elementsData.Min(eData => (eData as ShipData).FullSpeedValue);
             }
         }
 
         private void RefreshMaxTurnRate() {
-            if (ElementsData.Any()) {
-                UnitMaxTurnRate = ElementsData.Min(data => (data as ShipData).MaxTurnRate);
+            if (_elementsData.Any()) {
+                UnitMaxTurnRate = _elementsData.Min(data => (data as ShipData).MaxTurnRate);
             }
         }
 

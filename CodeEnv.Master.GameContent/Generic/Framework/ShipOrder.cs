@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
-        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, StandingOrder: {3}.";
+        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, StandingOrder: {3}";
 
         public ShipOrder StandingOrder { get; set; }
 

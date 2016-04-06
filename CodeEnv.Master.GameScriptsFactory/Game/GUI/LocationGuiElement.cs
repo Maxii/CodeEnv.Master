@@ -46,8 +46,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         get { return _position; }
         set {
             D.Assert(!_isPositionSet);  // only occurs once between Resets
-            _position = value;
-            PositionPropSetHandler();
+            SetProperty<Vector3?>(ref _position, value, "Position", PositionPropSetHandler);
         }
     }
 

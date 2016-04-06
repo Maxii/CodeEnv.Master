@@ -303,14 +303,13 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Compares the direction of 2 vectors for equality, ignoring their magnitude.
         /// </summary>
-        /// <param name="source">The source direction.</param>
-        /// <param name="v">The direction to compare the source to.</param>
-        /// <param name="degreeTolerance">The tolerance of the comparison in degrees.
-        /// Default if not specified is the FloatEqualityPrecision of the game, aka 0.0001F.</param>
+        /// <param name="sourceDir">The source direction.</param>
+        /// <param name="dir">The direction to compare the source to.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be more precise
+        /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
-        public static bool IsSameDirection(this Vector3 source, Vector3 v, float degreeTolerance = UnityConstants.FloatEqualityPrecision) {
-            float unused;
-            return UnityUtility.AreDirectionsWithinTolerance(source, v, degreeTolerance, out unused);
+        public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+            return UnityUtility.AreDirectionsWithinTolerance(sourceDir, dir, allowedDeviation);
         }
 
         /// <summary>
@@ -542,12 +541,29 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="sourceRotation">The source rotation.</param>
         /// <param name="otherRotation">The other rotation.</param>
-        /// <param name="allowedDeviation">The allowed deviation in degrees.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be more precise
+        /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
-        public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, float allowedDeviation = UnityConstants.FloatEqualityPrecision) {
-            return Quaternion.Angle(sourceRotation, otherRotation) <= allowedDeviation;
+        public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+            //var actualdeviation = Quaternion.Angle(__FixQuaternion(sourceRotation), __FixQuaternion(otherRotation));
+            D.Warn(allowedDeviation < UnityConstants.AngleEqualityPrecision, "Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
+            var actualDeviation = Quaternion.Angle(sourceRotation, otherRotation);
+            var isSame = actualDeviation <= allowedDeviation;
+            D.Log("IsSame result = {0}, remainingAngle: {1}, allowedDeviation: {2}.", isSame, actualDeviation, allowedDeviation);
+            return isSame;
         }
 
+        // see http://answers.unity3d.com/questions/1036566/quaternionangle-is-inaccurate.html#answer-1162822
+        [Obsolete]
+        private static Quaternion __FixQuaternion(Quaternion q) {
+            float mag = Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+            q.x /= mag;
+            q.y /= mag;
+            q.z /= mag;
+            q.w /= mag;
+            return q;
+        }
     }
 }
 

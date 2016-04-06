@@ -73,6 +73,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
+
         private LineType _lineType;
         private Transform _lineParent;
 
@@ -94,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
             _lineType = lineType;
             _lineWidth = width;
             _color = color;
-            VectorLine.SetCamera3D(References.MainCameraControl.MainCamera_Far);    // eliminates most jitter
+            VectorLine.SetCamera3D(References.MainCameraControl.MainCamera_Far);    // eliminates most jitter using MainCamera_Far
         }
 
         protected virtual void Initialize() {

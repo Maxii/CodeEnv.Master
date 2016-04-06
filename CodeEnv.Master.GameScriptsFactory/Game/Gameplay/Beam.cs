@@ -55,6 +55,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
 
+    private bool IsAnimateOperatingEffectJobRunning { get { return _animateOperatingEffectJob != null && _animateOperatingEffectJob.IsRunning; } }
+
     /// <summary>
     /// The cumulative time in hours that this beam has been operating.
     /// </summary>
@@ -130,7 +132,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void Update() {
         base.Update();
-        var deltaTimeInHours = _gameTime.DeltaTimeOrPaused * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        var deltaTimeInHours = _gameTime.DeltaTime * _gameTime.GameSpeedAdjustedHoursPerSecond;
         OperateBeam(deltaTimeInHours);
         _cumHoursOperating += deltaTimeInHours;
         if (_cumHoursOperating > Weapon.Duration) {
@@ -145,7 +147,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void OperateBeam(float deltaTimeInHours) {
         _isCurrentImpact = false;
         RaycastHit impactInfo;
-        Ray ray = new Ray(transform.position, Heading); // ray in direction beam is pointing
+        Ray ray = new Ray(transform.position, CurrentHeading); // ray in direction beam is pointing
         if (Physics.Raycast(ray, out impactInfo, _range, _beamImpactLayerMask)) {
             _isCurrentImpact = true;
             HandleImpact(impactInfo, deltaTimeInHours);
@@ -230,6 +232,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         AssessShowImpactEffects();
     }
 
+    protected override void IsPausedPropChangedHandler() {
+        base.IsPausedPropChangedHandler();
+        PauseJobs(_gameMgr.IsPaused);
+    }
+
     #endregion
 
     private void RefreshImpactLocation(RaycastHit impactInfo) {
@@ -297,10 +304,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _operatingEffectRenderer.enabled = toShow;
 
         // Beam animation
-        if (_animateOperatingEffectJob != null && _animateOperatingEffectJob.IsRunning) {
+        if (IsAnimateOperatingEffectJobRunning) {
             _animateOperatingEffectJob.Kill();
         }
         if (toShow) {
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             _animateOperatingEffectJob = new Job(AnimateBeam(), toStart: true);
         }
 
@@ -349,12 +357,12 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     /// <summary>
-    /// Animates the beam at a constant pace, independent of GameSpeed or Pausing.
+    /// Animates the beam at a constant pace independent of GameSpeed.
     /// </summary>
     private IEnumerator AnimateBeam() {
         while (true) {
             float offset = _initialBeamAnimationOffset + _beamAnimationSpeed * _gameTime.CurrentUnitySessionTime;
-            _operatingEffectRenderer.material.SetTextureOffset(UnityConstants.MainDiffuseTexture, new Vector2(offset, 0f));
+            _operatingEffectRenderer.material.SetTextureOffset(UnityConstants.MainDiffuseTexture, new Vector2(offset, 0F));
             yield return null;
         }
     }
@@ -382,6 +390,12 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
         else {
             ReportTargetMissed();
+        }
+    }
+
+    private void PauseJobs(bool toPause) {
+        if (IsAnimateOperatingEffectJobRunning) {
+            _animateOperatingEffectJob.IsPaused = toPause;
         }
     }
 

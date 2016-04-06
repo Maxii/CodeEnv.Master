@@ -15,6 +15,8 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
@@ -35,6 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// before LateUpdate so Draw3DAuto which uses LateUpdate will always have a current value.
         /// </summary>
         private Job _refreshSpeedValueJob;
+        private IList<IDisposable> _subscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VelocityRay"/> class with the DynamicObjectsFolder
@@ -59,10 +62,17 @@ namespace CodeEnv.Master.GameContent {
         public VelocityRay(string name, Transform target, Reference<float> speed, Transform lineParent, float width = 1F, GameColor color = GameColor.White)
             : base(name, new List<Vector3>(2), target, lineParent, LineType.Discrete, width, color) {
             _speed = speed;
+            Subscribe();
+        }
+
+        private void Subscribe() {
+            _subscriptions = new List<IDisposable>();
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
         }
 
         protected override void HandleLineActivated() {
             base.HandleLineActivated();
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(IsLineActive);
             D.Assert(!IsRefreshSpeedValueJobRunning);
             _refreshSpeedValueJob = new Job(UpdateSpeed(), toStart: true, jobCompleted: (jobWasKilled) => {
@@ -85,11 +95,31 @@ namespace CodeEnv.Master.GameContent {
             _refreshSpeedValueJob.Kill();
         }
 
+        #region Event and Property Change Handlers
+
+        private void IsPausedPropChangedHandler() {
+            PauseJobs(_gameMgr.IsPaused);
+        }
+
+        #endregion
+
+        private void PauseJobs(bool toPause) {
+            if (IsRefreshSpeedValueJobRunning) {    // OK to pause as speed values don't change while paused
+                _refreshSpeedValueJob.IsPaused = toPause;
+            }
+        }
+
         protected override void Cleanup() {
             base.Cleanup();
             if (_refreshSpeedValueJob != null) {
                 _refreshSpeedValueJob.Dispose();
             }
+            Unsubscribe();
+        }
+
+        private void Unsubscribe() {
+            _subscriptions.ForAll(d => d.Dispose());
+            _subscriptions.Clear();
         }
 
         public override string ToString() {

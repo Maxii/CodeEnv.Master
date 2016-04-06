@@ -207,7 +207,7 @@ namespace Pathfinding {
             IList<Vector3> waypointsAroundUniverseCenter = new List<Vector3>(0);
             var universeCenter = UniverseFolder.Instance.Folder.GetComponentInChildren<UniverseCenterItem>();
             if (universeCenter != null) {
-                radiusToAvoidWaypointsAroundUCenter = universeCenter.ShipOrbitSlot.OuterRadius * 2F;
+                radiusToAvoidWaypointsAroundUCenter = universeCenter.Data.CloseOrbitOuterRadius * 2F;  // HACK 
                 waypointsAroundUniverseCenter = MyMath.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, radiusToAvoidWaypointsAroundUCenter);
             }
 

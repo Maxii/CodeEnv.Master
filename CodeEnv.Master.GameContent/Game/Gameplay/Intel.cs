@@ -40,11 +40,15 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<IntelCoverage>(ref _datedCoverage, value, "DatedCoverage", null, DatedCoveragePropChangingHandler); }
         }
 
+        private GameDate _dateStamp;
         /// <summary>
         /// The "time stamp" associated with the DatedCoverage, aka when DatedCoverage was last updated.
         /// Used to calculate the age of the dated coverage level of intel.
         /// </summary>
-        public GameDate DateStamp { get; private set; }
+        public GameDate DateStamp {
+            get { return _dateStamp; }
+            set { SetProperty<GameDate>(ref _dateStamp, value, "DateStamp"); }
+        }
 
         public Intel() : base() { }
 
@@ -55,8 +59,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="intelToCopy">The intel to copy.</param>
         public Intel(Intel intelToCopy)
             : base(intelToCopy) {
-            this.DatedCoverage = intelToCopy.DatedCoverage;
-            this.DateStamp = intelToCopy.DateStamp;
+            DatedCoverage = intelToCopy.DatedCoverage;
+            DateStamp = intelToCopy.DateStamp;
         }
 
         public override bool IsCoverageChangeAllowed(IntelCoverage newCoverage) {

@@ -22,17 +22,22 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using MoreLinq;
 using UnityEngine;
 
 /// <summary>
 /// APlanetoidItems that are Planets.
 /// </summary>
-public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExplorable {
+public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShipExplorable {
 
+    private MoonItem[] _childMoons;
     /// <summary>
     /// The moons that orbit this planet. Can be empty but never null.
     /// </summary>
-    public MoonItem[] ChildMoons { get; private set; }
+    public MoonItem[] ChildMoons {
+        get { return _childMoons; }
+        private set { SetProperty<MoonItem[]>(ref _childMoons, value, "ChildMoons"); }
+    }
 
     public new PlanetData Data {
         get { return base.Data as PlanetData; }
@@ -42,14 +47,25 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
     private DetourGenerator _detourGenerator;
+    private IList<IShipItem> _shipsInCloseOrbit;
 
     #region Initialization
 
     protected override void InitializeObstacleZone() {
         base.InitializeObstacleZone();
-        _obstacleZoneCollider.radius = Data.LowOrbitRadius;
-        Vector3 obstacleZoneCenter = Position + _obstacleZoneCollider.center;
-        _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.HighOrbitRadius);
+        _obstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
+        InitializeObstacleDetourGenerator();
+    }
+
+    private void InitializeObstacleDetourGenerator() {
+        if (IsMobile) {
+            Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center));
+            _detourGenerator = new DetourGenerator(obstacleZoneCenter, ObstacleZoneRadius, Data.CloseOrbitOuterRadius);
+        }
+        else {
+            Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
+            _detourGenerator = new DetourGenerator(obstacleZoneCenter, ObstacleZoneRadius, Data.CloseOrbitOuterRadius);
+        }
     }
 
     protected override ADisplayManager InitializeDisplayManager() {
@@ -66,9 +82,9 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         iconEventListener.onPress += PressEventHandler;
     }
 
-    private ShipOrbitSlot InitializeShipOrbitSlot() {
-        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
-    }
+    //private ShipOrbitSlot InitializeShipOrbitSlot() {
+    //    return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
+    //}
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
         return new PlanetCtxControl(this);
@@ -81,10 +97,16 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
 
     private void RecordAnyChildMoons() {
         ChildMoons = gameObject.GetComponentsInChildren<MoonItem>();
-        //D.Log(ShowDebugLog && ChildMoons.Any(), "{0} recorded {1} child moons.", FullName, ChildMoons.Count());
+        D.Log(ShowDebugLog && ChildMoons.Any(), "{0} recorded {1} child moons.", FullName, ChildMoons.Count());
     }
 
     #endregion
+
+    internal void RemoveMoon(MoonItem moon) {
+        D.Assert(!moon.IsOperational);
+        D.Assert(ChildMoons.Contains(moon));
+        ChildMoons = ChildMoons.Except(moon).ToArray();
+    }
 
     private void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -110,7 +132,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
 
     public override void HandleEffectFinished(EffectID effectID) {
         base.HandleEffectFinished(effectID);
-        //D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
+        D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
         switch (effectID) {
             case EffectID.Dying:
                 if (ChildMoons.Any()) {
@@ -132,11 +154,10 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         }
     }
 
-    private int _deadMoonCount;
     private void HandleMoonDeathEffectFinished() {
-        _deadMoonCount++;
-        if (_deadMoonCount == ChildMoons.Count()) {
-            // this is the last moon to die
+        D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, ChildMoons.Count());
+        if (ChildMoons.Count() == Constants.Zero) {
+            // The last moon has shown its death effect as a result of the planet's death
             DestroyMe();
         }
     }
@@ -154,6 +175,17 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
     }
 
     #endregion
+
+    protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
+        if (ChildMoons.Any()) {
+            IMoonItem outermostMoon = ChildMoons.MaxBy(m => Vector3.SqrMagnitude(m.Position - Position));
+            Rigidbody highOrbitRigidbody = outermostMoon.CelestialOrbitSimulator.OrbitRigidbody;
+            shipOrbitJoint.connectedBody = highOrbitRigidbody;
+        }
+        else {
+            base.ConnectHighOrbitRigidbodyToShipOrbitJoint(shipOrbitJoint);
+        }
+    }
 
     #region Cleanup
 
@@ -181,28 +213,98 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IShipOrbitable Members
+    #region IShipCloseOrbitable Members
 
-    private ShipOrbitSlot _shipOrbitSlot;
-    public ShipOrbitSlot ShipOrbitSlot {
+    private IShipCloseOrbitSimulator _closeOrbitSimulator;
+    public IShipCloseOrbitSimulator CloseOrbitSimulator {
         get {
-            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
-            return _shipOrbitSlot;
+            if (_closeOrbitSimulator == null) {
+                OrbitData closeOrbitData = new OrbitData(gameObject, Data.CloseOrbitInnerRadius, Data.CloseOrbitOuterRadius, IsMobile);
+                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
+            }
+            return _closeOrbitSimulator;
         }
+    }
+
+    public void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+        if (_shipsInCloseOrbit == null) {
+            _shipsInCloseOrbit = new List<IShipItem>();
+        }
+        shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
+        _shipsInCloseOrbit.Add(ship);
+    }
+
+    public bool IsInCloseOrbit(IShipItem ship) {
+        if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
+    }
+
+    public bool IsCloseOrbitAllowedBy(Player player) {
+        return !Owner.IsAtWarWith(player);
     }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IGuardable).GuardStations; } }
 
-    public bool IsOrbitingAllowedBy(Player player) {
-        return !Owner.IsAtWarWith(player);
+    #endregion
+
+    #region IShipOrbitable Members
+
+    public override void HandleBrokeOrbit(IShipItem ship) {
+        if (IsInCloseOrbit(ship)) {
+            D.Assert(_closeOrbitSimulator != null);
+            var isRemoved = _shipsInCloseOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
+            float shipDistance = Vector3.Distance(ship.Position, Position);
+            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius;
+            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+                ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            if (_shipsInCloseOrbit.Count == Constants.Zero) {
+                // Choose either to deactivate the OrbitSimulator or destroy it, but not both
+                CloseOrbitSimulator.IsActivated = false;
+                //DestroyOrbitSimulator();
+            }
+        }
+        else {
+            base.HandleBrokeOrbit(ship);
+        }
     }
 
     #endregion
 
     #region INavigableTarget Members
 
+    public override float RadiusAroundTargetContainingKnownObstacles {
+        get {
+            float knownObstaclesRadius;
+            if (ChildMoons.Any()) {
+                MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+                float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+                knownObstaclesRadius = distanceToOuterMoon + outerMoon.RadiusAroundTargetContainingKnownObstacles;
+            }
+            else {
+                knownObstaclesRadius = base.RadiusAroundTargetContainingKnownObstacles;
+            }
+            return knownObstaclesRadius;
+        }
+    }
+
     public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        return Data.HighOrbitRadius + shipCollisionDetectionRadius; // OPTIMIZE want shipRadius value as AvoidableObstacleZone ends at LowOrbitRadius?
+        string arrivalDistanceMsg = "just outside of it's obstacle zone";
+        float arrivalDistance;
+        if (ChildMoons.Any()) {
+            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+            float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+            arrivalDistance = distanceToOuterMoon + outerMoon.GetShipArrivalDistance(shipCollisionDetectionRadius);
+            arrivalDistanceMsg = "just outside of outer moon {0}'s obstacle zone".Inject(outerMoon.FullName);
+        }
+        else {
+            arrivalDistance = Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius;
+        }
+        D.Log(ShowDebugLog, "{0}.GetShipArrivalDistance returned {1:0.00}, {2}.", FullName, arrivalDistance, arrivalDistanceMsg);
+        return arrivalDistance;
     }
 
     #endregion
@@ -215,8 +317,8 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipOrbitable, IShipExpl
 
     #region IAvoidableObstacle Members
 
-    public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
-        return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius, formationOffset);
+    public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
+        return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
     }
 
     #endregion

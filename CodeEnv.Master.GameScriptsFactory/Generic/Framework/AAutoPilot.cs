@@ -89,14 +89,15 @@ internal abstract class AAutoPilot : IDisposable {
     protected abstract bool ShowDebugLog { get; }
 
     /// <summary>
-    /// The current worldspace location of the point associated with the AutoPilotTarget this AutoPilot is engaged to reach.
+    /// The current worldspace location of the point associated with 
+    /// the AutoPilotTarget this AutoPilot's client is engaged to reach.
     /// </summary>
     protected virtual Vector3 AutoPilotTgtPtPosition { get { return AutoPilotTarget.Position; } }
 
     protected bool IsAutoPilotNavJobRunning { get { return _autoPilotNavJob != null && _autoPilotNavJob.IsRunning; } }
 
     /// <summary>
-    /// Distance from this Navigator's client to the TargetPoint.
+    /// Distance from this AutoPilot's client to the TargetPoint.
     /// </summary>
     protected float AutoPilotTgtPtDistance { get { return Vector3.Distance(Position, AutoPilotTgtPtPosition); } }
 
@@ -154,7 +155,6 @@ internal abstract class AAutoPilot : IDisposable {
     /// <returns></returns>
     protected virtual void CleanupAnyRemainingAutoPilotJobs() {
         if (IsAutoPilotNavJobRunning) {
-            //D.Log(ShowDebugLog, "{0} AutoPilot disengaging.", Name);
             _autoPilotNavJob.Kill();
         }
     }
@@ -163,9 +163,11 @@ internal abstract class AAutoPilot : IDisposable {
 
     private void IsAutoPilotEngagedPropChangedHandler() {
         if (_isAutoPilotEngaged) {
+            //D.Log(ShowDebugLog, "{0} AutoPilot engaging.", Name);
             HandleAutoPilotEngaged();
         }
         else {
+            //D.Log(ShowDebugLog, "{0} AutoPilot disengaging.", Name);
             HandleAutoPilotDisengaged();
         }
     }
@@ -178,13 +180,7 @@ internal abstract class AAutoPilot : IDisposable {
 
     protected virtual void PauseJobs(bool toPause) {
         if (IsAutoPilotNavJobRunning) {
-            if (toPause) {
-                _autoPilotNavJob.Pause();
-            }
-            else {
-                D.Log(ShowDebugLog, "{0} is unpausing NavigationJob.", Name);
-                _autoPilotNavJob.Unpause();
-            }
+            _autoPilotNavJob.IsPaused = toPause;
         }
     }
 
@@ -210,22 +206,24 @@ internal abstract class AAutoPilot : IDisposable {
 
     /// <summary>
     /// Checks for an obstacle enroute to the provided <c>destination</c>. Returns true if one
-    /// is found that requires immediate action and provides the detour to avoid it.
+    /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
     /// </summary>
-    /// <param name="destination">The current destination. May be the Target, waypoint or an obstacle detour.</param>
-    /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid detecting any ObstacleZoneCollider around the destination.</param>
+    /// <param name="destination">The current destination. May be the AutoPilotTarget or an obstacle detour.</param>
+    /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid 
+    /// detecting any ObstacleZoneCollider around the destination.</param>
     /// <param name="detour">The obstacle detour.</param>
     /// <param name="destinationOffset">The offset from destination.Position that is our destinationPoint.</param>
     /// <returns>
     ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
     /// </returns>
     protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, out INavigableTarget detour, Vector3 destinationOffset = default(Vector3)) {
+        Utility.ValidateNotNegative(castingDistanceSubtractor);
         int iterationCount = Constants.Zero;
         return TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, destinationOffset, out detour, ref iterationCount);
     }
 
     private bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, Vector3 destinationOffset, out INavigableTarget detour, ref int iterationCount) {
-        D.AssertWithException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
+        D.AssertException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
         detour = null;
         Vector3 vectorToDestPoint = (destination.Position + destinationOffset) - Position;
         float currentDestPtDistance = vectorToDestPoint.magnitude;
@@ -243,9 +241,17 @@ internal abstract class AAutoPilot : IDisposable {
             var obstacleZoneGo = hitInfo.collider.gameObject;
             var obstacleZoneHitDistance = hitInfo.distance;
             IAvoidableObstacle obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
-            D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}, DestOffset = {6}, CastSubtractor = {7:0.#}.",
-                Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance, destinationOffset, castingDistanceSubtractor);
 
+            if (obstacle == destination) {
+                D.LogBold(ShowDebugLog, "{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}, DestOffset = {4}, CastSubtractor = {5:0.00}.",
+                    Name, obstacle.FullName, rayLength, obstacleZoneHitDistance, destinationOffset, castingDistanceSubtractor);
+                HandleObstacleFoundIsTarget(obstacle);
+                return false;
+            }
+            else {
+                D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
+                    Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance);
+            }
             if (!TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detour)) {
                 return false;
             }
@@ -268,12 +274,9 @@ internal abstract class AAutoPilot : IDisposable {
     /// <param name="obstacle">The obstacle.</param>
     /// <param name="hitInfo">The hit information.</param>
     /// <param name="fleetRadius">The fleet radius.</param>
-    /// <param name="formationOffset">The formation offset. This is NOT the ship's targetDestinationOffset as 
-    /// detours around obstacles should be executed in full formation, if applicable.</param>
     /// <returns></returns>
-    protected INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius, Vector3 formationOffset) {
-        Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius, formationOffset);
-        //D.Log(ShowDebugLog, "{0} has created a detour at {1} to get by {2}.", Name, detourPosition, obstacle.FullName);
+    protected INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius) {
+        Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius);
         return new StationaryLocation(detourPosition);
     }
 
@@ -285,6 +288,14 @@ internal abstract class AAutoPilot : IDisposable {
     /// <param name="detour">The detour.</param>
     /// <returns></returns>
     protected abstract bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out INavigableTarget detour);
+
+    /// <summary>
+    /// Hook for derived classes to take action when an obstacle has been found that is also the destination.
+    /// </summary>
+    /// <param name="obstacle">The obstacle.</param>
+    protected virtual void HandleObstacleFoundIsTarget(IAvoidableObstacle obstacle) {
+        D.Assert(GetType() == typeof(ShipItem.ShipHelm));
+    }
 
     /// <summary>
     /// Refreshes the course.
@@ -302,6 +313,7 @@ internal abstract class AAutoPilot : IDisposable {
 
     protected virtual void Unsubscribe() {
         _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
     }
 
     #region IDisposable

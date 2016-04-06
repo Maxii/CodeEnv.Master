@@ -94,17 +94,35 @@ namespace CodeEnv.Master.Common {
             return C;
         }
 
-        //Same as the build in TransformDirection(), but using a rotation instead of a transform.
-        public static Vector3 TransformDirectionMath(Quaternion rotation, Vector3 vector) {
+        /// <summary>
+        /// Transforms direction from local space to world space.
+        /// The returned vector has the same length as localDirection but in world space.
+        /// Useful when you want to make a local to world space conversion using a projected rotation of a transform without the
+        /// need to actually rotate the transform to projected rotation.
+        /// <remarks>Same as Transform.TransformDirection(), but using a rotation instead of a transform.</remarks>
+        /// </summary>
+        /// <param name="rotation">The rotation to use, typically a projected rotation of a transform.</param>
+        /// <param name="localDirection">The direction in local space.</param>
+        /// <returns></returns>
+        public static Vector3 TransformDirectionMath(Quaternion rotation, Vector3 localDirection) {
 
-            Vector3 output = rotation * vector;
+            Vector3 output = rotation * localDirection;
             return output;
         }
 
-        //Same as the build in InverseTransformDirection(), but using a rotation instead of a transform.
-        public static Vector3 InverseTransformDirectionMath(Quaternion rotation, Vector3 vector) {
+        /// <summary>
+        /// Transforms direction from world space to local space.
+        /// The returned vector has the same length as worldDirection but in local space.
+        /// Useful when you want to make a world to local space conversion using a projected rotation of a transform without the
+        /// need to actually rotate the transform to projected rotation.
+        /// <remarks>Same as Transform.InverseTransformDirection(), but using a rotation instead of a transform.</remarks>
+        /// </summary>
+        /// <param name="rotation">The rotation to use, typically a projected rotation of a transform.</param>
+        /// <param name="worldDirection">The direction in world space.</param>
+        /// <returns></returns>
+        public static Vector3 InverseTransformDirectionMath(Quaternion rotation, Vector3 worldDirection) {
 
-            Vector3 output = Quaternion.Inverse(rotation) * vector;
+            Vector3 output = Quaternion.Inverse(rotation) * worldDirection;
             return output;
         }
 

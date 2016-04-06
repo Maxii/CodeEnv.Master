@@ -27,14 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
-        public override bool IsHQ {  // HACK temp override to add Assertion protection
-            get { return base.IsHQ; }
-            set {
-                D.Assert(value && HullCategory == FacilityHullCategory.CentralHub);
-                base.IsHQ = value;
-            }
-        }
-
         public override Index3D SectorIndex {
             get { return References.SectorGrid.GetSectorIndex(Position); } // Settlement Facilities get relocated
         }
@@ -44,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
-        /// <param name="facilityTransform">The facility transform.</param>
+        /// <param name="facility">The facility.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
@@ -52,13 +44,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        /// <param name="facilityRigidbody">The facility rigidbody.</param>
         /// <param name="topography">The topography.</param>
-        public FacilityData(Transform facilityTransform, Player owner, CameraFollowableStat cameraStat,
+        public FacilityData(IFacilityItem facility, Player owner, CameraFollowableStat cameraStat,
             IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
-            IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Rigidbody facilityRigidbody, Topography topography)
-            : base(facilityTransform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
-            facilityRigidbody.mass = Mass;
+            IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Topography topography)
+            : base(facility, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
             Topography = topography;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;

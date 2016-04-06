@@ -38,7 +38,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public IResponsiveTrackingSprite Icon { get; private set; }
+        private IResponsiveTrackingSprite _icon;
+        public IResponsiveTrackingSprite Icon {
+            get { return _icon; }
+            set { SetProperty<IResponsiveTrackingSprite>(ref _icon, value, "Icon"); }
+        }
 
         protected abstract Vector2 IconSize { get; }
 
@@ -142,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
             var iconCameraLosChgdListener = Icon.CameraLosChangedListener;
             iconCameraLosChgdListener.inCameraLosChanged -= IconInCameraLosChangedEventHandler;
             // event subscriptions already removed by Item before Icon changed
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(Icon);
+            GameUtility.DestroyIfNotNullOrAlreadyDestroyed(Icon);
         }
     }
 

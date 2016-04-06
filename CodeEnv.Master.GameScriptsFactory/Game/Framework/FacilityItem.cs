@@ -94,9 +94,19 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
             FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
         // Static trigger collider (no rigidbody) is OK as a ship's CollisionDetectionCollider has a kinematic rigidbody
         D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
-        Vector3 zoneCenter = Position + _obstacleZoneCollider.center;
-        _detourGenerator = new DetourGenerator(zoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+        InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
+    }
+
+    private void InitializeObstacleDetourGenerator() {
+        if (IsMobile) {
+            Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center));
+            _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+        }
+        else {
+            Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
+            _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+        }
     }
 
     #endregion
@@ -219,7 +229,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region None
 
     void None_EnterState() {
-        //LogEvent();
+        LogEvent();
     }
 
     void None_ExitState() {
@@ -231,7 +241,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log(ShowDebugLog, "{0}.Idling_EnterState() beginning execution.", FullName);
+        LogEvent();
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -249,6 +259,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
+    void Idling_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
+    }
+
     void Idling_ExitState() {
         LogEvent();
     }
@@ -260,7 +274,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     private IElementAttackableTarget _fsmPrimaryAttackTgt; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_EnterState() beginning execution.", FullName);
+        LogEvent();
 
         IUnitAttackableTarget attackTgtFromOrder = CurrentOrder.Target;
         while (attackTgtFromOrder.IsOperational) {
@@ -278,6 +292,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         InitiateFiringSequence(selectedFiringSolution);
     }
 
+    void ExecuteAttackOrder_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
+    }
+
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
         _fsmPrimaryAttackTgt = null;
@@ -288,15 +306,9 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_EnterState called.", FullName);
+        LogEvent();
         Call(FacilityState.Repairing);
         yield return null;  // required so Return()s here
-    }
-
-    void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        LogEvent();
-        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
-        InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -308,7 +320,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log(ShowDebugLog, "{0}.Repairing_EnterState beginning execution.", FullName);
+        LogEvent();
         StartEffect(EffectID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
@@ -316,7 +328,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
-            yield return new WaitForSeconds(10F);
+            yield return new WaitForHours(10.2F);
         }
 
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
@@ -334,6 +346,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
+    }
+
+    void Repairing_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
     }
 
     void Repairing_UponNewOrderReceived() {
@@ -356,7 +372,9 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         //OnStartShow();
         //while (true) {
         //TODO refit until complete
-        yield return new WaitForSeconds(2);
+        yield return new WaitForHours(20F);
+
+        //yield return new WaitForSeconds(2);
         //}
         //OnStopShow();   // must occur while still in target state
         Return();
@@ -474,22 +492,22 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
 
-    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
-        return _obstacleZoneCollider.radius + shipCollisionAvoidanceRadius;
+    public override float GetShipArrivalDistance(float shipCollisionDetecionRadius) {
+        return _obstacleZoneCollider.radius + shipCollisionDetecionRadius;
     }
 
     #endregion
 
     #region IAvoidableObstacle Members
 
-    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset) {
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
         var formation = Command.Data.UnitFormation;
         switch (formation) {
             case Formation.Circle:
-                return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius, formationOffset);
+                return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
 
             case Formation.Globe:
-                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius, formationOffset);
+                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
             case Formation.Wedge:
             case Formation.None:
             default:

@@ -55,6 +55,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private bool IsSectorWireframeShowing { get { return _wireframe != null && _wireframe.IsShowing; } }
 
+    private bool IsContextMenuShowing { get { return _ctxControl != null && _ctxControl.IsShowing; } }
+
     private float _distanceToHighlightedSector;
     private SectorGrid _sectorGrid;
     private CubeWireframe _wireframe;
@@ -72,7 +74,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private InputManager _inputMgr;
     private GameInputHelper _inputHelper;
     private Job _sectorViewJob;
-
     private IList<IDisposable> _subscriptions;
 
     protected override void InitializeOnAwake() {
@@ -96,6 +97,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
     }
+
+    // Note: no pausing of the sectorViewJob as I want to be able to inspect sectors when paused
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
@@ -138,7 +141,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 DynamicallySubscribe(false);
                 if (IsSectorViewJobRunning) {
                     _sectorViewJob.Kill();
-                    _sectorViewJob = null;
                 }
                 if (IsSectorWireframeShowing) {
                     ShowSector(false);
@@ -146,7 +148,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                     _wireframe = null;
                 }
                 _collider.enabled = false;
-                if (_ctxControl.IsShowing) { _ctxControl.Hide(); }
+                if (IsContextMenuShowing) {
+                    _ctxControl.Hide();
+                }
 
                 // OPTIMIZE cache sector and sectorView
                 var sector = _sectorGrid.GetSector(CurrentSectorIndex);
@@ -210,7 +214,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private IEnumerator ShowSectorUnderMouse() {    // IMPROVE use UICamera.onMouseMove
         while (true) {
-            if (!_ctxControl.IsShowing) {   // don't change highlighted sector while context menu is showing
+            if (!IsContextMenuShowing) {   // don't change highlighted sector while context menu is showing
 
                 Vector3 mousePosition = Input.mousePosition;
                 mousePosition.z = _distanceToHighlightedSector;
@@ -247,7 +251,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     protected override void Cleanup() {
         if (_wireframe != null) { _wireframe.Dispose(); }
-        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_sectorIDLabel);
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_sectorIDLabel);
         if (_sectorViewJob != null) { _sectorViewJob.Dispose(); }
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();

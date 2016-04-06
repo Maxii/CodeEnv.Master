@@ -88,21 +88,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. Gets the current speed of the ship in Units per hour. Whether paused or at a GameSpeed
-        /// other than Normal (x1), this property always returns the value assuming not paused with GameSpeed.Normal.
+        /// Readonly. The current speed of the ship in Units per hour. Whether paused or at a GameSpeed
+        /// other than Normal (x1), this property always returns the proper reportable value.
         /// </summary>
-        public float CurrentSpeedValue {
-            get {
-                if (_gameMgr.IsPaused) {
-                    return _currentSpeedValueOnPause;
-                }
-                else {
-                    var speedInGameSpeedAdjustedUnitsPerSec = _shipRigidbody.velocity.magnitude;
-                    var speedInUnitsPerHour = speedInGameSpeedAdjustedUnitsPerSec / _gameTime.GameSpeedAdjustedHoursPerSecond;
-                    return speedInUnitsPerHour;
-                }
-            }
-        }
+        public float CurrentSpeedValue { get { return Item.CurrentSpeedValue; } }
 
         private float _requestedSpeedValue;
         /// <summary>
@@ -129,24 +118,39 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The drag of the ship in Topography.OpenSpace.
         /// </summary>
-        public float Drag { get { return HullEquipment.Drag; } }
+        public float OpenSpaceDrag { get { return HullEquipment.Drag; } }
+
+        private float _currentDrag;
+        /// <summary>
+        /// The drag of the ship in its current Topography.
+        /// </summary>
+        public float CurrentDrag {
+            get {
+                D.Assert(_currentDrag != Constants.ZeroF);
+                return _currentDrag;
+            }
+            private set { SetProperty<float>(ref _currentDrag, value, "CurrentDrag", CurrentDragPropChangedHandler); }
+        }
 
         /// <summary>
-        /// The maximum power that can currently be projected by the engines. FullSpeed = FullPropulsionPower / (Mass * _rigidbody.drag).
+        /// The maximum power that can currently be projected by the engines. 
+        /// <remarks>See Flight.txt for equations.</remarks>
         /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
         /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
         /// </summary>
         public float FullPropulsionPower { get { return IsFtlOperational ? FullFtlPropulsionPower : FullStlPropulsionPower; } }
 
         /// <summary>
-        /// The maximum power that can be projected by the STL engines. FullStlSpeed = FullStlPropulsionPower / (Mass * _rigidbody.drag).
+        /// The maximum power that can be projected by the STL engines.         
+        /// <remarks>See Flight.txt for equations.</remarks>
         /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
         /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
         /// </summary>
         public float FullStlPropulsionPower { get { return _enginesStat.FullStlPropulsionPower; } }
 
         /// <summary>
-        /// The maximum power that can be projected by the FTL engines. FullFtlSpeed = FullFtlPropulsionPower / (Mass * _rigidbody.drag).
+        /// The maximum power that can be projected by the FTL engines.
+        /// <remarks>See Flight.txt for equations.</remarks>
         /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
         /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
         /// </summary>
@@ -167,7 +171,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Readonly. The real-time, normalized heading of the ship in worldspace coordinates. Equivalent to transform.forward.
         /// </summary>
-        public Vector3 CurrentHeading { get { return _itemTransform.forward; } }
+        public Vector3 CurrentHeading { get { return Item.CurrentHeading; } }
 
         /// <summary>
         /// The maximum speed that the ship can currently achieve in units per hour.
@@ -185,23 +189,17 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
 
+        protected new IShipItem Item { get { return base.Item as IShipItem; } }
+
         private new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
         private EnginesStat _enginesStat;
-
-        /// <summary>
-        /// The speed of the ship in units per hour when it was paused.
-        /// </summary>
-        private float _currentSpeedValueOnPause;
-        private IList<IDisposable> _subscriptions;
         private GameTime _gameTime;
-        private float _gameSpeedMultiplier;
-        private Rigidbody _shipRigidbody;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipData" /> class.
         /// </summary>
-        /// <param name="shipTransform">The ship transform.</param>
+        /// <param name="ship">The ship.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
@@ -209,16 +207,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        /// <param name="shipRigidbody">The ship rigidbody.</param>
         /// <param name="enginesStat">The engines stat.</param>
         /// <param name="combatStance">The combat stance.</param>
-        public ShipData(Transform shipTransform, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
+        public ShipData(IShipItem ship, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
             ShipHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors,
-            IEnumerable<ShieldGenerator> shieldGenerators, Rigidbody shipRigidbody, EnginesStat enginesStat, ShipCombatStance combatStance)
-            : base(shipTransform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
-            _shipRigidbody = shipRigidbody;
-            _shipRigidbody.mass = Mass;
-            // _shipRigidbody.drag gets set when Topography gets set/changed
+            IEnumerable<ShieldGenerator> shieldGenerators, EnginesStat enginesStat, ShipCombatStance combatStance)
+            : base(ship, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
@@ -226,24 +220,16 @@ namespace CodeEnv.Master.GameContent {
             _enginesStat = enginesStat;
             CombatStance = combatStance;
             InitializeLocalValuesAndReferences();
-            Subscribe();
         }
 
         private void InitializeLocalValuesAndReferences() {
             _gameTime = GameTime.Instance;
-            _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             _requestedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
-        }
-
-        private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gs => gs.IsPaused, IsPausedPropChangingHandler));
-            _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
         }
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will trigger Data.AssessFullSpeedValue()
+            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will set CurrentDrag
             //D.Log("{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
             IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
         }
@@ -268,20 +254,13 @@ namespace CodeEnv.Master.GameContent {
             AssessIsFtlOperational();
         }
 
-        protected override void TopographyPropChangedHandler() {
-            base.TopographyPropChangedHandler();
-            _shipRigidbody.drag = Drag * Topography.GetRelativeDensity();
+        private void CurrentDragPropChangedHandler() {
             RefreshFullSpeedValue();
         }
 
-        private void IsPausedPropChangingHandler(bool isPausing) {
-            if (isPausing) {
-                _currentSpeedValueOnPause = CurrentSpeedValue;
-            }
-        }
-
-        private void GameSpeedPropChangedHandler() {
-            _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
+        protected override void TopographyPropChangedHandler() {
+            base.TopographyPropChangedHandler();
+            CurrentDrag = OpenSpaceDrag * Topography.GetRelativeDensity();
         }
 
         #endregion
@@ -290,17 +269,11 @@ namespace CodeEnv.Master.GameContent {
         /// Refreshes the full speed value the ship is capable of achieving.
         /// </summary>
         private void RefreshFullSpeedValue() {
-            FullSpeedValue = IsFtlOperational ? FullFtlPropulsionPower / (Mass * _shipRigidbody.drag) : FullStlPropulsionPower / (Mass * _shipRigidbody.drag);
+            FullSpeedValue = GameUtility.CalculateMaxAttainableSpeed(FullPropulsionPower, Mass, CurrentDrag);
         }
 
         private void AssessIsFtlOperational() {
             IsFtlOperational = IsFtlActivated && !IsFtlDamaged && !IsFtlDampedByField;
-        }
-
-        protected override void Unsubscribe() {
-            base.Unsubscribe();
-            _subscriptions.ForAll<IDisposable>(s => s.Dispose());
-            _subscriptions.Clear();
         }
 
         public override string ToString() {

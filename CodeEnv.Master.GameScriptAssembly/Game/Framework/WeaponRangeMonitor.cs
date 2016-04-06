@@ -26,6 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Detects IElementAttackableTargets that enter/exit the range of its weapons and notifies each weapon of such.
 /// TODO Account for a diploRelations change with an owner.
+/// <remarks><see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/></remarks>
 /// <remarks>This WeaponRangeMonitor assumes that Short, Medium and LongRange weapons all detect
 /// items using the element's "Proximity Detectors" that are always operational. They do not rely on Sensors.</remarks>
 /// </summary>
@@ -33,7 +34,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
 
     public new IUnitElementItem ParentItem {
         get { return base.ParentItem as IUnitElementItem; }
-        set { base.ParentItem = value as AMortalItem; }
+        set { base.ParentItem = value as IUnitElementItem; }
     }
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // targets (elements and planetoids) have rigidbodies
@@ -56,7 +57,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         D.Log(ShowDebugLog, "{0} detected and added {1}.", Name, newlyDetectedItem.FullName);
         newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
         newlyDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
-        if (newlyDetectedItem.Owner.IsEnemyOf(Owner)) {
+        if (newlyDetectedItem.IsAttackingAllowedBy(Owner)) {
             AddEnemy(newlyDetectedItem);
         }
     }
@@ -66,7 +67,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
         lostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
         //D.Log(ShowDebugLog, "{0} removed {1} death subscription.", Name, lostDetectionItem.FullName);
-        if (lostDetectionItem.Owner.IsEnemyOf(Owner)) {
+        if (lostDetectionItem.IsAttackingAllowedBy(Owner)) {
             RemoveEnemy(lostDetectionItem);
         }
     }
@@ -98,7 +99,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackableTarg
         IElementAttackableTarget target = sender as IElementAttackableTarget;
         if (target != null) {
             // an attackable target with an owner
-            if (target.Owner.IsEnemyOf(Owner)) {
+            if (target.IsAttackingAllowedBy(Owner)) {
                 // an enemy
                 if (!_attackableEnemyTargetsDetected.Contains(target)) {
                     AddEnemy(target);

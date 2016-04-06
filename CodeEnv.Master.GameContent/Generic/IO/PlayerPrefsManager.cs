@@ -73,8 +73,9 @@ namespace CodeEnv.Master.GameContent {
         private string _isElementIconsEnabledKey = "Element Icons";
         private string _qualitySettingKey = "Quality Setting";
 
+        //********************************************************************************************
         // WARNING: Changing the name of a Property here requires a comensurate change in the name returned by GuiMenuElementIDExtensions
-        // Notifications are not needed for properties that cannot change during a game instance
+        // Note: Notifications are not needed for properties that cannot change during a game instance
         public UniverseSizeGuiSelection UniverseSizeSelection { get; private set; }
         public int PlayerCount { get; private set; }
         public string Username { get; set; }
@@ -104,39 +105,46 @@ namespace CodeEnv.Master.GameContent {
         public IQ AIPlayer5IQ { get; private set; }
         public IQ AIPlayer6IQ { get; private set; }
         public IQ AIPlayer7IQ { get; private set; }
+        //********************************************************************************************
+
+        //*******************************************************************************************
+        // Note: Notifications are not needed for properties that can change during a game instance
+        // but require no action to be taken when they change
 
         public GameSpeed GameSpeedOnLoad { get; private set; }
 
         public bool IsPauseOnLoadEnabled { get; private set; }
 
+        //*******************************************************************************************
+
         private bool _isZoomOutOnCursorEnabled;
         public bool IsZoomOutOnCursorEnabled {
             get { return _isZoomOutOnCursorEnabled; }
-            set { SetProperty<bool>(ref _isZoomOutOnCursorEnabled, value, "IsZoomOutOnCursorEnabled"); }
+            private set { SetProperty<bool>(ref _isZoomOutOnCursorEnabled, value, "IsZoomOutOnCursorEnabled"); }
         }
 
         private bool _isCameraRollEnabled;
         public bool IsCameraRollEnabled {
             get { return _isCameraRollEnabled; }
-            set { SetProperty<bool>(ref _isCameraRollEnabled, value, "IsCameraRollEnabled"); }
+            private set { SetProperty<bool>(ref _isCameraRollEnabled, value, "IsCameraRollEnabled"); }
         }
 
         private bool _isResetOnFocusEnabled;
         public bool IsResetOnFocusEnabled {
             get { return _isResetOnFocusEnabled; }
-            set { SetProperty<bool>(ref _isResetOnFocusEnabled, value, "IsResetOnFocusEnabled"); }
+            private set { SetProperty<bool>(ref _isResetOnFocusEnabled, value, "IsResetOnFocusEnabled"); }
         }
 
         private bool _isElementIconsEnabled;
         public bool IsElementIconsEnabled {
             get { return _isElementIconsEnabled; }
-            set { SetProperty<bool>(ref _isElementIconsEnabled, value, "IsElementIconsEnabled"); }
+            private set { SetProperty<bool>(ref _isElementIconsEnabled, value, "IsElementIconsEnabled"); }
         }
 
         private string _qualitySetting;
         public string QualitySetting {
             get { return _qualitySetting; }
-            set { SetProperty<string>(ref _qualitySetting, value, "QualitySetting"); }
+            private set { SetProperty<string>(ref _qualitySetting, value, "QualitySetting"); }
         }
 
         private IGameManager _gameMgr;

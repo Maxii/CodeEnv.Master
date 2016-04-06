@@ -24,11 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
-        private string _name;
-        public string Name {
-            get { return _name; }
-            set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler, NamePropChangingHandler); }
-        }
+        public string Name { get { return Item.Name; } }
 
         public virtual string FullName { get { return Name; } }
 
@@ -47,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<Topography>(ref _topography, value, "Topography", TopographyPropChangedHandler); }
         }
 
-        public Vector3 Position { get { return _itemTransform.position; } }
+        public Vector3 Position { get { return Item.Position; } }
 
         private bool _isOperational;
         /// <summary>
@@ -59,17 +55,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
         }
 
-        protected Transform _itemTransform;
+        protected IItem Item { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AItemData"/> class.
+        /// Initializes a new instance of the <see cref="AItemData" /> class.
         /// </summary>
-        /// <param name="itemTransform">The item transform.</param>
-        /// <param name="name">The name.</param>
+        /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
-        public AItemData(Transform itemTransform, string name, Player owner) {
-            _itemTransform = itemTransform; // must preceed Name change
-            Name = name;
+        public AItemData(IItem item, Player owner) {
+            Item = item;
             _owner = owner;
         }
 
@@ -86,15 +80,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void OwnerPropChangedHandler() {
             //D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
-        }
-
-        private void NamePropChangingHandler(string newName) {
-            string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
-            D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
-        }
-
-        private void NamePropChangedHandler() {
-            _itemTransform.name = Name;
         }
 
         protected virtual void TopographyPropChangedHandler() { }

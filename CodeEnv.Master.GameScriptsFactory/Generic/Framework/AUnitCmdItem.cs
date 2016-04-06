@@ -29,16 +29,28 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUnitAttackableTarget, IFormationMgrClient {
 
+    private Transform _unitContainer;
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
     /// </summary>
-    public Transform UnitContainer { get; private set; }
+    public Transform UnitContainer {
+        get { return _unitContainer; }
+        private set { SetProperty<Transform>(ref _unitContainer, value, "UnitContainer"); }
+    }
 
     public abstract bool IsAvailable { get; }
 
-    public bool IsTrackingLabelEnabled { private get; set; }
+    private bool _isTrackingLabelEnabled;
+    public bool IsTrackingLabelEnabled {
+        private get { return _isTrackingLabelEnabled; }
+        set { SetProperty<bool>(ref _isTrackingLabelEnabled, value, "IsTrackingLabelEnabled"); }
+    }
 
-    public bool __ShowHQDebugLog { get; set; }
+    private bool __showHQDebugLog;
+    public bool __ShowHQDebugLog {
+        get { return __showHQDebugLog; }
+        set { SetProperty<bool>(ref __showHQDebugLog, value, "__ShowHQDebugLog"); }
+    }
 
     public IconInfo IconInfo {
         get {
@@ -213,7 +225,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
                 monitor.Reset();
                 SensorRangeMonitors.Remove(monitor);
                 //D.Log(ShowDebugLog, "{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
-                UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
+                GameUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
             }
         });
     }
@@ -251,7 +263,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         D.Log(ShowDebugLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
         RemoveElement(deadSubordinateElement as AUnitElementItem);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
-        UponSubordinateElementDeath(deadSubordinateElement as AUnitElementItem);
+        if (IsOperational) {    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
+            UponSubordinateElementDeath(deadSubordinateElement as AUnitElementItem);
+        }
     }
 
     protected abstract void AttachCmdToHQElement();
@@ -301,8 +315,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         Utility.ValidateNotNull(newHQElement);
         var previousHQElement = HQElement;
         if (previousHQElement != null) {
-            previousHQElement.Data.IsHQ = false;
+            previousHQElement.IsHQ = false;
             // don't remove previousHQElement.ShowDebugLog if ShowHQDebugLog as its probably dieing
+        }
+        else {
+            // first assignment of HQ
+            D.Assert(!IsOperational);
+            // OPTIMIZE Just a FYI warning as formations currently assume this
+            D.Warn(newHQElement.transform.rotation != Quaternion.identity, "{0} first HQ Element rotation = {1}.", FullName, newHQElement.transform.rotation);
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
@@ -312,9 +332,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     private void HQElementPropChangedHandler() {
-        HQElement.Data.IsHQ = true;
+        HQElement.IsHQ = true;        //HQElement.Data.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
-        if (__ShowHQDebugLog) { HQElement.ShowDebugLog = true; }
+        if (__ShowHQDebugLog) {
+            HQElement.ShowDebugLog = true;
+        }
         //D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
@@ -323,7 +345,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         }
     }
 
-    protected void TargetDeathEventHandler(object sender, EventArgs e) {
+    protected void FsmTargetDeathEventHandler(object sender, EventArgs e) {
         IMortalItem deadTarget = sender as IMortalItem;
         UponTargetDeath(deadTarget);
     }
@@ -402,7 +424,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     public override void TakeHit(DamageStrength elementDamageSustained) {
-        if (DebugSettings.Instance.AllPlayersInvulnerable) {
+        if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
         DamageStrength damageToCmd = elementDamageSustained - Data.DamageMitigation;
@@ -438,8 +460,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         return false;
     }
 
-    protected void DestroyUnitContainer(float delayInSeconds = 0F) {
-        UnityUtility.Destroy(UnitContainer.gameObject, delayInSeconds);
+    protected void DestroyUnitContainer(float delayInHours = Constants.ZeroF) {
+        GameUtility.Destroy(UnitContainer.gameObject, delayInHours);
     }
 
     #endregion
@@ -448,7 +470,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     protected override void Cleanup() {
         base.Cleanup();
-        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
     protected override void Unsubscribe() {
@@ -513,6 +535,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     public virtual void CleanupAfterFormationChanges() { }
+
+    #endregion
+
+    #region  IUnitAttackableTarget Members
+
+    public bool IsAttackingAllowedBy(Player player) {
+        return Owner.IsEnemyOf(player);
+    }
 
     #endregion
 

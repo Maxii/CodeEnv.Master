@@ -36,13 +36,21 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string FullName { get { return _fullNameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name); } }
 
-    public IElementAttackableTarget Target { get; private set; }
+    private IElementAttackableTarget _target;
+    public IElementAttackableTarget Target {
+        get { return _target; }
+        private set { SetProperty<IElementAttackableTarget>(ref _target, value, "Target"); }
+    }
 
-    public Vector3 Heading { get { return transform.forward; } }
+    public Vector3 CurrentHeading { get { return transform.forward; } }
 
     public Player Owner { get { return Weapon.Owner; } }
 
-    public bool IsOperational { get; private set; }
+    private bool _isOperational;
+    public bool IsOperational {
+        get { return _isOperational; }
+        private set { SetProperty<bool>(ref _isOperational, value, "IsOperational"); }
+    }
 
     private bool _toShowEffects;
     public bool ToShowEffects {
@@ -50,11 +58,19 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", ToShowEffectsPropChangedHandler); }
     }
 
-    public WDVStrength DeliveryVehicleStrength { get; protected set; }
+    private WDVStrength _deliveryVehicleStrength;
+    public WDVStrength DeliveryVehicleStrength {
+        get { return _deliveryVehicleStrength; }
+        protected set { SetProperty<WDVStrength>(ref _deliveryVehicleStrength, value, "DeliveryVehicleStrength"); }
+    }
 
-    public DamageStrength DamagePotential { get; private set; }
+    public DamageStrength DamagePotential { get { return Weapon.DamagePotential; } }
 
-    protected AWeapon Weapon { get; private set; }
+    private AWeapon _weapon;
+    protected AWeapon Weapon {
+        get { return _weapon; }
+        private set { SetProperty<AWeapon>(ref _weapon, value, "Weapon"); }
+    }
 
     protected float _range;
     protected GameManager _gameMgr;
@@ -82,7 +98,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Weapon = weapon;
 
         DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
-        DamagePotential = weapon.DamagePotential;
 
         SyncName();
         weapon.HandleFiringInitiated(target, this);

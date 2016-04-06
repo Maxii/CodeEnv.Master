@@ -51,6 +51,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
+        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerEnter() tripped by {1} while paused.", Name, other.name);
         D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
@@ -70,7 +71,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
+        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerExit() tripped by {1} while paused.", Name, other.name);
+        D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", Name, other.name);
             return;

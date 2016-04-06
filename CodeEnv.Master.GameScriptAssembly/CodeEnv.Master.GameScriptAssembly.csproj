@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\CollisionDetectionMonitor.cs" />
     <Compile Include="Generic\_Debug\DrawSphereGizmo.cs" />
     <Compile Include="Generic\_Debug\DebugValues.cs" />
     <Compile Include="Game\Framework\FleetFormationStation.cs" />
@@ -89,9 +90,9 @@
     <Compile Include="Generic\_Debug\Logger.cs" />
     <Compile Include="Generic\_Debug\NguiEventLogger.cs" />
     <Compile Include="Generic\Graphics\MobileOrbitSimulator.cs" />
-    <Compile Include="Generic\Graphics\MobileShipOrbitSimulator.cs" />
+    <Compile Include="Generic\Graphics\MobileShipCloseOrbitSimulator.cs" />
     <Compile Include="Generic\Graphics\OrbitSimulator.cs" />
-    <Compile Include="Generic\Graphics\ShipOrbitSimulator.cs" />
+    <Compile Include="Generic\Graphics\ShipCloseOrbitSimulator.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\JobRunner.cs" />

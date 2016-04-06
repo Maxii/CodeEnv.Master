@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 ///  Abstract class for AUnitCmdItem's that are Base Commands.
 /// </summary>
-public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbitable, IGuardable, IPatrollable {
+public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseOrbitable, IGuardable, IPatrollable {
 
     public override bool IsAvailable { get { return CurrentState == BaseState.Idling; } }
 
@@ -43,6 +43,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         set { base.Data = value; }
     }
 
+    private IList<IShipItem> _shipsInHighOrbit;
+    private IList<IShipItem> _shipsInCloseOrbit;
+
     #region Initialization
 
     protected override void InitializeOnData() {
@@ -55,12 +58,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         return owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
     }
 
-    private ShipOrbitSlot InitializeShipOrbitSlot() {
-        return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
-    }
-
     private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Data.HighOrbitRadius * 5F; // HACK
+        float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * 5F; // HACK
         var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
@@ -71,7 +70,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     private IList<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
-        float distanceFromPosition = Data.HighOrbitRadius * 2F;   // HACK
+        float distanceFromPosition = Data.CloseOrbitOuterRadius * 2F;   // HACK
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
         guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
@@ -169,7 +168,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region None
 
     protected void None_EnterState() {
-        //LogEvent();
+        LogEvent();
     }
 
     protected void None_ExitState() {
@@ -184,6 +183,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         LogEvent();
     }
 
+    void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
     protected void Idling_ExitState() {
         LogEvent();
     }
@@ -193,7 +196,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     #region ExecuteAttackOrder
 
     protected IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_EnterState beginning execution.", Data.Name);
+        LogEvent();
         Call(BaseState.Attacking);
         yield return null;   // required so Return()s here
         CurrentState = BaseState.Idling;
@@ -212,7 +215,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
     protected void Attacking_EnterState() {
         LogEvent();
         _fsmAttackTarget = CurrentOrder.Target as IUnitAttackableTarget;
-        _fsmAttackTarget.deathOneShot += TargetDeathEventHandler;
+        _fsmAttackTarget.deathOneShot += FsmTargetDeathEventHandler;
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.CmdStaff, _fsmAttackTarget);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
@@ -230,7 +233,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     protected void Attacking_ExitState() {
         LogEvent();
-        _fsmAttackTarget.deathOneShot -= TargetDeathEventHandler;
+        _fsmAttackTarget.deathOneShot -= FsmTargetDeathEventHandler;
         _fsmAttackTarget = null;
     }
 
@@ -288,25 +291,92 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     #endregion
 
+    protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
+
     #region Cleanup
+
+    #endregion
+
+    #region IShipCloseOrbitable Members
+
+    private IShipCloseOrbitSimulator _closeOrbitSimulator;
+    public IShipCloseOrbitSimulator CloseOrbitSimulator {
+        get {
+            if (_closeOrbitSimulator == null) {
+                OrbitData closeOrbitData = new OrbitData(gameObject, Data.CloseOrbitInnerRadius, Data.CloseOrbitOuterRadius, IsMobile);
+                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
+            }
+            return _closeOrbitSimulator;
+        }
+    }
+
+    public void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+        if (_shipsInCloseOrbit == null) {
+            _shipsInCloseOrbit = new List<IShipItem>();
+        }
+        _shipsInCloseOrbit.Add(ship);
+        shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
+    }
+
+    public bool IsInCloseOrbit(IShipItem ship) {
+        if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
+    }
+
+    public bool IsCloseOrbitAllowedBy(Player player) {
+        return !Owner.IsEnemyOf(player);
+    }
 
     #endregion
 
     #region IShipOrbitable Members
 
-    private ShipOrbitSlot _shipOrbitSlot;
-    public ShipOrbitSlot ShipOrbitSlot {
-        get {
-            if (_shipOrbitSlot == null) { _shipOrbitSlot = InitializeShipOrbitSlot(); }
-            return _shipOrbitSlot;
+    public void HandleBrokeOrbit(IShipItem ship) {
+        if (IsInHighOrbit(ship)) {
+            var isRemoved = _shipsInHighOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
+            return;
         }
+        if (IsInCloseOrbit(ship)) {
+            D.Assert(_closeOrbitSimulator != null);
+            var isRemoved = _shipsInCloseOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
+            float shipDistance = Vector3.Distance(ship.Position, Position);
+            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius;
+            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+                ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            if (_shipsInCloseOrbit.Count == Constants.Zero) {
+                // Choose either to deactivate the OrbitSimulator or destroy it, but not both
+                CloseOrbitSimulator.IsActivated = false;
+                //DestroyOrbitSimulator();
+            }
+            return;
+        }
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
     }
+
+    public bool IsInHighOrbit(IShipItem ship) {
+        if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
+    }
+
+    public void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+        if (_shipsInHighOrbit == null) {
+            _shipsInHighOrbit = new List<IShipItem>();
+        }
+        _shipsInHighOrbit.Add(ship);
+        ConnectHighOrbitRigidbodyToShipOrbitJoint(shipOrbitJoint);
+    }
+
+    public bool IsHighOrbitAllowedBy(Player player) { return true; }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
-
-    public bool IsOrbitingAllowedBy(Player player) {
-        return !Owner.IsEnemyOf(player);
-    }
 
     #endregion
 
@@ -318,7 +388,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return Data.HighOrbitRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+            return Data.CloseOrbitOuterRadius + Data.CameraStat.OptimalViewingDistanceAdder;
         }
         set { base.OptimalCameraViewingDistance = value; }
     }
@@ -329,8 +399,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
 
     public override float RadiusAroundTargetContainingKnownObstacles { get { return Data.UnitMaxFormationRadius; } }
 
-    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
-        return Data.HighOrbitRadius + shipCollisionAvoidanceRadius; // OPTIMIZE shipRadius value needed?
+    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
+        return Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius;
     }
 
     #endregion
@@ -347,7 +417,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbita
         }
     }
 
-    // EmergencyGatherStations - see IShipOrbitable
+    // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);

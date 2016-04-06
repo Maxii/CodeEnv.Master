@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -39,14 +39,23 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// </summary>
     public event EventHandler ownerChanged;
 
+    /// <summary>
+    /// Debug flag in editor indicating whether to show the D.Log for this item.
+    /// <remarks>Requires #define DEBUG_LOG for D.Log() to be compiled.</remarks>
+    /// </summary>
+    [SerializeField]
+    private bool _showDebugLog = false;
+    public bool ShowDebugLog {
+        get { return _showDebugLog; }
+        set { SetProperty<bool>(ref _showDebugLog, value, "ShowDebugLog"); }
+    }
+
     private AItemData _data;
     public AItemData Data {
         get { return _data; }
         set {
             D.Assert(_data == null, "{0}.{1}.Data can only be set once.".Inject(FullName, GetType().Name));
-            _data = value;
-            InitializeOnData();
-            SubscribeToDataValueChanges();
+            SetProperty<AItemData>(ref _data, value, "Data", DataPropSetHandler);
         }
     }
 
@@ -77,9 +86,16 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         }
     }
 
-    public string Name { get { return Data.Name; } }
+    private string _name;
+    public string Name {
+        get {
+            D.Assert(_name != null);
+            return _name;
+        }
+        set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler); }
+    }
 
-    public Vector3 Position { get { return Data.Position; } }
+    public Vector3 Position { get { return transform.position; } }
 
     /// <summary>
     /// The radius of the conceptual 'globe' that encompasses this Item.
@@ -165,7 +181,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
                 case GameInputMode.NoInput:
                 case GameInputMode.PartialPopup:
                 case GameInputMode.FullPopup:
-                    D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), FullName);
+                    D.Log(ShowDebugLog, "InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), FullName);
                     ShowHud(false);
                     break;
                 case GameInputMode.Normal:
@@ -179,6 +195,15 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     }
 
     #region Event and Property Change Handlers
+
+    private void DataPropSetHandler() {
+        InitializeOnData();
+        SubscribeToDataValueChanges();
+    }
+
+    private void NamePropChangedHandler() {
+        transform.name = Name;
+    }
 
     protected virtual void IsOperationalPropChangedHandler() {
         enabled = IsOperational;
@@ -242,7 +267,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     public abstract float RadiusAroundTargetContainingKnownObstacles { get; }
 
-    public abstract float GetShipArrivalDistance(float shipCollisionAvoidanceRadius);
+    public abstract float GetShipArrivalDistance(float shipCollisionDetectionRadius);
 
 
     #endregion

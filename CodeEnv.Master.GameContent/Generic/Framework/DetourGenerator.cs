@@ -24,16 +24,41 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class DetourGenerator {
 
-        protected Vector3 _obstacleZoneCenter;
-        protected float _obstacleZoneRadius;
-        protected float _distanceToClearObstacle;
+        private Reference<Vector3> _obstacleZoneCenterRef;
+        private Vector3 _obstacleZoneCenter;
+        /// <summary>
+        /// The center of the obstacle zone in world space.
+        /// </summary>
+        private Vector3 ObstacleZoneCenter {
+            get {
+                if (_obstacleZoneCenterRef != null) {
+                    return _obstacleZoneCenterRef.Value;
+                }
+                return _obstacleZoneCenter;
+            }
+        }
+
+        private float _obstacleZoneRadius;
+        private float _distanceToClearObstacle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetourGenerator"/> class.
         /// </summary>
-        /// <param name="obstacleZoneCenter">The center of the AvoidableObstacleZone.</param>
+        /// <param name="obstacleZoneCenter">The center of the mobile AvoidableObstacleZone in worldspace.</param>
         /// <param name="obstacleZoneRadius">The radius of the AvoidableObstacleZone.</param>
-        /// <param name="distanceToClearObstacle">The distance desired to clear the obstacle measured from AvoidableObstacleZone center .</param>
+        /// <param name="distanceToClearObstacle">The distance desired to clear the obstacle measured from AvoidableObstacleZone center.</param>
+        public DetourGenerator(Reference<Vector3> obstacleZoneCenter, float obstacleZoneRadius, float distanceToClearObstacle) {
+            _obstacleZoneCenterRef = obstacleZoneCenter;
+            _obstacleZoneRadius = obstacleZoneRadius;
+            _distanceToClearObstacle = distanceToClearObstacle;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DetourGenerator"/> class.
+        /// </summary>
+        /// <param name="obstacleZoneCenter">The center of the stationary AvoidableObstacleZone in worldspace.</param>
+        /// <param name="obstacleZoneRadius">The radius of the AvoidableObstacleZone.</param>
+        /// <param name="distanceToClearObstacle">The distance desired to clear the obstacle measured from AvoidableObstacleZone center.</param>
         public DetourGenerator(Vector3 obstacleZoneCenter, float obstacleZoneRadius, float distanceToClearObstacle) {
             _obstacleZoneCenter = obstacleZoneCenter;
             _obstacleZoneRadius = obstacleZoneRadius;
@@ -47,14 +72,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="zoneHitPt">The zone hit pt.</param>
         /// <param name="fleetRadius">The fleet radius.</param>
-        /// <param name="formationOffset">The formation offset.</param>
         /// <returns></returns>
-        public Vector3 GenerateDetourFromObstacleZoneHit(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float fleetRadius, Vector3 formationOffset) {
+        public Vector3 GenerateDetourFromObstacleZoneHit(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float fleetRadius) {
             Vector3 ptOnZonePerimeterOnWayToDetour = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(shipOrFleetPosition, zoneHitPt, _obstacleZoneCenter, _obstacleZoneRadius);
-            Vector3 directionToDetourFromZoneCenter = (ptOnZonePerimeterOnWayToDetour - _obstacleZoneCenter).normalized;
-            float distanceToHQDetourFromZoneCenter = _distanceToClearObstacle + fleetRadius;
-            Vector3 hqDetour = _obstacleZoneCenter + directionToDetourFromZoneCenter * distanceToHQDetourFromZoneCenter;
-            return hqDetour + formationOffset;
+            Vector3 directionToDetourFromZoneCenter = (ptOnZonePerimeterOnWayToDetour - ObstacleZoneCenter).normalized;
+            float distanceToDetourFromZoneCenter = _distanceToClearObstacle + fleetRadius;
+            Vector3 detour = ObstacleZoneCenter + directionToDetourFromZoneCenter * distanceToDetourFromZoneCenter;
+            return detour;
         }
 
         /// <summary>
@@ -63,18 +87,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="fleetRadius">The fleet radius.</param>
-        /// <param name="formationOffset">The formation offset.</param>
         /// <returns></returns>
-        public Vector3 GenerateDetourAtObstaclePoles(Vector3 shipOrFleetPosition, float fleetRadius, Vector3 formationOffset) {
+        public Vector3 GenerateDetourAtObstaclePoles(Vector3 shipOrFleetPosition, float fleetRadius) {
             // Very simple: if below plane go below down pole, if above go above up pole
-            float centerPlaneY = _obstacleZoneCenter.y;
+            float centerPlaneY = ObstacleZoneCenter.y;
 
             bool isShipOrFleetOnOrAbovePlane = shipOrFleetPosition.y - centerPlaneY >= Constants.ZeroF;
             Vector3 directionToDetourFromZoneCenter = isShipOrFleetOnOrAbovePlane ? Vector3.up : Vector3.down;
 
-            float distanceToHQDetourFromZoneCenter = _distanceToClearObstacle + fleetRadius;
-            Vector3 hqDetour = _obstacleZoneCenter + directionToDetourFromZoneCenter * distanceToHQDetourFromZoneCenter;
-            return hqDetour + formationOffset;
+            float distanceToDetourFromZoneCenter = _distanceToClearObstacle + fleetRadius;
+            Vector3 detour = ObstacleZoneCenter + directionToDetourFromZoneCenter * distanceToDetourFromZoneCenter;
+            return detour;
         }
 
         /// <summary>
@@ -86,43 +109,42 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="zoneHitPt">The zone hit pt.</param>
         /// <param name="fleetRadius">The fleet radius.</param>
-        /// <param name="formationOffset">The formation offset.</param>
         /// <returns></returns>
-        public Vector3 GenerateDetourAroundPolesFromZoneHit(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float fleetRadius, Vector3 formationOffset) {
-            Vector3 ptOnZonePerimeterOnWayToInitialDetour = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(shipOrFleetPosition, zoneHitPt, _obstacleZoneCenter, _obstacleZoneRadius);
-            Vector3 directionToInitialDetourFromZoneCenter = (ptOnZonePerimeterOnWayToInitialDetour - _obstacleZoneCenter).normalized;
+        public Vector3 GenerateDetourAroundPolesFromZoneHit(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float fleetRadius) {
+            Vector3 ptOnZonePerimeterOnWayToInitialDetour = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(shipOrFleetPosition, zoneHitPt, ObstacleZoneCenter, _obstacleZoneRadius);
+            Vector3 directionToInitialDetourFromZoneCenter = (ptOnZonePerimeterOnWayToInitialDetour - ObstacleZoneCenter).normalized;
             float distanceToInitialHQDetourFromZoneCenter = _distanceToClearObstacle + fleetRadius;
-            Vector3 initialHQDetour = _obstacleZoneCenter + directionToInitialDetourFromZoneCenter * distanceToInitialHQDetourFromZoneCenter;
+            Vector3 initialDetour = ObstacleZoneCenter + directionToInitialDetourFromZoneCenter * distanceToInitialHQDetourFromZoneCenter;
 
-            float centerPlaneY = _obstacleZoneCenter.y;
-            float desiredHQClearanceFromPlane = _distanceToClearObstacle + fleetRadius;
-            float initialHQDetourYRelativeToPlane = initialHQDetour.y - centerPlaneY;
+            float centerPlaneY = ObstacleZoneCenter.y;
+            float desiredClearanceFromPlane = _distanceToClearObstacle + fleetRadius;
+            float initialDetourYRelativeToPlane = initialDetour.y - centerPlaneY;
             // place detour above or below plane
-            float finalHQDetourYRelativeToPlane = initialHQDetourYRelativeToPlane;
-            if (Mathfx.Approx(initialHQDetourYRelativeToPlane, Constants.ZeroF, .01F)) {
-                // initialHQDetour is right on plane so finalDetour placement above or below plane determined by shipOrFleetPosition
+            float finalDetourYRelativeToPlane = initialDetourYRelativeToPlane;
+            if (Mathfx.Approx(initialDetourYRelativeToPlane, Constants.ZeroF, .01F)) {
+                // initialDetour is right on plane so finalDetour placement above or below plane determined by shipOrFleetPosition
                 bool isShipOrFleetOnOrAbovePlane = shipOrFleetPosition.y - centerPlaneY >= Constants.ZeroF;
-                finalHQDetourYRelativeToPlane += isShipOrFleetOnOrAbovePlane ? desiredHQClearanceFromPlane : -desiredHQClearanceFromPlane;
+                finalDetourYRelativeToPlane += isShipOrFleetOnOrAbovePlane ? desiredClearanceFromPlane : -desiredClearanceFromPlane;
             }
-            else if (initialHQDetourYRelativeToPlane > Constants.ZeroF) {
-                // initialHQDetour is above plane
-                finalHQDetourYRelativeToPlane += desiredHQClearanceFromPlane;
+            else if (initialDetourYRelativeToPlane > Constants.ZeroF) {
+                // initialDetour is above plane
+                finalDetourYRelativeToPlane += desiredClearanceFromPlane;
             }
             else {
-                // initialHQDetour is below plane
-                finalHQDetourYRelativeToPlane -= desiredHQClearanceFromPlane;
+                // initialDetour is below plane
+                finalDetourYRelativeToPlane -= desiredClearanceFromPlane;
             }
 
             // avoid going above or below the plane more than needed
-            if (finalHQDetourYRelativeToPlane > Constants.ZeroF) {
-                finalHQDetourYRelativeToPlane = Mathf.Min(finalHQDetourYRelativeToPlane, desiredHQClearanceFromPlane);
+            if (finalDetourYRelativeToPlane > Constants.ZeroF) {
+                finalDetourYRelativeToPlane = Mathf.Min(finalDetourYRelativeToPlane, desiredClearanceFromPlane);
             }
             else {        // can't be == 0 as has to be either above or below
-                finalHQDetourYRelativeToPlane = Mathf.Max(finalHQDetourYRelativeToPlane, -desiredHQClearanceFromPlane);
+                finalDetourYRelativeToPlane = Mathf.Max(finalDetourYRelativeToPlane, -desiredClearanceFromPlane);
             }
-            float finalHQDetourY = centerPlaneY + finalHQDetourYRelativeToPlane;
-            Vector3 finalHQDetour = initialHQDetour.SetY(finalHQDetourY);
-            return finalHQDetour + formationOffset;
+            float finalDetourY = centerPlaneY + finalDetourYRelativeToPlane;
+            Vector3 finalDetour = initialDetour.SetY(finalDetourY);
+            return finalDetour;
         }
 
         public override string ToString() {

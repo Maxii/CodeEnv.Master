@@ -38,19 +38,27 @@ namespace CodeEnv.Master.GameContent {
         /// The desired radius of the circle in pixels when the Target is
         /// 1 unity unit away from the plane of the camera.
         /// </summary>
-        public float NormalizedRadius { get; set; }
+        public float NormalizedRadius { get; private set; }
 
         /// <summary>
         /// Indicates whether this circle should vary its radius with Target's
         /// distance to the camera.
         /// </summary>
-        public bool IsRadiusDynamic { get; set; }
+        public bool IsRadiusDynamic { get; private set; }
 
-        public int MaxCircles { get; set; }
+        public int MaxCircles { get; private set; }
 
-        public List<GameColor> Colors { get; set; }
+        private List<GameColor> _colors;
+        public List<GameColor> Colors {
+            get { return _colors; }
+            set { SetProperty<List<GameColor>>(ref _colors, value, "Colors"); }
+        }
 
-        public List<float> Widths { get; set; }
+        private List<float> _widths;
+        public List<float> Widths {
+            get { return _widths; }
+            set { SetProperty<List<float>>(ref _widths, value, "Widths"); }
+        }
 
         private bool IsDrawCirclesJobRunning { get { return _drawCirclesJob != null && _drawCirclesJob.IsRunning; } }
 
@@ -81,6 +89,8 @@ namespace CodeEnv.Master.GameContent {
             Colors.Fill<GameColor>(color);
             //InitializeCamera();
         }
+
+        // Note: no pausing of the drawCirclesJob as I want circles to adjust to camera moves when paused
 
         /// <summary>
         /// Initializes the camera so highlight circles appear behind UI elements.
@@ -231,6 +241,10 @@ namespace CodeEnv.Master.GameContent {
                 _line.SetWidth(Widths[0]);
             }
         }
+
+        #region Event and Property Change Handlers
+
+        #endregion
 
         protected override void Cleanup() {
             base.Cleanup();

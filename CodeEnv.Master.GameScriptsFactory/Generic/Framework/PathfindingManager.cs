@@ -30,7 +30,11 @@ using UnityEngine;
 /// </summary>
 public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
-    public MyAStarPointGraph Graph { get; private set; }
+    private MyAStarPointGraph _graph;
+    public MyAStarPointGraph Graph {
+        get { return _graph; }
+        private set { SetProperty<MyAStarPointGraph>(ref _graph, value, "Graph"); }
+    }
 
     private AstarPath _astarPath;
     private GameManager _gameMgr;

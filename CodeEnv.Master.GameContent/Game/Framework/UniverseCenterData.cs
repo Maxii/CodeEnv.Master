@@ -26,9 +26,9 @@ namespace CodeEnv.Master.GameContent {
 
         public float Radius { get; private set; }
 
-        public float LowOrbitRadius { get; private set; }
+        public float CloseOrbitInnerRadius { get; private set; }
 
-        public float HighOrbitRadius { get { return LowOrbitRadius + TempGameValues.ShipOrbitSlotDepth; } }
+        public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
@@ -37,15 +37,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="UniverseCenterData" /> class.
         /// </summary>
-        /// <param name="ucTransform">The uc transform.</param>
-        /// <param name="name">The name.</param>
+        /// <param name="ucenter">The ucenter.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="radius">The radius.</param>
-        /// <param name="lowOrbitRadius">The low orbit radius.</param>
-        public UniverseCenterData(Transform ucTransform, string name, CameraFocusableStat cameraStat, float radius, float lowOrbitRadius)
-            : base(ucTransform, name, TempGameValues.NoPlayer, cameraStat) {
+        /// <param name="closeOrbitInnerRadius">The close orbit inner radius.</param>
+        public UniverseCenterData(IUniverseCenterItem ucenter, CameraFocusableStat cameraStat, float radius, float closeOrbitInnerRadius)
+            : base(ucenter, TempGameValues.NoPlayer, cameraStat) {
             Radius = radius;
-            LowOrbitRadius = lowOrbitRadius;
+            CloseOrbitInnerRadius = closeOrbitInnerRadius;
             Topography = Topography.OpenSpace;
         }
 

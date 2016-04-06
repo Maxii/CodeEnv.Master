@@ -16,7 +16,9 @@
 
 // default namespace
 
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -28,8 +30,6 @@ using UnityEngine.Serialization;
 public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     private const string NameFormat = "{0}.{1}.{2}";
-
-    private const float AllowedTraverseTimeBufferFactor = 1.5F;
 
     /// <summary>
     /// The barrel's maximum elevation angle. 
@@ -46,13 +46,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// The elevation change rate of the barrel of this turret in degrees per hour.
     /// </summary>
     private const float BarrelElevationRate = 90F;
-
-    /// <summary>
-    /// The minimum traverse inaccuracy that can be used in degrees. 
-    /// Used to allow ExecuteTraverse() to complete early rather than wait
-    /// until the direction error is below UnityConstants.FloatEqualityPrecision.
-    /// </summary>
-    private const float MinTraverseInaccuracy = .01F;
 
     /// <summary>
     /// The maximum number of degrees the hub should have to rotate when traversing.
@@ -106,6 +99,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         set { base.Weapon = value; }
     }
 
+    private bool IsTraverseJobRunning { get { return _traverseJob != null && _traverseJob.IsRunning; } }
+
 #pragma warning disable 0414    // OPTIMIZE
 
     /// <summary>
@@ -123,7 +118,9 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     private float _allowedBarrelElevationAngleDeviationFromMax;
     private GameTime _gameTime;
+    private GameManager _gameMgr;
     private Job _traverseJob;
+    private IList<IDisposable> _subscriptions;
 
     #region Debug
 
@@ -132,22 +129,25 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     private LosWeaponFiringSolution __lastFiringSolution;
 
-    // Externalized this way to allow reporting of the results of a traverse.
-    private Vector3 __vectorToTargetPositionProjectedOntoHubPlane;
-    private Vector3 __vectorToTargetPositionProjectedOntoBarrelPlane;
-
     #endregion
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _gameTime = GameTime.Instance;
+        _gameMgr = GameManager.Instance;
         _barrelRestElevation = _barrel.localRotation;
+        Subscribe();
     }
 
     protected override void Validate() {
         base.Validate();
         D.Assert(_hub != null);
         D.Assert(_barrel != null);
+    }
+
+    private void Subscribe() {
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
     /// <summary>
@@ -221,16 +221,16 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                     return true;
                 }
                 if (targetHit.Owner.IsEnemyOf(Weapon.Owner)) {
-                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2}. Date: {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
+                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2} on {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
                     return false;
                 }
-                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2}. Date: {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
+                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2} on {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
                 return false;
             }
-            D.Log("{0}: CheckLineOfSight({1}) didn't find target but found {2}. Date: {3}.", Name, enemyTarget.FullName, hitInfo.transform.name, _gameTime.CurrentDate);
+            D.Log("{0}: CheckLineOfSight({1}) didn't find target but found {2} on {3}.", Name, enemyTarget.FullName, hitInfo.transform.name, _gameTime.CurrentDate);
             return false;
         }
-        D.Log("{0}: CheckLineOfSight({1}) didn't find anything. Date: {2}.", Name, enemyTarget.FullName, _gameTime.CurrentDate);
+        //D.Log("{0}: CheckLineOfSight({1}) didn't find anything. Date: {2}.", Name, enemyTarget.FullName, _gameTime.CurrentDate);
         return true;
     }
 
@@ -239,46 +239,24 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     public void TraverseTo(LosWeaponFiringSolution firingSolution) {
-        float maxReqdSecsToTraverse = CalcMaxSecsReqdToTraverse();
-        Traverse(firingSolution, maxReqdSecsToTraverse);
-    }
-
-    private float CalcMaxSecsReqdToTraverse() {
-        float secsReqdToExecuteMaxHubRotationChange = GameUtility.CalcMaxSecsReqdToCompleteRotation(HubRotationRate, HubMaxRotationTraversal);
-        float secsReqdToExecuteMaxBarrelElevationChange = GameUtility.CalcMaxSecsReqdToCompleteRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
-        float maxReqdSecsToTraverse = Mathf.Max(secsReqdToExecuteMaxHubRotationChange, secsReqdToExecuteMaxBarrelElevationChange) * AllowedTraverseTimeBufferFactor;
-        return maxReqdSecsToTraverse * TempGameValues.__AllowedTurnTimeBufferFactor;
-    }
-
-    /// <summary>
-    /// Traverses the mount to point at the target defined by the provided firing solution.
-    /// </summary>
-    /// <param name="firingSolution">The firing solution.</param>
-    /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
-    /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
-    private void Traverse(LosWeaponFiringSolution firingSolution, float allowedTime) {
         //IElementAttackableTarget target = firingSolution.EnemyTarget;
         //string targetName = target.FullName;
         //D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
+        D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+
+        D.Assert(Weapon.IsOperational);
+        Weapon.isOperationalChanged += WeaponIsOperationalChangedEventHandler;  // 3.29.16 added operational check as weapon can be damaged while traversing
 
         Quaternion reqdHubRotation = firingSolution.TurretRotation;
         Quaternion reqdBarrelElevation = firingSolution.TurretElevation;
 
-        if (_traverseJob != null && _traverseJob.IsRunning) {
-            D.Error("{0} is killing a Traverse Job that was traversing to {1}.", Name, __lastFiringSolution);   // if this happens, no onTraverseCompleted will be returned for cancelled traverse
-            _traverseJob.Kill();
-            // jobCompleted will run next frame so placed cancelled notice here
-        }
+        D.Assert(!IsTraverseJobRunning, "{0} received TraverseTo while traversing to {1}.", Name, __lastFiringSolution);
+        var errorDate = CalcLatestDateToCompleteTraverse();
+        //D.Log("{0}: time allowed to Traverse = {1}.", Name, errorDate - _gameTime.CurrentDate);
+        _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+            Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
 
-        _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
             if (!jobWasKilled) {
-                //D.Log("{0}'s traverse to aim at {1} complete.", Name, targetName);
-                //Vector3 actualTargetBearing = (target.Position - barrel.position).normalized;
-                //float deviationAngle = Vector3.Angle(MuzzleFacing, actualTargetBearing);
-                //D.Log("{0}: HubFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoHubPlane.normalized, hub.forward);
-                //Vector3 barrelLocalFacing = hub.InverseTransformDirection(barrel.forward);
-                //D.Log("{0}: LocalBarrelFacingAfterRotation Intended = {1}, Actual = {2}.", Name, __vectorToTargetPositionProjectedOntoBarrelPlane.normalized, barrelLocalFacing);
-                //D.Log("{0}: DeviationAngle = {1}, ActualTargetBearing = {2}, MuzzleBearingAfterTraverse = {3}.", Name, deviationAngle, actualTargetBearing, MuzzleFacing);
                 HandleTraverseCompleted(firingSolution);
             }
         });
@@ -290,51 +268,67 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="reqdHubRotation">The required rotation of the hub.</param>
     /// <param name="reqdBarrelElevation">The required (local) elevation of the barrel.</param>
-    /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
-    /// Warning: Set these values conservatively so they won't accidently throw an error when the GameSpeed is at its slowest.</param>
+    /// <param name="errorDate">The date after which an error is thrown.</param>
     /// <returns></returns>
-    private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, float allowedTime) {
-        //D.Log("Initiating {0} traversal. HubRotationRate: {1:0.}, BarrelElevationRate: {2:0.} degrees/hour.", Name, _hubRotationRate, _barrelElevationRate);
-        float cumTime = Constants.ZeroF;
-        Quaternion startingHubRotation = _hub.rotation;
-        Quaternion startingBarrelElevation = _barrel.localRotation;
+    private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation, GameDate errorDate) {
+        //Quaternion startingHubRotation = _hub.rotation;
+        //Quaternion startingBarrelElevation = _barrel.localRotation;
+        //float reqdHubRotationInDegrees = Quaternion.Angle(startingHubRotation, reqdHubRotation);
+        //float reqdBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, reqdBarrelElevation);
+        //D.Log("Initiating {0} traversal. ReqdHubRotationInDegrees: {1:0.#}, ReqdBarrelElevationInDegrees: {2:0.#}.", Name, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
         bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
         bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
+        //float actualHubRotationInDegrees = 0F;
+        //float actualBarrelElevationInDegrees = 0F;
+        float deltaTime;
+        GameDate currentDate = _gameTime.CurrentDate;
         while (!isTraverseCompleted) {
-            float deltaTime = _gameTime.DeltaTimeOrPaused;
+            deltaTime = _gameTime.DeltaTime;
             if (!isHubRotationCompleted) {
-                //Quaternion previousHubRotation = hub.rotation;
+                Quaternion previousHubRotation = _hub.rotation;
                 float allowedHubRotationChange = HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
-                _hub.rotation = Quaternion.RotateTowards(_hub.rotation, reqdHubRotation, allowedHubRotationChange);
-                //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, hub.rotation);
-                //D.Log("{0}: AllowedHabRotationChange = {1}, ActualHabRotationChange = {2}.", Name, allowedHabRotationChange, rotationChangeInDegrees);
-                isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
+                Quaternion inprocessRotation = Quaternion.RotateTowards(previousHubRotation, reqdHubRotation, allowedHubRotationChange);
+                //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, inprocessRotation);
+                //D.Log("{0}: AllowedHubRotationChange = {1}, ActualHubRotationChange = {2}.", Name, allowedHubRotationChange, rotationChangeInDegrees);
+                isHubRotationCompleted = inprocessRotation.IsSame(reqdHubRotation, TraverseInaccuracy);
+                _hub.rotation = inprocessRotation;
             }
 
             if (!isBarrelElevationCompleted) {
+                Quaternion previousBarrelElevation = _barrel.localRotation;
                 float allowedBarrelElevationChange = BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
-                _barrel.localRotation = Quaternion.RotateTowards(_barrel.localRotation, reqdBarrelElevation, allowedBarrelElevationChange);
-                isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
+                Quaternion inprocessElevation = Quaternion.RotateTowards(previousBarrelElevation, reqdBarrelElevation, allowedBarrelElevationChange);
+                //float elevationChangeInDegrees = Quaternion.Angle(previousBarrelElevation, inprocessElevation);
+                //D.Log("{0}: AllowedBarrelElevationChange = {1}, ActualBarrelElevationChange = {2}.", Name, allowedBarrelElevationChange, elevationChangeInDegrees);
+                isBarrelElevationCompleted = inprocessElevation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
+                _barrel.localRotation = inprocessElevation;
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
-            cumTime += deltaTime;
-            D.Assert(cumTime <= allowedTime, "{0}: Exceeded AllowedTime {1:0.##} while traversing.", Name, allowedTime);
+            //actualHubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
+            //actualBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
+
+            if (!isTraverseCompleted) {
+                //D.Assert(_gameTime.CurrentDate <= errorDate, "{0}: Exceeded error date {1} while traversing.", Name, errorDate);
+                currentDate = _gameTime.CurrentDate;
+                if (currentDate > errorDate) {
+                    D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while traversing.", Name, currentDate, errorDate);
+                    //D.Warn(!isHubRotationCompleted, "{0}: ReqdHubRotation = {1}, ActualHubRotation = {2}, Inaccuracy = {3:0.00}.", Name, reqdHubRotationInDegrees, actualHubRotationInDegrees, TraverseInaccuracy);
+                    //D.Warn(!isBarrelElevationCompleted, "{0}: ReqdBarrelElevation = {1}, ActualBarrelElevation = {2}, Inaccuracy = {3:0.00}.", Name, reqdBarrelElevationInDegrees, actualBarrelElevationInDegrees, TraverseInaccuracy);
+                }
+            }
             yield return null; // Note: see Navigator.ExecuteHeadingChange() if wish to use WaitForSeconds() or WaitForFixedUpdate()
         }
-        //D.Log("{0} completed Traverse Job. Duration = {1:0.####} GameTimeSecs.", Name, cumTime);
-        float hubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
-        float barrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
-        //D.Log("{0} completed Traverse Job. Hub rotated {1:0.#} degrees, Barrel elevated {2:0.#} degrees.", Name, hubRotationInDegrees, barrelElevationInDegrees);
-        D.Warn(hubRotationInDegrees < Constants.ZeroF || hubRotationInDegrees > HubMaxRotationTraversal, "{0} completed Traverse Job with unexpected Hub Rotation change of {1:0.#} degrees.", Name, hubRotationInDegrees);
-        D.Warn(barrelElevationInDegrees < Constants.ZeroF || barrelElevationInDegrees > BarrelMaxElevationTraversal, "{0} completed Traverse Job with unexpected Barrel Elevation change of {1:0.#} degrees.", Name, barrelElevationInDegrees);
+        //D.Log("{0} completed Traverse Job on {1}. Hub rotated {2:0.#} degrees, Barrel elevated {3:0.#} degrees.", Name, currentDate, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
+        //D.Warn(actualHubRotationInDegrees < Constants.ZeroF || actualHubRotationInDegrees > HubMaxRotationTraversal, "{0} completed Traverse Job with unexpected Hub Rotation change of {1:0.#} degrees.", Name, actualHubRotationInDegrees);
+        //D.Warn(actualBarrelElevationInDegrees < Constants.ZeroF || actualBarrelElevationInDegrees > BarrelMaxElevationTraversal, "{0} completed Traverse Job with unexpected Barrel Elevation change of {1:0.#} degrees.", Name, actualBarrelElevationInDegrees);
     }
 
     /// <summary>
     /// Tests whether this turret can traverse to acquire the provided targetPosition. Returns <c>true</c> if the turret can traverse far enough to
-    /// bear on the targetPosition, <c>false</c> otherwise. Returns the calculated hub and barrel rotation
-    /// and elevation values required for the turret to bear on the target, even if the turret cannot traverse that far.
+    /// bear on the targetPosition, <c>false</c> otherwise. Returns the calculated hub rotation
+    /// and barrel elevation values required for the turret to bear on the target, even if the turret cannot traverse that far.
     /// <remarks>Uses rotated versions of the UpTurret prefab where the rotation is added to the turret object itself so that it appears
     /// to the hub like the ship is rotated.</remarks>
     /// </summary>
@@ -351,12 +345,12 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         Vector3 targetPositionProjectedOntoHubPlane = targetPosition - _hub.up * signedDistanceToPlaneParallelToHubContainingTarget;
         //D.Log("{0}: TargetPositionProjectedOntoHubPlane = {1}.", Name, targetPositionProjectedOntoHubPlane);
 
-        __vectorToTargetPositionProjectedOntoHubPlane = targetPositionProjectedOntoHubPlane - _hub.position;
-        //D.Log("{0}: VectorToTargetPositionProjectedOntoHubPlane = {1}.", Name, __vectorToTargetPositionProjectedOntoHubPlane);
+        Vector3 vectorToTargetPositionProjectedOntoHubPlane = targetPositionProjectedOntoHubPlane - _hub.position;
+        //D.Log("{0}: VectorToTargetPositionProjectedOntoHubPlane = {1}.", Name, vectorToTargetPositionProjectedOntoHubPlane);
 
-        if (!__vectorToTargetPositionProjectedOntoHubPlane.IsSameAs(Vector3.zero)) {
+        if (!vectorToTargetPositionProjectedOntoHubPlane.IsSameAs(Vector3.zero)) {
             // LookRotation throws an error if the vector to the target is zero, aka directly above the hub
-            reqdHubRotation = Quaternion.LookRotation(__vectorToTargetPositionProjectedOntoHubPlane, _hub.up);
+            reqdHubRotation = Quaternion.LookRotation(vectorToTargetPositionProjectedOntoHubPlane, _hub.up);
         }
         else {
             // target is directly above turret so any rotation will work
@@ -364,21 +358,21 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         }
 
         // assumes barrel local Z plane is same as hub plane which is true when the hub and barrels positions are the same, aka they pivot around the same point in space
-        float barrelLocalZDistanceToTarget = __vectorToTargetPositionProjectedOntoHubPlane.magnitude;
+        float barrelLocalZDistanceToTarget = vectorToTargetPositionProjectedOntoHubPlane.magnitude;
 
         // barrel always elevates around its local x Axis
         Vector3 localBarrelVectorToTarget = new Vector3(Constants.ZeroF, signedDistanceToPlaneParallelToHubContainingTarget, barrelLocalZDistanceToTarget);
         //D.Log("{0}: LocalBarrelVectorToTarget = {1}.", Name, localBarrelVectorToTarget);
 
-        __vectorToTargetPositionProjectedOntoBarrelPlane = localBarrelVectorToTarget;    // simply for clarity
+        Vector3 vectorToTargetPositionProjectedOntoBarrelPlane = localBarrelVectorToTarget;    // simply for clarity
 
-        if (!__vectorToTargetPositionProjectedOntoBarrelPlane.IsSameAs(Vector3.zero)) {
-            reqdBarrelElevation = Quaternion.LookRotation(__vectorToTargetPositionProjectedOntoBarrelPlane);
+        if (!vectorToTargetPositionProjectedOntoBarrelPlane.IsSameAs(Vector3.zero)) {
+            reqdBarrelElevation = Quaternion.LookRotation(vectorToTargetPositionProjectedOntoBarrelPlane);
             //D.Log("{0}: CalculatedBarrelElevationAngle = {1}.", Name, reqdBarrelElevation.eulerAngles);
         }
         else {
             // target is directly above/infrontof/below turret so return barrels to their amidships bearing to hit it?
-            D.Log("{0}: Target is directly in front of turret so barrels elevating to max.", Name);
+            //D.Log("{0}: Target is directly in front of turret so barrels elevating to max.", Name);
             reqdBarrelElevation = _barrelMaxElevation;
         }
 
@@ -399,17 +393,46 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         TraverseInaccuracy = CalcTraverseInaccuracy();
     }
 
+    private void IsPausedPropChangedHandler() {
+        PauseJobs(_gameMgr.IsPaused);
+    }
+
+    private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
+        D.Assert(!Weapon.IsOperational);  // only subscribed when we are traversing and weapon is operational
+        if (IsTraverseJobRunning) {
+            _traverseJob.Kill();
+            D.Log("{0}: Weapon {1} no longer operational while traversing, probably due to damage.", Name, Weapon.FullName);
+        }
+    }
+
     #endregion
 
+    private void PauseJobs(bool toPause) {
+        if (IsTraverseJobRunning) {
+            _traverseJob.IsPaused = toPause;
+        }
+    }
+
+    private GameDate CalcLatestDateToCompleteTraverse() {
+        var latestDateToCompleteHubRotation = GameUtility.CalcWarningDateForRotation(HubRotationRate, HubMaxRotationTraversal);
+        var latestDateToCompleteBarrelElevation = GameUtility.CalcWarningDateForRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
+        return latestDateToCompleteHubRotation >= latestDateToCompleteBarrelElevation ? latestDateToCompleteHubRotation : latestDateToCompleteBarrelElevation;
+    }
+
     private float CalcTraverseInaccuracy() {
-        var maxTraverseInaccuracy = Mathf.Max(MinTraverseInaccuracy, Weapon.MaxTraverseInaccuracy);
-        return UnityEngine.Random.Range(MinTraverseInaccuracy, maxTraverseInaccuracy);
+        return UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, Weapon.MaxTraverseInaccuracy);
     }
 
     protected override void Cleanup() {
-        if (_traverseJob != null && _traverseJob.IsRunning) {
-            _traverseJob.Kill();
+        if (_traverseJob != null) {
+            _traverseJob.Dispose();
         }
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscriptions.ForAll(d => d.Dispose());
+        _subscriptions.Clear();
     }
 
     public override string ToString() {

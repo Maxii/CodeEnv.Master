@@ -106,9 +106,8 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(star.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(star.FullName));
         D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetValueName(), star.category.GetValueName()));
 
-        string starName = systemName + Constants.Space + CommonTerms.Star;
-        star.Data = new StarData(star.transform, starStat, cameraStat) {
-            Name = starName,
+        star.Name = systemName + Constants.Space + CommonTerms.Star;
+        star.Data = new StarData(star, starStat, cameraStat) {
             ParentName = systemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
@@ -147,11 +146,13 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(planetStat.Category == planet.category,
             "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
 
-        Rigidbody planetRigidbody = planet.GetComponent<Rigidbody>();
+        planet.Name = planetStat.Category.GetValueName();  // avoids Assert(Name != null), name gets updated when assigned to an orbit slot
         var passiveCMs = MakeCountermeasures(cmStats);
-        planet.Data = new PlanetData(planet.transform, cameraStat, passiveCMs, planetStat, planetRigidbody) {
+        PlanetData data = new PlanetData(planet, cameraStat, passiveCMs, planetStat) {
             ParentName = parentSystemName
         };
+        planet.GetComponent<Rigidbody>().mass = data.Mass;
+        planet.Data = data;
     }
 
     /// <summary>
@@ -187,11 +188,13 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(moonStat.Category == moon.category,
             "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName());
 
-        Rigidbody moonRigidbody = moon.GetComponent<Rigidbody>();
+        moon.Name = moonStat.Category.GetValueName();  // avoids Assert(Name != null), name gets updated when assigned to an orbit slot
         var passiveCMs = MakeCountermeasures(cmStats);
-        moon.Data = new PlanetoidData(moon.transform, cameraStat, passiveCMs, moonStat, moonRigidbody) {
+        PlanetoidData data = new PlanetoidData(moon, cameraStat, passiveCMs, moonStat) {
             ParentName = parentPlanetName
         };
+        moon.GetComponent<Rigidbody>().mass = data.Mass;
+        moon.Data = data;
     }
 
     /// <summary>
@@ -221,7 +224,9 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     public void PopulateSystemInstance(string systemName, CameraFocusableStat cameraStat, ref SystemItem system) {
         D.Assert(!system.IsOperational, "{0} should not be operational.", system.FullName);
         D.Assert(system.transform.parent != null, "{0} should already have a parent.", system.FullName);
-        SystemData data = new SystemData(system.transform, cameraStat, systemName) {
+
+        system.Name = systemName;
+        SystemData data = new SystemData(system, cameraStat) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;

@@ -185,13 +185,18 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     }
 
     /// <summary>
-    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// Logs the method name called.
     /// </summary>
     public override void LogEvent() {
-        if (DebugSettings.Instance.EnableEventLogging) {
+        if (_debugSettings.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = transform.name + "(from transform)";
-            Debug.Log("{0}.{1}_{2}.{3}() called.".Inject(name, GetType().Name, InstanceCount, stackFrame.GetMethod().Name));
+            string fullMethodName = stackFrame.GetMethod().ReflectedType.Name;
+            if (fullMethodName.Contains(Constants.LessThan)) {
+                string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
+                fullMethodName = coroutineMethodName;
+            }
+            string transformName = transform.name + "(from transform)";
+            Debug.Log("{0}.{1}_{2}.{3}() beginning execution.".Inject(transformName, GetType().Name, InstanceCount, fullMethodName));
         }
     }
 

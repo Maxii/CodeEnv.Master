@@ -205,88 +205,22 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="dirA">The first direction.</param>
         /// <param name="dirB">The second direction.</param>
-        /// <param name="allowedDegreeDeviation">The allowed deviation in degrees.</param>
-        /// <param name="actualDegreeDeviation">The actual degree deviation.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be more precise
+        /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
-        public static bool AreDirectionsWithinTolerance(Vector3 dirA, Vector3 dirB, float allowedDegreeDeviation, out float actualDegreeDeviation) {
+        public static bool AreDirectionsWithinTolerance(Vector3 dirA, Vector3 dirB, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
             dirA.ValidateNormalized();
             dirB.ValidateNormalized();
-            actualDegreeDeviation = Vector3.Angle(dirA, dirB);
-            D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDegreeDeviation);
-            return actualDegreeDeviation <= allowedDegreeDeviation;
+            D.Warn(allowedDeviation < UnityConstants.AngleEqualityPrecision, "Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
+            float actualDeviation = Vector3.Angle(dirA, dirB);
+            D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDeviation);
+            return actualDeviation <= allowedDeviation;
         }
 
-        /// <summary>
-        /// Checks whether the MonoBehaviour Interface provided is not null or already destroyed.
-        /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
-        /// Returns <c>true</c> if not null and not destroyed, otherwise returns false.
-        /// </summary>
-        /// <typeparam name="I">The interface Type.</typeparam>
-        /// <param name="i">The interface.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
-        public static bool CheckNotNullOrAlreadyDestroyed<I>(I i) where I : class {
-            if (i != null) {
-                if (!(i is Component)) {
-                    throw new System.ArgumentException("Interface is of Type {0}, which is not a Component.".Inject(typeof(I).Name));
-                }
-                var c = i as Component;
-                if (c != null) {
-                    // i is not destroyed
-                    return true;
-                }
-            }
-            return false;
-        }
+        #region Deprecated WaitFor Coroutines
 
-        /// <summary>
-        /// Destroys the gameObject associated with the Interface i, if i is not null or already destroyed.
-        /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
-        /// </summary>
-        /// <typeparam name="I">The Interface type.</typeparam>
-        /// <param name="i">The Interface instance.</param>
-        /// <param name="delayInSeconds">The delay in seconds.</param>
-        /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
-        /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
-        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i, float delayInSeconds = 0F, Action onCompletion = null) where I : class {
-            if (CheckNotNullOrAlreadyDestroyed<I>(i)) {
-                Destroy((i as Component).gameObject, delayInSeconds, onCompletion);
-            }
-        }
-
-        public static void Destroy(GameObject gameObject) {
-            Destroy(gameObject, Constants.ZeroF);
-        }
-
-        /// <summary>
-        /// Destroys the specified game object.
-        /// </summary>
-        /// <param name="gameObject">The game object.</param>
-        /// <param name="delayInSeconds">The delay in seconds.</param>
-        /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
-        public static void Destroy(GameObject gameObject, float delayInSeconds, Action onCompletion = null) {
-            //GameObject.Destroy(gameObject, delayInSeconds);
-            if (gameObject == null) {
-                D.Warn("Trying to destroy a GameObject that has already been destroyed.");
-                if (onCompletion != null) { onCompletion(); }
-                return;
-            }
-            string goName = gameObject.name;
-            D.Log("Initiating destruction of {0} with delay of {1}.", goName, delayInSeconds);
-            WaitForSecondsToExecute(delayInSeconds, onWaitFinished: () => {
-                if (gameObject == null) {
-                    D.Warn("Trying to destroy GameObject {0} that has already been destroyed.", goName);
-                }
-                else {
-                    GameObject.Destroy(gameObject);
-                }
-                if (onCompletion != null) { onCompletion(); }
-            });
-        }
-
-        #region WaitFor Coroutines
-
-        // IMPROVE These methods can execute their callback after the Game Instance has been terminated.
+        // 3.26.16 Deprecated all of these as their use is a bad practice
 
         /// <summary>
         /// Waits for the designated number of seconds, then executes the provided delegate.
@@ -299,10 +233,12 @@ namespace CodeEnv.Master.Common {
         /// before the code assigned to the onWaitFinished delegate.
         /// </summary>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
+        [Obsolete]
         public static void WaitForSecondsToExecute(float delayInSeconds, Action onWaitFinished) {
             new Job(WaitForSeconds(delayInSeconds), toStart: true, jobCompleted: (wasKilled) => onWaitFinished());
         }
 
+        [Obsolete]
         private static IEnumerator WaitForSeconds(float delayInSeconds) {
             yield return new WaitForSeconds(delayInSeconds);
         }
@@ -319,18 +255,21 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
         /// <returns></returns>
+        [Obsolete]
         public static void WaitOneFixedUpdateToExecute(Action onWaitFinished) {
             new Job(WaitOneFixedUpdate(), toStart: true, jobCompleted: delegate {
                 onWaitFinished();
             });
         }
 
+        [Obsolete]
         private static IEnumerator WaitOneFixedUpdate() {
             yield return new WaitForFixedUpdate();
         }
 
         /// <summary>
         /// Waits one frame, then executes the provided delegate.
+        /// <remarks>Deprecated as I can't think of a circumstance where it would be wise to use this.</remarks>
         /// Usage:
         ///     WaitOneToExecute(onWaitFinished: () =&gt; {
         ///         Code to execute after the wait;
@@ -340,6 +279,7 @@ namespace CodeEnv.Master.Common {
         /// before the code assigned to the onWaitFinished delegate.
         /// </summary>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
+        [Obsolete]
         public static void WaitOneToExecute(Action onWaitFinished) {
             WaitForFrames(Constants.One, onWaitFinished: delegate {
                 onWaitFinished();
@@ -348,6 +288,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Waits the designated number of frames, then executes the provided delegate.
+        /// <remarks>Deprecated as I can't think of a circumstance where it would be wise to use this.</remarks>
         /// Usage:
         /// WaitForFrames(framesToWait, onWaitFinished: (jobWasKilled) =&gt; {
         /// Code to execute after the wait;
@@ -360,6 +301,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
         /// signature is onWaitFinished(jobWasKilled).</param>
         /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
+        [Obsolete]
         public static Job WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
             Utility.ValidateNotNegative(framesToWait);
             return new Job(WaitForFrames(framesToWait), toStart: true, jobCompleted: (wasKilled) => {
@@ -376,6 +318,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="framesToWait">The frames to wait.</param>
         /// <returns></returns>
+        [Obsolete]
         private static IEnumerator WaitForFrames(int framesToWait) {
             int targetFrameCount = Time.frameCount + framesToWait;
             while (Time.frameCount < targetFrameCount) {
@@ -387,6 +330,7 @@ namespace CodeEnv.Master.Common {
         /// Waits the initial designated number of frames, then executes the provided delegate. Then
         /// continuously waits the repeating number of frames and executes the delegate. This continues
         /// until the returned Job is killed.
+        /// <remarks>Deprecated as I can't think of a circumstance where it would be wise to use this.</remarks>
         /// Usage:
         /// WaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute: () =&gt; {
         /// Code to execute;
@@ -401,6 +345,7 @@ namespace CodeEnv.Master.Common {
         /// <returns>
         /// A reference to the Job as it must be killed to stop it.
         /// </returns>
+        [Obsolete]
         public static Job WaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
             return new Job(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), toStart: true, jobCompleted: null);
         }
@@ -414,6 +359,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="repeatingFramesToWait">The number of frames to wait between method execution.</param>
         /// <param name="methodToExecute">The method to execute.</param>
         /// <returns></returns>
+        [Obsolete]
         private static IEnumerator RepeatingWaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
             int targetFrameCount = Time.frameCount + initialFramesToWait;
             while (Time.frameCount < targetFrameCount) {

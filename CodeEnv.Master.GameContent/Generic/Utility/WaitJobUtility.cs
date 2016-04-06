@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: WaitJobUtility.cs
-// Singleton. Collection of WaitJob utilities valid while a game is running.
+// Singleton. Collection of Job waiting utilities valid while a game is running.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,13 +24,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Singleton. Collection of WaitJob utilities valid while a game is running.
+    /// Singleton. Collection of Job waiting utilities valid while a game is running.
     /// </summary>
     public class WaitJobUtility : AGenericSingleton<WaitJobUtility>, IDisposable {
 
         private static GameTime _gameTime;
         private static bool _isGameRunning;
-        private static List<WaitJob> _runningJobs;
+        private static List<Job> _runningJobs;
 
         private static void RemoveCompletedJobs() {
             // http://stackoverflow.com/questions/17233558/remove-add-items-to-from-a-list-while-iterating-it
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         protected sealed override void Initialize() {
             _gameTime = GameTime.Instance;
             _gameMgr = References.GameManager;
-            _runningJobs = new List<WaitJob>();
+            _runningJobs = new List<Job>();
             Subscribe();
             // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
         }
@@ -90,10 +90,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hours">The hours to wait.</param>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
         /// signature is onWaitFinished(jobWasKilled).</param>
-        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
-        public static WaitJob WaitForHours(float hours, Action<bool> onWaitFinished) {
+        /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
+        public static Job WaitForHours(float hours, Action<bool> onWaitFinished) {
             D.Assert(_isGameRunning);
-            var job = new WaitJob(WaitForHours(hours), toStart: true, onJobComplete: (wasKilled) => {
+            var job = new Job(WaitForHours(hours), toStart: true, jobCompleted: (wasKilled) => {
                 onWaitFinished(wasKilled);
                 RemoveCompletedJobs();
             });
@@ -102,36 +102,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private static IEnumerator WaitForHours(float hours) {
-            var allowedSeconds = hours / _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float elapsedSeconds = Constants.ZeroF;
-            while (elapsedSeconds < allowedSeconds) {
-                elapsedSeconds += _gameTime.DeltaTimeOrPaused;  // IMPROVE if gameSpeed changes, hours wait time won't be correct
-                allowedSeconds = hours / _gameTime.GameSpeedAdjustedHoursPerSecond;
-                yield return null;
-            }
-        }
-
-        /// <summary>
-        /// Waits the designated number of hours, then executes the provided delegate.
-        /// As this method converts hours to a date, it automatically adjusts for Pauses and
-        /// GameSpeed changes.
-        /// Usage:
-        /// WaitForHours(hours, onWaitFinished: (jobWasKilled) =&gt; {
-        /// Code to execute after the wait;
-        /// });
-        /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
-        /// immediately return which means the code you have following it will execute
-        /// before the code assigned to the onWaitFinished delegate.
-        /// </summary>
-        /// <param name="hours">The hours to wait. A minimum of 1 but max is unlimited.</param>
-        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
-        /// signature is onWaitFinished(jobWasKilled).</param>
-        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
-        public static WaitJob WaitForHoursFromCurrentDate(int hours, Action<bool> onWaitFinished) {
-            D.Assert(_isGameRunning);
-            D.Assert(hours >= Constants.One);
-            GameDate futureDate = new GameDate(new GameTimeDuration(hours));
-            return WaitForDate(futureDate, onWaitFinished);
+            yield return new WaitForHours(hours);
         }
 
         /// <summary>
@@ -148,10 +119,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="futureDate">The future date.</param>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
         /// signature is onWaitFinished(jobWasKilled).</param>
-        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
-        public static WaitJob WaitForDate(GameDate futureDate, Action<bool> onWaitFinished) {
+        /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
+        public static Job WaitForDate(GameDate futureDate, Action<bool> onWaitFinished) {
             D.Assert(_isGameRunning);
-            var job = new WaitJob(WaitForDate(futureDate), toStart: true, onJobComplete: (wasKilled) => {
+            D.Warn(futureDate < _gameTime.CurrentDate, "Future date {0} < Current date {1}.", futureDate, _gameTime.CurrentDate);
+            var job = new Job(WaitForDate(futureDate), toStart: true, jobCompleted: (wasKilled) => {
                 onWaitFinished(wasKilled);
                 RemoveCompletedJobs();
             });
@@ -159,23 +131,8 @@ namespace CodeEnv.Master.GameContent {
             return job;
         }
 
-        /// <summary>
-        /// Waits for the designated GameDate. Usage:
-        /// new Job(GameUtility.WaitForDate(futureDate), toStart: true, onJobCompletion: (jobWasKilled) =&gt; {
-        /// Code to execute after the wait;
-        /// });
-        /// WARNING: the code in this location will execute immediately after the Job starts.
-        /// </summary>
-        /// <param name="futureDate">The date.</param>
-        /// <returns></returns>
         private static IEnumerator WaitForDate(GameDate futureDate) {
-            if (futureDate <= _gameTime.CurrentDate) {
-                // IMPROVE current date can exceed a future date of hours when game speed high?
-                D.Error("Future date {0} should be > Current date {1}.", futureDate, _gameTime.CurrentDate);
-            }
-            while (futureDate > _gameTime.CurrentDate) {
-                yield return null;
-            }
+            yield return new WaitForDate(futureDate);
         }
 
         /// <summary>
@@ -185,9 +142,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="onWaitFinished">The delegate to execute when the wait is finished.
         /// The signature is onWaitFinished(jobWasKilled).</param>
         /// <returns></returns>
-        public static WaitJob WaitWhileCondition(Reference<bool> waitWhileCondition, Action<bool> onWaitFinished) {
+        public static Job WaitWhileCondition(Func<bool> waitWhileCondition, Action<bool> onWaitFinished) {
             D.Assert(_isGameRunning);
-            var job = new WaitJob(WaitWhileCondition(waitWhileCondition), toStart: true, onJobComplete: (wasKilled) => {
+            var job = new Job(WaitWhileCondition(waitWhileCondition), toStart: true, jobCompleted: (wasKilled) => {
                 onWaitFinished(wasKilled);
                 RemoveCompletedJobs();
             });
@@ -195,10 +152,8 @@ namespace CodeEnv.Master.GameContent {
             return job;
         }
 
-        private static IEnumerator WaitWhileCondition(Reference<bool> waitWhileCondition) {
-            while (waitWhileCondition.Value) {
-                yield return null;
-            }
+        private static IEnumerator WaitWhileCondition(Func<bool> waitWhileCondition) {
+            yield return new WaitWhile(waitWhileCondition);
         }
 
         /// <summary>
@@ -210,14 +165,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="onWaitFinished">The delegate to execute when the wait is finished. 
         /// The signature is onWaitFinished(jobWasKilled).</param>
         /// <returns></returns>
-        public static WaitJob WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren, Action<bool> onWaitFinished) {
+        public static Job WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren, Action<bool> onWaitFinished) {
             D.Assert(_isGameRunning);
             D.Assert(!particleSystem.loop);
             if (includeChildren && particleSystem.transform.childCount > Constants.Zero) {
                 var childParticleSystems = particleSystem.gameObject.GetComponentsInChildren<ParticleSystem>().Except(particleSystem);
                 childParticleSystems.ForAll(cps => D.Assert(!cps.loop));
             }
-            var job = new WaitJob(WaitForParticleSystemCompletion(particleSystem, includeChildren), toStart: true, onJobComplete: (wasKilled) => {
+            var job = new Job(WaitForParticleSystemCompletion(particleSystem, includeChildren), toStart: true, jobCompleted: (wasKilled) => {
                 onWaitFinished(wasKilled);
                 RemoveCompletedJobs();
             });

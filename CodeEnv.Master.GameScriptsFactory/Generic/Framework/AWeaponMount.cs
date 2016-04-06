@@ -37,8 +37,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
         get { return _weapon; }
         set {
             D.Assert(_weapon == null);  // only happens once
-            _weapon = value;
-            WeaponPropSetHandler();
+            SetProperty<AWeapon>(ref _weapon, value, "Weapon", WeaponPropSetHandler);
         }
     }
 
@@ -53,7 +52,11 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// </summary>
     public abstract Vector3 MuzzleFacing { get; }
 
-    public MountSlotID SlotID { get; set; } // OPTIMIZE Not currently used
+    private MountSlotID _slotID;    // OPTIMIZE Not currently used
+    public MountSlotID SlotID {
+        get { return _slotID; }
+        set { SetProperty<MountSlotID>(ref _slotID, value, "SlotID"); }
+    }
 
     protected override void Validate() {
         base.Validate();

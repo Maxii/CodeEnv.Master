@@ -101,12 +101,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
-    /// <param name="item">The item.</param>
-    public void PopulateInstance(UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref FleetCmdItem item) {
-        D.Assert(!item.IsOperational, "{0} should not be operational.", item.FullName);
-        D.Assert(item.transform.parent != null, "{0} should already have a parent.", item.FullName);
+    /// <param name="fleetCmd">The item.</param>
+    public void PopulateInstance(UnitCmdStat cmdStat, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref FleetCmdItem fleetCmd) {
+        D.Assert(!fleetCmd.IsOperational, "{0} should not be operational.", fleetCmd.FullName);
+        D.Assert(fleetCmd.transform.parent != null, "{0} should already have a parent.", fleetCmd.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new FleetCmdData(item.transform, owner, cameraStat, passiveCMs, cmdStat);
+        fleetCmd.Name = CommonTerms.Command;
+        fleetCmd.Data = new FleetCmdData(fleetCmd, owner, cameraStat, passiveCMs, cmdStat);
     }
 
     /// <summary>
@@ -187,8 +188,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design.SensorStats);
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
-        Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
-        ShipData data = new ShipData(element.transform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, elementRigidbody, design.EnginesStat, design.CombatStance);
+        element.Name = hullCategory.GetValueName();
+        ShipData data = new ShipData(element, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design.EnginesStat, design.CombatStance);
+        element.GetComponent<Rigidbody>().mass = data.Mass;
         element.Data = data;
     }
 
@@ -215,12 +217,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
-    /// <param name="item">The item.</param>
-    public void PopulateInstance(UnitCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem item) {
-        D.Assert(!item.IsOperational, "{0} should not be operational.", item.FullName);
-        D.Assert(item.transform.parent != null, "{0} should already have a parent.", item.FullName);
+    /// <param name="cmd">The item.</param>
+    public void PopulateInstance(UnitCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref StarbaseCmdItem cmd) {
+        D.Assert(!cmd.IsOperational, "{0} should not be operational.", cmd.FullName);
+        D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new StarbaseCmdData(item.transform, owner, cameraStat, passiveCMs, cmdStat);
+        cmd.Name = CommonTerms.Command;
+        cmd.Data = new StarbaseCmdData(cmd, owner, cameraStat, passiveCMs, cmdStat);
     }
 
     /// <summary>
@@ -246,12 +249,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="passiveCmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
-    /// <param name="item">The item.</param>
-    public void PopulateInstance(SettlementCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem item) {
-        D.Assert(!item.IsOperational, "{0} should not be operational.", item.FullName);
-        D.Assert(item.transform.parent != null, "{0} should already have a parent.", item.FullName);
+    /// <param name="cmd">The item.</param>
+    public void PopulateInstance(SettlementCmdStat cmdStat, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasureStat> passiveCmStats, Player owner, ref SettlementCmdItem cmd) {
+        D.Assert(!cmd.IsOperational, "{0} should not be operational.", cmd.FullName);
+        D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
-        item.Data = new SettlementCmdData(item.transform, owner, cameraStat, passiveCMs, cmdStat) {
+        cmd.Name = CommonTerms.Command;
+        cmd.Data = new SettlementCmdData(cmd, owner, cameraStat, passiveCMs, cmdStat) {
             Approval = UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent)
         };
     }
@@ -299,8 +303,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design.SensorStats);
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
-        Rigidbody elementRigidbody = element.GetComponent<Rigidbody>();
-        FacilityData data = new FacilityData(element.transform, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, elementRigidbody, topography);
+        element.Name = hullCategory.GetValueName();
+        FacilityData data = new FacilityData(element, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, topography);
+        element.GetComponent<Rigidbody>().mass = data.Mass;
         element.Data = data;
     }
 
@@ -383,7 +388,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         if (remainingMountPlaceholders.Any()) {
             remainingMountPlaceholders.ForAll(mp => {
                 mp.transform.parent = null; // detach placeholder from hull so it won't be found as Destroy takes a frame
-                UnityUtility.Destroy(mp.gameObject);
+                GameUtility.Destroy(mp.gameObject);
             });
         }
         return weapons;
@@ -496,7 +501,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             losWeaponMount.InitializeBarrelElevationSettings(losMountPlaceholder.MinimumBarrelElevation);
         }
         mountPlaceholder.transform.parent = null;   // detach placeholder from hull so it won't be found as Destroy takes a frame
-        UnityUtility.Destroy(mountPlaceholder.gameObject);
+        GameUtility.Destroy(mountPlaceholder.gameObject);
         weapon.WeaponMount = weaponMount;
     }
 
@@ -560,7 +565,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
             weapDesigns.Add(weaponDesign);
         }
-        UnityUtility.Destroy(tempHullGo);
+        GameUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
 
@@ -595,7 +600,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             var weaponDesign = new WeaponDesign(stat, placeholderSlotID);
             weapDesigns.Add(weaponDesign);
         }
-        UnityUtility.Destroy(tempHullGo);
+        GameUtility.Destroy(tempHullGo);
         return weapDesigns;
     }
 

@@ -28,26 +28,23 @@ using CodeEnv.Master.GameContent;
 /// <typeparam name="EquipmentType">The Type of ranged equipment.</typeparam>
 public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where EquipmentType : ARangedEquipment {
 
-    private static string _nameFormat = "{0}.{1}[{2}, {3:0.} Units]";
+    private const string NameFormat = "{0}.{1}[{2}, {3:0.} Units]";
 
     public sealed override string Name {
         get {
             if (ParentItem == null) { return base.Name; }
-            return _nameFormat.Inject(ParentItem.FullName, GetType().Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
+            return NameFormat.Inject(ParentItem.FullName, GetType().Name, RangeCategory.GetValueName(), RangeDistance);
         }
     }
 
+    private RangeCategory _rangeCategory;
     /// <summary>
     /// The range category (short, medium, long) of the equipment.
     /// </summary>
-    public RangeCategory RangeCategory { get; private set; }
-
-    public new AMortalItem ParentItem {
-        get { return base.ParentItem as AMortalItem; }
-        set { base.ParentItem = value; }
+    public RangeCategory RangeCategory {
+        get { return _rangeCategory; }
+        private set { SetProperty<RangeCategory>(ref _rangeCategory, value, "RangeCategory"); }
     }
-
-    protected bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
 
     /// <summary>
     /// The ranged equipment associated with this monitor.

@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetOrder {
 
-        public float StandoffDistance { get; private set; }
+        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}";
 
         public INavigableTarget Target { get; private set; }
 
@@ -41,18 +41,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        /// <param name="standoffDistance">The standoff distance.</param>
-        public FleetOrder(FleetDirective directive, OrderSource source, INavigableTarget target = null, float standoffDistance = Constants.ZeroF) {
+        public FleetOrder(FleetDirective directive, OrderSource source, INavigableTarget target = null) {
             D.Assert(target == null || (!(target is IFleetFormationStation) && !(target is IUnitElementItem)));
             D.Assert(source != OrderSource.Captain);
             Directive = directive;
             Source = source;
             Target = target;
-            StandoffDistance = standoffDistance;
         }
 
-        public override string ToString() { // IMPROVE
-            return new ObjectAnalyzer().ToString(this);
+        public override string ToString() {
+            string targetText = Target != null ? Target.FullName : "null";
+            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText);
         }
 
     }

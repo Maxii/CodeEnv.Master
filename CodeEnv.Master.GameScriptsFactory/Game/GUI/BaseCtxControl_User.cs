@@ -41,7 +41,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
-                                                                                        FleetDirective.Orbit };
+                                                                                        FleetDirective.CloseOrbit };
 
     private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Disband };
 
@@ -106,10 +106,10 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableTarget> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                targets = _userKnowledge.Fleets.Where(f => _baseMenuOperator.Owner.IsAtWarWith(f.Owner)).Cast<INavigableTarget>();    // TODO InRange?
+                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigableTarget>();    // TODO InRange?
                 return true;
             case BaseDirective.Refit:
             case BaseDirective.Disband:
@@ -135,8 +135,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
                 return !(_baseMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
                 return !(_baseMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
-            case FleetDirective.Orbit:
-                return !(_baseMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
+            case FleetDirective.CloseOrbit:
+                return !(_baseMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

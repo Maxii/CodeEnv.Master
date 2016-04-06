@@ -32,11 +32,11 @@ namespace CodeEnv.Master.GameContent {
         AssumeStation,
 
         /// <summary>
-        /// Ships can assume orbit around any IShipOrbitable target including Bases, Planets, Stars and the UniverseCenter.
-        /// To be allowed to orbit, the owner of the orbit target cannot be at war with the ship's owner. For a Base, the
-        /// base owner cannot be an enemy which includes being in a state of ColdWare with the ship's owner.
+        /// Ships can assume a close orbit around any IShipCloseOrbitable target including Bases, Planets, Stars and the UniverseCenter.
+        /// To be allowed to go into close orbit, the owner of the orbit target cannot be at war with the ship's owner. For a Base, the
+        /// base owner cannot be an enemy which includes being in a state of ColdWar with the ship's owner.
         /// </summary>
-        AssumeOrbit,
+        AssumeCloseOrbit,
 
         /// <summary>
         /// Ships can move to all INavigableTargets including Units (fleets and bases), Planetoids, Stars, Systems,

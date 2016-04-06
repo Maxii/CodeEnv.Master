@@ -41,7 +41,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// <summary>
     /// The drag of this projectile in Topography.OpenSpace.
     /// </summary>
-    public abstract float Drag { get; }
+    public abstract float OpenSpaceDrag { get; }
 
     /// <summary>
     /// The mass of this projectile.
@@ -51,10 +51,12 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected Rigidbody _rigidbody;
     protected bool _hasWeaponFired;
     protected Vector3 _launchPosition;
-    protected float _gameSpeedMultiplier;
 
-    private bool _isVelocityOnPauseRecorded;
-    private Vector3 _velocityOnPause;
+    /// <summary>
+    /// The velocity to restore in gameSpeed-adjusted units per second after the pause is resumed.
+    /// </summary>
+    private Vector3 _velocityToRestoreAfterPause;
+    private bool _isVelocityToRestoreAfterPauseRecorded;
 
     protected override void Awake() {
         base.Awake();
@@ -63,7 +65,6 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _rigidbody.useGravity = false;
         // rigidbody drag and mass now set from Launch
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
         UpdateRate = FrameUpdateFrequency.Seldom;
         ValidateEffects();
     }
@@ -72,7 +73,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
+        _subscriptions.Add(_gameTime.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangingHandler));
     }
 
     public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
@@ -80,7 +81,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
         _launchPosition = transform.position;
 
-        _rigidbody.drag = Drag * topography.GetRelativeDensity();
+        _rigidbody.drag = OpenSpaceDrag * topography.GetRelativeDensity();
         _rigidbody.mass = Mass;
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
@@ -129,13 +130,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             // hit an attackableTarget
             //D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
             ContactPoint contactPoint = collision.contacts[0];
-            var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
-            if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
-                // target has a rigidbody so apply impact force
-                var force = GetForceOfImpact();
-                //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
-                impactedTargetRigidbody.AddForceAtPosition(force, contactPoint.point, ForceMode.Impulse);
-            }
+            // The application of impact force is already handled by the physics engine when regular rigidbodies collide
+            TryApplyImpactForce(impactedGo, contactPoint);
             if (impactedTarget.IsVisualDetailDiscernibleToUser) {
                 // target is being viewed by user so show impact effect
                 //D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
@@ -166,10 +162,36 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     }
 
     /// <summary>
+    /// Tries to apply the impact force to the impacted target.
+    /// Returns <c>true</c> if applied, false otherwise.
+    /// <remarks>The application of impact force should already be handled 
+    /// by the physics engine when regular rigidbodies collide but I'm having
+    /// a hard time seeing it without this.</remarks>
+    /// </summary>
+    /// <param name="impactedGo">The impacted go.</param>
+    /// <param name="contactPoint">The contact point.</param>
+    /// <returns></returns>
+    private bool TryApplyImpactForce(GameObject impactedGo, ContactPoint contactPoint) {
+        var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
+        if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
+            // target has a rigidbody so apply impact force
+            var force = GetForceOfImpact();
+            //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedGo.name);
+            impactedTargetRigidbody.AddForceAtPosition(force, contactPoint.point, ForceMode.Impulse);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Returns the force of impact on collision.
+    /// Virtual to allow override if I come up with a better equation.
     /// </summary>
     /// <returns></returns>
-    protected abstract Vector3 GetForceOfImpact();
+    protected virtual Vector3 GetForceOfImpact() {
+        Vector3 normalGameSpeedVelocityPerSec = _rigidbody.velocity / _gameTime.GameSpeedMultiplier;
+        return normalGameSpeedVelocityPerSec * _rigidbody.mass;
+    }
 
     protected abstract float GetDistanceTraveled();
 
@@ -180,36 +202,40 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         HandleCollision(collision);
     }
 
-    private void GameSpeedPropChangedHandler() {
-        float previousGameSpeedMultiplier = _gameSpeedMultiplier;
-        _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
-        float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
+    private void GameSpeedPropChangingHandler(GameSpeed newGameSpeed) {
+        float previousGameSpeedMultiplier = _gameTime.GameSpeedMultiplier;
+        float newGameSpeedMultiplier = newGameSpeed.SpeedMultiplier();
+        float gameSpeedChangeRatio = newGameSpeedMultiplier / previousGameSpeedMultiplier;
         AdjustForGameSpeed(gameSpeedChangeRatio);
     }
 
     protected override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
-        if (_gameMgr.IsPaused) {
-            D.Assert(!_isVelocityOnPauseRecorded);
-            _velocityOnPause = _rigidbody.velocity;
-            _isVelocityOnPauseRecorded = true;
-            _rigidbody.isKinematic = true;
-        }
-        else {
-            _rigidbody.isKinematic = false;
-            D.Assert(_isVelocityOnPauseRecorded);
-            _rigidbody.velocity = _velocityOnPause;
-            _isVelocityOnPauseRecorded = false;
-            _rigidbody.WakeUp();
-        }
+        PauseVelocity(_gameMgr.IsPaused);
     }
 
     #endregion
 
+    private void PauseVelocity(bool toPause) {
+        if (toPause) {
+            D.Assert(!_isVelocityToRestoreAfterPauseRecorded);
+            _velocityToRestoreAfterPause = _rigidbody.velocity;
+            _rigidbody.isKinematic = true;
+            _isVelocityToRestoreAfterPauseRecorded = true;
+        }
+        else {
+            D.Assert(_isVelocityToRestoreAfterPauseRecorded);
+            _rigidbody.isKinematic = false;
+            _rigidbody.velocity = _velocityToRestoreAfterPause;
+            _rigidbody.WakeUp();
+            _isVelocityToRestoreAfterPauseRecorded = false;
+        }
+    }
+
     private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
-            D.Assert(_isVelocityOnPauseRecorded, "{0} has not yet recorded VelocityOnPause.".Inject(transform.name));
-            _velocityOnPause *= gameSpeedChangeRatio;
+            D.Assert(_isVelocityToRestoreAfterPauseRecorded, "{0} has not yet recorded VelocityToRestoreAfterPause.", Name);
+            _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
         }
         else {
             _rigidbody.velocity *= gameSpeedChangeRatio;
@@ -252,7 +278,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     #region ITopographyChangeListener Members
 
     public void HandleTopographyChanged(Topography newTopography) {
-        _rigidbody.drag = Drag * newTopography.GetRelativeDensity();
+        //D.Log("{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
+        _rigidbody.drag = OpenSpaceDrag * newTopography.GetRelativeDensity();
     }
 
     #endregion

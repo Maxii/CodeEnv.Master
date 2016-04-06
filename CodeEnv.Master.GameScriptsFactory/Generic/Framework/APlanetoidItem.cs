@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -27,7 +28,7 @@ using UnityEngine;
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
 public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IUnitAttackableTarget, IElementAttackableTarget,
-    ISensorDetectable, IAvoidableObstacle {
+    ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
 
     /// <summary>
     /// Gets the maximum possible orbital speed of a planetoid in Units per hour, 
@@ -37,6 +38,16 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     [Tooltip("The category of planetoid")]
     public PlanetoidCategory category = PlanetoidCategory.None;
+
+    private IOrbitSimulator _celestialOrbitSimulator;
+    public IOrbitSimulator CelestialOrbitSimulator {
+        get {
+            if (_celestialOrbitSimulator == null) {
+                _celestialOrbitSimulator = transform.parent.GetComponent<IOrbitSimulator>();
+            }
+            return _celestialOrbitSimulator;
+        }
+    }
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
@@ -50,12 +61,19 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public override float Radius { get { return Data.Radius; } }
 
-    public ISystemItem ParentSystem { get; private set; }
+    public float ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
+
+    private ISystemItem _parentSystem;
+    public ISystemItem ParentSystem {
+        get { return _parentSystem; }
+        private set { SetProperty<ISystemItem>(ref _parentSystem, value, "ParentSystem"); }
+    }
 
     protected SphereCollider _obstacleZoneCollider;
 
     private DetectionHandler _detectionHandler;
     private SphereCollider _primaryCollider;
+    private IList<IShipItem> _shipsInHighOrbit;
 
     #region Initialization
 
@@ -126,7 +144,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     protected sealed override void SetDeadState() {
-        //D.Log(ShowDebugLog, "{0} is setting Dead state.", FullName);
+        D.Log(ShowDebugLog, "{0} is setting Dead state.", FullName);
         CurrentState = PlanetoidState.Dead;
     }
 
@@ -136,14 +154,23 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         // in-route ordnance to show its impact effect while the item is showing its death.
         // Also keep the ObstacleZoneCollider enabled to keep ships from flying through the exploding planetoid.
         ActivateParentOrbitSimulator(false);
+        ParentSystem.RemovePlanetoid(this);
+    }
+
+    protected virtual void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
+        shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
     }
 
     private void ActivateParentOrbitSimulator(bool toActivate) {
-        // moons have 2 IOrbitSims in parents
+        // moons have 2 IOrbitSims in parents so can't use GetSafeInterfaceInParents
         transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>().IsActivated = toActivate;
     }
 
     #region Event and Property Change Handlers
+
+    private void CurrentStatePropChangedHandler() {
+        HandleStateChange();
+    }
 
     #endregion
 
@@ -155,7 +182,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
         protected set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", CurrentStatePropChangedHandler); }
     }
 
-    private void CurrentStatePropChangedHandler() {
+    private void HandleStateChange() {
         D.Log(ShowDebugLog, "{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
         switch (CurrentState) {
             case PlanetoidState.Idling:
@@ -175,11 +202,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     /// <summary>
     /// Destroys this Planetoid, including the parent IOrbitSimulator and any children.
     /// </summary>
-    /// <param name="delayInSeconds">The delay in seconds.</param>
+    /// <param name="delayInHours"></param>
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
-    protected override void DestroyMe(float delayInSeconds = 0F, Action onCompletion = null) {
+    protected override void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
+        D.Log(ShowDebugLog, "{0}.DestroyMe called.", FullName);
         IOrbitSimulator parentOrbitSimulator = transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>();
-        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(parentOrbitSimulator, delayInSeconds, onCompletion);
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(parentOrbitSimulator, delayInHours, onCompletion);
     }
 
     #endregion
@@ -231,7 +259,48 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #endregion
 
+    #region IShipOrbitable Members
+
+    public bool IsHighOrbitAllowedBy(Player player) { return true; }
+
+    public bool IsInHighOrbit(IShipItem ship) {
+        if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
+    }
+
+    public void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+        if (_shipsInHighOrbit == null) {
+            _shipsInHighOrbit = new List<IShipItem>();
+        }
+        _shipsInHighOrbit.Add(ship);
+        ConnectHighOrbitRigidbodyToShipOrbitJoint(shipOrbitJoint);
+    }
+
+    public virtual void HandleBrokeOrbit(IShipItem ship) {
+        if (IsInHighOrbit(ship)) {
+            var isRemoved = _shipsInHighOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log(ShowDebugLog, "{0} has left high orbit around {1}.", ship.FullName, FullName);
+            return;
+        }
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
+    }
+
+    #endregion
+
+    #region  IUnitAttackableTarget Members
+
+    public bool IsAttackingAllowedBy(Player player) {
+        return Owner.IsEnemyOf(player);
+    }
+
+    #endregion
+
     #region IElementAttackableTarget Members
+
+    // IsAttackingAllowedBy(Player) see IUnitAttackableTarget Members
 
     [System.Obsolete]
     public void HandleFiredUponBy(IInterceptableOrdnance ordnanceFired) {
@@ -239,7 +308,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     public override void TakeHit(DamageStrength damagePotential) {
-        if (DebugSettings.Instance.AllPlayersInvulnerable) {
+        if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
         D.Assert(IsOperational);
@@ -300,13 +369,13 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     public override bool IsMobile { get { return true; } }
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
+    public override float RadiusAroundTargetContainingKnownObstacles { get { return ObstacleZoneRadius; } }
 
     #endregion
 
     #region IAvoidableObstacle Members
 
-    public abstract Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius, Vector3 formationOffset);
+    public abstract Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius);
 
     #endregion
 

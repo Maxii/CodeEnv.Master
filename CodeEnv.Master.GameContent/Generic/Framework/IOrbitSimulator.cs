@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsActivated { get; set; }
 
-        Transform transform { get; }
+        Rigidbody OrbitRigidbody { get; }
 
     }
 }

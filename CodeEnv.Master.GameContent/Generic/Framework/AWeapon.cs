@@ -42,7 +42,11 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", ToShowEffectsPropChangedHandler); }
         }
 
-        public IWeaponRangeMonitor RangeMonitor { get; set; }
+        private IWeaponRangeMonitor _rangeMonitor;
+        public IWeaponRangeMonitor RangeMonitor {
+            get { return _rangeMonitor; }
+            set { SetProperty<IWeaponRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
+        }
 
         private IWeaponMount _weaponMount;
         public IWeaponMount WeaponMount {
@@ -81,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
 
         private bool _isReady;
         /// <summary>
-        /// Indicates whether this weapon is ready to execute a firing solution. A weapon is ready when 
+        /// Indicates whether this weapon is ready to initiate a firing sequence. A weapon is ready when 
         /// it is operational, loaded and is not currently executing a firing sequence. This property is not affected by whether 
         /// there are any enemy targets within range, or whether there are any executable firing solutions.
         /// </summary>
@@ -112,6 +116,10 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isFiringSequenceUnderway, value, "IsFiringSequenceUnderway", IsFiringSequenceUnderwayPropChangedHandler); }
         }
 
+        private bool IsReloadJobRunning { get { return _reloadJob != null && _reloadJob.IsRunning; } }
+
+        private bool IsCheckForFiringSolutionsJobRunning { get { return _checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning; } }
+
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
@@ -124,9 +132,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private IDictionary<IElementAttackableTarget, CombatResult> _combatResults;
         private bool _isLoaded;
-        private WaitJob _reloadJob;
+        private Job _reloadJob;
         private Job _checkForFiringSolutionsJob;
         private GameTime _gameTime;
+        private IGameManager _gameMgr;
+        private IList<IDisposable> _subscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AWeapon" /> class.
@@ -136,24 +146,31 @@ namespace CodeEnv.Master.GameContent {
         public AWeapon(AWeaponStat stat, string name = null)
             : base(stat, name) {
             _gameTime = GameTime.Instance;
+            _gameMgr = References.GameManager;
             _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
             _combatResults = new Dictionary<IElementAttackableTarget, CombatResult>();
+            Subscribe();
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
+        private void Subscribe() {
+            _subscriptions = new List<IDisposable>();
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+        }
+
         /*****************************************************************************************************************************
-                    * This weapon does not need to track Owner changes. When the owner of the item with this weapon changes, the weapon's 
-                    * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. In addition,
-                    * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance via CheckActiveOrdnanceTargeting().
-                    * When the owner of an item detected by this weapon changes, the Monitor recategorizes the detectedItem into the right list - 
-                    * enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to CheckActiveOrdnanceTargeting(), 
-                    * calls HandleEnemyTargetInRangeChanged(), niether or both.
-                    *******************************************************************************************************************************/
+        * This weapon does not need to track Owner changes. When the owner of the item with this weapon changes, the weapon's 
+        * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. In addition,
+        * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance via CheckActiveOrdnanceTargeting().
+        * When the owner of an item detected by this weapon changes, the Monitor recategorizes the detectedItem into the right list - 
+        * enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to CheckActiveOrdnanceTargeting(), 
+        * calls HandleEnemyTargetInRangeChanged(), niether or both.
+        *******************************************************************************************************************************/
 
         /***********************************************************************************************************************************************
-                     * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
-                     **********************************************************************************************************************************************/
+        * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
+        **********************************************************************************************************************************************/
 
         /// <summary>
         /// Called when an ownership change of either the ParentElement or a tracked target requires 
@@ -197,17 +214,21 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Called when the element this weapon is attached too declines to fire
-        /// the weapon. This can occur when the target dies while the aiming process
-        /// is underway, or if the element decides to not waste a shot on any of the
-        /// provided firing solutions (e.g. the weapon may not be able to damage the target).
-        /// <remarks>Notifying the weapon of this decision is necessary so that the weapon
-        /// can begin looking for other firing solutions which would otherwise only occur once
-        /// the weapon was fired.</remarks>
+        /// Called when the element this weapon is attached too declines to fire the weapon. This can occur 
+        /// for numerous reasons: 1) the element is not in a state where it is allowed to fire, or for LosWeapons 
+        /// that must wait for the aiming process to complete: 2) the target has moved out of range, 3) the 
+        /// target has died, 4) the target is no longer an enemy, the weapon is no longer operational or, in the future 
+        /// 5) the element decides to not waste a shot on any of the provided firing solutions (e.g. the weapon may not 
+        /// be able to damage the target).
+        /// <remarks>Notifying the weapon of this decision is necessary so that the weapon can begin looking for 
+        /// other firing solutions which would otherwise only occur once the weapon was fired.</remarks>
         /// </summary>
         public void HandleElementDeclinedToFire() {
             IsFiringSequenceUnderway = false;
-            LaunchFiringSolutionsCheckJob();
+            AssessReadiness();
+            // 3.27.16 AssessReadiness should make IsReady = true, and call AssessReadinessToFire(). This re-assessment
+            // will look for targets again, and if it can't find any firing solutions, will call LaunchFiringSolutionsCheckJob
+            //// LaunchFiringSolutionsCheckJob();
         }
 
         /// <summary>
@@ -216,8 +237,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="targetFiredOn">The target fired on.</param>
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public virtual void HandleFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
-            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
-            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.".Inject(Name, targetFiredOn.FullName));
+            D.Assert(IsOperational, "{0} fired at {1} while not operational.", Name, targetFiredOn.FullName);
+            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.", Name, targetFiredOn.FullName);
 
             //D.Log("{0}.HandleFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
@@ -239,13 +260,14 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!_isLoaded);
             //D.Log("{0}.HandleFiringComplete({1}) called.", Name, ordnanceFired.Name);
             IsFiringSequenceUnderway = false;
-            UnityUtility.WaitOneToExecute(onWaitFinished: () => {
-                // give time for _reloadJob to exit before starting another
-                InitiateReloadCycle();
-            });
+            InitiateReloadCycle();
         }
 
         #region Event and Property Change Handlers
+
+        private void IsPausedPropChangedHandler() {
+            PauseJobs(_gameMgr.IsPaused);
+        }
 
         private void IsFiringSequenceUnderwayPropChangedHandler() {
             AssessReadiness();
@@ -277,7 +299,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 // just lost operational status so kill any reload in process
-                if (_reloadJob != null && _reloadJob.IsRunning) {
+                if (IsReloadJobRunning) {
                     _reloadJob.Kill();
                 }
             }
@@ -327,10 +349,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateReloadCycle() {
             //D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
-            if (_reloadJob != null && _reloadJob.IsRunning) {
-                // UNCLEAR can this happen?
-                D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
-            }
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+            D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
             _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     HandleReloaded();
@@ -372,6 +392,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void LaunchFiringSolutionsCheckJob() {
             KillFiringSolutionsCheckJob();
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(IsReady);
             D.Assert(IsAnyEnemyInRange);
             //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
@@ -395,14 +416,12 @@ namespace CodeEnv.Master.GameContent {
                     IsFiringSequenceUnderway = true;
                     OnReadyToFire(firingSolutions);
                 }
-                // OPTIMIZE can also handle this changeable waitDuration by subscribing to a GameSpeed change
-                var waitDuration = TempGameValues.HoursBetweenFiringSolutionChecks / _gameTime.GameSpeedAdjustedHoursPerSecond;
-                yield return new WaitForSeconds(waitDuration);
+                yield return new WaitForHours(TempGameValues.HoursBetweenFiringSolutionChecks);
             }
         }
 
         private void KillFiringSolutionsCheckJob() {
-            if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
+            if (IsCheckForFiringSolutionsJobRunning) {
                 //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
                 _checkForFiringSolutionsJob.Kill();
             }
@@ -465,12 +484,24 @@ namespace CodeEnv.Master.GameContent {
             combatResult.Interdictions++;
         }
 
+        // 3.28.16 Added during review of all Jobs for pausing controls
+        private void PauseJobs(bool toPause) {
+            if (IsCheckForFiringSolutionsJobRunning) {
+                _checkForFiringSolutionsJob.IsPaused = toPause;
+            }
+            if (IsReloadJobRunning) {
+                _reloadJob.IsPaused = toPause;
+            }
+        }
+
         private void ReportCombatResults(IElementAttackableTarget target) {
-            CombatResult combatResult;
-            if (_combatResults.TryGetValue(target, out combatResult)) {    // if the weapon never fired, there won't be a combat result
-                D.Log(combatResult);
-                //_combatResults.Remove(target);    // for now let these accumulate so logging of hits and misses after the target
-            }                                       // is out of the monitor's range doesn't encounter a Dictionary key not found error
+            if (DebugSettings.Instance.EnableCombatResultLogging) {
+                CombatResult combatResult;
+                if (_combatResults.TryGetValue(target, out combatResult)) {    // if the weapon never fired, there won't be a combat result
+                    D.Log(combatResult);
+                    //_combatResults.Remove(target);    // for now let these accumulate so logging of hits and misses after the target
+                }                                       // is out of the monitor's range doesn't encounter a Dictionary key not found error
+            }
         }
 
         #endregion
@@ -482,6 +513,12 @@ namespace CodeEnv.Master.GameContent {
             if (_checkForFiringSolutionsJob != null) {
                 _checkForFiringSolutionsJob.Dispose();
             }
+            Unsubscribe();
+        }
+
+        private void Unsubscribe() {
+            _subscriptions.ForAll(d => d.Dispose());
+            _subscriptions.Clear();
         }
 
         public sealed override string ToString() { return Stat.ToString(); }

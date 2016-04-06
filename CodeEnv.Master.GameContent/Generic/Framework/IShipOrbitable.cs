@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: IShipOrbitable.cs
-// Interface for Items that can be orbited by ships.
+// Interface for Items where ships can assume a high orbit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,26 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
     using UnityEngine;
 
     /// <summary>
-    /// Interface for Items that can be orbited by ships.
+    /// Interface for Items where ships can assume a high orbit.
     /// </summary>
     public interface IShipOrbitable : INavigableTarget {
 
-        ShipOrbitSlot ShipOrbitSlot { get; }
+        void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint);
 
-        /// <summary>
-        /// A collection of assembly stations that are local to the item.
-        /// </summary>
-        IList<StationaryLocation> LocalAssemblyStations { get; }
+        bool IsHighOrbitAllowedBy(Player player);
 
-        Player Owner { get; }
+        bool IsInHighOrbit(IShipItem ship);
 
-        Transform transform { get; }
-
-        bool IsOrbitingAllowedBy(Player player);
+        void HandleBrokeOrbit(IShipItem ship);
 
     }
 }

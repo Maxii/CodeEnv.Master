@@ -226,7 +226,10 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             else {
                 _delayedDateInRuntime = new GameDate(delay);
-                GameTime.Instance.dateChanged += DateChangedHandler;
+                WaitJobUtility.WaitForDate(_delayedDateInRuntime, onWaitFinished: (jobWasKilled) => {
+                    D.Assert(!jobWasKilled);
+                    HandleReachedDelayDate();
+                });
             }
         }
     }
@@ -243,29 +246,28 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             else {
                 _delayedDateInRuntime = new GameDate(runtimeDelay);
-                GameTime.Instance.dateChanged += DateChangedHandler;
+                WaitJobUtility.WaitForDate(_delayedDateInRuntime, onWaitFinished: (jobWasKilled) => {
+                    D.Assert(!jobWasKilled);
+                    HandleReachedDelayDate();
+                });
             }
         }
     }
 
-    private void DateChangedHandler(object sender, EventArgs e) {
+    private void HandleReachedDelayDate() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
         GameDate currentDate = GameTime.Instance.CurrentDate;
-        //D.Log("{0}.{1}.DateChangedEventHandler called. Date = ({2}).", UnitName, GetType().Name,  currentDate);
+        //D.Log("{0}.{1}.HandleReachedDelayDate() called. Date: {2}.", UnitName, GetType().Name,  currentDate);
         D.Assert(toDelayOperations);
         if (currentDate >= _delayedDateInRuntime) {
-            if (currentDate > _delayedDateInRuntime) {
-                D.Warn("{0}.{1} recorded current date {2} beyond target date {3}.", UnitName, GetType().Name, currentDate, _delayedDateInRuntime);
-            }
+            D.Warn(currentDate > _delayedDateInRuntime, "{0}.{1} recorded current date {2} beyond target date {3}.", UnitName, GetType().Name, currentDate, _delayedDateInRuntime);
             if (toDelayBuild) {
-                D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
+                D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, currentDate);
                 BuildDeployAndBeginUnitOperations();
             }
             else {
-                D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, _delayedDateInRuntime);
+                D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, currentDate);
                 BeginUnitOperations();
             }
-            //D.Log("{0}.{1} is unsubscribing from GameTime.onDateChanged.", UnitName, GetType().Name);
-            GameTime.Instance.dateChanged -= DateChangedHandler;
         }
     }
 
@@ -292,13 +294,15 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
 
         BeginElementsOperations();
         BeginCommandOperations();
-        UnityUtility.WaitOneToExecute(() => {
-            // delay 1 frame to allow Element and Command Idling_EnterState to execute
-            RecordCommandInStaticCollections();
-            __IssueFirstUnitOrder(onCompleted: delegate {
-                // issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
-                RemoveCreatorScript();
-            });
+        // 3.25.16 I eliminated the 1 frame delay onCompletion delegate to allow Element and Command Idling_EnterState to execute
+        // as I think this is a bad practice. Anyway, 1 frame wouldn't be enough for an IEnumerator Idling_EnterState
+        // to finish if it had more than one set of yields in it. In addition, if there is going to be a problem with 
+        // changing state (from issued orders here) when Idling is the state, but its EnterState hasn't run yet, I
+        // should find it out now as this can easily happen during the game.
+        RecordCommandInStaticCollections();
+        __IssueFirstUnitOrder(onCompleted: delegate {
+            // issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
+            RemoveCreatorScript();
         });
     }
 
@@ -322,7 +326,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             WDVCategory deliveryVehicleCategory = WDVCategory.Missile;
 
             RangeCategory rangeCat = RangeCategory.Long; ;
-            float maxSteeringInaccuracy = UnityEngine.Random.Range(Constants.ZeroF, 3F);    // missile steering inaccuracy of 0 - 3 degrees
+            float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);    // 0.04 - 3 degrees
             float reloadPeriod = UnityEngine.Random.Range(10F, 12F);
             string name = "Torpedo Launcher";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
@@ -337,8 +341,9 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
 
-            var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-    baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
+            var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
+                rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag,
+                ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -350,7 +355,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             AWeaponStat weapStat;
             RangeCategory rangeCat;
             float baseRangeDistance;
-            float maxTraverseInaccuracy = UnityEngine.Random.Range(Constants.ZeroF, 3F);    // turret traverse inaccuracy of 0 - 3 degrees
+            float maxTraverseInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
             float reloadPeriod;
             string name;
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);

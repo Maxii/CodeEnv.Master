@@ -71,7 +71,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        D.Log("{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, UserIntelCoverage.GetValueName());
+        D.Log(ShowDebugLog, "{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, UserIntelCoverage.GetValueName());
         AssessIsDiscernibleToUser();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed

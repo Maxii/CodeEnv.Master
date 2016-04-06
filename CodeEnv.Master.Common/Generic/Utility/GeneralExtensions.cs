@@ -20,6 +20,7 @@ namespace CodeEnv.Master.Common {
     using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
@@ -48,8 +49,10 @@ namespace CodeEnv.Master.Common {
         /// Gets the alternative text from the EnumAttribute if present. If not, the name is returned.
         /// Commonly used to get a short abbreviation for the enum name, e.g. "O" for Organics, "CV" for Carrier.
         /// </summary>
-        /// <param friendlyDescription="sourceEnumConstant">The named enum constant.</param>
-        /// <returns>Alternative text for the enum value if the <see cref="EnumAttribute"/> is present.</returns>
+        /// <param name="sourceEnumConstant">The source enum constant.</param>
+        /// <returns>
+        /// Alternative text for the enum value if the <see cref="EnumAttribute" /> is present.
+        /// </returns>
         public static string GetEnumAttributeText(this Enum sourceEnumConstant) {
             EnumAttribute attribute = GetAttribute(sourceEnumConstant);
             if (attribute == null) {
@@ -78,7 +81,8 @@ namespace CodeEnv.Master.Common {
         private static EnumAttribute GetAttribute(Enum enumConstant) {
             EnumAttribute attribute = Attribute.GetCustomAttribute(ForValue(enumConstant), typeof(EnumAttribute)) as EnumAttribute;
             if (attribute == null) {
-                D.Warn(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetValueName(), typeof(EnumAttribute).Name));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                D.Warn(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetValueName(), typeof(EnumAttribute).Name, callingMethodName));
             }
             return attribute;
         }
@@ -375,31 +379,31 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        ///  Tests if <c>value</c> is &gt;= <c>targetValue</c> within the provided acceptableRange. 
+        ///  Tests if <c>value</c> is &gt;= <c>targetValue</c> with buffer added. 
         ///  Useful in dealing with floating point imprecision.
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="targetValue">The targetValue.</param>
-        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.
+        /// <param name="equalsTolerance">The positive equals tolerance that is subtracted from targetValue.
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
-        public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
-            Utility.ValidateNotNegative(acceptableRange);
-            return value >= targetValue - acceptableRange;
+        public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float equalsTolerance = UnityConstants.FloatEqualityPrecision) {
+            Utility.ValidateNotNegative(equalsTolerance);
+            return value >= targetValue - equalsTolerance;
         }
 
         /// <summary>
-        ///  Tests if <c>value</c> is &lt;= <c>targetValue</c> within the provided acceptableRange. 
+        ///  Tests if <c>value</c> is &lt;= <c>targetValue</c> with buffer added. 
         ///  Useful in dealing with floating point imprecision.
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="targetValue">The targetValue.</param>
-        /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.
+        /// <param name="equalsTolerance">The positive equals tolerance that is added to targetValue.
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
-        public static bool IsLessThanOrEqualTo(this float value, float targetValue, float acceptableRange = UnityConstants.FloatEqualityPrecision) {
-            Utility.ValidateNotNegative(acceptableRange);
-            return value <= targetValue + acceptableRange;
+        public static bool IsLessThanOrEqualTo(this float value, float targetValue, float equalsTolerance = UnityConstants.FloatEqualityPrecision) {
+            Utility.ValidateNotNegative(equalsTolerance);
+            return value <= targetValue + equalsTolerance;
         }
 
         /// <summary>

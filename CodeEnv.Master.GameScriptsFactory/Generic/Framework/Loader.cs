@@ -30,9 +30,8 @@ public class Loader : AMonoSingleton<Loader> {
 
     [Tooltip("FramesPerSecond goal. Used when DebugSettings enables its usage.")]
     [SerializeField]
-    private int _targetFPS = 25;
+    private int _targetFPS = Mathf.RoundToInt(TempGameValues.MinimumFramerate);
 
-    //protected override bool IsPersistentAcrossScenes { get { return true; } }
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
     private IList<IDisposable> _subscriptions;
@@ -109,12 +108,6 @@ public class Loader : AMonoSingleton<Loader> {
         }
     }
 
-    private void CheckDebugSettings() {
-        if (DebugSettings.Instance.ForceFpsToTarget) {
-            QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = _targetFPS;
-        }
-    }
     protected override void Cleanup() {
         Unsubscribe();
     }
@@ -130,6 +123,17 @@ public class Loader : AMonoSingleton<Loader> {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    private void CheckDebugSettings() {
+        if (_debugSettings.ForceFpsToTarget) {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = _targetFPS;
+        }
+    }
+
+    #endregion
 
 }
 

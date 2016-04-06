@@ -37,20 +37,33 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     private bool _isActivated;
     /// <summary>
     /// Control for activating this OrbitSimulator. Activating the simulator does not necessarily
-    /// cause the simulator to rotate as it may be set by the OrbitSlot to not rotate.
+    /// cause the simulator to rotate as it may be set by the OrbitData to not rotate.
+    /// <remarks>This has nothing to do with the active property of a GameObject.</remarks>
     /// </summary>
     public bool IsActivated {
         get { return _isActivated; }
         set { SetProperty<bool>(ref _isActivated, value, "IsActivated", IsActivatedPropChangedHandler); }
     }
 
-    private AOrbitSlot _orbitSlot;
-    public AOrbitSlot OrbitSlot {
-        protected get { return _orbitSlot; }
+    private Rigidbody _orbitRigidbody;
+    public Rigidbody OrbitRigidbody {
+        get {
+            if (_orbitRigidbody == null) {
+                _orbitRigidbody = gameObject.AddMissingComponent<Rigidbody>();
+                _orbitRigidbody.useGravity = false;
+                _orbitRigidbody.isKinematic = true;
+            }
+            return _orbitRigidbody;
+        }
+    }
+
+    private OrbitData _orbitData;
+    public OrbitData OrbitData {
+        protected get { return _orbitData; }
         set {
-            D.Assert(_orbitSlot == null);   // one time only
-            _orbitSlot = value;
-            OrbitSlotPropSetHandler();
+            D.Assert(_orbitData == null);   // one time only
+            _orbitData = value;
+            OrbitDataPropSetHandler();
         }
     }
 
@@ -99,15 +112,14 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// <returns></returns>
     public float GetRelativeOrbitSpeed(float radius) {
         if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
-            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitSlot.OrbitPeriod.TotalInHours / _relativeOrbitRate);
+            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
         }
         return _orbitSpeedInUnitsPerHour;
     }
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        float deltaTimeSinceLastUpdate = _gameTime.DeltaTimeOrPaused * (int)UpdateRate;
-        //D.Log("Time.DeltaTime = {0}, GameTime.DeltaTimeWithGameSpeed = {1}, UpdateRate = {2}.", Time.deltaTime, GameTime.DeltaTimeOrPausedWithGameSpeed, (int)UpdateRate);
+        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * (int)UpdateRate;
         UpdateOrbit(deltaTimeSinceLastUpdate);
     }
 
@@ -115,7 +127,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// Updates the rotation of this object around its axis of orbit (it is coincident with the position of the object being orbited)
     /// to simulate the orbit of this object's child around the object orbited. The visual speed of the orbit varies with game speed.
     /// </summary>
-    /// <param name="deltaTimeSinceLastUpdate">The delta time (zero if paused) since last update.</param>
+    /// <param name="deltaTimeSinceLastUpdate">The delta time since last update.</param>
     protected virtual void UpdateOrbit(float deltaTimeSinceLastUpdate) {
         float degreesToRotate = _orbitRateInDegreesPerHour * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTimeSinceLastUpdate;
         transform.Rotate(_axisOfOrbit, degreesToRotate, relativeTo: Space.Self);
@@ -132,14 +144,14 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         AssessEnabled();
     }
 
-    private void OrbitSlotPropSetHandler() {
-        _orbitRateInDegreesPerHour = _relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitSlot.OrbitPeriod.TotalInHours;
+    private void OrbitDataPropSetHandler() {
+        _orbitRateInDegreesPerHour = _relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitData.OrbitPeriod.TotalInHours;
     }
 
     #endregion
 
     private void AssessEnabled() {
-        enabled = OrbitSlot.ToOrbit && IsActivated && !_gameMgr.IsPaused;
+        enabled = OrbitData.ToOrbit && IsActivated && !_gameMgr.IsPaused;
     }
 
     protected override void Cleanup() {

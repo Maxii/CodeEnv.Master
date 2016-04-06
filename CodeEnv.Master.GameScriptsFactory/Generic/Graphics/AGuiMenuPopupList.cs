@@ -53,7 +53,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
             }
             return _defaultSelection;
         }
-        set { _defaultSelection = value; }
+        set { SetProperty<string>(ref _defaultSelection, value, "DefaultSelection"); }
     }
 
     /// <summary>

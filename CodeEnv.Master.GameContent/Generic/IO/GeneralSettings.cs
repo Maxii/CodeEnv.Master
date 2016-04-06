@@ -129,17 +129,16 @@ namespace CodeEnv.Master.GameContent {
             private set { _revoltApprovalThreshold = value; }
         }
 
-        private float _hudRefreshRate;
+        private float _hudRefreshPeriod;
         /// <summary>
-        /// The base rate at which the HUD refreshes constantly changing data.
-        /// UOM = seconds between each refresh.
+        /// The number of hours between refreshes of the HUD.
         /// </summary>
-        public float HudRefreshRate {
+        public float HudRefreshPeriod {
             get {
                 CheckValuesInitialized();
-                return _hudRefreshRate;
+                return _hudRefreshPeriod;
             }
-            private set { _hudRefreshRate = value; }
+            private set { _hudRefreshPeriod = value; }
         }
 
         #endregion

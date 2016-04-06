@@ -28,12 +28,20 @@ using UnityEngine;
 /// </summary>
 public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatrollable, IFleetExplorable, IGuardable {
 
-    public bool IsTrackingLabelEnabled { private get; set; }
+    private bool _isTrackingLabelEnabled;
+    public bool IsTrackingLabelEnabled {
+        private get { return _isTrackingLabelEnabled; }
+        set { SetProperty<bool>(ref _isTrackingLabelEnabled, value, "IsTrackingLabelEnabled"); }
+    }
 
+    private OrbitData _settlementOrbitData;
     /// <summary>
-    ///  The orbit slot within this system that any current or future settlement can occupy. 
+    ///  The orbit data describing the orbit that any current or future settlement can occupy. 
     /// </summary>
-    public CelestialOrbitSlot SettlementOrbitSlot { get; set; }
+    public OrbitData SettlementOrbitData {
+        get { return _settlementOrbitData; }
+        set { SetProperty<OrbitData>(ref _settlementOrbitData, value, "SettlementOrbitData"); }
+    }
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -56,16 +64,15 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         get { return _star; }
         set {
             D.Assert(_star == null, "{0}'s Star can only be set once.".Inject(FullName));
-            _star = value;
-            StarPropSetHandler();
+            SetProperty<StarItem>(ref _star, value, "Star", StarPropSetHandler);
         }
     }
 
-    public IList<PlanetItem> Planets { get; private set; }
+    public IList<IPlanetItem> Planets { get; private set; }
 
-    public IList<MoonItem> Moons { get; private set; }
+    public IList<IMoonItem> Moons { get; private set; }
 
-    public IList<APlanetoidItem> Planetoids { get; private set; }
+    public IList<IPlanetoidItem> Planetoids { get; private set; }
 
     private SystemPublisher _publisher;
     public SystemPublisher Publisher {
@@ -83,9 +90,9 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        Planetoids = new List<APlanetoidItem>();    // OPTIMIZE size of each of these lists
-        Planets = new List<PlanetItem>();
-        Moons = new List<MoonItem>();
+        Planetoids = new List<IPlanetoidItem>();    // OPTIMIZE size of each of these lists
+        Planets = new List<IPlanetItem>();
+        Moons = new List<IMoonItem>();
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
@@ -157,7 +164,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
     public override void CommenceOperations() {
         base.CommenceOperations();
         if (Settlement != null) {
-            SettlementOrbitSlot.OrbitSimulator.IsActivated = true;
+            Settlement.CelestialOrbitSimulator.IsActivated = true;
         }
     }
 
@@ -174,9 +181,9 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         Data.AddPlanetoid(planetoid.Data);
     }
 
-    public void RemovePlanetoid(APlanetoidItem planetoid) {
+    public void RemovePlanetoid(IPlanetoidItem planetoid) {
         D.Assert(!planetoid.IsOperational);
-        bool isRemoved = Planetoids.Remove(planetoid);
+        bool isRemoved = Planetoids.Remove(planetoid as APlanetoidItem);
         var planet = planetoid as PlanetItem;
         if (planet != null) {
             isRemoved = isRemoved & Planets.Remove(planet);
@@ -184,7 +191,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         else {
             isRemoved = isRemoved & Moons.Remove(planetoid as MoonItem);
         }
-        isRemoved = isRemoved & Data.RemovePlanetoid(planetoid.Data);
+        isRemoved = isRemoved & Data.RemovePlanetoid((planetoid as APlanetoidItem).Data);
         D.Assert(isRemoved);
     }
 
@@ -208,12 +215,11 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
     }
 
     private void AttachSettlement(SettlementCmdItem settlementCmd) {
-        Transform settlementUnit = settlementCmd.UnitContainer;
-        SettlementOrbitSlot.AssumeOrbit(settlementUnit);
-        if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in AOrbitSlot
-            SettlementOrbitSlot.OrbitSimulator.IsActivated = true;
+        GeneralFactory.Instance.InstallCelestialItemInOrbit(settlementCmd.UnitContainer.gameObject, SettlementOrbitData);
+        if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
+            settlementCmd.CelestialOrbitSimulator.IsActivated = true;
         }
-        //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
+        //D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
 
     protected override void AssessIsDiscernibleToUser() {
@@ -247,9 +253,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
         }
         else {
             // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
-            // Choose to deactivate or destroy but not both
-            //SettlementOrbitSlot.OrbitSimulator.IsActivated = false;   // TODO make a choice between the two
-            SettlementOrbitSlot.DestroyOrbitSimulator();
+            Settlement.CelestialOrbitSimulator.IsActivated = false;
             Data.SettlementData = null;
         }
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
@@ -274,7 +278,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     protected override void Cleanup() {
         base.Cleanup();
-        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
         Data.Dispose();
     }
 
@@ -348,11 +352,11 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     public bool IsFullyExploredBy(Player player) {
         bool isStarExplored = Star.IsFullyExploredBy(player);
-        bool areAllPlanetsExplored = Planets.All(p => p.IsFullyExploredBy(player));
+        bool areAllPlanetsExplored = Planets.Cast<IShipExplorable>().All(p => p.IsFullyExploredBy(player)); //bool areAllPlanetsExplored = Planets.All(p => p.IsFullyExploredBy(player));
         return isStarExplored && areAllPlanetsExplored;
     }
 
-    // EmergencyGatherStations - see IPatrollable
+    // LocalAssemblyStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
         return !Owner.IsAtWarWith(player);

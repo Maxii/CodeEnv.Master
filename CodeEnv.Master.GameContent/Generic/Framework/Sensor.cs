@@ -27,7 +27,11 @@ namespace CodeEnv.Master.GameContent {
 
         private static string _nameFormat = "{0}[{1}({2:0.})]";
 
-        public ISensorRangeMonitor RangeMonitor { get; set; }
+        private ISensorRangeMonitor _rangeMonitor;
+        public ISensorRangeMonitor RangeMonitor {
+            get { return _rangeMonitor; }
+            set { SetProperty<ISensorRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
+        }
 
         public override string Name {
             get {

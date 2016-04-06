@@ -86,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            if (UnityUtility.CheckNotNullOrAlreadyDestroyed(_inputMgr)) {
+            if (GameUtility.CheckNotNullOrAlreadyDestroyed(_inputMgr)) {
                 _inputMgr.unconsumedPress -= UnconsumedPressEventHandler;
             }
         }

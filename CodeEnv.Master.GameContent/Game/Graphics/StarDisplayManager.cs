@@ -80,14 +80,14 @@ namespace CodeEnv.Master.GameContent {
             starLight.enabled = true;
 
             _revolvers = itemGo.GetSafeInterfacesInChildren<IRevolver>();
-            _revolvers.ForAll(r => r.enabled = false);
+            //_revolvers.ForAll(r => r.IsActivated = false);  // enabled = false in Awake
             //TODO Revolver settings
         }
 
         protected override void AssessComponentsToShowOrOperate() {
             base.AssessComponentsToShowOrOperate();
             _glowBillboard.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
-            _revolvers.ForAll(r => r.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
+            _revolvers.ForAll(r => r.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
         }
 
         public override string ToString() {

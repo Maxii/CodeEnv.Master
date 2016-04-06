@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
         // a Star's name is assigned when its parent system becomes known
         public StarCategory Category { get; private set; }
         public float Radius { get; private set; }
-        public float LowOrbitRadius { get; private set; }
+        public float CloseOrbitInnerRadius { get; private set; }
         public int Capacity { get; private set; }
         public ResourceYield Resources { get; private set; }
 
@@ -35,14 +35,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="category">The category of Star.</param>
         /// <param name="radius">The radius.</param>
-        /// <param name="lowOrbitRadius">The low orbit radius.</param>
+        /// <param name="closeOrbitInnerRadius">The low orbit radius.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public StarStat(StarCategory category, float radius, float lowOrbitRadius, int capacity, ResourceYield resources)
+        public StarStat(StarCategory category, float radius, float closeOrbitInnerRadius, int capacity, ResourceYield resources)
             : this() {
             Category = category;
             Radius = radius;
-            LowOrbitRadius = lowOrbitRadius;
+            CloseOrbitInnerRadius = closeOrbitInnerRadius;
             Capacity = capacity;
             Resources = resources;
         }

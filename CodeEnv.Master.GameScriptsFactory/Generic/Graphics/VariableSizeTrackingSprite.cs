@@ -25,17 +25,16 @@ using UnityEngine;
 /// </summary>
 public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
 
-    private AtlasID _atlasID;
-    public AtlasID AtlasID {
-        get { return _atlasID; }
-        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", AtlasIDPropChangedHandler); }
-    }
-
     /// <summary>
     /// Temporary. The desired dimensions in pixels of this sprite. 
     /// </summary>
     public Vector2 desiredSpriteDimensions = new Vector2(16, 16);    //TODO: Use properly sized sprite
 
+    private AtlasID _atlasID;
+    public AtlasID AtlasID {
+        get { return _atlasID; }
+        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", AtlasIDPropChangedHandler); }
+    }
 
     protected new UISprite Widget { get { return base.Widget as UISprite; } }
 

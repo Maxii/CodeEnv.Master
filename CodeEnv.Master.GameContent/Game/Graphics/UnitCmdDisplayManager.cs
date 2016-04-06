@@ -40,12 +40,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public GameColor Color {
             get { return _color; }
-            set {
-                if (_color != value) {
-                    _color = value;
-                    ColorPropChangedHandler();
-                }
-            }
+            set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedHandler); }
         }
 
         protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Above; } }

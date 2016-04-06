@@ -28,19 +28,21 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdItemData : AMortalItemData {
 
+        private float _unitMaxFormationRadius;
         /// <summary>
         /// The radius of this Unit's maximum formation, independant of whether the Unit's elements
         /// are located on their formation station. Value encompasses each element's "KeepoutZone"
         /// (Facility: AvoidableObstacleZone, Ship: CollisionDetectionZone) when the element is OnStation. 
         /// </summary>
-        public float UnitMaxFormationRadius { get; set; }
+        public float UnitMaxFormationRadius {
+            get { return _unitMaxFormationRadius; }
+            set { SetProperty<float>(ref _unitMaxFormationRadius, value, "UnitMaxFormationRadius"); }
+        }
 
         /// <summary>
         /// The radius of the Command, aka the radius of the HQElement.
         /// </summary>
         public float Radius { get { return HQElementData.HullDimensions.magnitude / 2F; } }
-
-        public new CameraUnitCmdStat CameraStat { get { return base.CameraStat as CameraUnitCmdStat; } }
 
         private string _parentName;
         public string ParentName {
@@ -179,19 +181,21 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _unitExpense, value, "UnitExpense"); }
         }
 
-        protected IList<AUnitElementItemData> ElementsData { get; private set; }
+        public new CameraUnitCmdStat CameraStat { get { return base.CameraStat as CameraUnitCmdStat; } }
+
+        protected IList<AUnitElementItemData> _elementsData;
         protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitCmdItemData" /> class.
         /// </summary>
-        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="cmd">The command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
         /// <param name="cmdStat">The command stat.</param>
-        public AUnitCmdItemData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(cmdTransform, CommonTerms.Command, owner, cameraStat, cmdStat.MaxHitPoints, passiveCMs) {
+        public AUnitCmdItemData(IUnitCmdItem cmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmd, owner, cameraStat, cmdStat.MaxHitPoints, passiveCMs) {
             ParentName = cmdStat.UnitName;
             UnitFormation = cmdStat.UnitFormation;
             MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
@@ -200,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeCollections() {
-            ElementsData = new List<AUnitElementItemData>();
+            _elementsData = new List<AUnitElementItemData>();
             _subscriptions = new Dictionary<AUnitElementItemData, IList<IDisposable>>();
         }
 
@@ -229,7 +233,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HQElementDataPropChangedHandler() {
-            D.Assert(ElementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
+            D.Assert(_elementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
             Topography = GetTopography();
         }
@@ -283,8 +287,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void ParentNamePropChangedHandler() {
             // the parent name of a command is the unit name
-            if (!ElementsData.IsNullOrEmpty()) {
-                ElementsData.ForAll(eData => eData.ParentName = ParentName);
+            if (!_elementsData.IsNullOrEmpty()) {
+                _elementsData.ForAll(eData => eData.ParentName = ParentName);
             }
         }
 
@@ -336,10 +340,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public virtual void AddElement(AUnitElementItemData elementData) {
-            D.Assert(!ElementsData.Contains(elementData), "Attempted to add {0} {1} that is already present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
+            D.Assert(!_elementsData.Contains(elementData), "Attempted to add {0} {1} that is already present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
             VerifyOwner(elementData);
             UpdateElementParentName(elementData);
-            ElementsData.Add(elementData);
+            _elementsData.Add(elementData);
 
             RefreshComposition();
             Subscribe(elementData);
@@ -365,7 +369,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public virtual void RemoveElement(AUnitElementItemData elementData) {
-            bool isRemoved = ElementsData.Remove(elementData);
+            bool isRemoved = _elementsData.Remove(elementData);
             D.Assert(isRemoved, "Attempted to remove {0} {1} that is not present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
 
             RefreshComposition();
@@ -403,24 +407,24 @@ namespace CodeEnv.Master.GameContent {
 
         private void RecalcUnitOffensiveStrength() {
             var defaultValueIfEmpty = default(CombatStrength);
-            UnitOffensiveStrength = ElementsData.Select(ed => ed.OffensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
+            UnitOffensiveStrength = _elementsData.Select(ed => ed.OffensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
         private void RecalcUnitDefensiveStrength() {
             var defaultValueIfEmpty = default(CombatStrength);
-            UnitDefensiveStrength = ElementsData.Select(ed => ed.DefensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
+            UnitDefensiveStrength = _elementsData.Select(ed => ed.DefensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
         private void RecalcUnitMaxHitPoints() {
-            UnitMaxHitPoints = ElementsData.Sum(ed => ed.MaxHitPoints);
+            UnitMaxHitPoints = _elementsData.Sum(ed => ed.MaxHitPoints);
         }
 
         private void RecalcUnitCurrentHitPoints() {
-            UnitCurrentHitPoints = ElementsData.Sum(ed => ed.CurrentHitPoints);
+            UnitCurrentHitPoints = _elementsData.Sum(ed => ed.CurrentHitPoints);
         }
 
         private void RecalcUnitWeaponsRange() {
-            var allUnitWeapons = ElementsData.SelectMany(ed => ed.Weapons);
+            var allUnitWeapons = _elementsData.SelectMany(ed => ed.Weapons);
             var undamagedUnitWeapons = allUnitWeapons.Where(w => !w.IsDamaged);
             var shortRangeWeapons = undamagedUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
             var mediumRangeWeapons = undamagedUnitWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
@@ -432,7 +436,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitSensorRange() {
-            var allUnitSensors = ElementsData.SelectMany(ed => ed.Sensors);
+            var allUnitSensors = _elementsData.SelectMany(ed => ed.Sensors);
             var shortRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeCategory.Short);
             var mediumRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeCategory.Medium);
             var longRangeSensors = allUnitSensors.Where(s => s.RangeCategory == RangeCategory.Long);
@@ -443,19 +447,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitScience() {
-            UnitScience = ElementsData.Sum(ed => ed.Science);
+            UnitScience = _elementsData.Sum(ed => ed.Science);
         }
 
         private void RecalcUnitCulture() {
-            UnitCulture = ElementsData.Sum(ed => ed.Culture);
+            UnitCulture = _elementsData.Sum(ed => ed.Culture);
         }
 
         private void RecalcUnitIncome() {
-            UnitIncome = ElementsData.Sum(ed => ed.Income);
+            UnitIncome = _elementsData.Sum(ed => ed.Income);
         }
 
         private void RecalcUnitExpense() {
-            UnitExpense = ElementsData.Sum(ed => ed.Expense);
+            UnitExpense = _elementsData.Sum(ed => ed.Expense);
         }
 
         private void Unsubscribe(AUnitElementItemData elementData) {

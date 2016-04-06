@@ -48,8 +48,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         get { return _resources; }
         set {
             D.Assert(!_isResourcesSet); // occurs only once between Resets
-            _resources = value;
-            ResourcesPropSetHandler();
+            SetProperty<ResourceYield?>(ref _resources, value, "Resources", ResourcesPropSetHandler);
         }
     }
 

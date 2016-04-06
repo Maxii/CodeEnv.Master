@@ -35,13 +35,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private static Vector3 _localSpaceForward = Vector3.forward;
 
-    /// <summary>
-    /// The minimum steering inaccuracy that can be used in degrees. 
-    /// Used to allow ChangeHeading() to complete early rather than wait
-    /// until the direction error is below UnityConstants.FloatEqualityPrecision.
-    /// </summary>
-    private static float _minSteeringInaccuracy = .01F;
-
     [SerializeField]
     private GameObject _muzzleEffect = null;
 
@@ -84,36 +77,40 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// </summary>
     public float CourseUpdateFrequency { get { return Weapon.OrdnanceCourseUpdateFrequency; } }
 
+    private float _steeringInaccuracy;
     /// <summary>
     /// The inaccuracy of the missile's steering system in degrees.
     /// </summary>
-    public float SteeringInaccuracy { get; private set; }
+    public float SteeringInaccuracy {
+        get { return _steeringInaccuracy; }
+        private set { SetProperty<float>(ref _steeringInaccuracy, value, "SteeringInaccuracy"); }
+    }
 
     /// <summary>
     /// The drag of this projectile in Topography.OpenSpace.
     /// </summary>
-    public override float Drag { get { return Weapon.OrdnanceDrag; } }
+    public override float OpenSpaceDrag { get { return Weapon.OrdnanceDrag; } }
 
     public override float Mass { get { return Weapon.OrdnanceMass; } }
 
+    private Vector3 _elementVelocityAtLaunch;
     /// <summary>
     /// The velocity of the element launching this missile when the missile is launched.
     /// <remarks>Keeps the missile from being immediately left behind by a moving element when launched.</remarks>
     /// </summary>
-    public Vector3 ElementVelocityAtLaunch { private get; set; }
+    public Vector3 ElementVelocityAtLaunch {
+        private get { return _elementVelocityAtLaunch; }
+        set { SetProperty<Vector3>(ref _elementVelocityAtLaunch, value, "ElementVelocityAtLaunch"); }
+    }
 
     protected new MissileLauncher Weapon { get { return base.Weapon as MissileLauncher; } }
 
-    /// <summary>
-    /// The force propelling this projectile, using a gameSpeedMultiplier of 1. This force will
-    /// propel the projectile to a top speed of <c>MaxSpeed</c> when in OpenSpace. When the missile is in
-    /// a System or other high drag topography, the missile's top speed will be lower due to the higher drag.
-    /// OrdnanceMass * OpenSpaceDrag * MaxSpeed (units/hour) * hoursPerSecond * _localSpaceForward;
-    /// </summary>
-    private Vector3 _nominalThrust;
+    private bool IsChangeHeadingJobRunning { get { return _changeHeadingJob != null && _changeHeadingJob.IsRunning; } }
+
+    private bool IsCourseUpdateJobRunning { get { return _courseUpdateJob != null && _courseUpdateJob.IsRunning; } }
+
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
-
     private Job _courseUpdateJob;
     private Job _changeHeadingJob;
     private float _hoursBetweenCourseUpdates;
@@ -127,7 +124,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         SteeringInaccuracy = CalcSteeringInaccuracy();
         target.deathOneShot += TargetDeathEventHandler;
 
-        _nominalThrust = CalcNominalThrust();
         enabled = true;
     }
 
@@ -151,6 +147,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected override void AssessShowOperatingEffects() {
         var toShow = ToShowEffects;
+        ShowOperatingEffects(toShow);
+    }
+
+    private void ShowOperatingEffects(bool toShow) {
         if (toShow) {
             _operatingEffect.Play();
         }
@@ -192,7 +192,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     private void ApplyThrust() {
-        var gameSpeedAdjustedThrust = _nominalThrust * _gameSpeedMultiplier;
+        // Note: Rigidbody.drag already adjusted for any Topography changes
+        float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);  //= MaxSpeed * Mass * _rigidbody.drag;
+        var gameSpeedAdjustedThrust = _localSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
         if (_driftCorrectionFactor > Constants.ZeroF) {
@@ -218,47 +220,51 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         IMortalItem deadTarget = sender as IMortalItem;
         D.Assert(deadTarget == Target);
         if (IsOperational) {
-            D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+            //D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
             TerminateNow();
         }
+    }
+
+    protected override void IsPausedPropChangedHandler() {
+        base.IsPausedPropChangedHandler();
+        PauseJobs(_gameMgr.IsPaused);
     }
 
     #endregion
 
     private void LaunchCourseUpdateJob() {
-        D.Assert(_courseUpdateJob == null);
+        D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+        D.Assert(!IsCourseUpdateJobRunning);
         _courseUpdateJob = new Job(UpdateCourse(), toStart: true, jobCompleted: (jobWasKilled) => {
             //TODO
         });
     }
 
     private IEnumerator UpdateCourse() {
-        while (true) {
-            CheckCourse();  // IMPROVE won't adjust to new gameSpeed until previous wait period expires
-            yield return new WaitForSeconds(_hoursBetweenCourseUpdates / _gameTime.GameSpeedAdjustedHoursPerSecond);
+        do {
+            CheckCourse();
+            yield return new WaitForHours(_hoursBetweenCourseUpdates);
         }
+        while (true);
     }
 
     private void CheckCourse() {
         Vector3 tgtBearing = (Target.Position - Position).normalized;
-        if (!Heading.IsSameDirection(tgtBearing, SteeringInaccuracy)) {
+        if (!CurrentHeading.IsSameDirection(tgtBearing, SteeringInaccuracy)) {
             // IMPROVE check LOS to target before making heading change, check ahead too?
             LaunchChangeHeadingJob(tgtBearing);
         }
     }
 
     private void LaunchChangeHeadingJob(Vector3 newHeading) {
-        if (_changeHeadingJob != null && _changeHeadingJob.IsRunning) {
-            _changeHeadingJob.Kill();   // Note: no timeout issue w/killing job as allowedTime recalc'd
+        D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+        if (IsChangeHeadingJobRunning) {
+            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", Name);   // -> course update freq is too high or turnRate too low
+            _changeHeadingJob.Kill();                  // missile should be able to complete a turn between course updates
         }
-        float allowedTime = GameUtility.CalcMaxSecsReqdToCompleteRotation(TurnRate, MaxReqdHeadingChange) * TempGameValues.__AllowedTurnTimeBufferFactor;
-        _changeHeadingJob = new Job(ChangeHeading(newHeading, allowedTime), toStart: true, jobCompleted: (jobWasKilled) => {
-            if (!IsOperational) { return; } // missile is or about to be destroyed
-            if (jobWasKilled) {
-                D.Warn("{0} had its ChangeHeadingJob killed.", Name);   // -> course update freq is too high or turnRate too low
-                // missile should be able to complete a turn between course updates
-            }
-            else {
+        GameDate errorDate = GameUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
+        _changeHeadingJob = new Job(ChangeHeading(newHeading, errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+            if (IsOperational && !jobWasKilled) {
                 //D.Log("{0} has completed a heading change.", Name);
             }
         });
@@ -271,22 +277,20 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// <param name="requestedHeading">The requested heading.</param>
     /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
     /// <returns></returns>
-    private IEnumerator ChangeHeading(Vector3 requestedHeading, float allowedTime) {
-        float cumTime = Constants.ZeroF;
-        //float angle = Vector3.Angle(Heading, newHeading);
-        while (!Heading.IsSameDirection(requestedHeading, SteeringInaccuracy)) {
-            float deltaTime = _gameTime.DeltaTimeOrPaused;
+    private IEnumerator ChangeHeading(Vector3 requestedHeading, GameDate errorDate) {
+        //Vector3 startingHeading = CurrentHeading;
+        while (!CurrentHeading.IsSameDirection(requestedHeading, SteeringInaccuracy)) {
             float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float allowedTurn = maxTurnRateInRadiansPerSecond * deltaTime;
-            Vector3 newHeading = Vector3.RotateTowards(Heading, requestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
+            float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTime;
+            Vector3 newHeading = Vector3.RotateTowards(CurrentHeading, requestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
             // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
             transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
             //D.Log("{0} actual heading after turn step: {1}.", Name, Heading);
-            cumTime += deltaTime; // WARNING: works only with yield return null;
-            D.Assert(cumTime <= allowedTime, "{0} exceeded AllowedTime {1:0.##} while turning.", Name, allowedTime);
+            GameDate currentDate;
+            D.Warn((currentDate = _gameTime.CurrentDate) > errorDate, "{0}: CurrentDate {1} > ErrorDate {2} while changing heading.", Name, currentDate, errorDate);
             yield return null;
         }
-        //D.Log("{0} has completed heading change of {1:0.#} degrees. Turn Duration = {2:0.##}.", Name, angle, cumTime);
+        //D.Log("{0} has completed heading change of {1:0.#} degrees.", Name, Vector3.Angle(startingHeading, CurrentHeading));
     }
 
     /// <summary>
@@ -300,21 +304,35 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
     }
 
-    protected override Vector3 GetForceOfImpact() { return _nominalThrust * _gameSpeedMultiplier; }
-
-    private Vector3 CalcNominalThrust() {
-        return Mass * Drag * MaxSpeed * GameTime.HoursPerSecond * _localSpaceForward;
-    }
-
     private float CalcSteeringInaccuracy() {
-        var maxSteeringInaccuracy = Mathf.Max(_minSteeringInaccuracy, Weapon.OrdnanceMaxSteeringInaccuracy);
-        return UnityEngine.Random.Range(_minSteeringInaccuracy, maxSteeringInaccuracy);
+        return UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, Weapon.OrdnanceMaxSteeringInaccuracy);
     }
 
     protected override float GetDistanceTraveled() {
         _cumDistanceTraveled += Vector3.Distance(Position, _positionLastRangeCheck);
         _positionLastRangeCheck = Position;
         return _cumDistanceTraveled;
+    }
+
+    private void PauseJobs(bool toPause) {
+        if (IsChangeHeadingJobRunning) {
+            _changeHeadingJob.IsPaused = toPause;
+        }
+        if (IsCourseUpdateJobRunning) {
+            _courseUpdateJob.IsPaused = toPause;
+        }
+    }
+
+    protected override void PrepareForTermination() {
+        base.PrepareForTermination();
+        ShowOperatingEffects(false);
+        if (IsChangeHeadingJobRunning) {
+            _changeHeadingJob.Kill();
+        }
+        if (IsCourseUpdateJobRunning) {
+            _courseUpdateJob.Kill();
+        }
+        Target.deathOneShot -= TargetDeathEventHandler;
     }
 
     protected override void Cleanup() {
@@ -325,7 +343,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null) {
             _changeHeadingJob.Dispose();
         }
-        Target.deathOneShot -= TargetDeathEventHandler;
     }
 
     public override string ToString() {

@@ -39,6 +39,15 @@ namespace CodeEnv.Master.GameContent {
 
         #region Static Constants
 
+        /// <summary>
+        /// The tolerance allowed for one hour to be equal to another.
+        /// <remarks>0.1 hour tolerance is about the best I can expect at an FPS as low as 25 
+        /// (0.04 secs between updates to GameTime) and GameSettings.HoursPerSecond of 2.0
+        /// => 0.04 * 2.0 = 0.08 hours tolerance. Granularity will be better at higher FPS, 
+        /// but I can't count on it.</remarks>
+        /// </summary>
+        public const float HoursEqualTolerance = 0.1F;
+
         public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         /// <summary>
@@ -48,18 +57,24 @@ namespace CodeEnv.Master.GameContent {
         public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
         public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
 
-        public static float SlowestGameSpeedMultiplier = GameSpeed.Slowest.SpeedMultiplier();
-
         #endregion
 
-        public event EventHandler dateChanged;
+        /// <summary>
+        /// Occurs when the date changes that a calender display would care about.
+        /// 3.25.16 Fires when the hour digit changes.
+        /// </summary>
+        public event EventHandler calenderDateChanged;
 
         /// <summary>
         /// The number of Hours passing per second, adjusted for GameSpeed.
         /// </summary>
         public float GameSpeedAdjustedHoursPerSecond { get { return HoursPerSecond * GameSpeedMultiplier; } }
 
-        public float GameSpeedMultiplier { get; private set; }
+        private float _gameSpeedMultiplier;
+        public float GameSpeedMultiplier {
+            get { return _gameSpeedMultiplier; }
+            set { SetProperty<float>(ref _gameSpeedMultiplier, value, "GameSpeedMultiplier"); }
+        }
 
         private GameSpeed _gameSpeed;
         public GameSpeed GameSpeed {
@@ -107,6 +122,7 @@ namespace CodeEnv.Master.GameContent {
         /// was rendered or zero if the game is paused. Useful for animations
         /// or other work that should stop while paused.
         /// </summary>
+        [Obsolete]
         public float DeltaTimeOrPaused {
             get {
                 WarnIfGameInstanceNotRunning();
@@ -167,33 +183,10 @@ namespace CodeEnv.Master.GameContent {
         public GameDate CurrentDate {
             get {
                 WarnIfGameInstanceNotRunning();
-                CheckForDateChange();
                 return _currentDate;
             }
-            private set { _currentDate = value; }
+            private set { SetProperty<GameDate>(ref _currentDate, value, "CurrentDate"); }
         }
-
-        public void CheckForDateChange() {
-            if (_gameMgr.IsRunning && !_gameMgr.IsPaused) {
-                RefreshCurrentDateTime();
-
-                var updatedDate = new GameDate(_currentDateTime);
-                //D.Log("GameDate {0} generated for CurrentDate changed check.", updatedDate);
-                if (updatedDate != _currentDate) {   // use of _currentDate rather than CurrentDate.get() avoids infinite loop 
-                    // updatedDate can be < _currentDate when a new game is started
-                    CurrentDate = updatedDate;
-                    //if (onDateChanged != null) {
-                    //    //string subscribers = onDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
-                    //    //D.Log("{0}.onDateChanged. List = {1}.", GetType().Name, subscribers);
-                    //    onDateChanged(updatedDate);
-                    //}
-
-                    OnDateChanged();
-                }
-            }
-        }
-
-        private IList<IDisposable> _subscriptions;
 
         /// <summary>
         /// The number of seconds accummulated by a saved GameInstance in UnitySessions prior to this one.
@@ -231,6 +224,7 @@ namespace CodeEnv.Master.GameContent {
         private float _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
         private PlayerPrefsManager _playerPrefsMgr;
         private IGameManager _gameMgr;
+        private IList<IDisposable> _subscriptions;
 
         private GameTime() {
             Initialize();
@@ -241,6 +235,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected sealed override void Initialize() {
             UnityEngine.Time.timeScale = Constants.OneF;
+            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursEqualTolerance, "See {0}.HoursEqualTolerance notes.", GetType().Name);
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();
@@ -299,6 +294,37 @@ namespace CodeEnv.Master.GameContent {
             // the list of subscribers to onDateChanged should be fine as saved
         }
 
+        public void CheckForDateChange() {
+            if (_gameMgr.IsRunning && !_gameMgr.IsPaused) {
+                RefreshCurrentDateTime();
+
+                bool toFireCalenderDateChangedEvent = false;
+                bool toUpdateCurrentDate = false;
+                var updatedDate = new GameDate(_currentDateTime);
+                if (updatedDate > _currentDate) {
+                    // they are not within equivalence tolerance so update
+                    toUpdateCurrentDate = true;
+                }
+
+                if (!updatedDate.CalenderEquals(_currentDate)) {
+                    // Hours digit has changed so calender needs to hear about it
+                    toFireCalenderDateChangedEvent = true;
+                    // 3.26.16: CurrentDate needs to be updated as GuiDateReadout will acquire it to post.
+                    // A small change in hours from hourDigit.99 to hourDigitPlusOne.01 needs to fire a
+                    // calender date change event, but the two dates are within equivalence tolerance
+                    // and therefore won't update CurrentDate so we tell it to update just in case.
+                    toUpdateCurrentDate = true;
+                }
+                if (toUpdateCurrentDate) {
+                    D.Log("{0}: Changing CurrentDate to {1}.", GetType().Name, updatedDate);
+                    CurrentDate = updatedDate;  // must be done before event fired
+                }
+                if (toFireCalenderDateChangedEvent) {
+                    OnCalenderDateChanged();
+                }
+            }
+        }
+
         #region Event and Property Change Handlers
 
         private void IsRunningPropChangedHandler() {
@@ -339,11 +365,11 @@ namespace CodeEnv.Master.GameContent {
             GameSpeedMultiplier = GameSpeed.SpeedMultiplier();
         }
 
-        private void OnDateChanged() {
-            if (dateChanged != null) {
-                //string subscribers = dateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
-                //D.Log("{0}.dateChanged. Subscribers = {1}.", GetType().Name, subscribers);
-                dateChanged(this, new EventArgs());
+        private void OnCalenderDateChanged() {
+            if (calenderDateChanged != null) {
+                //string subscribers = calenderDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
+                //D.Log("{0}.calenderDateChanged. CalenderDate: {1}, Subscribers: {2}.", GetType().Name, _currentDate.CalenderFormattedDate, subscribers);
+                calenderDateChanged(this, new EventArgs());
             }
         }
 
@@ -357,7 +383,9 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshCurrentDateTime() {
             D.Assert(_gameMgr.IsRunning);
             D.Assert(!_gameMgr.IsPaused);   // it keeps adding to currentDateTime
-            _currentDateTime += GameSpeedMultiplier * (GameInstancePlayTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh);
+            float deltaGameInstancePlayTime = GameInstancePlayTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
+            //D.Warn(deltaGameInstancePlayTime > HoursEqualTolerance, "{0}.deltaGameInstacePlayTime increased by {1}.", GetType().Name, deltaGameInstancePlayTime);
+            _currentDateTime += GameSpeedMultiplier * deltaGameInstancePlayTime;
             _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
             //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", GetType().Name, _currentDateTime);
         }
@@ -419,7 +447,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
     }
 }

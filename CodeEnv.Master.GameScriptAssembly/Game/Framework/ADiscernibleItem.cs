@@ -49,9 +49,17 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         set { base.Data = value; }
     }
 
-    public ADisplayManager DisplayMgr { get; private set; }
+    private ADisplayManager _displayMgr;
+    public ADisplayManager DisplayMgr {
+        get { return _displayMgr; }
+        private set { SetProperty<ADisplayManager>(ref _displayMgr, value, "DisplayMgr"); }
+    }
 
-    protected EffectsManager EffectsMgr { get; private set; }
+    private EffectsManager _effectsMgr;
+    protected EffectsManager EffectsMgr {
+        get { return _effectsMgr; }
+        set { SetProperty<EffectsManager>(ref _effectsMgr, value, "EffectsMgr"); }
+    }
 
     /// <summary>
     /// Flag indicating whether InitializeOnFirstDiscernibleToUser() has run.
@@ -162,6 +170,11 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     /// </remarks>
     protected abstract void ShowSelectedItemHud();
 
+    /// <summary>
+    /// Allows derived classes to take action after the finish of an effect.
+    /// This base method fires the onEffectFinished event.
+    /// </summary>
+    /// <param name="effectID">The effect identifier.</param>
     public virtual void HandleEffectFinished(EffectID effectID) {
         OnEffectFinished(effectID);
     }
@@ -229,26 +242,26 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
             InitializeOnFirstDiscernibleToUser();
         }
         AssessHighlighting();
-        //D.Log("{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
+        //D.Log(ShowDebugLog, "{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
     }
 
     // IMPROVE deal with losing IsDiscernible while hovered or pressed
 
     protected virtual void IsVisualDetailDiscernibleToUserPropChangedHandler() { }
 
-    protected virtual void HandleHoverOver() {
+    private void HandleHoverOver() {
         ShowHud(true);
         ShowHoverHighlight(true);
     }
 
-    protected virtual void HandleHoverOff() {
+    private void HandleHoverOff() {
         ShowHud(false);
         ShowHoverHighlight(false);
     }
 
     protected void HoverEventHandler(GameObject go, bool isOver) {
-        //D.Log("{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
-        if (IsDiscernibleToUser) {
+        //D.Log(ShowDebugLog, "{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
+        if (IsOperational && IsDiscernibleToUser) {
             if (isOver) {
                 HandleHoverOver();
             }
@@ -268,7 +281,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected virtual void HandleRightClick() { }
 
     protected void ClickEventHandler(GameObject go) {
-        //D.Log("{0} is handling an OnClick event.", FullName);
+        //D.Log(ShowDebugLog, "{0} is handling an OnClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 KeyCode notUsed;
@@ -300,7 +313,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected virtual void HandleRightPress() { }
 
     protected void PressEventHandler(GameObject go, bool isDown) {
-        //D.Log("{0} is handling an OnPress event. IsDown = {1}.", FullName, isDown);
+        //D.Log(ShowDebugLog, "{0} is handling an OnPress event. IsDown = {1}.", FullName, isDown);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 if (isDown) {
@@ -354,7 +367,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     protected virtual void HandleRightDoubleClick() { }
 
     protected void DoubleClickEventHandler(GameObject go) {
-        //D.Log("{0} is handling an OnDoubleClick event.", FullName);
+        //D.Log(ShowDebugLog, "{0} is handling an OnDoubleClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 HandleLeftDoubleClick();
@@ -381,7 +394,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         }
     }
 
-    private void OnEffectFinished(EffectID effectID) {
+    protected void OnEffectFinished(EffectID effectID) {
         if (effectFinished != null) {
             effectFinished(this, new EffectEventArgs(effectID));
         }
@@ -439,8 +452,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
             }
             return (Data.CameraStat as CameraFocusableStat).OptimalViewingDistance;
         }
-        set { _optimalCameraViewingDistance = value; }  //TODO public but not currently used until implement option to right click set
-        // Camera auto setting value commented out for now
+        set { SetProperty<float>(ref _optimalCameraViewingDistance, value, "OptimalCameraViewingDistance"); }
     }
 
     public virtual bool IsRetainedFocusEligible { get { return false; } }

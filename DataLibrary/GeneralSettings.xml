@@ -62,8 +62,8 @@
     </Setting>
 
     <Setting>
-      <PropertyName>HudRefreshRate</PropertyName>
-      <PropertyValue>1.0</PropertyValue>
+      <PropertyName>HudRefreshPeriod</PropertyName>
+      <PropertyValue>2.0</PropertyValue>
     </Setting>
 
   </Float>

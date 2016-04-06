@@ -35,7 +35,7 @@ public class StarCtxControl : ACtxControl {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
-                                                                                        FleetDirective.Orbit,
+                                                                                        FleetDirective.CloseOrbit,
                                                                                         FleetDirective.Explore };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -79,8 +79,8 @@ public class StarCtxControl : ACtxControl {
                 return !(_starMenuOperator.System as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
                 return !(_starMenuOperator.System as IGuardable).IsGuardingAllowedBy(_user);
-            case FleetDirective.Orbit:
-                return !(_starMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
+            case FleetDirective.CloseOrbit:
+                return !(_starMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

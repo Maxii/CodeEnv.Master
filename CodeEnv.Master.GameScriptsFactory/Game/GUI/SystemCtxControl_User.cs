@@ -108,12 +108,12 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableTarget> targets) {
         switch (directive) {
             case BaseDirective.Attack:
                 // Note: Easy access to attack fleets of war opponents. Other attack targets should be explicitly chosen by user
                 // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Where(f => _systemMenuOperator.Owner.IsAtWarWith(f.Owner)).Cast<INavigableTarget>();
+                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigableTarget>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:

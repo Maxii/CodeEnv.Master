@@ -31,8 +31,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float Radius { get; private set; }
 
-        public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
-
         private string _parentName;
         public string ParentName {
             get { return _parentName; }
@@ -65,41 +63,39 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
+        public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class
         /// with no countermeasures and no owner.
         /// </summary>
-        /// <param name="planetoidTransform">The planetoid transform.</param>
+        /// <param name="planetoid">The planetoid.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="planetoidStat">The stat.</param>
-        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
-        public PlanetoidData(Transform planetoidTransform, CameraFollowableStat cameraStat, PlanetoidStat planetoidStat, Rigidbody planetoidRigidbody)
-            : this(planetoidTransform, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), planetoidStat, planetoidRigidbody) { }
+        public PlanetoidData(IPlanetoidItem planetoid, CameraFollowableStat cameraStat, PlanetoidStat planetoidStat)
+            : this(planetoid, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), planetoidStat) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class with no owner.
         /// </summary>
-        /// <param name="planetoidTransform">The planetoid transform.</param>
+        /// <param name="planetoid">The planetoid.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
-        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
-        public PlanetoidData(Transform planetoidTransform, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat, Rigidbody planetoidRigidbody)
-            : this(planetoidTransform, TempGameValues.NoPlayer, cameraStat, passiveCMs, planetoidStat, planetoidRigidbody) { }
+        public PlanetoidData(IPlanetoidItem planetoid, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
+            : this(planetoid, TempGameValues.NoPlayer, cameraStat, passiveCMs, planetoidStat) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
+        /// Initializes a new instance of the <see cref="PlanetoidData" /> class.
         /// </summary>
-        /// <param name="planetoidTransform">The planetoid transform.</param>
+        /// <param name="planetoid">The planetoid.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
-        /// <param name="planetoidRigidbody">The planetoid rigidbody.</param>
-        public PlanetoidData(Transform planetoidTransform, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat, Rigidbody planetoidRigidbody)
-            : base(planetoidTransform, planetoidStat.Category.GetValueName(), owner, cameraStat, planetoidStat.MaxHitPoints, passiveCMs) {
+        public PlanetoidData(IPlanetoidItem planetoid, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
+            : base(planetoid, owner, cameraStat, planetoidStat.MaxHitPoints, passiveCMs) {
             Mass = planetoidStat.Mass;
-            planetoidRigidbody.mass = planetoidStat.Mass;
             Category = planetoidStat.Category;
             Radius = planetoidStat.Radius;
             Capacity = planetoidStat.Capacity;

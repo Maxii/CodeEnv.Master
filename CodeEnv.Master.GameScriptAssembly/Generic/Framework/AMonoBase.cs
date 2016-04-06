@@ -34,27 +34,13 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     public static bool IsApplicationQuiting { get; private set; }
 
-    #region Debug
-
-    /// <summary>
-    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
-    /// </summary>
-    public virtual void LogEvent() { // WARNING: KeyDuplication compile error in Unity with LogEvent(object parameter = null)
-        if (DebugSettings.Instance.EnableEventLogging) {
-            var stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = transform.name + "(from transform)";
-            Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
-        }
-    }
-
-    #endregion
-
     #region MonoBehaviour Event Methods
     // Note: When declared in a base class this way, ALL of these events are called by Unity
     // even if the derived class doesn't declare them and call base.Event()
 
     protected virtual void Awake() {
         useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
+        _debugSettings = DebugSettings.Instance;
         //LogEvent();
     }
 
@@ -511,6 +497,28 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         }
         return list;
     }
+
+    #region Debug
+
+    protected DebugSettings _debugSettings;
+
+    /// <summary>
+    /// Logs the method name called.
+    /// </summary>
+    public virtual void LogEvent() { // WARNING: KeyDuplication compile error in Unity with LogEvent(object parameter = null)
+        if (_debugSettings.EnableEventLogging) {
+            var stackFrame = new System.Diagnostics.StackFrame(1);
+            string fullMethodName = stackFrame.GetMethod().ReflectedType.Name;
+            if (fullMethodName.Contains(Constants.LessThan)) {
+                string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
+                fullMethodName = coroutineMethodName;
+            }
+            string transformName = transform.name + "(from transform)";
+            Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(transformName, GetType().Name, fullMethodName));
+        }
+    }
+
+    #endregion
 
     #region Nested Classes
 

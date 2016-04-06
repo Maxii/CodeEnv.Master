@@ -93,22 +93,25 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         });
     }
 
-    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void CheckDebugSettings() {
-        DebugSettings debugSettings = DebugSettings.Instance;
-        if (debugSettings.DisableGui) {
-            GuiCameraControl.Instance.GuiCamera.enabled = false;
-        }
-        if (!debugSettings.EnableFpsReadout) {
-            gameObject.GetSingleComponentInChildren<FpsReadout>().gameObject.SetActive(false);
-        }
-    }
-
     protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void CheckDebugSettings() {
+        if (_debugSettings.DisableGui) {
+            GuiCameraControl.Instance.GuiCamera.enabled = false;
+        }
+        if (!_debugSettings.EnableFpsReadout) {
+            gameObject.GetSingleComponentInChildren<FpsReadout>().gameObject.SetActive(false);
+        }
+    }
+
+    #endregion
 
     #region Stacked Panels Archive
 

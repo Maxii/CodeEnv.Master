@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The health of the item, a value between 0 and 1.
         /// </summary>
-        public virtual float Health {
+        public float Health {
             get { return _health; }
             private set {
                 value = Mathf.Clamp01(value);
@@ -73,14 +73,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
         /// </summary>
-        /// <param name="itemTransform">The item transform.</param>
-        /// <param name="name">The name.</param>
+        /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="passiveCMs">The item's passive Countermeasures.</param>
-        public AMortalItemData(Transform itemTransform, string name, Player owner, ACameraItemStat cameraStat, float maxHitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(itemTransform, name, owner, cameraStat) {
+        public AMortalItemData(IMortalItem item, Player owner, ACameraItemStat cameraStat, float maxHitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(item, owner, cameraStat) {
             Initialize(passiveCMs);
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;

@@ -181,6 +181,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private InputManager _inputMgr;
     private SectorGrid _sectorGrid;
     private GameManager _gameMgr;
+    private GameTime _gameTime;
 
     private Camera[] _mainCameras;
 
@@ -289,6 +290,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _inputMgr = InputManager.Instance;
         _sectorGrid = SectorGrid.Instance;
         _gameMgr = GameManager.Instance;
+        _gameTime = GameTime.Instance;
     }
 
     private void Subscribe() {
@@ -366,15 +368,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             _mainCameras.ForAll(cam => cam.fieldOfView = fov);
         }
     }
-    //private void RefreshCameraSettings(float nearClipPlaneDistance = TempGameValues.CameraNearClippingPlaneDistance_Default, float fov = TempGameValues.CameraFieldOfView_Default) {
-    //    if (!_camera.nearClipPlane.ApproxEquals(nearClipPlaneDistance)) {
-    //        _camera.nearClipPlane = nearClipPlaneDistance;
-    //        _camera.farClipPlane = Mathf.Min(nearClipPlaneDistance * TempGameValues.CameraMaxClippingPlaneRatio, _universeRadius * 2F);
-    //    }
-    //    if (!_camera.fieldOfView.ApproxEquals(fov)) {
-    //        _camera.fieldOfView = fov;
-    //    }
-    //}
 
     private void InitializeCameraPreferences() {
         // the initial Camera preference changed events occur earlier than we can subscribe so do it manually
@@ -1466,7 +1459,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #region Camera Updating Support
 
     private float GetTimeSinceLastUpdate() {
-        return GameTime.Instance.DeltaTime * (int)UpdateRate;
+        return _gameTime.DeltaTime * (int)UpdateRate;
     }
 
     private void LockCursor(bool toLockCursor) {

@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using Common.LocalResources;
     using UnityEngine;
@@ -45,7 +46,11 @@ namespace CodeEnv.Master.GameContent {
             get { return Shield != null ? _fullNameFormat.Inject(Shield.Name, Name) : Name; }
         }
 
-        public IShield Shield { get; set; }
+        private IShield _shield;
+        public IShield Shield {
+            get { return _shield; }
+            set { SetProperty<IShield>(ref _shield, value, "Shield"); }
+        }
 
         public float ReloadPeriod {
             get {
@@ -95,11 +100,17 @@ namespace CodeEnv.Master.GameContent {
 
         protected new ShieldGeneratorStat Stat { get { return base.Stat as ShieldGeneratorStat; } }
 
+        private bool IsReloadJobRunning { get { return _reloadJob != null && _reloadJob.IsRunning; } }
+
+        private bool IsRechargeJobRunning { get { return _rechargeJob != null && _rechargeJob.IsRunning; } }
+
         private GameTime _gameTime;
-        private WaitJob _reloadJob;
+        private Job _reloadJob;
         private Job _rechargeJob;
         private bool _isRecharging;
         private bool _isReloading;
+        private IList<IDisposable> _subscriptions;
+        private IGameManager _gameMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShieldGenerator"/> class.
@@ -109,9 +120,15 @@ namespace CodeEnv.Master.GameContent {
         public ShieldGenerator(ShieldGeneratorStat stat, string name = null)
             : base(stat, name) {
             _gameTime = GameTime.Instance;
+            _gameMgr = References.GameManager;
             CurrentCharge = Constants.ZeroF;
+            Subscribe();
         }
 
+        private void Subscribe() {
+            _subscriptions = new List<IDisposable>();
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+        }
         /// <summary>
         /// Attempts to absorb the impact of an ordnance delivery vehicle. If the full value of the impact is absorbed
         /// by this generator, the method returns <c>true</c> and the unabsorbedImpactValue is Zero.
@@ -148,6 +165,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
+
+        private void IsPausedPropChangedHandler() {
+            PauseJobs(_gameMgr.IsPaused);
+        }
 
         protected override void IsOperationalPropChangedHandler() {
             base.IsOperationalPropChangedHandler();
@@ -196,6 +217,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateRechargeProcess() {
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(HasCharge);
             D.Assert(!_isRecharging);
             D.Log("{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.Name, Name, TrickleChargeRate);
@@ -210,7 +232,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IEnumerator Recharge() {
             while (CurrentCharge < MaximumCharge) {
-                CurrentCharge += TrickleChargeRate * _gameTime.GameSpeedAdjustedHoursPerSecond * _gameTime.DeltaTimeOrPaused;
+                CurrentCharge += TrickleChargeRate * _gameTime.GameSpeedAdjustedHoursPerSecond * _gameTime.DeltaTime;
                 yield return null;
             }
         }
@@ -239,6 +261,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(!HasCharge);
             D.Assert(!_isReloading);
             _isReloading = true;
@@ -260,6 +283,15 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        private void PauseJobs(bool toPause) {
+            if (IsRechargeJobRunning) {
+                _rechargeJob.IsPaused = toPause;
+            }
+            if (IsReloadJobRunning) {
+                _reloadJob.IsPaused = toPause;
+            }
+        }
+
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
                 _reloadJob.Dispose();
@@ -267,7 +299,14 @@ namespace CodeEnv.Master.GameContent {
             if (_rechargeJob != null) {
                 _rechargeJob.Dispose();
             }
+            Unsubscribe();
         }
+
+        private void Unsubscribe() {
+            _subscriptions.ForAll(d => d.Dispose());
+            _subscriptions.Clear();
+        }
+
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -67,7 +67,7 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_user.IsEnemyOf(_systemMenuOperator.Owner);
+                return !(_settlement as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
             case FleetDirective.Explore:
                 var explorableSystem = _systemMenuOperator as IFleetExplorable;
                 return !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GameDate.cs
-// Data container class that holds the game date.
+// Immutable, data container structure that holds the game date.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,7 +14,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Zonked {
+namespace CodeEnv.Master.GameContent {
 
     using System;
     using CodeEnv.Master.Common;
@@ -22,11 +22,13 @@ namespace CodeEnv.Master.Zonked {
     using UnityEngine;
 
     /// <summary>
-    /// Data container class that holds the game date.
+    /// Immutable, data container structure that holds the game date.
     /// </summary>
-    public class GameDate : IEquatable<GameDate> {
+    public struct GameDate : IEquatable<GameDate> {
 
         #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
 
         public static bool operator <(GameDate left, GameDate right) {
             if (left.Year < right.Year) { return true; }
@@ -44,8 +46,7 @@ namespace CodeEnv.Master.Zonked {
             if (left.Year == right.Year) {
                 if (left.DayOfYear < right.DayOfYear) { return true; }
                 if (left.DayOfYear == right.DayOfYear) {
-                    if (left.HourOfDay < right.HourOfDay) { return true; }
-                    if (left.HourOfDay == right.HourOfDay) { return true; }
+                    if (left.HourOfDay <= right.HourOfDay) { return true; }
                 }
             }
             return false;
@@ -67,134 +68,121 @@ namespace CodeEnv.Master.Zonked {
             if (left.Year == right.Year) {
                 if (left.DayOfYear > right.DayOfYear) { return true; }
                 if (left.DayOfYear == right.DayOfYear) {
-                    if (left.HourOfDay > right.HourOfDay) { return true; }
-                    if (left.HourOfDay == right.HourOfDay) { return true; }
+                    if (left.HourOfDay >= right.HourOfDay) { return true; }
                 }
             }
             return false;
         }
 
         public static bool operator ==(GameDate left, GameDate right) {
-            if (left.Equals(right)) { return true; }
-            return false;
+            return left.Equals(right);
         }
 
         public static bool operator !=(GameDate left, GameDate right) {
-            if (left.Equals(right)) { return false; }
-            return true;
+            return !left.Equals(right);
         }
 
         #endregion
 
-        public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
-        public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
-        public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
-        public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
-        public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
+        public static GameDate GameStartDate = new GameDate(Constants.Zero, Constants.Zero, GameTime.GameStartYear);    // 2700.000.00
+        public static GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - 1, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19
 
-        public static GameDate GameStartDate;
-        public static GameDate GameEndDate;
-
-        static GameDate() {
-            GameStartDate = new GameDate(Constants.Zero, Constants.One, GameStartYear);
-            GameEndDate = new GameDate(HoursPerDay - 1, DaysPerYear - 1, GameEndYear);
-        }
+        // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
         public int HourOfDay { get; private set; }
-
         public int DayOfYear { get; private set; }
-
         public int Year { get; private set; }
 
         /// <summary>
-        /// Current date Copy Constructor. Initializes a new instance of the <see cref="GameDate"/> class
-        /// set to the same values as the current date. Useful when you want to capture the current date values
-        /// without using the same instance as GameTime.Date (whose values are always current.)
+        /// Initializes a new instance of the <see cref="GameDate"/> struct whose values
+        /// are set to the future that is <c>timeFromCurrentDate</c> from the CurrentDate.
         /// </summary>
-        public GameDate() : this(GameTime.Date) { }
+        /// <param name="timeFromCurrentDate">The time from current date. Cannot be the default (0.0.0).</param>
+        public GameDate(GameTimeDuration timeFromCurrentDate)
+            : this() {
+            // If timeFromCurrentDate is the default (0.0.0), this constructs a GameDate that is identical to CurrentDate. 
+            // As CurrentDate has already changed, the next time onCurrentDateChanged will be raised will be CurrentDate + 1 hour. 
+            // Therefore this constructed GameDate can never be matched to a date delivered by onCurrentDateChanged
+            D.Assert(timeFromCurrentDate != default(GameTimeDuration));
+
+            GameDate currentDate = GameTime.Instance.CurrentDate;
+            int futureYear = currentDate.Year + timeFromCurrentDate.Years;
+            int futureDay = currentDate.DayOfYear + timeFromCurrentDate.Days;
+            if (futureDay >= GameTime.DaysPerYear) {
+                futureYear++;
+                futureDay = futureDay % GameTime.DaysPerYear;
+            }
+            int futureHour = currentDate.HourOfDay + timeFromCurrentDate.Hours;
+            if (futureHour >= GameTime.HoursPerDay) {
+                futureDay++;
+                futureHour = futureHour % GameTime.HoursPerDay;
+                if (futureDay == GameTime.DaysPerYear) {
+                    futureYear++;
+                    futureDay = 0;
+                }
+            }
+            HourOfDay = futureHour;
+            DayOfYear = futureDay;
+            Year = futureYear;
+        }
 
         /// <summary>
-        /// Copy Constructor. Initializes a new instance of the <see cref="GameDate"/> class 
-        /// set to the same values as the provided date.
-        /// </summary>
-        /// <param name="dateToCopy">The date to copy.</param>
-        public GameDate(GameDate dateToCopy) : this(dateToCopy.HourOfDay, dateToCopy.DayOfYear, dateToCopy.Year) { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GameDate"/> class.
+        /// Initializes a new instance of the <see cref="GameDate"/> struct.
         /// </summary>
         /// <param name="dayOfYear">The day of year.</param>
         /// <param name="year">The year.</param>
         public GameDate(int dayOfYear, int year) : this(Constants.Zero, dayOfYear, year) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GameDate"/> class.
+        /// Initializes a new instance of the <see cref="GameDate"/> struct.
         /// </summary>
         /// <param name="hourOfDay">The hour of day.</param>
         /// <param name="dayOfYear">The day of year.</param>
         /// <param name="year">The year.</param>
-        public GameDate(int hourOfDay, int dayOfYear, int year) {
-            Arguments.ValidateForRange(hourOfDay, Constants.Zero, HoursPerDay - 1);
-            Arguments.ValidateForRange(dayOfYear, Constants.One, DaysPerYear);  // UNCLEAR is this range correct?
-            Arguments.ValidateForRange(year, GameStartYear, GameEndYear);
+        public GameDate(int hourOfDay, int dayOfYear, int year)
+            : this() {
+            Utility.ValidateForRange(hourOfDay, Constants.Zero, GameTime.HoursPerDay - 1);
+            Utility.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);  // UNCLEAR is this range correct?
+            Utility.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
             HourOfDay = hourOfDay;
             DayOfYear = dayOfYear;
             Year = year;
         }
 
-        internal void SyncDateToGameClock(float gameClock) {
-            int elapsedHours = Mathf.FloorToInt(gameClock * HoursPerSecond);
-            int elapsedDays = elapsedHours / HoursPerDay;
-            int hoursPerYear = DaysPerYear * HoursPerDay;
-            Year = GameStartYear + Mathf.FloorToInt(elapsedHours / hoursPerYear);
-            DayOfYear = 1 + (elapsedDays % DaysPerYear);
-            HourOfDay = elapsedHours % HoursPerDay;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameDate"/> struct synched to the gameClock value provided.
+        /// </summary>
+        /// <param name="gameClock">The game clock.</param>
+        internal GameDate(float gameClock)
+            : this() {
+            int elapsedHours = Mathf.FloorToInt(gameClock * GameTime.HoursPerSecond);
+            int elapsedDays = elapsedHours / GameTime.HoursPerDay;
+            int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
+            Year = GameTime.GameStartYear + elapsedHours / hoursPerYear;
+            DayOfYear = elapsedDays % GameTime.DaysPerYear;
+            HourOfDay = elapsedHours % GameTime.HoursPerDay;
         }
 
-        #region Equals Override
+        #region Object.Equals and GetHashCode Override
 
-        // Override object.Equals on reference types when you do not want your
-        // reference type to obey reference semantics, as defined by System.Object.
-        // Always override ValueType.Equals for your own Value Types.
-        public override bool Equals(object right) {
-            //TODO the containing class T must extend IEquatable<T>
-            //       
-            // See the full list of guidelines at
-            //   http://go.microsoft.com/fwlink/?LinkID=85237  
-            // and also the guidance for operator== at
-            //   http://go.microsoft.com/fwlink/?LinkId=85238 aka
-            // "Rarely override the operator==() when you create reference types as
-            // the .NET Framework classes expect it to follow reference semantics for
-            // all reference types. Always override the == operator for your own
-            // Value Types. See Effective C#, Item 6.
-
-            // No need to check 'this' for null as the CLR throws an exception before
-            // calling any instance method through a null reference.
-            if (object.ReferenceEquals(right, null)) {
-                return false;
-            }
-
-            if (object.ReferenceEquals(this, right)) {
-                return true;
-            }
-
-            if (this.GetType() != right.GetType()) {
-                return false;
-            }
-
-            // now call IEquatable's Equals
-            return this.Equals(right as GameDate);
+        public override bool Equals(object obj) {
+            if (!(obj is GameDate)) { return false; }
+            return Equals((GameDate)obj);
         }
 
-        // Generally, do not override object.GetHashCode as object's version is reliable
-        // although not efficient. You should override it IFF operator==() is redefined which
-        // is rare. 
-        // You should always override ValueType.GetHashCode and redefine ==() for your
-        // value types. If the value type is used as a hash key, it must be immutable.
-        // See Effective C# Item 7.
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See Page 254, C# 4.0 in a Nutshell.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode() {
-            //TODO: write your implementation of GetHashCode() here
-            return base.GetHashCode();
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + HourOfDay.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + DayOfYear.GetHashCode();
+            hash = hash * 31 + Year.GetHashCode();
+            return hash;
         }
 
         #endregion
@@ -206,12 +194,6 @@ namespace CodeEnv.Master.Zonked {
         #region IEquatable<GameDate> Members
 
         public bool Equals(GameDate other) {
-            //TODO add your equality test here. Call the base class Equals only if the
-            // base class version is not provided by System.Object or System.ValueType
-            // as all that occurs is either a check for reference equality or content equality.
-            if (other == null) {    // the runtime will use this IEquatable Equals implementation directly
-                return false;       // rather than the Object.Equals above, IF the 'other' passed for equivalence testing is of Type T
-            }   // In that case, 'other' must be tested for null as the null test for 'right' in Object.Equals never occurs
             return HourOfDay == other.HourOfDay && DayOfYear == other.DayOfYear && Year == other.Year;
         }
 

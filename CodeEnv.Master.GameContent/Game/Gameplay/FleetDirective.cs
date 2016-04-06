@@ -26,7 +26,8 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Fleets can move to most INavigableTargets including other Units (fleets and bases), Planetoids, Stars, Systems,
         /// Sectors and the UniverseCenter. Diplomatic state with the owner, if any, is not a factor. The speed of the move
-        /// is chosen by Fleet Cmd with the exception of FullSpeedMove below.
+        /// is chosen by Fleet Cmd with the exception of FullSpeedMove below. If the target of the move is IShipOrbitable,
+        /// then the fleet will go into high orbit until it receives another order.
         /// If a system or sector is designated as the move target and the fleet is currently outside of the system/sector, 
         /// the fleet will move to just outside the radius of the system/sector. If the fleet is currently inside the 
         /// system/sector, the fleet will move to the closest patrol point within the system/sector. 
@@ -36,6 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Fleets can move to most INavigableTargets including other Units (fleets and bases), Planetoids, Stars, Systems,
         /// Sectors and the UniverseCenter. Diplomatic state with the owner, if any, is not a factor. The move will occur at FullSpeed.
+        /// If the target of the move is IShipOrbitable, then the fleet will go into high orbit until it receives another order.
         /// If a system or sector is designated as the move target and the fleet is currently outside of the system/sector, 
         /// the fleet will move to just outside the radius of the system/sector. If the fleet is currently inside the 
         /// system/sector, the fleet will move to the closest patrol point within the system/sector. 
@@ -43,10 +45,10 @@ namespace CodeEnv.Master.GameContent {
         FullSpeedMove,
 
         /// <summary>
-        /// Fleets can orbit Bases, Stars, Planets and the UniverseCenter. 
+        /// Fleets can go into close orbit around Bases, Stars, Planets and the UniverseCenter. 
         /// Diplomatic state with the owner, if any, cannot be at war, and with Bases cannot be an enemy.
         /// </summary>
-        Orbit,
+        CloseOrbit,
 
         /// <summary>
         /// Fleets can patrol any IPatrollable target including Bases, Systems, Sectors and the UniverseCenter. 

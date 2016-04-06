@@ -29,8 +29,8 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
 
     private OrbitSimulator _immobileCelestialOrbitSimPrefab;
     private MobileOrbitSimulator _mobileCelestialOrbitSimPrefab;
-    private ShipOrbitSimulator _immobileShipOrbitSimPrefab;
-    private MobileShipOrbitSimulator _mobileShipOrbitSimPrefab;
+    private ShipCloseOrbitSimulator _immobileShipOrbitSimPrefab;
+    private MobileShipCloseOrbitSimulator _mobileShipOrbitSimPrefab;
 
     private GameObject _dynamicObjectsFolderGo;
 
@@ -41,50 +41,50 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     protected sealed override void Initialize() {
         _immobileCelestialOrbitSimPrefab = RequiredPrefabs.Instance.orbitSimulator;
         _mobileCelestialOrbitSimPrefab = RequiredPrefabs.Instance.mobileOrbitSimulator;
-        _immobileShipOrbitSimPrefab = RequiredPrefabs.Instance.shipOrbitSimulator;
-        _mobileShipOrbitSimPrefab = RequiredPrefabs.Instance.mobileShipOrbitSimulator;
+        _immobileShipOrbitSimPrefab = RequiredPrefabs.Instance.shipCloseOrbitSimulator;
+        _mobileShipOrbitSimPrefab = RequiredPrefabs.Instance.mobileShipCloseOrbitSimulator;
 
         _dynamicObjectsFolderGo = DynamicObjectsFolder.Instance.gameObject;
     }
 
     /// <summary>
-    /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitSlot
-    /// and returns the IOrbitSimulator parent created.
-    /// Note: Clients are responsible for positioning the orbitingObject relative to the IOrbitSimulator
-    /// parent by setting its localPosition.
+    /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitData.
     /// </summary>
-    /// <param name="orbitingObject">The orbiting object.</param>
-    /// <param name="orbitSlot">The orbit slot.</param>
-    /// <returns></returns>
-    public IOrbitSimulator InstallCelestialObjectInOrbit(GameObject orbitingObject, CelestialOrbitSlot orbitSlot) {
-        GameObject orbitSimGo;
-        if (orbitSlot.OrbitSimulator == null) {
-            GameObject orbitSimPrefab = orbitSlot.IsOrbitedObjectMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
-            orbitSimGo = UnityUtility.AddChild(orbitSlot.OrbitedObject, orbitSimPrefab);
-            var orbitSim = orbitSimGo.GetSafeComponent<OrbitSimulator>();
-            orbitSim.OrbitSlot = orbitSlot;
-        }
-        else {
-            orbitSimGo = orbitSlot.OrbitSimulator.transform.gameObject;
-            D.Assert(orbitSimGo.transform.childCount == Constants.Zero);
-        }
-        orbitSimGo.name = orbitingObject.name + Constants.Space + typeof(OrbitSimulator).Name;
-        UnityUtility.AttachChildToParent(orbitingObject, orbitSimGo);
-        return orbitSimGo.GetSafeInterface<IOrbitSimulator>();
+    /// <param name="orbitingGo">The orbiting GameObject.</param>
+    /// <param name="orbitData">The orbit slot.</param>
+    public void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData) {
+        GameObject orbitSimPrefab = orbitData.IsOrbitedItemMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
+        GameObject orbitSimGo = UnityUtility.AddChild(orbitData.OrbitedItem, orbitSimPrefab);
+        var orbitSim = orbitSimGo.GetSafeComponent<OrbitSimulator>();
+        orbitSim.OrbitData = orbitData;
+        orbitSimGo.name = orbitingGo.name + Constants.Space + typeof(OrbitSimulator).Name;
+        UnityUtility.AttachChildToParent(orbitingGo, orbitSimGo);
+        orbitingGo.transform.localPosition = GenerateRandomLocalPositionWithinSlot(orbitData);
     }
 
     /// <summary>
-    /// Makes and returns an instance of IShipOrbitSimulator for this ShipOrbitSlot.
+    /// Generates a random local position within the orbit slot at <c>MeanDistance</c> from the body orbited.
+    /// Use to set the local position of the orbiting object once attached to the orbiter.
     /// </summary>
-    /// <param name="orbitSlot">The orbit slot.</param>
     /// <returns></returns>
-    public IShipOrbitSimulator MakeShipOrbitSimulatorInstance(ShipOrbitSlot orbitSlot) {
-        D.Assert(orbitSlot.OrbitSimulator == null);
-        GameObject orbitSimPrefab = orbitSlot.IsOrbitedObjectMobile ? _mobileShipOrbitSimPrefab.gameObject : _immobileShipOrbitSimPrefab.gameObject;
-        GameObject orbitSimGo = UnityUtility.AddChild(orbitSlot.OrbitedObject.transform.gameObject, orbitSimPrefab);
-        var orbitSim = orbitSimGo.GetSafeComponent<ShipOrbitSimulator>();
-        orbitSim.OrbitSlot = orbitSlot;
-        orbitSimGo.name = orbitSlot.OrbitedObject.FullName + Constants.Space + typeof(ShipOrbitSlot).Name;  // OPTIMIZE
+    private Vector3 GenerateRandomLocalPositionWithinSlot(OrbitData orbitData) {
+        Vector2 pointOnCircle = RandomExtended.PointOnCircle(orbitData.MeanRadius);
+        return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
+    }
+
+
+    /// <summary>
+    /// Makes and returns an instance of IShipCloseOrbitSimulator for this OrbitData.
+    /// </summary>
+    /// <param name="closeOrbitData">The orbit data.</param>
+    /// <returns></returns>
+    public IShipCloseOrbitSimulator MakeShipCloseOrbitSimulatorInstance(OrbitData closeOrbitData) {
+        GameObject orbitSimPrefab = closeOrbitData.IsOrbitedItemMobile ? _mobileShipOrbitSimPrefab.gameObject : _immobileShipOrbitSimPrefab.gameObject;
+        GameObject orbitSimGo = UnityUtility.AddChild(closeOrbitData.OrbitedItem, orbitSimPrefab);
+        var orbitSim = orbitSimGo.GetSafeComponent<ShipCloseOrbitSimulator>();
+        orbitSim.OrbitData = closeOrbitData;
+        IShipCloseOrbitable closeOrbitableItem = closeOrbitData.OrbitedItem.GetComponent<IShipCloseOrbitable>();
+        orbitSimGo.name = closeOrbitableItem.FullName + Constants.Space + typeof(ShipCloseOrbitSimulator).Name;  // OPTIMIZE
         return orbitSim;
     }
 
@@ -128,6 +128,9 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
 
     /// <summary>
     /// Makes an instance of Ordnance.
+    /// <remarks>Physics.IgnoreCollision below resets the trigger state of each collider, thereby
+    /// generating sequential OnTriggerExit and OnTriggerEnter events in any Monitor in the area.</remarks>
+    /// <see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/>
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="firingElement">The GameObject firing this ordnance.</param>

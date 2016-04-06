@@ -23,10 +23,15 @@ using UnityEngine;
 
 /// <summary>
 /// Detects ships entering/exiting a region of space and notifies them of the Topography change.
+/// <remarks><see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/></remarks>
 /// </summary>
 public class TopographyMonitor : AColliderMonitor {
 
-    public Topography SurroundingTopography { get; set; }   // IMPROVE ParentItem should know about their surrounding topology
+    private Topography _surroundingTopography;  // IMPROVE ParentItem should know about their surrounding topology
+    public Topography SurroundingTopography {
+        get { return _surroundingTopography; }
+        set { SetProperty<Topography>(ref _surroundingTopography, value, "SurroundingTopography"); }
+    }
 
     protected override bool IsTriggerCollider { get { return true; } }
 
@@ -36,11 +41,12 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
+        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerEnter() tripped by {1} while paused.", Name, other.name);
         if (other.isTrigger) {
             return;
         }
-        //D.Log("{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3}.",
-        //ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - transform.position));
+        //D.Log(ShowDebugLog, "{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3:0.##}, RangeDistance = {4:0.##}.",
+        //ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             listener.HandleTopographyChanged(ParentItem.Topography);
@@ -49,11 +55,12 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
+        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerExit() tripped by {1} while paused.", Name, other.name);
         if (other.isTrigger) {
             return;
         }
-        //D.Log("{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3}.",
-        //  ParentItem.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - transform.position));
+        //D.Log(ShowDebugLog, "{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3:0.##}, RangeDistance = {4:0.##}.",
+        //  ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             listener.HandleTopographyChanged(SurroundingTopography);

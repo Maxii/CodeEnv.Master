@@ -54,24 +54,24 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
-        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, SettlementCmdStat cmdStat)
-            : this(cmdTransform, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public SettlementCmdData(ISettlementCmdItem settlementCmd, Player owner, CameraUnitCmdStat cameraStat, SettlementCmdStat cmdStat)
+            : this(settlementCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class.
         /// </summary>
-        /// <param name="cmdTransform">The command transform.</param>
+        /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(Transform cmdTransform, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, SettlementCmdStat cmdStat)
-            : base(cmdTransform, owner, cameraStat, passiveCMs, cmdStat) {
+        public SettlementCmdData(ISettlementCmdItem settlementCmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, SettlementCmdStat cmdStat)
+            : base(settlementCmd, owner, cameraStat, passiveCMs, cmdStat) {
             Population = cmdStat.Population;
         }
 

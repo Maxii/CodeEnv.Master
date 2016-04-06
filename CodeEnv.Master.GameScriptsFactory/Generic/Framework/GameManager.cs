@@ -86,18 +86,34 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public event EventHandler newGameBuilding;
 
-    public Scene GameScene { get; private set; }
+    private Scene _gameScene;
+    public Scene GameScene {
+        get { return _gameScene; }
+        private set { SetProperty<Scene>(ref _gameScene, value, "GameScene"); }
+    }
 
-    public Scene LobbyScene { get; private set; }
+    private Scene _lobbyScene;
+    public Scene LobbyScene {
+        get { return _lobbyScene; }
+        private set { SetProperty<Scene>(ref _lobbyScene, value, "LobbyScene"); }
+    }
 
-    public GameSettings GameSettings { get; private set; }
+    private GameSettings _gameSettings;
+    public GameSettings GameSettings {
+        get { return _gameSettings; }
+        private set { SetProperty<GameSettings>(ref _gameSettings, value, "GameSettings"); }
+    }
 
-    public bool IsSceneLoading { get; private set; }
+    private bool _isSceneLoading;
+    public bool IsSceneLoading {
+        get { return _isSceneLoading; }
+        private set { SetProperty<bool>(ref _isSceneLoading, value, "IsSceneLoading"); }
+    }
 
     private bool _isPaused;
     public bool IsPaused {
         get { return _isPaused; }
-        set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
+        private set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
     }
 
     public IList<Player> AllPlayers { get; private set; }
@@ -146,15 +162,23 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         protected set { base.CurrentState = value; }
     }
 
+    private PlayersDesigns _playersDesigns;
     /// <summary>
     /// A collection of Element Designs for each player.
     /// </summary>
-    public PlayersDesigns PlayersDesigns { get; private set; }
+    public PlayersDesigns PlayersDesigns {
+        get { return _playersDesigns; }
+        set { SetProperty<PlayersDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
+    }
 
+    private PlayersKnowledge _playersKnowledge;
     /// <summary>
     /// A collection of PlayerKnowledge instances, one for each player.
     /// </summary>
-    public PlayersKnowledge PlayersKnowledge { get; private set; }
+    public PlayersKnowledge PlayersKnowledge {
+        get { return _playersKnowledge; }
+        private set { SetProperty<PlayersKnowledge>(ref _playersKnowledge, value, "PlayersKnowledge"); }
+    }
 
     /// <summary>
     /// The User's PlayerKnowledge instance.
@@ -228,7 +252,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         // HACK initialize this utility so its static methods are ready when accessed
         var dummy3 = WaitJobUtility.Instance;
 #pragma warning restore 0168
-        UpdateRate = FrameUpdateFrequency.Infrequent;
+        UpdateRate = FrameUpdateFrequency.Continuous;
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
     }
 
@@ -308,6 +332,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void StartGameStateProgressionReadinessChecks() {
+        D.Assert(!IsPaused);
         //D.Log("{0}_{1} is preparing to start GameState Progression System Readiness Checks.", GetType().Name, InstanceCount);
         __ValidateGameStateProgressionReadinessSystemState();
         __progressCheckJob = new Job(AssessReadinessToProgressGameState(), toStart: true, jobCompleted: (wasJobKilled) => {
@@ -351,7 +376,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         //D.Log("{0}.GameStateProgressionSystem time waiting = {1}.", GetType().Name, Time.time - startTime);
         if (Time.time - startTime > 5F) {
             __progressCheckJob.Kill();
-            __progressCheckJob = null;
         }
     }
 

@@ -27,23 +27,23 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ItemHudManager : IDisposable {
 
-        public bool IsHudShowing { get { return _hudJob != null && _hudJob.IsRunning; } }
+        public bool IsHudShowing { get { return IsHudRefreshJobRunning; } }
 
-        private float _hudRefreshRate;  // OPTIMIZE use static event to change?
+        private bool IsHudRefreshJobRunning { get { return _hudRefreshJob != null && _hudRefreshJob.IsRunning; } }
+
+        /// <summary>
+        /// The number of hours between refreshes of the HUD.
+        /// </summary>
+        private float _hudRefreshPeriod;
         private APublisher _publisher;
-        private Job _hudJob;
-        private IList<IDisposable> _subscriptions;
+        private Job _hudRefreshJob;
 
         public ItemHudManager(APublisher publisher) {
             _publisher = publisher;
-            _hudRefreshRate = GeneralSettings.Instance.HudRefreshRate;
-            Subscribe();
+            _hudRefreshPeriod = GeneralSettings.Instance.HudRefreshPeriod;
         }
 
-        private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangingHandler));
-        }
+        // Note: Not pausing _hudRefreshJob when paused as I want to be able to look at item status while paused
 
         public void ShowHud() {
             Show(true);
@@ -55,51 +55,36 @@ namespace CodeEnv.Master.GameContent {
 
         private void Show(bool toShow) {
             if (toShow) {
-                if (_hudJob == null || !_hudJob.IsRunning) {
-                    _hudJob = new Job(RefreshHudContent(), toStart: true, jobCompleted: (wasKilled) => {
-                        //D.Log("{0} ShowHUD Job {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
+                if (!IsHudRefreshJobRunning) {
+                    _hudRefreshJob = new Job(RefreshHudContent(), toStart: true, jobCompleted: (wasKilled) => {
+                        //D.Log("{0} HudRefreshJob {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
                     });
                 }
             }
             else {
-                if (_hudJob != null && _hudJob.IsRunning) {
-                    _hudJob.Kill();
-                    _hudJob = null;
+                if (IsHudRefreshJobRunning) {
+                    _hudRefreshJob.Kill();
                 }
                 References.HoveredItemHudWindow.Hide();
             }
         }
 
-        #region Event and Property Change Handlers
-
-        private void GameSpeedPropChangingHandler(GameSpeed newSpeed) { // OPTIMIZE use static event?
-            //D.Log("{0}.GameSpeedPropChangingHandler() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetValueName(), newSpeed.GetValueName());
-            float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
-            float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
-            _hudRefreshRate *= speedChangeRatio;
-        }
-
-        #endregion
-
         private IEnumerator RefreshHudContent() {
             var itemHud = References.HoveredItemHudWindow;
             while (true) {
                 itemHud.Show(_publisher.ItemHudText);
-                //yield return null;  // hud instantly follows mouse
-                yield return new WaitForSeconds(_hudRefreshRate);
+                yield return new WaitForHours(_hudRefreshPeriod);
             }
         }
+
+        #region Event and Property Change Handlers
+
+        #endregion
 
         private void Cleanup() {
-            if (_hudJob != null) {
-                _hudJob.Dispose();
+            if (_hudRefreshJob != null) {
+                _hudRefreshJob.Dispose();
             }
-            Unsubscribe();
-        }
-
-        private void Unsubscribe() {
-            _subscriptions.ForAll<IDisposable>(s => s.Dispose());
-            _subscriptions.Clear();
         }
 
         public override string ToString() {

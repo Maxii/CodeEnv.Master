@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -36,8 +37,17 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         get { return _parentSystem; }
         set {
             D.Assert(_parentSystem == null);  // only happens once
-            _parentSystem = value;
-            ParentSystemPropSetHandler();
+            SetProperty<SystemItem>(ref _parentSystem, value, "ParentSystem", ParentSystemPropSetHandler);
+        }
+    }
+
+    private IOrbitSimulator _celestialOrbitSimulator;
+    public IOrbitSimulator CelestialOrbitSimulator {
+        get {
+            if (_celestialOrbitSimulator == null) {
+                _celestialOrbitSimulator = transform.parent.GetComponent<IOrbitSimulator>();
+            }
+            return _celestialOrbitSimulator;
         }
     }
 
@@ -86,6 +96,10 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         RemoveSettlementFromSystem();
     }
 
+    protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
+        shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
+    }
+
     #region Event and Property Change Handlers
 
     private void ParentSystemPropSetHandler() {
@@ -104,7 +118,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     #region INavigableTarget Members
 
-    public override bool IsMobile { get { return ParentSystem.SettlementOrbitSlot.ToOrbit; } }
+    public override bool IsMobile { get { return ParentSystem.SettlementOrbitData.ToOrbit; } }
 
     #endregion
 

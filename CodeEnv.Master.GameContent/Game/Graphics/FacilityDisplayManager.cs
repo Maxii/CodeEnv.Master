@@ -35,14 +35,14 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
-            _revolver.enabled = false;
-            D.Warn(_revolver.RotateDuringPause, "{0} revolver set to rotate during a pause.", Name);
+            //_revolver.IsActivated = false;    // enabled = false in Awake
+            D.Warn(_revolver.RotateDuringPause, "FYI. {0} revolver set to rotate during a pause.", Name);
             //TODO Revolver settings
         }
 
         protected override void AssessComponentsToShowOrOperate() {
             base.AssessComponentsToShowOrOperate();
-            _revolver.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
+            _revolver.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
         }
 
         public override string ToString() {

@@ -734,15 +734,15 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             //Get the result of the yield
                             var result = _enumerator.Current;   // the return value of the yield
                             //Check if it is a coroutine
-                            if (result is IEnumerator) {    // aka the yield wants to wait until another coroutine completes
-                                D.Warn("{0} CodeBlock is IEnumerator. State: {1}.", Name, ApplicableStateName); // warn as currently don't use
+                            if (result is IEnumerator) {    // wait until another coroutine completes, eg. CustomYieldInstruction
+                                //D.Log(ShowDebugLog, "{0} CodeBlock is IEnumerator. State: {1}.", Name, ApplicableStateName); 
                                 //Push the current coroutine and execute the new one
                                 _stack.Push(_enumerator);
                                 _enumerator = result as IEnumerator;
                                 yield return null;
                             }
                             //Check if it is a yield instruction
-                            else if (result is YieldInstruction) {  // a YieldInstruction is the parent of the WaitFor... classes
+                            else if (result is YieldInstruction) {  // a YieldInstruction is the parent of the built in WaitFor... classes
                                 //D.Log(ShowDebugLog, "{0} CodeBlock is YieldInstruction. State: {1}.", Name, ApplicableStateName); 
                                 //To be able to interrupt yield instructions we need to run them as a separate coroutine and wait for them
                                 _stack.Push(_enumerator);
@@ -775,7 +775,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             else {
                                 //Ensure we don't use this enumerator again
 
-                                //if (_enumerator != enm) {   // D doesn't like this inside method as _fsm.CurrentState or LastState starts out null
+                                //if (_enumerator != enm) { 
                                 //    D.Error("{0} attempting to null _enumerator that has changed. ApplicableState: {1}, _enumerator is null: {2}, enm is null: {3}, CurrentState: {4}, LastState: {5}.",
                                 //    Name, ApplicableStateName, _enumerator == null, enm == null, _fsm.CurrentState.ToString(), _fsm.LastState.ToString());
                                 //}

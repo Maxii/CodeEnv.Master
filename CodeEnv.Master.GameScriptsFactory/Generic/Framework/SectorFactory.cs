@@ -27,6 +27,8 @@ using UnityEngine;
 public class SectorFactory : AGenericSingleton<SectorFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
+    private const string SectorNameFormat = "Sector {0}";
+
     private GameObject _sectorPrefab;
 
     private SectorFactory() {
@@ -42,7 +44,8 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
         // sector.Awake() runs immediately here, then disables itself
         SectorItem sector = sectorGO.GetSafeComponent<SectorItem>();
 
-        SectorData data = new SectorData(sector.transform, sectorIndex) {
+        sector.Name = SectorNameFormat.Inject(sectorIndex);
+        SectorData data = new SectorData(sector, sectorIndex) {
             //Density = 1F  the concept of space density is now attached to Topography, not Sectors. Density is relative and affects only drag
         };
         sector.Data = data;

@@ -71,7 +71,16 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     }
 
     public void SetTarget(IHighlightable target, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
+        var previousMortalTarget = _target as AMortalItem;
+        if (previousMortalTarget != null) {
+            previousMortalTarget.deathOneShot -= TargetDeathEventHandler;
+        }
         _target = target;
+        var mortalTarget = target as AMortalItem;
+        if (mortalTarget != null) {
+            mortalTarget.deathOneShot += TargetDeathEventHandler;
+        }
+
         if (_enableTrackingLabel && _trackingLabel == null) {
             _trackingLabel = InitializeTrackingLabel();
         }
@@ -127,9 +136,21 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         //D.Log("{0}: Position = {1}.", GetType().Name, transform.position);
     }
 
+    #region Event and Property Change Handlers
+
+    private void TargetDeathEventHandler(object sender, EventArgs e) {
+        var deadTarget = sender as AMortalItem;
+        //D.Log("{0}.TargetDeathEventHandler called. DeadTarget: {1}.", GetType().Name, deadTarget.FullName);
+        D.Assert((_target as AMortalItem) == deadTarget);
+        _target = null;
+        Show(false);
+    }
+
+    #endregion
+
     protected override void Cleanup() {
         References.SphericalHighlight = null;
-        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
     public override string ToString() {

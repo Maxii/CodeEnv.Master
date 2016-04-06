@@ -108,7 +108,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <returns></returns>
     private bool TryPopulateItemSubMenu_UserMenuOperatorIsSelected(CtxMenu.Item topLevelItem, T directive) {
         IEnumerable<INavigableTarget> targets;
-        bool isSubmenuSupported = TryGetSubMenuUnitTargets_MenuOperatorIsSelected(directive, out targets);
+        bool isSubmenuSupported = TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out targets);
         if (isSubmenuSupported) {
             // directive requires a submenu, although targets maybe empty
             var targetsStack = new Stack<INavigableTarget>(targets);
@@ -150,7 +150,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
-    protected virtual bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(T directive, out IEnumerable<INavigableTarget> targets) {
+    protected virtual bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(T directive, out IEnumerable<INavigableTarget> targets) {
         targets = Enumerable.Empty<INavigableTarget>();
         return false;
     }

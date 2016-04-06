@@ -52,11 +52,15 @@ namespace CodeEnv.Master.GameContent {
             protected set { SetProperty<bool>(ref _isPrimaryMeshInMainCameraLOS, value, "IsPrimaryMeshInMainCameraLOS", IsPrimaryMeshInMainCameraLosPropChangedHandler); }
         }
 
+        private bool _isDisplayEnabled;
         /// <summary>
         /// Indicates whether the DisplayMgr is allowed to display material on the screen.
         /// True or false, InCameraLOS continues to operate.
         /// </summary>
-        public bool IsDisplayEnabled { get; protected set; }
+        public bool IsDisplayEnabled {
+            get { return _isDisplayEnabled; }
+            protected set { SetProperty<bool>(ref _isDisplayEnabled, value, "IsDisplayEnabled"); }
+        }
 
         protected MeshRenderer _primaryMeshRenderer;
         private bool __isPrimaryMeshShowing;
@@ -98,6 +102,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!(toEnable && isDead));    // should never both be true
             if (IsDisplayEnabled != toEnable) {
                 IsDisplayEnabled = toEnable;
+                D.Log("{0}.IsDisplayEnabled changed.", GetType().Name);
                 IsDisplayEnabledPropChangedHandler();
             }
             if (isDead) { _primaryMeshRenderer.enabled = false; }

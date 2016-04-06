@@ -149,6 +149,17 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public const float FloatEqualityPrecision = .0001F;
 
+        /// <summary>
+        /// The finest precision allowed for use in determining angle equality.
+        /// This is due to floating point precision limitations within Unity which
+        /// uses Quaternions for rotations, even when the rotations are expressed
+        /// using Vector3 directions as Unity uses Quaternions internally for all
+        /// rotations.
+        /// <remarks>http://answers.unity3d.com/questions/1036566/quaternionangle-is-inaccurate.html#answer-1162822 
+        /// </remarks>
+        /// </summary>
+        public const float AngleEqualityPrecision = 0.04F;
+
     }
 }
 

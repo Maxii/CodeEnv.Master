@@ -32,7 +32,7 @@ public class UniverseCenterCtxControl : ACtxControl {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
-                                                                                        FleetDirective.Orbit,
+                                                                                        FleetDirective.CloseOrbit,
                                                                                         FleetDirective.Explore};
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -75,8 +75,8 @@ public class UniverseCenterCtxControl : ACtxControl {
             case FleetDirective.Explore:
                 var explorableUCenter = _universeCenterMenuOperator as IFleetExplorable;
                 return explorableUCenter.IsFullyExploredBy(_user) || !explorableUCenter.IsExploringAllowedBy(_user);
-            case FleetDirective.Orbit:
-                return !(_universeCenterMenuOperator as IShipOrbitable).IsOrbitingAllowedBy(_user);
+            case FleetDirective.CloseOrbit:
+                return !(_universeCenterMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

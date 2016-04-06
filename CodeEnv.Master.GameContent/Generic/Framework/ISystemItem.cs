@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISystemItem : IDiscernibleItem {
 
+        IList<IPlanetItem> Planets { get; }
+
         SystemReport GetUserReport();
 
         SystemReport GetReport(Player player);
@@ -33,6 +35,9 @@ namespace CodeEnv.Master.GameContent {
         StarReport GetStarReport(Player player);
 
         PlanetoidReport[] GetPlanetoidReports(Player player);
+
+        void RemovePlanetoid(IPlanetoidItem planetoid);
+
     }
 }
 

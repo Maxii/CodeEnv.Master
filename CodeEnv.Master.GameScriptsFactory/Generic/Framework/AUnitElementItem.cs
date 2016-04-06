@@ -28,6 +28,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IElementAttackableTarget, ISensorDetectable {
 
+    private const string __HQNameAddendum = "[HQ]";
+
     public event EventHandler isHQChanged;
 
     /// <summary>
@@ -49,9 +51,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
-    public bool IsHQ { get { return Data.IsHQ; } }
+    private bool _isHQ;
+    public bool IsHQ {
+        get { return _isHQ; }
+        set { SetProperty<bool>(ref _isHQ, value, "IsHQ", IsHQPropChangedHandler); }
+    }
 
-    public IUnitCmdItem Command { get; set; }
+    private IUnitCmdItem _command;
+    public IUnitCmdItem Command {
+        get { return _command; }
+        set { SetProperty<IUnitCmdItem>(ref _command, value, "Command"); }
+    }
 
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
 
@@ -60,7 +70,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected IList<IShield> _shields = new List<IShield>();
     protected Rigidbody _rigidbody;
     protected PlayerKnowledge _ownerKnowledge;
-
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
@@ -90,7 +99,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected virtual void InitializePrimaryRigidbody() {
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _rigidbody.useGravity = false;
-        _rigidbody.isKinematic = true;  // avoid physics affects until CommenceOperations, if at all
+        // Note: if physics is allowed to induce rotation, then ChangeHeading behaves unpredictably when HQ, 
+        // presumably because Cmd is attached to HQ with a fixed joint?
+        _rigidbody.freezeRotation = true;   // covers both Ship and Facility for when I put Facility under physics control
+        _rigidbody.isKinematic = true;      // avoid physics affects until CommenceOperations, if at all
     }
 
     private void AttachEquipment() {
@@ -102,7 +114,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitElementItemData, bool>(data => data.IsHQ, IsHQPropChangedHandler));
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
     }
 
@@ -132,6 +143,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected override void FinalInitialize() {
         base.FinalInitialize();
         _ownerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(Owner);
+        _rigidbody.isKinematic = false;
     }
 
     #endregion
@@ -166,14 +178,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     /// <summary>
-    /// Overridden to assign Command as the focus to replace it. 
+    /// Assigns its Command as the focus to replace it. 
     /// <remarks>If the last element to die then Command will shortly die 
     /// after HandleSubordinateElementDeath() called. This in turn
     /// will null the MainCameraControl.CurrentFocus property.
     /// </remarks>
     /// </summary>
-    protected override void HandleDeathWhileIsFocus() {
-        D.Assert(IsFocus);
+    protected override void AssignAlternativeFocusOnDeath() {
+        base.AssignAlternativeFocusOnDeath();
         (Command as ICameraFocusable).IsFocus = true;
     }
 
@@ -263,7 +275,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         bool isMsgReceived = UponWeaponReadyToFire(firingSolutions);
         if (!isMsgReceived) {
             // element in state that doesn't deal with firing weapons
-            var weapon = firingSolutions.First().Weapon;
+            var weapon = firingSolutions.First().Weapon;    // all the same weapon
             weapon.HandleElementDeclinedToFire();
         }
     }
@@ -463,9 +475,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         ShowHighlights(HighlightID.None);
     }
 
+    private void HandleLosWeaponAimed(LosWeaponFiringSolution firingSolution) {
+        var target = firingSolution.EnemyTarget;
+        var losWeapon = firingSolution.Weapon;
+        D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
+        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
+            LaunchOrdnance(losWeapon, target);
+        }
+        else {
+            // target moved out of range, died or changed diplo during aiming process
+            losWeapon.HandleElementDeclinedToFire();
+        }
+        losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
+    }
+
     #region Event and Property Change Handlers
 
     protected virtual void IsHQPropChangedHandler() {
+        Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
         OnIsHQChanged();
     }
 
@@ -489,17 +516,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     private void LosWeaponAimedEventHandler(object sender, ALOSWeapon.LosWeaponFiringSolutionEventArgs e) {
-        var firingSolution = e.FiringSolution;
-        var target = firingSolution.EnemyTarget;
-        var losWeapon = firingSolution.Weapon;
-        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
-            LaunchOrdnance(losWeapon, target);
-        }
-        else {
-            // target moved out of range, died or changed diplo during aiming process
-            losWeapon.HandleElementDeclinedToFire();
-        }
-        losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
+        HandleLosWeaponAimed(e.FiringSolution);
     }
 
     protected override void IsVisualDetailDiscernibleToUserPropChangedHandler() {
@@ -516,11 +533,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected override void HandleLeftDoubleClick() {
         base.HandleLeftDoubleClick();
         Command.IsSelected = true;
-    }
-
-    protected override void OnCollisionEnter(Collision collision) {
-        base.OnCollisionEnter(collision);
-        D.Log(ShowDebugLog, "{0}.OnCollisionEnter() called. Colliding object = {1}.", FullName, collision.collider.name);
     }
 
     #endregion
@@ -608,11 +620,25 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
-    #region Debug
+    #region Debug Collision Reporting
+
+    protected void __ReportCollision(Collision collision) {
+        SphereCollider sphereCollider = collision.collider as SphereCollider;
+        BoxCollider boxCollider = collision.collider as BoxCollider;
+        string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
+        D.Log(ShowDebugLog, "While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
+            CurrentState.ToString(), FullName, collision.collider.name, colliderSizeMsg, _rigidbody.velocity.ToPreciseString());
+        //D.Log(ShowDebugLog, "{0}: Detail on collision - Distance between collider centers = {1:0.##}", FullName, Vector3.Distance(Position, collision.collider.transform.position));
+        // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+    }
 
     #endregion
 
     #region IElementAttackableTarget Members
+
+    public bool IsAttackingAllowedBy(Player player) {
+        return Owner.IsEnemyOf(player);
+    }
 
     /// <summary>
     /// Called by the ordnanceFired to notify its target of the launch
@@ -638,7 +664,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     public override void TakeHit(DamageStrength damagePotential) {
-        if (DebugSettings.Instance.AllPlayersInvulnerable) {
+        if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
         D.Assert(IsOperational);

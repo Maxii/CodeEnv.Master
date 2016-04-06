@@ -77,7 +77,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !_user.IsEnemyOf(_fleetMenuOperator.Owner);
+                return !(_fleetMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
@@ -89,7 +89,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Attack:
-                return !_user.IsEnemyOf(_fleetMenuOperator.Owner);
+                return !(_fleetMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

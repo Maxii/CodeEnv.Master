@@ -24,9 +24,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AEquipment : APropertyChangeTracking {
 
-        public event EventHandler<EventArgs> isOperationalChanged;
+        public event EventHandler isOperationalChanged;
 
-        public event EventHandler<EventArgs> isDamagedChanged;
+        public event EventHandler isDamagedChanged;
 
         public virtual string Name { get; private set; }
 

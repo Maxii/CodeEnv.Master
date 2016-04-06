@@ -25,6 +25,7 @@ using UnityEngine;
 
 /// <summary>
 /// Detects ISensorDetectable Items that enter and exit the range of its sensors and notifies each with an HandleDetectionBy() or HandleDetectionLostBy() event.
+/// <remarks><see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/></remarks>
 /// </summary>
 public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sensor>, ISensorRangeMonitor {
 
@@ -36,7 +37,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     public new IUnitCmdItem ParentItem {
         get { return base.ParentItem as IUnitCmdItem; }
-        set { base.ParentItem = value as AMortalItem; }
+        set { base.ParentItem = value as IUnitCmdItem; }
     }
 
     /// <summary>
@@ -83,7 +84,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         if (mortalItem != null) {
             mortalItem.deathOneShot += DetectedItemDeathEventHandler;
             var attackableTarget = mortalItem as IElementAttackableTarget;
-            if (attackableTarget != null && attackableTarget.Owner.IsEnemyOf(Owner)) {
+            if (attackableTarget != null && attackableTarget.IsAttackingAllowedBy(Owner)) {
                 AddEnemy(attackableTarget);
             }
         }
@@ -97,7 +98,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
             mortalItem.deathOneShot -= DetectedItemDeathEventHandler;
             //D.Log(ShowDebugLog, "{0} removed {1} death subscription.", Name, mortalItem.FullName);
             var enemyTarget = mortalItem as IElementAttackableTarget;
-            if (enemyTarget != null && enemyTarget.Owner.IsEnemyOf(Owner)) {
+            if (enemyTarget != null && enemyTarget.IsAttackingAllowedBy(Owner)) {
                 RemoveEnemy(enemyTarget);
             }
         }
@@ -120,7 +121,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         var target = alreadyTrackedDetectableItem as IElementAttackableTarget;
         if (target != null) {
             // an attackable target with an owner
-            if (target.Owner.IsEnemyOf(Owner)) {
+            if (target.IsAttackingAllowedBy(Owner)) {
                 // an enemy
                 if (!AttackableEnemyTargetsDetected.Contains(target)) {
                     AddEnemy(target);

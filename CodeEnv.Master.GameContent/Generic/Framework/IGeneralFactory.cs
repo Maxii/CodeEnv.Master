@@ -24,24 +24,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IGeneralFactory {
 
-
         /// <summary>
-        /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitSlot
-        /// and returns the IOrbitSimulator parent created.
-        /// Note: Clients are responsible for positioning the orbitingObject relative to the IOrbitSimulator
-        /// parent by setting its localPosition.
+        /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitSlot.
         /// </summary>
         /// <param name="orbitingObject">The orbiting object.</param>
-        /// <param name="orbitSlot">The orbit slot.</param>
-        /// <returns></returns>
-        IOrbitSimulator InstallCelestialObjectInOrbit(GameObject orbitingObject, CelestialOrbitSlot orbitSlot);
+        /// <param name="orbitData">The orbit slot.</param>
+        void InstallCelestialItemInOrbit(GameObject orbitingObject, OrbitData orbitData);
 
         /// <summary>
         /// Makes and returns an instance of IShipOrbitSimulator for this ShipOrbitSlot.
         /// </summary>
-        /// <param name="orbitSlot">The orbit slot.</param>
+        /// <param name="orbitData">The orbit slot.</param>
         /// <returns></returns>
-        IShipOrbitSimulator MakeShipOrbitSimulatorInstance(ShipOrbitSlot orbitSlot);
+        IShipCloseOrbitSimulator MakeShipCloseOrbitSimulatorInstance(OrbitData orbitData);
 
         /// <summary>
         /// Makes an instance of an explosion, scaled to work with the item it is being applied too.

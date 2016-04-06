@@ -27,10 +27,14 @@ using UnityEngine;
 /// </summary>
 public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
+    private bool _isShowing;
     /// <summary>
     /// Indicates whether this <see cref="ATrackingWidget" /> is currently showing. 
     /// </summary>
-    public bool IsShowing { get; private set; }
+    public bool IsShowing {
+        get { return _isShowing; }
+        private set { SetProperty<bool>(ref _isShowing, value, "IsShowing"); }
+    }
 
     private string _optionalRootName;
     /// <summary>

@@ -77,7 +77,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_MenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableTarget> targets) {
         switch (directive) {
             case ShipDirective.Join:
                 targets = _userKnowledge.MyFleets.Except(_shipMenuOperator.Command).Cast<INavigableTarget>();

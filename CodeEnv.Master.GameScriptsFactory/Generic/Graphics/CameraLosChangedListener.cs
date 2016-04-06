@@ -43,7 +43,11 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// </summary>
     public event EventHandler inCameraLosChanged;
 
-    public bool InCameraLOS { get; private set; }
+    private bool _inCameraLOS;
+    public bool InCameraLOS {
+        get { return _inCameraLOS; }
+        private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS"); }
+    }
 
     protected override void Awake() {
         base.Awake();

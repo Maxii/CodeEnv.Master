@@ -53,6 +53,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsVisualDetailDiscernibleToUser { get; }
 
+        bool IsAttackingAllowedBy(Player player);
+
     }
 }
 

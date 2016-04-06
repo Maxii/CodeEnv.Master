@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public const float ShipOrbitSlotDepth = 1F;
+        public const float ShipCloseOrbitSlotDepth = 1F;
 
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.

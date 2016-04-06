@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMobileShipOrbitSimulator.cs
-// Interface for easy access to MobileShipOrbitSimulator instances.
+// File: IMobileShipCloseOrbitSimulator.cs
+// Interface for easy access to MobileShipCloseOrbitSimulator instances.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,10 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for easy access to MobileShipOrbitSimulator instances.
+    /// Interface for easy access to MobileShipCloseOrbitSimulator instances.
     /// </summary>
-    public interface IMobileShipOrbitSimulator : IShipOrbitSimulator {
+    public interface IMobileShipCloseOrbitSimulator : IShipCloseOrbitSimulator {
 
+        [System.Obsolete]
         Vector3 DirectionOfTravel { get; }
 
     }

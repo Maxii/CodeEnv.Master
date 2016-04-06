@@ -44,7 +44,11 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isAnyThreatInRange, value, "IsAnyThreatInRange", IsAnyThreatInRangePropChangedHandler); }
         }
 
-        public IActiveCountermeasureRangeMonitor RangeMonitor { get; set; }
+        private IActiveCountermeasureRangeMonitor _rangeMonitor;
+        public IActiveCountermeasureRangeMonitor RangeMonitor {
+            get { return _rangeMonitor; }
+            set { SetProperty<IActiveCountermeasureRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
+        }
 
         public override string FullName {
             get {
@@ -69,15 +73,17 @@ namespace CodeEnv.Master.GameContent {
             get { return RangeMonitor != null ? RangeMonitor.Owner.CountermeasureRangeMultiplier : Constants.OneF; }
         }
 
+        protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
+
+        private bool IsReloadJobRunning { get { return _reloadJob != null && _reloadJob.IsRunning; } }
+
         /// <summary>
         /// The list of IInterceptableOrdnance threats in range that qualify as targets of this countermeasure.
         /// </summary>
         private IList<IInterceptableOrdnance> _qualifiedThreats;
         private bool _isLoaded;
-        private WaitJob _reloadJob;
+        private Job _reloadJob;
         private GameTime _gameTime;
-
-        protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActiveCountermeasure"/> class.
@@ -93,15 +99,15 @@ namespace CodeEnv.Master.GameContent {
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
         /*****************************************************************************************************************************************
-                    * This countermeasure does not need to track Owner changes. When the owner of the item with this countermeasure changes, the countermeasure's 
-                    * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. 
-                    * When the owner of an item detected by this countermeasure changes, the Monitor recategorizes the detectedItem into the right list 
-                    * taking appropriate action as a result.
-                    *****************************************************************************************************************************************/
+        * This countermeasure does not need to track Owner changes. When the owner of the item with this countermeasure changes, the countermeasure's 
+        * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. 
+        * When the owner of an item detected by this countermeasure changes, the Monitor recategorizes the detectedItem into the right list 
+        * taking appropriate action as a result.
+        *****************************************************************************************************************************************/
 
         /**********************************************************************************************************************************************
-                     * ParentDeath Note: No need to track it as the parent element will turn off the activate state of all equipment when it initiates dying.
-                     *********************************************************************************************************************************************/
+        * ParentDeath Note: No need to track it as the parent element will turn off the activate state of all equipment when it initiates dying.
+        *********************************************************************************************************************************************/
 
         /// <summary>
         /// Fires this countermeasure using the provided firingSolution which attempts to intercept an incoming threat.
@@ -169,7 +175,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary> 
         /// <remarks>Note: Done this way to match the way I handled it with Weapons, where
         /// this was a public method called by the fired ordnance.</remarks>
-
         /// <param name="threatFiredOn">The target fired on.</param>
         private void HandleFiringInitiated(IInterceptableOrdnance threatFiredOn) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.Name));
@@ -187,10 +192,7 @@ namespace CodeEnv.Master.GameContent {
         /// some ordnance (beams) didn't complete firing until the beam was terminated.</remarks>
         private void HandleFiringComplete() {
             D.Assert(!_isLoaded);
-            UnityUtility.WaitOneToExecute(onWaitFinished: () => {
-                // give time for _reloadJob to exit before starting another
-                InitiateReloadCycle();
-            });
+            InitiateReloadCycle();
         }
 
         #region Event and Property Change Handlers
@@ -213,7 +215,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 // just lost operational status so kill any reload in process
-                if (_reloadJob != null && _reloadJob.IsRunning) {
+                if (IsReloadJobRunning) {
                     _reloadJob.Kill();
                 }
             }
@@ -238,10 +240,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateReloadCycle() {
             //D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
-            if (_reloadJob != null && _reloadJob.IsRunning) {
-                // UNCLEAR can this happen?
-                D.Warn("{0}.InitiateReloadCycle() called while already Running.", Name);
-            }
+            D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
             _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     HandleReloaded();

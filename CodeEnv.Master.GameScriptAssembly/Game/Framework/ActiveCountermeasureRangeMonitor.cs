@@ -112,7 +112,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     #endregion
 
     private bool ConfirmNotIncoming(IInterceptableOrdnance detectedOrdnance) {
-        var ordnanceHeading = detectedOrdnance.Heading;
+        var ordnanceHeading = detectedOrdnance.CurrentHeading;
         var bearingToOrdnance = detectedOrdnance.Position - transform.position;
         var dot = Vector3.Dot(ordnanceHeading, bearingToOrdnance);
         return dot >= Constants.ZeroF;  // 0 if orthogonal, +epsilon to +1.0 if some direction the same, -epsilon to -1.0 if some direction opposite

@@ -54,9 +54,15 @@ public abstract class AGuiWindow : AMonoBase {
     public bool useFading = true;
     public float fadeDuration = 0.2f;
 
-    public bool IsShowing { get; private set; }
+    private bool _isShowing;
+    public bool IsShowing {
+        get { return _isShowing; }
+        private set { SetProperty<bool>(ref _isShowing, value, "IsShowing"); }
+    }
 
     protected abstract Transform ContentHolder { get; }
+
+    private bool IsFadeJobRunning { get { return _fadeJob != null && _fadeJob.IsRunning; } }
 
     private UIPanel _panel;
     private FadeMode _currentFadeMode = FadeMode.None;
@@ -93,6 +99,8 @@ public abstract class AGuiWindow : AMonoBase {
             IsShowing = true;
         }
     }
+
+    // Note: no pause controls on fadeJob as I want window access while paused
 
     /// <summary>
     /// Show the window.
@@ -147,11 +155,11 @@ public abstract class AGuiWindow : AMonoBase {
 
         if (_currentFadeMode == FadeMode.In) {
             // ignore command if we are already actively fading in
-            D.Assert(_fadeJob != null && _fadeJob.IsRunning);
+            D.Assert(IsFadeJobRunning);
             return;
         }
 
-        if (_fadeJob != null) {
+        if (IsFadeJobRunning) {
             _fadeJob.Kill();
             _currentFadeMode = FadeMode.None;
         }
@@ -169,11 +177,11 @@ public abstract class AGuiWindow : AMonoBase {
 
         if (_currentFadeMode == FadeMode.Out) {
             // ignore command if we are already actively fading out
-            D.Assert(_fadeJob != null && _fadeJob.IsRunning);
+            D.Assert(IsFadeJobRunning);
             return;
         }
 
-        if (_fadeJob != null) {
+        if (IsFadeJobRunning) {
             _fadeJob.Kill();
             _currentFadeMode = FadeMode.None;
         }

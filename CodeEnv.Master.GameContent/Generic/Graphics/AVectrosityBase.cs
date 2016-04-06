@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
         protected bool IsLineActive { get { return _line != null && _line.active; } }
 
         protected VectorLine _line;
+        protected IGameManager _gameMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AVectrosityBase" /> class.
@@ -53,6 +54,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name of the VectorLine.</param>
         public AVectrosityBase(string name) {
             _lineName = name;
+            _gameMgr = References.GameManager;
         }
 
         #region Event and Property Change Handlers

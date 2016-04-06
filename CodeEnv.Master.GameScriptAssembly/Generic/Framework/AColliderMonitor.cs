@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -31,7 +32,7 @@ public abstract class AColliderMonitor : AMonoBase {
     /// Control for enabling/disabling the monitor's collider.
     /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger.
     /// </summary>
-    protected bool IsOperational {
+    public bool IsOperational {
         get { return _collider.enabled; }
         set {
             if (_collider.enabled != value) {
@@ -52,12 +53,12 @@ public abstract class AColliderMonitor : AMonoBase {
         protected set { SetProperty<float>(ref _rangeDistance, value, "RangeDistance", RangeDistancePropChangedHandler); }
     }
 
-    private AItem _parentItem;
-    public AItem ParentItem {
+    private IItem _parentItem;
+    public IItem ParentItem {
         get { return _parentItem; }
         set {
             D.Assert(_parentItem == null);   // should only happen once
-            SetProperty<AItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
+            SetProperty<IItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
         }
     }
 
@@ -78,17 +79,25 @@ public abstract class AColliderMonitor : AMonoBase {
     /// </summary>
     protected abstract bool IsTriggerCollider { get; }
 
+    protected bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
+
     protected SphereCollider _collider;
+    protected IGameManager _gameMgr;
+
+    private IList<IDisposable> _subscriptons;
 
     protected sealed override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
+        Subscribe();
         IsOperational = false;
     }
 
     protected virtual void InitializeValuesAndReferences() {
+        _gameMgr = References.GameManager;
         if (IsKinematicRigidbodyReqd) {
             var rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+            rigidbody.useGravity = false;
             rigidbody.isKinematic = true;
         }
         else {
@@ -101,12 +110,20 @@ public abstract class AColliderMonitor : AMonoBase {
         _collider.enabled = false;
     }
 
+    private void Subscribe() {
+        _subscriptons = new List<IDisposable>();
+        _subscriptons.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+    }
+
+
     #region Event and Property Change Handlers
 
     protected abstract void IsOperationalPropChangedHandler();
 
+    protected virtual void IsPausedPropChangedHandler() { }
+
     protected virtual void RangeDistancePropChangedHandler() {
-        D.Log("{0} had its RangeDistance changed to {1:0.}.", Name, RangeDistance);
+        D.Log(ShowDebugLog, "{0} had its RangeDistance changed to {1:0.}.", Name, RangeDistance);
         _collider.radius = RangeDistance;
     }
 
@@ -125,7 +142,7 @@ public abstract class AColliderMonitor : AMonoBase {
     /// Resets this Monitor in preparation for reuse by the same Parent.
     /// </summary>
     protected virtual void ResetForReuse() {
-        D.Log("{0} is being reset for potential reuse.", Name);
+        D.Log(ShowDebugLog, "{0} is being reset for potential reuse.", Name);
         IsOperational = false;
         RangeDistance = Constants.ZeroF;
         D.Assert(ParentItem != null);
@@ -136,6 +153,8 @@ public abstract class AColliderMonitor : AMonoBase {
     }
 
     protected virtual void Unsubscribe() {
+        _subscriptons.ForAll(s => s.Dispose());
+        _subscriptons.Clear();
         if (ParentItem != null) {
             ParentItem.ownerChanging -= ParentOwnerChangingEventHandler;
             ParentItem.ownerChanged -= ParentOwnerChangedEventHandler;

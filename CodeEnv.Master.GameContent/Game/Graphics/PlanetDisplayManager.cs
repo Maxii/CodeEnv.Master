@@ -69,13 +69,13 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);
             _revolver = itemGo.GetSingleInterfaceInImmediateChildren<IRevolver>();  // avoids moon revolvers
-            _revolver.enabled = false;
+            //_revolver.IsActivated = false;    // enabled = false in Awake
             //TODO Revolver settings
         }
 
         protected override void AssessComponentsToShowOrOperate() {
             base.AssessComponentsToShowOrOperate();
-            _revolver.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
+            _revolver.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
             if (_secondaryMeshRenderers.Any()) {
                 _secondaryMeshRenderers.ForAll(smr => smr.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
             }

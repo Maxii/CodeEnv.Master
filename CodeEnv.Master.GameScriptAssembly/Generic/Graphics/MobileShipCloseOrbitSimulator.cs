@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MobileShipOrbitSimulator.cs
+// File: MobileShipCloseOrbitSimulator.cs
 // Simulates orbiting around a mobile parent of any ships attached by a fixed joint.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,14 +24,15 @@ using UnityEngine;
 /// Simulates orbiting around a mobile parent of any ships attached by a fixed joint.
 /// This is also an INavigableTarget which allows it to be used as a destination by a Ship's AutoPilot.
 /// </summary>
-public class MobileShipOrbitSimulator : ShipOrbitSimulator, IMobileShipOrbitSimulator {
+public class MobileShipCloseOrbitSimulator : ShipCloseOrbitSimulator, IMobileShipCloseOrbitSimulator {
 
     /// <summary>
     /// The worldspace direction of travel of the OrbitedObject around which this simulator is rotating.
     /// </summary>
+    [System.Obsolete]
     public Vector3 DirectionOfTravel {
         get {
-            D.Assert(OrbitSlot.ToOrbit);   // Ships always actively orbit. _previousPosition not valid without it
+            D.Assert(OrbitData.ToOrbit);   // Ships always actively orbit. _previousPosition not valid without it
             return (transform.position - _previousPosition).normalized;
         }
     }
