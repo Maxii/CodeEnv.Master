@@ -161,22 +161,22 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         LogEvent();
         Player fleetOwner = _owner;
         var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
-        IEnumerable<INavigableTarget> moveTgts = fleetOwnerKnowledge.Starbases.Where(sb => !fleetOwner.IsEnemyOf(sb.Owner)).Cast<INavigableTarget>();
+        IEnumerable<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Where(sb => !fleetOwner.IsEnemyOf(sb.Owner)).Cast<IFleetNavigable>();
         if (!moveTgts.Any()) {
             // in case no starbases qualify
-            moveTgts = fleetOwnerKnowledge.Settlements.Where(s => !fleetOwner.IsEnemyOf(s.Owner)).Cast<INavigableTarget>();
+            moveTgts = fleetOwnerKnowledge.Settlements.Where(s => !fleetOwner.IsEnemyOf(s.Owner)).Cast<IFleetNavigable>();
             if (!moveTgts.Any()) {
                 // in case no Settlements qualify
-                moveTgts = fleetOwnerKnowledge.Planets.Where(p => !fleetOwner.IsEnemyOf(p.Owner)).Cast<INavigableTarget>();
+                moveTgts = fleetOwnerKnowledge.Planets.Where(p => !fleetOwner.IsEnemyOf(p.Owner)).Cast<IFleetNavigable>();
                 if (!moveTgts.Any()) {
                     // in case no Planets qualify
-                    moveTgts = fleetOwnerKnowledge.Systems.Where(sys => !fleetOwner.IsEnemyOf(sys.Owner)).Cast<INavigableTarget>();
+                    moveTgts = fleetOwnerKnowledge.Systems.Where(sys => !fleetOwner.IsEnemyOf(sys.Owner)).Cast<IFleetNavigable>();
                     if (!moveTgts.Any()) {
                         // in case no Systems qualify
-                        moveTgts = fleetOwnerKnowledge.Stars.Where(star => star.GetIntelCoverage(fleetOwner) == IntelCoverage.Basic || !fleetOwner.IsEnemyOf(star.Owner)).Cast<INavigableTarget>();
+                        moveTgts = fleetOwnerKnowledge.Stars.Where(star => star.GetIntelCoverage(fleetOwner) == IntelCoverage.Basic || !fleetOwner.IsEnemyOf(star.Owner)).Cast<IFleetNavigable>();
                         if (!moveTgts.Any()) {
                             // in case no Stars qualify
-                            moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
+                            moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>();
                             if (!moveTgts.Any()) {
                                 D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
                                 return;
@@ -187,7 +187,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                 }
             }
         }
-        INavigableTarget destination;
+        IFleetNavigable destination;
         if (findFarthest) {
             destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
         }
@@ -202,17 +202,21 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         LogEvent();
         Player fleetOwner = _owner;
         var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
-        IEnumerable<IUnitAttackableTarget> attackTgts = fleetOwnerKnowledge.Starbases.Cast<IUnitAttackableTarget>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner));
+        IEnumerable<IUnitAttackableTarget> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackableTarget>().Where(f => f.IsAttackingAllowedBy(fleetOwner));
         if (attackTgts.IsNullOrEmpty()) {
-            // in case no Starbases qualify
-            attackTgts = fleetOwnerKnowledge.Settlements.Cast<IUnitAttackableTarget>().Where(s => s.IsAttackingAllowedBy(fleetOwner));
+            // in case no Fleets qualify
+            attackTgts = fleetOwnerKnowledge.Starbases.Cast<IUnitAttackableTarget>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner));
             if (attackTgts.IsNullOrEmpty()) {
-                // in case no Settlements qualify
-                attackTgts = fleetOwnerKnowledge.Planets.Cast<IUnitAttackableTarget>().Where(p => p.IsAttackingAllowedBy(fleetOwner));
+                // in case no Starbases qualify
+                attackTgts = fleetOwnerKnowledge.Settlements.Cast<IUnitAttackableTarget>().Where(s => s.IsAttackingAllowedBy(fleetOwner));
                 if (attackTgts.IsNullOrEmpty()) {
-                    D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
-                    __GetFleetUnderway();
-                    return;
+                    // in case no Settlements qualify
+                    attackTgts = fleetOwnerKnowledge.Planets.Cast<IUnitAttackableTarget>().Where(p => p.IsAttackingAllowedBy(fleetOwner));
+                    if (attackTgts.IsNullOrEmpty()) {
+                        D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
+                        __GetFleetUnderway();
+                        return;
+                    }
                 }
             }
         }

@@ -30,9 +30,11 @@ namespace CodeEnv.Master.GameContent {
         private GameDate _targetDate;
         private GameTime _gameTime;
 
-        public WaitForHours(float hours) {
+        public WaitForHours(float hours) : this(new GameTimeDuration(hours)) { }
+
+        public WaitForHours(GameTimeDuration duration) {
             _gameTime = GameTime.Instance;
-            _targetDate = new GameDate(new GameTimeDuration(hours));
+            _targetDate = new GameDate(duration);
         }
 
         public override bool keepWaiting { get { return _gameTime.CurrentDate < _targetDate; } }

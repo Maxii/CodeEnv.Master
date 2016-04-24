@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipOrder StandingOrder { get; set; }
 
-        public INavigableTarget Target { get; private set; }
+        public IShipNavigable Target { get; private set; }
 
         /// <summary>
         /// The source of this order. 
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source, INavigableTarget target = null) {
+        public ShipOrder(ShipDirective directive, OrderSource source, IShipNavigable target = null) {
             if (directive == ShipDirective.Move) {
                 D.Assert(GetType() == typeof(ShipMoveOrder));
             }

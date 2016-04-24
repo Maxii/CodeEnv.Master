@@ -97,9 +97,9 @@ public class StarCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _starMenuOperator;
+        IFleetNavigable target = _starMenuOperator;
         if (directive == FleetDirective.Explore || directive == FleetDirective.Guard || directive == FleetDirective.Patrol) {
-            target = _starMenuOperator.System as INavigableTarget;
+            target = _starMenuOperator.System as IFleetNavigable;
         }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);

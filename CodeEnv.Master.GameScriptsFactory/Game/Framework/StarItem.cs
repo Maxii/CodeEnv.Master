@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
+public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
     public StarCategory category = StarCategory.None;
 
@@ -244,8 +244,8 @@ public class StarItem : AIntelItem, IStarItem, IShipCloseOrbitable, ISensorDetec
     public IShipCloseOrbitSimulator CloseOrbitSimulator {
         get {
             if (_closeOrbitSimulator == null) {
-                OrbitData closeOrbitSlot = new OrbitData(gameObject, Data.CloseOrbitInnerRadius, Data.CloseOrbitOuterRadius, IsMobile);
-                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitSlot);
+                OrbitData closeOrbitData = new OrbitData(gameObject, Data.CloseOrbitInnerRadius, Data.CloseOrbitOuterRadius, IsMobile);
+                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
             }
             return _closeOrbitSimulator;
         }
@@ -357,12 +357,20 @@ public class StarItem : AIntelItem, IStarItem, IShipCloseOrbitable, ISensorDetec
 
     #endregion
 
-    #region INavigableTarget Members
+    #region IFleetNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
+    public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer; ;
+    }
 
-    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        return Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius; // OPTIMIZE want shipRadius value as AvoidableObstacleZone ends at LowOrbitRadius?
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
+        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

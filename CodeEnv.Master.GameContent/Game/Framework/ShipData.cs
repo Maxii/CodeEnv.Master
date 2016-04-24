@@ -70,12 +70,12 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private INavigableTarget _target;
-        public INavigableTarget Target {
+        private INavigable _target;
+        public INavigable Target {
             get { return _target; }
             set {
                 if (_target == value) { return; }   // eliminates equality warning when targets are the same
-                SetProperty<INavigableTarget>(ref _target, value, "Target");
+                SetProperty<INavigable>(ref _target, value, "Target");
             }
         }
 
@@ -88,37 +88,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. The current speed of the ship in Units per hour. Whether paused or at a GameSpeed
+        /// Readonly. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
         /// other than Normal (x1), this property always returns the proper reportable value.
         /// </summary>
-        public float CurrentSpeedValue { get { return Item.CurrentSpeedValue; } }
-
-        private float _requestedSpeedValue;
-        /// <summary>
-        /// The desired speed this ship should be traveling at in Units per hour. 
-        /// The thrust of the ship will be adjusted to accelerate or decelerate to this speed.
-        /// </summary>
-        public float RequestedSpeedValue {
-            get { return _requestedSpeedValue; }
-            set {
-                D.Warn(value > FullSpeedValue, "{0} RequestedSpeedValue {1:0.0000} > FullSpeedValue {2:0.0000}.", FullName, value, FullSpeedValue);
-                SetProperty<float>(ref _requestedSpeedValue, value, "RequestedSpeedValue");
-            }
-        }
-
-        private Speed _requestedSpeed;
-        /// <summary>
-        /// The desired speed setting this ship should be traveling at. 
-        /// </summary>
-        public Speed RequestedSpeed {
-            get { return _requestedSpeed; }
-            set { SetProperty<Speed>(ref _requestedSpeed, value, "RequestedSpeed"); }
-        }
+        public float ActualSpeedValue { get { return Item.ActualSpeedValue; } }
 
         /// <summary>
-        /// The drag of the ship in Topography.OpenSpace.
+        /// The Speed the ship has been ordered to execute.
         /// </summary>
-        public float OpenSpaceDrag { get { return HullEquipment.Drag; } }
+        public Speed CurrentSpeed { get { return Item.CurrentSpeed; } }
+
+        /// <summary>
+        /// Readonly. The real-time, normalized heading of the ship in worldspace coordinates. Equivalent to transform.forward.
+        /// </summary>
+        public Vector3 CurrentHeading { get { return Item.CurrentHeading; } }
 
         private float _currentDrag;
         /// <summary>
@@ -131,6 +114,11 @@ namespace CodeEnv.Master.GameContent {
             }
             private set { SetProperty<float>(ref _currentDrag, value, "CurrentDrag", CurrentDragPropChangedHandler); }
         }
+
+        /// <summary>
+        /// The drag of the ship in Topography.OpenSpace.
+        /// </summary>
+        public float OpenSpaceDrag { get { return HullEquipment.Drag; } }
 
         /// <summary>
         /// The maximum power that can currently be projected by the engines. 
@@ -156,22 +144,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float FullFtlPropulsionPower { get { return _enginesStat.FullFtlPropulsionPower; } }
 
-        private Vector3 _requestedHeading;
+        private Vector3 _intendedHeading;
         /// <summary>
-        /// The ship's normalized, requested heading in worldspace coordinates.
+        /// The ship's normalized requested/intended heading in worldspace coordinates.
         /// </summary>
-        public Vector3 RequestedHeading {
-            get { return _requestedHeading; }
+        public Vector3 IntendedHeading {
+            get { return _intendedHeading; }
             set {
                 value.ValidateNormalized();
-                SetProperty<Vector3>(ref _requestedHeading, value, "RequestedHeading");
+                SetProperty<Vector3>(ref _intendedHeading, value, "IntendedHeading");
             }
         }
-
-        /// <summary>
-        /// Readonly. The real-time, normalized heading of the ship in worldspace coordinates. Equivalent to transform.forward.
-        /// </summary>
-        public Vector3 CurrentHeading { get { return Item.CurrentHeading; } }
 
         /// <summary>
         /// The maximum speed that the ship can currently achieve in units per hour.
@@ -224,7 +207,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeLocalValuesAndReferences() {
             _gameTime = GameTime.Instance;
-            _requestedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
+            _intendedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
         }
 
         public override void CommenceOperations() {

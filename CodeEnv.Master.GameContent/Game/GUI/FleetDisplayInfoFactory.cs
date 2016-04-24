@@ -102,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
             return isSuccess;
         }
 
-        private float? CalcTargetDistance(INavigableTarget target, Vector3? fleetPosition) {
+        private float? CalcTargetDistance(INavigable target, Vector3? fleetPosition) {
             if (target != null && fleetPosition.HasValue) {
                 return Vector3.Distance(target.Position, fleetPosition.Value);
             }

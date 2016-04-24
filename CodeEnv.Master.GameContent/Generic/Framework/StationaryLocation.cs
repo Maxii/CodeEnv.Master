@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// An INavigableTarget wrapping a stationary location in world space.
     /// </summary>
-    /// <seealso cref="CodeEnv.Master.GameContent.INavigableTarget" />
+    /// <seealso cref="CodeEnv.Master.GameContent.INavigable" />
     /// <seealso cref="System.IEquatable{CodeEnv.Master.GameContent.StationaryLocation}" />
-    public struct StationaryLocation : INavigableTarget, IEquatable<StationaryLocation> {
+    public struct StationaryLocation : IShipNavigable, IFleetNavigable, IEquatable<StationaryLocation> {
 
         #region Equality Operators Override
 
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region INavigableTarget Members
+        #region INavigable Members
 
         public string DisplayName { get { return FullName; } }
 
@@ -92,15 +92,24 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsMobile { get { return false; } }
 
-        public float Radius { get { return Constants.ZeroF; } }
+        #endregion
+
+        #region IShipNavigable Members
+
+        public AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+            return new AutoPilotTarget(this, tgtOffset, Constants.ZeroF, TempGameValues.WaypointCloseEnoughDistance);
+        }
+
+        #endregion
+
+        #region IFleetNavigable Members
 
         public Topography Topography { get; private set; }
 
-        public float RadiusAroundTargetContainingKnownObstacles { get { return Constants.ZeroF; } }
-
-        public float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
-            return TempGameValues.WaypointCloseEnoughDistance;
+        public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+            return Vector3.Distance(fleetPosition, Position);
         }
+
 
         #endregion
 

@@ -31,7 +31,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ship">The ship.</param>
         /// <param name="closeOrbitPlacementPosition">The close orbit placement position.</param>
         /// <returns></returns>
-        bool TryDetermineCloseOrbitPlacementPosition(IShipItem ship, out Vector3 closeOrbitPlacementPosition);
+        //[System.Obsolete]
+        //bool TryDetermineCloseOrbitPlacementPosition(IShipItem ship, out Vector3 closeOrbitPlacementPosition);
 
     }
 }

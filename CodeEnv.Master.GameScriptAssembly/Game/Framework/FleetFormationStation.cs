@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Formation station for a ship in a Fleet formation.
 /// </summary>
-public class FleetFormationStation : AMonoBase, IFleetFormationStation, INavigableTarget {
+public class FleetFormationStation : AMonoBase, IFleetFormationStation, IShipNavigable {
 
     private const string NameFormat = "{0}.{1}";
 
@@ -56,6 +56,8 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, INavigab
     }
 
     public float DistanceToStation { get { return Vector3.Distance(Position, AssignedShip.Position); } }
+
+    public float Radius { get { return TempGameValues.FleetFormationStationRadius; } }
 
     // Note: FormationStation's facing, as a child of FleetCmd, is always the same as FleetCmd's and Flagship's facing
 
@@ -112,7 +114,7 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, INavigab
 
     #endregion
 
-    #region INavigableTarget Members
+    #region INavigable Members
 
     public string DisplayName { get { return NameFormat.Inject(AssignedShip.DisplayName, GetType().Name); } }
 
@@ -122,15 +124,15 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, INavigab
 
     public Vector3 Position { get { return transform.position; } }
 
-    public float Radius { get { return TempGameValues.FleetFormationStationRadius; } }
+    #endregion
 
-    public float RadiusAroundTargetContainingKnownObstacles { get { return Constants.ZeroF; } }
+    #region IShipNavigable Members
 
-    public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
-
-    public float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        D.Assert(AssignedShip.CollisionDetectionZoneRadius.ApproxEquals(shipCollisionDetectionRadius));   // its the same ship
-        return Radius - shipCollisionDetectionRadius;   // entire shipCollisionDetectionZone is within the FormationStation 'sphere' defined by Radius
+    public AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        D.Assert(AssignedShip.CollisionDetectionZoneRadius.ApproxEquals(tgtStandoffDistance));   // its the same ship
+        float outerShellRadius = Radius - tgtStandoffDistance;   // entire shipCollisionDetectionZone is within the FormationStation 'sphere'
+        float innerShellRadius = Constants.ZeroF;
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

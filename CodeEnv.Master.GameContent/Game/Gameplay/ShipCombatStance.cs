@@ -25,29 +25,26 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
-        /// The ship will attempt to dis-engage from the
-        /// battlefield, minimizing any damage.
+        /// The ship will attempt to dis-engage from the battlefield, minimizing any damage.
         /// </summary>
         Retreat,
 
         /// <summary>
-        /// The ship will attempt to engage its target
-        /// at a distance where all of its offensive
-        /// weapons can be brought to bear.
+        /// The ship will attempt to engage its target at a distance where all 
+        /// of its offensive weapons can be brought to bear.
         /// </summary>
         PointBlank,
 
         /// <summary>
-        /// The ship will attempt to engage its target
-        /// at a distance where its primary offensive
-        /// weapons can be brought to bear.
+        /// The ship will attempt to engage its target at a distance where its 
+        /// long and medium range weapons can be brought to bear.
+        /// IMPROVE should pick distance based on what its primary weapons are.
         /// </summary>
         Optimal,
 
         /// <summary>
-        /// The ship will attempt to engage its target
-        /// at a distance where its longest range offensive
-        /// weapons can be brought to bear.
+        /// The ship will attempt to engage its target at a distance where only 
+        /// its longest range offensive weapons can be brought to bear.
         /// </summary>
         Standoff
 

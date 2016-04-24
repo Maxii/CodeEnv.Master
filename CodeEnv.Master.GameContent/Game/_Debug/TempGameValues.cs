@@ -23,11 +23,37 @@ namespace CodeEnv.Master.GameContent {
 
         public const bool DoSettlementsActivelyOrbit = false;
 
+        /// <summary>
+        /// The maximum range of any weapon in a base.
+        /// </summary>
+        public const float __MaxBaseWeaponsRangeDistance = 25F;
+
+        /// <summary>
+        /// The maximum range of any weapon in a fleet.
+        /// </summary>
+        public const float __MaxFleetWeaponsRangeDistance = 20F;
+
+        /// <summary>
+        /// The maximum allowed orbit speed in units per hour of each planetoids.
+        /// Used to warn if orbit period causes this speed to be exceeded.
+        /// IDEA: Derive OrbitPeriod of each planetoid from this value?
+        /// </summary>
+        public const float __MaxPlanetoidOrbitSpeed = 0.1F;
+
+        /// <summary>
+        /// The slowest ship speed value allowed under propulsion. Set at twice
+        /// __MaxPlanetoidOrbitSpeed to make sure a ship can catch a planet moving
+        /// directly away from it.
+        /// </summary>
+        public const float ShipMinimumSpeedValue = __MaxPlanetoidOrbitSpeed * 2F;
+
         public const float WaypointCloseEnoughDistance = 2F;
+
+        public const float ObstacleCheckRayLengthBuffer = 0.1F;
 
         public const float __ReqdMissileTravelDistanceBeforePushover = 0.2F;
 
-        public const float __AllowedTurnTimeBufferFactor = 1.05F;
+        public const float __AllowedTurnTimeBufferFactor = 1.20F;
 
         public const int MaxLosWeaponsForAnyElement = 12;
 
@@ -64,7 +90,13 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public const float ShipCloseOrbitSlotDepth = 1F;
+        /// <summary>
+        /// The depth of a ship close orbit slot.
+        /// <remarks>4.9.16 increased from 1.0F after allowing ship APilot to change speed.
+        /// As all of ship (including detection zone) needs to be within the slot, the remaining slot
+        /// arrival depth forced ships to go too slow and couldn't catch moving planets.</remarks>
+        /// </summary>
+        public const float ShipCloseOrbitSlotDepth = 1.5F;
 
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.

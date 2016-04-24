@@ -31,7 +31,7 @@ public class MobileShipCloseOrbitSimulator : ShipCloseOrbitSimulator, IMobileShi
     /// </summary>
     [System.Obsolete]
     public Vector3 DirectionOfTravel {
-        get {
+        get {   // IMPROVE use tangent on point on circle?
             D.Assert(OrbitData.ToOrbit);   // Ships always actively orbit. _previousPosition not valid without it
             return (transform.position - _previousPosition).normalized;
         }

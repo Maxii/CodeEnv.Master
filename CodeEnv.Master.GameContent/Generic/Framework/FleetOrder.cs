@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}";
 
-        public INavigableTarget Target { get; private set; }
+        public IFleetNavigable Target { get; private set; }
 
         /// <summary>
         /// The source of this order.
@@ -41,8 +41,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public FleetOrder(FleetDirective directive, OrderSource source, INavigableTarget target = null) {
-            D.Assert(target == null || (!(target is IFleetFormationStation) && !(target is IUnitElementItem)));
+        public FleetOrder(FleetDirective directive, OrderSource source, IFleetNavigable target = null) {
             D.Assert(source != OrderSource.Captain);
             Directive = directive;
             Source = source;

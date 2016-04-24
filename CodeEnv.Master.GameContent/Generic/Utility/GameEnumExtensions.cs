@@ -575,8 +575,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Gets the speed in units per hour for this ship or fleet. Either or both datas
-        /// can be null if you are certain which speed and move mode you are asking for. If
-        /// moveMode = None, then you must be asking for a constant speed value.
+        /// can be null if you are certain which speed and move mode you are asking for. 
         /// </summary>
         /// <param name="speed">The speed enum value.</param>
         /// <param name="moveMode">The move mode.</param>
@@ -585,27 +584,32 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
         public static float GetUnitsPerHour(this Speed speed, ShipMoveMode moveMode, ShipData shipData, FleetCmdData fleetData) {
-            if (moveMode == ShipMoveMode.None) {
-                D.Assert(speed == Speed.EmergencyStop || speed == Speed.Stop || speed == Speed.Docking || speed == Speed.StationaryOrbit ||
-                    speed == Speed.MovingOrbit || speed == Speed.Slow);
-            }
+            D.Assert(moveMode != ShipMoveMode.None);
 
             // Note: see Flight.txt in GameDev Notes for analysis of speed values
 
             float fullSpeedFactor = Constants.ZeroF;
             switch (speed) {
-                case Speed.EmergencyStop:
+                case Speed.HardStop:
                     return Constants.ZeroF;
                 case Speed.Stop:
                     return Constants.ZeroF;
+                case Speed.ThrustersOnly:
+                    // 4.13.16 InSystem, STL = 0.05 but clamped at 0.2 below, OpenSpace, FTL = 1.2
+                    fullSpeedFactor = 0.03F;
+                    break;
                 case Speed.Docking:
-                    return 0.04F;
-                case Speed.StationaryOrbit:
-                    return 0.1F;
-                case Speed.MovingOrbit: // Typical Planet Orbital Speed ~ 0.1, Moons are no longer IShipOrbitable
-                    return 0.2F;
+                    // 4.9.16 InSystem, STL = 0.08 but clamped at 0.2 below, OpenSpace, FTL = 2
+                    fullSpeedFactor = 0.05F;
+                    break;
+                case Speed.DeadSlow:
+                    // 4.9.16 InSystem, STL = 0.13 but clamped at 0.2 below, OpenSpace, FTL = 3.2
+                    fullSpeedFactor = 0.08F;
+                    break;
                 case Speed.Slow:
-                    return 0.3F;
+                    // 4.9.16 InSystem, STL = 0.24, OpenSpace, FTL = 6
+                    fullSpeedFactor = 0.15F;
+                    break;
                 case Speed.OneThird:
                     // 11.24.15 InSystem, STL = 0.4, OpenSpace, FTL = 10
                     fullSpeedFactor = 0.25F;
@@ -636,7 +640,13 @@ namespace CodeEnv.Master.GameContent {
                 fullSpeed = fleetData.UnitFullSpeedValue;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                 //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fullSpeed);
             }
-            return fullSpeedFactor * fullSpeed;
+
+            float speedValueResult = fullSpeedFactor * fullSpeed;
+            if (speedValueResult < TempGameValues.ShipMinimumSpeedValue) {
+                speedValueResult = TempGameValues.ShipMinimumSpeedValue;
+                D.Log("Speed {0} value has been clamped to {1:0.00}.", speed.GetValueName(), speedValueResult);
+            }
+            return speedValueResult;
         }
 
         /// <summary>
@@ -649,20 +659,19 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
         public static bool TryDecreaseSpeed(this Speed sourceSpeed, out Speed newSpeed) {
-            D.Assert(sourceSpeed != Speed.None && sourceSpeed != Speed.EmergencyStop && sourceSpeed != Speed.Stop);
             newSpeed = Speed.None;
 
             switch (sourceSpeed) {
-                case Speed.Docking:
+                case Speed.ThrustersOnly:
                     return false;
-                case Speed.StationaryOrbit:
+                case Speed.Docking:
+                    newSpeed = Speed.ThrustersOnly;
+                    return true;
+                case Speed.DeadSlow:
                     newSpeed = Speed.Docking;
                     return true;
-                case Speed.MovingOrbit:
-                    newSpeed = Speed.StationaryOrbit;
-                    return true;
                 case Speed.Slow:
-                    newSpeed = Speed.MovingOrbit;
+                    newSpeed = Speed.DeadSlow;
                     return true;
                 case Speed.OneThird:
                     newSpeed = Speed.Slow;
@@ -691,17 +700,16 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
         public static bool TryIncreaseSpeed(this Speed sourceSpeed, out Speed newSpeed) {
-            D.Assert(sourceSpeed != Speed.None && sourceSpeed != Speed.EmergencyStop && sourceSpeed != Speed.Stop);
             newSpeed = Speed.None;
 
             switch (sourceSpeed) {
+                case Speed.ThrustersOnly:
+                    newSpeed = Speed.Docking;
+                    return true;
                 case Speed.Docking:
-                    newSpeed = Speed.StationaryOrbit;
+                    newSpeed = Speed.DeadSlow;
                     return true;
-                case Speed.StationaryOrbit:
-                    newSpeed = Speed.MovingOrbit;
-                    return true;
-                case Speed.MovingOrbit:
+                case Speed.DeadSlow:
                     newSpeed = Speed.Slow;
                     return true;
                 case Speed.Slow:

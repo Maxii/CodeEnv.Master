@@ -195,6 +195,9 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
                 string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
                 fullMethodName = coroutineMethodName;
             }
+            else {
+                fullMethodName = stackFrame.GetMethod().Name;
+            }
             string transformName = transform.name + "(from transform)";
             Debug.Log("{0}.{1}_{2}.{3}() beginning execution.".Inject(transformName, GetType().Name, InstanceCount, fullMethodName));
         }

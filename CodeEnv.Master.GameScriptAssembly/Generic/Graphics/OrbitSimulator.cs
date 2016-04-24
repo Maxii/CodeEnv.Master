@@ -27,6 +27,10 @@ using UnityEngine;
 /// </summary>
 public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
+    private const string NameFormat = "{0}.{1}";
+
+    public string Name { get { return NameFormat.Inject(OrbitData.OrbitedItem.name, GetType().Name); } }
+
     /// <summary>
     /// The relative orbit speed of the object around the location. A value of 1 means
     /// an orbit will take one OrbitPeriod.
@@ -59,13 +63,23 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     private OrbitData _orbitData;
     public OrbitData OrbitData {
-        protected get { return _orbitData; }
+        get { return _orbitData; }
         set {
             D.Assert(_orbitData == null);   // one time only
             _orbitData = value;
             OrbitDataPropSetHandler();
         }
     }
+
+    /// <summary>
+    /// The speed of travel in units per hour of the OrbitingItem located at a radius of OrbitData.MeanRadius
+    /// from the OrbitedItem. This value is always relative to the body being orbited.
+    /// <remarks>The speed of a planet around a system is relative to an unmoving system, so this value
+    /// is the speed the planet is traveling in the universe. Conversely, the speed of a moon around a planet
+    /// is relative to the moving planet, so the value returned for the moon does not account for the 
+    /// speed of the planet.</remarks>
+    /// </summary>
+    public float RelativeOrbitSpeed { get; private set; }
 
     /// <summary>
     /// The axis of orbit in local space.
@@ -82,7 +96,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// The speed of the orbiting object around the orbited object in units per hour. 
     /// This value will increase as the radius of the orbit increases.
     /// </summary>
-    private float _orbitSpeedInUnitsPerHour;
+    //private float _orbitSpeedInUnitsPerHour;
     private IList<IDisposable> _subscriptions;
     private IGameManager _gameMgr;
 
@@ -100,21 +114,13 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
-    /// <summary>
-    /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling 
-    /// in Units per hour. This value is always relative to the body being orbited.
-    /// e.g. the speed of a planet around a system is relative to an unmoving system, so this value
-    /// is the speed the planet is traveling in the universe. Conversely, the speed of a moon around a planet
-    /// is relative to the moving planet, so the value returned for the moon does not account for the 
-    /// speed of the planet.
-    /// </summary>
-    /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
-    /// <returns></returns>
-    public float GetRelativeOrbitSpeed(float radius) {
-        if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
-            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
+    private float InitializeOrbitSpeed() {
+        float orbitSpeedInUnitsPerHour = (2F * Mathf.PI * OrbitData.MeanRadius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
+        if (!(this is ShipCloseOrbitSimulator)) {
+            D.Warn(orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed, "{0} orbitSpeed {1:0.0000} > max {2:0.00}.",
+                Name, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
         }
-        return _orbitSpeedInUnitsPerHour;
+        return orbitSpeedInUnitsPerHour;
     }
 
     protected override void OccasionalUpdate() {
@@ -146,6 +152,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     private void OrbitDataPropSetHandler() {
         _orbitRateInDegreesPerHour = _relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitData.OrbitPeriod.TotalInHours;
+        RelativeOrbitSpeed = InitializeOrbitSpeed();
     }
 
     #endregion

@@ -27,6 +27,17 @@ namespace CodeEnv.Master.GameContent {
 
         Rigidbody OrbitRigidbody { get; }
 
+        /// <summary>
+        /// The speed of travel in units per hour of the OrbitingItem located at a radius of OrbitData.MeanRadius
+        /// from the OrbitedItem. This value is always relative to the body being orbited.
+        /// <remarks>The speed of a planet around a system is relative to an unmoving system, so this value
+        /// is the speed the planet is traveling in the universe. Conversely, the speed of a moon around a planet
+        /// is relative to the moving planet, so the value returned for the moon does not account for the 
+        /// speed of the planet.</remarks>
+        /// </summary>
+        float RelativeOrbitSpeed { get; }
+
+
     }
 }
 

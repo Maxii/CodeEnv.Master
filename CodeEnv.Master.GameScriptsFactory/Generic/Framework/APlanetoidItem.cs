@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IUnitAttackableTarget, IElementAttackableTarget,
+public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IFleetNavigable, IUnitAttackableTarget, IElementAttackableTarget,
     ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
 
     /// <summary>
@@ -42,8 +42,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     private IOrbitSimulator _celestialOrbitSimulator;
     public IOrbitSimulator CelestialOrbitSimulator {
         get {
-            if (_celestialOrbitSimulator == null) {
-                _celestialOrbitSimulator = transform.parent.GetComponent<IOrbitSimulator>();
+            if (_celestialOrbitSimulator == null) { // moons have 2 IOrbitSims in parents so can't use GetSafeInterfaceInParents
+                _celestialOrbitSimulator = transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>();
             }
             return _celestialOrbitSimulator;
         }
@@ -105,9 +105,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     protected override void InitializeOnFirstDiscernibleToUser() {
         base.InitializeOnFirstDiscernibleToUser();
-        float orbitalRadius = transform.localPosition.magnitude;
-        // moons will have 2 OrbitSimulators as parents, 1 for the moon and 1 for the planet        
-        Data.OrbitalSpeed = gameObject.GetSafeFirstComponentInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
+        Data.OrbitalSpeed = CelestialOrbitSimulator.RelativeOrbitSpeed;
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -162,8 +160,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     }
 
     private void ActivateParentOrbitSimulator(bool toActivate) {
-        // moons have 2 IOrbitSims in parents so can't use GetSafeInterfaceInParents
-        transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>().IsActivated = toActivate;
+        CelestialOrbitSimulator.IsActivated = toActivate;
     }
 
     #region Event and Property Change Handlers
@@ -300,6 +297,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #region IElementAttackableTarget Members
 
+    public AutoPilotTarget GetAttackTarget(float innerRadius, float outerRadius) {
+        return new AutoPilotTarget(this, Vector3.zero, innerRadius, outerRadius);
+    }
+
     // IsAttackingAllowedBy(Player) see IUnitAttackableTarget Members
 
     [System.Obsolete]
@@ -365,11 +366,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #endregion
 
-    #region INavigableTarget Members
+    #region INavigable Members
 
     public override bool IsMobile { get { return true; } }
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return ObstacleZoneRadius; } }
+    #endregion
+
+    #region IFleetNavigable Members
+
+    public abstract float GetObstacleCheckRayLength(Vector3 fleetPosition);
 
     #endregion
 

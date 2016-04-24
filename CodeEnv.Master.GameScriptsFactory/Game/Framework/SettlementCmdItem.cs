@@ -45,7 +45,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
     public IOrbitSimulator CelestialOrbitSimulator {
         get {
             if (_celestialOrbitSimulator == null) {
-                _celestialOrbitSimulator = transform.parent.GetComponent<IOrbitSimulator>();
+                _celestialOrbitSimulator = UnitContainer.parent.GetComponent<IOrbitSimulator>();
             }
             return _celestialOrbitSimulator;
         }
@@ -96,6 +96,10 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         RemoveSettlementFromSystem();
     }
 
+    protected override void DestroyApplicableParents(float delayInHours = Constants.ZeroF) {
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_celestialOrbitSimulator, delayInHours);
+    }
+
     protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
     }
@@ -116,7 +120,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region INavigableTarget Members
+    #region INavigable Members
 
     public override bool IsMobile { get { return ParentSystem.SettlementOrbitData.ToOrbit; } }
 

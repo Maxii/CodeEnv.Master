@@ -136,18 +136,19 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        ///  Tests if <c>value</c> is within <c>acceptableRange</c> of the <c>targetValue</c>. Useful in dealing with floating point imprecision
+        ///  Tests if <c>value</c> is within <c>acceptableRange</c> of the <c>targetValue</c>. 
+        ///  Useful in dealing with floating point imprecision.
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="targetValue">The targetValue.</param>
         /// <param name="acceptableRange">The acceptableRange to either side of the targetValue.</param>
         /// <returns></returns>
         public static bool Approx(float value, float targetValue, float acceptableRange) {
-            return ((Mathf.Abs(value - targetValue) < acceptableRange));
+            return ((Mathf.Abs(value - targetValue) <= acceptableRange));
         }
 
         /// <summary>
-        ///  Tests if a Vector3 is within acceptableRange of another Vector3. Useful in dealing with floating point imprecision.
+        /// Tests if a Vector3 is within acceptableRange of another Vector3. Useful in dealing with floating point imprecision.
         /// Compares the square of the distance separating the two vectors to the square of the acceptableRange as this 
         /// avoids calculating a square root which is much slower than squaring the acceptableRange.
         /// </summary>
@@ -156,7 +157,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="acceptableRange">The acceptableRange.</param>
         /// <returns></returns>
         public static bool Approx(Vector3 vector, Vector3 targetVector, float acceptableRange) {
-            return ((vector - targetVector).sqrMagnitude < acceptableRange * acceptableRange);
+            return ((vector - targetVector).sqrMagnitude <= acceptableRange * acceptableRange);
         }
 
         /// <summary>

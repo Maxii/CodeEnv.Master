@@ -21,7 +21,7 @@
     <ImageAtlasID>MyGui</ImageAtlasID>
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
-    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponRangeMultiplier>0.9</WeaponRangeMultiplier>
     <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
     <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
@@ -32,7 +32,7 @@
     <ImageAtlasID>MyGui</ImageAtlasID>
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
-    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponRangeMultiplier>1.1</WeaponRangeMultiplier>
     <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
     <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
@@ -43,7 +43,7 @@
     <ImageAtlasID>MyGui</ImageAtlasID>
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
-    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponRangeMultiplier>1.05</WeaponRangeMultiplier>
     <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
     <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
@@ -54,7 +54,7 @@
     <ImageAtlasID>MyGui</ImageAtlasID>
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
-    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponRangeMultiplier>1.15</WeaponRangeMultiplier>
     <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
     <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
@@ -65,7 +65,7 @@
     <ImageAtlasID>MyGui</ImageAtlasID>
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
-    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponRangeMultiplier>0.95</WeaponRangeMultiplier>
     <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
     <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>
@@ -76,7 +76,7 @@
     <ImageAtlasID>MyGui</ImageAtlasID>
     <ImageFilename>image</ImageFilename>
     <SensorRangeMultiplier>1.0</SensorRangeMultiplier>
-    <WeaponRangeMultiplier>1.0</WeaponRangeMultiplier>
+    <WeaponRangeMultiplier>1.2</WeaponRangeMultiplier>
     <ActiveCountermeasureRangeMultiplier>1.0</ActiveCountermeasureRangeMultiplier>
     <WeaponReloadPeriodMultiplier>1.0</WeaponReloadPeriodMultiplier>
     <ActiveCountermeasureReloadPeriodMultiplier>1.0</ActiveCountermeasureReloadPeriodMultiplier>

@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle,
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigable, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle,
     IPatrollable, IFleetExplorable, IShipExplorable, IGuardable {
 
     public new UniverseCenterData Data {
@@ -278,7 +278,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipCloseOrb
 
     #endregion
 
-
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible { get { return true; } }
@@ -297,12 +296,20 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipCloseOrb
 
     #endregion
 
-    #region INavigableTarget Members
+    #region IFleetNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
+    public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer; ;
+    }
 
-    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        return Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius;
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
+        float outerShellRadius = innerShellRadius + 3F;   // HACK depth of arrival shell is 3 as speeds are higher
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
@@ -334,6 +341,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipCloseOrb
     }
 
     // LocalAssemblyStations - see IShipOrbitable
+
+    public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);

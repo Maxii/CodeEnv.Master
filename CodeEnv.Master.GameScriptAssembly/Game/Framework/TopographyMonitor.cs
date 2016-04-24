@@ -49,7 +49,9 @@ public class TopographyMonitor : AColliderMonitor {
         //ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
-            listener.HandleTopographyChanged(ParentItem.Topography);
+            if (__ValidateTopographyChange(listener)) {
+                listener.HandleTopographyChanged(ParentItem.Topography);
+            }
         }
     }
 
@@ -63,7 +65,9 @@ public class TopographyMonitor : AColliderMonitor {
         //  ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
-            listener.HandleTopographyChanged(SurroundingTopography);
+            if (__ValidateTopographyChange(listener)) {
+                listener.HandleTopographyChanged(SurroundingTopography);
+            }
         }
     }
 
@@ -76,6 +80,21 @@ public class TopographyMonitor : AColliderMonitor {
     protected override void IsOperationalPropChangedHandler() { }
 
     #endregion
+
+    /// <summary>
+    /// Checks the validity of this trigger event as showing an actual topography change.
+    /// Works by validating that the listener is located near the edge of the system.
+    /// <remarks>Bug workaround. http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/
+    /// </remarks>
+    /// </summary>
+    /// <param name="listener">The listener.</param>
+    /// <returns></returns>
+    private bool __ValidateTopographyChange(ITopographyChangeListener listener) {
+        Vector3 listenerPosition = (listener as Component).transform.position;
+        ISystemItem parentSystem = ParentItem as ISystemItem;
+        float distanceToListener = Vector3.Distance(parentSystem.Position, listenerPosition);
+        return Mathfx.Approx(distanceToListener, parentSystem.Radius, 1F);
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -94,13 +94,14 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         switch (directive) {
             case FleetDirective.Repair:
                 return _fleetMenuOperator.Data.Health == Constants.OneHundredPercent && _fleetMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
+            case FleetDirective.Attack:
+                return !_fleetMenuOperator.IsAttackCapable;
             case FleetDirective.Join:
             case FleetDirective.AssumeFormation:
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
             case FleetDirective.Explore:
             case FleetDirective.CloseOrbit:
-            case FleetDirective.Attack:
             case FleetDirective.Refit:
             case FleetDirective.Withdraw:   // TODO should be in battle
             case FleetDirective.Retreat:    // TODO should be in battle
@@ -119,45 +120,45 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(FleetDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(FleetDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case FleetDirective.Join:
-                targets = _userKnowledge.MyFleets.Except(_fleetMenuOperator).Cast<INavigableTarget>();
+                targets = _userKnowledge.MyFleets.Except(_fleetMenuOperator).Cast<INavigable>();
                 return true;
             case FleetDirective.Patrol:
                 // Note: Easy access to patrol friendly systems. Other patrol targets should be explicitly chosen by user
-                targets = _userKnowledge.Systems.Where(sys => sys.Owner.IsFriendlyWith(_user)).Cast<INavigableTarget>();
+                targets = _userKnowledge.Systems.Where(sys => sys.Owner.IsFriendlyWith(_user)).Cast<INavigable>();
                 return true;
             case FleetDirective.Guard:
                 // Note: Easy access to guard my systems and bases. Other guard targets should be explicitly chosen by user
-                targets = _userKnowledge.MySystems.Cast<INavigableTarget>().Union(_userKnowledge.MyBases.Cast<INavigableTarget>());
+                targets = _userKnowledge.MySystems.Cast<INavigable>().Union(_userKnowledge.MyBases.Cast<INavigable>());
                 return true;
             case FleetDirective.Explore:
                 // Note: Easy access to explore systems allowing exploration that need it. Other exploration targets should be explicitly chosen by user
                 var systems = _userKnowledge.Systems.Cast<IFleetExplorable>();
                 var systemsAllowingExploration = systems.Where(sys => sys.IsExploringAllowedBy(_user));
-                var systemsNeedingExploration = systemsAllowingExploration.Where(sys => !sys.IsFullyExploredBy(_user)).Cast<INavigableTarget>();
+                var systemsNeedingExploration = systemsAllowingExploration.Where(sys => !sys.IsFullyExploredBy(_user)).Cast<INavigable>();
                 targets = systemsNeedingExploration;
                 return true;
             case FleetDirective.CloseOrbit:
-                targets = _userKnowledge.MyBases.Cast<INavigableTarget>().Union(_userKnowledge.MyPlanets.Cast<INavigableTarget>());
+                targets = _userKnowledge.MyBases.Cast<INavigable>().Union(_userKnowledge.MyPlanets.Cast<INavigable>());
                 return true;
             case FleetDirective.Attack:
                 // Note: Easy access to attack fleets and bases of war opponents. Other attack targets should be explicitly chosen by user
                 var knownFleetsAtWar = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user));
                 var knownBasesAtWar = _userKnowledge.Bases.Where(b => b.Owner.IsAtWarWith(_user));
-                targets = knownFleetsAtWar.Cast<INavigableTarget>().Union(knownBasesAtWar.Cast<INavigableTarget>());
+                targets = knownFleetsAtWar.Cast<INavigable>().Union(knownBasesAtWar.Cast<INavigable>());
                 return true;
             case FleetDirective.Repair:
             case FleetDirective.Refit:
             case FleetDirective.Disband:
             case FleetDirective.Withdraw:   // TODO away from enemy
             case FleetDirective.Retreat:    // TODO away from enemy
-                targets = _userKnowledge.MyBases.Cast<INavigableTarget>();
+                targets = _userKnowledge.MyBases.Cast<INavigable>();
                 return true;
             case FleetDirective.Scuttle:
-            case FleetDirective.AssumeFormation:    // Note: Not going to offer EmergencyGatherStations as targets
-                targets = Enumerable.Empty<INavigableTarget>();
+            case FleetDirective.AssumeFormation:    // Note: Inplace only, not going to offer LocalAssyStations as targets
+                targets = Enumerable.Empty<INavigable>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -206,23 +207,23 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private void IssueFleetMenuOperatorOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target;
+        INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.FullName, directive.GetValueName(), msg);
-        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target as IFleetNavigable);
     }
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _fleetMenuOperator;
+        IFleetNavigable target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     private void IssueRemoteShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        INavigableTarget target = _fleetMenuOperator;
+        IShipNavigable target = _fleetMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
     }

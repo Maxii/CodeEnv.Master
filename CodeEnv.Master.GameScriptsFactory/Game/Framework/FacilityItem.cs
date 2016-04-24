@@ -32,6 +32,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     public override bool IsAvailable { get { return CurrentState == FacilityState.Idling; } }
 
+    public override bool IsAttackCapable { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
+
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
@@ -488,12 +490,12 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #endregion
 
-    #region INavigableTarget Members
+    #region IShipNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return _obstacleZoneCollider.radius; } }
-
-    public override float GetShipArrivalDistance(float shipCollisionDetecionRadius) {
-        return _obstacleZoneCollider.radius + shipCollisionDetecionRadius;
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
+        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

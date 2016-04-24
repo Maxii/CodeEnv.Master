@@ -88,7 +88,7 @@ public class SystemCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _systemMenuOperator;
+        IFleetNavigable target = _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }

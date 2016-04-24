@@ -48,14 +48,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float HoursEqualTolerance = 0.1F;
 
-        public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
-        public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
+        public static readonly int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
+        public static readonly int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         /// <summary>
         /// The number of GameHours in a Second at a GameSpeedMultiplier of 1 (aka GameSpeed.Normal).
         /// </summary>
-        public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
-        public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
-        public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
+        public static readonly float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
+        public static readonly int GameStartYear = GeneralSettings.Instance.GameStartYear;
+        public static readonly int GameEndYear = GeneralSettings.Instance.GameEndYear;
 
         #endregion
 

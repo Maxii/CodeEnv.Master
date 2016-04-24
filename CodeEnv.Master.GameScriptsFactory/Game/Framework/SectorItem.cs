@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AItems that are Sectors.
 /// </summary>
-public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IGuardable {
+public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
 
     private static string _toStringFormat = "{0}{1}";
 
@@ -111,14 +111,25 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IG
         return _toStringFormat.Inject(GetType().Name, SectorIndex);
     }
 
-    #region INavigableTarget Members
+    #region IFleetNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return System != null ? System.Radius : Constants.ZeroF; } }
     // TODO what about a Starbase or Nebula?
+    public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        if (System != null) {
+            return System.GetObstacleCheckRayLength(fleetPosition);
+        }
+        return Vector3.Distance(fleetPosition, Position);
+    }
 
-    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) { return Radius / 2F; }  // 600
+    #endregion
 
+    #region IShipNavigable Members
 
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius = Radius / 2F;   // HACK 600
+        float outerShellRadius = innerShellRadius + 20F;   // HACK depth of arrival shell is 20
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+    }
 
     #endregion
 
@@ -135,6 +146,8 @@ public class SectorItem : AItem, ISectorItem, IPatrollable, IFleetExplorable, IG
     }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+
+    public Speed PatrolSpeed { get { return Speed.TwoThirds; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);

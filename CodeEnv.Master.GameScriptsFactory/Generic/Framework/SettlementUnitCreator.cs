@@ -107,9 +107,17 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
     }
 
     protected override void AssignHQElement() {
+        // 4.19.16: TEMP: Like Fleets, Bases can temporarily pick another facility if there is no facility present that matches
+        // an 'acceptable' HQELementCategory, aka CentralHub. Bases used to require a CentralHub as their HQ, but with the
+        // demise (sometime over a year ago) of Bases distributing damage to protect the HQ, there must be an alternative if a 
+        // CentralHub is not present in the preset Base.
         LogEvent();
         var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.HullCategory));
-        D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
+        if (candidateHQElements.IsNullOrEmpty()) {
+            // _command might not hold a valid HQ Element if preset
+            D.Warn("No valid HQElements for {0} found.", UnitName);
+            candidateHQElements = _command.Elements;
+        }
         var hqElement = RandomExtended.Choice(candidateHQElements) as FacilityItem;
         _command.HQElement = hqElement;
     }

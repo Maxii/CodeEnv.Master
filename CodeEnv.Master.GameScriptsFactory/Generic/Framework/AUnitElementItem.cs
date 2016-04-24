@@ -38,6 +38,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     public abstract bool IsAvailable { get; }
 
+    /// <summary>
+    /// Indicates whether this element is capable of attacking.
+    /// <remarks>An element that is not capable of attacking is usually an
+    /// Element that is not allowed to attack or one with no operational weapons.</remarks>
+    /// </summary>
+    public abstract bool IsAttackCapable { get; }
+
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
@@ -62,6 +69,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         get { return _command; }
         set { SetProperty<IUnitCmdItem>(ref _command, value, "Command"); }
     }
+
+    public bool HasOperationalWeapons { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
 
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
 
@@ -640,6 +649,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         return Owner.IsEnemyOf(player);
     }
 
+    public AutoPilotTarget GetAttackTarget(float innerRadius, float outerRadius) {
+        return new AutoPilotTarget(this, Vector3.zero, innerRadius, outerRadius);
+    }
+
     /// <summary>
     /// Called by the ordnanceFired to notify its target of the launch
     /// of the ordnance. This workaround is necessary in cases where the ordnance is
@@ -664,11 +677,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     public override void TakeHit(DamageStrength damagePotential) {
+        LogEvent();
         if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
         D.Assert(IsOperational);
-        LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
             //D.Log("{0} has been hit but incurred no damage.", FullName);

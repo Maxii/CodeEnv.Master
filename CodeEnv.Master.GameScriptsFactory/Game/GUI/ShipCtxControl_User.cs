@@ -77,17 +77,17 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = _userKnowledge.MyFleets.Except(_shipMenuOperator.Command).Cast<INavigableTarget>();
+                targets = _userKnowledge.MyFleets.Except(_shipMenuOperator.Command).Cast<INavigable>();
                 return true;
             case ShipDirective.Disband:
-                targets = _userKnowledge.MyBases.Cast<INavigableTarget>();
+                targets = _userKnowledge.MyBases.Cast<INavigable>();
                 return true;
             case ShipDirective.Withdraw:
             case ShipDirective.Scuttle:
-                targets = Enumerable.Empty<INavigableTarget>();
+                targets = Enumerable.Empty<INavigable>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -105,11 +105,11 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private void IssueShipMenuOperatorOrder(int itemID) {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
-        INavigableTarget target;
+        INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target as IShipNavigable);
     }
 
     public override string ToString() {

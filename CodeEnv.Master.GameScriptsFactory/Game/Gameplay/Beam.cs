@@ -57,6 +57,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private bool IsAnimateOperatingEffectJobRunning { get { return _animateOperatingEffectJob != null && _animateOperatingEffectJob.IsRunning; } }
 
+    private bool IsOperatingAudioPlaying { get { return _operatingAudioSource != null && _operatingAudioSource.isPlaying; } }
     /// <summary>
     /// The cumulative time in hours that this beam has been operating.
     /// </summary>
@@ -235,6 +236,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     protected override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
         PauseJobs(_gameMgr.IsPaused);
+        PauseAudio(_gameMgr.IsPaused);
     }
 
     #endregion
@@ -369,7 +371,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
-        if (_operatingAudioSource != null && _operatingAudioSource.isPlaying) {
+        if (IsOperatingAudioPlaying) {
             //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
             _operatingAudioSource.Stop();
         }
@@ -396,6 +398,19 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void PauseJobs(bool toPause) {
         if (IsAnimateOperatingEffectJobRunning) {
             _animateOperatingEffectJob.IsPaused = toPause;
+        }
+    }
+
+    private void PauseAudio(bool toPause) {
+        if (IsOperatingAudioPlaying) {
+            if (toPause) {
+                _operatingAudioSource.Pause();
+            }
+        }
+        else {  // AudioSource.IsPlaying returns false when paused
+            if (!toPause) {
+                _operatingAudioSource.UnPause();
+            }
         }
     }
 

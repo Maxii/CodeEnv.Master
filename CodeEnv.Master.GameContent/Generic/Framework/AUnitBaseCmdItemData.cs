@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -45,6 +46,15 @@ namespace CodeEnv.Master.GameContent {
 
         public AUnitBaseCmdItemData(IUnitCmdItem cmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(cmd, owner, cameraStat, passiveCMs, cmdStat) { }
+
+        #region Event and Property Change Handlers
+
+        protected override void UnitWeaponsRangePropChangedHandler() {
+            D.Warn(UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance, "{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.",
+                FullName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
+        }
+
+        #endregion
 
         protected override void RefreshComposition() {
             var elementCategories = _elementsData.Cast<FacilityData>().Select(fd => fd.HullCategory);

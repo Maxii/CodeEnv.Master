@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items that are patrollable by Fleets.
     /// </summary>
-    public interface IPatrollable : INavigableTarget {
+    public interface IPatrollable : INavigable {
 
         /// <summary>
         /// Returns a copy of the list of Patrol Stations around this IPatrollable Item.
@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
         IList<StationaryLocation> LocalAssemblyStations { get; }
 
         Player Owner { get; }
+
+        Speed PatrolSpeed { get; }
 
         bool IsPatrollingAllowedBy(Player player);
 

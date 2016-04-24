@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFleetExplorable.cs
-// Interface for Items that can only be explored by FleetCmds.
+// File: IFleetNavigable.cs
+// INavigable destination that can be navigated to by Fleets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,20 +14,20 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-
 namespace CodeEnv.Master.GameContent {
-    using System.Collections.Generic;
+
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Interface for Items that can only be explored by FleetCmds.
+    /// INavigable destination that can be navigated to by Fleets.
+    /// <remarks>Elements, FormationStations and CloseOrbitSimulators are not IFleetNavigable.</remarks>
     /// </summary>
-    public interface IFleetExplorable : IExplorable {
+    public interface IFleetNavigable : INavigable {
 
-        /// <summary>
-        /// A collection of assembly stations that are local to the item.
-        /// </summary>
-        IList<StationaryLocation> LocalAssemblyStations { get; }
+        Topography Topography { get; }
+
+        float GetObstacleCheckRayLength(Vector3 fleetPosition);
 
     }
 }

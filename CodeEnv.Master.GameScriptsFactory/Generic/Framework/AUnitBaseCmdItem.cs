@@ -23,6 +23,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using MoreLinq;
 using UnityEngine;
 
 /// <summary>
@@ -85,13 +86,41 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         CurrentState = BaseState.Idling;
     }
 
+    /// <summary>
+    /// Removes the element from the Unit.
+    /// <remarks>4.19.16 Just discovered I still had asserts in place that require that the Base's HQElement die last, 
+    /// a holdover from when Bases distributed damage to protect the HQ until last. I'm allowing Bases to change their
+    /// HQElement if it dies now until I determine how I want Base.HQELements to operate gameplay-wise.</remarks>
+    /// </summary>
+    /// <param name="element">The element.</param>
     public override void RemoveElement(AUnitElementItem element) {
         base.RemoveElement(element);
-        D.Assert(element.IsHQ != IsOperational);    // Base HQElements must be the last element to die
+
+        if (!IsOperational) {
+            // BaseCmd has died
+            return;
+        }
+
+        var facility = element as FacilityItem;
+        if (facility == HQElement) {
+            // HQ Element has been removed
+            HQElement = SelectHQElement();
+        }
+    }
+
+    /// <summary>
+    /// Selects and returns a new HQElement.
+    /// Throws an InvalidOperationException if there are no elements to select from.
+    /// </summary>
+    /// <returns></returns>
+    private FacilityItem SelectHQElement() {
+        return Elements.MaxBy(e => e.Data.Health) as FacilityItem;  // IMPROVE
     }
 
     protected override void AttachCmdToHQElement() {
-        // does nothing as BaseCmds and HQElements don't change or move
+        // For now, simply position the Cmd over the new HQElement. As it doesn't 
+        // yet move, there is no need yet for a fixedJoint attachment like FleetCmd
+        transform.position = HQElement.Position;
     }
 
     protected override void SetDeadState() {
@@ -183,7 +212,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         LogEvent();
     }
 
-    void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+    protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
     }
 
@@ -226,7 +255,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         Return();
     }
 
-    void Attacking_UponNewOrderReceived() {
+    protected void Attacking_UponNewOrderReceived() {
         LogEvent();
         Return();
     }
@@ -267,13 +296,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     protected void Dead_EnterState() {
         LogEvent();
         HandleDeath();
-        StartEffect(EffectID.Dying);
+        StartEffect(EffectID.Dying);    // currently no death effect for a BaseCmd, just its elements
     }
 
     protected void Dead_UponEffectFinished(EffectID effectID) {
         LogEvent();
         D.Assert(effectID == EffectID.Dying);
-        DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // HACK long wait so last element can play death effect
+        DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
     #endregion
@@ -395,12 +424,20 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #endregion
 
-    #region INavigableTarget Members
+    #region IFleetNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return Data.UnitMaxFormationRadius; } }
+    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        return Vector3.Distance(fleetPosition, Position) - Data.UnitMaxFormationRadius;
+    }
 
-    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        return Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius;
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
+        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
@@ -416,6 +453,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
             return new List<StationaryLocation>(_patrolStations);
         }
     }
+
+    public Speed PatrolSpeed { get { return Speed.Slow; } }
 
     // LocalAssemblyStations - see IShipOrbitable
 

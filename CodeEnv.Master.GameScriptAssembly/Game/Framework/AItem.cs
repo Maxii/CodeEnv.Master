@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IItem, INavigableTarget {
+public abstract class AItem : AMonoBase, IItem, IShipNavigable {
 
     /// <summary>
     /// Occurs when the owner of this <c>AItem</c> is about to change.
@@ -58,6 +58,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
             SetProperty<AItemData>(ref _data, value, "Data", DataPropSetHandler);
         }
     }
+
+    public virtual Topography Topography { get { return Data.Topography; } }
 
     public bool IsHudShowing {
         get { return _hudManager != null && _hudManager.IsHudShowing; }
@@ -259,16 +261,15 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     #endregion
 
-    #region INavigableTarget Members
-
-    public virtual Topography Topography { get { return Data.Topography; } }
+    #region INavigable Members
 
     public virtual bool IsMobile { get { return false; } }
 
-    public abstract float RadiusAroundTargetContainingKnownObstacles { get; }
+    #endregion
 
-    public abstract float GetShipArrivalDistance(float shipCollisionDetectionRadius);
+    #region IShipNavigable Members
 
+    public abstract AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance);
 
     #endregion
 

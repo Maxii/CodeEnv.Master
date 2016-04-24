@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         //public bool IsFtlAvailableForUse { get; private set; }
         //public bool IsFlapsDeployed { get; private set; }
 
-        public INavigableTarget Target { get; private set; }
+        public INavigable Target { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
             base.AssignIncrementalValues_IntelCoverageBasic(data);
             var sData = data as ShipData;
             Name = sData.Name;
-            CurrentSpeed = sData.CurrentSpeedValue;
+            CurrentSpeed = sData.ActualSpeedValue;
         }
 
         public override string ToString() {

@@ -17,10 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using MoreLinq;
     using UnityEngine;
 
     /// <summary>
@@ -114,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Calculates and returns the latest GameDate that this rotation shuold complete. Includes a small buffer.
+        /// Calculates and returns the latest GameDate by which this rotation should complete. Includes a small buffer.
         /// <remarks>Typically used to calculate how long to allow a rotation coroutine to run before throwing a warning or error.
         /// Use of a date in this manner handles GameSpeed changes and Pauses during the rotation.
         /// </remarks>
@@ -125,8 +127,13 @@ namespace CodeEnv.Master.GameContent {
         public static GameDate CalcWarningDateForRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
             float maxHoursReqdToCompleteRotation = maxRotationReqdInDegrees / rotationRateInDegreesPerHour;
             float bufferedMaxHours = maxHoursReqdToCompleteRotation * TempGameValues.__AllowedTurnTimeBufferFactor;
+            bufferedMaxHours = Mathf.Clamp(bufferedMaxHours, Constants.OneF, GameTimeDuration.OneDay.TotalInHours); // HACK
             var maxDurationFromCurrentDate = new GameTimeDuration(bufferedMaxHours);
             return new GameDate(maxDurationFromCurrentDate);
+        }
+
+        public static StationaryLocation GetClosest(Vector3 myPosition, IList<StationaryLocation> locations) {
+            return locations.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
         }
 
         /// <summary>

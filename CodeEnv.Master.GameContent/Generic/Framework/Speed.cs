@@ -27,75 +27,76 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Default, used for error detection.
         /// </summary>
-        None,
+        None = 0,
 
         /// <summary>
-        /// A constant speed value of zero, resulting instantly in a velocity of zero.
-        /// The speed value is not a function of the engine in use or Topographic density.
+        /// A constant unitsPerHour value of zero, resulting instantly in a velocity of zero.
+        /// The unitsPerHour value is not a function of the engine in use or Topographic density.
         /// </summary>
-        EmergencyStop,
+        HardStop = 1,
 
         /// <summary>
-        /// A constant speed value of zero, resulting eventually in a velocity of zero as their can be
+        /// A constant unitsPerHour value of zero, resulting eventually in a velocity of zero as there can be
         /// some residual momentum for a short time.
-        /// The speed value is not a function of the engine in use or Topographic density.
+        /// The unitsPerHour value is not a function of the engine in use or Topographic density.
         /// </summary>
-        Stop,
+        Stop = 2,
 
         /// <summary>
-        /// A constant speed value suitable for manuevering around or approaching very close, stationary objects.
-        /// The speed value is not a function of the engine in use or Topographic density.
+        /// The lowest non-zero unitsPerHour value suitable for approaching very, very close objects.
+        /// If the ShipMoveMode is FleetWide, ThrustersOnly here refers to the lowest ThrustersOnly value found in any ship in the fleet.
+        /// The unitsPerHour value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        Docking,
+        ThrustersOnly = 3,
 
         /// <summary>
-        /// A constant speed value suitable for inserting the ship into orbit around a stationary object
-        /// or a mobile object whose direction of travel is towards the ship.
-        /// The speed value is not a function of the engine in use or Topographic density.
+        /// A very, very low unitsPerHour value suitable for approaching very close objects.
+        /// If the ShipMoveMode is FleetWide, Docking here refers to the lowest Docking value found in any ship in the fleet.
+        /// The unitsPerHour value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        StationaryOrbit,
+        Docking = 4,
 
         /// <summary>
-        /// A constant speed value suitable for inserting the ship into orbit around a mobile object that is
-        /// moving orthogonal to or partially away from the ship.
-        /// The speed value is not a function of the engine in use or Topographic density.
+        /// A very low unitsPerHour value suitable for manuevering around or approaching close objects.
+        /// If the ShipMoveMode is FleetWide, DeadSlow here refers to the lowest DeadSlow value found in any ship in the fleet.
+        /// The unitsPerHour value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        MovingOrbit,
+        DeadSlow = 5,
 
         /// <summary>
-        /// A constant speed value suitable for movement between local destinations. Also used to insert
-        /// the ship into orbit around a mobile object that is moving mostly away from the ship.
-        /// The speed value is not a function of the engine in use or Topographic density.
+        /// A low unitsPerHour value suitable for approaching local objects. If the ShipMoveMode is FleetWide, 
+        /// Slow here refers to the lowest Slow value found in any ship in the fleet.
+        /// The unitsPerHour value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        Slow,
+        Slow = 6,
 
         /// <summary>
-        /// 33% of Standard speed, 25% of Full. If the ShipMoveMode is FleetWide, Full here refers to
-        /// the slowest FullSpeed found in all ships in the fleet.
+        /// 33% of Standard speed, 25% of Full. If the ShipMoveMode is FleetWide, OneThird here refers to
+        /// the lowest OneThird value found in any ship in the fleet.
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        OneThird,
+        OneThird = 7,
 
         /// <summary>
-        /// 67% of Standard speed, 50% of Full. If the ShipMoveMode is FleetWide, Full here refers to
-        /// the slowest FullSpeed found in all ships in the fleet.   
+        /// 67% of Standard speed, 50% of Full. If the ShipMoveMode is FleetWide, TwoThirds here refers to
+        /// the lowest TwoThirds value found in any ship in the fleet. 
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        TwoThirds,
+        TwoThirds = 8,
 
         /// <summary>
-        /// The most efficient speed, 100% of Standard, 75% of Full. If the ShipMoveMode is FleetWide, Full here refers to
-        /// the slowest FullSpeed found in all ships in the fleet.
+        /// The most efficient speed, 100% of Standard, 75% of Full. If the ShipMoveMode is FleetWide, 
+        /// Standard here refers to the lowest Standard value found in any ship in the fleet.
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        Standard,
+        Standard = 9,
 
         /// <summary>
-        /// The fastest speed, 133% of Standard, 100% of Full. If the ShipMoveMode is FleetWide, Full here refers to
-        /// the slowest FullSpeed found in all ships in the fleet.
+        /// The fastest speed, 133% of Standard, 100% of Full. If the ShipMoveMode is FleetWide, 
+        /// Full here refers to the lowest Full value found in any ship in the fleet.
         /// The speed value is a direct function of the engine in use and Topographic density.
         /// </summary>
-        Full,
+        Full = 10
 
     }
 

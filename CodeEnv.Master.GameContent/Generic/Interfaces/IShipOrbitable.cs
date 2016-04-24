@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipItem.cs
-// Interface for all items that are ships.
+// File: IShipOrbitable.cs
+// Interface for Items where ships can assume a high orbit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,23 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    ///  Interface for all items that are ships.
+    /// Interface for Items where ships can assume a high orbit.
     /// </summary>
-    public interface IShipItem : IUnitElementItem {
+    public interface IShipOrbitable : IShipNavigable {
 
-        Vector3 CurrentHeading { get; }
+        void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint);
 
-        float CurrentSpeedValue { get; }
+        bool IsHighOrbitAllowedBy(Player player);
 
-        float CollisionDetectionZoneRadius { get; }
+        bool IsInHighOrbit(IShipItem ship);
 
-        void HandlePendingCollisionWith(IObstacle obstacle);
-
-        void HandlePendingCollisionAverted(IObstacle obstacle);
+        void HandleBrokeOrbit(IShipItem ship);
 
     }
 }

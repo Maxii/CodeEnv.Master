@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for targets that can be attacked by unit elements.
     /// </summary>
-    public interface IElementAttackableTarget : INavigableTarget, ISensorDetectable {
+    public interface IElementAttackableTarget : IShipNavigable, ISensorDetectable {
 
         event EventHandler deathOneShot;
 
@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
         new string DisplayName { get; }
 
         new Vector3 Position { get; }
+
+        bool IsVisualDetailDiscernibleToUser { get; }
 
         /// <summary>
         /// Called by the ordnanceFired to notify its target of the launch
@@ -51,9 +53,16 @@ namespace CodeEnv.Master.GameContent {
 
         void TakeHit(DamageStrength attackerStrength);
 
-        bool IsVisualDetailDiscernibleToUser { get; }
-
         bool IsAttackingAllowedBy(Player player);
+
+        /// <summary>
+        /// Returns the AutoPilotTarget for use by a Ship's AutoPilot when attacking this target.
+        /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
+        /// </summary>
+        /// <param name="innerRadius">The inner radius.</param>
+        /// <param name="outerRadius">The outer radius.</param>
+        /// <returns></returns>
+        AutoPilotTarget GetAttackTarget(float innerRadius, float outerRadius);
 
     }
 }

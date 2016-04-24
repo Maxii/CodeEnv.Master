@@ -93,7 +93,7 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _universeCenterMenuOperator;
+        IFleetNavigable target = _universeCenterMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }

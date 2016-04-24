@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common", "CodeEnv.Master.Common\CodeEnv.Master.Common.csproj", "{1557C03E-56EE-4C70-9BD8-AB637D3191CF}"
 EndProject
@@ -56,6 +56,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NguiEditor", "..\..\Plugins
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeadCode", "DeadCode", "{F1A439E5-BEAD-4292-B4F1-A14733522D52}"
 	ProjectSection(SolutionItems) = preProject
+		DeadCode\AAutoPilot.cs = DeadCode\AAutoPilot.cs
 		DeadCode\ACmdIconInfoFactory.cs = DeadCode\ACmdIconInfoFactory.cs
 		DeadCode\ACmdPublisherBase.cs = DeadCode\ACmdPublisherBase.cs
 		DeadCode\ACombatItemData.cs = DeadCode\ACombatItemData.cs

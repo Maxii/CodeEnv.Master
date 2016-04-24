@@ -17,6 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -47,6 +49,9 @@ namespace CodeEnv.Master.GameContent {
                                              + "M: {1}" + Constants.NewLine
                                              + "L: {2}";
 
+        /// <summary>
+        /// Returns the maximum positive distance or zero if none.
+        /// </summary>
         public float Max { get { return Mathf.Max(Short, Medium, Long); } }
 
         public float Short { get; private set; }
@@ -54,6 +59,19 @@ namespace CodeEnv.Master.GameContent {
         public float Medium { get; private set; }
 
         public float Long { get; private set; }
+
+        /// <summary>
+        /// Returns the minimum positive distance or zero if none.
+        /// </summary>
+        [Obsolete]
+        public float Min {
+            get {
+                if (Short > Constants.ZeroF) { return Short; }
+                if (Medium > Constants.ZeroF) { return Medium; }
+                if (Long > Constants.ZeroF) { return Long; }
+                return Constants.ZeroF;
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RangeDistance" /> struct.
@@ -91,6 +109,17 @@ namespace CodeEnv.Master.GameContent {
             Short = shortDistance;
             Medium = mediumDistance;
             Long = longDistance;
+        }
+
+        /// <summary>
+        /// Returns true if rangeCat has a non-zero value, false otherwise.
+        /// </summary>
+        /// <param name="rangeCat">The range cat.</param>
+        /// <param name="value">The non-zero value returned.</param>
+        /// <returns></returns>
+        public bool TryGetValue(RangeCategory rangeCat, out float value) {
+            value = GetValue(rangeCat);
+            return value > Constants.ZeroF;
         }
 
         public float GetValue(RangeCategory rangeCat) {

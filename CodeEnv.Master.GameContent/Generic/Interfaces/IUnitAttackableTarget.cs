@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for targets that can be attacked by unit commands.
     /// </summary>
-    public interface IUnitAttackableTarget : INavigableTarget {
+    public interface IUnitAttackableTarget : IFleetNavigable {
 
         event EventHandler deathOneShot;
 

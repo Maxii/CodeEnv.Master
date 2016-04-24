@@ -369,7 +369,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns true if targetValue is within a reasonable tolerance of the value of source.
+        /// Returns true if targetValue is within <c>UnityConstants.FloatEqualityPrecision</c> of the value of source.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="value">The value.</param>

@@ -48,15 +48,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private ParticleSystem _impactEffect = null;
 
     /// <summary>
-    /// Arbitrary value to correct drift from momentum when a turn is attempted.
-    /// Higher values cause sharper turns. Zero means no correction.
-    /// </summary>
-    [Range(0F, 5F)]
-    [Tooltip("Higher values correct drift causing sharper turns. Zero means no correction.")]
-    [SerializeField]
-    private float _driftCorrectionFactor = 1F;
-
-    /// <summary>
     /// The maximum speed of this missile in units per hour in Topography.OpenSpace.
     /// The actual speed of this missile will asymptotically approach this MaxSpeed as it travels,
     /// reaching it only when the friction from the missile's drag matches the missile's thrust. 
@@ -113,16 +104,18 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private Vector3 _positionLastRangeCheck;
     private Job _courseUpdateJob;
     private Job _changeHeadingJob;
-    private float _hoursBetweenCourseUpdates;
+    private GameTimeDuration _courseUpdatePeriod;
     private bool _hasPushedOver;
+    private DriftCorrector _driftCorrector;
 
     public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
         _positionLastRangeCheck = Position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
-        _hoursBetweenCourseUpdates = 1F / CourseUpdateFrequency;
+        _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
         SteeringInaccuracy = CalcSteeringInaccuracy();
         target.deathOneShot += TargetDeathEventHandler;
+        _driftCorrector = new DriftCorrector(FullName, transform, _rigidbody);
 
         enabled = true;
     }
@@ -193,13 +186,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private void ApplyThrust() {
         // Note: Rigidbody.drag already adjusted for any Topography changes
-        float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);  //= MaxSpeed * Mass * _rigidbody.drag;
+        float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);
         var gameSpeedAdjustedThrust = _localSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
-        if (_driftCorrectionFactor > Constants.ZeroF) {
-            ReduceDrift();
-        }
     }
 
     private void HandlePushover() {
@@ -228,6 +218,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     protected override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
         PauseJobs(_gameMgr.IsPaused);
+        _driftCorrector.Pause(_gameMgr.IsPaused);
     }
 
     #endregion
@@ -243,7 +234,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private IEnumerator UpdateCourse() {
         do {
             CheckCourse();
-            yield return new WaitForHours(_hoursBetweenCourseUpdates);
+            yield return new WaitForHours(_courseUpdatePeriod);
         }
         while (true);
     }
@@ -262,10 +253,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", Name);   // -> course update freq is too high or turnRate too low
             _changeHeadingJob.Kill();                  // missile should be able to complete a turn between course updates
         }
+        HandleTurnBeginning();
         GameDate errorDate = GameUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
         _changeHeadingJob = new Job(ChangeHeading(newHeading, errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
             if (IsOperational && !jobWasKilled) {
                 //D.Log("{0} has completed a heading change.", Name);
+                HandleTurnCompleted();
             }
         });
     }
@@ -293,15 +286,20 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         //D.Log("{0} has completed heading change of {1:0.#} degrees.", Name, Vector3.Angle(startingHeading, CurrentHeading));
     }
 
-    /// <summary>
-    /// Reduces the amount of drift of the missile in the direction it was heading prior to a turn.
-    /// IMPROVE Expensive to call every frame when no residual drift left after a turn.
-    /// </summary>
-    private void ReduceDrift() {
-        Vector3 relativeVelocity = transform.InverseTransformDirection(_rigidbody.velocity);
-        _rigidbody.AddRelativeForce(-relativeVelocity.x * _driftCorrectionFactor * Vector3.right);
-        _rigidbody.AddRelativeForce(-relativeVelocity.y * _driftCorrectionFactor * Vector3.up);
-        //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
+    private void HandleTurnBeginning() {
+        DisengageDriftCorrection();
+    }
+
+    private void HandleTurnCompleted() {
+        EngageDriftCorrection();
+    }
+
+    private void EngageDriftCorrection() {
+        _driftCorrector.Engage();
+    }
+
+    private void DisengageDriftCorrection() {
+        _driftCorrector.Disengage();
     }
 
     private float CalcSteeringInaccuracy() {
@@ -332,6 +330,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (IsCourseUpdateJobRunning) {
             _courseUpdateJob.Kill();
         }
+        _driftCorrector.Disengage();
         Target.deathOneShot -= TargetDeathEventHandler;
     }
 
@@ -343,6 +342,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (_changeHeadingJob != null) {
             _changeHeadingJob.Dispose();
         }
+        _driftCorrector.Dispose();
     }
 
     public override string ToString() {

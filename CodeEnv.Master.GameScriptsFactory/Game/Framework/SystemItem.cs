@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatrollable, IFleetExplorable, IGuardable {
+public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
 
     private bool _isTrackingLabelEnabled;
     public bool IsTrackingLabelEnabled {
@@ -252,8 +252,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
             AttachSettlement(Settlement);
         }
         else {
-            // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
-            Settlement.CelestialOrbitSimulator.IsActivated = false;
+            // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
+            // The settlement's CelestialOrbitSimulator is destroyed as a new one is created with a new settlement
             Data.SettlementData = null;
         }
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
@@ -300,13 +300,41 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
 
     #endregion
 
-    #region INavigableTarget Members
+    #region IFleetNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles { get { return Radius; } }
-
-    public override float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
-        return Radius + shipCollisionAvoidanceRadius;   // keeps ship outside of gravity well, aka Topography.System
+    public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        float distanceToFleet = Vector3.Distance(fleetPosition, Position);
+        if (distanceToFleet > Radius) {
+            // fleet is outside of system so only cast to system edge
+            return distanceToFleet - Radius;
+        }
+        // fleet is inside system so don't cast into star
+        return Star.GetObstacleCheckRayLength(fleetPosition);
     }
+
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+        float distanceToShip = Vector3.Distance(shipPosition, Position);
+        if (distanceToShip > Radius) {
+            // outside of the system
+            float innerShellRadius = Radius + tgtStandoffDistance;   // keeps ship outside of gravity well, aka Topography.System
+            float outerShellRadius = innerShellRadius + 10F;   // HACK depth of arrival shell is 10
+            return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        }
+        else {
+            // inside of system
+            StationaryLocation closestAssyStation = GameUtility.GetClosest(shipPosition, LocalAssemblyStations);
+            return closestAssyStation.GetMoveTarget(tgtOffset, tgtStandoffDistance, shipPosition);
+        }
+    }
+    //public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    //    float innerShellRadius = Radius + tgtStandoffDistance;   // keeps ship outside of gravity well, aka Topography.System
+    //    float outerShellRadius = innerShellRadius + 10F;   // HACK depth of arrival shell is 10
+    //    return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+    //}
 
     #endregion
 
@@ -323,6 +351,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IPatro
     }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+
+    public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);

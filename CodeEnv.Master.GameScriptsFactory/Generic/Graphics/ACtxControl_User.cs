@@ -45,7 +45,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <summary>
     /// Lookup table for IUnitTargets for this item, keyed by the ID of the item selected.
     /// </summary>
-    protected static IDictionary<int, INavigableTarget> _unitTargetLookup = new Dictionary<int, INavigableTarget>();
+    protected static IDictionary<int, INavigable> _unitTargetLookup = new Dictionary<int, INavigable>();
 
     /// <summary>
     /// The directives available for execution when the user operator of the menu is the Item selected.
@@ -107,11 +107,11 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <returns></returns>
     private bool TryPopulateItemSubMenu_UserMenuOperatorIsSelected(CtxMenu.Item topLevelItem, T directive) {
-        IEnumerable<INavigableTarget> targets;
+        IEnumerable<INavigable> targets;
         bool isSubmenuSupported = TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out targets);
         if (isSubmenuSupported) {
             // directive requires a submenu, although targets maybe empty
-            var targetsStack = new Stack<INavigableTarget>(targets);
+            var targetsStack = new Stack<INavigable>(targets);
             int submenuItemCount = targetsStack.Count;
 
             if (submenuItemCount > Constants.Zero) {
@@ -150,8 +150,8 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
-    protected virtual bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(T directive, out IEnumerable<INavigableTarget> targets) {
-        targets = Enumerable.Empty<INavigableTarget>();
+    protected virtual bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(T directive, out IEnumerable<INavigable> targets) {
+        targets = Enumerable.Empty<INavigable>();
         return false;
     }
 
@@ -160,7 +160,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
         _unitTargetLookup.Clear();
     }
 
-    private INavigableTarget FindClosestTarget(AItem item, IEnumerable<INavigableTarget> targets) {
+    private INavigable FindClosestTarget(AItem item, IEnumerable<INavigable> targets) {
         return targets.MinBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
 

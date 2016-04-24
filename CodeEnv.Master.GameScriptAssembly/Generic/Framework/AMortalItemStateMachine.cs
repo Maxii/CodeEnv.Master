@@ -296,7 +296,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     protected void Call(object stateToActivate) {
         var callerEnterState = state.enterState;
         D.Assert(callerEnterState.Method.ReturnType == typeof(IEnumerator));
-        //D.Log(ShowDebugLog, "{0}.Call({1}) called.", FullName, stateToActivate.ToString());
+        D.Log(ShowDebugLog, "{0}.Call({1}) called.", FullName, stateToActivate.ToString());
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -358,7 +358,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// The state to use if there is no waiting calling state.
     /// </param>
     protected void Return(object baseState) {
-        //D.Log(ShowDebugLog, "{0}.Return({1}) called.", FullName, baseState.ToString());
+        D.Log(ShowDebugLog, "{0}.Return({1}) from state {2} called.", FullName, baseState.ToString(), CurrentState.ToString());
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
@@ -795,8 +795,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                                 if (_enumerator == enm) {
                                     // _enumerator hasn't been changed externally during the frame it took to get here so it is OK to null
                                     _enumerator = null;
+                                    //D.Log(ShowDebugLog, "{0}.Run() _enumerator set to null. Frame: {1}.", Name, Time.frameCount);
                                 }
-                                //D.Log(ShowDebugLog, "{0}.Run() _enumerator set to null. Frame: {1}.", Name, Time.frameCount);
 
                             }
                             // Starts at top again without waiting for the next frame
@@ -805,7 +805,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                     else {
                         //_enumerator changed by MoveNext() executed code assigning a new state. _enumerator here will be null if the
                         // Enter/ExitState() method of the new state returns void
-                        //D.Log(ShowDebugLog, "{0}.Run()._enumerator has changed. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                        //D.Log(ShowDebugLog, "{0}.Run()._enumerator was changed by executed code block. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
                         yield return null;
                     }
                 }

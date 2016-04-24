@@ -32,8 +32,8 @@ namespace CodeEnv.Master.GameContent {
         public const string NoYearsFormat = "{0} days, {1:0.0} hours";  //= "{0:D3} days, {1:D2} hours";
         public const string HoursOnlyFormat = "{0:0.0} hours"; //= "{0:D2} hours";
 
-        public static GameTimeDuration OneDay = new GameTimeDuration(hours: 0F, days: 1, years: 0);
-        public static GameTimeDuration OneYear = new GameTimeDuration(hours: 0F, days: 0, years: 1);
+        public static readonly GameTimeDuration OneDay = new GameTimeDuration(hours: 0F, days: 1, years: 0);
+        public static readonly GameTimeDuration OneYear = new GameTimeDuration(hours: 0F, days: 0, years: 1);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="days">The days. Number of days is unlimited.</param>
         public GameTimeDuration(float hours, int days)
             : this() {
-            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
+            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameTime.HoursEqualTolerance);
             Utility.ValidateNotNegative(days);
             float totalHours = (days * GameTime.HoursPerDay) + hours;
             Initialize(totalHours);
@@ -158,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="years">The years. Unlimited.</param>
         public GameTimeDuration(float hours, int days, int years)
             : this() {
-            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
+            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameTime.HoursEqualTolerance);
             Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
             Utility.ValidateNotNegative(years);
             float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
@@ -230,7 +230,8 @@ namespace CodeEnv.Master.GameContent {
         #region IEquatable<GameTimeDuration> Members
 
         public bool Equals(GameTimeDuration other) {
-            return Mathfx.Approx(TotalInHours, other.TotalInHours, GameTime.HoursEqualTolerance);
+            // - Mathf.Epsilon useful for 0F comparison only. See http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
+            return Mathfx.Approx(TotalInHours, other.TotalInHours, GameTime.HoursEqualTolerance - UnityConstants.FloatEqualityPrecision);
         }
 
         #endregion

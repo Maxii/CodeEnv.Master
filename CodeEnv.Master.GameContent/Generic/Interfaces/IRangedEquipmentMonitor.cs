@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
 
         Player Owner { get; }
 
+        bool IsOperational { get; }
+
     }
 }
 

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="course">The course.</param>
-        public CoursePlotLine(string name, IList<INavigableTarget> course)
+        public CoursePlotLine(string name, IList<INavigable> course)
             : this(name, course, References.DynamicObjectsFolder.Folder, 1F) { }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="lineParent">The line parent.</param>
         /// <param name="lineWidth">Width of the line.</param>
         /// <param name="color">The color of the line. Default is Gray.</param>
-        public CoursePlotLine(string name, IList<INavigableTarget> course, Transform lineParent, float lineWidth, GameColor color = GameColor.Gray)
+        public CoursePlotLine(string name, IList<INavigable> course, Transform lineParent, float lineWidth, GameColor color = GameColor.Gray)
             : base(name, course.Select(wayPt => wayPt.Position).ToList(), null, lineParent, LineType.Continuous, lineWidth, color) {
         }
 
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// Use this when you have added, replaced or removed one or more waypoints in your course.
         /// </summary>
         /// <param name="course">The course.</param>
-        public void UpdateCourse(IList<INavigableTarget> course) {
+        public void UpdateCourse(IList<INavigable> course) {
             Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3 list
         }
 

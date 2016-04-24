@@ -77,7 +77,8 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
+                return !(_fleetMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
@@ -111,7 +112,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _fleetMenuOperator;
+        IFleetNavigable target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }

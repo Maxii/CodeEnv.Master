@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -346,7 +346,6 @@ namespace CodeEnv.Master.Common {
             return vectorsToOtherLocations;
         }
 
-
         /// <summary>
         /// Finds the average vector between fromLocation and all toLocations.
         /// </summary>
@@ -489,6 +488,8 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Determines whether this renderer is in the line of sight of (and therefore rendered by) the provided camera.
         /// WARNING: Does not take into account layer-specific farClipPlanes and my approach to a workaround is not reliable.
+        ///   - it thinks the camera sees the renderer as it doesn't account for layer-specific clipPlane
+        ///   - unsuccessfully used Vector3.Distance() to compare to layer farClipPlane distance
         /// </summary>
         /// <param name="renderer">The renderer.</param>
         /// <param name="camera">The camera.</param>

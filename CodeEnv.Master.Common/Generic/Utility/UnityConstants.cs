@@ -145,7 +145,9 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// My default precision for Unity float equality comparisons.
-        /// 1M times less precise than Unity's built in == comparison
+        /// 1M times less precise than Unity's built in == comparison.
+        /// WARNING: Donot use Mathf.Epsilon for any comparisons except with 0F.
+        /// see http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
         /// </summary>
         public const float FloatEqualityPrecision = .0001F;
 

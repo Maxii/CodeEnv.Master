@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IShipExplorable.cs
-// Interface for Items that can only be explored by individual ships.
+// Interface for Items that individual ships can be ordered to explore.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items that can only be explored by individual ships.
+    /// Interface for Items that individual ships can be ordered to explore.
     /// </summary>
-    public interface IShipExplorable : IExplorable {
+    public interface IShipExplorable : IExplorable, IShipNavigable {
 
         /// <summary>
         /// Tells the item the player has fully explored it.

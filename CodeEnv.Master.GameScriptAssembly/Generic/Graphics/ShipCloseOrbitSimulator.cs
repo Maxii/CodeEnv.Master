@@ -24,7 +24,7 @@ using UnityEngine;
 /// Simulates orbiting around an immobile parent of any ships attached by a fixed joint.
 /// This is also an INavigableTarget which allows it to be used as a destination by a Ship's AutoPilot.
 /// </summary>
-public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator, INavigableTarget {
+public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator, IShipNavigable {
 
     private const string NameFormat = "{0}.{1}";
 
@@ -48,40 +48,41 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IShipOrbitSimulator Members
+    #region IShipOrbitSimulator Members Archive
 
-    /// <summary>
-    /// Returns true if the provided ship should simply be placed in the returned position within
-    /// the close orbit slot, false if the ship should use the autoPilot to achieve close orbit.
-    /// </summary>
-    /// <param name="ship">The ship.</param>
-    /// <param name="closeOrbitPlacementPosition">The close orbit placement position.</param>
-    /// <returns></returns>
-    public bool TryDetermineCloseOrbitPlacementPosition(IShipItem ship, out Vector3 closeOrbitPlacementPosition) {
-        if (CheckWeatherToManuallyPlaceShipInCloseOrbit(ship)) {
-            // ship is too far inside of orbitSlot to use AutoPilot so just place it where it belongs
-            float slotMeanRadius = OrbitData.MeanRadius;
-            float distanceFromOrbitedObjectToDesiredPosition = slotMeanRadius;
-            float maxAllowedShipOrbitRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
-            D.Warn(distanceFromOrbitedObjectToDesiredPosition > maxAllowedShipOrbitRadius, "{0} CollisionDetectionZone is protruding from ShipOrbitSlot. {1:0.##} > {2:0.##}.",
-                ship.FullName, distanceFromOrbitedObjectToDesiredPosition, maxAllowedShipOrbitRadius);
-            float minAllowedShipOrbitRadius = OrbitData.InnerRadius + ship.CollisionDetectionZoneRadius;
-            D.Warn(distanceFromOrbitedObjectToDesiredPosition < minAllowedShipOrbitRadius, "{0} CollisionDetectionZone is protruding from ShipOrbitSlot. {1:0.##} < {2:0.##}.",
-                ship.FullName, distanceFromOrbitedObjectToDesiredPosition, minAllowedShipOrbitRadius);
+    ///// <summary>
+    ///// Returns true if the provided ship should simply be placed in the returned position within
+    ///// the close orbit slot, false if the ship should use the autoPilot to achieve close orbit.
+    ///// </summary>
+    ///// <param name="ship">The ship.</param>
+    ///// <param name="closeOrbitPlacementPosition">The close orbit placement position.</param>
+    ///// <returns></returns>
+    //[System.Obsolete]
+    //public bool TryDetermineCloseOrbitPlacementPosition(IShipItem ship, out Vector3 closeOrbitPlacementPosition) {
+    //    if (CheckWeatherToManuallyPlaceShipInCloseOrbit(ship)) {
+    //        // ship is too far inside of orbitSlot to use AutoPilot so just place it where it belongs
+    //        float slotMeanRadius = OrbitData.MeanRadius;
+    //        float distanceFromOrbitedObjectToDesiredPosition = slotMeanRadius;
+    //        float maxAllowedShipOrbitRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
+    //        D.Warn(distanceFromOrbitedObjectToDesiredPosition > maxAllowedShipOrbitRadius, "{0} CollisionDetectionZone is protruding from ShipOrbitSlot. {1:0.##} > {2:0.##}.",
+    //            ship.FullName, distanceFromOrbitedObjectToDesiredPosition, maxAllowedShipOrbitRadius);
+    //        float minAllowedShipOrbitRadius = OrbitData.InnerRadius + ship.CollisionDetectionZoneRadius;
+    //        D.Warn(distanceFromOrbitedObjectToDesiredPosition < minAllowedShipOrbitRadius, "{0} CollisionDetectionZone is protruding from ShipOrbitSlot. {1:0.##} < {2:0.##}.",
+    //            ship.FullName, distanceFromOrbitedObjectToDesiredPosition, minAllowedShipOrbitRadius);
 
-            Vector3 orbitedObjectPosition = transform.position; // same as orbitedItem
-            Vector3 directionToDesiredOrbitPosition = (ship.Position - orbitedObjectPosition).normalized;
-            closeOrbitPlacementPosition = orbitedObjectPosition + directionToDesiredOrbitPosition * distanceFromOrbitedObjectToDesiredPosition;
-            return true;
-        }
-        // Ship is outside orbit slot capture window so AutoPilot can be used
-        closeOrbitPlacementPosition = Vector3.zero;
-        return false;
-    }
+    //        Vector3 orbitedObjectPosition = transform.position; // same as orbitedItem
+    //        Vector3 directionToDesiredOrbitPosition = (ship.Position - orbitedObjectPosition).normalized;
+    //        closeOrbitPlacementPosition = orbitedObjectPosition + directionToDesiredOrbitPosition * distanceFromOrbitedObjectToDesiredPosition;
+    //        return true;
+    //    }
+    //    // Ship is outside orbit slot capture window so AutoPilot can be used
+    //    closeOrbitPlacementPosition = Vector3.zero;
+    //    return false;
+    //}
 
     #endregion
 
-    #region INavigableTarget Members
+    #region INavigable Members
 
     public string DisplayName { get { return FullName; } }
 
@@ -96,15 +97,15 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
 
     public bool IsMobile { get { return OrbitData.IsOrbitedItemMobile; } }
 
-    public float Radius { get { return OrbitData.OuterRadius; } }
+    #endregion
 
-    public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
+    #region IShipNavigable Members
 
-    public float RadiusAroundTargetContainingKnownObstacles { get { return OrbitData.InnerRadius; } }
-
-    public float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        return OrbitData.OuterRadius - shipCollisionDetectionRadius;   // entire shipCollisionDetectionZone is inside the OrbitSlot
-
+    public AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        // makes sure the entire shipCollisionDetectionZone is inside the OrbitSlot
+        float outerShellRadius = OrbitData.OuterRadius - tgtStandoffDistance;
+        float innerShellRadius = OrbitData.InnerRadius + tgtStandoffDistance;
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

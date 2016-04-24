@@ -27,12 +27,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : AUnitCmdItemData {
 
-        private INavigableTarget _target;
-        public INavigableTarget Target {
+        private INavigable _target;
+        public INavigable Target {
             get { return _target; }
             set {
                 if (_target == value) { return; }   // eliminates equality warning when targets are the same
-                SetProperty<INavigableTarget>(ref _target, value, "Target");
+                SetProperty<INavigable>(ref _target, value, "Target");
             }
         }
 
@@ -43,21 +43,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. The real-time speed of the Flagship in Units per hour, normalized for game speed.
+        /// Readonly. The actual speed of the Flagship in Units per hour, normalized for game speed.
         /// </summary>
-        public float CurrentSpeedValue { get { return HQElementData.CurrentSpeedValue; } }
+        public float ActualSpeedValue { get { return HQElementData.ActualSpeedValue; } }
 
         /// <summary>
-        /// Readonly. The requested speed of the Flagship in Units per hour, normalized for game speed.
+        /// The Speed the Flagship has been ordered to execute.
         /// </summary>
-        public float RequestedSpeedValue { get { return HQElementData.RequestedSpeedValue; } }
-
-        // Note: RequestedSpeed not currently present as it would be confusing to show ShipSpeeds from HQElement
-
-        /// <summary>
-        /// Readonly. The requested heading of the Flagship in worldspace coordinates.
-        /// </summary>
-        public Vector3 RequestedHeading { get { return HQElementData.RequestedHeading; } }
+        public Speed CurrentSpeed { get { return HQElementData.CurrentSpeed; } }
 
         /// <summary>
         /// Readonly. The real-time heading of the Flagship in worldspace coordinates. Equivalent to transform.forward.
@@ -184,6 +177,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
+
+        protected override void UnitWeaponsRangePropChangedHandler() {
+            D.Warn(UnitWeaponsRange.Max > TempGameValues.__MaxFleetWeaponsRangeDistance, "{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.",
+                FullName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
+        }
 
         private void ShipFullSpeedPropChangedHandler() {
             RefreshFullSpeed();

@@ -67,17 +67,18 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_settlement as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
+                return !(_settlement as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Explore:
                 var explorableSystem = _systemMenuOperator as IFleetExplorable;
                 return !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
-            case FleetDirective.Move:
-            case FleetDirective.FullSpeedMove:
-                return false;
             case FleetDirective.Patrol:
                 return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
                 return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
+                return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -94,7 +95,7 @@ public class SystemCtxControl_AI : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = directive == FleetDirective.Attack ? _settlement as INavigableTarget : _systemMenuOperator;
+        IFleetNavigable target = directive == FleetDirective.Attack ? _settlement as IFleetNavigable : _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }

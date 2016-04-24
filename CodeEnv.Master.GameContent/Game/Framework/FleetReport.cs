@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public FleetComposition UnitComposition { get; private set; }
 
-        public INavigableTarget Target { get; private set; }
+        public INavigable Target { get; private set; }
 
         public float? CurrentSpeed { get; private set; }
 
@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
             base.AssignIncrementalValues_IntelCoverageBroad(data);
             FleetCmdData fData = data as FleetCmdData;
             Target = fData.Target;
-            CurrentSpeed = fData.CurrentSpeedValue;
+            CurrentSpeed = fData.ActualSpeedValue;
         }
 
         public override string ToString() {

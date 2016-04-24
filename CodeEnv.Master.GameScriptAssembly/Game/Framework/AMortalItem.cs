@@ -239,6 +239,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
                 string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
                 fullMethodName = coroutineMethodName;
             }
+            else {
+                fullMethodName = stackFrame.GetMethod().Name;
+            }
             Debug.Log(LogEventFormat.Inject(FullName, fullMethodName));
         }
     }

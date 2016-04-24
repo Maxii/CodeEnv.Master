@@ -27,6 +27,7 @@ using UnityEngine;
 /// Abstract base class for Ship and Fleet Navigators.
 /// Note: Present in GameScriptsFactory assembly to allow use of internal.
 /// </summary>
+[Obsolete]
 internal abstract class AAutoPilot : IDisposable {
 
     protected const float TargetCastingDistanceBuffer = 0.1F;
@@ -43,7 +44,7 @@ internal abstract class AAutoPilot : IDisposable {
     private static LayerMask _avoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
     private static Speed[] _inValidAutoPilotSpeeds = {  Speed.None,
-                                                        Speed.EmergencyStop,
+                                                        Speed.HardStop,
                                                         Speed.Stop
                                                     };
 
@@ -69,7 +70,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// <summary>
     /// The course this AutoPilot will follow when engaged. 
     /// </summary>
-    internal IList<INavigableTarget> AutoPilotCourse { get; private set; }
+    internal IList<INavigable> AutoPilotCourse { get; private set; }
 
     /// <summary>
     /// The name of this Navigator's client.
@@ -79,7 +80,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// <summary>
     /// The current target this AutoPilot is engaged to reach.
     /// </summary>
-    protected INavigableTarget AutoPilotTarget { get; private set; }
+    protected INavigable AutoPilotTarget { get; private set; }
 
     /// <summary>
     /// The current position of this Navigator client in world space.
@@ -112,7 +113,7 @@ internal abstract class AAutoPilot : IDisposable {
     protected GameManager _gameMgr;
 
     internal AAutoPilot() {
-        AutoPilotCourse = new List<INavigableTarget>();
+        AutoPilotCourse = new List<INavigable>();
         _gameTime = GameTime.Instance;
         _gameMgr = GameManager.Instance;
     }
@@ -127,7 +128,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// </summary>
     /// <param name="autoPilotTgt">The target this AutoPilot is being engaged to reach.</param>
     /// <param name="autoPilotSpeed">The speed the autopilot should travel at.</param>
-    protected void RecordAutoPilotCourseValues(INavigableTarget autoPilotTgt, Speed autoPilotSpeed) {
+    protected void RecordAutoPilotCourseValues(INavigable autoPilotTgt, Speed autoPilotSpeed) {
         Utility.ValidateNotNull(autoPilotTgt);
         D.Assert(!_inValidAutoPilotSpeeds.Contains(autoPilotSpeed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, autoPilotSpeed.GetValueName()));
         AutoPilotTarget = autoPilotTgt;
@@ -216,13 +217,13 @@ internal abstract class AAutoPilot : IDisposable {
     /// <returns>
     ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
     /// </returns>
-    protected bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, out INavigableTarget detour, Vector3 destinationOffset = default(Vector3)) {
+    protected bool TryCheckForObstacleEnrouteTo(INavigable destination, float castingDistanceSubtractor, out INavigable detour, Vector3 destinationOffset = default(Vector3)) {
         Utility.ValidateNotNegative(castingDistanceSubtractor);
         int iterationCount = Constants.Zero;
         return TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, destinationOffset, out detour, ref iterationCount);
     }
 
-    private bool TryCheckForObstacleEnrouteTo(INavigableTarget destination, float castingDistanceSubtractor, Vector3 destinationOffset, out INavigableTarget detour, ref int iterationCount) {
+    private bool TryCheckForObstacleEnrouteTo(INavigable destination, float castingDistanceSubtractor, Vector3 destinationOffset, out INavigable detour, ref int iterationCount) {
         D.AssertException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
         detour = null;
         Vector3 vectorToDestPoint = (destination.Position + destinationOffset) - Position;
@@ -256,7 +257,7 @@ internal abstract class AAutoPilot : IDisposable {
                 return false;
             }
 
-            INavigableTarget newDetour;
+            INavigable newDetour;
             float detourCastingDistanceSubtractor = Constants.ZeroF;  // obstacle detours don't have ObstacleZones
             Vector3 detourOffset = destinationOffset;
             if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, detourOffset, out newDetour, ref iterationCount)) {
@@ -275,7 +276,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// <param name="hitInfo">The hit information.</param>
     /// <param name="fleetRadius">The fleet radius.</param>
     /// <returns></returns>
-    protected INavigableTarget GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius) {
+    protected INavigable GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius) {
         Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius);
         return new StationaryLocation(detourPosition);
     }
@@ -287,14 +288,14 @@ internal abstract class AAutoPilot : IDisposable {
     /// <param name="zoneHitInfo">The zone hit information.</param>
     /// <param name="detour">The detour.</param>
     /// <returns></returns>
-    protected abstract bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out INavigableTarget detour);
+    protected abstract bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out INavigable detour);
 
     /// <summary>
     /// Hook for derived classes to take action when an obstacle has been found that is also the destination.
     /// </summary>
     /// <param name="obstacle">The obstacle.</param>
     protected virtual void HandleObstacleFoundIsTarget(IAvoidableObstacle obstacle) {
-        D.Assert(GetType() == typeof(ShipItem.ShipHelm));
+        //D.Assert(GetType() == typeof(ShipItem.ShipHelm));
     }
 
     /// <summary>
@@ -302,7 +303,7 @@ internal abstract class AAutoPilot : IDisposable {
     /// </summary>
     /// <param name="mode">The mode.</param>
     /// <param name="waypoint">The optional waypoint.</param>
-    protected abstract void RefreshCourse(CourseRefreshMode mode, INavigableTarget waypoint = null);
+    protected abstract void RefreshCourse(CourseRefreshMode mode, INavigable waypoint = null);
 
     protected virtual void Cleanup() {
         if (_autoPilotNavJob != null) {

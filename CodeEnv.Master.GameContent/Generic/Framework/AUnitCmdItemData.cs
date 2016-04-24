@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance UnitWeaponsRange {
             get { return _unitWeaponsRange; }
-            private set { SetProperty<RangeDistance>(ref _unitWeaponsRange, value, "UnitWeaponsRange"); }
+            private set { SetProperty<RangeDistance>(ref _unitWeaponsRange, value, "UnitWeaponsRange", UnitWeaponsRangePropChangedHandler); }
         }
 
         private RangeDistance _unitSensorRange;
@@ -280,6 +280,8 @@ namespace CodeEnv.Master.GameContent {
             base.HealthPropChangedHandler();
             RefreshCurrentCmdEffectiveness();
         }
+
+        protected abstract void UnitWeaponsRangePropChangedHandler();
 
         private void MaxCmdEffectivenessPropChangedHandler() {
             RefreshCurrentCmdEffectiveness();

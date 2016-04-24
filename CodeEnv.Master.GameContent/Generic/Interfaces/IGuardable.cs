@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipOrbitable.cs
-// Interface for Items where ships can assume a high orbit.
+// File: IGuardable.cs
+// Interface for Items that can be guarded at GuardStations.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,16 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for Items where ships can assume a high orbit.
+    /// Interface for Items that can be guarded at GuardStations.
     /// </summary>
-    public interface IShipOrbitable : INavigableTarget {
+    public interface IGuardable : INavigable {
 
-        void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint);
+        IList<StationaryLocation> GuardStations { get; }
 
-        bool IsHighOrbitAllowedBy(Player player);
-
-        bool IsInHighOrbit(IShipItem ship);
-
-        void HandleBrokeOrbit(IShipItem ship);
+        bool IsGuardingAllowedBy(Player player);
 
     }
 }

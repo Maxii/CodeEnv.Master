@@ -110,7 +110,6 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     protected ADiscernibleItem _remoteUserOwnedSelectedItem;
 
-
     /// <summary>
     /// The last press release position in world space. Acquired from UICamera,
     /// indicates where the user was pointing just prior to when the 
@@ -521,7 +520,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected abstract void HandleMenuPick_OptimalFocusDistance();
 
-    protected float GetDistanceTo(INavigableTarget target) {
+    protected float GetDistanceTo(INavigable target) {
         return Vector3.Distance(ItemForDistanceMeasurements.Position, target.Position);
     }
 

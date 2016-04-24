@@ -76,7 +76,8 @@ public class PlanetoidCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
+                return !(_planetoidMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
@@ -101,7 +102,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     private void IssueRemoteFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _planetoidMenuOperator;
+        IFleetNavigable target = _planetoidMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }

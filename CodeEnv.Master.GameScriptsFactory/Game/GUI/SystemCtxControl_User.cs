@@ -92,9 +92,10 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Repair:
                 return _settlement.Data.Health == Constants.OneHundredPercent && _settlement.Data.UnitHealth == Constants.OneHundredPercent;
             case BaseDirective.Refit:
-            //TODO under attack?
+                //TODO under attack?
+                return true;
             case BaseDirective.Attack:
-                return false;
+                return !_settlement.IsAttackCapable;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -108,16 +109,16 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case BaseDirective.Attack:
                 // Note: Easy access to attack fleets of war opponents. Other attack targets should be explicitly chosen by user
                 // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigableTarget>();
+                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigable>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
-                targets = Enumerable.Empty<INavigableTarget>();
+                targets = Enumerable.Empty<INavigable>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -173,7 +174,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueSystemMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        INavigableTarget target;
+        INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _systemMenuOperator.FullName, directive.GetValueName(), msg);
@@ -182,14 +183,14 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = directive.EqualsAnyOf(FleetDirective.Disband, FleetDirective.Refit, FleetDirective.Repair) ? _settlement as INavigableTarget : _systemMenuOperator;
+        IFleetNavigable target = directive.EqualsAnyOf(FleetDirective.Disband, FleetDirective.Refit, FleetDirective.Repair) ? _settlement as IFleetNavigable : _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     private void IssueRemoteShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        INavigableTarget target = _settlement;
+        IShipNavigable target = _settlement;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
     }

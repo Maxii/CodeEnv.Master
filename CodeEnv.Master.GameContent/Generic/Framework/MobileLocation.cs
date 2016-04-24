@@ -16,13 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// An INavigableTarget wrapping a mobile location in world space.
     /// </summary>
-    public class MobileLocation : INavigableTarget {
+    public class MobileLocation : IFleetNavigable, IShipNavigable {
 
         private Reference<Vector3> _movingPosition;
 
@@ -34,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             return FullName;
         }
 
-        #region INavigableTarget Members
+        #region INavigable Members
 
         public string DisplayName { get { return FullName; } }
 
@@ -44,15 +45,24 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsMobile { get { return true; } }
 
-        public float Radius { get { return Constants.ZeroF; } }
+        #endregion
+
+        #region IShipNavigable Members
+
+        public AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+            return new AutoPilotTarget(this, tgtOffset, Constants.ZeroF, TempGameValues.WaypointCloseEnoughDistance);
+        }
+
+        #endregion
+
+        #region IFleetNavigable Members
 
         public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
 
-        public float RadiusAroundTargetContainingKnownObstacles { get { return Constants.ZeroF; } }
-
-        public float GetShipArrivalDistance(float shipCollisionAvoidanceRadius) {
-            return TempGameValues.WaypointCloseEnoughDistance;
+        public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+            return Vector3.Distance(fleetPosition, Position);
         }
+
 
         #endregion
 

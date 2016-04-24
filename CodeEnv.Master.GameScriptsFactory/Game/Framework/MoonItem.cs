@@ -108,10 +108,20 @@ public class MoonItem : APlanetoidItem, IMoonItem {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region INavigableTarget Members
+    #region IShipNavigable Members
 
-    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        return ObstacleZoneRadius + shipCollisionDetectionRadius;
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius = ObstacleZoneRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
+        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+    }
+
+    #endregion
+
+    #region IFleetNavigable Members
+
+    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        return Vector3.Distance(fleetPosition, Position) - ObstacleZoneRadius - TempGameValues.ObstacleCheckRayLengthBuffer;
     }
 
     #endregion

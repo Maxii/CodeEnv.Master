@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUnitAttackableTarget, IFormationMgrClient {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFleetNavigable, IUnitAttackableTarget, IFormationMgrClient {
 
     private Transform _unitContainer;
     /// <summary>
@@ -39,6 +39,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
     }
 
     public abstract bool IsAvailable { get; }
+
+    public bool IsAttackCapable { get { return Elements.Where(e => e.IsAttackCapable).Any(); } }
 
     private bool _isTrackingLabelEnabled;
     public bool IsTrackingLabelEnabled {
@@ -460,7 +462,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
         return false;
     }
 
-    protected void DestroyUnitContainer(float delayInHours = Constants.ZeroF) {
+    /// <summary>
+    /// Destroys any parents that are applicable to the Cmd. 
+    /// <remarks>A Fleet and Starbase destroy their UnitContainer, but a Settlement 
+    /// destroys its UnitContainer's parent, its CelestialOrbitSimulator.</remarks>
+    /// </summary>
+    /// <param name="delayInHours">The delay in hours.</param>
+    protected virtual void DestroyApplicableParents(float delayInHours = Constants.ZeroF) {
         GameUtility.Destroy(UnitContainer.gameObject, delayInHours);
     }
 
@@ -496,9 +504,15 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IUni
 
     #endregion
 
-    #region INavigableTarget Members
+    #region INavigable Members
 
     public override string DisplayName { get { return Data.ParentName; } }
+
+    #endregion
+
+    #region IFleetNavigable Members
+
+    public abstract float GetObstacleCheckRayLength(Vector3 fleetPosition);
 
     #endregion
 

@@ -274,37 +274,36 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
 
     #endregion
 
-    #region INavigableTarget Members
+    #region IFleetNavigable Members
 
-    public override float RadiusAroundTargetContainingKnownObstacles {
-        get {
-            float knownObstaclesRadius;
-            if (ChildMoons.Any()) {
-                MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
-                float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-                knownObstaclesRadius = distanceToOuterMoon + outerMoon.RadiusAroundTargetContainingKnownObstacles;
-            }
-            else {
-                knownObstaclesRadius = base.RadiusAroundTargetContainingKnownObstacles;
-            }
-            return knownObstaclesRadius;
-        }
-    }
-
-    public override float GetShipArrivalDistance(float shipCollisionDetectionRadius) {
-        string arrivalDistanceMsg = "just outside of it's obstacle zone";
-        float arrivalDistance;
+    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        float radiusContainingKnownObstacles = ObstacleZoneRadius;
         if (ChildMoons.Any()) {
             MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
             float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-            arrivalDistance = distanceToOuterMoon + outerMoon.GetShipArrivalDistance(shipCollisionDetectionRadius);
-            arrivalDistanceMsg = "just outside of outer moon {0}'s obstacle zone".Inject(outerMoon.FullName);
+            radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
+        }
+        return Vector3.Distance(fleetPosition, Position) - radiusContainingKnownObstacles - TempGameValues.ObstacleCheckRayLengthBuffer; ;
+    }
+
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+        float innerShellRadius;
+        float outerShellRadius;
+        if (ChildMoons.Any()) {
+            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+            float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+            innerShellRadius = distanceToOuterMoon + outerMoon.GetMoveTarget(tgtOffset, tgtStandoffDistance).InnerRadius;
+            outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         }
         else {
-            arrivalDistance = Data.CloseOrbitOuterRadius + shipCollisionDetectionRadius;
+            innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
+            outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         }
-        D.Log(ShowDebugLog, "{0}.GetShipArrivalDistance returned {1:0.00}, {2}.", FullName, arrivalDistance, arrivalDistanceMsg);
-        return arrivalDistance;
+        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

@@ -27,14 +27,14 @@ using UnityEngine;
 /// </summary>
 public abstract class AOrdnance : AMonoBase, IOrdnance {
 
+    private const string FullNameFormat = "{0}_{1}";
     private static int __instanceCount = 1;
-    private static string _fullNameFormat = "{0}_{1}";
 
     public event EventHandler deathOneShot;
 
     public string Name { get; private set; }
 
-    public string FullName { get { return _fullNameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name); } }
+    public string FullName { get { return FullNameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name); } }
 
     private IElementAttackableTarget _target;
     public IElementAttackableTarget Target {

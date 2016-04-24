@@ -89,6 +89,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Attack:
+                return !_baseMenuOperator.IsAttackCapable;
             case BaseDirective.Refit:
             case BaseDirective.Disband:
             case BaseDirective.Scuttle:
@@ -106,15 +107,15 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigableTarget>();    // TODO InRange?
+                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigable>();    // TODO InRange?
                 return true;
             case BaseDirective.Refit:
             case BaseDirective.Disband:
             case BaseDirective.Scuttle:
-                targets = Enumerable.Empty<INavigableTarget>();
+                targets = Enumerable.Empty<INavigable>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -172,7 +173,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueBaseMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        INavigableTarget target;
+        INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string tgtMsg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.FullName, directive.GetValueName(), tgtMsg);
@@ -181,14 +182,14 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableTarget target = _baseMenuOperator;
+        IFleetNavigable target = _baseMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
     private void IssueRemoteShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        INavigableTarget target = _baseMenuOperator;
+        IShipNavigable target = _baseMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
     }

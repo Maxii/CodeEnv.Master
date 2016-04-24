@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IGuardable.cs
-// Interface for Items that can be guarded at GuardStations.
+// File: IFleetExplorable.cs
+// Interface for Items that FleetCmds can be ordered to explore.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,18 +14,21 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
 
     using System.Collections.Generic;
+    using UnityEngine;
 
     /// <summary>
-    /// Interface for Items that can be guarded at GuardStations.
+    /// Interface for Items that FleetCmds can be ordered to explore.
     /// </summary>
-    public interface IGuardable : INavigableTarget {
+    public interface IFleetExplorable : IExplorable, IFleetNavigable {
 
-        IList<StationaryLocation> GuardStations { get; }
-
-        bool IsGuardingAllowedBy(Player player);
+        /// <summary>
+        /// A collection of assembly stations that are local to the item.
+        /// </summary>
+        IList<StationaryLocation> LocalAssemblyStations { get; }
 
     }
 }

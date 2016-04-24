@@ -30,8 +30,8 @@ namespace CodeEnv.Master.GameContent {
         public const string CalenderDateFormat = "{0}.{1:D3}.{2:00.}";  //= "{0}.{1:D3}.{2:D2}";
         public const string FullDateFormat = "{0}.{1:D3}.{2:00.0}";  //= "{0}.{1:D3}.{2:D2}";
 
-        public static GameDate GameStartDate = new GameDate(Constants.ZeroF, Constants.Zero, GameTime.GameStartYear);    // 2700.000.00
-        public static GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - Mathf.Epsilon, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19
+        public static readonly GameDate GameStartDate = new GameDate(Constants.ZeroF, Constants.Zero, GameTime.GameStartYear);    // 2700.000.00.0
+        public static readonly GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - GameTime.HoursEqualTolerance, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19.9
 
         #region Comparison Operators Override
 
@@ -118,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="year">The year.</param>
         public GameDate(float hourOfDay, int dayOfYear, int year)
             : this() {
-            Utility.ValidateForRange(hourOfDay, Constants.ZeroF, GameTime.HoursPerDay - Mathf.Epsilon);
+            Utility.ValidateForRange(hourOfDay, Constants.ZeroF, GameTime.HoursPerDay - GameTime.HoursEqualTolerance);
             Utility.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);
             Utility.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
 
@@ -193,7 +193,8 @@ namespace CodeEnv.Master.GameContent {
         #region IEquatable<GameDate> Members
 
         public bool Equals(GameDate other) {
-            return Mathfx.Approx(TotalHoursSinceGameStart, other.TotalHoursSinceGameStart, GameTime.HoursEqualTolerance);
+            // - Mathf.Epsilon useful for 0F comparison only. See http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
+            return Mathfx.Approx(TotalHoursSinceGameStart, other.TotalHoursSinceGameStart, GameTime.HoursEqualTolerance - UnityConstants.FloatEqualityPrecision);
         }
 
         #endregion
