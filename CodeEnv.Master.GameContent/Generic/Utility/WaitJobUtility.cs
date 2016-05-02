@@ -93,8 +93,8 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
         public static Job WaitForHours(float hours, Action<bool> onWaitFinished) {
             D.Assert(_isGameRunning);
-            var job = new Job(WaitForHours(hours), toStart: true, jobCompleted: (wasKilled) => {
-                onWaitFinished(wasKilled);
+            var job = new Job(WaitForHours(hours), toStart: true, jobCompleted: (jobWasKilled) => {
+                onWaitFinished(jobWasKilled);
                 RemoveCompletedJobs();
             });
             _runningJobs.Add(job);
@@ -117,14 +117,14 @@ namespace CodeEnv.Master.GameContent {
         /// before the code assigned to the onWaitFinished delegate.
         /// </summary>
         /// <param name="futureDate">The future date.</param>
-        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
-        /// signature is onWaitFinished(jobWasKilled).</param>
+        /// <param name="waitFinished">The delegate to execute once the wait is finished. The
+        /// signature is waitFinished(jobWasKilled).</param>
         /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
-        public static Job WaitForDate(GameDate futureDate, Action<bool> onWaitFinished) {
+        public static Job WaitForDate(GameDate futureDate, Action<bool> waitFinished) {
             D.Assert(_isGameRunning);
             D.Warn(futureDate < _gameTime.CurrentDate, "Future date {0} < Current date {1}.", futureDate, _gameTime.CurrentDate);
-            var job = new Job(WaitForDate(futureDate), toStart: true, jobCompleted: (wasKilled) => {
-                onWaitFinished(wasKilled);
+            var job = new Job(WaitForDate(futureDate), toStart: true, jobCompleted: (jobWasKilled) => {
+                waitFinished(jobWasKilled);
                 RemoveCompletedJobs();
             });
             _runningJobs.Add(job);
@@ -136,20 +136,24 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Waits until waitWhileCondition turns <c>false</c>, then executes the onWaitFinished delegate.
+        /// Waits until waitWhileCondition turns <c>false</c>, then executes the provided delegate.
+        /// <remarks>Warning: there is no returned Job here that would allow it to be killed. This is
+        /// because I've found what I think is a deferred execution issue with the Linq Func that
+        /// allows it to be executed one more time AFTER the Job is killed. When the Job is killed, 
+        /// MoveNext() is NOT called again, but the Func executes one more time anyhow. I'm thinking
+        /// this can only be deferred execution although I'm not clear why.</remarks>
         /// </summary>
         /// <param name="waitWhileCondition">The <c>true</c> condition that continues the wait.</param>
-        /// <param name="onWaitFinished">The delegate to execute when the wait is finished.
-        /// The signature is onWaitFinished(jobWasKilled).</param>
+        /// <param name="waitFinished">The delegate to execute when the wait is finished.
+        /// The signature is waitFinished(jobWasKilled).</param>
         /// <returns></returns>
-        public static Job WaitWhileCondition(Func<bool> waitWhileCondition, Action<bool> onWaitFinished) {
+        public static void WaitWhileCondition(Func<bool> waitWhileCondition, Action<bool> waitFinished) {
             D.Assert(_isGameRunning);
-            var job = new Job(WaitWhileCondition(waitWhileCondition), toStart: true, jobCompleted: (wasKilled) => {
-                onWaitFinished(wasKilled);
+            var job = new Job(WaitWhileCondition(waitWhileCondition), toStart: true, jobCompleted: (jobWasKilled) => {
+                waitFinished(jobWasKilled);
                 RemoveCompletedJobs();
             });
             _runningJobs.Add(job);
-            return job;
         }
 
         private static IEnumerator WaitWhileCondition(Func<bool> waitWhileCondition) {
@@ -162,18 +166,18 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="particleSystem">The particle system.</param>
         /// <param name="includeChildren">if set to <c>true</c> [include children].</param>
-        /// <param name="onWaitFinished">The delegate to execute when the wait is finished. 
-        /// The signature is onWaitFinished(jobWasKilled).</param>
+        /// <param name="waitFinished">The delegate to execute when the wait is finished. 
+        /// The signature is waitFinished(jobWasKilled).</param>
         /// <returns></returns>
-        public static Job WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren, Action<bool> onWaitFinished) {
+        public static Job WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren, Action<bool> waitFinished) {
             D.Assert(_isGameRunning);
             D.Assert(!particleSystem.loop);
             if (includeChildren && particleSystem.transform.childCount > Constants.Zero) {
                 var childParticleSystems = particleSystem.gameObject.GetComponentsInChildren<ParticleSystem>().Except(particleSystem);
                 childParticleSystems.ForAll(cps => D.Assert(!cps.loop));
             }
-            var job = new Job(WaitForParticleSystemCompletion(particleSystem, includeChildren), toStart: true, jobCompleted: (wasKilled) => {
-                onWaitFinished(wasKilled);
+            var job = new Job(WaitForParticleSystemCompletion(particleSystem, includeChildren), toStart: true, jobCompleted: (jobWasKilled) => {
+                waitFinished(jobWasKilled);
                 RemoveCompletedJobs();
             });
             _runningJobs.Add(job);

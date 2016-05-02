@@ -123,14 +123,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
-        protected IList<IElementAttackableTarget> _qualifiedEnemyTargets;
+        protected IList<IElementAttackable> _qualifiedEnemyTargets;
 
         /// <summary>
         /// Lookup table for CombatResults keyed by the target of this weapon.
         /// <remarks>The target itself is used as the key. If the target dies,
         /// the key is removed before the target is destroyed.</remarks>
         /// </summary>
-        private IDictionary<IElementAttackableTarget, CombatResult> _combatResults;
+        private IDictionary<IElementAttackable, CombatResult> _combatResults;
         private bool _isLoaded;
         private Job _reloadJob;
         private Job _checkForFiringSolutionsJob;
@@ -147,8 +147,8 @@ namespace CodeEnv.Master.GameContent {
             : base(stat, name) {
             _gameTime = GameTime.Instance;
             _gameMgr = References.GameManager;
-            _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
-            _combatResults = new Dictionary<IElementAttackableTarget, CombatResult>();
+            _qualifiedEnemyTargets = new List<IElementAttackable>();
+            _combatResults = new Dictionary<IElementAttackable, CombatResult>();
             Subscribe();
         }
 
@@ -183,7 +183,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
-        public void HandleEnemyTargetInRangeChanged(IElementAttackableTarget enemyTarget, bool isInRange) {
+        public void HandleEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
             //D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(enemyTarget)) {
@@ -209,7 +209,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="enemyTarget">The target.</param>
         /// <returns></returns>
-        public bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget) {
+        public bool ConfirmInRangeForLaunch(IElementAttackable enemyTarget) {
             return WeaponMount.ConfirmInRangeForLaunch(enemyTarget);
         }
 
@@ -236,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="targetFiredOn">The target fired on.</param>
         /// <param name="ordnanceFired">The ordnance fired.</param>
-        public virtual void HandleFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+        public virtual void HandleFiringInitiated(IElementAttackable targetFiredOn, IOrdnance ordnanceFired) {
             D.Assert(IsOperational, "{0} fired at {1} while not operational.", Name, targetFiredOn.FullName);
             D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.", Name, targetFiredOn.FullName);
 
@@ -343,7 +343,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="terminatedOrdnance">The dead ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
 
-        private bool CheckIfQualified(IElementAttackableTarget enemyTarget) {
+        private bool CheckIfQualified(IElementAttackable enemyTarget) {
             return true;    // UNDONE
         }
 
@@ -446,7 +446,7 @@ namespace CodeEnv.Master.GameContent {
         /// Records a shot was fired for purposes of tracking CombatResults.
         /// </summary>
         /// <param name="target">The target.</param>
-        private void RecordShotFired(IElementAttackableTarget target) {
+        private void RecordShotFired(IElementAttackable target) {
             string targetName = target.Name;
             CombatResult combatResult;
             if (!_combatResults.TryGetValue(target, out combatResult)) {
@@ -460,7 +460,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called by fired ordnance when it hits its intended target.
         /// </summary>
         /// <param name="target">The target.</param>
-        public void HandleTargetHit(IElementAttackableTarget target) {
+        public void HandleTargetHit(IElementAttackable target) {
             var combatResult = _combatResults[target];
             combatResult.Hits++;
         }
@@ -469,7 +469,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called by fired ordnance when it misses its intended target without being fatally interdicted.
         /// </summary>
         /// <param name="target">The target.</param>
-        public void HandleTargetMissed(IElementAttackableTarget target) {
+        public void HandleTargetMissed(IElementAttackable target) {
             var combatResult = _combatResults[target];
             combatResult.Misses++;
         }
@@ -479,7 +479,7 @@ namespace CodeEnv.Master.GameContent {
         /// (ActiveCM or Shield) or some other obstacle that was not its target.
         /// </summary>
         /// <param name="target">The target.</param>
-        public void HandleOrdnanceInterdicted(IElementAttackableTarget target) {
+        public void HandleOrdnanceInterdicted(IElementAttackable target) {
             var combatResult = _combatResults[target];
             combatResult.Interdictions++;
         }
@@ -494,7 +494,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void ReportCombatResults(IElementAttackableTarget target) {
+        private void ReportCombatResults(IElementAttackable target) {
             if (DebugSettings.Instance.EnableCombatResultLogging) {
                 CombatResult combatResult;
                 if (_combatResults.TryGetValue(target, out combatResult)) {    // if the weapon never fired, there won't be a combat result

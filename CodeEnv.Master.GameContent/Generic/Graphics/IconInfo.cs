@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Immutable struct containing info needed to construct icons.
@@ -38,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private static string _toStringFormat = "{0}.Filename: {1}, AtlasID: {2}, Color: {3}";
+        private const string ToStringFormat = "{0}.Filename: {1}, AtlasID: {2}, Color: {3}, Placement: {4}, Size: {5}, Layer: {6}";
 
         public string Filename { get; private set; }
 
@@ -46,11 +47,20 @@ namespace CodeEnv.Master.GameContent {
 
         public GameColor Color { get; private set; }
 
-        public IconInfo(string filename, AtlasID atlasID, GameColor color)
+        public Vector2 Size { get; private set; }
+
+        public WidgetPlacement Placement { get; private set; }
+
+        public Layers Layer { get; private set; }
+
+        public IconInfo(string filename, AtlasID atlasID, GameColor color, Vector2 size, WidgetPlacement placement, Layers layer)
             : this() {
             Filename = filename;
             AtlasID = atlasID;
             Color = color;
+            Size = size;
+            Placement = placement;
+            Layer = layer;
         }
 
         #region Object.Equals and GetHashCode Override
@@ -72,19 +82,24 @@ namespace CodeEnv.Master.GameContent {
             hash = hash * 31 + Filename.GetHashCode(); // 31 = another prime number
             hash = hash * 31 + AtlasID.GetHashCode();
             hash = hash * 31 + Color.GetHashCode();
+            hash = hash * 31 + Placement.GetHashCode();
+            hash = hash * 31 + Size.GetHashCode();
+            hash = hash * 31 + Layer.GetHashCode();
             return hash;
         }
 
         #endregion
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Filename, AtlasID.GetValueName(), Color.GetValueName());
+            return ToStringFormat.Inject(GetType().Name, Filename, AtlasID.GetValueName(), Color.GetValueName(), Placement.GetValueName(),
+                Size, Layer.GetValueName());
         }
 
         #region IEquatable<IconInfo> Members
 
         public bool Equals(IconInfo other) {
-            return Filename == other.Filename && AtlasID == other.AtlasID && Color == other.Color;
+            return Filename == other.Filename && AtlasID == other.AtlasID && Color == other.Color && Placement == other.Placement
+                && Size == other.Size && Layer == other.Layer;
         }
 
         #endregion

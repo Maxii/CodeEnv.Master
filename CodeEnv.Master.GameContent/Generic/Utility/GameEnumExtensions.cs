@@ -574,20 +574,27 @@ namespace CodeEnv.Master.GameContent {
         #region Ship Speed 
 
         /// <summary>
-        /// Gets the speed in units per hour for this ship or fleet. Either or both datas
-        /// can be null if you are certain which speed and move mode you are asking for. 
+        /// Gets the speed in units per hour for this ship moving as part of a fleet.
         /// </summary>
         /// <param name="speed">The speed enum value.</param>
-        /// <param name="moveMode">The move mode.</param>
-        /// <param name="shipData">The ship data.</param>
         /// <param name="fleetData">The fleet data.</param>
         /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public static float GetUnitsPerHour(this Speed speed, ShipMoveMode moveMode, ShipData shipData, FleetCmdData fleetData) {
-            D.Assert(moveMode != ShipMoveMode.None);
+        public static float GetUnitsPerHour(this Speed speed, FleetCmdData fleetData) {
+            return GetUnitsPerHour(speed, null, fleetData);
+        }
 
+        /// <summary>
+        /// Gets the speed in units per hour for this ship moving independantly of its fleet.
+        /// </summary>
+        /// <param name="speed">The speed enum value.</param>
+        /// <param name="shipData">The ship data.</param>
+        /// <returns></returns>
+        public static float GetUnitsPerHour(this Speed speed, ShipData shipData) {
+            return GetUnitsPerHour(speed, shipData, null);
+        }
+
+        private static float GetUnitsPerHour(Speed speed, ShipData shipData, FleetCmdData fleetData) {
             // Note: see Flight.txt in GameDev Notes for analysis of speed values
-
             float fullSpeedFactor = Constants.ZeroF;
             switch (speed) {
                 case Speed.HardStop:
@@ -632,7 +639,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             float fullSpeed = Constants.ZeroF;
-            if (moveMode == ShipMoveMode.ShipSpecific) {
+            if (shipData != null) {
                 fullSpeed = shipData.FullSpeedValue; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
                 //D.Log("{0}.FullSpeed = {1} units/hour. IsFtlOperational = {2}.", shipData.FullName, fullSpeed, shipData.IsFtlOperational);
             }
@@ -648,6 +655,7 @@ namespace CodeEnv.Master.GameContent {
             }
             return speedValueResult;
         }
+
 
         /// <summary>
         /// Tries to decrease the speed by one step below the source speed. Returns

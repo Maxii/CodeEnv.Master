@@ -36,10 +36,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public string FullName { get { return FullNameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name); } }
 
-    private IElementAttackableTarget _target;
-    public IElementAttackableTarget Target {
+    private IElementAttackable _target;
+    public IElementAttackable Target {
         get { return _target; }
-        private set { SetProperty<IElementAttackableTarget>(ref _target, value, "Target"); }
+        private set { SetProperty<IElementAttackable>(ref _target, value, "Target"); }
     }
 
     public Vector3 CurrentHeading { get { return transform.forward; } }
@@ -93,7 +93,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
     }
 
-    protected void PrepareForLaunch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    protected void PrepareForLaunch(IElementAttackable target, AWeapon weapon, bool toShowEffects) {
         Target = target;
         Weapon = weapon;
 

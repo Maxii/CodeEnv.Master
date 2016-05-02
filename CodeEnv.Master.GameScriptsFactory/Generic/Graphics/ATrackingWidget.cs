@@ -103,6 +103,14 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     protected UIWidget Widget { get; private set; }
+
+    /// <summary>
+    /// Indicates if the camera is within acceptable range of the target to show the widget.
+    /// </summary>
+    private bool IsWithinShowDistance {
+        get { return Utility.IsInRange(Target.Position.DistanceToCamera(), _minShowDistance, _maxShowDistance); }
+    }
+
     protected Vector3 _offset;
 
     private float _minShowDistance = Constants.ZeroF;
@@ -122,6 +130,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         // can't use Show here as derived classes reference other fields not yet set
     }
 
+    // UNCLEAR These show distances are only enforced when Show(true) is called. How much value does this provide?
     public void SetShowDistance(float min, float max = Mathf.Infinity) {
         _minShowDistance = min;
         _maxShowDistance = CalcMaxShowDistance(max);
@@ -152,8 +161,8 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [to show].</param>
     public void Show(bool toShow) {
-        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", transform.name, toShow, _toCheckShowDistance, IsWithinShowDistance());
-        if (!toShow || (_toCheckShowDistance && !IsWithinShowDistance())) {
+        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", transform.name, toShow, _toCheckShowDistance, IsWithinShowDistance);
+        if (!toShow || (_toCheckShowDistance && !IsWithinShowDistance)) {
             Hide();
         }
         else {
@@ -163,14 +172,6 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         // will be received. Only really matters for UITrackableWidgets as they are the only version that needs to update position
         enabled = Widget.gameObject.GetComponent<CameraLosChangedListener>() != null ? true : toShow;
         //D.Log("{0}.Show({1}) called. Widget alpha is now {2}.", transform.name, toShow, Widget.alpha);
-    }
-
-    /// <summary>
-    /// Checks if the camera is within acceptable range of the target to show the widget.
-    /// </summary>
-    /// <returns><c>true</c> if within acceptable range, false otherwise.</returns>
-    private bool IsWithinShowDistance() {
-        return Utility.IsInRange(Target.Position.DistanceToCamera(), _minShowDistance, _maxShowDistance);
     }
 
     protected virtual void Show() {
@@ -251,7 +252,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         base.OccasionalUpdate();
         RefreshPositionOnUpdate();
         if (_toCheckShowDistance) {
-            if (IsWithinShowDistance()) {
+            if (IsWithinShowDistance) {
                 Show();
             }
             else {

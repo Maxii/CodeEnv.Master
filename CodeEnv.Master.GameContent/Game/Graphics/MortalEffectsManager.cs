@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
                 var explosion = _generalFactory.MakeAutoDestructExplosionInstance(_effectsClient.Radius, _effectsClient.Position);
                 explosion.Play(withChildren: true);
-                WaitJobUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, onWaitFinished: delegate {
+                WaitJobUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, waitFinished: delegate {
                     //D.Log("{0}.{1} explosion particle system has completed.", _effectsClient.FullName, GetType().Name);
                     _effectsClient.HandleEffectFinished(effectID);
                 });

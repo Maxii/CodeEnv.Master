@@ -29,6 +29,8 @@ using UnityEngine;
 /// </summary>
 public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
+    private static readonly Vector2 IconSize = new Vector2(24F, 24F);
+
     public StarCategory category = StarCategory.None;
 
     public new StarData Data {
@@ -105,11 +107,16 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
         return new StarCtxControl(this);
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        var dMgr = new StarDisplayManager(this, MakeIconInfo());
-        SubscribeToIconEvents(dMgr.Icon);
-        return dMgr;
+    protected override ADisplayManager MakeDisplayManagerInstance() {
+        return new StarDisplayManager(this, Layers.Cull_3000);
     }
+
+    protected override void InitializeDisplayManager() {
+        base.InitializeDisplayManager();
+        DisplayMgr.IconInfo = MakeIconInfo();
+        SubscribeToIconEvents(DisplayMgr.Icon);
+    }
+
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover += HoverEventHandler;
@@ -149,7 +156,7 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
     private IconInfo MakeIconInfo() {
         var report = GetUserReport();
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("Icon01", AtlasID.Contextual, iconColor);
+        return new IconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, Layers.TransparentFX);
     }
 
     protected override void ShowSelectedItemHud() {
@@ -367,10 +374,10 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

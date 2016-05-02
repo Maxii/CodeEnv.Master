@@ -53,6 +53,11 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     /// </summary>
     public bool ftlStartsDamaged;
 
+    /// <summary>
+    /// The exclusions when randomly picking ShipCombatStances.
+    /// </summary>
+    public ShipCombatStanceExclusions stanceExclusions;
+
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override ShipHullStat CreateElementHullStat(ShipHullCategory hullCat, string elementName) {
@@ -69,9 +74,8 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     protected override void MakeAndRecordDesign(string designName, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats) {
         ShipHullCategory hullCategory = hullStat.HullCategory;
-        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
         var engineStat = __MakeEnginesStat(hullCategory);
-
+        var combatStance = SelectCombatStance();
         var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
         var design = new ShipDesign(_owner, designName, hullStat, engineStat, combatStance, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
         GameManager.Instance.PlayersDesigns.Add(design);
@@ -237,6 +241,29 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     protected override int GetMaxMissileWeaponsAllowed(ShipHullCategory hullCategory) {
         return hullCategory.__MaxMissileWeapons();
+    }
+
+    private ShipCombatStance SelectCombatStance() {
+        if (stanceExclusions == ShipCombatStanceExclusions.AllExceptBalanced) {
+            return ShipCombatStance.Balanced;
+        }
+        if (stanceExclusions == ShipCombatStanceExclusions.AllExceptPointBlank) {
+            return ShipCombatStance.PointBlank;
+        }
+        if (stanceExclusions == ShipCombatStanceExclusions.AllExceptStandoff) {
+            return ShipCombatStance.Standoff;
+        }
+        else {
+            IList<ShipCombatStance> excludedCombatStances = new List<ShipCombatStance>() { default(ShipCombatStance) };
+            if (stanceExclusions == ShipCombatStanceExclusions.Disengage) {
+                excludedCombatStances.Add(ShipCombatStance.Disengage);
+            }
+            else if (stanceExclusions == ShipCombatStanceExclusions.DefensiveAndDisengage) {
+                excludedCombatStances.Add(ShipCombatStance.Disengage);
+                excludedCombatStances.Add(ShipCombatStance.Defensive);
+            }
+            return Enums<ShipCombatStance>.GetRandomExcept(excludedCombatStances.ToArray());
+        }
     }
 
     private UnitCmdStat __MakeCmdStat() {
@@ -453,6 +480,33 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Nested Classes
+
+    public enum ShipCombatStanceExclusions {
+
+        /// <summary>
+        /// ShipCombatStance choice will be random.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// ShipCombatStance choice will be random, excluding Disengage.
+        /// </summary>
+        Disengage,
+
+        /// <summary>
+        /// ShipCombatStance choice will be random, excluding Disengage and Defensive.
+        /// </summary>
+        DefensiveAndDisengage,
+
+        AllExceptStandoff,
+
+        AllExceptBalanced,
+
+        AllExceptPointBlank
+    }
+
+    #endregion
 
 }
 

@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShipExplorable {
 
+    private static readonly Vector2 IconSize = new Vector2(20F, 20F);
+
     private MoonItem[] _childMoons;
     /// <summary>
     /// The moons that orbit this planet. Can be empty but never null.
@@ -68,23 +70,14 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
         }
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        var dMgr = new PlanetDisplayManager(this, MakeIconInfo());
-        SubscribeToIconEvents(dMgr.Icon);
-        return dMgr;
+    protected override ADisplayManager MakeDisplayManagerInstance() {
+        return new PlanetDisplayManager(this, __DetermineCullingLayer());
     }
 
-    private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-        var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += HoverEventHandler;
-        iconEventListener.onClick += ClickEventHandler;
-        iconEventListener.onDoubleClick += DoubleClickEventHandler;
-        iconEventListener.onPress += PressEventHandler;
+    protected override void InitializeDisplayManager() {
+        base.InitializeDisplayManager();
+        DisplayMgr.IconInfo = MakeIconInfo();
     }
-
-    //private ShipOrbitSlot InitializeShipOrbitSlot() {
-    //    return new ShipOrbitSlot(Data.LowOrbitRadius, Data.HighOrbitRadius, this);
-    //}
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
         return new PlanetCtxControl(this);
@@ -109,14 +102,12 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
     }
 
     private void AssessIcon() {
-        if (DisplayMgr == null) { return; }
-
-        var iconInfo = RefreshIconInfo();
-        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-            UnsubscribeToIconEvents(DisplayMgr.Icon);
-            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
-            DisplayMgr.IconInfo = iconInfo;
-            SubscribeToIconEvents(DisplayMgr.Icon);
+        if (DisplayMgr != null) {
+            var iconInfo = RefreshIconInfo();
+            if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+                DisplayMgr.IconInfo = iconInfo;
+            }
         }
     }
 
@@ -127,7 +118,7 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
     private IconInfo MakeIconInfo() {
         var report = GetUserReport();
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("Icon02", AtlasID.Contextual, iconColor);
+        return new IconInfo("Icon02", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, Layers.Cull_1000);
     }
 
     public override void HandleEffectFinished(EffectID effectID) {
@@ -187,25 +178,39 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
         }
     }
 
-    #region Cleanup
-
-    protected override void Unsubscribe() {
-        base.Unsubscribe();
-        if (DisplayMgr != null) {
-            var icon = DisplayMgr.Icon;
-            if (icon != null) {
-                UnsubscribeToIconEvents(icon);
-            }
+    private Layers __DetermineCullingLayer() {
+        switch (Data.Category) {
+            case PlanetoidCategory.GasGiant:    // radius 5
+            case PlanetoidCategory.Ice:         // radius 2 with rings
+                return Layers.Cull_400;
+            case PlanetoidCategory.Terrestrial: // radius 2
+            case PlanetoidCategory.Volcanic:    // radius 1
+                return Layers.Cull_200;
+            case PlanetoidCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.Category));
         }
     }
 
-    private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-        var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= HoverEventHandler;
-        iconEventListener.onClick -= ClickEventHandler;
-        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
-        iconEventListener.onPress -= PressEventHandler;
-    }
+    #region Cleanup
+
+    //protected override void Unsubscribe() {
+    //    base.Unsubscribe();
+    //    if (DisplayMgr != null) {
+    //        var icon = DisplayMgr.Icon;
+    //        if (icon != null) {
+    //            UnsubscribeToIconEvents(icon);
+    //        }
+    //    }
+    //}
+
+    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    //    var iconEventListener = icon.EventListener;
+    //    iconEventListener.onHover -= HoverEventHandler;
+    //    iconEventListener.onClick -= ClickEventHandler;
+    //    iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+    //    iconEventListener.onPress -= PressEventHandler;
+    //}
 
     #endregion
 
@@ -290,20 +295,20 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius;
         float outerShellRadius;
         if (ChildMoons.Any()) {
             MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
             float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-            innerShellRadius = distanceToOuterMoon + outerMoon.GetMoveTarget(tgtOffset, tgtStandoffDistance).InnerRadius;
+            innerShellRadius = distanceToOuterMoon + outerMoon.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition).InnerRadius;
             outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         }
         else {
             innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
             outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         }
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

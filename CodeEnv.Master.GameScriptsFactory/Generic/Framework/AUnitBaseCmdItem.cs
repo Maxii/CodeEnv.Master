@@ -326,6 +326,27 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #endregion
 
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum defining the states a Base (Starbase or Settlement) can operate in.
+    /// </summary>
+    public enum BaseState {
+
+        None,
+        Idling,
+        ExecuteAttackOrder,
+        Attacking,
+
+        Repairing,
+        Refitting,
+        Disbanding,
+        Dead
+
+    }
+
+    #endregion
+
     #region IShipCloseOrbitable Members
 
     private IShipCloseOrbitSimulator _closeOrbitSimulator;
@@ -434,10 +455,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
@@ -478,27 +499,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     public bool IsGuardingAllowedBy(Player player) {
         return !player.IsEnemyOf(Owner);
-    }
-
-    #endregion
-
-    #region Nested Classes
-
-    /// <summary>
-    /// Enum defining the states a Base (Starbase or Settlement) can operate in.
-    /// </summary>
-    public enum BaseState {
-
-        None,
-        Idling,
-        ExecuteAttackOrder,
-        Attacking,
-
-        Repairing,
-        Refitting,
-        Disbanding,
-        Dead
-
     }
 
     #endregion

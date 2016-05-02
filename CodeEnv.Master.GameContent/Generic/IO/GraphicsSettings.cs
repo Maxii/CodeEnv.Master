@@ -27,6 +27,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
+        [System.Obsolete]
         public int ShipLayerCullingDistanceFactor {
             get {
                 CheckValuesInitialized();
@@ -39,6 +40,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
+        [System.Obsolete]
         public int FacilityLayerCullingDistanceFactor {
             get {
                 CheckValuesInitialized();
@@ -51,6 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
+        [System.Obsolete]
         public int PlanetoidLayerCullingDistanceFactor {
             get {
                 CheckValuesInitialized();
@@ -63,6 +66,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
+        [System.Obsolete]
         public int StarLayerCullingDistanceFactor {
             get {
                 CheckValuesInitialized();

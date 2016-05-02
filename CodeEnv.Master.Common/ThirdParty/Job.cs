@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -27,7 +27,10 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class Job : IDisposable {
 
+        private const string DefaultJobName = "UnnamedJob";
+
         public static IJobRunner jobRunner;
+
 
         /// <summary>
         /// Action delegate executed when the job is completed. Contains a
@@ -41,10 +44,12 @@ namespace CodeEnv.Master.Common {
         public bool IsPaused {
             get { return _isPaused; }
             set {
-                D.Assert(_isPaused != value, "{0} is trying to set IsPaused to value {1} it already has.", typeof(Job).Name, value);
+                D.Assert(_isPaused != value, "{0} is trying to set IsPaused to value {1} it already has.", JobName, value);
                 _isPaused = value;
             }
         }
+
+        public string JobName { get; private set; } // My 4.26.16 addition
 
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
@@ -60,8 +65,9 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         private bool _hasBeenPreviouslyRun;
 
-        public Job(IEnumerator coroutine, bool toStart = false, Action<bool> jobCompleted = null) {
+        public Job(IEnumerator coroutine, string jobName = DefaultJobName, bool toStart = false, Action<bool> jobCompleted = null) {
             _coroutine = coroutine;
+            JobName = jobName; // My 4.26.16 addition
             this.jobCompleted = jobCompleted;
             if (toStart) { Start(); }
         }
@@ -75,6 +81,7 @@ namespace CodeEnv.Master.Common {
                     yield return null;
                 }
                 else {
+                    D.Log(JobName != DefaultJobName, "{0}.MoveNext being called.", JobName);
                     // run the next iteration and stop if we are done
                     if (_coroutine.MoveNext()) {
                         yield return _coroutine.Current;
@@ -134,8 +141,8 @@ namespace CodeEnv.Master.Common {
         //    return j;
         //}
         // ************** My Replacement **************
-        public Job CreateAndAddChildJob(IEnumerator coroutine, Action<bool> onJobComplete = null) {
-            var j = new Job(coroutine, false, onJobComplete);
+        public Job CreateAndAddChildJob(IEnumerator coroutine, Action<bool> jobCompleted = null) {
+            var j = new Job(coroutine, toStart: false, jobCompleted: jobCompleted);
             AddChildJob(j);
             return j;
         }
@@ -165,8 +172,10 @@ namespace CodeEnv.Master.Common {
         }
 
         public void Start() {
-            //D.Log("{0}.Start called.", _coroutine.GetType().Name);
-            D.Assert(!_hasBeenPreviouslyRun, "Attempting to reuse {0} which has already run to completion. {1}Either create a new Job for each use or use while(true) and manually kill it.".Inject(_coroutine.GetType().Name, Constants.NewLine));
+            D.Log(JobName != DefaultJobName, "{0}.Start called.", JobName);
+            D.Assert(!_hasBeenPreviouslyRun, @"Attempting to reuse {0} which has already run to completion. 
+                {1}Either create a new Job for each use or use while(true) and manually kill it.",
+                JobName, Constants.NewLine);
             IsRunning = true;
             jobRunner.StartCoroutine(Run());
             _hasBeenPreviouslyRun = true;
@@ -182,6 +191,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public void Kill() {
             if (IsRunning) {
+                D.Log(JobName != DefaultJobName, "{0} was killed while running.", JobName);
                 _jobWasKilled = true;
                 IsRunning = false;
             }

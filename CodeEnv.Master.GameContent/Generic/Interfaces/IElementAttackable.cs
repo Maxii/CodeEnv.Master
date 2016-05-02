@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IElementAttackableTarget.cs
+// File: IElementAttackable.cs
 // Interface for targets that can be attacked by unit elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for targets that can be attacked by unit elements.
     /// </summary>
-    public interface IElementAttackableTarget : IShipNavigable, ISensorDetectable {
+    public interface IElementAttackable : IShipNavigable, ISensorDetectable {
 
         event EventHandler deathOneShot;
 
@@ -54,15 +54,6 @@ namespace CodeEnv.Master.GameContent {
         void TakeHit(DamageStrength attackerStrength);
 
         bool IsAttackingAllowedBy(Player player);
-
-        /// <summary>
-        /// Returns the AutoPilotTarget for use by a Ship's AutoPilot when attacking this target.
-        /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
-        /// </summary>
-        /// <param name="innerRadius">The inner radius.</param>
-        /// <param name="outerRadius">The outer radius.</param>
-        /// <returns></returns>
-        AutoPilotTarget GetAttackTarget(float innerRadius, float outerRadius);
 
     }
 }

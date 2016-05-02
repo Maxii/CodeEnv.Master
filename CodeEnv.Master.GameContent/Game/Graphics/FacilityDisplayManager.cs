@@ -25,12 +25,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityDisplayManager : AElementDisplayManager {
 
-        protected override Layers CullingLayer { get { return Layers.FacilityCull; } }
-
         private IRevolver _revolver;
 
-        public FacilityDisplayManager(IWidgetTrackable trackedFacility, GameColor color)
-            : base(trackedFacility, color) { }
+        public FacilityDisplayManager(IWidgetTrackable trackedFacility, Layers meshLayer)
+            : base(trackedFacility, meshLayer) { }
 
         protected override void InitializeOther(GameObject itemGo) {
             base.InitializeOther(itemGo);

@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IFleetNavigable, IUnitAttackableTarget, IElementAttackableTarget,
+public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IFleetNavigable, IUnitAttackableTarget, IShipAttackable,
     ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
 
     /// <summary>
@@ -295,11 +295,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     #endregion
 
-    #region IElementAttackableTarget Members
-
-    public AutoPilotTarget GetAttackTarget(float innerRadius, float outerRadius) {
-        return new AutoPilotTarget(this, Vector3.zero, innerRadius, outerRadius);
-    }
+    #region IElementAttackable Members
 
     // IsAttackingAllowedBy(Player) see IUnitAttackableTarget Members
 
@@ -343,6 +339,16 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
     //    var explosionClone = UnityUtility.AddChild(gameObject, explosionPrefab);
     //    D.Warn("{0} showing explosion.", FullName);
     //}
+
+    #endregion
+
+    #region IShipAttackable Members
+
+    public AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface) {
+        float innerRadius = ObstacleZoneRadius + minRangeToTgtSurface;
+        float outerRadius = Radius + maxRangeToTgtSurface;
+        return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
+    }
 
     #endregion
 

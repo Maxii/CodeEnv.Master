@@ -76,7 +76,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _subscriptions.Add(_gameTime.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangingHandler));
     }
 
-    public virtual void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
+    public virtual void Launch(IElementAttackable target, AWeapon weapon, Topography topography, bool toShowEffects) {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
         _launchPosition = transform.position;
@@ -125,7 +125,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //Name, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
         //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(transform.position, Target.Position));
         var impactedGo = collision.collider.gameObject;
-        var impactedTarget = impactedGo.GetComponent<IElementAttackableTarget>();
+        var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
         if (impactedTarget != null) {
             // hit an attackableTarget
             //D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);

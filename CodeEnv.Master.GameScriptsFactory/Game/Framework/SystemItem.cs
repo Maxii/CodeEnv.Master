@@ -135,8 +135,8 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
         return trackingLabel;
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        return new SystemDisplayManager(gameObject);
+    protected override ADisplayManager MakeDisplayManagerInstance() {
+        return new SystemDisplayManager(gameObject, Layers.SystemOrbitalPlane);
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
@@ -316,25 +316,20 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float distanceToShip = Vector3.Distance(shipPosition, Position);
         if (distanceToShip > Radius) {
             // outside of the system
             float innerShellRadius = Radius + tgtStandoffDistance;   // keeps ship outside of gravity well, aka Topography.System
             float outerShellRadius = innerShellRadius + 10F;   // HACK depth of arrival shell is 10
-            return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+            return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
         }
         else {
             // inside of system
             StationaryLocation closestAssyStation = GameUtility.GetClosest(shipPosition, LocalAssemblyStations);
-            return closestAssyStation.GetMoveTarget(tgtOffset, tgtStandoffDistance, shipPosition);
+            return closestAssyStation.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition);
         }
     }
-    //public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
-    //    float innerShellRadius = Radius + tgtStandoffDistance;   // keeps ship outside of gravity well, aka Topography.System
-    //    float outerShellRadius = innerShellRadius + 10F;   // HACK depth of arrival shell is 10
-    //    return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
-    //}
 
     #endregion
 

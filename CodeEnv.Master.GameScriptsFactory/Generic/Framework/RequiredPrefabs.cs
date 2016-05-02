@@ -67,8 +67,6 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public UIAtlas myGuiAtlas;
 
     [Header("Misc")]
-    public SphereCollider universeEdge;
-    public Transform cameraDummyTarget;
     public SectorItem sector;
     public FleetFormationStation fleetFormationStation;
 

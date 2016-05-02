@@ -128,11 +128,11 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, IShipNav
 
     #region IShipNavigable Members
 
-    public AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    public AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         D.Assert(AssignedShip.CollisionDetectionZoneRadius.ApproxEquals(tgtStandoffDistance));   // its the same ship
         float outerShellRadius = Radius - tgtStandoffDistance;   // entire shipCollisionDetectionZone is within the FormationStation 'sphere'
         float innerShellRadius = Constants.ZeroF;
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

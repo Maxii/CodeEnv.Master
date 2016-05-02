@@ -43,6 +43,15 @@ namespace CodeEnv.Master.Common {
             private set { _disableGui = value; }
         }
 
+        private bool _disableRepair;
+        public bool DisableRepair {
+            get {
+                CheckValuesInitialized();
+                return _disableRepair;
+            }
+            private set { _disableRepair = value; }
+        }
+
         private bool _disableRetreat;
         public bool DisableRetreat {
             get {

@@ -40,11 +40,12 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// <summary>
     /// The layers the World EventDispatcher (3D) is allowed to 'see' when determining whether to raise an event.
     /// This covers the 'normal' game play case where all world 3D objects in the scene should receive events.
+    /// OPTIMIZE For now I'm keeping all CullingLayers receiving events although I don't think they need too.
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
-    private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskUtility.CreateExclusiveMask(Layers.UniverseEdge,
-        Layers.DeepSpace, Layers.UI, Layers.AvoidableObstacleZone, Layers.CollisionDetectionZone, Layers.Shields, Layers.IgnoreRaycast,
-        Layers.Water);
+    private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskUtility.CreateExclusiveMask(
+    Layers.DeepSpace, Layers.UI, Layers.AvoidableObstacleZone, Layers.CollisionDetectionZone, Layers.Shields, Layers.IgnoreRaycast,
+    Layers.Water);
 
     /// <summary>
     /// The EventDispatcher (World or UI) mask that does not allow any events to be raised.

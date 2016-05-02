@@ -23,14 +23,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipMoveOrder : ShipOrder {
 
-        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, Speed: {3}, Mode: {4}, StandingOrder: {5}, Standoff: {6:0.#}.";
+        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, Speed: {3}, Fleetwide: {4}, StandingOrder: {5}, Standoff: {6:0.#}.";
 
         /// <summary>
         /// The speed of this move.
         /// </summary>
         public Speed Speed { get; private set; }
 
-        public ShipMoveMode Mode { get; private set; }
+        public bool IsFleetwide { get; private set; }
 
         /// <summary>
         /// When the ship arrives at the target, this is the distance 
@@ -44,24 +44,23 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of the order.</param>
         /// <param name="target">The move target.</param>
         /// <param name="speed">The move speed.</param>
-        /// <param name="mode">The mode the ship is to move in.</param>
-        /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance 
+        /// <param name="isFleetwide">if set to <c>true</c> the move should be coordinated as a fleet.</param>
+        /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
         /// from the target it should strive to achieve.</param>
-        public ShipMoveOrder(OrderSource source, IShipNavigable target, Speed speed, ShipMoveMode mode, float targetStandoffDistance)
+        public ShipMoveOrder(OrderSource source, IShipNavigable target, Speed speed, bool isFleetwide, float targetStandoffDistance)
             : base(ShipDirective.Move, source, target) {
             Utility.ValidateNotNull(target);
             D.Assert(speed != Speed.None);
-            D.Assert(mode != ShipMoveMode.None);
             Utility.ValidateNotNegative(targetStandoffDistance);
             Speed = speed;
-            Mode = mode;
+            IsFleetwide = isFleetwide;
             TargetStandoffDistance = targetStandoffDistance;
         }
 
         public override string ToString() {
             string targetText = Target != null ? Target.FullName : "null";
             string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "null";
-            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(), Mode.GetValueName(), standingOrderText, TargetStandoffDistance);
+            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(), IsFleetwide, standingOrderText, TargetStandoffDistance);
         }
 
     }

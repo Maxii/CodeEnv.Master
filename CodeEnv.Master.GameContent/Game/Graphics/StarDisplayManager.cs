@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.GameContent;
     using UnityEngine;
@@ -25,30 +26,26 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarDisplayManager : AIconDisplayManager {
 
-        private static Vector2 _starIconSize = new Vector2(16F, 16F);
+        private static readonly LayerMask StarLightCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
+            Layers.Cull_Tiny, Layers.Cull_1, Layers.Cull_2, Layers.Cull_3, Layers.Cull_4, Layers.Cull_8, Layers.Cull_15, Layers.Cull_200,
+            Layers.Cull_400, Layers.Cull_1000, Layers.Cull_3000, Layers.Projectiles, Layers.Shields, Layers.SystemOrbitalPlane);
 
-        private static LayerMask _starLightCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-            Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.Projectiles, Layers.Shields, Layers.SystemOrbitalPlane);
-
-        protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Over; } }
-
-        protected override Vector2 IconSize { get { return _starIconSize; } }
+        public new IResponsiveTrackingSprite Icon { get { return base.Icon as IResponsiveTrackingSprite; } }
 
         protected override int IconDepth { get { return -4; } }
 
         private IBillboard _glowBillboard;
         private IRevolver[] _revolvers; // star mesh and 2 glows
 
-        public StarDisplayManager(IWidgetTrackable trackedStar, IconInfo iconInfo)
-            : base(trackedStar) {
-            IconInfo = iconInfo;
+        public StarDisplayManager(IWidgetTrackable trackedStar, Layers meshLayer)
+            : base(trackedStar, meshLayer) {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetSingleComponentInImmediateChildren<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;    // A star can't possibly cast a shadow of itself on another object
             primaryMeshRenderer.receiveShadows = false; // A star can't possibly display a shadow from another object on its surface
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.StarCull);    // layer automatically handles showing
+            __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
             return primaryMeshRenderer;
         }
 
@@ -59,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             glowRenderers.ForAll(gr => {
                 gr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 gr.receiveShadows = false;
-                D.Assert((Layers)(gr.gameObject.layer) == Layers.StarCull); // layer automatically handles showing
+                __ValidateAndCorrectMeshLayer(gr.gameObject);
                 gr.enabled = true;
             });
         }
@@ -76,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
             //starLight.bounceIntensity = 1F; // bounce light shadowing not currently supported for point lights
             starLight.shadows = LightShadows.None;  // point light shadows are expensive
             starLight.renderMode = LightRenderMode.Auto;
-            starLight.cullingMask = _starLightCullingMask;
+            starLight.cullingMask = StarLightCullingMask;
             starLight.enabled = true;
 
             _revolvers = itemGo.GetSafeInterfacesInChildren<IRevolver>();

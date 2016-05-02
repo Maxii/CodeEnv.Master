@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: WeaponFiringSolution.cs
-// A firing solution for a Weapon against an IElementAttackableTarget target.
+// A firing solution for a Weapon against an IElementAttackable target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,17 +19,17 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// A firing solution for a Weapon against an IElementAttackableTarget target.
+    /// A firing solution for a Weapon against an IElementAttackable target.
     /// </summary>
     public class WeaponFiringSolution {
 
         private static string _toStringFormat = "{0}: WeaponName = {1}, TargetName = {2}.";
 
-        public IElementAttackableTarget EnemyTarget { get; private set; }
+        public IElementAttackable EnemyTarget { get; private set; }
 
         public AWeapon Weapon { get; private set; }
 
-        public WeaponFiringSolution(AWeapon weapon, IElementAttackableTarget enemyTgt) {
+        public WeaponFiringSolution(AWeapon weapon, IElementAttackable enemyTgt) {
             Weapon = weapon;
             EnemyTarget = enemyTgt;
         }

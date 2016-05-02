@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IOrdnance.cs
-// Interface for Ordnance of all types.
+// File: ITrackingSprite.cs
+// Interface for easy access to ConstantSizeTrackingSprite.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,25 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for Ordnance of all types.
+    /// Interface for easy access to ConstantSizeTrackingSprite.
     /// </summary>
-    public interface IOrdnance {
+    public interface ITrackingSprite : ITrackingWidget {
 
-        event EventHandler deathOneShot;
+        IconInfo IconInfo { get; set; }
 
-        bool ToShowEffects { get; set; }
-
-        string Name { get; }
-
-        Vector3 CurrentHeading { get; }
-
-        Player Owner { get; }
-
-        IElementAttackable Target { get; }
+        ICameraLosChangedListener CameraLosChangedListener { get; }
 
     }
 }

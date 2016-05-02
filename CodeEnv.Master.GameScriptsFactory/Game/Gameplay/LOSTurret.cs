@@ -165,7 +165,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="enemyTarget">The enemy target.</param>
     /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution) {
+    public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
@@ -196,7 +196,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
-    public override bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget) {
+    public override bool ConfirmInRangeForLaunch(IElementAttackable enemyTarget) {
         float weaponRange = Weapon.RangeDistance;
         return Vector3.SqrMagnitude(enemyTarget.Position - _hub.position) < weaponRange * weaponRange;
     }
@@ -207,14 +207,14 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="enemyTarget">The enemy target.</param>
     /// <returns></returns>
-    private bool CheckLineOfSight(IElementAttackableTarget enemyTarget) {
+    private bool CheckLineOfSight(IElementAttackable enemyTarget) {
         Vector3 turretPosition = _hub.position;
         Vector3 vectorToTarget = enemyTarget.Position - turretPosition;
         Vector3 targetDirection = vectorToTarget.normalized;
         float targetDistance = vectorToTarget.magnitude;
         RaycastHit hitInfo;
         if (Physics.Raycast(turretPosition, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
-            var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackableTarget>();
+            var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackable>();
             if (targetHit != null) {
                 if (targetHit == enemyTarget) {
                     //D.Log("{0}: CheckLineOfSight({1}) found its target.", Name, enemyTarget.FullName);
@@ -239,7 +239,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     public void TraverseTo(LosWeaponFiringSolution firingSolution) {
-        //IElementAttackableTarget target = firingSolution.EnemyTarget;
+        //IElementAttackable target = firingSolution.EnemyTarget;
         //string targetName = target.FullName;
         //D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");

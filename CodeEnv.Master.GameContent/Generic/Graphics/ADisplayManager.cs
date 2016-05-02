@@ -15,6 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -57,28 +58,31 @@ namespace CodeEnv.Master.GameContent {
         /// Indicates whether the DisplayMgr is allowed to display material on the screen.
         /// True or false, InCameraLOS continues to operate.
         /// </summary>
-        public bool IsDisplayEnabled {
+        protected bool IsDisplayEnabled {
             get { return _isDisplayEnabled; }
-            protected set { SetProperty<bool>(ref _isDisplayEnabled, value, "IsDisplayEnabled"); }
+            set { SetProperty<bool>(ref _isDisplayEnabled, value, "IsDisplayEnabled"); }
         }
 
         protected MeshRenderer _primaryMeshRenderer;
         private bool __isPrimaryMeshShowing;
+        private Layers __meshLayer;
+        private GameObject _itemGO;
 
-        public ADisplayManager(GameObject itemGO) {
-            Initialize(itemGO);
+        public ADisplayManager(GameObject itemGO, Layers meshLayer) {
+            _itemGO = itemGO;
+            __meshLayer = meshLayer;
         }
 
-        private void Initialize(GameObject itemGO) {
-            _primaryMeshRenderer = InitializePrimaryMesh(itemGO);
+        public void Initialize() {
+            _primaryMeshRenderer = InitializePrimaryMesh(_itemGO);
             _primaryMeshRenderer.enabled = true;
 
             var primaryMeshCameraLosChgdListener = _primaryMeshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
             primaryMeshCameraLosChgdListener.inCameraLosChanged += PrimaryMeshInCameraLosChangedEventHandler;
             primaryMeshCameraLosChgdListener.enabled = true;
 
-            InitializeSecondaryMeshes(itemGO);
-            InitializeOther(itemGO);
+            InitializeSecondaryMeshes(_itemGO);
+            InitializeOther(_itemGO);
             // AssessComponentsToShow(); no need to call here as EnableDisplay(true) is called immediately after initialization
             // Warning: if called here, derived class constructors will not have completed yet
         }
@@ -166,6 +170,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void AssessInMainCameraLOS() {
             IsInMainCameraLOS = IsPrimaryMeshInMainCameraLOS;
+        }
+
+        protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
+            if ((Layers)meshGo.layer != __meshLayer) {
+                D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}.",
+                    GetType().Name, meshGo.name, ((Layers)meshGo.layer).GetValueName(), __meshLayer.GetValueName());
+                UnityUtility.SetLayerRecursively(meshGo.transform, __meshLayer);
+            }
         }
 
     }

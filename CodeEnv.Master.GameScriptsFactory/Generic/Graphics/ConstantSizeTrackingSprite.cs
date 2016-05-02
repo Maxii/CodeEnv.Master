@@ -21,9 +21,18 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Sprite resident in world space that tracks world objects.  The user perceives the widget at a constant size as the camera and/or tracked gameObject moves. 
+/// Sprite resident in world space that tracks world objects.  
+/// The user perceives the widget at a constant size as the camera and/or tracked gameObject moves. 
 /// </summary>
-public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
+public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITrackingSprite {
+
+    public ICameraLosChangedListener CameraLosChangedListener { get; private set; }
+
+    private IconInfo _iconInfo;
+    public IconInfo IconInfo {
+        get { return _iconInfo; }
+        set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
+    }
 
     private AtlasID _atlasID;
     public AtlasID AtlasID {
@@ -36,6 +45,10 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     protected override void Awake() {
         base.Awake();
         D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
+
+        GameObject widgetGo = WidgetTransform.gameObject;
+        CameraLosChangedListener = widgetGo.AddComponent<CameraLosChangedListener>();
+        // Note: donot disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
     }
 
     /// <summary>
@@ -47,17 +60,20 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
         Widget.spriteName = spriteFilename;
     }
 
-    /// <summary>
-    /// Temporary. Sets the dimensions of the sprite in pixels. 
-    /// If not set, the sprite will assume the dimensions found in the atlas.
-    /// </summary>
-    /// <param name="width">The width.</param>
-    /// <param name="height">The height.</param>
-    public virtual void __SetDimensions(int width, int height) {        //TODO: Start with sprites of desired size
-        Widget.SetDimensions(width, height);
+    protected virtual void SetDimensions(Vector2 size) {
+        Widget.SetDimensions(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
     }
 
     #region Event and Property Change Handlers
+
+    private void IconInfoPropChangedHandler() {
+        AtlasID = IconInfo.AtlasID;
+        Set(IconInfo.Filename);
+        Color = IconInfo.Color;
+        SetDimensions(IconInfo.Size);
+        Placement = IconInfo.Placement;
+        NGUITools.SetLayer(gameObject, (int)IconInfo.Layer);
+    }
 
     private void AtlasIDPropChangedHandler() {
         Widget.atlas = AtlasID.GetAtlas();

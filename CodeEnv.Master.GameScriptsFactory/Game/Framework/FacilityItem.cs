@@ -30,8 +30,15 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle {
 
+    private static readonly Vector2 IconSize = new Vector2(16F, 16F);
+
     public override bool IsAvailable { get { return CurrentState == FacilityState.Idling; } }
 
+    /// <summary>
+    /// Indicates whether this facility is capable of firing on a target in an attack.
+    /// <remarks>A facility that is not capable of attacking is usually a facility that is under orders not to attack 
+    /// (CombatStance is Defensive) or one with no operational weapons.</remarks>
+    /// </summary>
     public override bool IsAttackCapable { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
 
     public new FacilityData Data {
@@ -77,8 +84,8 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         return new ItemHudManager(Publisher);
     }
 
-    protected override AIconDisplayManager MakeDisplayManager() {
-        return new FacilityDisplayManager(this, Owner.Color);
+    protected override ADisplayManager MakeDisplayManagerInstance() {
+        return new FacilityDisplayManager(this, __DetermineMeshCullingLayer());
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -147,8 +154,30 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     protected override IconInfo MakeIconInfo() {
         var report = GetUserReport();
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
+        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, Layers.Cull_200);
     }
+
+    protected override void __ValidateRadius(float radius) {
+        D.Assert(radius <= TempGameValues.FacilityMaxRadius, "{0} Radius {1:0.00} > Max {2:0.00}.", FullName, radius, TempGameValues.FacilityMaxRadius);
+    }
+
+    private Layers __DetermineMeshCullingLayer() {
+        switch (Data.HullCategory) {
+            case FacilityHullCategory.CentralHub:
+            case FacilityHullCategory.Defense:
+                return Layers.Cull_15;
+            case FacilityHullCategory.Factory:
+            case FacilityHullCategory.Barracks:
+            case FacilityHullCategory.ColonyHab:
+            case FacilityHullCategory.Economic:
+            case FacilityHullCategory.Laboratory:
+                return Layers.Cull_8;
+            case FacilityHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));
+        }
+    }
+
 
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
@@ -273,7 +302,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region ExecuteAttackOrder
 
-    private IElementAttackableTarget _fsmPrimaryAttackTgt; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IElementAttackable _fsmPrimaryAttackTgt; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         LogEvent();
@@ -435,6 +464,9 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region Combat Support Methods
 
     protected override void AssessNeedForRepair() {
+        if (_debugSettings.DisableRepair) {
+            return;
+        }
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != FacilityDirective.Repair) {
                 OverrideCurrentOrder(FacilityDirective.Repair, retainSuperiorsOrder: true);
@@ -486,60 +518,6 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         if (drawCntl != null) {
             Destroy(drawCntl);
         }
-    }
-
-    #endregion
-
-    #region IShipNavigable Members
-
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
-        float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
-        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
-    }
-
-    #endregion
-
-    #region IAvoidableObstacle Members
-
-    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
-        var formation = Command.Data.UnitFormation;
-        switch (formation) {
-            case Formation.Circle:
-                return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
-
-            case Formation.Globe:
-                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
-            case Formation.Wedge:
-            case Formation.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
-        }
-    }
-
-    #endregion
-
-    #region Nested Classes
-
-    /// <summary>
-    /// Enum defining the states a Facility can operate in.
-    /// </summary>
-    public enum FacilityState {
-
-        None,
-
-        Idling,
-
-        ExecuteAttackOrder,
-
-        Repairing,
-
-        Refitting,
-
-        Disbanding,
-
-        Dead
-
     }
 
     #endregion
@@ -611,6 +589,70 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     //    }
     //    AssessNeedForRepair();
     //}
+
+    #endregion
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum defining the states a Facility can operate in.
+    /// </summary>
+    public enum FacilityState {
+
+        None,
+
+        Idling,
+
+        ExecuteAttackOrder,
+
+        Repairing,
+
+        Refitting,
+
+        Disbanding,
+
+        Dead
+
+    }
+
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+        float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
+        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+    }
+
+    #endregion
+
+    #region IAvoidableObstacle Members
+
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
+        var formation = Command.Data.UnitFormation;
+        switch (formation) {
+            case Formation.Circle:
+                return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
+
+            case Formation.Globe:
+                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
+            case Formation.Wedge:
+            case Formation.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
+        }
+    }
+
+    #endregion
+
+    #region IShipAttackable Members
+
+    public override AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface) {
+        float innerRadius = _obstacleZoneCollider.radius + minRangeToTgtSurface;
+        float outerRadius = Radius + maxRangeToTgtSurface;
+        return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
+    }
 
     #endregion
 

@@ -28,34 +28,24 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementDisplayManager : AIconDisplayManager {
 
-        private static Vector2 _elementIconSize = new Vector2(12F, 12F);
-
-        private GameColor _color;
+        private GameColor _meshColor;
         /// <summary>
         /// The GameColor to use on the element's primary mesh. Typically the color of the owner.
         /// </summary>
-        public GameColor Color {
-            get { return _color; }
-            set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedHandler); }
+        public GameColor MeshColor {
+            get { return _meshColor; }
+            set { SetProperty<GameColor>(ref _meshColor, value, "MeshColor", MeshColorPropChangedHandler); }
         }
 
-        protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Below; } }
-
-        protected override Vector2 IconSize { get { return _elementIconSize; } }
+        public new IResponsiveTrackingSprite Icon { get { return base.Icon as IResponsiveTrackingSprite; } }
 
         protected override int IconDepth { get { return -5; } }
-
-        /// <summary>
-        /// The Layer used to cull this element's meshes.
-        /// </summary>
-        protected abstract Layers CullingLayer { get; }
 
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
         private MaterialPropertyBlock _primaryMeshMPB;
 
-        public AElementDisplayManager(IWidgetTrackable trackedElement, GameColor color)
-            : base(trackedElement) {
-            Color = color;  // will result in ColorPropChangedHandler()
+        public AElementDisplayManager(IWidgetTrackable trackedElement, Layers meshLayer)
+            : base(trackedElement, meshLayer) {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject elementItemGo) {
@@ -64,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
             var primaryMeshRenderer = hull.HullMesh.GetComponent<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == CullingLayer);    // layer automatically handles showing
+            __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
 
             // Note: currently could use renderer.sharedMaterial here for greater efficiency, but only until each element gets assigned its own material
             InitializePrimaryMeshMaterial(primaryMeshRenderer.material);
@@ -85,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
             }
             /*******************************************************************************************
             * These values were set when I wasn't using the metal material's MetallicMap, opting
-            * instead to set these. Why I don't know, but not using the MatallicMap kept the
+            * instead to set these. UNCLEAR Why I don't know, but not using the MatallicMap kept the
             * colors from showing up on the element unless the shader tab was clicked in the inspector.
             *
             * if (material.GetFloat(UnityConstants.StdShader_Property_MetallicFloat) != 0.25F) {
@@ -115,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
             if (_secondaryMeshRenderers.Any()) {
                 //D.Log("{0} is initializing Mount Renderers.", Name);
                 _secondaryMeshRenderers.ForAll(r => {
-                    D.Assert((Layers)r.gameObject.layer == CullingLayer);
+                    __ValidateAndCorrectMeshLayer(r.gameObject);
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                     r.receiveShadows = true;
                     r.enabled = false;
@@ -147,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0}.ShowPrimaryMesh() called.", Name);
             //_primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             //_primaryMeshMPB.Clear();
-            _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, Color.ToUnityColor());
+            _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, MeshColor.ToUnityColor());
             D.Log("{0}.PrimaryMeshMPB color after show = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
             _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
             // Note: using a MaterialPropertyBlock containing a color changes the color the renderer shows, but does not change the color contained in the material
@@ -170,21 +160,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        /// <summary>
-        /// Determines the conditions under which the Icon should show. This element version
-        /// shows the icon when 1) the display is enabled, 2) the icon exists and is within the camera's LOS,
-        /// 3) the primary mesh is no longer showing due to clipping planes and 4) the element's Command is the focus.
-        /// This last criteria keeps the element's icon colliders off when the command is not the focus, allowing the
-        /// Command Icon collider to be more easily acquired.
-        /// </summary>
-        /// <returns></returns>
-        protected override bool ShouldIconShow() {
-            return base.ShouldIconShow() && ((_trackedItem as IUnitElementItem).Command as ICameraFocusable).IsFocus;
-        }
-
         #region Event and Property Change Handlers
 
-        private void ColorPropChangedHandler() {
+        private void MeshColorPropChangedHandler() {
             if (IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS) {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();

@@ -56,7 +56,7 @@ public class Bullet : AProjectileOrdnance {
 
     protected new ProjectileLauncher Weapon { get { return base.Weapon as ProjectileLauncher; } }
 
-    public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
+    public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
         InitializeVelocity();
         enabled = true;

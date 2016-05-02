@@ -138,19 +138,84 @@ namespace CodeEnv.Master.GameContent {
 
         public const float UniverseCenterRadius = 50F;
 
-        #region Max Radius values for setting culling distances
+        public const float StarRadius = 10F;
 
         // Note on MaxRadius values. Use of a static dynamically generated MaxRadius on each Item type works, but it only gets populated 
         // when a item is built. Some items like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
         // needs these values during startup to set the layer culling distances, I had to return to these values for now.
 
-        public const float StarRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)
+        public const float FacilityMaxRadius = 0.35F;  // range is 0.17 - 0.35
 
-        public const float PlanetoidMaxRadius = 5.0F;  // Moons are 0.2 - 1.0, Planets 1.0 - 5.0   // 5 x 200(factor) = 1000(cullingDistance)
+        public const float ShipMaxRadius = 0.175F;   // range is 0.03 - 0.17
 
-        public const float FacilityMaxRadius = 0.35F;  // range is 0.17 - 0.35  // .35 x 50(factor) = 17.5(cullingDistance)
+        #region Culling distances
 
-        public const float ShipMaxRadius = 0.175F;   // range is 0.03 - 0.17      // 0.17 x 25(factor) = 4.3(cullingDistance)
+        /// <summary>
+        /// The smallest CullDistance &lt;&lt; 1 unit.
+        /// TODO The distance where fighter and ordnance meshes disappear, replaced by an Icon.
+        /// </summary>
+        public const float CullDistance_Tiny = 0.5F;
+
+        /// <summary>
+        /// CullDistance of 1 unit.
+        /// The distance where the Frigate class of ship meshes disappear, replaced by the Element Icon.
+        /// </summary>
+        public const float CullDistance_1 = 1F;
+
+        /// <summary>
+        /// CullDistance of 2 units.
+        /// The distance where the Destroyer class of ship meshes disappear, replaced by the Element Icon.
+        /// </summary>
+        public const float CullDistance_2 = 2F;
+
+        /// <summary>
+        /// CullDistance of 3 units.
+        /// The distance where the Cruiser class of ship meshes disappear, replaced by the Element Icon.
+        /// </summary>
+        public const float CullDistance_3 = 3F;
+
+        /// <summary>
+        /// CullDistance of 4 units. 
+        /// The distance where larger ship classes (Dreadnought and Carrier) meshes disappear, replaced by the Element Icon.
+        /// </summary>
+        public const float CullDistance_4 = 4F;
+
+        /// <summary>
+        /// CullDistance of 8 units. 
+        /// The distance where smaller facility meshes disappear, replaced by the Element Icon.
+        /// </summary>
+        public const float CullDistance_8 = 8F;
+
+        /// <summary>
+        /// CullDistance of 15 units.
+        /// The distance where larger facility meshes disappear, replaced by the Element Icon.
+        /// </summary>
+        public const float CullDistance_15 = 15F;
+
+        /// <summary>
+        /// CullDistance of 200 units.
+        /// The distance where moon, smaller planet meshes and Element Icons disappear. 
+        /// Planets are replaced by the Planet Icon. Moon meshes are not replaced by icons.
+        /// </summary>
+        public const float CullDistance_200 = 200F;
+
+        /// <summary>
+        /// CullDistance of 400 units. 
+        /// The distance where larger planet meshes disappear, replaced by the Planet Icon.
+        /// </summary>
+        public const float CullDistance_400 = 400F;
+
+        /// <summary>
+        /// CullDistance of 1000 units.
+        /// The distance where planet Icons disappear.
+        /// </summary>
+        public const float CullDistance_1000 = 1000F;
+
+        /// <summary>
+        /// CullDistance of 3000 units. 
+        /// The distance where the star and orbital plane meshes disappear, replaced by the Star Icon.
+        /// </summary>
+        public const float CullDistance_3000 = 3000F;
 
         #endregion
 
@@ -178,16 +243,15 @@ namespace CodeEnv.Master.GameContent {
         /// The colors acceptable for use by players.
         /// </summary>
         public static readonly GameColor[] AllPlayerColors = new GameColor[] {
-            GameColor.Blue,
+            GameColor.LightBlue,
             GameColor.Red,
-            GameColor.Cyan,
-            GameColor.Green,
+            GameColor.Aqua,
+            GameColor.Lime,
             GameColor.Magenta,
             GameColor.Yellow,
-            GameColor.Brown,
-            GameColor.Purple,
-            GameColor.Teal,
-            GameColor.DarkGreen
+            GameColor.Silver,
+            GameColor.Orange,
+            GameColor.Green
         };
 
         public static readonly Player NoPlayer = new NoPlayer();

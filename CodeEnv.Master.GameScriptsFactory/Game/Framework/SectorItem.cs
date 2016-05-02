@@ -125,10 +125,19 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
-        float innerShellRadius = Radius / 2F;   // HACK 600
-        float outerShellRadius = innerShellRadius + 20F;   // HACK depth of arrival shell is 20
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+        float distanceToShip = Vector3.Distance(shipPosition, Position);
+        if (distanceToShip > Radius / 2F) {
+            // outside of the outer half of sector
+            float innerShellRadius = Radius / 2F;   // HACK 600
+            float outerShellRadius = innerShellRadius + 20F;   // HACK depth of arrival shell is 20
+            return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        }
+        else {
+            // inside inner half of sector
+            StationaryLocation closestAssyStation = GameUtility.GetClosest(shipPosition, LocalAssemblyStations);
+            return closestAssyStation.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition);
+        }
     }
 
     #endregion

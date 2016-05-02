@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Xml.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
     /// Singleton. Abstract, generic base Factory that makes instances of IconInfo for Commands.
@@ -31,6 +32,12 @@ namespace CodeEnv.Master.GameContent {
     public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AGenericSingleton<FactoryType>
         where ReportType : ACmdReport
         where FactoryType : ACmdIconInfoFactory<ReportType, FactoryType> {
+
+        private static readonly Layers Layer = Layers.TransparentFX;
+
+        private static readonly WidgetPlacement Placement = WidgetPlacement.Above;
+
+        private static readonly Vector2 Size = new Vector2(32F, 32F);
 
         protected abstract AtlasID AtlasID { get; }
 
@@ -116,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IconInfo MakeInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
             string filename = AcquireFilename(section, criteria);
-            return new IconInfo(filename, AtlasID, color);
+            return new IconInfo(filename, AtlasID, color, Size, Placement, Layer);
         }
 
         protected abstract string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria);

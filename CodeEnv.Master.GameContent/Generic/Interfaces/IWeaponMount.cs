@@ -37,14 +37,14 @@ namespace CodeEnv.Master.GameContent {
 
         AWeapon Weapon { get; set; }
 
-        bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution);
+        bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution);
 
         /// <summary>
         /// Confirms the provided enemyTarget is in range PRIOR to launching the weapon's ordnance.
         /// </summary>
         /// <param name="enemyTarget">The target.</param>
         /// <returns></returns>
-        bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget);
+        bool ConfirmInRangeForLaunch(IElementAttackable enemyTarget);
 
     }
 }

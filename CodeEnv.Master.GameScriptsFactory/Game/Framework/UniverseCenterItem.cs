@@ -90,8 +90,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
         return new UniverseCenterCtxControl(this);
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        return new UniverseCenterDisplayManager(gameObject);
+    protected override ADisplayManager MakeDisplayManagerInstance() {
+        return new UniverseCenterDisplayManager(gameObject, Layers.Default);
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
@@ -306,10 +306,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 3F;   // HACK depth of arrival shell is 3 as speeds are higher
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

@@ -29,6 +29,7 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
 
     public override void OnInspectorGUI() {
         base.OnInspectorGUI();
+
         var fleetCreator = target as FleetUnitCreator;
         fleetCreator.move = GUILayout.Toggle(fleetCreator.move, "Get Fleet Underway");
         if (fleetCreator.move) {
@@ -38,6 +39,8 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
             EditorGUI.indentLevel--;
         }
         fleetCreator.ftlStartsDamaged = GUILayout.Toggle(fleetCreator.ftlStartsDamaged, "FTL Starts Damaged");
+
+        fleetCreator.stanceExclusions = (FleetUnitCreator.ShipCombatStanceExclusions)EditorGUILayout.EnumPopup("CombatStanceExclusions", fleetCreator.stanceExclusions);
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

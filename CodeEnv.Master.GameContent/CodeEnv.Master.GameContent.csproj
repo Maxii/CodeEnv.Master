@@ -54,7 +54,7 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Generic\Framework\DriftCorrector.cs" />
-    <Compile Include="Generic\Framework\AutoPilotTarget.cs" />
+    <Compile Include="Generic\Framework\AutoPilotDestinationProxy.cs" />
     <Compile Include="Generic\Interfaces\IFleetNavigable.cs" />
     <Compile Include="Generic\Utility\GameEnumExtensions.cs" />
     <Compile Include="Generic\Framework\AFormationManager.cs" />
@@ -216,7 +216,7 @@
     <Compile Include="Generic\Interfaces\ICameraLosChangedListener.cs" />
     <Compile Include="Generic\Interfaces\IWidgetTrackable.cs" />
     <Compile Include="Generic\Interfaces\IRevolver.cs" />
-    <Compile Include="Generic\Interfaces\IElementAttackableTarget.cs" />
+    <Compile Include="Generic\Interfaces\IElementAttackable.cs" />
     <Compile Include="Generic\Interfaces\IUnitElementItem.cs" />
     <Compile Include="Generic\Interfaces\IItem.cs" />
     <Compile Include="Generic\Interfaces\IMortalItem.cs" />
@@ -327,6 +327,8 @@
     <Compile Include="Generic\Interfaces\IShipOrbitable.cs" />
     <Compile Include="Generic\Framework\OrbitData.cs" />
     <Compile Include="Generic\Interfaces\IShipNavigable.cs" />
+    <Compile Include="Generic\Interfaces\IShipAttackable.cs" />
+    <Compile Include="Generic\Interfaces\ITrackingSprite.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
@@ -368,7 +370,6 @@
     <Compile Include="Game\Graphics\SystemDisplayManager.cs" />
     <Compile Include="Game\Framework\SettlementFormationManager.cs" />
     <Compile Include="Game\Framework\StarbaseFormationManager.cs" />
-    <Compile Include="Generic\Framework\ShipMoveMode.cs" />
     <Compile Include="Generic\Framework\ShipMoveOrder.cs" />
     <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
     <Compile Include="Game\Graphics\UnitCmdEffectsManager.cs" />

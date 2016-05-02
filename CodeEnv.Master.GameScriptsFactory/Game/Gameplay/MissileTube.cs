@@ -49,7 +49,7 @@ public class MissileTube : AWeaponMount {
     /// <param name="enemyTarget">The enemy target.</param>
     /// <param name="firingSolution"></param>
     /// <returns></returns>
-    public override bool TryGetFiringSolution(IElementAttackableTarget enemyTarget, out WeaponFiringSolution firingSolution) {
+    public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
         D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
 
@@ -67,7 +67,7 @@ public class MissileTube : AWeaponMount {
     /// </summary>
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
-    public override bool ConfirmInRangeForLaunch(IElementAttackableTarget enemyTarget) {
+    public override bool ConfirmInRangeForLaunch(IElementAttackable enemyTarget) {
         float distanceToPushover = TempGameValues.__ReqdMissileTravelDistanceBeforePushover;
         Vector3 launchDirection = MuzzleFacing;
         Vector3 vectorToPushover = launchDirection * distanceToPushover;

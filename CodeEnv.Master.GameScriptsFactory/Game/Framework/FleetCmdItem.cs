@@ -116,7 +116,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // UNCLEAR does this ship need to be in ShipState.None while these changes take place?
         RemoveElement(ship);
         ship.IsHQ = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
-                           //ship.Data.IsHQ = false; 
         fleetCmd.AddElement(ship);
     }
 
@@ -240,11 +239,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             && CurrentState != FleetState.AssumingCloseOrbit);
 
         if (CurrentOrder != null) {
+            D.LogBold(ShowDebugLog, "{0} received new order {1}. CurrentState: {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
             Data.Target = CurrentOrder.Target;  // can be null
 
-            D.LogBold(ShowDebugLog, "{0} received new order {1}. CurrentState: {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
-            FleetDirective order = CurrentOrder.Directive;
-            switch (order) {
+            FleetDirective directive = CurrentOrder.Directive;
+            __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
+
+            switch (directive) {
                 case FleetDirective.Move:
                     CurrentState = FleetState.ExecuteMoveOrder;
                     break;
@@ -282,14 +283,45 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 case FleetDirective.Repair:
                 case FleetDirective.Retreat:
                 case FleetDirective.Withdraw:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetValueName());
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, directive.GetValueName());
                     break;
                 case FleetDirective.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
         }
     }
+
+    private void __ValidateKnowledgeOfOrderTarget(IFleetNavigable target, FleetDirective directive) {
+        if (directive == FleetDirective.Retreat || directive == FleetDirective.Withdraw || directive == FleetDirective.Disband
+            || directive == FleetDirective.Refit || directive == FleetDirective.Repair || directive == FleetDirective.StopAttack) {
+            // directives aren't yet implemented
+            return;
+        }
+        if (target is StarItem || target is SystemItem || target is UniverseCenterItem) {
+            // unnecessary check as all players have knowledge of these targets
+            return;
+        }
+        if (directive == FleetDirective.AssumeFormation) {
+            D.Assert(target == null || target is StationaryLocation || target is MobileLocation);
+            return;
+        }
+        if (directive == FleetDirective.Scuttle) {
+            D.Assert(target == null);
+            return;
+        }
+        if (directive == FleetDirective.Move || directive == FleetDirective.FullSpeedMove) {
+            //if (target is StationaryLocation || target is MobileLocation) {
+            //    return;
+            //}
+            if (target is SectorItem) {
+                return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
+            }
+        }
+        D.Assert(_ownerKnowledge.HasKnowledgeOf(target as IDiscernibleItem), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+            FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+    }
+
 
     #region StateMachine
 
@@ -354,7 +386,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             Call(FleetState.Moving);
             yield return null;  // reqd so Return()s here
 
-            D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} ExecuteAssumeFormationOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+            D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteAssumeFormationOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
             D.Assert(!CheckForDeathOf(_fsmApMoveTgt));
         }
 
@@ -429,12 +461,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApIsMoveTgtUnreachable) {
-            HandleDestinationUnreachable(_fsmApMoveTgt);
+        if (_fsmApMoveTgtUnreachable) {
+            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
             yield return null;
         }
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -448,7 +480,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void ExecuteFullSpeedMoveOrder_ExitState() {
         LogEvent();
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -466,12 +498,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApIsMoveTgtUnreachable) {
-            HandleDestinationUnreachable(_fsmApMoveTgt);
+        if (_fsmApMoveTgtUnreachable) {
+            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
             yield return null;
         }
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -500,8 +532,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// <param name="moveOrder">The move order.</param>
     /// <param name="apMoveTgt">The ap move TGT.</param>
     /// <param name="apMoveSpeed">The ap move speed.</param>
-    /// <param name="moveTgtStandoffDistance">The move TGT standoff distance.</param>
-    private void GetApMoveOrderSettings(FleetOrder moveOrder, out IFleetNavigable apMoveTgt, out Speed apMoveSpeed, out float moveTgtStandoffDistance) {
+    /// <param name="apMoveTgtStandoffDistance">The move TGT standoff distance.</param>
+    private void GetApMoveOrderSettings(FleetOrder moveOrder, out IFleetNavigable apMoveTgt, out Speed apMoveSpeed, out float apMoveTgtStandoffDistance) {
         D.Assert(moveOrder.Directive == FleetDirective.Move || moveOrder.Directive == FleetDirective.FullSpeedMove);
 
         // Determine move speed
@@ -539,7 +571,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         apMoveTgt = moveTgt;
 
         // Determine move target standoff distance
-        moveTgtStandoffDistance = GetMoveTargetStandoffDistance(moveOrderTgt);
+        apMoveTgtStandoffDistance = CalcApMoveTgtStandoffDistance(moveOrderTgt);
     }
 
     /// <summary>
@@ -547,7 +579,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// </summary>
     /// <param name="moveTgt">The move target.</param>
     /// <returns></returns>
-    private float GetMoveTargetStandoffDistance(IFleetNavigable moveTgt) {
+    private float CalcApMoveTgtStandoffDistance(IFleetNavigable moveTgt) {
         float standoffDistance = Constants.ZeroF;
         var baseTgt = moveTgt as AUnitBaseCmdItem;
         if (baseTgt != null) {
@@ -573,7 +605,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void ExecuteMoveOrder_ExitState() {
         LogEvent();
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -616,7 +648,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// fleets where the ships in this fleet should 'arrive' outside of the enemy's max weapons range.</remarks>
     /// </summary>
     private float _fsmApMoveTgtStandoffDistance;
-    private bool _fsmApIsMoveTgtUnreachable;
+    private bool _fsmApMoveTgtUnreachable;
 
     void Moving_EnterState() {
         LogEvent();
@@ -624,23 +656,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (mortalMoveTarget != null) {
             mortalMoveTarget.deathOneShot += FsmTargetDeathEventHandler;
         }
-        _navigator.PlotCourse(_fsmApMoveTgt, _fsmApMoveSpeed, _fsmApMoveTgtStandoffDistance);
+        _navigator.PlotPilotCourse(_fsmApMoveTgt, _fsmApMoveSpeed, _fsmApMoveTgtStandoffDistance);
     }
 
-    void Moving_UponCoursePlotSuccess() {
+    void Moving_UponApCoursePlotSuccess() {
         LogEvent();
-        _navigator.EngageAutoPilot();
+        _navigator.EngagePilot();
     }
 
-    void Moving_UponCoursePlotFailure() {
+    void Moving_UponApCoursePlotFailure() {
         LogEvent();
-        _fsmApIsMoveTgtUnreachable = true;
+        _fsmApMoveTgtUnreachable = true;
         Return();
     }
 
-    void Moving_UponDestinationUnreachable() {
+    void Moving_UponApTargetUnreachable() {
         LogEvent();
-        _fsmApIsMoveTgtUnreachable = true;
+        _fsmApMoveTgtUnreachable = true;
         Return();
     }
 
@@ -650,12 +682,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             D.Assert(deadTarget is IPatrollable || deadTarget is IGuardable);
         }
         else {
-            D.Assert(_fsmApMoveTgt == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _fsmApMoveTgt.FullName, deadTarget.FullName));
+            D.Assert(_fsmApMoveTgt == deadTarget, "{0}.target {1} is not dead target {2}.",
+                FullName, _fsmApMoveTgt.FullName, deadTarget.FullName);
         }
         Return();
     }
 
-    void Moving_UponDestinationReached() {
+    void Moving_UponApTargetReached() {
         LogEvent();
         Return();
     }
@@ -679,7 +712,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
         _fsmApMoveSpeed = Speed.None;
         _fsmApMoveTgtStandoffDistance = Constants.ZeroF;
-        _navigator.DisengageAutoPilot();
+        _navigator.DisengagePilot();
     }
 
     #endregion
@@ -707,9 +740,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here
 
-        D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} ExecuteCloseOrbitOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+        D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteCloseOrbitOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -746,7 +779,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void ExecuteCloseOrbitOrder_ExitState() {
         LogEvent();
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -828,7 +861,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} ExecuteExploreOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+        D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteExploreOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
         D.Assert(!CheckForDeathOf(_fsmApMoveTgt));  // Fleet explore targets are Systems, sectors and the UCenter
 
         StationaryLocation closestLocalAssyStation;
@@ -885,7 +918,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
                         var speed = Speed.Standard;
                         float standoffDistance = Constants.ZeroF;   // AssyStation can't be owned by anyone
-                        ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, ShipMoveMode.ShipSpecific, standoffDistance);
+                        bool isFleetwideMove = false;
+                        //ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, ShipMoveMode.ShipSpecific, standoffDistance);
+                        ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, isFleetwideMove, standoffDistance);
                     }
                     else {
                         ShipOrder assumeStationOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
@@ -1042,9 +1077,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null; // required so Return()s here
 
-        D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} ExecutePatrolOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+        D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecutePatrolOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -1058,7 +1093,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         yield return null;    // required so Return()s here
 
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -1088,7 +1123,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void ExecutePatrolOrder_ExitState() {
         LogEvent();
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -1130,7 +1165,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             Call(FleetState.Moving);
             yield return null;    // required so Return()s here
 
-            D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} Patrolling target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+            D.Assert(!_fsmApMoveTgtUnreachable, "{0} Patrolling target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
             if (CheckForDeathOf(_patrolledTgt as IFleetNavigable)) {
                 // target we are patrolling around has died so let ExecutePatrolOrder handle it
                 Return();
@@ -1190,9 +1225,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} Guarded target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+        D.Assert(!_fsmApMoveTgtUnreachable, "{0} Guarded target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -1209,9 +1244,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        D.Assert(!_fsmApIsMoveTgtUnreachable, "{0} GuardStation {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
+        D.Assert(!_fsmApMoveTgtUnreachable, "{0} GuardStation {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
         if (CheckForDeathOf(_guardedTgt as IFleetNavigable)) {
-            HandleMoveTgtDeath(_guardedTgt as IFleetNavigable);
+            HandleApMoveTgtDeath(_guardedTgt as IFleetNavigable);
             yield return null;
         }
 
@@ -1240,7 +1275,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
         _guardedTgt = null;
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -1256,16 +1291,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         _fsmApMoveTgt = CurrentOrder.Target;
         _fsmApMoveSpeed = Speed.Full;
-        _fsmApMoveTgtStandoffDistance = GetMoveTargetStandoffDistance(CurrentOrder.Target);
+        _fsmApMoveTgtStandoffDistance = CalcApMoveTgtStandoffDistance(CurrentOrder.Target);
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApIsMoveTgtUnreachable) {
-            HandleDestinationUnreachable(_fsmApMoveTgt);
+        if (_fsmApMoveTgtUnreachable) {
+            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
             yield return null;
         }
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -1279,9 +1314,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // Note: 2 ways to leave the state: death of attackTgt and a new order causing a state change
     }
 
-    void ExecuteAttackOrder_UponTargetDeath(IMortalItem deadAttackTgt) {
+    void ExecuteAttackOrder_UponTargetDeath(IMortalItem deadUnitAttackTgt) {
         LogEvent();
-        D.Assert(_fsmApMoveTgt == deadAttackTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmApMoveTgt.FullName, deadAttackTgt.FullName);
+        D.Assert(_fsmApMoveTgt == deadUnitAttackTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmApMoveTgt.FullName, deadUnitAttackTgt.FullName);
         CurrentState = FleetState.Idling;
     }
 
@@ -1293,7 +1328,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         LogEvent();
         (_fsmApMoveTgt as IUnitAttackableTarget).deathOneShot -= FsmTargetDeathEventHandler;
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -1313,12 +1348,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApIsMoveTgtUnreachable) {
-            HandleDestinationUnreachable(_fsmApMoveTgt);
+        if (_fsmApMoveTgtUnreachable) {
+            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
             yield return null;
         }
         if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleMoveTgtDeath(_fsmApMoveTgt);
+            HandleApMoveTgtDeath(_fsmApMoveTgt);
             yield return null;
         }
 
@@ -1332,7 +1367,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void ExecuteJoinFleetOrder_ExitState() {
         LogEvent();
         _fsmApMoveTgt = null;
-        _fsmApIsMoveTgtUnreachable = false;
+        _fsmApMoveTgtUnreachable = false;
     }
 
     #endregion
@@ -1406,14 +1441,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// <summary>
     /// Warns and sets CurrentState to Idling.
     /// </summary>
-    /// <param name="target">The target.</param>
-    private void HandleDestinationUnreachable(IFleetNavigable target) {
-        D.Warn("{0} reporting destination {1} as unreachable from State {2}.", FullName, target.FullName, CurrentState.GetValueName());
+    /// <param name="apMoveTgt">The target.</param>
+    private void HandleApMoveTgtUnreachable(IFleetNavigable apMoveTgt) {
+        D.Warn("{0} state {1} reporting target {2} as unreachable. Call()ed from State {3}.",
+            FullName, LastState.GetValueName(), apMoveTgt.FullName, CurrentState.GetValueName());
         CurrentState = FleetState.Idling;
     }
 
-    private bool CheckForDeathOf(IFleetNavigable moveTgt) {
-        AMortalItem mortalMoveTgt = moveTgt as AMortalItem;
+    private bool CheckForDeathOf(IFleetNavigable apMoveTgt) {
+        AMortalItem mortalMoveTgt = apMoveTgt as AMortalItem;
         if (mortalMoveTgt != null && !mortalMoveTgt.IsOperational) {
             return true;
         }
@@ -1425,21 +1461,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// <remarks>The deadMoveTgt is not always _fsmApMoveTgt as sometimes these are 
     /// Patrol or Guard Stations.</remarks>
     /// </summary>
-    /// <param name="deadMoveTgt">The dead move TGT.</param>
-    private void HandleMoveTgtDeath(IFleetNavigable deadMoveTgt) {
-        D.Assert(!(deadMoveTgt as AMortalItem).IsOperational);
-        D.LogBold("{0} Moving state reporting target {1} has died. Moving state was Call()ed by {2}.", FullName, deadMoveTgt.FullName, CurrentState.GetValueName());
+    /// <param name="deadApMoveTgt">The dead move TGT.</param>
+    private void HandleApMoveTgtDeath(IFleetNavigable deadApMoveTgt) {
+        D.Assert(!(deadApMoveTgt as AMortalItem).IsOperational);
+        D.Log("{0} state {1} reporting target {2} has died. Reporting state was Call()ed by {3}.",
+            FullName, LastState.GetValueName(), deadApMoveTgt.FullName, CurrentState.GetValueName());
         CurrentState = FleetState.Idling;
     }
 
+    private void UponApCoursePlotFailure() { RelayToCurrentState(); }
 
-    private void UponCoursePlotFailure() { RelayToCurrentState(); }
+    private void UponApCoursePlotSuccess() { RelayToCurrentState(); }
 
-    private void UponCoursePlotSuccess() { RelayToCurrentState(); }
+    private void UponApTargetReached() { RelayToCurrentState(); }
 
-    private void UponDestinationReached() { RelayToCurrentState(); }
-
-    private void UponDestinationUnreachable() {
+    private void UponApTargetUnreachable() {
         // the final waypoint is not close enough and we can't directly approach the Destination
         RelayToCurrentState();
     }
@@ -1457,10 +1493,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     private void UponEnemyDetected() { RelayToCurrentState(); } // TODO not yet used
-
-    //private StationaryLocation GetClosest(IList<StationaryLocation> locations) {
-    //    return locations.MinBy(loc => Vector3.SqrMagnitude(loc.Position - Position));
-    //}
 
     /// <summary>
     /// Tries to get ships from the fleet using the criteria provided. Returns <c>false</c> if no ships
@@ -1589,7 +1621,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             if (__coursePlot == null) {
                 string name = __coursePlotNameFormat.Inject(DisplayName);
                 Transform lineParent = DynamicObjectsFolder.Instance.Folder;
-                var course = _navigator.AutoPilotCourse.Cast<INavigable>().ToList();
+                var course = _navigator.ApCourse.Cast<INavigable>().ToList();
                 __coursePlot = new CoursePlotLine(name, course, lineParent, Constants.One, GameColor.Yellow);
             }
             AssessDebugShowCoursePlot();
@@ -1619,14 +1651,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     private void AssessDebugShowCoursePlot() {
         if (__coursePlot != null) {
             // Note: left out IsDiscernible as I want these lines to show up whether the fleet is on screen or not
-            bool toShow = _navigator.AutoPilotCourse.Count > Constants.Zero;    // no longer auto shows a selected fleet
+            bool toShow = _navigator.ApCourse.Count > Constants.Zero;    // no longer auto shows a selected fleet
             __coursePlot.Show(toShow);
         }
     }
 
     private void UpdateDebugCoursePlot() {
         if (__coursePlot != null) {
-            var course = _navigator.AutoPilotCourse.Cast<INavigable>().ToList();
+            var course = _navigator.ApCourse.Cast<INavigable>().ToList();
             __coursePlot.UpdateCourse(course);
             AssessDebugShowCoursePlot();
         }
@@ -1703,65 +1735,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         if (__velocityRay != null) {
             __velocityRay.Dispose();
         }
-    }
-
-    #endregion
-
-    #region ICameraFollowable Members
-
-    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
-
-    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
-
-    #endregion
-
-    #region INavigable Members
-
-    public override bool IsMobile { get { return true; } }
-
-    #endregion
-
-    #region IFleetNavigable Members
-
-    // IMPROVE Currently Ships aren't obstacles that can be discovered via casting
-    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-        return Vector3.Distance(fleetPosition, Position);
-    }
-
-    #endregion
-
-    #region IShipNavigable Members
-
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
-        float innerShellRadius = Data.UnitMaxFormationRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of formation
-        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
-    }
-
-    #endregion
-
-    #region IFormationMgrClient Members
-
-    public override void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
-        ShipItem ship = element as ShipItem;
-
-        if (!IsOperational) {
-            // If not operational, this positioning is occuring during construction so place the ship now where it belongs
-            base.PositionElementInFormation(element, stationOffset);
-        }
-
-        FleetFormationStation station = ship.FormationStation;
-        if (station != null) {
-            // the ship already has a formation station so get rid of it
-            //D.Log(ShowDebugLog, "{0} is removing and destroying old FormationStation.", ship.FullName);
-            ship.FormationStation = null;
-            Destroy(station);
-        }
-        //D.Log(ShowDebugLog, "{0} is adding a new FormationStation.", ship.FullName);
-        Vector3 localOffset = transform.InverseTransformDirection(stationOffset);
-        station = UnitFactory.Instance.MakeFleetFormationStation(this, localOffset);
-        station.AssignedShip = ship;
-        ship.FormationStation = station;
     }
 
     #endregion
@@ -1855,9 +1828,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     internal class FleetNavigator : IDisposable {
 
-        private const float TargetCastingDistanceBuffer = 0.1F;
-
-        private const float WaypointCastingDistanceSubtractor = Constants.ZeroF;
+        private const string NameFormat = "{0}.{1}";
 
         /// <summary>
         /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
@@ -1868,51 +1839,35 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         private readonly static LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
-        private readonly static Speed[] InValidAutoPilotSpeeds = {
-                                                                    Speed.None,
-                                                                    Speed.HardStop,
-                                                                    Speed.Stop
-                                                                };
+        private readonly static Speed[] InvalidApSpeeds = {
+                                                            Speed.None,
+                                                            Speed.HardStop,
+                                                            Speed.Stop
+                                                        };
 
-        private bool _isAutoPilotEngaged;
-        /// <summary>
-        /// Indicates whether the AutoPilot is engaged. This is also the primary
-        /// internal control for engaging/disengaging the autopilot.
-        /// </summary>
-        public bool IsAutoPilotEngaged {
-            get { return _isAutoPilotEngaged; }
-            private set {
-                if (_isAutoPilotEngaged != value) {
-                    _isAutoPilotEngaged = value;
-                    IsAutoPilotEngagedPropChangedHandler();
-                }
-                else {
-                    //string msg = _isAutoPilotEngaged ? "engage" : "disengage";
-                    //D.Log(ShowDebugLog, "{0} attempting to {1} autoPilot when autoPilot state = {1}.", Name, msg);
-                }
-            }
-        }
+        public bool IsPilotEngaged { get; private set; }
 
         /// <summary>
         /// The course this AutoPilot will follow when engaged. 
         /// </summary>
-        internal IList<IFleetNavigable> AutoPilotCourse { get; private set; }
+        internal IList<IFleetNavigable> ApCourse { get; private set; }
 
-        private string Name { get { return _fleet.DisplayName; } }
+        private string Name { get { return NameFormat.Inject(_fleet.DisplayName, typeof(FleetNavigator).Name); } }
 
         private Vector3 Position { get { return _fleet.Position; } }
 
-        private float AutoPilotTgtDistance { get { return Vector3.Distance(AutoPilotTarget.Position, Position); } }
+        private float ApTgtDistance { get { return Vector3.Distance(ApTarget.Position, Position); } }
 
         /// <summary>
         /// Returns true if the fleet's target has moved far enough to require a new waypoint course to find it.
         /// </summary>
-        private bool IsCourseReplotNeeded {
+        private bool IsApCourseReplotNeeded {
             get {
-                if (AutoPilotTarget.IsMobile) {
-                    var sqrDistanceTgtTraveled = Vector3.SqrMagnitude(AutoPilotTarget.Position - _targetPositionAtLastCoursePlot);
-                    //D.Log(ShowDebugLog, "{0}.IsCourseReplotNeeded called. {1} > {2}?, Dest: {3}, PrevDest: {4}.", _fleet.FullName, sqrDistanceTgtTraveled, _targetMovementReplotThresholdDistanceSqrd, _autoPilotTarget.Position, _targetPositionAtLastCoursePlot);
-                    return sqrDistanceTgtTraveled > _targetMovementReplotThresholdDistanceSqrd;
+                if (ApTarget.IsMobile) {
+                    var sqrDistanceTgtTraveled = Vector3.SqrMagnitude(ApTarget.Position - _apTgtPositionAtLastCoursePlot);
+                    //D.Log(ShowDebugLog, "{0}.IsCourseReplotNeeded called. {1} > {2}?, Dest: {3}, PrevDest: {4}.", 
+                    //Name, sqrDistanceTgtTraveled, _apTgtMovementReplotThresholdDistanceSqrd, ApTarget.Position, _apTgtPositionAtLastCoursePlot);
+                    return sqrDistanceTgtTraveled > _apTgtMovementReplotThresholdDistanceSqrd;
                 }
                 return false;
             }
@@ -1920,34 +1875,34 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         private bool IsWaitForFleetToAlignJobRunning { get { return _waitForFleetToAlignJob != null && _waitForFleetToAlignJob.IsRunning; } }
 
-        private bool IsAutoPilotNavJobRunning { get { return _autoPilotNavJob != null && _autoPilotNavJob.IsRunning; } }
+        private bool IsApNavJobRunning { get { return _apNavJob != null && _apNavJob.IsRunning; } }
 
         private bool ShowDebugLog { get { return _fleet.ShowDebugLog; } }
 
         /// <summary>
         /// The current target this AutoPilot is engaged to reach.
         /// </summary>
-        private IFleetNavigable AutoPilotTarget { get; set; }
+        private IFleetNavigable ApTarget { get; set; }
 
         /// <summary>
         /// The speed the autopilot should travel at. 
         /// </summary>
-        private Speed _autoPilotSpeed;
-        private float _targetStandoffDistance;
+        private Speed _apSpeed;
+        private float _apTgtStandoffDistance;
         private Action _fleetIsAlignedCallbacks;
-        private Job _autoPilotNavJob;
+        private Job _apNavJob;
         private Job _waitForFleetToAlignJob;
 
         /// <summary>
         /// If <c>true </c> the flagship has reached its current destination. In most cases, this
         /// "destination" is an interum waypoint provided by this fleet navigator, but it can also be the
-        /// 'final' destination, aka Target.
+        /// 'final' destination, aka ApTarget.
         /// </summary>
         private bool _hasFlagshipReachedDestination;
-        private bool _isCourseReplot;
-        private Vector3 _targetPositionAtLastCoursePlot;
-        private float _targetMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
-        private int _currentWaypointIndex;
+        private bool _isApCourseReplotting;
+        private Vector3 _apTgtPositionAtLastCoursePlot;
+        private float _apTgtMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
+        private int _currentApCourseIndex;
         private Seeker _seeker;
         private GameTime _gameTime;
         private GameManager _gameMgr;
@@ -1955,7 +1910,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private IList<IDisposable> _subscriptions;
 
         internal FleetNavigator(FleetCmdItem fleet, Seeker seeker) {
-            AutoPilotCourse = new List<IFleetNavigable>();
+            ApCourse = new List<IFleetNavigable>();
             _gameTime = GameTime.Instance;
             _gameMgr = GameManager.Instance;
             _fleet = fleet;
@@ -1966,63 +1921,67 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
             _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
-            _seeker.pathCallback += CoursePlotCompletedEventHandler;
+            _seeker.pathCallback += ApCoursePlotCompletedEventHandler;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
 
         /// <summary>
         /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
-        /// <param name="autoPilotTgt">The target this AutoPilot is being engaged to reach.</param>
-        /// <param name="autoPilotSpeed">The speed the autopilot should travel at.</param>
-        /// <param name="targetStandoffDistance">The target standoff distance.</param>
-        internal void PlotCourse(IFleetNavigable autoPilotTgt, Speed autoPilotSpeed, float targetStandoffDistance) {
-            Utility.ValidateNotNull(autoPilotTgt);
-            D.Assert(!InValidAutoPilotSpeeds.Contains(autoPilotSpeed), "{0} speed of {1} for autopilot is invalid.".Inject(Name, autoPilotSpeed.GetValueName()));
-            AutoPilotTarget = autoPilotTgt;
-            _autoPilotSpeed = autoPilotSpeed;
-            _targetStandoffDistance = targetStandoffDistance;
-            ResetCourseReplotValues();
-            GenerateCourse();
+        /// <param name="apTgt">The target this AutoPilot is being engaged to reach.</param>
+        /// <param name="apSpeed">The speed the autopilot should travel at.</param>
+        /// <param name="apTgtStandoffDistance">The target standoff distance.</param>
+        internal void PlotPilotCourse(IFleetNavigable apTgt, Speed apSpeed, float apTgtStandoffDistance) {
+            Utility.ValidateNotNull(apTgt);
+            D.Assert(!InvalidApSpeeds.Contains(apSpeed), "{0} speed of {1} for pilot is invalid.".Inject(Name, apSpeed.GetValueName()));
+            ApTarget = apTgt;
+            _apSpeed = apSpeed;
+            _apTgtStandoffDistance = apTgtStandoffDistance;
+            ResetApCourseReplotValues();
+            GenerateApCourse();
         }
 
         /// <summary>
         /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
         /// </summary>
-        internal void EngageAutoPilot() {
-            _fleet.HQElement.destinationReached += FlagshipReachedDestinationEventHandler;
-            IsAutoPilotEngaged = true;
+        internal void EngagePilot() {
+            _fleet.HQElement.apTgtReached += FlagshipReachedDestinationEventHandler;
+            //D.Log(ShowDebugLog, "{0} Pilot engaging.", Name);
+            IsPilotEngaged = true;
+            EngagePilot_Internal();
         }
 
-        private void HandleAutoPilotEngaged() {
-            EngageAutoPilot_Internal();
-        }
-
-        private void EngageAutoPilot_Internal() {
-            D.Assert(AutoPilotCourse.Count != Constants.Zero, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(Name));
-            CleanupAnyRemainingAutoPilotJobs();
-            InitiateCourseToTarget();
+        private void EngagePilot_Internal() {
+            D.Assert(ApCourse.Count != Constants.Zero, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(Name));
+            CleanupAnyRemainingApJobs();
+            InitiateApCourseToTarget();
         }
 
         /// <summary>
         /// Primary exposed control for disengaging the AutoPilot from handling movement.
         /// </summary>
-        internal void DisengageAutoPilot() {
-            _fleet.HQElement.destinationReached -= FlagshipReachedDestinationEventHandler;
-            IsAutoPilotEngaged = false;
+        internal void DisengagePilot() {
+            _fleet.HQElement.apTgtReached -= FlagshipReachedDestinationEventHandler;
+            //D.Log(ShowDebugLog, "{0} Pilot disengaging.", Name);
+            IsPilotEngaged = false;
+            CleanupAnyRemainingApJobs();
+            RefreshApCourse(CourseRefreshMode.ClearCourse);
+            _apSpeed = Speed.None;
+            _apTgtStandoffDistance = Constants.ZeroF;
+            ApTarget = null;
         }
 
         #region Course Execution
 
-        private void InitiateCourseToTarget() {
-            D.Assert(!IsAutoPilotNavJobRunning);
+        private void InitiateApCourseToTarget() {
+            D.Assert(!IsApNavJobRunning);
             D.Assert(!_hasFlagshipReachedDestination);
             D.Log(ShowDebugLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).",
-                Name, AutoPilotTarget.FullName, AutoPilotTgtDistance, _autoPilotSpeed.GetValueName(), _autoPilotSpeed.GetUnitsPerHour(ShipMoveMode.FleetWide, null, _fleet.Data));
-            //D.Log(ShowDebugLog, "{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
+                Name, ApTarget.FullName, ApTgtDistance, _apSpeed.GetValueName(), _apSpeed.GetUnitsPerHour(_fleet.Data));
+            // D.Log(ShowDebugLog, "{0}'s course waypoints are: {1}.", Name, ApCourse.Select(wayPt => wayPt.Position).Concatenate());
 
-            _currentWaypointIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
-            IFleetNavigable currentWaypoint = AutoPilotCourse[_currentWaypointIndex];   // skip the course start position as the fleet is already there
+            _currentApCourseIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
+            IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];   // skip the course start position as the fleet is already there
 
             // ***************************************************************************************************************************
             // The following initial Obstacle Check has been extracted from the PilotNavigationJob to accommodate a Fleet Move Cmd issued 
@@ -2033,60 +1992,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             IFleetNavigable detour;
             if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
                 // but there is an obstacle, so add a waypoint
-                RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
+                RefreshApCourse(CourseRefreshMode.AddWaypoint, detour);
             }
 
-            _autoPilotNavJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
+            _apNavJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
                 if (!wasKilled) {
-                    HandleDestinationReached();
+                    HandleApTgtReached();
                 }
             });
 
             // Reqd as I have no pause control over AStar while it is generating a path
             if (_gameMgr.IsPaused) {
-                _autoPilotNavJob.IsPaused = true;
-                D.Log(ShowDebugLog, "{0} has paused PilotNavigationJob immediately after starting it.", Name);
+                _apNavJob.IsPaused = true;
+                D.Log(ShowDebugLog, "{0} has paused ApNavJob immediately after starting it.", Name);
             }
         }
-        //private void InitiateCourseToTarget() {
-        //    D.Assert(!IsAutoPilotNavJobRunning);
-        //    D.Assert(!_hasFlagshipReachedDestination);
-        //    D.Log(ShowDebugLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).",
-        //        Name, AutoPilotTarget.FullName, AutoPilotTgtDistance, _autoPilotSpeed.GetValueName(), _autoPilotSpeed.GetUnitsPerHour(ShipMoveMode.FleetWide, null, _fleet.Data));
-        //    //D.Log(ShowDebugLog, "{0}'s course waypoints are: {1}.", Name, Course.Select(wayPt => wayPt.Position).Concatenate());
-
-        //    _currentWaypointIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
-        //    IFleetNavigable currentWaypoint = AutoPilotCourse[_currentWaypointIndex];   // skip the course start position as the fleet is already there
-
-        //    float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target are StationaryLocations
-        //    if (currentWaypoint == AutoPilotTarget) {
-        //        castingDistanceSubtractor = AutoPilotTarget.RadiusAroundDestContainingKnownObstacles + TargetCastingDistanceBuffer;
-        //    }
-
-        //    // ***************************************************************************************************************************
-        //    // The following initial Obstacle Check has been extracted from the PilotNavigationJob to accommodate a Fleet Move Cmd issued 
-        //    // via ContextMenu while Paused. It starts the Job and then immediately pauses it. This test for an obstacle prior to the Job 
-        //    // starting allows the Course plot display to show the detour around the obstacle (if one is found) rather than show a 
-        //    // course plot into an obstacle.
-        //    // ***************************************************************************************************************************
-        //    IFleetNavigable detour;
-        //    if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour)) {
-        //        // but there is an obstacle, so add a waypoint
-        //        RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
-        //    }
-
-        //    _autoPilotNavJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
-        //        if (!wasKilled) {
-        //            HandleDestinationReached();
-        //        }
-        //    });
-
-        //    // Reqd as I have no pause control over AStar while it is generating a path
-        //    if (_gameMgr.IsPaused) {
-        //        _autoPilotNavJob.IsPaused = true;
-        //        D.Log(ShowDebugLog, "{0} has paused PilotNavigationJob immediately after starting it.", Name);
-        //    }
-        //}
 
         /// <summary>
         /// Coroutine that follows the Course to the Target. 
@@ -2096,145 +2016,49 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <returns></returns>
         private IEnumerator EngageCourse() {
             //D.Log(ShowDebugLog, "{0}.EngageCourse() has begun.", _fleet.FullName);
-            int targetDestinationIndex = AutoPilotCourse.Count - 1;
-            D.Assert(_currentWaypointIndex == 1);  // already set prior to the start of the Job
-            IFleetNavigable currentWaypoint = AutoPilotCourse[_currentWaypointIndex];
+            int apTgtCourseIndex = ApCourse.Count - 1;
+            D.Assert(_currentApCourseIndex == 1);  // already set prior to the start of the Job
+            IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];
             //D.Log(ShowDebugLog, "{0}: first waypoint is {1} in course with {2} waypoints reqd before final approach to Target {3}.",
-            //Name, currentWaypoint.Position, targetDestinationIndex - 1, AutoPilotTarget.FullName);
+            //Name, currentWaypoint.Position, apTgtCourseIndex - 1, ApTarget.FullName);
 
-            float standoffDistance = Constants.ZeroF;
-            if (_currentWaypointIndex == targetDestinationIndex) {
-                standoffDistance = _targetStandoffDistance;
+            float waypointStandoffDistance = Constants.ZeroF;
+            if (_currentApCourseIndex == apTgtCourseIndex) {
+                waypointStandoffDistance = _apTgtStandoffDistance;
             }
-            IssueMoveOrderToAllShips(currentWaypoint, standoffDistance);
+            IssueMoveOrderToAllShips(currentWaypoint, waypointStandoffDistance);
 
             IFleetNavigable detour;
-            while (_currentWaypointIndex <= targetDestinationIndex) {
+            while (_currentApCourseIndex <= apTgtCourseIndex) {
                 if (_hasFlagshipReachedDestination) {
                     _hasFlagshipReachedDestination = false;
-                    _currentWaypointIndex++;
-                    if (_currentWaypointIndex == targetDestinationIndex) {
-                        standoffDistance = _targetStandoffDistance;
+                    _currentApCourseIndex++;
+                    if (_currentApCourseIndex == apTgtCourseIndex) {
+                        waypointStandoffDistance = _apTgtStandoffDistance;
                     }
-                    else if (_currentWaypointIndex > targetDestinationIndex) {
+                    else if (_currentApCourseIndex > apTgtCourseIndex) {
                         continue;   // conclude coroutine
                     }
                     D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
-                        _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, AutoPilotCourse[_currentWaypointIndex].FullName);
+                        _currentApCourseIndex - 1, currentWaypoint.FullName, _currentApCourseIndex, ApCourse[_currentApCourseIndex].FullName);
 
-                    currentWaypoint = AutoPilotCourse[_currentWaypointIndex];
+                    currentWaypoint = ApCourse[_currentApCourseIndex];
                     if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
                         // there is an obstacle enroute to the next waypoint, so use the detour provided instead
-                        RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
+                        RefreshApCourse(CourseRefreshMode.AddWaypoint, detour);
                         currentWaypoint = detour;
-                        targetDestinationIndex = AutoPilotCourse.Count - 1;
+                        apTgtCourseIndex = ApCourse.Count - 1;
                     }
-                    IssueMoveOrderToAllShips(currentWaypoint, standoffDistance);
+                    IssueMoveOrderToAllShips(currentWaypoint, waypointStandoffDistance);
                 }
-                else if (IsCourseReplotNeeded) {
-                    RegenerateCourse();
+                else if (IsApCourseReplotNeeded) {
+                    RegenerateApCourse();
                 }
                 yield return null;  // OPTIMIZE use WaitForHours, checking not currently expensive here
                 // IMPROVE use ProgressCheckDistance to derive
             }
             // we've reached the target
         }
-        //private IEnumerator EngageCourse() {
-        //    //D.Log(ShowDebugLog, "{0}.EngageCourse() has begun.", _fleet.FullName);
-        //    int targetDestinationIndex = AutoPilotCourse.Count - 1;
-        //    D.Assert(_currentWaypointIndex == 1);  // already set prior to the start of the Job
-        //    IFleetNavigable currentWaypoint = AutoPilotCourse[_currentWaypointIndex];
-        //    //D.Log(ShowDebugLog, "{0}: first waypoint is {1} in course with {2} waypoints reqd before final approach to Target {3}.",
-        //    //Name, currentWaypoint.Position, targetDestinationIndex - 1, AutoPilotTarget.FullName);
-
-        //    float standoffDistance = Constants.ZeroF;
-        //    if (_currentWaypointIndex == targetDestinationIndex) {
-        //        standoffDistance = _targetStandoffDistance;
-        //    }
-        //    IssueMoveOrderToAllShips(currentWaypoint, standoffDistance);
-
-        //    float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target is a StationaryLocation
-        //    IFleetNavigable detour;
-        //    while (_currentWaypointIndex <= targetDestinationIndex) {
-        //        if (_hasFlagshipReachedDestination) {
-        //            _hasFlagshipReachedDestination = false;
-        //            _currentWaypointIndex++;
-        //            if (_currentWaypointIndex == targetDestinationIndex) {
-        //                castingDistanceSubtractor = AutoPilotTarget.RadiusAroundDestContainingKnownObstacles + TargetCastingDistanceBuffer;
-        //                standoffDistance = _targetStandoffDistance;
-        //            }
-        //            else if (_currentWaypointIndex > targetDestinationIndex) {
-        //                continue;   // conclude coroutine
-        //            }
-        //            D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
-        //                _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, AutoPilotCourse[_currentWaypointIndex].FullName);
-
-        //            currentWaypoint = AutoPilotCourse[_currentWaypointIndex];
-        //            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour)) {
-        //                // there is an obstacle enroute to the next waypoint, so use the detour provided instead
-        //                RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
-        //                currentWaypoint = detour;
-        //                targetDestinationIndex = AutoPilotCourse.Count - 1;
-        //                castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
-        //            }
-        //            IssueMoveOrderToAllShips(currentWaypoint, standoffDistance);
-        //        }
-        //        else if (IsCourseReplotNeeded) {
-        //            RegenerateCourse();
-        //        }
-        //        yield return null;  // OPTIMIZE use WaitForHours, checking not currently expensive here
-        //        // IMPROVE use ProgressCheckDistance to derive
-        //    }
-        //    // we've reached the target
-        //}
-        //private IEnumerator EngageCourse() {
-        //    //D.Log(ShowDebugLog, "{0}.EngageCourse() has begun.", _fleet.FullName);
-        //    int targetDestinationIndex = AutoPilotCourse.Count - 1;
-        //    D.Assert(_currentWaypointIndex == 1);  // already set prior to the start of the Job
-        //    IFleetNavigable currentWaypoint = AutoPilotCourse[_currentWaypointIndex];
-        //    //D.Log(ShowDebugLog, "{0}: first waypoint is {1} in course with {2} waypoints reqd before final approach to Target {3}.",
-        //    //Name, currentWaypoint.Position, targetDestinationIndex - 1, AutoPilotTarget.FullName);
-
-        //    float castingDistanceSubtractor = WaypointCastingDistanceSubtractor;  // all waypoints except the final Target is a StationaryLocation
-        //    if (_currentWaypointIndex == targetDestinationIndex) {
-        //        castingDistanceSubtractor = AutoPilotTarget.RadiusAroundDestContainingKnownObstacles + TargetCastingDistanceBuffer;
-        //    }
-
-        //    IFleetNavigable detour;
-        //    IssueMoveOrderToAllShips(currentWaypoint);
-
-
-        //    while (_currentWaypointIndex <= targetDestinationIndex) {
-        //        if (_hasFlagshipReachedDestination) {
-        //            _hasFlagshipReachedDestination = false;
-        //            _currentWaypointIndex++;
-        //            if (_currentWaypointIndex == targetDestinationIndex) {
-        //                castingDistanceSubtractor = AutoPilotTarget.RadiusAroundDestContainingKnownObstacles + TargetCastingDistanceBuffer;
-        //            }
-        //            else if (_currentWaypointIndex > targetDestinationIndex) {
-        //                continue;   // conclude coroutine
-        //            }
-        //            D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
-        //                _currentWaypointIndex - 1, currentWaypoint.FullName, _currentWaypointIndex, AutoPilotCourse[_currentWaypointIndex].FullName);
-
-        //            currentWaypoint = AutoPilotCourse[_currentWaypointIndex];
-        //            if (TryCheckForObstacleEnrouteTo(currentWaypoint, castingDistanceSubtractor, out detour)) {
-        //                // there is an obstacle enroute to the next waypoint, so use the detour provided instead
-        //                RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
-        //                currentWaypoint = detour;
-        //                targetDestinationIndex = AutoPilotCourse.Count - 1;
-        //                castingDistanceSubtractor = WaypointCastingDistanceSubtractor;
-        //            }
-        //            IssueMoveOrderToAllShips(currentWaypoint);
-        //        }
-        //        else if (IsCourseReplotNeeded) {
-        //            RegenerateCourse();
-        //        }
-        //        yield return null;  // OPTIMIZE use WaitForHours, checking not currently expensive here
-        //        // IMPROVE use ProgressCheckDistance to derive
-        //    }
-        //    // we've reached the target
-        //}
 
         #endregion
 
@@ -2244,11 +2068,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// Checks for an obstacle enroute to the provided <c>destination</c>. Returns true if one
         /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
         /// </summary>
-        /// <param name="destination">The current destination. May be the AutoPilotTarget or an obstacle detour.</param>
-        /// <param name="castingDistanceSubtractor">The distance to subtract from the casted Ray length to avoid 
-        /// detecting any ObstacleZoneCollider around the destination.</param>
+        /// <param name="destination">The current destination. May be the ApTarget or an obstacle detour.</param>
         /// <param name="detour">The obstacle detour.</param>
-        /// <param name="destinationOffset">The offset from destination.Position that is our destinationPoint.</param>
         /// <returns>
         ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
         /// </returns>
@@ -2256,11 +2077,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             int iterationCount = Constants.Zero;
             return TryCheckForObstacleEnrouteTo(destination, out detour, ref iterationCount);
         }
-        //private bool TryCheckForObstacleEnrouteTo(IFleetNavigable destination, float castingDistanceSubtractor, out IFleetNavigable detour, Vector3 destinationOffset = default(Vector3)) {
-        //    Utility.ValidateNotNegative(castingDistanceSubtractor);
-        //    int iterationCount = Constants.Zero;
-        //    return TryCheckForObstacleEnrouteTo(destination, castingDistanceSubtractor, destinationOffset, out detour, ref iterationCount);
-        //}
 
         private bool TryCheckForObstacleEnrouteTo(IFleetNavigable destination, out IFleetNavigable detour, ref int iterationCount) {
             D.AssertException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
@@ -2278,8 +2094,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 IAvoidableObstacle obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
 
                 if (obstacle == destination) {
-                    D.Warn("{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}.", Name, obstacle.FullName, rayLength, obstacleZoneHitDistance);
-                    return false;
+                    D.Error("{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}.", Name, obstacle.FullName, rayLength, obstacleZoneHitDistance);
                 }
                 else {
                     D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
@@ -2298,50 +2113,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
             return false;
         }
-        //private bool TryCheckForObstacleEnrouteTo(IFleetNavigable destination, float castingDistanceSubtractor, Vector3 destinationOffset, out IFleetNavigable detour, ref int iterationCount) {
-        //    D.AssertException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
-        //    detour = null;
-        //    Vector3 vectorToDestPoint = (destination.Position + destinationOffset) - Position;
-        //    float currentDestPtDistance = vectorToDestPoint.magnitude;
-        //    if (currentDestPtDistance <= castingDistanceSubtractor) {
-        //        return false;
-        //    }
-        //    Vector3 currentDestPtBearing = vectorToDestPoint.normalized;
-        //    float rayLength = currentDestPtDistance - castingDistanceSubtractor;
-        //    Ray ray = new Ray(Position, currentDestPtBearing);
-
-        //    RaycastHit hitInfo;
-        //    if (Physics.Raycast(ray, out hitInfo, rayLength, AvoidableObstacleZoneOnlyLayerMask.value)) {
-        //        // there is an AvoidableObstacleZone in the way. Warning: hitInfo.transform returns the rigidbody parent since 
-        //        // the obstacleZone trigger collider is static. UNCLEAR if this means it forms a compound collider as this is a raycast
-        //        var obstacleZoneGo = hitInfo.collider.gameObject;
-        //        var obstacleZoneHitDistance = hitInfo.distance;
-        //        IAvoidableObstacle obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
-
-        //        if (obstacle == destination) {
-        //            D.Warn("{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}, DestOffset = {4}, CastSubtractor = {5:0.00}.",
-        //                Name, obstacle.FullName, rayLength, obstacleZoneHitDistance, destinationOffset, castingDistanceSubtractor);
-        //            return false;
-        //        }
-        //        else {
-        //            D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
-        //                Name, obstacle.FullName, obstacle.Position, destination.FullName, rayLength, obstacleZoneHitDistance);
-        //        }
-        //        if (!TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detour)) {
-        //            return false;
-        //        }
-
-        //        IFleetNavigable newDetour;
-        //        float detourCastingDistanceSubtractor = Constants.ZeroF;  // obstacle detours don't have ObstacleZones
-        //        Vector3 detourOffset = destinationOffset;
-        //        if (TryCheckForObstacleEnrouteTo(detour, detourCastingDistanceSubtractor, detourOffset, out newDetour, ref iterationCount)) {
-        //            D.Log(ShowDebugLog, "{0} found another obstacle on the way to detour {1}.", Name, detour.FullName);
-        //            detour = newDetour;
-        //        }
-        //        return true;
-        //    }
-        //    return false;
-        //}
 
         private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out IFleetNavigable detour) {
             detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _fleet.Data.UnitMaxFormationRadius);
@@ -2453,7 +2224,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="shipName">Name of the ship for debugging.</param>
         /// <returns></returns>
         internal void RemoveFleetIsAlignedCallback(Action shipCallbackDelegate, ShipItem ship) {
-            //if (_fleetIsAlignedCallbacks != null) {
             D.Assert(_fleetIsAlignedCallbacks != null); // method only called if ship knows it has an active callback -> not null
             D.Assert(IsWaitForFleetToAlignJobRunning);
             D.Assert(_fleetIsAlignedCallbacks.GetInvocationList().Contains(shipCallbackDelegate));
@@ -2464,23 +2234,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 // delegate invocation list is now empty
                 KillWaitForFleetToAlignJob();
             }
-            //}
         }
 
         #endregion
 
         #region Event and Property Change Handlers
-
-        private void IsAutoPilotEngagedPropChangedHandler() {
-            if (_isAutoPilotEngaged) {
-                //D.Log(ShowDebugLog, "{0} AutoPilot engaging.", Name);
-                HandleAutoPilotEngaged();
-            }
-            else {
-                //D.Log(ShowDebugLog, "{0} AutoPilot disengaging.", Name);
-                HandleAutoPilotDisengaged();
-            }
-        }
 
         private void IsPausedPropChangedHandler() {
             PauseJobs(_gameMgr.IsPaused);
@@ -2491,23 +2249,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _hasFlagshipReachedDestination = true;
         }
 
-        private void CoursePlotCompletedEventHandler(Path path) {
+        private void ApCoursePlotCompletedEventHandler(Path path) {
             if (path.error) {
-                D.Warn("{0} generated an error plotting a course to {1}.", Name, AutoPilotTarget.FullName);
-                HandleCoursePlotFailure();
+                D.Warn("{0} generated an error plotting a course to {1}.", Name, ApTarget.FullName);
+                HandleApCoursePlotFailure();
                 return;
             }
-            ConstructCourse(path.vectorPath);
-            HandleCourseChanged();
-            //D.Log(ShowDebugLog, "{0}'s waypoint course to {1} is: {2}.", ClientName, Target.FullName, Course.Concatenate());
+            ConstructApCourse(path.vectorPath);
+            HandleApCourseChanged();
+            //D.Log(ShowDebugLog, "{0}'s waypoint course to {1} is: {2}.", Name, ApTarget.FullName, ApCourse.Concatenate());
             //PrintNonOpenSpaceNodes(path);
 
-            if (_isCourseReplot) {
-                ResetCourseReplotValues();
-                EngageAutoPilot_Internal();
+            if (_isApCourseReplotting) {
+                ResetApCourseReplotValues();
+                EngagePilot_Internal();
             }
             else {
-                HandleCoursePlotSuccess();
+                HandleApCoursePlotSuccess();
             }
         }
 
@@ -2515,53 +2273,47 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         internal void HandleHQElementChanging(ShipItem oldHQElement, ShipItem newHQElement) {
             if (oldHQElement != null) {
-                oldHQElement.destinationReached -= FlagshipReachedDestinationEventHandler;
+                oldHQElement.apTgtReached -= FlagshipReachedDestinationEventHandler;
             }
-            if (IsAutoPilotNavJobRunning) {   // if not engaged, this connection will be established when next engaged
-                newHQElement.destinationReached += FlagshipReachedDestinationEventHandler;
+            if (IsApNavJobRunning) {   // if not engaged, this connection will be established when next engaged
+                newHQElement.apTgtReached += FlagshipReachedDestinationEventHandler;
             }
         }
 
-        private void HandleAutoPilotDisengaged() {
-            CleanupAnyRemainingAutoPilotJobs();
-            RefreshCourse(CourseRefreshMode.ClearCourse);
-            _autoPilotSpeed = Speed.None;
-            _targetStandoffDistance = Constants.ZeroF;
-            AutoPilotTarget = null;
-        }
-
-        private void HandleCourseChanged() {
+        private void HandleApCourseChanged() {
             _fleet.UpdateDebugCoursePlot();
         }
 
-        private void HandleCoursePlotFailure() {
-            if (_isCourseReplot) {
-                D.Warn("{0}'s course to {1} couldn't be replotted.", Name, AutoPilotTarget.FullName);
+        private void HandleApCoursePlotFailure() {
+            if (_isApCourseReplotting) {
+                D.Warn("{0}'s course to {1} couldn't be replotted.", Name, ApTarget.FullName);
             }
-            _fleet.UponCoursePlotFailure();
+            _fleet.UponApCoursePlotFailure();
         }
 
-        private void HandleCoursePlotSuccess() {
-            _fleet.UponCoursePlotSuccess();
+        private void HandleApCoursePlotSuccess() {
+            _fleet.UponApCoursePlotSuccess();
         }
 
-        private void HandleDestinationReached() {
-            //D.Log(ShowDebugLog, "{0} at {1} reached Destination {2} \nat {3}. Actual proximity: {4:0.0000} units.", Name, Position, Target.FullName, TargetPoint, TargetPointDistance);
-            RefreshCourse(CourseRefreshMode.ClearCourse);
-            _fleet.UponDestinationReached();
+        private void HandleApTgtReached() {
+            //D.Log(ShowDebugLog, "{0} at {1} reached Target {2} \nat {3}. Actual proximity: {4:0.0000} units.", 
+            //Name, Position, ApTarget.FullName, ApTarget.Position, ApTgtDistance);
+            RefreshApCourse(CourseRefreshMode.ClearCourse);
+            _fleet.UponApTargetReached();
         }
 
-        private void HandleDestinationUnreachable() {
-            RefreshCourse(CourseRefreshMode.ClearCourse);
-            _fleet.UponDestinationUnreachable();
+        private void HandleApTgtUnreachable() {
+            RefreshApCourse(CourseRefreshMode.ClearCourse);
+            _fleet.UponApTargetUnreachable();
         }
 
         private void IssueMoveOrderToAllShips(IFleetNavigable fleetTgt, float tgtStandoffDistance) {
-            var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, fleetTgt as IShipNavigable, _autoPilotSpeed, ShipMoveMode.FleetWide, tgtStandoffDistance);
+            bool isFleetwideMove = true;
+            var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, fleetTgt as IShipNavigable, _apSpeed, isFleetwideMove, tgtStandoffDistance);
             _fleet.Elements.ForAll(e => {
                 var ship = e as ShipItem;
                 //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target: {2}, Speed: {3}, StandoffDistance: {4:0.#}.", 
-                //    _fleet.FullName, ship.FullName, fleetTgt.FullName, _autoPilotSpeed.GetValueName(), tgtStandoffDistance);
+                //Name, ship.FullName, fleetTgt.FullName, _apSpeed.GetValueName(), tgtStandoffDistance);
                 ship.CurrentOrder = shipMoveToOrder;
             });
         }
@@ -2572,22 +2324,22 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// Constructs a new course for this fleet from the <c>astarFixedCourse</c> provided.
         /// </summary>
         /// <param name="astarFixedCourse">The astar fixed course.</param>
-        private void ConstructCourse(IList<Vector3> astarFixedCourse) {
-            D.Assert(!astarFixedCourse.IsNullOrEmpty(), "{0}'s astarFixedCourse contains no path to {1}.".Inject(Name, AutoPilotTarget.FullName));
-            AutoPilotCourse.Clear();
+        private void ConstructApCourse(IList<Vector3> astarFixedCourse) {
+            D.Assert(!astarFixedCourse.IsNullOrEmpty(), "{0}'s astarFixedCourse contains no path to {1}.".Inject(Name, ApTarget.FullName));
+            ApCourse.Clear();
             int destinationIndex = astarFixedCourse.Count - 1;  // no point adding StationaryLocation for Destination as it gets immediately replaced
             for (int i = 0; i < destinationIndex; i++) {
-                AutoPilotCourse.Add(new StationaryLocation(astarFixedCourse[i]));
+                ApCourse.Add(new StationaryLocation(astarFixedCourse[i]));
             }
-            AutoPilotCourse.Add(AutoPilotTarget); // places it at course[destinationIndex]
-            ImproveCourseWithSystemAccessPoints();
+            ApCourse.Add(ApTarget); // places it at course[destinationIndex]
+            ImproveApCourseWithSystemAccessPoints();
         }
 
         /// <summary>
         /// Improves the existing course with System entry or exit points if applicable. If it is determined that a system entry or exit
         /// point is needed, the existing course will be modified to minimize the amount of InSystem travel time req'd to reach the target. 
         /// </summary>
-        private void ImproveCourseWithSystemAccessPoints() {
+        private void ImproveApCourseWithSystemAccessPoints() {
             SystemItem fleetSystem = null;
             if (_fleet.Topography == Topography.System) {
                 var fleetSectorIndex = SectorGrid.Instance.GetSectorIndex(Position);
@@ -2597,37 +2349,37 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
 
             SystemItem targetSystem = null;
-            if (AutoPilotTarget.Topography == Topography.System) {
-                var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(AutoPilotTarget.Position);
+            if (ApTarget.Topography == Topography.System) {
+                var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(ApTarget.Position);
                 var isSystemFound = SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem);
                 D.Assert(isSystemFound);
-                ValidateItemWithinSystem(targetSystem, AutoPilotTarget);
+                ValidateItemWithinSystem(targetSystem, ApTarget);
             }
 
             if (fleetSystem != null) {
                 if (fleetSystem == targetSystem) {
                     // the target and fleet are in the same system so exit and entry points aren't needed
-                    //D.Log(ShowDebugLog, "{0} and target {1} are both within System {2}.", _fleet.DisplayName, Target.FullName, fleetSystem.FullName);
+                    //D.Log(ShowDebugLog, "{0} and target {1} are both within System {2}.", _fleet.DisplayName, ApTarget.FullName, fleetSystem.FullName);
                     return;
                 }
                 Vector3 fleetSystemExitPt = MyMath.FindClosestPointOnSphereTo(Position, fleetSystem.Position, fleetSystem.Radius);
-                AutoPilotCourse.Insert(1, new StationaryLocation(fleetSystemExitPt));
+                ApCourse.Insert(1, new StationaryLocation(fleetSystemExitPt));
                 D.Log(ShowDebugLog, "{0} adding SystemExit Waypoint {1} for System {2}.", Name, fleetSystemExitPt, fleetSystem.FullName);
             }
 
             if (targetSystem != null) {
                 Vector3 targetSystemEntryPt;
-                if (AutoPilotTarget.Position.IsSameAs(targetSystem.Position)) {
+                if (ApTarget.Position.IsSameAs(targetSystem.Position)) {
                     // Can't use FindClosestPointOnSphereTo(Point, SphereCenter, SphereRadius) as Point is the same as SphereCenter,
                     // so use point on System periphery that is closest to the final course waypoint (can be course start) prior to the target.
-                    var finalCourseWaypointPosition = AutoPilotCourse[AutoPilotCourse.Count - 2].Position;
+                    var finalCourseWaypointPosition = ApCourse[ApCourse.Count - 2].Position;
                     var systemToWaypointDirection = (finalCourseWaypointPosition - targetSystem.Position).normalized;
                     targetSystemEntryPt = targetSystem.Position + systemToWaypointDirection * targetSystem.Radius;
                 }
                 else {
-                    targetSystemEntryPt = MyMath.FindClosestPointOnSphereTo(AutoPilotTarget.Position, targetSystem.Position, targetSystem.Radius);
+                    targetSystemEntryPt = MyMath.FindClosestPointOnSphereTo(ApTarget.Position, targetSystem.Position, targetSystem.Radius);
                 }
-                AutoPilotCourse.Insert(AutoPilotCourse.Count - 1, new StationaryLocation(targetSystemEntryPt));
+                ApCourse.Insert(ApCourse.Count - 1, new StationaryLocation(targetSystemEntryPt));
                 D.Log(ShowDebugLog, "{0} adding SystemEntry Waypoint {1} for System {2}.", Name, targetSystemEntryPt, targetSystem.FullName);
             }
         }
@@ -2638,8 +2390,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="mode">The mode.</param>
         /// <param name="waypoint">The optional waypoint. When not null, this is always a StationaryLocation detour to avoid an obstacle.</param>
         /// <exception cref="System.NotImplementedException"></exception>
-        private void RefreshCourse(CourseRefreshMode mode, IFleetNavigable waypoint = null) {
-            //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), Course.Count);
+        private void RefreshApCourse(CourseRefreshMode mode, IFleetNavigable waypoint = null) {
+            //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), ApCourse.Count);
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.Assert(waypoint == null);
@@ -2647,39 +2399,39 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     break;
                 case CourseRefreshMode.AddWaypoint:
                     D.Assert(waypoint is StationaryLocation);
-                    AutoPilotCourse.Insert(_currentWaypointIndex, waypoint);    // changes Course.Count
+                    ApCourse.Insert(_currentApCourseIndex, waypoint);    // changes Course.Count
                     break;
                 case CourseRefreshMode.ReplaceObstacleDetour:
                     D.Assert(waypoint is StationaryLocation);
-                    AutoPilotCourse.RemoveAt(_currentWaypointIndex);          // changes Course.Count
-                    AutoPilotCourse.Insert(_currentWaypointIndex, waypoint);    // changes Course.Count
+                    ApCourse.RemoveAt(_currentApCourseIndex);          // changes Course.Count
+                    ApCourse.Insert(_currentApCourseIndex, waypoint);    // changes Course.Count
                     break;
                 case CourseRefreshMode.RemoveWaypoint:
                     D.Assert(waypoint is StationaryLocation);
-                    D.Assert(AutoPilotCourse[_currentWaypointIndex] == waypoint);
-                    bool isRemoved = AutoPilotCourse.Remove(waypoint);         // changes Course.Count
+                    D.Assert(ApCourse[_currentApCourseIndex] == waypoint);
+                    bool isRemoved = ApCourse.Remove(waypoint);         // changes Course.Count
                     D.Assert(isRemoved);
-                    _currentWaypointIndex--;
+                    _currentApCourseIndex--;
                     break;
                 case CourseRefreshMode.ClearCourse:
                     D.Assert(waypoint == null);
-                    AutoPilotCourse.Clear();
+                    ApCourse.Clear();
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
             }
-            //D.Log(ShowDebugLog, "CourseCountAfter = {0}.", Course.Count);
-            HandleCourseChanged();
+            //D.Log(ShowDebugLog, "CourseCountAfter = {0}.", ApCourse.Count);
+            HandleApCourseChanged();
         }
 
-        private void GenerateCourse() {
+        private void GenerateApCourse() {
             Vector3 start = Position;
-            string replot = _isCourseReplot ? "RE-plotting" : "plotting";
-            D.Log(ShowDebugLog, "{0} is {1} course to {2}. Start = {3}, Destination = {4}.", Name, replot, AutoPilotTarget.FullName, start, AutoPilotTarget.Position);
+            string replot = _isApCourseReplotting ? "RE-plotting" : "plotting";
+            D.Log(ShowDebugLog, "{0} is {1} course to {2}. Start = {3}, Destination = {4}.", Name, replot, ApTarget.FullName, start, ApTarget.Position);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
             //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points
-            Path path = ABPath.Construct(start, AutoPilotTarget.Position, null);
+            Path path = ABPath.Construct(start, ApTarget.Position, null);
 
             // Node qualifying constraint instance that checks that nodes are walkable, and within the seeker-specified
             // max search distance. Tags and area testing are turned off, primarily because I don't yet understand them
@@ -2714,9 +2466,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             //_seeker.StartPath(startPosition, targetPosition); 
         }
 
-        private void RegenerateCourse() {
-            _isCourseReplot = true;
-            GenerateCourse();
+        private void RegenerateApCourse() {
+            _isApCourseReplotting = true;
+            GenerateApCourse();
         }
 
         // Note: No longer RefreshingNavigationalValues as I've eliminated _courseProgressCheckPeriod
@@ -2725,16 +2477,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <summary>
         /// Resets the values used when replotting a course.
         /// </summary>
-        private void ResetCourseReplotValues() {
-            _targetPositionAtLastCoursePlot = AutoPilotTarget.Position;
-            _isCourseReplot = false;
+        private void ResetApCourseReplotValues() {
+            _apTgtPositionAtLastCoursePlot = ApTarget.Position;
+            _isApCourseReplotting = false;
         }
 
         #endregion
 
-        private void CleanupAnyRemainingAutoPilotJobs() {
-            if (IsAutoPilotNavJobRunning) {
-                _autoPilotNavJob.Kill();
+        private void CleanupAnyRemainingApJobs() {
+            if (IsApNavJobRunning) {
+                _apNavJob.Kill();
             }
             // Note: WaitForFleetToAlign Job is designed to assist ships, not the FleetCmd. It can still be running 
             // if the Fleet disengages its autoPilot while ships are turning. This would occur when the fleet issues 
@@ -2744,8 +2496,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
 
         private void PauseJobs(bool toPause) {
-            if (IsAutoPilotNavJobRunning) {
-                _autoPilotNavJob.IsPaused = toPause;
+            if (IsApNavJobRunning) {
+                _apNavJob.IsPaused = toPause;
             }
             if (IsWaitForFleetToAlignJobRunning) {
                 _waitForFleetToAlignJob.IsPaused = _gameMgr.IsPaused;
@@ -2754,8 +2506,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         private void Cleanup() {
             Unsubscribe();
-            if (_autoPilotNavJob != null) {
-                _autoPilotNavJob.Dispose();
+            if (_apNavJob != null) {
+                _apNavJob.Dispose();
             }
             if (_waitForFleetToAlignJob != null) {
                 _waitForFleetToAlignJob.Dispose();
@@ -2765,7 +2517,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private void Unsubscribe() {
             _subscriptions.ForAll(s => s.Dispose());
             _subscriptions.Clear();
-            _seeker.pathCallback -= CoursePlotCompletedEventHandler;
+            _seeker.pathCallback -= ApCoursePlotCompletedEventHandler;
         }
 
         public override string ToString() {
@@ -3054,7 +2806,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     //            _autoPilotNavJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
     //                if (!wasKilled) {
-    //                    HandleDestinationReached();
+    //                    HandleTargetReached();
     //                }
     //            });
 
@@ -3274,8 +3026,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     //            _fleet.UponCoursePlotSuccess();
     //        }
 
-    //        protected override void HandleDestinationReached() {
-    //            base.HandleDestinationReached();
+    //        protected override void HandleTargetReached() {
+    //            base.HandleTargetReached();
     //            _fleet.UponDestinationReached();
     //        }
 
@@ -3628,6 +3380,65 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     //    }
 
     #endregion
+
+    #endregion
+
+    #region ICameraFollowable Members
+
+    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
+
+    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
+
+    #endregion
+
+    #region INavigable Members
+
+    public override bool IsMobile { get { return true; } }
+
+    #endregion
+
+    #region IFleetNavigable Members
+
+    // IMPROVE Currently Ships aren't obstacles that can be discovered via casting
+    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        return Vector3.Distance(fleetPosition, Position);
+    }
+
+    #endregion
+
+    #region IShipNavigable Members
+
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+        float innerShellRadius = Data.UnitMaxFormationRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of formation
+        float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+    }
+
+    #endregion
+
+    #region IFormationMgrClient Members
+
+    public override void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
+        ShipItem ship = element as ShipItem;
+
+        if (!IsOperational) {
+            // If not operational, this positioning is occuring during construction so place the ship now where it belongs
+            base.PositionElementInFormation(element, stationOffset);
+        }
+
+        FleetFormationStation station = ship.FormationStation;
+        if (station != null) {
+            // the ship already has a formation station so get rid of it
+            //D.Log(ShowDebugLog, "{0} is removing and destroying old FormationStation.", ship.FullName);
+            ship.FormationStation = null;
+            Destroy(station);
+        }
+        //D.Log(ShowDebugLog, "{0} is adding a new FormationStation.", ship.FullName);
+        Vector3 localOffset = transform.InverseTransformDirection(stationOffset);
+        station = UnitFactory.Instance.MakeFleetFormationStation(this, localOffset);
+        station.AssignedShip = ship;
+        ship.FormationStation = station;
+    }
 
     #endregion
 

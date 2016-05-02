@@ -152,25 +152,61 @@ namespace CodeEnv.Master.GameContent {
             //return longestRangeSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
         }
 
-        /// <summary>
-        /// My brown color, more commonly known as Peru (205, 133, 63) in RGB.
-        /// </summary>
-        private static Color _brown = new Color(0.80F, 0.52F, 0.25F, 1F);
-
-        /// <summary>
-        /// Purple color (128, 0, 128) in RGB.
-        /// </summary>
-        private static Color _purple = new Color(0.5F, 0F, 0.5F, 1F);
+        private static Color32 _magenta = Color.magenta;    // Hex #FF00FFFF
+        private static Color32 _yellow = Color.yellow;      // Hex #FFFF00FF
+        private static Color32 _aqua = Color.cyan;          // Hex #00FFFFFF
+        private static Color32 _black = Color.black;        // Hex #000000FF
+        private static Color32 _blue = Color.blue;          // Hex #0000FFFF
+        private static Color32 _green = Color.green;        // Hex #008000FF
+        private static Color32 _gray = Color.gray;          // Hex #808080FF
+        private static Color32 _clear = Color.clear;        // Hex ?
+        private static Color32 _red = Color.red;            // Hex #FF0000FF
+        private static Color32 _white = Color.white;        // Hex #FFFFFFFF
 
         /// <summary>
         /// Dark green (0, 128, 0) in RGB.
         /// </summary>
-        private static Color _darkGreen = new Color(0F, 0.5F, 0F, 1F);
+        private static Color32 _darkGreen = new Color(0F, 0.5F, 0F, 1F);
 
         /// <summary>
-        /// Teal, aka Blue/Green (0, 128, 128) in RGB.
+        /// Purple color RGB (128, 0, 128), HtmlHexString "#800080FF"
         /// </summary>
-        private static Color _teal = new Color(0F, 0.5F, 0.5F, 1F);
+        private static Color32 _purple = new Color(0.5F, 0F, 0.5F, 1F);
+
+        /// <summary>
+        /// My brown color, more commonly known as Peru. RGB (205, 133, 63) Hex #A52A2AFF?
+        /// </summary>
+        private static Color32 _brown = new Color(0.80F, 0.52F, 0.25F, 1F);
+
+        /// <summary>
+        /// Teal, aka Blue/Green RGB (0, 128, 128), HtmlHexString "008080FF".
+        /// </summary>
+        private static Color32 _teal = new Color(0F, 0.5F, 0.5F, 1F);
+
+        private static Color32 _lime;
+        private static Color32 _lightBlue;
+        private static Color32 _olive;
+        private static Color32 _orange;
+        private static Color32 _silver;
+        private static Color32 _darkBlue;
+        private static Color32 _maroon;
+
+        static GameExtensions() {
+            _lightBlue = CreateColor("#ADD8E6FF");
+            _lime = CreateColor("#00FF00FF");
+            _olive = CreateColor("#808000FF");
+            _orange = CreateColor("#FFA500FF");
+            _silver = CreateColor("#C0C0C0FF");
+            _darkBlue = CreateColor("#0000A0FF");
+            _maroon = CreateColor("#800000FF");
+        }
+
+        private static Color32 CreateColor(string htmlColorString) {
+            Color color;
+            bool isCreated = ColorUtility.TryParseHtmlString(htmlColorString, out color);
+            D.Assert(isCreated, "Color conversion of hex {0} failed.", htmlColorString);
+            return color;
+        }
 
         /// <summary>
         /// Converts the provided GameColor to the UnityEngine.Color equivalent with
@@ -181,47 +217,68 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="alpha">The optional alpha channel value.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static Color ToUnityColor(this GameColor gameColor, float alpha = 1F) {    // OPTIMIZE use Color32 
+        public static Color32 ToUnityColor(this GameColor gameColor, float alpha = 1F) {    // OPTIMIZE use Color32 
             Utility.ValidateForRange(alpha, Constants.ZeroF, Constants.OneF);
-            Color color;
+            Color32 color;
             switch (gameColor) {
+                case GameColor.Aqua:
+                    color = _aqua;
+                    break;
                 case GameColor.Black:
-                    color = Color.black;
+                    color = _black;
                     break;
                 case GameColor.Blue:
-                    color = Color.blue;
-                    break;
-                case GameColor.Cyan:
-                    color = Color.cyan;
-                    break;
-                case GameColor.Green:
-                    color = Color.green;
-                    break;
-                case GameColor.Gray:
-                    color = Color.gray;
-                    break;
-                case GameColor.Clear:
-                    return Color.clear; // simply return as Color.clear has alpha = 0
-                case GameColor.Magenta:
-                    color = Color.magenta;
-                    break;
-                case GameColor.Red:
-                    color = Color.red;
-                    break;
-                case GameColor.White:
-                    color = Color.white;
-                    break;
-                case GameColor.Yellow:
-                    color = Color.yellow;
+                    color = _blue;
                     break;
                 case GameColor.Brown:
                     color = _brown;
                     break;
-                case GameColor.Purple:
-                    color = _purple;
+                case GameColor.Clear:
+                    return _clear; // simply return as Color.clear has alpha = 0
+                case GameColor.DarkBlue:
+                    color = _darkBlue;
                     break;
                 case GameColor.DarkGreen:
                     color = _darkGreen;
+                    break;
+                case GameColor.Gray:
+                    color = _gray;
+                    break;
+                case GameColor.Green:
+                    color = _green;
+                    break;
+                case GameColor.LightBlue:
+                    color = _lightBlue;
+                    break;
+                case GameColor.Lime:
+                    color = _lime;
+                    break;
+                case GameColor.Magenta:
+                    color = _magenta;
+                    break;
+                case GameColor.Maroon:
+                    color = _maroon;
+                    break;
+                case GameColor.Olive:
+                    color = _olive;
+                    break;
+                case GameColor.Orange:
+                    color = _orange;
+                    break;
+                case GameColor.Purple:
+                    color = _purple;
+                    break;
+                case GameColor.Red:
+                    color = _red;
+                    break;
+                case GameColor.Silver:
+                    color = _silver;
+                    break;
+                case GameColor.White:
+                    color = _white;
+                    break;
+                case GameColor.Yellow:
+                    color = _yellow;
                     break;
                 case GameColor.Teal:
                     color = _teal;
@@ -231,10 +288,65 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameColor));
             }
             if (alpha < Constants.OneF) {
-                color.a = alpha;
+                color.a = (byte)Mathf.RoundToInt(255 * alpha);
             }
             return color;
         }
+        //public static Color32 ToUnityColor(this GameColor gameColor, float alpha = 1F) {    // OPTIMIZE use Color32 
+        //    Utility.ValidateForRange(alpha, Constants.ZeroF, Constants.OneF);
+        //    Color32 color;
+        //    switch (gameColor) {
+        //        case GameColor.Black:
+        //            color = Color.black;
+        //            break;
+        //        case GameColor.Blue:
+        //            color = Color.blue;
+        //            break;
+        //        case GameColor.Cyan:
+        //            color = Color.cyan;
+        //            break;
+        //        case GameColor.Green:
+        //            color = Color.green;
+        //            break;
+        //        case GameColor.Gray:
+        //            color = Color.gray;
+        //            break;
+        //        case GameColor.Clear:
+        //            return Color.clear; // simply return as Color.clear has alpha = 0
+        //        case GameColor.Magenta:
+        //            color = Color.magenta;
+        //            break;
+        //        case GameColor.Red:
+        //            color = Color.red;
+        //            break;
+        //        case GameColor.White:
+        //            color = Color.white;
+        //            break;
+        //        case GameColor.Yellow:
+        //            color = Color.yellow;
+        //            break;
+        //        case GameColor.Brown:
+        //            color = _brown;
+        //            break;
+        //        case GameColor.Purple:
+        //            color = _purple;
+        //            break;
+        //        case GameColor.DarkGreen:
+        //            color = _darkGreen;
+        //            break;
+        //        case GameColor.Teal:
+        //            color = _teal;
+        //            break;
+        //        case GameColor.None:
+        //        default:
+        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameColor));
+        //    }
+        //    if (alpha < Constants.OneF) {
+        //        color.a = alpha;
+        //        color.a = (byte)Mathf.RoundToInt(255 * alpha);
+        //    }
+        //    return color;
+        //}
 
         /// <summary>
         /// Embeds the Ngui-recognized Hex value equivalent value for <c>color</c> around this text.

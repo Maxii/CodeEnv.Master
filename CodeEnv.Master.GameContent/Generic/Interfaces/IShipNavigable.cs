@@ -27,10 +27,11 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns the AutoPilotTarget for use by a Ship's AutoPilot when moving to this IShipNavigable destination.
         /// </summary>
-        /// <param name="tgtStandoffDistance">The standoff distance from the target.</param>
         /// <param name="tgtOffset">The offset from the target that this ship is actually trying to reach.</param>
+        /// <param name="tgtStandoffDistance">The standoff distance from the target.</param>
+        /// <param name="shipPosition">The ship position.</param>
         /// <returns></returns>
-        AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
+        AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
 
     }
 }

@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -30,10 +31,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
-        private static GameColor[] _defaultPlayerColors = new GameColor[] {
-            GameColor.Blue, GameColor.Red, GameColor.Cyan, GameColor.Green,
-            GameColor.Magenta, GameColor.Yellow, GameColor.Brown, GameColor.Purple
-        };
+        private static readonly GameColor[] _defaultPlayerColors = TempGameValues.AllPlayerColors.Except(GameColor.Green).ToArray();
 
         private string _universeSizeKey = "Universe Size";
         private string _playerCountKey = "Player Count";
@@ -345,6 +343,7 @@ namespace CodeEnv.Master.GameContent {
             AIPlayer5Color = RetrieveEnumPref<GameColor>(_aiPlayer5ColorKey, _defaultPlayerColors[5]);
             AIPlayer6Color = RetrieveEnumPref<GameColor>(_aiPlayer6ColorKey, _defaultPlayerColors[6]);
             AIPlayer7Color = RetrieveEnumPref<GameColor>(_aiPlayer7ColorKey, _defaultPlayerColors[7]);
+            __ValidatePlayerColorPreferences();
 
             AIPlayer1IQ = RetrieveEnumPref<IQ>(_aiPlayer1IQKey, IQ.Normal);
             AIPlayer2IQ = RetrieveEnumPref<IQ>(_aiPlayer2IQKey, IQ.Normal);
@@ -399,6 +398,14 @@ namespace CodeEnv.Master.GameContent {
         private float DecryptToFloat(float value) { return value; }
         private int DecryptToInt(int value) { return value; }
         private bool DecryptToBool(string value) { return bool.Parse(value); }
+
+        private void __ValidatePlayerColorPreferences() {
+            var playerColorPrefs = new GameColor[] {UserPlayerColor, AIPlayer1Color, AIPlayer2Color, AIPlayer3Color, AIPlayer4Color,
+            AIPlayer5Color, AIPlayer6Color, AIPlayer7Color };
+            playerColorPrefs.ForAll(pref => {
+                D.Assert(pref.EqualsAnyOf(TempGameValues.AllPlayerColors), "{0}: PlayerColorPref {1} is invalid.", GetType().Name, pref.GetValueName());
+            });
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

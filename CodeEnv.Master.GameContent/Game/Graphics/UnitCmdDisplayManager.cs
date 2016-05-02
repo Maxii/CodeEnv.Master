@@ -30,22 +30,19 @@ namespace CodeEnv.Master.GameContent {
          * For detail on this color change system, see AElementDisplayManager
          ******************************************************************************************/
 
-        private static Vector2 _cmdIconSize = new Vector2(24F, 24F);
-        private static float _primaryMeshAlpha = 0.1F;
+        private const float _primaryMeshAlpha = 0.1F;
 
-        private GameColor _color;
+        private GameColor _meshColor;
         /// <summary>
         /// The GameColor to use on the Cmd's primary mesh, aka HQ Element highlight mesh.
         /// Typically the color of the owner.
         /// </summary>
-        public GameColor Color {
-            get { return _color; }
-            set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedHandler); }
+        public GameColor MeshColor {
+            get { return _meshColor; }
+            set { SetProperty<GameColor>(ref _meshColor, value, "MeshColor", MeshColorPropChangedHandler); }
         }
 
-        protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Above; } }
-
-        protected override Vector2 IconSize { get { return _cmdIconSize; } }
+        public new IResponsiveTrackingSprite Icon { get { return base.Icon as IResponsiveTrackingSprite; } }
 
         protected override int IconDepth { get { return -3; } }
 
@@ -59,10 +56,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="trackedCmd">The tracked command.</param>
         /// <param name="iconInfo">The icon information.</param>
         /// <param name="color">The color of the owner.</param>
-        public UnitCmdDisplayManager(IWidgetTrackable trackedCmd, IconInfo iconInfo, GameColor color)
-            : base(trackedCmd) {
-            IconInfo = iconInfo;
-            Color = color;  // will result in ColorPropChangedHandler() which will initialize the ColorChangeSystem
+        public UnitCmdDisplayManager(IWidgetTrackable trackedCmd, Layers meshLayer)
+            : base(trackedCmd, meshLayer) {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
@@ -71,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
             _currentPrimaryMeshRadius = primaryMeshRenderer.bounds.size.x / 2F;
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) != Layers.Default); // HACK    // layer automatically handles showing
+            __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
 
             InitializePrimaryMeshMaterial(primaryMeshRenderer.material);
             return primaryMeshRenderer;
@@ -81,19 +76,10 @@ namespace CodeEnv.Master.GameContent {
             if (material.IsKeywordEnabled(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency)) {
                 material.EnableKeyword(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency);
             }
-            if (!material.IsKeywordEnabled(UnityConstants.StdShader_MapKeyword_Metallic)) {
-                material.EnableKeyword(UnityConstants.StdShader_MapKeyword_Metallic);
-            }
-            if (material.GetFloat(UnityConstants.StdShader_Property_MetallicFloat) != Constants.ZeroF) {
-                material.SetFloat(UnityConstants.StdShader_Property_MetallicFloat, Constants.ZeroF);
-            }
-            if (material.GetFloat(UnityConstants.StdShader_Property_SmoothnessFloat) != Constants.ZeroF) {
-                material.SetFloat(UnityConstants.StdShader_Property_SmoothnessFloat, Constants.ZeroF);
-            }
         }
 
         private void InitializeColorChangeSystem(GameColor color) {
-            Color primaryMeshColor = color.ToUnityColor(_primaryMeshAlpha);
+            Color32 primaryMeshColor = color.ToUnityColor(_primaryMeshAlpha);
             _primaryMeshMPB = new MaterialPropertyBlock();  // default color is black
             _primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             // renderer's existing MaterialPropertyBlock color is also black, implying that the existing property block is the default, at least wrt color
@@ -141,8 +127,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        private void ColorPropChangedHandler() {
-            InitializeColorChangeSystem(Color);
+        private void MeshColorPropChangedHandler() {
+            InitializeColorChangeSystem(MeshColor);
             if (IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS) {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();

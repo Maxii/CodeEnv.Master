@@ -23,21 +23,28 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
-        Clear,
+        Aqua,
         Black,
-        Gray,
-        White,
-
         Blue,
-        Cyan,
-        Green,
-        Magenta,
-        Red,
-        Yellow,
         Brown,
-        Purple,
+        Clear,
+        DarkBlue,
         DarkGreen,
-        Teal
+        Gray,
+        Green,
+        LightBlue,
+        Lime,
+        Magenta,
+        Maroon,
+        Olive,
+        Orange,
+        Purple,
+        Red,
+        Silver,
+        Teal,
+        White,
+        Yellow,
+
     }
 }
 

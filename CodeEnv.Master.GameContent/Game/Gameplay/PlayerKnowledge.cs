@@ -122,13 +122,15 @@ namespace CodeEnv.Master.GameContent {
         private HashSet<IPlanetoidItem> _planetoids = new HashSet<IPlanetoidItem>();
         private HashSet<IStarItem> _stars = new HashSet<IStarItem>();
         private HashSet<ISystemItem> _systems = new HashSet<ISystemItem>();
-
         private HashSet<IUnitElementItem> _elements = new HashSet<IUnitElementItem>();
         private HashSet<IUnitCmdItem> _commands = new HashSet<IUnitCmdItem>();
+
+        private DebugSettings _debugSettings;
 
         public PlayerKnowledge(Player player) {
             D.Assert(player != null && player != TempGameValues.NoPlayer);
             Player = player;
+            _debugSettings = DebugSettings.Instance;
         }
 
         /// <summary>
@@ -319,13 +321,15 @@ namespace CodeEnv.Master.GameContent {
         public void AddStar(IStarItem star) {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
             D.Assert(_stars.Add(star), "{0} tried to add Star {1} it already has.", Name, star.FullName);
-            D.Assert(star.GetIntelCoverage(Player) == IntelCoverage.Basic);
+            var starIntelCoverage = _debugSettings.AllIntelCoverageComprehensive ? IntelCoverage.Comprehensive : IntelCoverage.Basic;
+            D.Assert(star.GetIntelCoverage(Player) == starIntelCoverage);
             AddSystem(star.System);
         }
 
         public void AddUniverseCenter(IUniverseCenterItem universeCenter) {
             D.Assert(UniverseCenter == null);   // should only be added once when all players get Basic IntelCoverage of UCenter
-            D.Assert(universeCenter.GetIntelCoverage(Player) == IntelCoverage.Basic);
+            var ucIntelCoverage = _debugSettings.AllIntelCoverageComprehensive ? IntelCoverage.Comprehensive : IntelCoverage.Basic;
+            D.Assert(universeCenter.GetIntelCoverage(Player) == ucIntelCoverage);
             UniverseCenter = universeCenter;
         }
 

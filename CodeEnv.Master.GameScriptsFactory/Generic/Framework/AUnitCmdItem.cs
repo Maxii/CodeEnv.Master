@@ -133,10 +133,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         return new Highlighter(this, iconTransform, false); // icon is constant size on the screen so no need for the highlight to dynamically adjust its size
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        var dMgr = new UnitCmdDisplayManager(this, MakeIconInfo(), Owner.Color);
-        SubscribeToIconEvents(dMgr.Icon);
-        return dMgr;
+    protected sealed override ADisplayManager MakeDisplayManagerInstance() {
+        return new UnitCmdDisplayManager(this, Layers.Cull_400);
+    }
+
+    protected sealed override void InitializeDisplayManager() {
+        base.InitializeDisplayManager();
+        DisplayMgr.MeshColor = Owner.Color;
+        DisplayMgr.IconInfo = MakeIconInfo();
+        SubscribeToIconEvents(DisplayMgr.Icon);
+        DisplayMgr.ResizePrimaryMesh(Radius);
     }
 
     protected override EffectsManager InitializeEffectsManager() {
@@ -358,7 +364,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
             _trackingLabel.Color = Owner.Color;
         }
         if (DisplayMgr != null) {
-            DisplayMgr.Color = Owner.Color;
+            DisplayMgr.MeshColor = Owner.Color;
         }
         AssessIcon();
     }

@@ -42,8 +42,8 @@ public class MoonItem : APlanetoidItem, IMoonItem {
         _obstacleZoneCollider.radius = Radius + 1F;
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        return new MoonDisplayManager(gameObject);
+    protected override ADisplayManager MakeDisplayManagerInstance() {
+        return new MoonDisplayManager(gameObject, Layers.Cull_200);
     }
 
     protected override void FinalInitialize() {
@@ -110,10 +110,10 @@ public class MoonItem : APlanetoidItem, IMoonItem {
 
     #region IShipNavigable Members
 
-    public override AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance) {
+    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius = ObstacleZoneRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotTarget(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

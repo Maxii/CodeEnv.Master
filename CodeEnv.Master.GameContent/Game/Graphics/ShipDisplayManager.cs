@@ -24,10 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipDisplayManager : AElementDisplayManager {
 
-        protected override Layers CullingLayer { get { return Layers.ShipCull; } }
-
-        public ShipDisplayManager(IWidgetTrackable trackedShip, GameColor color)
-            : base(trackedShip, color) { }
+        public ShipDisplayManager(IWidgetTrackable trackedShip, Layers meshLayer)
+            : base(trackedShip, meshLayer) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

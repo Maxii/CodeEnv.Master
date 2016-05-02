@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
 
         private IRevolver _revolver;
 
-        public MoonDisplayManager(GameObject itemGO) : base(itemGO) { }
+        public MoonDisplayManager(GameObject itemGO, Layers meshLayer) : base(itemGO, meshLayer) { }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
+            __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
 
             var material = primaryMeshRenderer.material;
             InitializePrimaryMeshMaterial(material);

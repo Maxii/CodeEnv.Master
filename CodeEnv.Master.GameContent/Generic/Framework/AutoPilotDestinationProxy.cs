@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AutoPilotTarget.cs
-// Target used by the ShipHelm's auto pilot to navigate to an INavigable destination.
+// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigable destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,40 +20,43 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Target used by the ShipHelm's auto pilot to navigate to an INavigable destination.
+    /// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigable destination.
     /// </summary>
-    public class AutoPilotTarget {
+    public class AutoPilotDestinationProxy {
 
         private const string NameFormat = "{0}.{1}";
 
-        public string FullName { get { return NameFormat.Inject(Target.FullName, typeof(AutoPilotTarget).Name); } }
+        public string FullName { get { return NameFormat.Inject(Destination.FullName, typeof(AutoPilotDestinationProxy).Name); } }
 
-        public Vector3 Position { get { return Target.Position + _targetOffset; } }
+        public Vector3 Position { get { return Destination.Position + _destOffset; } }
 
-        public bool IsMobile { get { return Target.IsMobile; } }
+        public bool IsMobile { get { return Destination.IsMobile; } }
 
         public float ArrivalWindowDepth { get; private set; }
 
-        public bool IsFastMover { get { return Target is IShipItem || Target is IFleetCmdItem; } }
+        public bool IsFastMover { get { return Destination is IShipItem || Destination is IFleetCmdItem; } }
 
         public float InnerRadius { get; private set; }
         public float OuterRadius { get; private set; }
 
-        public IShipNavigable Target { get; private set; }
+        public IShipNavigable Destination { get; private set; }
 
-        private Vector3 _targetOffset;
+        private Vector3 _destOffset;
 
-        public AutoPilotTarget(IShipNavigable target, Vector3 targetOffset, float innerRadius, float outerRadius) {
-            Target = target;
-            _targetOffset = targetOffset;
+        public AutoPilotDestinationProxy(IShipNavigable destination, Vector3 destOffset, float innerRadius, float outerRadius) {
+            Utility.ValidateNotNull(destination);
+            Utility.ValidateNotNegative(innerRadius);
+            Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK
+            Destination = destination;
+            _destOffset = destOffset;
             InnerRadius = innerRadius;
             OuterRadius = outerRadius;
             ArrivalWindowDepth = outerRadius - innerRadius;
         }
 
-        public bool IsArrived(Vector3 shipPosition) {
-            float distanceToTarget = Vector3.Distance(Position, shipPosition);
-            if (distanceToTarget > InnerRadius && distanceToTarget < OuterRadius) {
+        public bool HasArrived(Vector3 shipPosition) {
+            float shipDistanceToDest = Vector3.Distance(Position, shipPosition);
+            if (shipDistanceToDest > InnerRadius && shipDistanceToDest < OuterRadius) {
                 // ship has arrived
                 return true;
             }
@@ -71,17 +74,17 @@ namespace CodeEnv.Master.GameContent {
         public bool TryGetArrivalDistanceAndDirection(Vector3 shipPosition, out Vector3 direction, out float distance) {
             direction = Vector3.zero;
             distance = Constants.ZeroF;
-            Vector3 vectorToTarget = Position - shipPosition;
-            float distanceToTarget = vectorToTarget.magnitude;
-            if (distanceToTarget > InnerRadius && distanceToTarget < OuterRadius) {
+            Vector3 vectorToDest = Position - shipPosition;
+            float distanceToDest = vectorToDest.magnitude;
+            if (distanceToDest > InnerRadius && distanceToDest < OuterRadius) {
                 // ship has arrived
                 return false;
             }
-            direction = vectorToTarget.normalized;
-            distance = distanceToTarget - OuterRadius;
-            if (distanceToTarget < InnerRadius) {
+            direction = vectorToDest.normalized;
+            distance = distanceToDest - OuterRadius;
+            if (distanceToDest < InnerRadius) {
                 direction = -direction;
-                distance = InnerRadius - distanceToTarget;
+                distance = InnerRadius - distanceToDest;
             }
             return true;
         }
@@ -91,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void ResetOffset() {
-            _targetOffset = Vector3.zero;
+            _destOffset = Vector3.zero;
         }
 
         public override string ToString() {

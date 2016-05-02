@@ -108,7 +108,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private bool _hasPushedOver;
     private DriftCorrector _driftCorrector;
 
-    public override void Launch(IElementAttackableTarget target, AWeapon weapon, Topography topography, bool toShowEffects) {
+    public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography, bool toShowEffects) {
         base.Launch(target, weapon, topography, toShowEffects);
         _positionLastRangeCheck = Position;
         _rigidbody.velocity = ElementVelocityAtLaunch;

@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IElementAttackableTarget, ISensorDetectable {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IShipAttackable, ISensorDetectable {
 
     private const string __HQNameAddendum = "[HQ]";
 
@@ -39,9 +39,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     public abstract bool IsAvailable { get; }
 
     /// <summary>
-    /// Indicates whether this element is capable of attacking.
-    /// <remarks>An element that is not capable of attacking is usually an
-    /// Element that is not allowed to attack or one with no operational weapons.</remarks>
+    /// Indicates whether this element is capable of attacking an enemy target.
     /// </summary>
     public abstract bool IsAttackCapable { get; }
 
@@ -50,11 +48,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         set { base.Data = value; }
     }
 
+    private float _radius;
     public override float Radius {
         get {
-            var radius = Data.HullDimensions.magnitude / 2F;
-            //D.Log(ShowDebugLog, "{0} Radius = {1:0.##}.", FullName, radius);
-            return radius;
+            if (_radius == Constants.ZeroF) {
+                _radius = Data.HullDimensions.magnitude / 2F;
+                //D.Log(ShowDebugLog, "{0} Radius set to {1:0.000}.", FullName, _radius);
+                __ValidateRadius(_radius);
+            }
+            return _radius;
         }
     }
 
@@ -69,8 +71,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         get { return _command; }
         set { SetProperty<IUnitCmdItem>(ref _command, value, "Command"); }
     }
-
-    public bool HasOperationalWeapons { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
 
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
 
@@ -126,20 +126,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
     }
 
-    protected override ADisplayManager InitializeDisplayManager() {
-        var dMgr = MakeDisplayManager();
+    protected sealed override void InitializeDisplayManager() {
+        base.InitializeDisplayManager();
         if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-            dMgr.IconInfo = MakeIconInfo();
-            SubscribeToIconEvents(dMgr.Icon);
+            DisplayMgr.IconInfo = MakeIconInfo();
+            SubscribeToIconEvents(DisplayMgr.Icon);
         }
-        return dMgr;
+        DisplayMgr.MeshColor = Owner.Color;
     }
-
-    /// <summary>
-    /// Instantiates and returns the appropriate ElementDisplayMgr.
-    /// </summary>
-    /// <returns></returns>
-    protected abstract AIconDisplayManager MakeDisplayManager();
 
     private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
@@ -226,7 +220,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         weapon.readytoFire += WeaponReadyToFireEventHandler;
     }
 
-    protected WeaponFiringSolution PickBestFiringSolution(IList<WeaponFiringSolution> firingSolutions, IElementAttackableTarget tgtHint = null) {
+    protected WeaponFiringSolution PickBestFiringSolution(IList<WeaponFiringSolution> firingSolutions, IElementAttackable tgtHint = null) {
         if (tgtHint == null) {
             return firingSolutions.First();
         }
@@ -259,7 +253,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
-    private void LaunchOrdnance(AWeapon weapon, IElementAttackableTarget target) {
+    private void LaunchOrdnance(AWeapon weapon, IElementAttackable target) {
         var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
         var projectileOrdnance = ordnance as AProjectileOrdnance;
         if (projectileOrdnance != null) {
@@ -514,7 +508,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     protected override void OwnerPropChangedHandler() {
         base.OwnerPropChangedHandler();
         if (DisplayMgr != null) {
-            DisplayMgr.Color = Owner.Color;
+            DisplayMgr.MeshColor = Owner.Color;
             AssessIcon();
         }
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
@@ -539,12 +533,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
+    #endregion
+
     protected override void HandleLeftDoubleClick() {
         base.HandleLeftDoubleClick();
         Command.IsSelected = true;
     }
 
-    #endregion
+    protected abstract void __ValidateRadius(float radius);
 
     # region StateMachine Support Methods
 
@@ -555,7 +551,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected void UponEffectFinished(EffectID effectID) { RelayToCurrentState(effectID); }
 
-    protected void UponTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
+    protected void UponApTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
     private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         return RelayToCurrentState(firingSolutions);
@@ -643,14 +639,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
-    #region IElementAttackableTarget Members
+    #region IElementAttackable Members
 
     public bool IsAttackingAllowedBy(Player player) {
         return Owner.IsEnemyOf(player);
-    }
-
-    public AutoPilotTarget GetAttackTarget(float innerRadius, float outerRadius) {
-        return new AutoPilotTarget(this, Vector3.zero, innerRadius, outerRadius);
     }
 
     /// <summary>
@@ -705,6 +697,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             AssessNeedForRepair();
         }
     }
+
+    #endregion
+
+    #region IShipAttackable Members
+
+    public abstract AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface);
 
     #endregion
 

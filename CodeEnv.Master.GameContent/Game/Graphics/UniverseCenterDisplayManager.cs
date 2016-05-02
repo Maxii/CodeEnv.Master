@@ -26,12 +26,13 @@ namespace CodeEnv.Master.GameContent {
 
         private IRevolver _revolver;
 
-        public UniverseCenterDisplayManager(GameObject itemGO) : base(itemGO) { }
+        public UniverseCenterDisplayManager(GameObject itemGO, Layers meshLayer) : base(itemGO, meshLayer) { }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
+            __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
             var material = primaryMeshRenderer.material;
             InitializePrimaryMeshMaterial(material);
             return primaryMeshRenderer;

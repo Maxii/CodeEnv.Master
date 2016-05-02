@@ -43,13 +43,13 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// <summary>
     /// All the detected, attackable enemy targets that are in range of the sensors of this monitor.
     /// </summary>
-    public IList<IElementAttackableTarget> AttackableEnemyTargetsDetected { get; private set; }
+    public IList<IElementAttackable> AttackableEnemyTargetsDetected { get; private set; }
 
     protected override bool IsKinematicRigidbodyReqd { get { return true; } }   // Stars and UCenter don't have rigidbodies
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        AttackableEnemyTargetsDetected = new List<IElementAttackableTarget>();
+        AttackableEnemyTargetsDetected = new List<IElementAttackable>();
         InitializeDebugShowSensor();
     }
 
@@ -83,7 +83,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         var mortalItem = newlyDetectedItem as IMortalItem;
         if (mortalItem != null) {
             mortalItem.deathOneShot += DetectedItemDeathEventHandler;
-            var attackableTarget = mortalItem as IElementAttackableTarget;
+            var attackableTarget = mortalItem as IElementAttackable;
             if (attackableTarget != null && attackableTarget.IsAttackingAllowedBy(Owner)) {
                 AddEnemy(attackableTarget);
             }
@@ -97,7 +97,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         if (mortalItem != null) {
             mortalItem.deathOneShot -= DetectedItemDeathEventHandler;
             //D.Log(ShowDebugLog, "{0} removed {1} death subscription.", Name, mortalItem.FullName);
-            var enemyTarget = mortalItem as IElementAttackableTarget;
+            var enemyTarget = mortalItem as IElementAttackable;
             if (enemyTarget != null && enemyTarget.IsAttackingAllowedBy(Owner)) {
                 RemoveEnemy(enemyTarget);
             }
@@ -118,7 +118,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
     private void DetectedItemOwnerChangedEventHandler(object sender, EventArgs e) {
         ISensorDetectable alreadyTrackedDetectableItem = sender as ISensorDetectable;
-        var target = alreadyTrackedDetectableItem as IElementAttackableTarget;
+        var target = alreadyTrackedDetectableItem as IElementAttackable;
         if (target != null) {
             // an attackable target with an owner
             if (target.IsAttackingAllowedBy(Owner)) {
@@ -158,11 +158,11 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     #endregion
 
-    private void AddEnemy(IElementAttackableTarget enemyTarget) {
+    private void AddEnemy(IElementAttackable enemyTarget) {
         AttackableEnemyTargetsDetected.Add(enemyTarget);
     }
 
-    private void RemoveEnemy(IElementAttackableTarget enemyTarget) {
+    private void RemoveEnemy(IElementAttackable enemyTarget) {
         var isRemoved = AttackableEnemyTargetsDetected.Remove(enemyTarget);
         D.Assert(isRemoved);
     }

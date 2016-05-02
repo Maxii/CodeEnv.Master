@@ -82,7 +82,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// The current attackable target being hit. Can be null as a result
     /// of misses as well as hitting a target that can't take damage (e.g. Stars).
     /// </summary>
-    private IElementAttackableTarget _impactedTarget;
+    private IElementAttackable _impactedTarget;
 
     /// <summary>
     /// Indicates something is currently being hit. 
@@ -123,7 +123,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         D.Assert(!_muzzleEffect.playOnAwake);
     }
 
-    public void Launch(IElementAttackableTarget target, AWeapon weapon, bool toShowEffects) {
+    public void Launch(IElementAttackable target, AWeapon weapon, bool toShowEffects) {
         PrepareForLaunch(target, weapon, toShowEffects);
         D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
         weapon.isOperationalChanged += WeaponIsOperationalChangedEventHandler;
@@ -183,10 +183,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             return;
         }
 
-        var impactedTarget = impactedGo.GetComponent<IElementAttackableTarget>();
+        var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
         if (impactedTarget != null) {
             // hit an attackableTarget
-            //D.Log("{0} has hit {1} {2}.", Name, typeof(IElementAttackableTarget).Name, impactedTarget.DisplayName);
+            //D.Log("{0} has hit {1} {2}.", Name, typeof(IElementAttackable).Name, impactedTarget.DisplayName);
             if (impactedTarget != _impactedTarget) {
                 // hit a new target that can take damage, so apply cumDamage to previous impactedTarget, if any
                 AssessApplyDamage();

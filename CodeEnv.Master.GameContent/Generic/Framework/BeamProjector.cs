@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override void HandleFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+        public override void HandleFiringInitiated(IElementAttackable targetFiredOn, IOrdnance ordnanceFired) {
             base.HandleFiringInitiated(targetFiredOn, ordnanceFired);
             // IMPROVE Track target with turret
         }

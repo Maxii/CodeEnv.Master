@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -43,13 +43,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
     public ITrackingWidget MakeUITrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Over, float min = Constants.ZeroF, float max = Mathf.Infinity) {
-        GameObject prefab = RequiredPrefabs.Instance.uiTrackingLabel.gameObject;
-        var clone = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, prefab);
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.uiTrackingLabel.gameObject;
+        GameObject trackingWidgetGo = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, trackingPrefabGo);
 
-        Layers layerForTrackingWidget = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
+        __WarnIfUnexpectedLayers(target, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = clone.GetSafeComponent<UITrackingLabel>();
+        var trackingWidget = trackingWidgetGo.GetSafeComponent<UITrackingLabel>();
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -68,13 +69,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
     public ITrackingWidget MakeUITrackingSprite(IWidgetTrackable target, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
-        GameObject prefab = RequiredPrefabs.Instance.uiTrackingSprite.gameObject;
-        var clone = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, prefab);
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.uiTrackingSprite.gameObject;
+        GameObject trackingWidgetGo = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, trackingPrefabGo);
 
-        Layers layerForTrackingWidget = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
+        __WarnIfUnexpectedLayers(target, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = clone.GetSafeComponent<UITrackingSprite>();
+        var trackingWidget = trackingWidgetGo.GetSafeComponent<UITrackingSprite>();
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
@@ -89,23 +91,16 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// </summary>
     /// <param name="target">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
-    /// <param name="size">The size of the sprite in pixels.</param>
-    /// <param name="placement">The placement of the sprite relative to the target.</param>
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, Vector2 size, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
-        GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
-        GameObject clone = NGUITools.AddChild(target.transform.gameObject, prefab);
+    public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
+        GameObject trackingWidgetGo = NGUITools.AddChild(target.transform.gameObject, trackingPrefabGo);
 
-        Layers layer = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layer);
-
-        var trackingSprite = clone.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
-        trackingSprite.__SetDimensions(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
+        var trackingSprite = trackingWidgetGo.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
         trackingSprite.Target = target;
         trackingSprite.IconInfo = iconInfo;
-        trackingSprite.Placement = placement;
         trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
         return trackingSprite;
@@ -119,13 +114,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="min">The minimum show distance.</param>
     /// <returns></returns>
     public ITrackingWidget MakeVariableSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
-        GameObject prefab = RequiredPrefabs.Instance.worldTrackingLabel;
-        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
+        GameObject trackingWidgetGo = NGUITools.AddChild(target.transform.gameObject, trackingPrefabGo);
 
-        Layers layer = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layer);
+        __WarnIfUnexpectedLayers(target, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = clone.AddComponent<VariableSizeTrackingLabel>();   // AddComponent() runs Awake before returning
+        var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingLabel>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
@@ -135,7 +131,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
 
     /// <summary>
     /// Creates a sprite whose size scales with the size of the target, parented to and tracking the <c>target</c>.
-    /// IMPROVE If there is an AtlasID, then their should also be a SpriteName and Color. Use IconInfo?
+    /// IMPROVE If there is an AtlasID, then there should also be a SpriteName and Color. Use IconInfo?
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
@@ -143,13 +139,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="min">The minimum show distance.</param>
     /// <returns></returns>
     public ITrackingWidget MakeVariableSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
-        GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
-        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
+        GameObject trackingWidgetGo = NGUITools.AddChild(target.transform.gameObject, trackingPrefabGo);
 
-        Layers layer = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layer);
+        __WarnIfUnexpectedLayers(target, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = clone.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
@@ -163,27 +160,20 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// IMPROVE If there is an AtlasID, then their should also be a SpriteName and Color. Use IconInfo?
     /// </summary>
     /// <param name="target">The target.</param>
-    /// <param name="atlasID">The atlas identifier.</param>
-    /// <param name="__dimensions">The desired dimensions of the sprite in pixels.</param>
-    /// <param name="placement">The placement.</param>
+    /// <param name="iconInfo">The icon information.</param>
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeConstantSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
-        GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
-        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
+    public ITrackingSprite MakeConstantSizeTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
+        GameObject trackingWidgetGo = NGUITools.AddChild(target.transform.gameObject, trackingPrefabGo);
 
-        Layers layer = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layer);
-
-        var trackingWidget = clone.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
-        trackingWidget.__SetDimensions(Mathf.RoundToInt(__dimensions.x), Mathf.RoundToInt(__dimensions.y));
-        trackingWidget.AtlasID = atlasID;
-        trackingWidget.Target = target;
-        trackingWidget.Placement = placement;
-        trackingWidget.SetShowDistance(min, max);
+        var trackingSprite = trackingWidgetGo.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        trackingSprite.Target = target;
+        trackingSprite.IconInfo = iconInfo;
+        trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
-        return trackingWidget;
+        return trackingSprite;
     }
 
     /// <summary>
@@ -195,13 +185,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
     public ITrackingWidget MakeConstantSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
-        GameObject prefab = RequiredPrefabs.Instance.worldTrackingLabel;
-        var clone = NGUITools.AddChild(target.transform.gameObject, prefab);
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
+        GameObject trackingWidgetGo = NGUITools.AddChild(target.transform.gameObject, trackingPrefabGo);
 
-        Layers layer = CheckLayers(target, prefab);
-        NGUITools.SetLayer(clone, (int)layer);
+        __WarnIfUnexpectedLayers(target, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = clone.AddComponent<ConstantSizeTrackingLabel>();   // AddComponent() runs Awake before returning
+        var trackingWidget = trackingWidgetGo.AddComponent<ConstantSizeTrackingLabel>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -209,13 +200,12 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         return trackingWidget;
     }
 
-    private Layers CheckLayers(IWidgetTrackable target, GameObject trackingWidgetPrefab) {
+    private void __WarnIfUnexpectedLayers(IWidgetTrackable target, GameObject trackingWidgetPrefab) {
         Layers targetLayer = (Layers)target.transform.gameObject.layer;
         Layers prefabLayer = (Layers)trackingWidgetPrefab.layer;
         if (prefabLayer != Layers.UI && prefabLayer != Layers.TransparentFX && prefabLayer != targetLayer) {
             D.Warn("Target {0} of Layer {1} being assigned TrackingWidget of Layer {2}.", target.transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
         }
-        return prefabLayer;
     }
 
     private void Cleanup() {

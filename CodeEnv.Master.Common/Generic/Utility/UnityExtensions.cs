@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -470,18 +470,18 @@ namespace CodeEnv.Master.Common {
         /// <returns>The diameter of the collider on the screen. Can be zero.</returns>
         public static float OnScreenDiameter(this Collider col) {
             Vector3 colliderPosition = col.transform.position;
-            D.Log("ColliderPosition = {0}.".Inject(colliderPosition));
+            //D.Log("ColliderPosition = {0}.".Inject(colliderPosition));
             if (!UnityUtility.IsWithinCameraViewport(colliderPosition)) {
                 return Constants.ZeroF;
             }
             float colliderDiameter = col.bounds.extents.magnitude;
-            D.Log("ColliderDiameter = {0}.".Inject(colliderDiameter));
+            //D.Log("ColliderDiameter = {0}.".Inject(colliderDiameter));
             float distanceFromCamera = Vector3.Distance(colliderPosition, Camera.main.transform.position);
-            D.Log("DistanceFromCamera = {0}.".Inject(distanceFromCamera));
+            //D.Log("DistanceFromCamera = {0}.".Inject(distanceFromCamera));
             float angularSize = (colliderDiameter / distanceFromCamera) * Mathf.Rad2Deg;
-            D.Log("AngularSize = {0}.".Inject(angularSize));
+            //D.Log("AngularSize = {0}.".Inject(angularSize));
             float pixelSize = ((angularSize * Screen.height) / Camera.main.fieldOfView);
-            D.Log("PixelSize = {0}.".Inject(pixelSize));
+            //D.Log("PixelSize = {0}.".Inject(pixelSize));
             return pixelSize;
         }
 
@@ -551,7 +551,7 @@ namespace CodeEnv.Master.Common {
             allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
             var actualDeviation = Quaternion.Angle(sourceRotation, otherRotation);
             var isSame = actualDeviation <= allowedDeviation;
-            D.Log("IsSame result = {0}, remainingAngle: {1}, allowedDeviation: {2}.", isSame, actualDeviation, allowedDeviation);
+            //D.Log("IsSame result = {0}, remainingAngle: {1}, allowedDeviation: {2}.", isSame, actualDeviation, allowedDeviation);
             return isSame;
         }
 

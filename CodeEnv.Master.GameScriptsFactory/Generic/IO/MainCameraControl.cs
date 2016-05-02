@@ -35,6 +35,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     private const float CameraFieldOfView_Default = 50F;
 
+    private const float DummyTargetColliderRadius = 0.5F;
+
+    private static readonly float DummyTargetOffsetInsideUniverseEdge = DummyTargetColliderRadius + 0.1F;
+
     private const float CameraMaxClippingPlaneRatio = 10000F;  // OPTIMIZE up to 30000? http://forum.unity3d.com/threads/how-to-avoid-z-fighting.56418/
 
     /// <summary>
@@ -190,6 +194,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private Vector3 _targetPoint;
     private Transform _target;
     private Transform _dummyTarget;
+    private SphereCollider _universeEdgeCollider;
 
     private float _universeRadius;
 
@@ -199,12 +204,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <summary>
     /// The layers the main 3DCameras are allowed to render.
     /// </summary>
-    private LayerMask _mainCamerasCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-        Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull,
-        Layers.SystemOrbitalPlane, Layers.Projectiles, Layers.Shields); // UNCLEAR is DummyTarget and UniverseEdge needed here for a Raycast?
-
-    private LayerMask _universeEdgeOnlyMask = LayerMaskUtility.CreateInclusiveMask(Layers.UniverseEdge);
-    private LayerMask _dummyTargetOnlyMask = LayerMaskUtility.CreateInclusiveMask(Layers.DummyTarget);
+    private LayerMask _mainCamerasCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX, Layers.Cull_Tiny,
+        Layers.Cull_1, Layers.Cull_2, Layers.Cull_3, Layers.Cull_4, Layers.Cull_8, Layers.Cull_15, Layers.Cull_200, Layers.Cull_400, Layers.Cull_1000, Layers.Cull_3000,
+        Layers.SystemOrbitalPlane, Layers.Projectiles, Layers.Shields);
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -344,12 +346,21 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         RefreshCamerasFOV();
 
-        //_camera.layerCullSpherical = true;
+        //_camera.layerCullSpherical = true;    // UNCLEAR
         float[] cullDistances = new float[32];
-        cullDistances[(int)Layers.ShipCull] = TempGameValues.ShipMaxRadius * GraphicsSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
-        cullDistances[(int)Layers.FacilityCull] = TempGameValues.FacilityMaxRadius * GraphicsSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
-        cullDistances[(int)Layers.PlanetoidCull] = TempGameValues.PlanetoidMaxRadius * GraphicsSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
-        cullDistances[(int)Layers.StarCull] = TempGameValues.StarRadius * GraphicsSettings.Instance.StarLayerCullingDistanceFactor; // 3000   // temp commented to always see
+        cullDistances[(int)Layers.Cull_Tiny] = TempGameValues.CullDistance_Tiny;
+        cullDistances[(int)Layers.Cull_1] = TempGameValues.CullDistance_1;
+        cullDistances[(int)Layers.Cull_2] = TempGameValues.CullDistance_2;
+        cullDistances[(int)Layers.Cull_3] = TempGameValues.CullDistance_3;
+        cullDistances[(int)Layers.Cull_4] = TempGameValues.CullDistance_4;
+        cullDistances[(int)Layers.Cull_8] = TempGameValues.CullDistance_8;
+        cullDistances[(int)Layers.Cull_15] = TempGameValues.CullDistance_15;
+        cullDistances[(int)Layers.Cull_200] = TempGameValues.CullDistance_200;
+        cullDistances[(int)Layers.Cull_400] = TempGameValues.CullDistance_400;
+        cullDistances[(int)Layers.Cull_1000] = TempGameValues.CullDistance_1000;
+        cullDistances[(int)Layers.Cull_3000] = TempGameValues.CullDistance_3000;
+
+        cullDistances[(int)Layers.SystemOrbitalPlane] = TempGameValues.CullDistance_3000;
 
         _mainCameras.ForAll(cam => {
             cam.orthographic = false;
@@ -386,8 +397,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void PositionCameraForGame() {
-        CreateUniverseEdge();
-        CreateDummyTarget();
+        _universeEdgeCollider = CreateUniverseEdge();
+        _dummyTarget = CreateDummyTarget();
 
         // HACK start looking down from a far distance
         float yElevation = _universeRadius * 0.3F;
@@ -401,41 +412,26 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         //ResetToWorldspace();
     }
 
-    private void CreateUniverseEdge() {
-        GameObject universeEdge = null;
-        SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.universeEdge;
-        if (universeEdgePrefab == null) {
-            D.Warn("UniverseEdgePrefab on RequiredPrefabs is null.");
-            string universeEdgeName = Layers.UniverseEdge.GetValueName();
-            universeEdge = new GameObject(universeEdgeName);
-            universeEdge.AddComponent<SphereCollider>();
-            universeEdge.isStatic = true;
-            UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
-        }
-        else {
-            universeEdge = UnityUtility.AddChild(UniverseFolder.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
-        }
-        SphereCollider universeEdgeCollider = UnityUtility.ValidateComponentPresence<SphereCollider>(universeEdge.gameObject);
+    private SphereCollider CreateUniverseEdge() {
+        GameObject universeEdge = new GameObject("UniverseEdge");
+        universeEdge.isStatic = true;
+        SphereCollider universeEdgeCollider = universeEdge.AddComponent<SphereCollider>();
+        UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
+        D.Assert(universeEdge.layer == (int)Layers.Default);
+        universeEdgeCollider.isTrigger = true;
         universeEdgeCollider.radius = _universeRadius;
-        universeEdge.layer = (int)Layers.UniverseEdge;
+        return universeEdgeCollider;
     }
 
-    private void CreateDummyTarget() {
-        Transform dummyTargetPrefab = RequiredPrefabs.Instance.cameraDummyTarget;
-        GameObject dummyTarget;
-        if (dummyTargetPrefab == null) {
-            D.Warn("DummyTargetPrefab on RequiredPrefabs is null.");
-            string dummyTargetName = Layers.DummyTarget.GetValueName();
-            dummyTarget = new GameObject(dummyTargetName);
-            dummyTarget.AddComponent<SphereCollider>();
-            dummyTarget.AddComponent<DummyTargetManager>();
-            UnityUtility.AttachChildToParent(dummyTarget, DynamicObjectsFolder.Instance.Folder.gameObject);
-        }
-        else {
-            dummyTarget = UnityUtility.AddChild(DynamicObjectsFolder.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
-        }
-        dummyTarget.layer = (int)Layers.DummyTarget;
-        _dummyTarget = dummyTarget.transform;
+    private Transform CreateDummyTarget() {
+        GameObject dummyTgt = new GameObject("DummyTarget");
+        SphereCollider dummyTgtCollider = dummyTgt.AddComponent<SphereCollider>();
+        dummyTgtCollider.isTrigger = true;
+        dummyTgtCollider.radius = DummyTargetColliderRadius;
+        dummyTgt.AddComponent<DummyTargetManager>();
+        UnityUtility.AttachChildToParent(dummyTgt, DynamicObjectsFolder.Instance.gameObject);
+        D.Assert(dummyTgt.layer == (int)Layers.Default);
+        return dummyTgt.transform;
     }
 
     /// <summary>
@@ -1699,38 +1695,63 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private bool PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
         //D.Log("{0}{1}.PlaceDummyTargetAtUniverseEdgeInDirection({2}) called.", GetType().Name, InstanceCount, direction);
         direction.ValidateNormalized();
-        Ray ray = new Ray(Position, direction);
-        RaycastHit targetHit;
-        if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _dummyTargetOnlyMask.value)) {
-            D.Assert(_dummyTarget != null);
-            if (_dummyTarget != targetHit.transform) {
-                D.Error("Camera should find DummyTarget, but it is: " + targetHit.transform.name);
-                return false;
-            }
 
-            float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin);
-            //D.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
-            if (!distanceToUniverseOrigin.CheckRange(_universeRadius, allowedPercentageVariation: 0.1F)) {
-                D.Error("Camera's Dummy Target is not located on UniverseEdge! Position = " + _dummyTarget.position);
-                return false;
-            }
-            // the dummy Target is already there
-            //D.Log("DummyTarget already present at " + _dummyTarget.position + ". TargetHit at " + targetHit.transform.position);
-            return false;
+        Vector3 currentDirectionToDummyTgt = (_dummyTarget.position - Position).normalized;
+        if (direction.IsSameAs(currentDirectionToDummyTgt)) {
+            // DummyTarget is already there
+            float dummyTgtDistanceToOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin); // OPTIMIZE values too big to use SqrMagnitude
+            float expectedDummyTgtDistanceToOrigin = _universeRadius - DummyTargetOffsetInsideUniverseEdge;
+            D.Assert(Mathfx.Approx(dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin, 0.5F), "{0} != {1}.", dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin);
+            return false;   // Note 4.29.16: Using large 0.5F tolerance as saw 49999.65 vs expected 49999.4 when trucking on Gigantic
         }
 
-        Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2);
-        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, _universeEdgeOnlyMask.value)) {
-            Vector3 universeEdgePoint = targetHit.point;
-            _dummyTarget.position = universeEdgePoint;
+        Ray ray = new Ray(Position, direction);
+        RaycastHit targetHit;
+
+        Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2F);
+        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, _universeRadius * 2F)) {
+            D.Assert(targetHit.collider == _universeEdgeCollider, "Expected to hit UniverseEdgeCollider. Instead hit {0}!", targetHit.collider.name);
+            // Place dummyTgt just inside UniverseEdge so its collider doesn't extend outside the UniverseEdge collider,
+            // otherwise we might hit the dummyTgt collider rather than the UniverseEdge collider
+            Vector3 hitPtOnUniverseEdgeCollider = targetHit.point;
+            _dummyTarget.position = hitPtOnUniverseEdgeCollider - ray.direction * DummyTargetOffsetInsideUniverseEdge;
             ChangeTarget(_dummyTarget, _dummyTarget.position);
-            //D.Log("New DummyTarget location = " + universeEdgePoint);
             return true;
         }
 
-        D.Error("Camera has not found a Universe Edge point! PointOutsideUniverse = " + pointOutsideUniverse);
+        D.Error("Camera has not found a Universe Edge point!");
         return false;
     }
+    //private bool PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
+    //    //D.Log("{0}{1}.PlaceDummyTargetAtUniverseEdgeInDirection({2}) called.", GetType().Name, InstanceCount, direction);
+    //    direction.ValidateNormalized();
+    //    Ray ray = new Ray(Position, direction);
+    //    RaycastHit targetHit;
+    //    if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _dummyTargetOnlyMask.value)) {
+    //        D.Assert(_dummyTarget == targetHit.transform, "Camera should find DummyTarget, but it is {0}.", targetHit.transform.name);
+
+    //        float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin);
+    //        //D.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
+    //        if (!distanceToUniverseOrigin.CheckRange(_universeRadius, allowedPercentageVariation: 0.1F)) {
+    //            D.Error("Camera's Dummy Target is not located on UniverseEdge! Position = " + _dummyTarget.position);
+    //        }
+    //        // the dummy Target is already there
+    //        //D.Log("DummyTarget already present at " + _dummyTarget.position + ". TargetHit at " + targetHit.transform.position);
+    //        return false;
+    //    }
+
+    //    Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2);
+    //    if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, _universeEdgeOnlyMask.value)) {
+    //        Vector3 universeEdgePoint = targetHit.point;
+    //        _dummyTarget.position = universeEdgePoint;
+    //        ChangeTarget(_dummyTarget, _dummyTarget.position);
+    //        //D.Log("New DummyTarget location = " + universeEdgePoint);
+    //        return true;
+    //    }
+
+    //    D.Error("Camera has not found a Universe Edge point! PointOutsideUniverse = " + pointOutsideUniverse);
+    //    return false;
+    //}
 
     /// <summary>
     /// Calculates a new rotation derived from the current EulerAngles.

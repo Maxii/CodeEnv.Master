@@ -21,7 +21,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Sprite resident in world space that tracks world objects.  The user perceives the widget changing size as the camera and/or tracked gameObject moves.
+/// Sprite resident in world space that tracks world objects.  
+/// The user perceives the widget changing size as the camera and/or tracked gameObject moves.
 /// </summary>
 public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
 

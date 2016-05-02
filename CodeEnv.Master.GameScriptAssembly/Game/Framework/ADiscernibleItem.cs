@@ -86,9 +86,8 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         D.Assert(IsOperational, "{0}.InitializeOnFirstDiscernibleToUser() called when not operational.", FullName);
         _hudManager = InitializeHudManager();
 
-        DisplayMgr = InitializeDisplayManager();
-        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, IsInMainCameraLosPropChangedHandler));
-        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, IsVisualDetailDiscernibleToUserPropChangedHandler));
+        DisplayMgr = MakeDisplayManagerInstance();
+        InitializeDisplayManager();
         // always start enabled as UserPlayerIntelCoverage must be > None for this method to be called,
         // or, in the case of SystemItem, its members coverage must be > their starting coverage
         DisplayMgr.EnableDisplay(true);
@@ -100,7 +99,13 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     protected abstract ItemHudManager InitializeHudManager();
 
-    protected abstract ADisplayManager InitializeDisplayManager();
+    protected abstract ADisplayManager MakeDisplayManagerInstance();
+
+    protected virtual void InitializeDisplayManager() {
+        DisplayMgr.Initialize();
+        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, IsInMainCameraLosPropChangedHandler));
+        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, IsVisualDetailDiscernibleToUserPropChangedHandler));
+    }
 
     protected virtual EffectsManager InitializeEffectsManager() {
         return new EffectsManager(this);

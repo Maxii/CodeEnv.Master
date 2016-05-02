@@ -31,22 +31,18 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
         }
 
-        public string Name {
+        protected string Name {
             get {
                 if (_trackedItem == null) { return GetType().Name; }
                 return "{0}.{1}".Inject(_trackedItem.DisplayName, GetType().Name);
             }
         }
 
-        private IResponsiveTrackingSprite _icon;
-        public IResponsiveTrackingSprite Icon {
+        private ITrackingSprite _icon;
+        protected ITrackingSprite Icon {
             get { return _icon; }
-            set { SetProperty<IResponsiveTrackingSprite>(ref _icon, value, "Icon"); }
+            private set { SetProperty<ITrackingSprite>(ref _icon, value, "Icon"); }
         }
-
-        protected abstract Vector2 IconSize { get; }
-
-        protected abstract WidgetPlacement IconPlacement { get; }
 
         /// <summary>
         /// The UIPanel depth of the icon. Higher values are drawn over lower values.
@@ -56,8 +52,8 @@ namespace CodeEnv.Master.GameContent {
         protected bool _isIconInMainCameraLOS = true;
         protected IWidgetTrackable _trackedItem;
 
-        public AIconDisplayManager(IWidgetTrackable trackedItem)
-            : base(trackedItem.transform.gameObject) {
+        public AIconDisplayManager(IWidgetTrackable trackedItem, Layers meshLayer)
+            : base(trackedItem.transform.gameObject, meshLayer) {
             _trackedItem = trackedItem;
         }
 
@@ -78,6 +74,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void IconInfoPropChangedHandler() {
+            D.Assert(_primaryMeshRenderer != null, "Always Initialize before setting IconInfo.");
             if (Icon != null) {
                 // icon already present
                 if (IconInfo != null) {
@@ -103,13 +100,17 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private IResponsiveTrackingSprite MakeIcon() {
-            var icon = References.TrackingWidgetFactory.MakeResponsiveTrackingSprite(_trackedItem, IconInfo, IconSize, IconPlacement);
+        private ITrackingSprite MakeIcon() {
+            var icon = MakeIconInstance();
             icon.DrawDepth = IconDepth;
             var iconCameraLosChgdListener = icon.CameraLosChangedListener;
             iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;
             iconCameraLosChgdListener.enabled = true;
             return icon;
+        }
+
+        protected virtual ITrackingSprite MakeIconInstance() {
+            return References.TrackingWidgetFactory.MakeResponsiveTrackingSprite(_trackedItem, IconInfo);
         }
 
         protected override void AssessInMainCameraLOS() {

@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         IUnitCmdItem ParentItem { get; set; }
 
-        IList<IElementAttackableTarget> AttackableEnemyTargetsDetected { get; }
+        IList<IElementAttackable> AttackableEnemyTargetsDetected { get; }
 
         void Add(Sensor sensor);
 

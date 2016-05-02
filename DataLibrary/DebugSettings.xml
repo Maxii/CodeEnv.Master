@@ -13,8 +13,12 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>DisableRetreat</PropertyName>
+      <PropertyName>DisableRepair</PropertyName>
       <PropertyValue>true</PropertyValue>
+    </Setting>
+      <Setting>
+      <PropertyName>DisableRetreat</PropertyName>
+      <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>AllPlayersInvulnerable</PropertyName>
@@ -38,7 +42,7 @@
     </Setting>
     <Setting>
       <PropertyName>AllIntelCoverageComprehensive</PropertyName>
-      <PropertyValue>false</PropertyValue>
+      <PropertyValue>true</PropertyValue>
     </Setting>
 
   </Boolean>

@@ -35,18 +35,14 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         UI = 5,
 
-        /*************************************************************************************/
+        /*Layers 0 - 7 reserved by Unity ****************************************************/
 
-        //Gui2D = 8,    // Removed 8.29.14, replaced by new built-in layer UI introduced in Unity 4.5
-
-        /************************************************************************************************
-         * These 2 layers exist to allow the MainCameraControl to raycast using a mask which avoids
-         * interference from other colliders.
-         *************************************************************************************************/
-        UniverseEdge = 9,
-        DummyTarget = 10,
-
-        //SectorView = 11,  // Unused
+        /*************************************************************************************
+        * Gui2D = 8,    // Removed 8.29.14, replaced by new built-in layer UI introduced in Unity 4.5
+        * UniverseEdge = 9, // Eliminated 4.29.16
+        * DummyTarget = 10, // Eliminated 4.29.16
+        * SectorView = 11,  // Unused
+        *************************************************************************************************/
 
         /// <summary>
         /// Layer used by UI Elements that popup on the screen. Allows the normal UI layer 
@@ -56,25 +52,81 @@ namespace CodeEnv.Master.Common {
         //UIPopup = 12, // No longer used 6.7.15
 
         /************************************************************************************************
-         * These 4 layers exist to allow the MainCamera to automatically cull the meshes present 
+         * These layers exist to allow the MainCamera to automatically cull the meshes present 
          * on the layer beyond a predefined distance. Avoids calculating camera distance in update.
          *************************************************************************************************/
-        ShipCull = 14,
-        FacilityCull = 15,
-        PlanetoidCull = 16,
-        StarCull = 17,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than &lt;&lt;1 unit away.
+        /// Typically used by fighter and ornance meshes.
+        /// </summary>
+        Cull_Tiny = 8,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 1 unit away.
+        /// Typically used by meshes associated with the Frigate class of ships.
+        /// </summary>
+        Cull_1 = 9,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 2 units away.
+        /// Typically used by meshes associated with the Destroyer class of ships.
+        /// </summary>
+        Cull_2 = 10,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 3 units away.
+        /// Typically used by meshes associated with the Cruiser class of ships.
+        /// </summary>
+        Cull_3 = 11,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 4 units away.
+        /// Typically used by meshes associated with the larger classes of ships.
+        /// </summary>
+        Cull_4 = 12,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 15 units away.
+        /// Typically used by meshes associated with the larger classes of facilities.
+        /// </summary>
+        Cull_15 = 13,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 200 units away.
+        /// Typically used by meshes associated with moons and small planets.
+        /// </summary>
+        Cull_200 = 14,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 400 units away.
+        /// Typically used by meshes associated with large planets.
+        /// </summary>
+        Cull_400 = 15,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 1000 units away.
+        /// Typically used by Planet Icons.
+        /// </summary>
+        Cull_1000 = 16,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 3000 units away.
+        /// Typically used by meshes associated with Stars and the SystemOrbitalPlane.
+        /// </summary>
+        Cull_3000 = 17,
+
+        /// <summary>
+        /// Layer allowing the MainCamera to cull objects more than 8 units away.
+        /// Typically used by meshes associated with the smaller classes of facilities.
+        /// </summary>
+        Cull_8 = 18,
 
         /// <summary>
         /// Layer that allows the System OrbitalPlane Collider to be masked off from Ngui event raycasts. 
         /// Used when checking for occluded colliders behind the plane collider.
         /// </summary>
         SystemOrbitalPlane = 19,
-
-        /// <summary>
-        /// Layer that allows the dedicated DeepSpace Background camera to cull all meshes
-        /// except the DeepSpace background meshes in the scene.
-        /// </summary>
-        DeepSpace = 20,
 
         /// <summary>
         /// Layer for Zones around non-ship Items (Obstacles) where ships are banned. 
@@ -107,7 +159,13 @@ namespace CodeEnv.Master.Common {
         /// layer to avoid interfering with ship and fleet raycasts. CollisionDetectionZone layer objects are allowed to 
         /// collide with each other and AvoidableObstacleZone layer objects to detect impending collisions.
         /// </summary>
-        CollisionDetectionZone = 26
+        CollisionDetectionZone = 26,
+
+        /// <summary>
+        /// Layer that allows the dedicated DeepSpace Background camera to cull all meshes
+        /// except the DeepSpace background meshes in the scene.
+        /// </summary>
+        DeepSpace = 31,
 
     }
 }

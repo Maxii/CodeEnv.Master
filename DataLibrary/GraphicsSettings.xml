@@ -14,11 +14,11 @@
   <Integer>
     <Setting>
       <PropertyName>ShipLayerCullingDistanceFactor</PropertyName>
-      <PropertyValue>200</PropertyValue>
+      <PropertyValue>30</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>FacilityLayerCullingDistanceFactor</PropertyName>
-      <PropertyValue>300</PropertyValue>
+      <PropertyValue>50</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>PlanetoidLayerCullingDistanceFactor</PropertyName>

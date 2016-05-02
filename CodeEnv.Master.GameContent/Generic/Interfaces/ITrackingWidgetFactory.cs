@@ -43,12 +43,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target this sprite will track.</param>
         /// <param name="iconInfo">The info needed to build the sprite.</param>
-        /// <param name="size">The size of the sprite in pixels.</param>
-        /// <param name="placement">The placement of the sprite relative to the target.</param>
         /// <param name="min">The minimum show distance.</param>
         /// <param name="max">The maximum show distance.</param>
         /// <returns></returns>
-        IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, Vector2 size, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity);
+        IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, float min = Constants.ZeroF, float max = Mathf.Infinity);
 
         /// <summary>
         /// Creates a label whose size scales with the size of the target, parented to and tracking the <c>target</c>.
@@ -73,13 +71,11 @@ namespace CodeEnv.Master.GameContent {
         /// Creates a sprite whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
         /// </summary>
         /// <param name="target">The target.</param>
-        /// <param name="atlasID">The atlas identifier.</param>
-        /// <param name="__dimensions">The desired dimensions of the sprite in pixels.</param>
-        /// <param name="placement">The placement.</param>
+        /// <param name="iconInfo">The icon information.</param>
         /// <param name="min">The minimum show distance.</param>
         /// <param name="max">The maximum show distance.</param>
         /// <returns></returns>
-        ITrackingWidget MakeConstantSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity);
+        ITrackingSprite MakeConstantSizeTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, float min = Constants.ZeroF, float max = Mathf.Infinity);
 
         /// <summary>
         ///  Creates a label whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.

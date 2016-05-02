@@ -156,7 +156,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject hullPrefabGo = _shipHullPrefabs.Single(sHull => sHull.HullCategory == hullCategory).gameObject;
         GameObject elementGoClone = UnityUtility.AddChild(null, _shipItemPrefab.gameObject);
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
-        hullGoClone.layer = (int)Layers.ShipCull;   // hull layer gets set to item layer by AddChild
+        hullGoClone.layer = (int)Layers.Cull_200;   // hull layer gets set to item layer by AddChild
 
         ShipItem element = elementGoClone.GetSafeComponent<ShipItem>();
         PopulateInstance(owner, cameraStat, design, ref element);
@@ -271,7 +271,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject hullPrefabGo = _facilityHullPrefabs.Single(fHull => fHull.HullCategory == hullCategory).gameObject;
         GameObject elementGoClone = UnityUtility.AddChild(null, _facilityItemPrefab.gameObject);
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
-        hullGoClone.layer = (int)Layers.FacilityCull;   // hull layer gets set to item layer by AddChild
+        hullGoClone.layer = (int)Layers.Cull_400;   // hull layer gets set to item layer by AddChild
 
         FacilityItem element = elementGoClone.GetSafeComponent<FacilityItem>();
         PopulateInstance(owner, topography, cameraStat, design, ref element);

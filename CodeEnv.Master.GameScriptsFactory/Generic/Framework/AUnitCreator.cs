@@ -226,7 +226,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             else {
                 _delayedDateInRuntime = new GameDate(delay);
-                WaitJobUtility.WaitForDate(_delayedDateInRuntime, onWaitFinished: (jobWasKilled) => {
+                WaitJobUtility.WaitForDate(_delayedDateInRuntime, waitFinished: (jobWasKilled) => {
                     D.Assert(!jobWasKilled);
                     HandleReachedDelayDate();
                 });
@@ -246,7 +246,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             }
             else {
                 _delayedDateInRuntime = new GameDate(runtimeDelay);
-                WaitJobUtility.WaitForDate(_delayedDateInRuntime, onWaitFinished: (jobWasKilled) => {
+                WaitJobUtility.WaitForDate(_delayedDateInRuntime, waitFinished: (jobWasKilled) => {
                     D.Assert(!jobWasKilled);
                     HandleReachedDelayDate();
                 });

@@ -26,20 +26,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetDisplayManager : AIconDisplayManager {
 
-        private static Vector2 _planetIconSize = new Vector2(12F, 12F);
-
-        protected override WidgetPlacement IconPlacement { get { return WidgetPlacement.Over; } }
-
-        protected override Vector2 IconSize { get { return _planetIconSize; } }
-
         protected override int IconDepth { get { return -6; } }
 
         private IRevolver _revolver;
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
 
-        public PlanetDisplayManager(IWidgetTrackable trackedPlanet, IconInfo iconInfo)
-            : base(trackedPlanet) {
-            IconInfo = iconInfo;
+        public PlanetDisplayManager(IWidgetTrackable trackedPlanet, Layers meshLayer)
+            : base(trackedPlanet, meshLayer) {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
@@ -47,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
             var primaryMeshRenderer = meshRenderers.Single(mr => mr.GetComponent<IRevolver>() != null);
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
-            D.Assert((Layers)(primaryMeshRenderer.gameObject.layer) == Layers.PlanetoidCull);   // layer automatically handles showing
+            __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
             // Note: using custom SpaceUnity Shaders for now
             return primaryMeshRenderer;
         }
@@ -56,11 +49,11 @@ namespace CodeEnv.Master.GameContent {
             base.InitializeSecondaryMeshes(itemGo);
             _secondaryMeshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {  // some planets may not have atmosphere or rings
-                _secondaryMeshRenderers.ForAll(r => {
-                    r.gameObject.layer = (int)Layers.PlanetoidCull;  // layer automatically handles showing
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-                    r.receiveShadows = true;
-                    r.enabled = false;
+                _secondaryMeshRenderers.ForAll(smr => {
+                    __ValidateAndCorrectMeshLayer(smr.gameObject);
+                    smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                    smr.receiveShadows = true;
+                    smr.enabled = false;
                     // Note: using custom SpaceUnity Shaders for now
                 });
             }
@@ -79,6 +72,10 @@ namespace CodeEnv.Master.GameContent {
             if (_secondaryMeshRenderers.Any()) {
                 _secondaryMeshRenderers.ForAll(smr => smr.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
             }
+        }
+
+        protected override ITrackingSprite MakeIconInstance() {
+            return References.TrackingWidgetFactory.MakeConstantSizeTrackingSprite(_trackedItem, IconInfo);
         }
 
         #region Hide Primary Mesh Archive

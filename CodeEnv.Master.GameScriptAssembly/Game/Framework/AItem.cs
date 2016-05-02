@@ -269,7 +269,7 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
 
     #region IShipNavigable Members
 
-    public abstract AutoPilotTarget GetMoveTarget(Vector3 tgtOffset, float tgtStandoffDistance);
+    public abstract AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
 
     #endregion
 
