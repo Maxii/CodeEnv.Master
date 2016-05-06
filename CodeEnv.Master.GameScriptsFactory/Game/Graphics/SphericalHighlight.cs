@@ -59,7 +59,6 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         _meshTransform = _renderer.transform;
         _baseSphereRadius = _renderer.bounds.size.x / 2F;
         //D.Log("{0} base sphere radius = {1}.", GetType().Name, _baseSphereRadius);
-        UpdateRate = FrameUpdateFrequency.Continuous;   // .Normal is not often enough when moving fast
     }
 
     private void InitializeMeshRendererMaterial() {
@@ -126,8 +125,8 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         }
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
+    protected override void Update() {
+        base.Update();
         UpdatePosition();
     }
 

@@ -89,12 +89,6 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        protected override void ToShowEffectsPropChangedHandler() {
-            if (_activeFiredOrdnance.Any()) {
-                _activeFiredOrdnance.ForAll(ord => ord.ToShowEffects = ToShowEffects);
-            }
-        }
-
         #endregion
 
     }

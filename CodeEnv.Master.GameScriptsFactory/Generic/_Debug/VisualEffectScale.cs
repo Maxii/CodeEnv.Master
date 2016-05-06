@@ -46,7 +46,7 @@ public class VisualEffectScale : AMonoBase {
     /// Scale control available in the editor. Use this control to manually scale
     /// the size of the effect. Typically, this control is used when the concept of ItemRadius
     /// is N/A (e.g. weapon muzzle effect size does not change when a weapon is fired from
-    /// a large radius Dreadnaught or a small radius Frigate). 1.0F is the right value to use
+    /// a large radius Dreadnought or a small radius Frigate). 1.0F is the right value to use
     /// when you want the effect to be sized to just encompass the radius of an item like a ship,
     /// facility, planet or moon.
     /// </summary>

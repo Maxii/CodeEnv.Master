@@ -558,6 +558,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoUpdate();
     }
 
+    [Obsolete]
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
         state.DoOccasionalUpdate();

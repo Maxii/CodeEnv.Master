@@ -401,7 +401,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         D.Assert(!Weapon.IsOperational);  // only subscribed when we are traversing and weapon is operational
         if (IsTraverseJobRunning) {
             _traverseJob.Kill();
-            D.Log("{0}: Weapon {1} no longer operational while traversing, probably due to damage.", Name, Weapon.FullName);
+            D.Log("Weapon {0} no longer operational while traversing, probably due to damage.", Weapon.FullName);
         }
     }
 

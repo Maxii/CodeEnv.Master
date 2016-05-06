@@ -201,7 +201,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if the two provided directions are within the allowed deviation in degrees.
+        /// Returns <c>true</c> if the two provided normalized directions are within the allowed deviation in degrees.
         /// </summary>
         /// <param name="dirA">The first direction.</param>
         /// <param name="dirB">The second direction.</param>

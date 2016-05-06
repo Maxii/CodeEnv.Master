@@ -51,7 +51,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerEnter() tripped by {1} while paused.", Name, other.name);
         D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
@@ -65,13 +64,17 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
                 return;
             }
+            if (_gameMgr.IsPaused) {
+                D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", Name, detectedObject.FullName);
+                RecordObjectEnteringWhilePaused(detectedObject);
+                return;
+            }
             AddDetectedObject(detectedObject);
         }
     }
 
     protected sealed override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerExit() tripped by {1} while paused.", Name, other.name);
         D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", Name, other.name);
@@ -81,6 +84,11 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         var lostDetectionObject = other.GetComponent<IDetectableType>();
         if (lostDetectionObject != null) {
             D.Log(ShowDebugLog, "{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
+            if (_gameMgr.IsPaused) {
+                D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", Name, lostDetectionObject.FullName);
+                RecordObjectExitingWhilePaused(lostDetectionObject);
+                return;
+            }
             RemoveDetectedObject(lostDetectionObject);
         }
     }
@@ -88,7 +96,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected override void IsOperationalPropChangedHandler() {
         //D.Log(ShowDebugLog, "{0}.IsOperationPropChangedHandler() called. IsOperational: {1}.", Name, IsOperational);
         if (IsOperational) {
-            AcquireAllDetectableObjecsInRange();
+            AcquireAllDetectableObjectsInRange();
         }
         else {
             RemoveAllDetectedObjects();
@@ -127,6 +135,13 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         base.ParentOwnerChangedEventHandler(sender, e);
         RangeDistance = RefreshRangeDistance();
         AssessIsOperational();
+    }
+
+    protected override void IsPausedPropChangedHandler() {
+        base.IsPausedPropChangedHandler();
+        if (!_gameMgr.IsPaused) {
+            HandleObjectsDetectedWhilePaused();
+        }
     }
 
     #endregion
@@ -194,14 +209,14 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     private void ReacquireAllDetectableObjectsInRange() {
         RemoveAllDetectedObjects();
-        AcquireAllDetectableObjecsInRange();
+        AcquireAllDetectableObjectsInRange();
     }
 
     /// <summary>
     /// All detectable items in range are added to this Monitor.
     /// Throws an exception if any items are already present in the ItemsDetected list.
     /// </summary>
-    private void AcquireAllDetectableObjecsInRange() {
+    private void AcquireAllDetectableObjectsInRange() {
         BulkDetectAllCollidersInRange();
     }
 
@@ -232,6 +247,85 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             AddDetectedObject(detectableObject);
         }
     }
+
+    #region Objects Detected While Paused Handling System
+
+    private IList<IDetectableType> _enteringObjectsDetectedWhilePaused;
+    private IList<IDetectableType> _exitingObjectsDetectedWhilePaused;
+
+    private void RecordObjectEnteringWhilePaused(IDetectableType enteringObject) {
+        if (_enteringObjectsDetectedWhilePaused == null) {
+            _enteringObjectsDetectedWhilePaused = new List<IDetectableType>();
+        }
+        if (CheckForPreviousPausedExitOf(enteringObject)) {
+            // while paused, previously exited and now entered so record to take action when unpaused
+            D.Warn("{0} removing entering object {1} already recorded as exited while paused.", Name, enteringObject.FullName);
+            _exitingObjectsDetectedWhilePaused.Remove(enteringObject);
+        }
+        _enteringObjectsDetectedWhilePaused.Add(enteringObject);
+    }
+
+    private void RecordObjectExitingWhilePaused(IDetectableType exitingObject) {
+        if (_exitingObjectsDetectedWhilePaused == null) {
+            _exitingObjectsDetectedWhilePaused = new List<IDetectableType>();
+        }
+        if (CheckForPreviousPausedEntryOf(exitingObject)) {
+            // while paused, previously entered and now exited so eliminate record as no action should be taken when unpaused
+            D.Warn("{0} removing exiting object {1} already recorded as entered while paused.", Name, exitingObject.FullName);
+            _enteringObjectsDetectedWhilePaused.Remove(exitingObject);
+            return;
+        }
+        _exitingObjectsDetectedWhilePaused.Add(exitingObject);
+    }
+
+    private void HandleObjectsDetectedWhilePaused() {
+        D.Log(ShowDebugLog, "{0} handling objects detected while paused, if any.", Name);
+        __ValidateObjectsDetectedWhilePaused();
+        if (!_enteringObjectsDetectedWhilePaused.IsNullOrEmpty()) {
+            _enteringObjectsDetectedWhilePaused.ForAll(obj => AddDetectedObject(obj));
+            _enteringObjectsDetectedWhilePaused.Clear();
+        }
+        if (!_exitingObjectsDetectedWhilePaused.IsNullOrEmpty()) {
+            _exitingObjectsDetectedWhilePaused.ForAll(obj => RemoveDetectedObject(obj));
+            _exitingObjectsDetectedWhilePaused.Clear();
+        }
+    }
+
+    private void __ValidateObjectsDetectedWhilePaused() {
+        // there should be no obstacles that are present in both lists
+        if (_enteringObjectsDetectedWhilePaused.IsNullOrEmpty() || _exitingObjectsDetectedWhilePaused.IsNullOrEmpty()) {
+            return;
+        }
+        D.Assert(!_enteringObjectsDetectedWhilePaused.EqualsAnyOf(_exitingObjectsDetectedWhilePaused));
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided enteringObject has also been
+    /// recorded as having exited while paused, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="enteringObject">The enteringObject.</param>
+    /// <returns></returns>
+    private bool CheckForPreviousPausedExitOf(IDetectableType enteringObject) {
+        if (_exitingObjectsDetectedWhilePaused.IsNullOrEmpty()) {
+            return false;
+        }
+        return _exitingObjectsDetectedWhilePaused.Contains(enteringObject);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided exitingObject has also been
+    /// recorded as having entered while paused, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="exitingObject">The exitingObject.</param>
+    /// <returns></returns>
+    private bool CheckForPreviousPausedEntryOf(IDetectableType exitingObject) {
+        if (_enteringObjectsDetectedWhilePaused.IsNullOrEmpty()) {
+            return false;
+        }
+        return _enteringObjectsDetectedWhilePaused.Contains(exitingObject);
+    }
+
+    #endregion
 
     #region Acquire Colliders Workaround Archive
 

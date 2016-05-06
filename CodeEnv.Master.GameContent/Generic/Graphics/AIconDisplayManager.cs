@@ -89,6 +89,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 // initial or subsequent generation of the Icon
                 Icon = MakeIcon();
+                //SubscribeToIconCameraLosChanges(Icon);
             }
         }
 
@@ -100,6 +101,14 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        //private ITrackingSprite MakeIcon() {
+        //    var icon = MakeIconInstance();
+        //    icon.DrawDepth = IconDepth;
+        //    //var iconCameraLosChgdListener = icon.CameraLosChangedListener;
+        //    //iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;
+        //    //iconCameraLosChgdListener.Initialize();
+        //    return icon;
+        //}
         private ITrackingSprite MakeIcon() {
             var icon = MakeIconInstance();
             icon.DrawDepth = IconDepth;
@@ -108,6 +117,12 @@ namespace CodeEnv.Master.GameContent {
             iconCameraLosChgdListener.enabled = true;
             return icon;
         }
+
+        //private void SubscribeToIconCameraLosChanges(ITrackingSprite icon) {
+        //    var iconCameraLosChgdListener = icon.CameraLosChangedListener;
+        //    iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;
+        //    iconCameraLosChgdListener.Initialize(); // Can generate immediate event
+        //}
 
         protected virtual ITrackingSprite MakeIconInstance() {
             return References.TrackingWidgetFactory.MakeResponsiveTrackingSprite(_trackedItem, IconInfo);

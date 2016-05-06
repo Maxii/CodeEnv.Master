@@ -92,11 +92,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     protected float _orbitRateInDegreesPerHour;
     protected GameTime _gameTime;
 
-    /// <summary>
-    /// The speed of the orbiting object around the orbited object in units per hour. 
-    /// This value will increase as the radius of the orbit increases.
-    /// </summary>
-    //private float _orbitSpeedInUnitsPerHour;
     private IList<IDisposable> _subscriptions;
     private IGameManager _gameMgr;
 
@@ -104,7 +99,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         base.Awake();
         _gameMgr = References.GameManager;
         _gameTime = GameTime.Instance;
-        UpdateRate = FrameUpdateFrequency.Frequent;
         Subscribe();
         enabled = false;
     }
@@ -123,15 +117,16 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         return orbitSpeedInUnitsPerHour;
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * (int)UpdateRate;
+    protected override void Update() {
+        base.Update();
+        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime;
         UpdateOrbit(deltaTimeSinceLastUpdate);
     }
 
     /// <summary>
     /// Updates the rotation of this object around its axis of orbit (it is coincident with the position of the object being orbited)
     /// to simulate the orbit of this object's child around the object orbited. The visual speed of the orbit varies with game speed.
+    /// OPTIMIZE Consider calling this centrally every x updates.
     /// </summary>
     /// <param name="deltaTimeSinceLastUpdate">The delta time since last update.</param>
     protected virtual void UpdateOrbit(float deltaTimeSinceLastUpdate) {

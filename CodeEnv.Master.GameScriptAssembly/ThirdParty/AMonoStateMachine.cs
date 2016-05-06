@@ -628,6 +628,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoUpdate();
     }
 
+    [Obsolete]
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
         state.DoOccasionalUpdate();

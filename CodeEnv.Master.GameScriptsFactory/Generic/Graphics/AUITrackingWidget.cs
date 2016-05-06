@@ -44,7 +44,7 @@ public abstract class AUITrackingWidget : ATrackingWidget {
         transform.SetWorldPositionZ(Constants.ZeroF);
     }
 
-    protected override void RefreshPositionOnUpdate() {
+    protected override void RefreshPosition() {
         SetPosition();
     }
 

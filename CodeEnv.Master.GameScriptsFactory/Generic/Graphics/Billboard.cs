@@ -27,6 +27,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public class Billboard : AMonoBase, IBillboard {
 
+    private const int CheckFacingCounterThreshold = 4;
+
     //[FormerlySerializedAs("reverseFacing")]
     [SerializeField]
     private bool _reverseFacing = false;
@@ -34,17 +36,16 @@ public class Billboard : AMonoBase, IBillboard {
     //[FormerlySerializedAs("reverseLabelFacing")]
     [SerializeField]
     private bool _reverseLabelFacing = false;
-
     private Transform _cameraTransform;
+    private int __checkFacingCounter;
 
     protected override void Awake() {
         base.Awake();
-        UpdateRate = FrameUpdateFrequency.Normal;
-        CheckForUIPanelPresenceInParents();
+        WarnIfUIPanelPresentInParents();
         enabled = false;
     }
 
-    private void CheckForUIPanelPresenceInParents() {
+    private void WarnIfUIPanelPresentInParents() {
         if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
             D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);
@@ -54,23 +55,34 @@ public class Billboard : AMonoBase, IBillboard {
     protected override void Start() {
         base.Start();
         _cameraTransform = Camera.main.transform;
-        TryPrepareLabel();
+        PrepareLabel();
     }
 
-    private bool TryPrepareLabel() {
+    private void PrepareLabel() {
         UIWidget widget = gameObject.GetComponentInChildren<UIWidget>();
         if (widget && widget as UILabel != null) {
             if (_reverseLabelFacing) {
                 widget.transform.forward = -widget.transform.forward;
             }
-            return true;
         }
-        return false;
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        UpdateFacing();
+    protected override void OnEnable() {
+        base.OnEnable();
+        if (_cameraTransform != null) {  // _cameraTransform is null on first enabled
+            UpdateFacing(); // don't wait for counter when enabled
+        }
+    }
+
+    protected override void Update() {
+        base.Update();
+        if (__checkFacingCounter >= CheckFacingCounterThreshold) {
+            UpdateFacing();
+            __checkFacingCounter = Constants.Zero;
+        }
+        else {
+            __checkFacingCounter++;
+        }
     }
 
     private void UpdateFacing() {

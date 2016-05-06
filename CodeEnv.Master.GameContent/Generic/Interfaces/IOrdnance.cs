@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler deathOneShot;
 
-        bool ToShowEffects { get; set; }
-
         string Name { get; }
 
         Vector3 CurrentHeading { get; }

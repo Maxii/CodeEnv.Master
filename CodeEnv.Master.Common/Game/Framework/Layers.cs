@@ -58,7 +58,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Layer allowing the MainCamera to cull objects more than &lt;&lt;1 unit away.
-        /// Typically used by fighter and ornance meshes.
+        /// Typically used by fighter and ordnance meshes. 5.4.16 Not currently used.
         /// </summary>
         Cull_Tiny = 8,
 

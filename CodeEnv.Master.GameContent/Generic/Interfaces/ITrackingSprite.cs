@@ -14,6 +14,8 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using CodeEnv.Master.Common;
+
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>

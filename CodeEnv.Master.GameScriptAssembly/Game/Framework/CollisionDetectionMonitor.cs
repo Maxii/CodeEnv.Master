@@ -50,9 +50,6 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     /// </summary>
     protected override bool IsKinematicRigidbodyReqd { get { return true; } }
 
-    private IList<IObstacle> _enteringObstaclesEncounteredWhilePaused;
-    private IList<IObstacle> _exitingObstaclesEncounteredWhilePaused;
-
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _collider.gameObject.layer = (int)Layers.CollisionDetectionZone;
@@ -74,8 +71,9 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", Name, obstacleZoneCollider.name);
+            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", Name, obstacle.FullName);
             RecordObstacleEnteringWhilePaused(obstacle);
+            return;
         }
         ParentItem.HandlePendingCollisionWith(obstacle);
     }
@@ -93,8 +91,9 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", Name, obstacleZoneCollider.name);
+            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", Name, obstacle.FullName);
             RecordObstacleExitingWhilePaused(obstacle);
+            return;
         }
         ParentItem.HandlePendingCollisionAverted(obstacle);
     }
@@ -117,9 +116,19 @@ public class CollisionDetectionMonitor : AColliderMonitor {
 
     #endregion
 
+    #region Obstacles Encountered While Paused Handling System
+
+    private IList<IObstacle> _enteringObstaclesEncounteredWhilePaused;
+    private IList<IObstacle> _exitingObstaclesEncounteredWhilePaused;
+
     private void RecordObstacleEnteringWhilePaused(IObstacle obstacle) {
         if (_enteringObstaclesEncounteredWhilePaused == null) {
             _enteringObstaclesEncounteredWhilePaused = new List<IObstacle>();
+        }
+        if (CheckForPreviousPausedExitOf(obstacle)) {
+            // while paused, previously exited and now entered so record to take action when unpaused
+            D.Warn("{0} removing entering obstacle {1} already recorded as exited while paused.", Name, obstacle.FullName);
+            _exitingObstaclesEncounteredWhilePaused.Remove(obstacle);
         }
         _enteringObstaclesEncounteredWhilePaused.Add(obstacle);
     }
@@ -128,19 +137,63 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         if (_exitingObstaclesEncounteredWhilePaused == null) {
             _exitingObstaclesEncounteredWhilePaused = new List<IObstacle>();
         }
+        if (CheckForPreviousPausedEntryOf(obstacle)) {
+            // while paused, previously entered and now exited so eliminate record as no action should be taken when unpaused
+            D.Warn("{0} removing exiting obstacle {1} already recorded as entered while paused.", Name, obstacle.FullName);
+            _enteringObstaclesEncounteredWhilePaused.Remove(obstacle);
+            return;
+        }
         _exitingObstaclesEncounteredWhilePaused.Add(obstacle);
     }
 
     private void HandleObstaclesEncounteredWhilePaused() {
-        if (_enteringObstaclesEncounteredWhilePaused != null) {
+        D.Log(ShowDebugLog, "{0} handling obstacles encountered while paused, if any.", Name);
+        __ValidateObstaclesEncounteredWhilePaused();
+        if (!_enteringObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
             _enteringObstaclesEncounteredWhilePaused.ForAll(obs => ParentItem.HandlePendingCollisionWith(obs));
-            _enteringObstaclesEncounteredWhilePaused = null;
+            _enteringObstaclesEncounteredWhilePaused.Clear();
         }
-        if (_exitingObstaclesEncounteredWhilePaused != null) {
+        if (!_exitingObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
             _exitingObstaclesEncounteredWhilePaused.ForAll(obs => ParentItem.HandlePendingCollisionAverted(obs));
-            _exitingObstaclesEncounteredWhilePaused = null;
+            _exitingObstaclesEncounteredWhilePaused.Clear();
         }
     }
+
+    private void __ValidateObstaclesEncounteredWhilePaused() {
+        // there should be no obstacles that are present in both lists
+        if (_enteringObstaclesEncounteredWhilePaused.IsNullOrEmpty() || _exitingObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
+            return;
+        }
+        D.Assert(!_enteringObstaclesEncounteredWhilePaused.EqualsAnyOf(_exitingObstaclesEncounteredWhilePaused));
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided enteringObstacle has also been
+    /// recorded as having exited while paused, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="obstacle">The enteringObstacle.</param>
+    /// <returns></returns>
+    private bool CheckForPreviousPausedExitOf(IObstacle enteringObstacle) {
+        if (_exitingObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
+            return false;
+        }
+        return _exitingObstaclesEncounteredWhilePaused.Contains(enteringObstacle);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided exitingObstacle has also been
+    /// recorded as having entered while paused, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="obstacle">The exitingObstacle.</param>
+    /// <returns></returns>
+    private bool CheckForPreviousPausedEntryOf(IObstacle exitingObstacle) {
+        if (_enteringObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
+            return false;
+        }
+        return _enteringObstaclesEncounteredWhilePaused.Contains(exitingObstacle);
+    }
+
+    #endregion
 
     protected override void ResetForReuse() {
         base.ResetForReuse();

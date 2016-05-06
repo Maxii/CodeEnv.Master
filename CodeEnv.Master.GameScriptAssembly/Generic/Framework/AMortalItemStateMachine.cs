@@ -518,6 +518,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoUpdate();
     }
 
+    [Obsolete]
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
         state.DoOccasionalUpdate();

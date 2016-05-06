@@ -257,12 +257,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
         var projectileOrdnance = ordnance as AProjectileOrdnance;
         if (projectileOrdnance != null) {
-            projectileOrdnance.Launch(target, weapon, Topography, IsVisualDetailDiscernibleToUser);
+            projectileOrdnance.Launch(target, weapon, Topography);
         }
         else {
             var beamOrdnance = ordnance as Beam;
             D.Assert(beamOrdnance != null);
-            beamOrdnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
+            beamOrdnance.Launch(target, weapon);
         }
         //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
@@ -273,6 +273,26 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
          * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
          **************************************************************************************************************************************************/
     }
+    //private void LaunchOrdnance(AWeapon weapon, IElementAttackable target) {
+    //    var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
+    //    var projectileOrdnance = ordnance as AProjectileOrdnance;
+    //    if (projectileOrdnance != null) {
+    //        projectileOrdnance.Launch(target, weapon, Topography, IsVisualDetailDiscernibleToUser);
+    //    }
+    //    else {
+    //        var beamOrdnance = ordnance as Beam;
+    //        D.Assert(beamOrdnance != null);
+    //        beamOrdnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
+    //    }
+    //    //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
+    //    /***********************************************************************************************************************************************
+    //     * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
+    //     * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
+    //     * death cinematic plays out. Once the target is destroyed, its collider becomes disabled, allowing ordnance to pass through and potentially
+    //     * collide with other items until it runs out of range and self terminates. This behaviour holds for both projectile and beam ordnance. In the
+    //     * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
+    //     **************************************************************************************************************************************************/
+    //}
 
     private void HandleWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         bool isMsgReceived = UponWeaponReadyToFire(firingSolutions);
@@ -524,8 +544,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void IsVisualDetailDiscernibleToUserPropChangedHandler() {
         base.IsVisualDetailDiscernibleToUserPropChangedHandler();
-        Data.Weapons.ForAll(w => w.ToShowEffects = IsVisualDetailDiscernibleToUser);
+        Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
     }
+    //protected override void IsVisualDetailDiscernibleToUserPropChangedHandler() {
+    //    base.IsVisualDetailDiscernibleToUserPropChangedHandler();
+    //    Data.Weapons.ForAll(w => w.ToShowEffects = IsVisualDetailDiscernibleToUser);
+    //}
 
     private void IsElementIconsEnabledPropChangedHandler() {
         if (DisplayMgr != null) {
@@ -565,29 +589,29 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        var equipmentDamageChance = damageSeverity;
+        var equipDamageChance = damageSeverity;
 
         var undamagedWeapons = Data.Weapons.Where(w => !w.IsDamaged);
         undamagedWeapons.ForAll(w => {
-            w.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            w.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
         });
 
         var undamagedSensors = Data.Sensors.Where(s => !s.IsDamaged);
         undamagedSensors.ForAll(s => {
-            s.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            s.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
         });
 
         var undamagedActiveCMs = Data.ActiveCountermeasures.Where(cm => !cm.IsDamaged);
         undamagedActiveCMs.ForAll(cm => {
-            cm.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            cm.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", FullName, cm.Name);
         });
 
         var undamagedGenerators = Data.ShieldGenerators.Where(gen => !gen.IsDamaged);
         undamagedGenerators.ForAll(gen => {
-            gen.IsDamaged = RandomExtended.Chance(equipmentDamageChance);
+            gen.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
         });
     }

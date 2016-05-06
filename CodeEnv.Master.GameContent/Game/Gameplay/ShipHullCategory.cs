@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         Cruiser,
 
         [EnumAttribute("DN")]
-        Dreadnaught,
+        Dreadnought,
 
         [EnumAttribute("CV")]
         Carrier,

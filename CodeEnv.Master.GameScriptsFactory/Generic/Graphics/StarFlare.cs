@@ -37,7 +37,6 @@ public class StarFlare : AMonoBase {
     protected override void Awake() {
         base.Awake();
         _mainCamera = Camera.main.transform;
-        UpdateRate = FrameUpdateFrequency.Seldom;
     }
 
     protected override void Start() {
@@ -74,8 +73,8 @@ public class StarFlare : AMonoBase {
         _originalIntensity = _flareLight.intensity;
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
+    protected override void Update() {
+        base.Update();
         if (_flareLight != null) {
             VaryFlareIntensityByCameraDistance();
         }

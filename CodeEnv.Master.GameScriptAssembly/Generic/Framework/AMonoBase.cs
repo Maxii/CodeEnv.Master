@@ -69,7 +69,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <value>
     ///  The rate at which ToUpdate() returns true, calling OccasionalUpdate(). Default is Never.
     /// </value>
+    [Obsolete]
     private FrameUpdateFrequency _updateRate;
+    [Obsolete]
     protected FrameUpdateFrequency UpdateRate {
         get { return _updateRate; }
         set {
@@ -78,6 +80,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         }
     }
 
+    [Obsolete]
     private int _updateCounter = Constants.Zero;
 
     /// <summary>
@@ -85,6 +88,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// If using inside Update(), consider using the convenience method OccasionalUpdate().
     /// </summary>
     /// <returns>true on a pace set by the UpdateRate property</returns>
+    [Obsolete]
     private bool ToUpdate() {
         if (UpdateRate == FrameUpdateFrequency.Never) {
             return false;
@@ -102,14 +106,15 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     protected virtual void Update() {
         //LogEvent();
-        if (ToUpdate()) {
-            OccasionalUpdate();
-        }
+        //if (ToUpdate()) {
+        //    OccasionalUpdate();
+        //}
     }
 
     /// <summary>
     /// Called at a frequency determined by the setting of UpdateRate.
     /// </summary>
+    [Obsolete]
     protected virtual void OccasionalUpdate() {
         //LogEvent();
     }
@@ -174,7 +179,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     //}
 
     #endregion
-
 
     #region Invoke
     // Based on an Action Delegate that encapsulates methods with no parameters that return void, aka 'a task'.
@@ -325,57 +329,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method must have one parameter and return IEnumerator..</param>
     protected void StopCoroutine<T>(Func<T, IEnumerator> task) {
         StopCoroutine(task.Method.Name);
-    }
-
-    #endregion
-
-    #region GetComponent
-
-    /// <summary>
-    /// Gets the single component of Type T that belongs to one of the immediate children of the GameObject.
-    /// Returns null if none found. Throws an exception if more than one is found.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <exception cref="InvalidOperationException" />
-    /// <returns></returns>
-    public T GetComponentInImmediateChildren<T>() where T : UnityEngine.Component {
-        T[] tComponents = GetComponentsInImmediateChildren<T>();
-        if (tComponents.IsNullOrEmpty<T>()) {
-            return null;
-        }
-        if (tComponents.Length >= 2) {
-            throw new InvalidOperationException("More than one component found.");
-        }
-        return tComponents[0];
-    }
-
-    /// <summary>
-    /// Gets all the components of Type T that belong to the immediate children of the GameObject. Can be empty.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public T[] GetComponentsInImmediateChildren<T>() where T : UnityEngine.Component {
-        T[] tComponentsInAllChildren = GetComponentsInChildren<T>();
-        var tComponentsInImmediateChildren = from t in tComponentsInAllChildren where t.transform.parent == gameObject.transform select t;
-        return tComponentsInImmediateChildren.ToArray<T>();
-    }
-
-    /// <summary>
-    /// Like GetComponent&lt;T&gt;(), this returns the script component that implements Interface I if the game object has one attached, null if it doesn't. 
-    /// </summary>
-    /// <typeparam name="I">The Interface Type.</typeparam>
-    /// <returns>The script component that implements the Interface I.</returns>
-    public I GetInterfaceComponent<I>() where I : class {
-        return GetComponent(typeof(I)) as I;
-    }
-
-    /// <summary>
-    /// Untested. Like GetComponents&lt;T&gt;(), this returns the script components that implement Interface I if the game object has one or more attached, empty if not. 
-    /// </summary>
-    /// <typeparam name="I">The Type of Interface.</typeparam>
-    /// <returns></returns>
-    public I[] GetInterfaceComponents<I>() where I : class {
-        return Utility.ConvertToArray<I>(GetComponents(typeof(I)));
     }
 
     #endregion

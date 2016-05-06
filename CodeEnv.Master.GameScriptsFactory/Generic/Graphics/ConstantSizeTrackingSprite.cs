@@ -34,12 +34,6 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITr
         set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
     }
 
-    private AtlasID _atlasID;
-    public AtlasID AtlasID {
-        get { return _atlasID; }
-        set { SetProperty<AtlasID>(ref _atlasID, value, "AtlasID", AtlasIDPropChangedHandler); }
-    }
-
     protected new UISprite Widget { get { return base.Widget as UISprite; } }
 
     protected override void Awake() {
@@ -67,16 +61,12 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITr
     #region Event and Property Change Handlers
 
     private void IconInfoPropChangedHandler() {
-        AtlasID = IconInfo.AtlasID;
+        Widget.atlas = IconInfo.AtlasID.GetAtlas();
         Set(IconInfo.Filename);
         Color = IconInfo.Color;
         SetDimensions(IconInfo.Size);
         Placement = IconInfo.Placement;
         NGUITools.SetLayer(gameObject, (int)IconInfo.Layer);
-    }
-
-    private void AtlasIDPropChangedHandler() {
-        Widget.atlas = AtlasID.GetAtlas();
     }
 
     #endregion

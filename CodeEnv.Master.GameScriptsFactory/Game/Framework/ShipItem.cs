@@ -276,7 +276,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             case ShipHullCategory.Science:
             case ShipHullCategory.Colonizer:
                 return Layers.Cull_3;
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Troop:
             case ShipHullCategory.Carrier:
                 return Layers.Cull_4;
@@ -303,7 +303,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             case ShipHullCategory.Colonizer:
                 dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
                 break;
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Troop:
                 dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
                 break;
@@ -1729,8 +1729,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        var equipDamagedChance = damageSeverity;
-        Data.IsFtlDamaged = RandomExtended.Chance(equipDamagedChance);
+        if (!Data.IsFtlDamaged) {
+            var equipDamageChance = damageSeverity;
+            Data.IsFtlDamaged = RandomExtended.Chance(equipDamageChance);
+        }
     }
 
     protected override void AssessNeedForRepair() {
@@ -2660,7 +2662,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <param name="headingConfirmed">Delegate that fires when the ship gets to the new heading.</param>
         private void ChangeHeading_Internal(Vector3 newHeading, Action headingConfirmed = null) {
             newHeading.ValidateNormalized();
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             //D.Log(ShowDebugLog, "{0} received ChangeHeading to (local){1}.", Name, _ship.transform.InverseTransformDirection(newHeading));
 
             // Warning: Don't test for same direction here. Instead, if same direction, let the coroutine respond one frame
@@ -2700,6 +2701,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     // that the heading is confirmed so a response here would be a duplicate.
                 }
             });
+
+            // Reqd as I have no pause control over the State Machine. The instance I found was ExecuteAttackOrder Call()ed Attacking
+            // which initiated an AutoPilot pursuit which launched this new heading job 
+            if (_gameMgr.IsPaused) {
+                _headingJob.IsPaused = true;
+                D.Log(ShowDebugLog, "{0} has paused HeadingJob immediately after starting it.", Name);
+            }
         }
 
         /// <summary>

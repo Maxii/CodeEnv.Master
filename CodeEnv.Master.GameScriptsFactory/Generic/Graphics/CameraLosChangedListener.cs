@@ -29,6 +29,16 @@ using UnityEngine;
 /// </summary>
 public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
+    private const string NameFormat = "{0}.{1}";
+
+    private static readonly Vector2 DefaultMeshSize = new Vector2(4F, 4F);
+
+    private static readonly Vector3[] DefaultMeshLocalCorners = new Vector3[] { new Vector3(-2F, -2F),
+                                                                                new Vector3(-2F, 2F),
+                                                                                new Vector3(2F, 2F),
+                                                                                new Vector3(2F, -2F)
+                                                                              };
+
     /// <summary>
     /// Get or add an event listener to the specified game object.
     /// </summary>
@@ -49,28 +59,34 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS"); }
     }
 
+    private string Name { get { return NameFormat.Inject(name, typeof(CameraLosChangedListener).Name); } }
+
+    private Renderer _renderer;
+    private bool _isInvisibleMesh;
+
     protected override void Awake() {
         base.Awake();
         enabled = false;
+        Initialize();
+    }
+
+    private void Initialize() {
+        _renderer = GetComponent<Renderer>();
+        if (_renderer == null) {
+            InitializeInvisibleMesh();  // creates and assigns _renderer
+        }
     }
 
     protected override void Start() {
         base.Start();
-        var renderer = GetComponent<Renderer>();
-        if (renderer != null) {
-            renderer.enabled = true;    // renderers usually start enabled. This is to make sure as renderers do not deliver OnBecameVisible() events if not enabled
-
-            if (!renderer.isVisible) {
-                // Note: All subscribers begin with InCameraLOS = true, aka they think they are in the camera's line of sight. 
-                // When the renderer first wakes up, it sends OnBecameInvisible if it is not visible. If this occurs before this listener 
-                // is enabled, the listener's subscribers will not receive the notification. The following call makes sure the notification 
-                // is repeated when this listener becomes enabled. It is not needed when using an invisible mesh as the newly installed 
-                // invisible mesh renderer will immediately notify subscribers of its inCameraLOS state.
-                OnBecameInvisible();
-            }
-        }
-        else {
-            InitializeInvisibleMesh();
+        _renderer.enabled = true;
+        if (!_renderer.isVisible) {
+            // Note: All subscribers begin with InCameraLOS = true, aka they think they are in the camera's line of sight. 
+            // When the renderer first wakes up, it sends OnBecameInvisible if it is not visible. If this occurs before this listener 
+            // is enabled, the listener's subscribers will not receive the notification. The following call makes sure the notification 
+            // is repeated when this listener becomes enabled. It is not needed when using an invisible mesh as the newly installed 
+            // invisible mesh renderer will immediately notify subscribers of its inCameraLOS state.
+            OnBecameInvisible();
         }
     }
 
@@ -78,30 +94,34 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     void OnBecameVisible() {
         if (enabled) {
-            //D.LogContext(this, "{0}.{1} has received OnBecameVisible().", transform.name, GetType().Name);
+            //D.LogContext(this, "{0} has received OnBecameVisible().", Name);
             InCameraLOS = true;
             OnInCameraLosChanged();
         }
         else {
-            D.WarnContext(this, "{0}.{1}.OnBecameVisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
-                transform.name, GetType().Name);
+            if (!_isInvisibleMesh) {    // invisible mesh will always immediately generate an event as I can't instantiate it disabled
+                D.WarnContext(this, "{0}.OnBecameVisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
+                    Name);
+            }
         }
     }
 
     void OnBecameInvisible() {
-        if (IsApplicationQuiting || GameManager.Instance.IsSceneLoading) { // Application.isLoadingLevel deprecated in Unity5
+        if (IsApplicationQuiting || GameManager.Instance.IsSceneLoading) {
             // OnBecameInvisible called if already visible when application is quiting
             return;
         }
 
         if (enabled) {
-            //D.LogContext(this, "{0}.{1} has received OnBecameInvisible().", transform.name, GetType().Name);
+            //D.LogContext(this, "{0} has received OnBecameInvisible().", Name);
             InCameraLOS = false;
             OnInCameraLosChanged();
         }
         else {
-            D.WarnContext(this, "{0}.{1}.OnBecameInvisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
-                transform.name, GetType().Name);
+            if (!_isInvisibleMesh) {  // invisible mesh will always immediately generate an event as I can't instantiate it disabled
+                D.WarnContext(this, "{0}.OnBecameInvisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
+                    Name);
+            }
         }
     }
 
@@ -110,7 +130,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             inCameraLosChanged(this, new EventArgs());
         }
         else {
-            D.WarnContext(this, "{0}.{1} has no subscriber. InCameraLOS = {2}.", transform.name, GetType().Name, InCameraLOS);
+            D.WarnContext(this, "{0} has no subscriber. InCameraLOS = {1}.", Name, InCameraLOS);
         }
     }
 
@@ -123,24 +143,27 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// <summary>
     /// Temporary workaround used to filter out all UIWidget.onChange events that aren't caused by a change in Widget Dimensions.
     /// </summary>
-    private Vector2 __previousWidgetDimensions;
-
-    private UIWidget _widget;
+    private Vector2 __previousMeshSize;
+    private UIWidget _widget;   // can be null
     private MeshFilter _meshFilter;
+
     /// <summary>
     /// Sets up an invisible bounds mesh that enables OnBecameVisible/Invisible to properly operate,
     /// even without having a pre-installed Renderer. Derived from Vectrosity.VectorManager.
     /// </summary>
     private void InitializeInvisibleMesh() {
+        _isInvisibleMesh = true;
         _meshFilter = gameObject.AddMissingComponent<MeshFilter>();
 
-        var meshRenderer = gameObject.AddMissingComponent<MeshRenderer>();
-        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   //meshRenderer.castShadows = false;
-        meshRenderer.receiveShadows = false;
-        meshRenderer.enabled = true;    // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
+        _renderer = gameObject.AddMissingComponent<MeshRenderer>();
+        _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        _renderer.receiveShadows = false;
+        D.Assert(_renderer.enabled);    // renderers do not deliver OnBecameVisible() events if not enabled
 
-        _widget = UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
-        _widget.onChange += CheckInvisibleMeshSize;
+        _widget = gameObject.GetComponent<UIWidget>();
+        if (_widget != null) {
+            _widget.onChange += CheckInvisibleMeshSize;
+        }
         CheckInvisibleMeshSize();
     }
 
@@ -149,20 +172,21 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// This is typically called when the Widget's dimensions change.
     /// </summary>
     private void CheckInvisibleMeshSize() {
-        var widgetDimensions = _widget.localSize;
-        if (__previousWidgetDimensions == widgetDimensions) {
-            //D.Warn("{0} invisible mesh size {1} check without a widget dimension change.", GetType().Name, widgetDimensions);
+        var meshSize = _widget != null ? _widget.localSize : DefaultMeshSize;
+        if (__previousMeshSize == meshSize) {
+            //D.Warn("{0} invisible mesh size {1} check without a widget dimension change.", Name, meshSize);
             return;
         }
-        __previousWidgetDimensions = widgetDimensions;
+        __previousMeshSize = meshSize;
 
-        string cacheKey = widgetDimensions.ToString();  // "[0.0, 1.0]"
+        string cacheKey = meshSize.ToString();  // "[0.0, 1.0]"
         if (!_meshCache.ContainsKey(cacheKey)) {
-            _meshCache.Add(cacheKey, MakeBoundsMesh(UnityUtility.GetBounds(_widget.localCorners)));
+            Vector3[] meshLocalCorners = _widget != null ? _widget.localCorners : DefaultMeshLocalCorners;
+            _meshCache.Add(cacheKey, MakeBoundsMesh(UnityUtility.GetBounds(meshLocalCorners)));
             _meshCache[cacheKey].name = cacheKey + " Invisible Bounds";
         }
         else {
-            //D.Log("{0} is reusing {1} mesh.", transform.name, _meshCache[cacheKey].name);
+            //D.Log("{0} is reusing {1} mesh.", Name, _meshCache[cacheKey].name);
         }
         _meshFilter.mesh = _meshCache[cacheKey];
     }
@@ -174,7 +198,6 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// <param name="bounds">The bounds.</param>
     /// <returns></returns>
     private static Mesh MakeBoundsMesh(Bounds bounds) {
-
         var mesh = new Mesh();
         mesh.vertices = new[] {bounds.center + new Vector3(-bounds.extents.x,  bounds.extents.y,  bounds.extents.z),
                                bounds.center + new Vector3( bounds.extents.x,  bounds.extents.y,  bounds.extents.z),

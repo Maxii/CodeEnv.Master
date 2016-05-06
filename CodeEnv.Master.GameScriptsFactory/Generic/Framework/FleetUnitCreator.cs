@@ -119,13 +119,13 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     protected override ShipHullCategory[] ElementCategories {
         get {
-            return new ShipHullCategory[] { ShipHullCategory.Frigate, ShipHullCategory.Destroyer, ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnaught,
+            return new ShipHullCategory[] { ShipHullCategory.Frigate, ShipHullCategory.Destroyer, ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnought,
         ShipHullCategory.Colonizer, ShipHullCategory.Science, ShipHullCategory.Troop, ShipHullCategory.Support};
         }
     }
 
     protected override ShipHullCategory[] HQElementCategories {
-        get { return new ShipHullCategory[] { ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnaught }; }
+        get { return new ShipHullCategory[] { ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnought }; }
     }
 
     protected override void AssignHQElement() {
@@ -284,7 +284,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         ShipHullCategory hullCat = hullStat.HullCategory;
         float fov;
         switch (hullCat) {
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Carrier:
             case ShipHullCategory.Troop:
                 fov = 70F;
@@ -334,7 +334,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             case ShipHullCategory.Colonizer:
             case ShipHullCategory.Cruiser:
             case ShipHullCategory.Destroyer:
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Fighter:
             case ShipHullCategory.Frigate:
             case ShipHullCategory.Science:
@@ -349,7 +349,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     private float __GetExpense(ShipHullCategory category) {
         switch (category) {
             case ShipHullCategory.Carrier:
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Troop:
             case ShipHullCategory.Colonizer:
                 return 5F;
@@ -379,7 +379,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             case ShipHullCategory.Colonizer:
             case ShipHullCategory.Science:
                 return 200F;                     // mass * drag = 20
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Troop:
                 return 400F;                     // mass * drag = 60
             case ShipHullCategory.Carrier:
@@ -409,7 +409,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             case ShipHullCategory.Colonizer:
             case ShipHullCategory.Science:
                 return .10F;
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Troop:
                 return .15F;
             case ShipHullCategory.Carrier:
@@ -458,7 +458,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
             case ShipHullCategory.Colonizer:
                 dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
                 break;
-            case ShipHullCategory.Dreadnaught:
+            case ShipHullCategory.Dreadnought:
             case ShipHullCategory.Troop:
                 dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
                 break;

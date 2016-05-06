@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -33,7 +34,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// </summary>
     private const float MaxReqdHeadingChange = 180F;
 
-    private static Vector3 _localSpaceForward = Vector3.forward;
+    private static readonly Vector3 LocalSpaceForward = Vector3.forward;
 
     [SerializeField]
     private GameObject _muzzleEffect = null;
@@ -108,8 +109,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private bool _hasPushedOver;
     private DriftCorrector _driftCorrector;
 
-    public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography, bool toShowEffects) {
-        base.Launch(target, weapon, topography, toShowEffects);
+    public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
+        base.Launch(target, weapon, topography);
         _positionLastRangeCheck = Position;
         _rigidbody.velocity = ElementVelocityAtLaunch;
         _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
@@ -120,41 +121,35 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         enabled = true;
     }
 
+    protected override AProjectileDisplayManager MakeDisplayMgr() {
+        return new MissileDisplayManager(this, Layers.Cull_15, _operatingEffect);
+    }
+
     protected override void ValidateEffects() {
-        base.ValidateEffects();
         D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
         D.Assert(_impactEffect.playOnAwake);
         D.Assert(!_impactEffect.gameObject.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _impactEffect.name));
-        D.Assert(_operatingEffect != null, "{0} has no inFlight effect.".Inject(Name));
-        D.Assert(!_operatingEffect.playOnAwake);
         D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
         D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _muzzleEffect.name));
-    }
-
-    protected override void AssessShowMuzzleEffects() {
-        if (_muzzleEffect != null) { // muzzleEffect is detroyed once used
-            var toShow = ToShowEffects && !_hasWeaponFired;
-            _muzzleEffect.SetActive(toShow);    // effect will destroy itself when completed
+        if (_operatingEffect != null) {
+            // ParticleSystem Operating Effect can be null. If so, it will be replaced by an Icon
+            D.Assert(!_operatingEffect.playOnAwake);
         }
     }
 
-    protected override void AssessShowOperatingEffects() {
-        var toShow = ToShowEffects;
-        ShowOperatingEffects(toShow);
-    }
-
-    private void ShowOperatingEffects(bool toShow) {
-        if (toShow) {
-            _operatingEffect.Play();
-        }
-        else {
-            _operatingEffect.Stop();
-        }
+    protected override void ShowMuzzleEffect() {
+        // relocate this Effect so it doesn't move with the projectile while showing
+        UnityUtility.AttachChildToParent(_muzzleEffect, DynamicObjectsFolder.Instance.gameObject);
+        _muzzleEffect.layer = (int)Layers.TransparentFX;
+        _muzzleEffect.transform.position = Position;
+        _muzzleEffect.transform.rotation = transform.rotation;
+        _muzzleEffect.SetActive(true);    // auto destroyed on completion
+        //TODO Add audio
     }
 
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
-        if (_impactEffect != null) { // impactEffect is detroyed once used but method can be called after that
-            // relocate this impactEffect as this projectile could be destroyed before the effect is done playing
+        if (_impactEffect != null) { // impactEffect is destroyed once used but method can be called after that
+            // relocate this effect as this projectile could be destroyed before the effect is done playing
             UnityUtility.AttachChildToParent(_impactEffect.gameObject, DynamicObjectsFolder.Instance.gameObject);
             _impactEffect.gameObject.layer = (int)Layers.TransparentFX;
             _impactEffect.transform.position = position;
@@ -187,7 +182,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private void ApplyThrust() {
         // Note: Rigidbody.drag already adjusted for any Topography changes
         float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);
-        var gameSpeedAdjustedThrust = _localSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        var gameSpeedAdjustedThrust = LocalSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
     }
@@ -323,7 +318,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
-        ShowOperatingEffects(false);
         if (IsChangeHeadingJobRunning) {
             _changeHeadingJob.Kill();
         }

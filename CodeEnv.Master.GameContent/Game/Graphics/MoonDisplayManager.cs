@@ -27,10 +27,10 @@ namespace CodeEnv.Master.GameContent {
 
         private IRevolver _revolver;
 
-        public MoonDisplayManager(GameObject itemGO, Layers meshLayer) : base(itemGO, meshLayer) { }
+        public MoonDisplayManager(GameObject trackedItemGo, Layers meshLayer) : base(trackedItemGo, meshLayer) { }
 
-        protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
+        protected override MeshRenderer InitializePrimaryMesh(GameObject trackedItemGo) {
+            var primaryMeshRenderer = trackedItemGo.GetSingleComponentInChildren<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);
@@ -47,9 +47,9 @@ namespace CodeEnv.Master.GameContent {
             material.SetFloat(UnityConstants.StdShader_MapKeyword_Metallic, 0.20F);
         }
 
-        protected override void InitializeOther(GameObject itemGo) {
-            base.InitializeOther(itemGo);
-            _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
+        protected override void InitializeOther(GameObject trackedItemGo) {
+            base.InitializeOther(trackedItemGo);
+            _revolver = trackedItemGo.GetSingleInterfaceInChildren<IRevolver>();
             //_revolver.IsActivated = false;    // enabled = false in Awake
             //TODO Revolver settings
         }

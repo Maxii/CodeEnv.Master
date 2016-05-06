@@ -27,10 +27,10 @@ namespace CodeEnv.Master.GameContent {
         // IMPROVE primaryMeshRenderer's sole purpose right now is to allow receipt of visibility changes by CameraLosChangedListener 
         // Other ideas could include making an invisible bounds mesh for the plane like done for UIWidgets in CameraLosChangedListener
 
-        public SystemDisplayManager(GameObject itemGO, Layers meshLayer) : base(itemGO, meshLayer) { }
+        public SystemDisplayManager(GameObject trackedItemGo, Layers meshLayer) : base(trackedItemGo, meshLayer) { }
 
-        protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            var orbitalPlaneMeshCollider = itemGo.GetComponentInChildren<MeshCollider>();   // IMPROVE don't use MeshCollider
+        protected override MeshRenderer InitializePrimaryMesh(GameObject trackedItemGo) {
+            var orbitalPlaneMeshCollider = trackedItemGo.GetComponentInChildren<MeshCollider>();   // IMPROVE don't use MeshCollider
             var primaryMeshRenderer = orbitalPlaneMeshCollider.gameObject.GetComponent<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;

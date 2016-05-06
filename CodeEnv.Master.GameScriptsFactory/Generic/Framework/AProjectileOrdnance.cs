@@ -16,14 +16,18 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
 /// </summary>
-public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, ITopographyChangeListener {
+public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, ITopographyChangeListener, IWidgetTrackable {
+
+    private const int CheckProgressCounterThreshold = 16;
 
     /// <summary>
     /// The maximum speed of this projectile in units per hour when in Topography.OpenSpace.
@@ -48,9 +52,15 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// </summary>
     public abstract float Mass { get; }
 
+    protected override bool ToShowMuzzleEffects { get { return base.ToShowMuzzleEffects && !_hasWeaponFired; } }
+
     protected Rigidbody _rigidbody;
-    protected bool _hasWeaponFired;
     protected Vector3 _launchPosition;
+
+    private bool _hasWeaponFired;
+    private BoxCollider _collider;
+    private AProjectileDisplayManager _displayMgr;
+    private int __checkProgressCounter;
 
     /// <summary>
     /// The velocity to restore in gameSpeed-adjusted units per second after the pause is resumed.
@@ -64,20 +74,19 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _rigidbody.isKinematic = false;
         _rigidbody.useGravity = false;
         // rigidbody drag and mass now set from Launch
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        UpdateRate = FrameUpdateFrequency.Seldom;
+        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         ValidateEffects();
     }
 
-    protected virtual void ValidateEffects() { }
+    protected abstract void ValidateEffects();
 
     protected override void Subscribe() {
         base.Subscribe();
         _subscriptions.Add(_gameTime.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangingHandler));
     }
 
-    public virtual void Launch(IElementAttackable target, AWeapon weapon, Topography topography, bool toShowEffects) {
-        PrepareForLaunch(target, weapon, toShowEffects);
+    public virtual void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
+        PrepareForLaunch(target, weapon);
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
         _launchPosition = transform.position;
 
@@ -86,13 +95,28 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
         weapon.HandleFiringComplete(this);
-        //target.HandleFiredUponBy(this);   // No longer needed as ordnance with a rigidbody is detected by the ActiveCountermeasureMonitor even when instantiated inside the monitor's collider.
-        //enabled = true set by derived classes after all settings initialized
+
+        _displayMgr = InitializeDisplayMgr();
     }
 
-    protected sealed override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        CheckProgress();
+    private AProjectileDisplayManager InitializeDisplayMgr() {
+        AProjectileDisplayManager displayMgr = MakeDisplayMgr();
+        displayMgr.Initialize();
+        displayMgr.EnableDisplay(true);
+        return displayMgr;
+    }
+
+    protected abstract AProjectileDisplayManager MakeDisplayMgr();
+
+    protected sealed override void Update() {   // OPTIMIZE a call to all projectiles to check progress could be done centrally
+        base.Update();
+        if (__checkProgressCounter >= CheckProgressCounterThreshold) {
+            CheckProgress();
+            __checkProgressCounter = Constants.Zero;
+        }
+        else {
+            __checkProgressCounter++;
+        }
     }
 
     /// <summary>
@@ -103,10 +127,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         var distanceTraveled = GetDistanceTraveled();
         //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
         if (distanceTraveled > _range) {
-            if (ToShowEffects) {
-                ShowImpactEffects(transform.position); // self destruction effect
-            }
             //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            // No self destruction effect
             if (Target.IsOperational) {
                 // reporting a miss after the target is dead will just muddy the combat report
                 ReportTargetMissed();
@@ -135,7 +157,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             if (impactedTarget.IsVisualDetailDiscernibleToUser) {
                 // target is being viewed by user so show impact effect
                 //D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
-                var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.05F;    // HACK
+                var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
                 // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
                 ShowImpactEffects(impactEffectLocation);
             }
@@ -182,6 +204,14 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         }
         return false;
     }
+
+    protected override void AssessShowMuzzleEffects() {
+        if (ToShowMuzzleEffects) {
+            ShowMuzzleEffect();    // effect will destroy itself when completed
+        }
+    }
+
+    protected abstract void ShowMuzzleEffect();
 
     /// <summary>
     /// Returns the force of impact on collision.
@@ -242,6 +272,11 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         }
     }
 
+    protected override void PrepareForTermination() {
+        base.PrepareForTermination();
+        _displayMgr.EnableDisplay(false, isDead: true);
+    }
+
     #region IInterceptableOrdnance Members
 
     public Vector3 Position { get { return transform.position; } }
@@ -280,6 +315,38 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     public void HandleTopographyChanged(Topography newTopography) {
         //D.Log("{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
         _rigidbody.drag = OpenSpaceDrag * newTopography.GetRelativeDensity();
+    }
+
+    #endregion
+
+    #region IWidgetTrackable Members
+
+    public string DisplayName { get { return Name; } }
+
+    public Vector3 GetOffset(WidgetPlacement placement) {
+        switch (placement) {
+            case WidgetPlacement.Above:
+                return new Vector3(Constants.ZeroF, _collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.AboveLeft:
+                return new Vector3(-_collider.bounds.extents.x, _collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.AboveRight:
+                return new Vector3(_collider.bounds.extents.x, _collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.Below:
+                return new Vector3(Constants.ZeroF, -_collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.BelowLeft:
+                return new Vector3(-_collider.bounds.extents.x, -_collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.BelowRight:
+                return new Vector3(_collider.bounds.extents.x, -_collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.Left:
+                return new Vector3(-_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
+            case WidgetPlacement.Right:
+                return new Vector3(_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
+            case WidgetPlacement.Over:
+                return Vector3.zero;
+            case WidgetPlacement.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
+        }
     }
 
     #endregion

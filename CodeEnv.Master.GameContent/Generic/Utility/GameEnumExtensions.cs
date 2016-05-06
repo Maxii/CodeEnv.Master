@@ -282,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Cruiser:
                     value = 7;
                     break;
-                case ShipHullCategory.Dreadnaught:
+                case ShipHullCategory.Dreadnought:
                     value = TempGameValues.MaxLosWeaponsForAnyElement;   // 12
                     break;
                 case ShipHullCategory.None:
@@ -315,7 +315,7 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Cruiser:
                     value = 4;
                     break;
-                case ShipHullCategory.Dreadnaught:
+                case ShipHullCategory.Dreadnought:
                     value = TempGameValues.MaxMissileWeaponsForAnyElement;   // 6
                     break;
                 case ShipHullCategory.None:
@@ -341,7 +341,7 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Colonizer:
                     //return new Vector3(.07F, .04F, .15F);
                     return new Vector3(.15F, .08F, .30F);
-                case ShipHullCategory.Dreadnaught:
+                case ShipHullCategory.Dreadnought:
                 case ShipHullCategory.Troop:
                     //return new Vector3(.10F, .06F, .25F);
                     return new Vector3(.21F, .07F, .45F);

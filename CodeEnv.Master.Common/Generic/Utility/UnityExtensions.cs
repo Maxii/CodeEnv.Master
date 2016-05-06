@@ -309,7 +309,7 @@ namespace CodeEnv.Master.Common {
         /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
         public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
-            return UnityUtility.AreDirectionsWithinTolerance(sourceDir, dir, allowedDeviation);
+            return UnityUtility.AreDirectionsWithinTolerance(sourceDir.normalized, dir.normalized, allowedDeviation);
         }
 
         /// <summary>

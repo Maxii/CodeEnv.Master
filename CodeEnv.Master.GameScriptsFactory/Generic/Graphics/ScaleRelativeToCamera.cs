@@ -28,10 +28,6 @@ using UnityEngine.Serialization;
 /// </summary>
 public class ScaleRelativeToCamera : AMonoBase {
 
-    //[FormerlySerializedAs("updateRate")]
-    [SerializeField]
-    private FrameUpdateFrequency _updateRate = FrameUpdateFrequency.Continuous;
-
     //[FormerlySerializedAs("scaleFactor")]
     [Tooltip("The relative scale factor to use. Adjust as needed.")]
     [SerializeField]
@@ -45,20 +41,19 @@ public class ScaleRelativeToCamera : AMonoBase {
         base.Awake();
         // record initial scale of the GO and use it as a basis
         _initialScale = transform.localScale;
-        UpdateRate = _updateRate;
-        CheckForUIPanelPresenceInParents();
+        WarnIfUIPanelPresentInParents();
         enabled = false;
     }
 
-    private void CheckForUIPanelPresenceInParents() {
+    private void WarnIfUIPanelPresentInParents() {
         if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
             D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);
         }
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
+    protected override void Update() {
+        base.Update();
         Scale = _initialScale * transform.DistanceToCamera() * _relativeScaleFactor;
         transform.localScale = Scale;
     }

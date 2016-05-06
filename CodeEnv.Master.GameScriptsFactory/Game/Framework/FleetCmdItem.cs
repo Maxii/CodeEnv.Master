@@ -2169,7 +2169,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             bool isAdded = _shipsWaitingForFleetAlignment.Add(ship);
             D.Assert(isAdded, "{0} attempted to add {1} that is already present.", Name, ship.FullName);
             if (!IsWaitForFleetToAlignJobRunning) {
-                D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
                 float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
                 GameDate errorDate = GameUtility.CalcWarningDateForRotation(lowestShipTurnrate, ShipItem.ShipHelm.MaxReqdHeadingChange);
                 _waitForFleetToAlignJob = new Job(WaitWhileShipsAlignToRequestedHeading(errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
@@ -2187,6 +2186,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                         _shipsWaitingForFleetAlignment.Clear();
                     }
                 });
+
+                // Reqd as I have no pause control over the Ship State Machine. The instance I found was ExecuteAttackOrder Call()ed Attacking
+                // which initiated an AutoPilot pursuit which launched this new wait for alignment job.
+                if (_gameMgr.IsPaused) {
+                    _waitForFleetToAlignJob.IsPaused = true;
+                    D.Log(ShowDebugLog, "{0} has paused WaitForFleetToAlignJob immediately after starting it.", Name);
+                }
             }
         }
 
@@ -2500,7 +2506,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 _apNavJob.IsPaused = toPause;
             }
             if (IsWaitForFleetToAlignJobRunning) {
-                _waitForFleetToAlignJob.IsPaused = _gameMgr.IsPaused;
+                _waitForFleetToAlignJob.IsPaused = toPause;
             }
         }
 

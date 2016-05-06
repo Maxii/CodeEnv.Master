@@ -73,7 +73,6 @@ public class Revolver : AMonoBase, IRevolver {
         _gameMgr = References.GameManager;
         _rotationPeriod = GameTimeDuration.OneDay;
         _rotationRate = _relativeRotationRate * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;
-        UpdateRate = FrameUpdateFrequency.Frequent;
         Subscribe();
         enabled = false;
     }
@@ -86,9 +85,9 @@ public class Revolver : AMonoBase, IRevolver {
 
     // Note: Revolvers no longer control their own enabled state based on visibility as DisplayManagers also need to control it based on IntelCoverage
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * (int)UpdateRate;
+    protected override void Update() {
+        base.Update();
+        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime;
         UpdateRotation(deltaTimeSinceLastUpdate);
     }
 
@@ -96,6 +95,7 @@ public class Revolver : AMonoBase, IRevolver {
     /// Updates the rotation of the revolving object this script is attached to around 
     /// the <c>axisOfRotation</c>. For esthetic purposes, the visual rate of rotation 
     /// varies with gameSpeed and it may not cease while paused.
+    /// OPTIMIZE Consider calling this centrally for all revolvers.
     /// </summary>
     /// <param name="deltaTimeSinceLastUpdate">The speed adjusted elapsed time since the last update.</param>
     private void UpdateRotation(float deltaTimeSinceLastUpdate) {

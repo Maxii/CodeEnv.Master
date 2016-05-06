@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ADisplayManager : APropertyChangeTracking {
 
-        protected static Color _hiddenMeshColor = GameColor.Clear.ToUnityColor();
+        protected static readonly Color HiddenMeshColor = GameColor.Clear.ToUnityColor();
 
         private bool _isInMainCameraLOS = true;
         /// <summary>
@@ -64,34 +64,33 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected MeshRenderer _primaryMeshRenderer;
+        protected Layers _meshLayer;
         private bool __isPrimaryMeshShowing;
-        private Layers __meshLayer;
-        private GameObject _itemGO;
+        private GameObject _trackedItemGo;
 
-        public ADisplayManager(GameObject itemGO, Layers meshLayer) {
-            _itemGO = itemGO;
-            __meshLayer = meshLayer;
+        public ADisplayManager(GameObject _trackedItemGo, Layers meshLayer) {
+            this._trackedItemGo = _trackedItemGo;
+            _meshLayer = meshLayer;
         }
 
         public void Initialize() {
-            _primaryMeshRenderer = InitializePrimaryMesh(_itemGO);
+            _primaryMeshRenderer = InitializePrimaryMesh(_trackedItemGo);
             _primaryMeshRenderer.enabled = true;
 
             var primaryMeshCameraLosChgdListener = _primaryMeshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
             primaryMeshCameraLosChgdListener.inCameraLosChanged += PrimaryMeshInCameraLosChangedEventHandler;
             primaryMeshCameraLosChgdListener.enabled = true;
 
-            InitializeSecondaryMeshes(_itemGO);
-            InitializeOther(_itemGO);
+            InitializeSecondaryMeshes(_trackedItemGo);
+            InitializeOther(_trackedItemGo);
             // AssessComponentsToShow(); no need to call here as EnableDisplay(true) is called immediately after initialization
-            // Warning: if called here, derived class constructors will not have completed yet
         }
 
-        protected abstract MeshRenderer InitializePrimaryMesh(GameObject itemGO);
+        protected abstract MeshRenderer InitializePrimaryMesh(GameObject trackedItemGo);
 
-        protected virtual void InitializeSecondaryMeshes(GameObject itemGO) { }
+        protected virtual void InitializeSecondaryMeshes(GameObject trackedItemGo) { }
 
-        protected virtual void InitializeOther(GameObject itemGO) { }
+        protected virtual void InitializeOther(GameObject trackedItemGo) { }
 
         /// <summary>
         /// Controls whether this DisplayMgr is allowed to display material to the screen.
@@ -173,10 +172,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
-            if ((Layers)meshGo.layer != __meshLayer) {
+            if ((Layers)meshGo.layer != _meshLayer) {
                 D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}.",
-                    GetType().Name, meshGo.name, ((Layers)meshGo.layer).GetValueName(), __meshLayer.GetValueName());
-                UnityUtility.SetLayerRecursively(meshGo.transform, __meshLayer);
+                    GetType().Name, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName());
+                UnityUtility.SetLayerRecursively(meshGo.transform, _meshLayer);
             }
         }
 

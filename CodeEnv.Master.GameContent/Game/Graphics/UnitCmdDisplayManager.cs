@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
             if (_hiddenMeshMPB == null) {
                 _hiddenMeshMPB = new MaterialPropertyBlock();
                 _primaryMeshRenderer.GetPropertyBlock(_hiddenMeshMPB);
-                _hiddenMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
+                _hiddenMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, HiddenMeshColor);
             }
         }
 

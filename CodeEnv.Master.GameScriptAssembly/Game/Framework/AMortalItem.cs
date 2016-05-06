@@ -80,10 +80,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// Execute any preparation work that must occur prior to others hearing about this Item's death.
     /// The normal death shutdown process is handled by HandleDeath() which is called by the 
     /// Item's Dead_EnterState method up to a frame later.
+    /// <remarks>Obsoleted 5.5.16 and replaced by HandleDeath().</remarks>
     /// </summary>
+    [Obsolete]
     protected virtual void PrepareForDeathNotification() {
+        // Moved this to HandleDeath 2.x.16 without noticing a problem when obsoleted 5.5.16
         //if (IsSelected) {
-        //    SelectionManager.Instance.CurrentSelection = null;  // UNCLEAR can this wait until Dead_EnterState calls HandleDeath?
+        //    SelectionManager.Instance.CurrentSelection = null; 
         //}
     }
 
@@ -96,7 +99,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
             HandleDeathWhileIsFocus();
         }
         if (IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;  // UNCLEAR can this wait until Dead_EnterState calls HandleDeath?
+            SelectionManager.Instance.CurrentSelection = null;
         }
         if (IsHudShowing) {
             ShowHud(false);
@@ -133,9 +136,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         if (!IsOperational) {
             D.Log(ShowDebugLog, "{0} is initiating death sequence.", FullName);
             SetDeadState();
-            PrepareForDeathNotification();
+            //PrepareForDeathNotification();
             OnDeath();
-            CleanupAfterDeathNotification();
+            //CleanupAfterDeathNotification();
             // HandleDeath gets called after this, from Dead_EnterState
         }
     }
@@ -153,13 +156,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     #endregion
-
-    /// <summary>
-    /// Execute any cleanup work that must occur immediately after others hearing about this Item's death.
-    /// The normal death shutdown process is handled by HandleDeath() which is called by the 
-    /// Item's Dead_EnterState method up to a frame later.
-    /// </summary>
-    protected virtual void CleanupAfterDeathNotification() { }
 
     #region Attack Simulation
 
@@ -205,6 +201,15 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     #endregion
+
+    /// <summary>
+    /// Execute any cleanup work that must occur immediately after others hearing about this Item's death.
+    /// The normal death shutdown process is handled by HandleDeath() which is called by the 
+    /// Item's Dead_EnterState method up to a frame later.
+    /// <remarks>Obsoleted 5.5.16 and replaced by HandleDeath().</remarks>
+    /// </summary>
+    [Obsolete]
+    protected virtual void CleanupAfterDeathNotification() { }
 
     /// <summary>
     /// Destroys this GameObject.

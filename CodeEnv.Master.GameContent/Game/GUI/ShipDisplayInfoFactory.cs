@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipDisplayInfoFactory : AElementItemDisplayInfoFactory<ShipReport, ShipDisplayInfoFactory> {
 
-        private static ContentID[] _contentIDsToDisplay = new ContentID[] {                         
+        private static ContentID[] _contentIDsToDisplay = new ContentID[] {
             ContentID.Name,
             ContentID.ParentName,
             ContentID.Owner,
@@ -100,9 +100,16 @@ namespace CodeEnv.Master.GameContent {
             return isSuccess;
         }
 
-        private float? CalcTargetDistance(INavigable target, Vector3? fleetPosition) {
-            if (target != null && fleetPosition.HasValue) {
-                return Vector3.Distance(target.Position, fleetPosition.Value);
+        private float? CalcTargetDistance(INavigable target, Vector3? shipPosition) {
+            if (target != null) {
+                IMortalItem mortalTgt = target as IMortalItem;
+                if (mortalTgt != null && !mortalTgt.IsOperational) {
+                    // target has died so don't try to access its position
+                    return null;
+                }
+                if (shipPosition.HasValue) {
+                    return Vector3.Distance(target.Position, shipPosition.Value);
+                }
             }
             return null;
         }

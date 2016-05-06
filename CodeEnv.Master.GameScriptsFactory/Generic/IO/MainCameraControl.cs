@@ -123,6 +123,16 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     #region Fields
 
+    [SerializeField]    // OPTIMIZE
+    private CameraUpdateMode _focusingUpdateMode = CameraUpdateMode.LateUpdate;
+    [SerializeField]
+    private CameraUpdateMode _focusedUpdateMode = CameraUpdateMode.LateUpdate;
+    [SerializeField]
+    private CameraUpdateMode _freeformUpdateMode = CameraUpdateMode.LateUpdate;
+    [SerializeField]
+    private CameraUpdateMode _followUpdateMode = CameraUpdateMode.FixedUpdate;
+
+
     private Index3D _sectorIndex;
     /// <summary>
     /// Readonly. The location of the camera in sector space.
@@ -316,13 +326,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void InitializeMainCamera() {   // called from OnGameStateChanged()
         InitializeFields();
         SetCameraSettings();
+        InitializeCameraLight();
         InitializeCameraPreferences();
         PositionCameraForGame();
     }
 
     private void InitializeFields() {
         _universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
-        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     private void SetCameraSettings() {
@@ -367,6 +377,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             cam.cullingMask = _mainCamerasCullingMask;
             cam.layerCullDistances = cullDistances;
         });
+    }
+
+    private void InitializeCameraLight() {
+        Light directionalLight = gameObject.GetComponentInChildren<Light>(includeInactive: true);
+        directionalLight.type = LightType.Directional;
+        directionalLight.color = GameColor.White.ToUnityColor();
+        directionalLight.cullingMask = _mainCamerasCullingMask;
+        directionalLight.intensity = 1F;
     }
 
     /// <summary>
@@ -644,17 +662,23 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         LockCursor(true);
     }
 
-    //void Focusing_Update() {
-    //    Focusing_UpdateCamera();
-    //}
-
-    void Focusing_LateUpdate() {
-        Focusing_UpdateCamera();
+    void Focusing_Update() {
+        if (_focusingUpdateMode == CameraUpdateMode.Update) {
+            Focusing_UpdateCamera();
+        }
     }
 
-    //void Focusing_FixedUpdate() {
-    //    Focusing_UpdateCamera();
-    //}
+    void Focusing_LateUpdate() {
+        if (_focusingUpdateMode == CameraUpdateMode.LateUpdate) {
+            Focusing_UpdateCamera();
+        }
+    }
+
+    void Focusing_FixedUpdate() {
+        if (_focusingUpdateMode == CameraUpdateMode.FixedUpdate) {
+            Focusing_UpdateCamera();
+        }
+    }
 
     private void Focusing_UpdateCamera() {
         // transition process to allow lookAt to complete. Only entered from OnFocusSelected, when !IsResetOnFocus
@@ -668,7 +692,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // is set in EnterState and does not need to be updated to get there as the Target doesn't move
 
         // no other functionality active 
-        ProcessChanges(GetTimeSinceLastUpdate());
+        ProcessChanges(GetTimeSinceLastUpdate(_focusingUpdateMode));
     }
 
     void Focusing_ExitState() {
@@ -692,17 +716,23 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _cameraDistanceDampener = settings.focusedDistanceDampener;
     }
 
-    //void Focused_Update() {
-    //    Focused_UpdateCamera();
-    //}
-
-    void Focused_LateUpdate() {
-        Focused_UpdateCamera();
+    void Focused_Update() {
+        if (_focusedUpdateMode == CameraUpdateMode.Update) {
+            Focused_UpdateCamera();
+        }
     }
 
-    //void Focused_FixedUpdate() {
-    //    Focused_UpdateCamera();
-    //}
+    void Focused_LateUpdate() {
+        if (_focusedUpdateMode == CameraUpdateMode.LateUpdate) {
+            Focused_UpdateCamera();
+        }
+    }
+
+    void Focused_FixedUpdate() {
+        if (_focusedUpdateMode == CameraUpdateMode.FixedUpdate) {
+            Focused_UpdateCamera();
+        }
+    }
 
     private void Focused_UpdateCamera() {
         if (dragFreeTruck.IsActivated || dragFreePedestal.IsActivated) {
@@ -711,7 +741,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             return;
         }
 
-        float timeSinceLastUpdate = GetTimeSinceLastUpdate();
+        float timeSinceLastUpdate = GetTimeSinceLastUpdate(_focusedUpdateMode);
         // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
         float inputValue = 0F;
         // the clamping value used to constrain distanceChgAllowedPerUnitInput
@@ -890,23 +920,29 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         CurrentFocus = null;    // will tell the previous focus it is no longer in focus
     }
 
-    //void Freeform_Update() {
-    //    Freeform_UpdateCamera();
-    //}
-
-    void Freeform_LateUpdate() {
-        Freeform_UpdateCamera();
+    void Freeform_Update() {
+        if (_freeformUpdateMode == CameraUpdateMode.Update) {
+            Freeform_UpdateCamera();
+        }
     }
 
-    //void Freeform_FixedUpdate() {
-    //    Freeform_UpdateCamera();
-    //}
+    void Freeform_LateUpdate() {
+        if (_freeformUpdateMode == CameraUpdateMode.LateUpdate) {
+            Freeform_UpdateCamera();
+        }
+    }
+
+    void Freeform_FixedUpdate() {
+        if (_freeformUpdateMode == CameraUpdateMode.FixedUpdate) {
+            Freeform_UpdateCamera();
+        }
+    }
 
     private void Freeform_UpdateCamera() {
         // the only exit condition out of Freeform is the user clicking to follow or focus an object
         // the event that is generated causes the CameraState to change
 
-        float timeSinceLastUpdate = GetTimeSinceLastUpdate();
+        float timeSinceLastUpdate = GetTimeSinceLastUpdate(_freeformUpdateMode);
         // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
         float inputValue = 0F;
         // the clamping value used to constrain distanceChgAllowedPerUnitInput
@@ -1123,16 +1159,22 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         //_previousFollowLookAt = lookAt;
     }
 
-    //void Follow_Update() {
-    //    Follow_UpdateCamera();
-    //}
+    void Follow_Update() {
+        if (_followUpdateMode == CameraUpdateMode.Update) {
+            Follow_UpdateCamera();
+        }
+    }
 
-    //void Follow_LateUpdate() {
-    //    Follow_UpdateCamera();
-    //}
+    void Follow_LateUpdate() {
+        if (_followUpdateMode == CameraUpdateMode.LateUpdate) {
+            Follow_UpdateCamera();
+        }
+    }
 
-    void Follow_FixedUpdate() { // testing shows minimum jitter 
-        Follow_UpdateCamera();
+    void Follow_FixedUpdate() {
+        if (_followUpdateMode == CameraUpdateMode.FixedUpdate) {    // testing shows minimum jitter 
+            Follow_UpdateCamera();
+        }
     }
 
     private void Follow_UpdateCamera() {
@@ -1142,7 +1184,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             return;
         }
 
-        float timeSinceLastUpdate = GetTimeSinceLastUpdate();
+        float timeSinceLastUpdate = GetTimeSinceLastUpdate(_followUpdateMode);
         // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
         float inputValue = Constants.ZeroF;
         // the clamping value used to constrain distanceChgAllowedPerUnitInput
@@ -1454,8 +1496,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     #region Camera Updating Support
 
-    private float GetTimeSinceLastUpdate() {
-        return _gameTime.DeltaTime * (int)UpdateRate;
+    private float GetTimeSinceLastUpdate(CameraUpdateMode updateMode) {
+        return updateMode == CameraUpdateMode.FixedUpdate ? Time.fixedDeltaTime : _gameTime.DeltaTime;
     }
 
     private void LockCursor(bool toLockCursor) {
@@ -1697,7 +1739,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         direction.ValidateNormalized();
 
         Vector3 currentDirectionToDummyTgt = (_dummyTarget.position - Position).normalized;
-        if (direction.IsSameAs(currentDirectionToDummyTgt)) {
+        if (direction.IsSameDirection(currentDirectionToDummyTgt)) {
             // DummyTarget is already there
             float dummyTgtDistanceToOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin); // OPTIMIZE values too big to use SqrMagnitude
             float expectedDummyTgtDistanceToOrigin = _universeRadius - DummyTargetOffsetInsideUniverseEdge;
@@ -1722,36 +1764,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         D.Error("Camera has not found a Universe Edge point!");
         return false;
     }
-    //private bool PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
-    //    //D.Log("{0}{1}.PlaceDummyTargetAtUniverseEdgeInDirection({2}) called.", GetType().Name, InstanceCount, direction);
-    //    direction.ValidateNormalized();
-    //    Ray ray = new Ray(Position, direction);
-    //    RaycastHit targetHit;
-    //    if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _dummyTargetOnlyMask.value)) {
-    //        D.Assert(_dummyTarget == targetHit.transform, "Camera should find DummyTarget, but it is {0}.", targetHit.transform.name);
-
-    //        float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin);
-    //        //D.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
-    //        if (!distanceToUniverseOrigin.CheckRange(_universeRadius, allowedPercentageVariation: 0.1F)) {
-    //            D.Error("Camera's Dummy Target is not located on UniverseEdge! Position = " + _dummyTarget.position);
-    //        }
-    //        // the dummy Target is already there
-    //        //D.Log("DummyTarget already present at " + _dummyTarget.position + ". TargetHit at " + targetHit.transform.position);
-    //        return false;
-    //    }
-
-    //    Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2);
-    //    if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, _universeEdgeOnlyMask.value)) {
-    //        Vector3 universeEdgePoint = targetHit.point;
-    //        _dummyTarget.position = universeEdgePoint;
-    //        ChangeTarget(_dummyTarget, _dummyTarget.position);
-    //        //D.Log("New DummyTarget location = " + universeEdgePoint);
-    //        return true;
-    //    }
-
-    //    D.Error("Camera has not found a Universe Edge point! PointOutsideUniverse = " + pointOutsideUniverse);
-    //    return false;
-    //}
 
     /// <summary>
     /// Calculates a new rotation derived from the current EulerAngles.
@@ -1884,6 +1896,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         Horizontal = 0,
         Vertical = 1,
         None = 3
+    }
+
+    public enum CameraUpdateMode {
+        LateUpdate = 0, // Default
+        Update = 1,
+        FixedUpdate = 2
     }
 
     public enum ScreenEdgeAxis {

@@ -134,7 +134,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
     }
 
     protected sealed override ADisplayManager MakeDisplayManagerInstance() {
-        return new UnitCmdDisplayManager(this, Layers.Cull_400);
+        return new UnitCmdDisplayManager(this, Layers.Cull_200);
     }
 
     protected sealed override void InitializeDisplayManager() {

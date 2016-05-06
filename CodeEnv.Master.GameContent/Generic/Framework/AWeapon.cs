@@ -33,13 +33,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public event EventHandler<WeaponFiringSolutionEventArgs> readytoFire;
 
-        private bool _toShowEffects;
-        /// <summary>
-        /// Indicates whether this weapon and its fired ordnance should show their audio and visual effects.
-        /// </summary>
-        public bool ToShowEffects {
-            get { return _toShowEffects; }
-            set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", ToShowEffectsPropChangedHandler); }
+        private bool _isWeaponDiscernibleToUser;
+        public bool IsWeaponDiscernibleToUser {
+            get { return _isWeaponDiscernibleToUser; }
+            set { SetProperty<bool>(ref _isWeaponDiscernibleToUser, value, "IsWeaponDiscernibleToUser"); }
         }
 
         private IWeaponRangeMonitor _rangeMonitor;
@@ -313,8 +310,6 @@ namespace CodeEnv.Master.GameContent {
             }
             AssessReadinessToFire();
         }
-
-        protected abstract void ToShowEffectsPropChangedHandler();
 
         private void OnReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
             D.Assert(firingSolutions.Any());    // must have one or more firingSolutions to generate the event

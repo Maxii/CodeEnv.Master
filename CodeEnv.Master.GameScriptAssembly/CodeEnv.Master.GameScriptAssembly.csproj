@@ -103,6 +103,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdParty\Note.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine.cs" />
+    <Compile Include="Generic\IO\WidgetTrackableLocation.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

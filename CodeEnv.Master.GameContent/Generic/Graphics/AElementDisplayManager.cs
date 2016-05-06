@@ -16,8 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -94,10 +92,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public void SubscribeToPropertyChanged<T1, T2>(Func<FacilityDisplayManager, bool> p, object isDisplayEnabledPropChangedHandler) {
-            throw new NotImplementedException();
-        }
-
         protected override void InitializeSecondaryMeshes(GameObject elementItemGo) {   // Mounts
             base.InitializeSecondaryMeshes(elementItemGo);
             var hullGo = elementItemGo.GetSingleInterfaceInChildren<IHull>().transform.gameObject;
@@ -122,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
             _primaryMeshMPB = new MaterialPropertyBlock();  // default color is black
             _primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             _primaryMeshMPB.Clear();    // in case the renderer had properties other than the default properties
-            // renderer's existing MaterialPropertyBlock color is also black, implying that the existing property block is the default, at least wrt color
+                                        // renderer's existing MaterialPropertyBlock color is also black, implying that the existing property block is the default, at least wrt color
             _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
         }
 
@@ -138,7 +132,7 @@ namespace CodeEnv.Master.GameContent {
             //_primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             //_primaryMeshMPB.Clear();
             _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, MeshColor.ToUnityColor());
-            D.Log("{0}.PrimaryMeshMPB color after show = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
+            //D.Log("{0}.PrimaryMeshMPB color after show = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
             _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
             // Note: using a MaterialPropertyBlock containing a color changes the color the renderer shows, but does not change the color contained in the material
         }
@@ -148,15 +142,18 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0}.HidePrimaryMesh() called.", Name);
             //_primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             //_primaryMeshMPB.Clear();
-            _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _hiddenMeshColor);
-            D.Log("{0}.PrimaryMeshMPB color after hide = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
+            _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, HiddenMeshColor);
+            //D.Log("{0}.PrimaryMeshMPB color after hide = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
             _primaryMeshRenderer.SetPropertyBlock(_primaryMeshMPB);
         }
 
         protected override void AssessComponentsToShowOrOperate() {
             base.AssessComponentsToShowOrOperate();
             if (_secondaryMeshRenderers.Any()) {
-                _secondaryMeshRenderers.ForAll(r => r.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
+                _secondaryMeshRenderers.ForAll(r => {
+                    r.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
+                    //D.Log("{0} just changed {1}.renderer.enabled to {2}.", Name, r.gameObject.name, r.enabled);
+                });
             }
         }
 

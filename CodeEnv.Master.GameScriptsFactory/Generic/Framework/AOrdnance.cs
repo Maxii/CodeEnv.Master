@@ -52,12 +52,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         private set { SetProperty<bool>(ref _isOperational, value, "IsOperational"); }
     }
 
-    private bool _toShowEffects;
-    public bool ToShowEffects {
-        get { return _toShowEffects; }
-        set { SetProperty<bool>(ref _toShowEffects, value, "ToShowEffects", ToShowEffectsPropChangedHandler); }
-    }
-
     private WDVStrength _deliveryVehicleStrength;
     public WDVStrength DeliveryVehicleStrength {
         get { return _deliveryVehicleStrength; }
@@ -65,6 +59,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     public DamageStrength DamagePotential { get { return Weapon.DamagePotential; } }
+
+    protected virtual bool ToShowMuzzleEffects { get { return IsWeaponDiscernibleToUser; } }
+
+    protected bool IsWeaponDiscernibleToUser { get { return Weapon.IsWeaponDiscernibleToUser; } }
 
     private AWeapon _weapon;
     protected AWeapon Weapon {
@@ -93,9 +91,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
     }
 
-    protected void PrepareForLaunch(IElementAttackable target, AWeapon weapon, bool toShowEffects) {
+    protected void PrepareForLaunch(IElementAttackable target, AWeapon weapon) {
         Target = target;
         Weapon = weapon;
+        SubscribeToWeaponChanges();
 
         DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
 
@@ -103,25 +102,24 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         weapon.HandleFiringInitiated(target, this);
 
         _range = weapon.RangeDistance;
-        ToShowEffects = toShowEffects;
         IsOperational = true;
     }
 
-    protected abstract void AssessShowMuzzleEffects();
+    private void SubscribeToWeaponChanges() {
+        _subscriptions.Add(Weapon.SubscribeToPropertyChanged<AWeapon, bool>(weap => weap.IsWeaponDiscernibleToUser, IsWeaponDiscernibleToUserPropChangedHandler));
+    }
 
-    protected abstract void AssessShowOperatingEffects();
+    protected abstract void AssessShowMuzzleEffects();
 
     protected void ShowImpactEffects(Vector3 position) { ShowImpactEffects(position, Quaternion.identity); }
 
     protected abstract void ShowImpactEffects(Vector3 position, Quaternion rotation);
 
-    protected virtual void ToShowEffectsPropChangedHandler() {
-        //D.Log("{0}.ToShowEffects is now {1}.", Name, ToShowEffects);
-        AssessShowMuzzleEffects();
-        AssessShowOperatingEffects();
-    }
-
     #region Event and Property Change Handlers
+
+    protected virtual void IsWeaponDiscernibleToUserPropChangedHandler() {
+        AssessShowMuzzleEffects();
+    }
 
     protected virtual void IsPausedPropChangedHandler() {
         enabled = !_gameMgr.IsPaused;

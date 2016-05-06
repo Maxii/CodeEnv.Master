@@ -252,7 +252,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         // HACK initialize this utility so its static methods are ready when accessed
         var dummy3 = WaitJobUtility.Instance;
 #pragma warning restore 0168
-        UpdateRate = FrameUpdateFrequency.Continuous;
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
     }
 
@@ -526,12 +525,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
     }
 
-    #endregion
-
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
+    protected override void Update() {
+        base.Update();
         _gameTime.CheckForDateChange(); // CheckForDateChange() will ignore the call if a GameInstance isn't running or is paused
     }
+
+    #endregion
 
     #region New Game
 

@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool enabled { get; set; }
 
+        Transform transform { get; }
+
     }
 }
 

@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
 
-        private IList<IOrdnance> _activeFiredOrdnance;
+        private IList<IOrdnance> _activeFiredOrdnance;  // OPTIMIZE not currently used
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectileLauncher"/> class.
@@ -67,11 +67,10 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() { } // Projectile ordnance cannot be remotely terminated
 
-        protected override void ToShowEffectsPropChangedHandler() {
-            if (_activeFiredOrdnance.Any()) {
-                _activeFiredOrdnance.ForAll(ord => ord.ToShowEffects = ToShowEffects);
-            }
-        }
+        #region Event and Property Change Handlers
+
+        #endregion
+
 
     }
 }

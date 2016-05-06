@@ -16,8 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -50,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() {
             if (_activeOrdnance != null) {
-                if (_activeOrdnance.Target.Owner.IsEnemyOf(Owner)) {
+                if (!_activeOrdnance.Target.Owner.IsEnemyOf(Owner)) {
                     _activeOrdnance.Terminate();
                 }
             }
@@ -77,12 +75,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
-
-        protected override void ToShowEffectsPropChangedHandler() {
-            if (_activeOrdnance != null) {
-                _activeOrdnance.ToShowEffects = ToShowEffects;
-            }
-        }
 
         protected override void IsOperationalPropChangedHandler() {
             base.IsOperationalPropChangedHandler();

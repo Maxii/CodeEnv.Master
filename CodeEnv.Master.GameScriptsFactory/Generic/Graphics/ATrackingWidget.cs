@@ -125,7 +125,6 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         Widget.enabled = false;
         _panel = gameObject.GetSingleComponentInChildren<UIPanel>();
         _panel.depth = DrawDepth;
-        UpdateRate = FrameUpdateFrequency.Normal;
         enabled = false;
         // can't use Show here as derived classes reference other fields not yet set
     }
@@ -248,9 +247,9 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         AlignWidget();
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        RefreshPositionOnUpdate();
+    protected override void Update() {  // OPTIMIZE Could be done ~ 4 times less frequently, change when improve TrackingWidget
+        base.Update();
+        RefreshPosition();
         if (_toCheckShowDistance) {
             if (IsWithinShowDistance) {
                 Show();
@@ -328,7 +327,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// their position as they are parented to gameObjects in world space. 
     /// AUITrackingWidgets do need to constantly reposition to track their target as they reside under UIRoot. 
     /// </summary>
-    protected virtual void RefreshPositionOnUpdate() { }
+    protected virtual void RefreshPosition() { }
 
     private void RenameGameObjects() {
         if (Target != null) {   // Target can be null if OptionalRootName is set before Target

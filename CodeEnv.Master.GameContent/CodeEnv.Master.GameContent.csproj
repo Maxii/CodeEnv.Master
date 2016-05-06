@@ -53,6 +53,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AProjectileDisplayManager.cs" />
+    <Compile Include="Game\Graphics\BulletDisplayManager.cs" />
     <Compile Include="Generic\Framework\DriftCorrector.cs" />
     <Compile Include="Generic\Framework\AutoPilotDestinationProxy.cs" />
     <Compile Include="Generic\Interfaces\IFleetNavigable.cs" />
@@ -329,6 +331,7 @@
     <Compile Include="Generic\Interfaces\IShipNavigable.cs" />
     <Compile Include="Generic\Interfaces\IShipAttackable.cs" />
     <Compile Include="Generic\Interfaces\ITrackingSprite.cs" />
+    <Compile Include="Game\Graphics\MissileDisplayManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

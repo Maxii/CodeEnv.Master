@@ -53,11 +53,18 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     [SerializeField]
     private float _beamAnimationSpeed = -1F;
 
+    private bool ToShowOperatingEffects { get { return IsWeaponDiscernibleToUser || IsBeamEndLocationInCameraLos; } }
+
+    private bool ToShowImpactEffects { get { return IsBeamEndLocationInCameraLos && _isCurrentImpact; } }
+
     protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
+
+    private bool IsBeamEndLocationInCameraLos { get { return _beamEndListener != null && _beamEndListener.InCameraLOS; } }
 
     private bool IsAnimateOperatingEffectJobRunning { get { return _animateOperatingEffectJob != null && _animateOperatingEffectJob.IsRunning; } }
 
     private bool IsOperatingAudioPlaying { get { return _operatingAudioSource != null && _operatingAudioSource.isPlaying; } }
+
     /// <summary>
     /// The cumulative time in hours that this beam has been operating.
     /// </summary>
@@ -95,6 +102,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// Used to AssessCombatResults() when the beam is terminated.
     /// </summary>
     private bool _isIntendedTargetHit;
+
     /// <summary>
     /// Indicates whether the beam was interdicted one or more times by a Shield
     /// or some target other than the intended <c>Target</c>.
@@ -105,6 +113,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private Job _animateOperatingEffectJob;
     private Vector3 _impactLocation;
     private AudioSource _operatingAudioSource;
+    private ICameraLosChangedListener _beamEndListener;
+    private IWidgetTrackable _beamEnd;
 
     protected override void Awake() {
         base.Awake();
@@ -117,17 +127,24 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void ValidateEffects() {
-        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
-        D.Assert(!_impactEffect.playOnAwake);
         D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
         D.Assert(!_muzzleEffect.playOnAwake);
+        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
+        D.Assert(!_impactEffect.playOnAwake);
     }
 
-    public void Launch(IElementAttackable target, AWeapon weapon, bool toShowEffects) {
-        PrepareForLaunch(target, weapon, toShowEffects);
+    public void Launch(IElementAttackable target, AWeapon weapon) {
+        PrepareForLaunch(target, weapon);
         D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
         weapon.isOperationalChanged += WeaponIsOperationalChangedEventHandler;
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
+
+        _beamEnd = TrackingWidgetFactory.Instance.MakeTrackableLocation(gameObject);
+        _beamEndListener = TrackingWidgetFactory.Instance.MakeInvisibleCameraLosChangedListener(_beamEnd, Layers.Cull_15);
+        _beamEndListener.inCameraLosChanged += BeamEndInCameraLosChangedEventHandler;
+
+        AssessShowMuzzleEffects();
+        AssessShowOperatingEffects();
         enabled = true;
     }
 
@@ -158,15 +175,22 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             AssessApplyDamage();
         }
 
-        if (ToShowEffects) {
-            float beamLength = _isCurrentImpact ? Vector3.Distance(transform.position, impactInfo.point) : _range;
-            // end the beam line at either the impact point or its range
-            _operatingEffectRenderer.SetPosition(index: 1, position: new Vector3(0F, 0F, beamLength));
-            // Set beam scaling based off its length?
-            float beamSizeMultiplier = beamLength * (_beamAnimationScale / 10F);
-            _operatingEffectRenderer.material.SetTextureScale(UnityConstants.MainDiffuseTexture, new Vector2(beamSizeMultiplier, 1F));
+        if (ToShowOperatingEffects) {
+            PrepareBeamForShowing(impactInfo);
         }
         AssessShowImpactEffects();
+    }
+
+    private void PrepareBeamForShowing(RaycastHit impactInfo) {
+        D.Assert(ToShowOperatingEffects);
+        float beamLength = _isCurrentImpact ? Vector3.Distance(transform.position, impactInfo.point) : _range;
+        // end the beam line at either the impact point or its range
+        Vector3 localBeamEnd = new Vector3(0F, 0F, beamLength);
+        _operatingEffectRenderer.SetPosition(index: 1, position: localBeamEnd);
+        _beamEnd.transform.localPosition = localBeamEnd;
+        // Set beam scaling based off its length?
+        float beamSizeMultiplier = beamLength * (_beamAnimationScale / 10F);
+        _operatingEffectRenderer.material.SetTextureScale(UnityConstants.MainDiffuseTexture, new Vector2(beamSizeMultiplier, 1F));
     }
 
     private void HandleImpact(RaycastHit impactInfo, float deltaTimeInHours) {
@@ -228,8 +252,14 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
-    protected override void ToShowEffectsPropChangedHandler() {
-        base.ToShowEffectsPropChangedHandler();
+    private void BeamEndInCameraLosChangedEventHandler(object sender, EventArgs e) {
+        AssessShowOperatingEffects();
+        AssessShowImpactEffects();
+    }
+
+    protected override void IsWeaponDiscernibleToUserPropChangedHandler() {
+        base.IsWeaponDiscernibleToUserPropChangedHandler();
+        AssessShowOperatingEffects();
         AssessShowImpactEffects();
     }
 
@@ -242,7 +272,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     #endregion
 
     private void RefreshImpactLocation(RaycastHit impactInfo) {
-        _impactLocation = impactInfo.point + impactInfo.normal * 0.05F; // HACK
+        _impactLocation = impactInfo.point + impactInfo.normal * 0.01F; // HACK
     }
 
     /// <summary>
@@ -278,7 +308,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void AssessShowMuzzleEffects() {
         // beam muzzleEffects are not destroyed when used
-        var toShow = ToShowEffects;
+        bool toShow = ToShowMuzzleEffects;
         ShowMuzzleEffects(toShow);
     }
 
@@ -294,15 +324,18 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     /// <summary>
     /// Assesses whether to show the Beam's OperatingEffect. 
-    /// Called only when ToShowEffects changes.
     /// </summary>
-    protected override void AssessShowOperatingEffects() {
-        var toShow = ToShowEffects;
+    private void AssessShowOperatingEffects() {
+        var toShow = ToShowOperatingEffects;
         ShowOperatingEffects(toShow);
     }
 
     private void ShowOperatingEffects(bool toShow) {
-        // Beam
+        if (_gameMgr.IsPaused) {
+            // no operating effect status changes while paused as this can get Jobs out of sync
+            return;
+        }
+        // Beam visibility
         _operatingEffectRenderer.enabled = toShow;
 
         // Beam animation
@@ -310,8 +343,12 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _animateOperatingEffectJob.Kill();
         }
         if (toShow) {
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");    // OPTIMIZE not needed with IsPaused return above
             _animateOperatingEffectJob = new Job(AnimateBeam(), toStart: true);
+            if (_gameMgr.IsPaused) {
+                _animateOperatingEffectJob.IsPaused = true;
+                D.Log("{0} has paused AnimateOperatingEffectJob immediately after starting it.", Name);
+            }
         }
 
         // Beam audio
@@ -319,12 +356,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             if (_operatingAudioSource == null) {
                 _operatingAudioSource = SFXManager.Instance.PlaySFX(gameObject, SfxGroupID.BeamOperations, toLoop: true);
             }
-            if (!_operatingAudioSource.isPlaying) {
-                _operatingAudioSource.Play();
+            if (!IsOperatingAudioPlaying) {
+                // can be playing but paused
+                _operatingAudioSource.Play();   // Note: source.Play initiates playing while source is paused
             }
         }
         else {
-            if (_operatingAudioSource.isPlaying) {
+            if (IsOperatingAudioPlaying) {
                 _operatingAudioSource.Stop();
             }
         }
@@ -333,7 +371,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void AssessShowImpactEffects() {
         //D.Log("{0}.AssessShowImpactEffects() called. ToShowEffects: {1}, IsImpact: {2}.", Name, ToShowEffects, _isImpact);
         // beam impactEffects are not destroyed when used
-        var toShow = ToShowEffects && _isCurrentImpact;
+        var toShow = ToShowImpactEffects;
         if (toShow) {
             ShowImpactEffects(_impactLocation);
         }
@@ -346,7 +384,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
         //D.Log("{0}.ShowImpactEffects() called.", Name);
-        D.Assert(ToShowEffects && _isCurrentImpact);
+        D.Assert(ToShowImpactEffects);
         if (_impactEffect.isPlaying) {
             _impactEffect.Stop();
         }
@@ -377,6 +415,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
         AssessCombatResults();
         Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
+        // beamEndListener is a child so no need to unsubscribe
         Weapon.HandleFiringComplete(this);
     }
 
@@ -407,8 +446,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
                 _operatingAudioSource.Pause();
             }
         }
-        else {  // AudioSource.IsPlaying returns false when paused
-            if (!toPause) {
+        else {  // AudioSource.isPlaying returns false when paused
+            if (!toPause && _operatingAudioSource != null) {    // can still be null if unpause before ever played
                 _operatingAudioSource.UnPause();
             }
         }
