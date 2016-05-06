@@ -29,6 +29,14 @@ namespace CodeEnv.Master.GameContent {
     public static class GameExtensions {
 
         /// <summary>
+        /// Validates this hours value is no more precise than GameConstants.HoursEqualTolerance.
+        /// </summary>
+        /// <param name="hours">The hours.</param>
+        public static void ValidateHours(this float hours) {
+            GameUtility.ValidateHoursValue(hours);
+        }
+
+        /// <summary>
         /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
         /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
         /// </summary>

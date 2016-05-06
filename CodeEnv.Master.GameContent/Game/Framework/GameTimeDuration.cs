@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         // see C# 4.0 In a Nutshell, page 254
 
         public static bool operator <(GameTimeDuration left, GameTimeDuration right) {
-            return left.TotalInHours < right.TotalInHours - GameTime.HoursEqualTolerance;
+            return left.TotalInHours < right.TotalInHours - GameConstants.HoursPrecision;
         }
 
         public static bool operator <=(GameTimeDuration left, GameTimeDuration right) {
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static bool operator >(GameTimeDuration left, GameTimeDuration right) {
-            return left.TotalInHours > right.TotalInHours + GameTime.HoursEqualTolerance;
+            return left.TotalInHours > right.TotalInHours + GameConstants.HoursPrecision;
         }
 
         public static bool operator >=(GameTimeDuration left, GameTimeDuration right) {
@@ -134,8 +134,13 @@ namespace CodeEnv.Master.GameContent {
         public GameTimeDuration(float hours)
             : this() {
             Utility.ValidateNotNegative(hours);
-            Initialize(hours);
+            Initialize(GameUtility.RoundHours(hours));
         }
+        //public GameTimeDuration(float hours)
+        //    : this() {
+        //    Utility.ValidateNotNegative(hours);
+        //    Initialize(hours);
+        //}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the values provided.
@@ -143,12 +148,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hours">The hours. Must be less than the number of hours in a day.</param>
         /// <param name="days">The days. Number of days is unlimited.</param>
         public GameTimeDuration(float hours, int days)
-            : this() {
-            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameTime.HoursEqualTolerance);
+    : this() {
+            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameConstants.HoursPrecision);
             Utility.ValidateNotNegative(days);
-            float totalHours = (days * GameTime.HoursPerDay) + hours;
+            float totalHours = (days * GameTime.HoursPerDay) + GameUtility.RoundHours(hours);
             Initialize(totalHours);
         }
+        //public GameTimeDuration(float hours, int days)
+        //    : this() {
+        //    Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameConstants.HoursPrecision);
+        //    Utility.ValidateNotNegative(days);
+        //    float totalHours = (days * GameTime.HoursPerDay) + hours;
+        //    Initialize(totalHours);
+        //}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the values provided.
@@ -157,13 +169,21 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="days">The days. Must be less than the number of days in a year.</param>
         /// <param name="years">The years. Unlimited.</param>
         public GameTimeDuration(float hours, int days, int years)
-            : this() {
-            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameTime.HoursEqualTolerance);
+    : this() {
+            Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameConstants.HoursPrecision);
             Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
             Utility.ValidateNotNegative(years);
-            float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+            float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + GameUtility.RoundHours(hours);
             Initialize(totalHours);
         }
+        //public GameTimeDuration(float hours, int days, int years)
+        //    : this() {
+        //    Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - GameConstants.HoursPrecision);
+        //    Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
+        //    Utility.ValidateNotNegative(years);
+        //    float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+        //    Initialize(totalHours);
+        //}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration"/> class 
@@ -186,12 +206,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Initialize(float totalHours) {
+            totalHours.ValidateHours();
             Hours = totalHours % GameTime.HoursPerDay;
             int days = Mathf.FloorToInt(totalHours / GameTime.HoursPerDay);
             Days = days % GameTime.DaysPerYear;
             Years = days / GameTime.DaysPerYear;
             TotalInHours = totalHours;
         }
+        //private void Initialize(float totalHours) {
+        //    Hours = totalHours % GameTime.HoursPerDay;
+        //    int days = Mathf.FloorToInt(totalHours / GameTime.HoursPerDay);
+        //    Days = days % GameTime.DaysPerYear;
+        //    Years = days / GameTime.DaysPerYear;
+        //    TotalInHours = totalHours;
+        //}
 
         #region Object.Equals and GetHashCode Override
 
@@ -208,12 +236,19 @@ namespace CodeEnv.Master.GameContent {
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
         public override int GetHashCode() {
-            int hash = 17;
-            // Rule: If two things are equal then they MUST return the same value for GetHashCode()
-            // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
-            // I don't know how to do this when Hours uses Approx so I'll gaurantee it and live with conflicts
-            return hash;
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = 17;
+                hash = hash * 31 + TotalInHours.GetHashCode();
+                return hash;
+            }
         }
+        //public override int GetHashCode() {
+        //    int hash = 17;
+        //    // Rule: If two things are equal then they MUST return the same value for GetHashCode()
+        //    // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
+        //    // I don't know how to do this when Hours uses Approx so I'll gaurantee it and live with conflicts
+        //    return hash;
+        //}
 
         #endregion
 
@@ -231,8 +266,12 @@ namespace CodeEnv.Master.GameContent {
 
         public bool Equals(GameTimeDuration other) {
             // - Mathf.Epsilon useful for 0F comparison only. See http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
-            return Mathfx.Approx(TotalInHours, other.TotalInHours, GameTime.HoursEqualTolerance - UnityConstants.FloatEqualityPrecision);
+            return Mathfx.Approx(TotalInHours, other.TotalInHours, UnityConstants.FloatEqualityPrecision);
         }
+        //public bool Equals(GameTimeDuration other) {
+        //    // - Mathf.Epsilon useful for 0F comparison only. See http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
+        //    return Mathfx.Approx(TotalInHours, other.TotalInHours, GameConstants.HoursEqualTolerance);
+        //}
 
         #endregion
 

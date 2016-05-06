@@ -381,6 +381,7 @@
     <Compile Include="Generic\Framework\DetourGenerator.cs" />
     <Compile Include="Generic\Framework\WaitForDate.cs" />
     <Compile Include="Generic\Framework\WaitForHours.cs" />
+    <Compile Include="Yielders.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Deferred\" />

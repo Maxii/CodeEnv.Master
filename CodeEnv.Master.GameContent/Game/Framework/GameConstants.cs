@@ -23,6 +23,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameConstants {
 
+        /// <summary>
+        /// The tolerance allowed for one hour to be equal to another.
+        /// <remarks>0.1 hour tolerance is about the best I can expect at an FPS as low as 25 
+        /// (0.04 secs between updates to GameTime) and GameSettings.HoursPerSecond of 2.0
+        /// => 0.04 * 2.0 = 0.08 hours tolerance. Granularity will be better at higher FPS, 
+        /// but I can't count on it.</remarks>
+        /// </summary>
+        public const float HoursPrecision = 0.1F;
+
+        public const float HoursRoundingFactor = 1F / HoursPrecision;
+
         public static readonly Vector3 UniverseOrigin = Vector3.zero;
 
         #region UILabel Icon Markers

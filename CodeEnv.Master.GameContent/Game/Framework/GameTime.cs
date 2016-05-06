@@ -39,15 +39,6 @@ namespace CodeEnv.Master.GameContent {
 
         #region Static Constants
 
-        /// <summary>
-        /// The tolerance allowed for one hour to be equal to another.
-        /// <remarks>0.1 hour tolerance is about the best I can expect at an FPS as low as 25 
-        /// (0.04 secs between updates to GameTime) and GameSettings.HoursPerSecond of 2.0
-        /// => 0.04 * 2.0 = 0.08 hours tolerance. Granularity will be better at higher FPS, 
-        /// but I can't count on it.</remarks>
-        /// </summary>
-        public const float HoursEqualTolerance = 0.1F;
-
         public static readonly int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static readonly int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         /// <summary>
@@ -235,7 +226,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected sealed override void Initialize() {
             UnityEngine.Time.timeScale = Constants.OneF;
-            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursEqualTolerance, "See {0}.HoursEqualTolerance notes.", GetType().Name);
+            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > GameConstants.HoursPrecision, "See {0}.HoursEqualTolerance notes.", GetType().Name);
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();

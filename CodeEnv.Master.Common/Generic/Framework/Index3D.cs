@@ -67,11 +67,13 @@ namespace CodeEnv.Master.Common {
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
         public override int GetHashCode() {
-            int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + x.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + y.GetHashCode();
-            hash = hash * 31 + z.GetHashCode();
-            return hash;
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = 17;  // 17 = some prime number
+                hash = hash * 31 + x.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + y.GetHashCode();
+                hash = hash * 31 + z.GetHashCode();
+                return hash;
+            }
         }
 
         #endregion

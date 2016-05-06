@@ -28,16 +28,23 @@ namespace CodeEnv.Master.GameContent {
     public class WaitForHours : CustomYieldInstruction {
 
         private GameDate _targetDate;
+        private GameTimeDuration _duration;
         private GameTime _gameTime;
 
         public WaitForHours(float hours) : this(new GameTimeDuration(hours)) { }
 
         public WaitForHours(GameTimeDuration duration) {
+            _duration = duration;
             _gameTime = GameTime.Instance;
-            _targetDate = new GameDate(duration);
+            //_targetDate = new GameDate(duration);
+            RefreshTargetDate();
         }
 
         public override bool keepWaiting { get { return _gameTime.CurrentDate < _targetDate; } }
+
+        public void RefreshTargetDate() {
+            _targetDate = new GameDate(_duration);
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

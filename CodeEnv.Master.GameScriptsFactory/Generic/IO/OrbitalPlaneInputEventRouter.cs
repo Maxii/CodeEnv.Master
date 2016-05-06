@@ -431,7 +431,8 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private IEnumerator SpawnOnHoverOccludedObjectChecks() {
         while (true) {
             CheckForOccludedObjectAndProcessOnHoverNotifications();
-            yield return new WaitForSeconds(1F);
+            yield return Yielders.GetWaitForSeconds(1F);
+            //yield return new WaitForSeconds(1F);
         }
     }
 

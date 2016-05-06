@@ -202,10 +202,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Finds the closest point on sphere surface orthogonal to intersecting line.
         /// </summary>
-        /// <param name="intersectPtA">First intersection point between the line and the sphere's surface.</param>
-        /// <param name="intersectPtB">Second intersection point between the line and the sphere's surface.</param>
-        /// <param name="sphereCenter">The sphere center.</param>
-        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <param name="hours">The hours.</param>
         /// <returns></returns>
         //public static Vector3 FindClosestPointOnSphereOrthogonalToIntersectingLine(Vector3 intersectPtA, Vector3 intersectPtB, Vector3 sphereCenter, float sphereRadius) {
         //    var aToCenterSqrd = Vector3.SqrMagnitude(intersectPtA - sphereCenter);

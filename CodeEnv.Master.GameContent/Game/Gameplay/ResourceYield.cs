@@ -147,12 +147,14 @@ namespace CodeEnv.Master.GameContent {
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
         public override int GetHashCode() {
-            int hash = 17;  // 17 = some prime number
-            foreach (var key in ResourceValueLookup.Keys) {
-                hash = hash * 31 + key.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + ResourceValueLookup[key].GetHashCode();
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = 17;  // 17 = some prime number
+                foreach (var key in ResourceValueLookup.Keys) {
+                    hash = hash * 31 + key.GetHashCode(); // 31 = another prime number
+                    hash = hash * 31 + ResourceValueLookup[key].GetHashCode();
+                }
+                return hash;
             }
-            return hash;
         }
 
         #endregion

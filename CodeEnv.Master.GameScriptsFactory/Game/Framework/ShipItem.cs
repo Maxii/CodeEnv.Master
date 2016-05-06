@@ -2026,7 +2026,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// </summary>
         private const float DetourTurnAngleThreshold = 15F;
 
-        public const float MinHoursPerProgressCheckPeriodAllowed = GameTime.HoursEqualTolerance;
+        public const float MinHoursPerProgressCheckPeriodAllowed = GameConstants.HoursPrecision;
 
         private static readonly Speed[] _inValidApSpeeds = {
                                                             Speed.None,
@@ -2446,7 +2446,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     hasArrived = true;
                 }
 
-                yield return new WaitForHours(progressCheckPeriod);
+                yield return Yielders.GetWaitForHours(progressCheckPeriod.TotalInHours);
+                //yield return new WaitForHours(progressCheckPeriod);
             }
             //D.Log(ShowDebugLog, "{0} has arrived at {1}.", Name, destination.FullName);
         }
@@ -2828,7 +2829,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
                     _doesApObstacleCheckPeriodNeedRefresh = false;
                 }
-                yield return new WaitForHours(_apObstacleCheckPeriod);
+                yield return Yielders.GetWaitForHours(_apObstacleCheckPeriod.TotalInHours);
+                //yield return new WaitForHours(_apObstacleCheckPeriod);
             }
             RefreshCourse(courseRefreshMode, detour);
             ContinueCourseToTargetVia(detour);

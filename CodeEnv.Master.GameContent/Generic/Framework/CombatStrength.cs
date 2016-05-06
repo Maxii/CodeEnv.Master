@@ -247,16 +247,18 @@ namespace CodeEnv.Master.GameContent {
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
         public override int GetHashCode() {
-            int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + Mode.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + BeamDeliveryStrength.GetHashCode();
-            hash = hash * 31 + ProjectileDeliveryStrength.GetHashCode();
-            hash = hash * 31 + MissileDeliveryStrength.GetHashCode();
-            hash = hash * 31 + BeamDamagePotential.GetHashCode();
-            hash = hash * 31 + ProjectileDamagePotential.GetHashCode();
-            hash = hash * 31 + MissileDamagePotential.GetHashCode();
-            hash = hash * 31 + TotalDamageMitigation.GetHashCode();
-            return hash;
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = 17;  // 17 = some prime number
+                hash = hash * 31 + Mode.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + BeamDeliveryStrength.GetHashCode();
+                hash = hash * 31 + ProjectileDeliveryStrength.GetHashCode();
+                hash = hash * 31 + MissileDeliveryStrength.GetHashCode();
+                hash = hash * 31 + BeamDamagePotential.GetHashCode();
+                hash = hash * 31 + ProjectileDamagePotential.GetHashCode();
+                hash = hash * 31 + MissileDamagePotential.GetHashCode();
+                hash = hash * 31 + TotalDamageMitigation.GetHashCode();
+                return hash;
+            }
         }
 
         #endregion

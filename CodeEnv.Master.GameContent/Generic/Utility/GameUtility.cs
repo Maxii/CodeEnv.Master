@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -29,6 +29,38 @@ namespace CodeEnv.Master.GameContent {
     /// Collection of tools and utilities specific to the game.
     /// </summary>
     public static class GameUtility {
+
+        /// <summary>
+        /// Validates the provided hours value is no more precise than GameConstants.HoursEqualTolerance.
+        /// </summary>
+        /// <param name="hours">The hours.</param>
+        public static void ValidateHoursValue(float hours) {
+            float confirmedRoundedHours = RoundHours(hours);
+            //D.Log("{0:0.000} validating against {1:0.000}.", hours, confirmedRoundedHours);
+            D.Assert(Mathfx.Approx(confirmedRoundedHours, hours, UnityConstants.FloatEqualityPrecision), "Hours: {0} != ConfirmedHours: {1}.", hours, confirmedRoundedHours);
+        }
+        //public static void ValidateHoursValue(float hours) {
+        //    float confirmedRoundedHours = RoundHours(hours);
+        //    //D.Log("{0:0.000} validating against {1:0.000}.", hours, confirmedRoundedHours);
+        //    if (confirmedRoundedHours == Constants.ZeroF) {
+        //        D.Assert(hours == Constants.ZeroF);
+        //        return;
+        //    }
+        //    float remainder = hours % confirmedRoundedHours;
+        //    D.Assert(Mathfx.Approx(remainder, Constants.ZeroF, UnityConstants.FloatEqualityPrecision), "Hours: {0} % ConfirmedHours: {1} = remainder {2} != Constants.ZeroF.",
+        //        hours, confirmedRoundedHours, remainder);
+        //}
+
+        /// <summary>
+        /// Rounds the provided hours value to the precision used by hours in dates and durations.
+        /// </summary>
+        /// <param name="hours">The hours to round.</param>
+        /// <returns></returns>
+        public static float RoundHours(float hours) {
+            float result = Mathf.Round(hours * GameConstants.HoursRoundingFactor) / GameConstants.HoursRoundingFactor;
+            //D.Log("{0:0.000} hours rounded to {1:0.000}", hours, result);
+            return result;
+        }
 
         /// <summary>
         /// Calculates and returns the maximum attainable speed from the provided values.
@@ -191,7 +223,7 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
             string goName = gameObject.name;
-            D.Log("Initiating destruction of {0} with delay of {1} hours.", goName, delayInHours);
+            //D.Log("Initiating destruction of {0} with delay of {1} hours.", goName, delayInHours);
             if (delayInHours == Constants.ZeroF) {
                 // avoids launching a Job. Jobs don't provide call tracing in Console
                 GameObject.Destroy(gameObject);
