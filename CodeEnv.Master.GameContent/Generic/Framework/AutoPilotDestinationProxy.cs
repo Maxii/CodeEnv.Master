@@ -68,8 +68,8 @@ namespace CodeEnv.Master.GameContent {
         /// if the ship has already arrived.
         /// </summary>
         /// <param name="shipPosition">The ship position.</param>
-        /// <param name="direction">The direction.</param>
-        /// <param name="distance">The distance.</param>
+        /// <param name="direction">The direction to arrival.</param>
+        /// <param name="distance">The distance to arrival.</param>
         /// <returns></returns>
         public bool TryGetArrivalDistanceAndDirection(Vector3 shipPosition, out Vector3 direction, out float distance) {
             direction = Vector3.zero;

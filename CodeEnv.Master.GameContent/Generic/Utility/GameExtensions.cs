@@ -29,14 +29,6 @@ namespace CodeEnv.Master.GameContent {
     public static class GameExtensions {
 
         /// <summary>
-        /// Validates this hours value is no more precise than GameConstants.HoursEqualTolerance.
-        /// </summary>
-        /// <param name="hours">The hours.</param>
-        public static void ValidateHours(this float hours) {
-            GameUtility.ValidateHoursValue(hours);
-        }
-
-        /// <summary>
         /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
         /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
         /// </summary>
@@ -300,61 +292,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return color;
         }
-        //public static Color32 ToUnityColor(this GameColor gameColor, float alpha = 1F) {    // OPTIMIZE use Color32 
-        //    Utility.ValidateForRange(alpha, Constants.ZeroF, Constants.OneF);
-        //    Color32 color;
-        //    switch (gameColor) {
-        //        case GameColor.Black:
-        //            color = Color.black;
-        //            break;
-        //        case GameColor.Blue:
-        //            color = Color.blue;
-        //            break;
-        //        case GameColor.Cyan:
-        //            color = Color.cyan;
-        //            break;
-        //        case GameColor.Green:
-        //            color = Color.green;
-        //            break;
-        //        case GameColor.Gray:
-        //            color = Color.gray;
-        //            break;
-        //        case GameColor.Clear:
-        //            return Color.clear; // simply return as Color.clear has alpha = 0
-        //        case GameColor.Magenta:
-        //            color = Color.magenta;
-        //            break;
-        //        case GameColor.Red:
-        //            color = Color.red;
-        //            break;
-        //        case GameColor.White:
-        //            color = Color.white;
-        //            break;
-        //        case GameColor.Yellow:
-        //            color = Color.yellow;
-        //            break;
-        //        case GameColor.Brown:
-        //            color = _brown;
-        //            break;
-        //        case GameColor.Purple:
-        //            color = _purple;
-        //            break;
-        //        case GameColor.DarkGreen:
-        //            color = _darkGreen;
-        //            break;
-        //        case GameColor.Teal:
-        //            color = _teal;
-        //            break;
-        //        case GameColor.None:
-        //        default:
-        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameColor));
-        //    }
-        //    if (alpha < Constants.OneF) {
-        //        color.a = alpha;
-        //        color.a = (byte)Mathf.RoundToInt(255 * alpha);
-        //    }
-        //    return color;
-        //}
 
         /// <summary>
         /// Embeds the Ngui-recognized Hex value equivalent value for <c>color</c> around this text.

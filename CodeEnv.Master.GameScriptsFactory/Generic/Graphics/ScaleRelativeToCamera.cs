@@ -23,7 +23,7 @@ using UnityEngine.Serialization;
 /// Scales an object relative to the distance to the camera. Gives the appearance of the object size being the same
 /// while the camera moves. Useful for GUI objects attached to game objects. Often useful when combined with Billboard.
 /// 
-///Usage: Place this script on the gameobject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
+///Usage: Place this script on the gameObject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
 ///rather than the camera itself, and uses the initial scale as a basis. Use the public scaleFactor variable to adjust the object size on the screen.
 /// </summary>
 public class ScaleRelativeToCamera : AMonoBase {
@@ -36,6 +36,7 @@ public class ScaleRelativeToCamera : AMonoBase {
     public Vector3 Scale { get; private set; }
 
     private Vector3 _initialScale;
+    private int _scaleRefreshCounter;
 
     protected override void Awake() {
         base.Awake();
@@ -54,6 +55,10 @@ public class ScaleRelativeToCamera : AMonoBase {
 
     protected override void Update() {
         base.Update();
+        RefreshScale();
+    }
+
+    private void RefreshScale() {
         Scale = _initialScale * transform.DistanceToCamera() * _relativeScaleFactor;
         transform.localScale = Scale;
     }
@@ -63,5 +68,21 @@ public class ScaleRelativeToCamera : AMonoBase {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Occasional RefreshScale Update Archive
+
+    //private const int ScaleRefreshCountThreshold = 4;
+
+    //protected override void Update() {
+    //    base.Update();
+    //    if (_scaleRefreshCounter >= ScaleRefreshCountThreshold) {
+    //        RefreshScale();
+    //        _scaleRefreshCounter = Constants.Zero;
+    //        return;
+    //    }
+    //    _scaleRefreshCounter++;
+    //}
+
+    #endregion
 }
 

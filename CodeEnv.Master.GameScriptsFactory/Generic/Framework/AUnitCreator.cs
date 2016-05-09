@@ -656,7 +656,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     }
 
     /// <summary>
-    /// Assigns the hq element to the command. The assignment itself regenerates the formation,
+    /// Assigns the HQ element to the command. The assignment itself regenerates the formation,
     /// resulting in each element assuming the proper position.
     /// Note: This method must not be called before AddElements().
     /// </summary>

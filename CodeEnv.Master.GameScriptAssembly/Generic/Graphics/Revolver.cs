@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class Revolver : AMonoBase, IRevolver {
 
+    private const int UpdateRotationCounterThreshold = 4;
+
     [SerializeField]
     private bool _rotateDuringPause = true;
     public bool RotateDuringPause { get { return _rotateDuringPause; } }
@@ -66,6 +68,7 @@ public class Revolver : AMonoBase, IRevolver {
     private GameTime _gameTime;
     private IList<IDisposable> _subscriptions;
     private IGameManager _gameMgr;
+    private int _updateRotationCounter;
 
     protected override void Awake() {
         base.Awake();
@@ -87,8 +90,13 @@ public class Revolver : AMonoBase, IRevolver {
 
     protected override void Update() {
         base.Update();
-        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime;
-        UpdateRotation(deltaTimeSinceLastUpdate);
+        if (_updateRotationCounter >= UpdateRotationCounterThreshold) {
+            float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * _updateRotationCounter;
+            UpdateRotation(deltaTimeSinceLastUpdate);
+            _updateRotationCounter = Constants.Zero;
+            return;
+        }
+        _updateRotationCounter++;
     }
 
     /// <summary>

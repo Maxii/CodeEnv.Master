@@ -182,7 +182,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
                             // in case no Stars qualify
                             moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>();
                             if (!moveTgts.Any()) {
-                                D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
+                                D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been canceled.", UnitName);
                                 return;
                             }
                             D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
@@ -198,7 +198,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         else {
             destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
         }
-        D.Log("{0} destination is {1}.", UnitName, destination.FullName);
+        //D.Log("{0} destination is {1}.", UnitName, destination.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
     }
 
@@ -231,7 +231,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         else {
             attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
         }
-        D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
+        //D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
     }
 

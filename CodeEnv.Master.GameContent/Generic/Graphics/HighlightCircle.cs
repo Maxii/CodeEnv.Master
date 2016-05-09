@@ -156,7 +156,7 @@ namespace CodeEnv.Master.GameContent {
                     // might be not showing requiring a start and end point each for first and third circle
                 }
                 _line.Draw();
-                yield return new WaitForEndOfFrame();
+                yield return Yielders.WaitForEndOfFrame;
             }
         }
 

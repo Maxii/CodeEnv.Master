@@ -31,7 +31,6 @@ namespace CodeEnv.Master.Common {
 
         public static IJobRunner jobRunner;
 
-
         /// <summary>
         /// Action delegate executed when the job is completed. Contains a
         /// boolean indicating whether the job was killed or completed normally.
@@ -149,8 +148,9 @@ namespace CodeEnv.Master.Common {
         // ******************************************
 
         public void AddChildJob(Job childJob) {
-            if (_childJobStack == null)
+            if (_childJobStack == null) {
                 _childJobStack = new Stack<Job>();
+            }
             _childJobStack.Push(childJob);
         }
 

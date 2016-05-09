@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -22,32 +22,40 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// YieldInstruction that waits a specific number of hours. 
     /// Accommodates changes in GameSpeed during use.
-    /// <remarks>Expensive as GameTime.CurrentDate
-    /// changes much more often than GameTime.CurrentCalenderDate.</remarks>
+    /// <remarks>Use Yielders.GetWaitForHours() instead of making a new instance
+    /// as each new instance creates garbage.</remarks>
     /// </summary>
     public class WaitForHours : CustomYieldInstruction {
 
+        private const string ToStringFormat = "{0} TargetDate: {1}";
+
         private GameDate _targetDate;
-        private GameTimeDuration _duration;
         private GameTime _gameTime;
 
         public WaitForHours(float hours) : this(new GameTimeDuration(hours)) { }
 
         public WaitForHours(GameTimeDuration duration) {
-            _duration = duration;
             _gameTime = GameTime.Instance;
-            //_targetDate = new GameDate(duration);
-            RefreshTargetDate();
+            _targetDate = new GameDate(duration);
         }
 
-        public override bool keepWaiting { get { return _gameTime.CurrentDate < _targetDate; } }
+        public override bool keepWaiting {
+            get {
+                //return LogKeepWaiting();
+                return _gameTime.CurrentDate < _targetDate;
+            }
+        }
 
-        public void RefreshTargetDate() {
-            _targetDate = new GameDate(_duration);
+        private bool LogKeepWaiting() {
+            var currentDate = _gameTime.CurrentDate;
+            bool continueWaiting = currentDate < _targetDate;
+            D.Log(continueWaiting, "WaitForHours.keepWaiting called. CurrentDate {0} < TargetDate {1}, Frame {2}.",
+                currentDate, _targetDate, Time.frameCount);
+            return continueWaiting;
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return ToStringFormat.Inject(typeof(WaitForHours), _targetDate);
         }
 
     }

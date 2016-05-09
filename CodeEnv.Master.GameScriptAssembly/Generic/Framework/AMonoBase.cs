@@ -225,7 +225,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     public IEnumerator InvokeRandomRepeating(Action task, float minTime, float maxTime) {
         while (true) {
             float time = UnityEngine.Random.Range(minTime, maxTime);
-            yield return new WaitForSeconds(time);
+            yield return Yielders.GetWaitForSeconds(time);
             Invoke(task.Method.Name, 0);
         }
     }

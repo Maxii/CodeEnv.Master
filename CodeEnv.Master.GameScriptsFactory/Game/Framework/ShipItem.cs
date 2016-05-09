@@ -57,7 +57,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     private ShipOrder _currentOrder;
     /// <summary>
     /// The last order this ship was instructed to execute.
-    /// Note: Orders from UnitCommands and the Player can become standing orders until superceded by another order
+    /// Note: Orders from UnitCommands and the Player can become standing orders until superseded by another order
     /// from either the UnitCmd or the Player. They may not be lost when the Captain overrides one of these orders. 
     /// Instead, the Captain can direct that his superior's order be recorded in the 'StandingOrder' property of his override order so 
     /// the element may return to it after the Captain's order has been executed. 
@@ -78,7 +78,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     }
 
     /// <summary>
-    /// Readonly. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
+    /// Read only. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
     /// other than Normal (x1), this property always returns the proper reportable value.
     /// </summary>
     public float ActualSpeedValue { get { return Helm.ActualSpeedValue; } }
@@ -879,7 +879,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             }
         }
         if (!exploreTgt.IsExploringAllowedBy(Owner)) {
-            D.Warn("{0} Explore order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
+            D.Warn("{0} Explore order of {1} is no longer valid. Diplomatic state with Owner {2} must have changed and is now {3}.",
                 FullName, exploreTgt.FullName, exploreTgt.Owner.LeaderName, Owner.GetRelations(exploreTgt.Owner).GetValueName());
             isValid = false;
         }
@@ -959,7 +959,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     private bool __TryValidateRightToOrbit(IShipCloseOrbitable orbitTgt) {
         if (!orbitTgt.IsHighOrbitAllowedBy(Owner)) {
-            D.Warn("{0}'s intention to orbit {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
+            D.Warn("{0}'s intention to orbit {1} is no longer valid. Diplomatic state with Owner {2} must have changed and is now {3}.",
                 FullName, orbitTgt.FullName, orbitTgt.Owner.LeaderName, Owner.GetRelations(orbitTgt.Owner).GetValueName());
             // unsuccessful going into orbit of orbitTgt so shipOrbitSlot is nulled
             return false;
@@ -1056,7 +1056,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         IUnitAttackableTarget unitAttackTgt = CurrentOrder.Target as IUnitAttackableTarget;
         string attackTgtFromOrderName = unitAttackTgt.FullName;
         if (!unitAttackTgt.IsOperational) {
-            D.LogBold(ShowDebugLog, "{0} was killed before {1} could begin attack. Cancelling Attack Order.", attackTgtFromOrderName, FullName);
+            D.LogBold(ShowDebugLog, "{0} was killed before {1} could begin attack. Canceling Attack Order.", attackTgtFromOrderName, FullName);
             CurrentState = ShipState.Idling;
         }
 
@@ -1075,14 +1075,18 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     yield return null;
                 }
 
-                // if Attacking Return()ed and tgt still alive, it should be because of an order change and never reach here
+                // if Attacking Return()ed and target still alive, it should be because of an order change and never reach here
                 D.Assert(!primaryAttackTgt.IsOperational);
+                _fsmApTgt = null;
                 allowLogging = true;
             }
-            else if (allowLogging) {
-                D.LogBold(ShowDebugLog, "{0} is staying put as it found no target it chooses to attack associated with UnitTarget {1}.",
-                    FullName, unitAttackTgt.FullName);  // either CombatStance = Retreat, no operational weapons or no targets in sensor range
-                allowLogging = false;
+            else {
+                // declined to pick first or subsequent primary target
+                if (allowLogging) {
+                    D.LogBold(ShowDebugLog, "{0} is staying put as it found no target it chooses to attack associated with UnitTarget {1}.",
+                        FullName, unitAttackTgt.FullName);  // either CombatStance = Retreat, no operational weapons or no targets in sensor range
+                    allowLogging = false;
+                }
             }
             yield return null;
         }
@@ -1094,7 +1098,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     void ExecuteAttackOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
-        D.Assert(_fsmApTgt == null);    // if this is called from this state, the ship declined to pick a primary target
+        // if this is called from this state, the ship has either 1) declined to pick a first or subsequent primary target in which
+        // case _fsmApTgt will be null, or 2) _fsmApTgt has been destroyed but has not yet had time to be nulled upon Return()ing from Attacking
+        if (_fsmApTgt != null) {
+            D.Assert(!(_fsmApTgt as IShipAttackable).IsOperational);
+        }
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
@@ -1263,7 +1271,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
-            yield return new WaitForHours(15.4F);
+            yield return new WaitForHours(15.4F);   // HACK
         }
 
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
@@ -1792,20 +1800,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             __coursePlot = null;
         }
     }
-    //private void EnableDebugShowCoursePlot(bool toEnable) {
-    //    if (toEnable) {
-    //        if (__coursePlot == null) {
-    //            string name = __coursePlotNameFormat.Inject(FullName);
-    //            __coursePlot = new CoursePlotLine(name, Helm.AutoPilotCourse);
-    //        }
-    //        AssessDebugShowCoursePlot();
-    //    }
-    //    else {
-    //        D.Assert(__coursePlot != null);
-    //        __coursePlot.Dispose();
-    //        __coursePlot = null;
-    //    }
-    //}
 
     private void AssessDebugShowCoursePlot() {
         if (__coursePlot != null) {
@@ -1821,12 +1815,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             AssessDebugShowCoursePlot();
         }
     }
-    //private void UpdateDebugCoursePlot() {
-    //    if (__coursePlot != null) {
-    //        __coursePlot.UpdateCourse(Helm.AutoPilotCourse);
-    //        AssessDebugShowCoursePlot();
-    //    }
-    //}
 
     private void ShowDebugShipCoursePlotsChangedEventHandler(object sender, EventArgs e) {
         EnableDebugShowCoursePlot(DebugValues.Instance.ShowShipCoursePlots);
@@ -2021,12 +2009,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         /// <summary>
         /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
-        /// must be used. Logic: If the req'd turn to reach the detour is sharp (above this value), then
+        /// must be used. Logic: If the reqd turn to reach the detour is sharp (above this value), then
         /// we are either very close or the obstacle is very large so it is time to redirect around the obstacle.
         /// </summary>
         private const float DetourTurnAngleThreshold = 15F;
 
-        public const float MinHoursPerProgressCheckPeriodAllowed = GameConstants.HoursPrecision;
+        public const float MinHoursPerProgressCheckPeriodAllowed = GameTime.HoursPrecision;
 
         private static readonly Speed[] _inValidApSpeeds = {
                                                             Speed.None,
@@ -2073,7 +2061,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         internal bool IsHeadingJobRunning { get { return _headingJob != null && _headingJob.IsRunning; } }
 
         /// <summary>
-        /// Readonly. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
+        /// Read only. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
         /// other than Normal (x1), this property always returns the proper reportable value.
         /// </summary>
         internal float ActualSpeedValue { get { return _engineRoom.ActualSpeedValue; } }
@@ -2399,7 +2387,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <param name="destination">The destination's proxy.</param>
         /// <returns></returns>
         private IEnumerator EngageDirectCourseTo(AutoPilotDestinationProxy destination) {
-            bool hasArrived = false;
             bool isDestinationADetour = destination != ApTargetProxy;
             bool isDestFastMover = destination.IsFastMover;
             bool isIncreaseAboveApSpeedAllowed = isDestinationADetour || isDestFastMover;
@@ -2408,8 +2395,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
             float distanceToArrival;
             Vector3 directionToArrival;
-            if (!destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
-                hasArrived = true;
+#pragma warning disable 0219
+            bool arrived = false;
+#pragma warning restore 0219
+            if (arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
+                // arrived
+                yield break;
             }
             else {
                 //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", Name, destination.FullName, distanceToArrival);
@@ -2418,36 +2409,39 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     D.Log(ShowDebugLog, "{0} is correcting its speed to {1} to get a minimum of 5 progress checks.", Name, correctedSpeed.GetValueName());
                     ChangeSpeed_Internal(correctedSpeed, _isApCurrentSpeedFleetwide);
                 }
-                D.Log(ShowDebugLog, "{0} initial progress check period set to {1}.", Name, progressCheckPeriod);
+                //D.Log(ShowDebugLog, "{0} initial progress check period set to {1}.", Name, progressCheckPeriod);
             }
 
-            while (!hasArrived) {
+            float halfArrivalWindowDepth = destination.ArrivalWindowDepth / 2F;
+            while (!(arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival))) {
+                //D.Log(ShowDebugLog, "{0} beginning progress check on Date: {1}.", Name, _gameTime.CurrentDate);
                 if (CheckForCourseCorrection(directionToArrival)) {
-                    //D.Log(ShowDebugLog, "{0} is making a midcourse correction of {1:0.00} degrees.", Name, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
+                    D.Log(ShowDebugLog, "{0} is making a mid course correction of {1:0.00} degrees.", Name, Vector3.Angle(directionToArrival, _ship.Data.IntendedHeading));
                     ChangeHeading_Internal(directionToArrival);
+                    _ship.UpdateDebugCoursePlot();  // 5.7.16 added to keep plots current with moving targets
                 }
 
                 GameTimeDuration correctedPeriod;
-                if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, isIncreaseAboveApSpeedAllowed, destination.ArrivalWindowDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
+                if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, isIncreaseAboveApSpeedAllowed, halfArrivalWindowDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
                     if (correctedPeriod != default(GameTimeDuration)) {
                         D.Assert(correctedSpeed == default(Speed));
-                        D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} enroute to {3}, Distance to arrival = {4:0.0}.",
+                        D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
                             Name, progressCheckPeriod, correctedPeriod, destination.FullName, distanceToArrival);
                         progressCheckPeriod = correctedPeriod;
                     }
                     else {
                         D.Assert(correctedSpeed != default(Speed));
-                        D.Log(ShowDebugLog, "{0} is correcting speed from {1} to {2} enroute to {3}, Distance to arrival = {4:0.0}.",
+                        D.Log(ShowDebugLog, "{0} is correcting speed from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
                             Name, CurrentSpeed.GetValueName(), correctedSpeed.GetValueName(), destination.FullName, distanceToArrival);
                         ChangeSpeed_Internal(correctedSpeed, _isApCurrentSpeedFleetwide);
                     }
                 }
-                if (!destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
-                    hasArrived = true;
-                }
+                //D.Log(ShowDebugLog, "{0} completed progress check on Date: {1}, NextProgressCheckPeriod: {2}.", Name, _gameTime.CurrentDate, progressCheckPeriod);
+                //D.Log(ShowDebugLog, "{0} not yet arrived. DistanceToArrival = {1:0.0}.", Name, distanceToArrival);
 
-                yield return Yielders.GetWaitForHours(progressCheckPeriod.TotalInHours);
-                //yield return new WaitForHours(progressCheckPeriod);
+                var waitForHours = new WaitForHours(progressCheckPeriod);
+                //D.Log(ShowDebugLog, "{0} is about to wait until {1} before checking progress again.", Name, waitForHours);
+                yield return waitForHours;
             }
             //D.Log(ShowDebugLog, "{0} has arrived at {1}.", Name, destination.FullName);
         }
@@ -2501,22 +2495,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         }
 
         /// <summary>
-        /// Checks to confirm that the ship's intended heading is the same as the provided destination direction.
+        /// Returns <c>true</c> if the ship's intended heading is not the same as directionToDest
+        /// indicating a need for a course correction to <c>directionToDest</c>.
         /// </summary>
-        /// <param name="directionToDest">The direction to dest.</param>
-        /// <returns>
-        ///   <c>true</c> if a course correction to <c>correctedHeading</c> is needed.
-        /// </returns>
+        /// <param name="directionToDest">The direction to destination.</param>
+        /// <returns></returns>
         private bool CheckForCourseCorrection(Vector3 directionToDest) {
-            if (IsHeadingJobRunning) {
-                // don't bother checking if in process of turning
-                return false;
-            }
-            //D.Log(ShowDebugLog, "{0} is checking its course.", Name);
-            if (!directionToDest.IsSameDirection(_ship.Data.IntendedHeading, 1F)) {
-                return true;
-            }
-            return false;
+            //D.Log(ShowDebugLog, "{0} is attempting a course check.", Name);
+            return !directionToDest.IsSameDirection(_ship.Data.IntendedHeading, 1F);
         }
 
         /// <summary>
@@ -2526,13 +2512,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// </summary>
         /// <param name="distanceToArrival">The distance to arrival.</param>
         /// <param name="isIncreaseAboveApSpeedAllowed">if set to <c>true</c> [is increase above automatic pilot speed allowed].</param>
-        /// <param name="arrivalWindow">The arrival window.</param>
+        /// <param name="halfArrivalCaptureDepth">The half arrival capture depth.</param>
         /// <param name="currentPeriod">The current period.</param>
         /// <param name="correctedPeriod">The corrected period.</param>
         /// <param name="correctedSpeed">The corrected speed.</param>
         /// <returns></returns>
-        private bool TryCheckForPeriodOrSpeedCorrection(float distanceToArrival, bool isIncreaseAboveApSpeedAllowed, float arrivalCaptureDepth,
+        private bool TryCheckForPeriodOrSpeedCorrection(float distanceToArrival, bool isIncreaseAboveApSpeedAllowed, float halfArrivalCaptureDepth,
             GameTimeDuration currentPeriod, out GameTimeDuration correctedPeriod, out Speed correctedSpeed) {
+            //D.Log(ShowDebugLog, "{0} called TryCheckForPeriodOrSpeedCorrection().", Name);
             correctedSpeed = default(Speed);
             correctedPeriod = default(GameTimeDuration);
             if (_doesApProgressCheckPeriodNeedRefresh) {
@@ -2547,50 +2534,50 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             float checksRemainingThreshold = MaxNumberOfProgressChecksBeforeSpeedAndCheckPeriodReductionsBegin;
 
             if (checksRemainingBeforeArrival < checksRemainingThreshold) {
-                // limit how far down progress check reductions can go so speed reductions make up the rest
-                float minDistanceAllowingProgressCheckReductions = arrivalCaptureDepth * 2F;
-                if (maxDistanceCoveredDuringNextProgressCheck > minDistanceAllowingProgressCheckReductions) {
-                    // reduce progress check period before a speed reduction is considered
+                // limit how far down progress check period reductions can go 
+                float minDesiredHoursPerCheckPeriod = MinHoursPerProgressCheckPeriodAllowed * 2F;
+                bool isMinDesiredCheckPeriod = currentPeriod.TotalInHours.IsLessThanOrEqualTo(minDesiredHoursPerCheckPeriod, .01F);
+                bool isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
+
+                if (!isMinDesiredCheckPeriod && isDistanceCoveredPerCheckTooHigh) {
+                    // reduce progress check period to the desired minimum before considering speed reductions
                     float correctedPeriodHours = currentPeriod.TotalInHours / 2F;
-                    if (correctedPeriodHours < MinHoursPerProgressCheckPeriodAllowed) {
-                        correctedPeriodHours = MinHoursPerProgressCheckPeriodAllowed;
+                    if (correctedPeriodHours < minDesiredHoursPerCheckPeriod) {
+                        correctedPeriodHours = minDesiredHoursPerCheckPeriod;
+                        //D.Log(ShowDebugLog, "{0} has set progress check period hours to desired min {1:0.00}.", Name, minDesiredHoursPerCheckPeriod);
                     }
                     correctedPeriod = new GameTimeDuration(correctedPeriodHours);
-                    D.Log(ShowDebugLog, "{0} is reducing progress check period to {1} to find arrival window capture depth {2:0.00}.", Name, correctedPeriod, arrivalCaptureDepth);
+                    //D.Log(ShowDebugLog, "{0} is reducing progress check period to {1} to find halfArrivalCaptureDepth {2:0.00}.", Name, correctedPeriod, halfArrivalCaptureDepth);
                     return true;
                 }
-                else {
-                    //D.Log(ShowDebugLog, "{0} has stopped reducing progress check periods. Speed reductions may now begin.", Name);
-                    // front half tries to keep momentum from carrying ship beyond arrival window
-                    float frontHalfArrivalWindowDepth = arrivalCaptureDepth / 2F;
-                    if (maxDistanceCoveredDuringNextProgressCheck >= frontHalfArrivalWindowDepth) {
-                        // at this speed I could miss the arrival window
-                        D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss front half depth {2:0.00} of arrival window.",
-                            Name, checksRemainingBeforeArrival, frontHalfArrivalWindowDepth);
-                        if (CurrentSpeed.TryDecreaseSpeed(out correctedSpeed)) {
-                            D.Log(ShowDebugLog, "{0} is reducing speed to {1}.", Name, correctedSpeed.GetValueName());
-                            return true;
-                        }
-                        else {
-                            float correctedPeriodHours = currentPeriod.TotalInHours / 2F;
-                            if (correctedPeriodHours < MinHoursPerProgressCheckPeriodAllowed) {
-                                correctedPeriodHours = MinHoursPerProgressCheckPeriodAllowed;
-                                maxDistanceCoveredDuringNextProgressCheck = correctedPeriodHours * _engineRoom.IntendedCurrentSpeedValue;
-                                // if this Assert fires, it means period and speed can't go low enough to capture the arrival window
-                                D.Assert(maxDistanceCoveredDuringNextProgressCheck <= frontHalfArrivalWindowDepth, "{0} > {1}", maxDistanceCoveredDuringNextProgressCheck, frontHalfArrivalWindowDepth);
-                            }
-                            correctedPeriod = new GameTimeDuration(correctedPeriodHours);
-                            D.Log(ShowDebugLog, "{0} cannot go slower so could miss front half of arrival window. DistanceCoveredBetweenChecks {1:0.00} > ArrivalWindowFrontHalfDepth {2:0.00}. Reducing period to {3}.",
-                                Name, maxDistanceCoveredDuringNextProgressCheck, frontHalfArrivalWindowDepth, correctedPeriod);
-                        }
+
+                //D.Log(ShowDebugLog, "{0} distanceCovered during next progress check = {1:0.00}, halfArrivalCaptureDepth = {2:0.00}.", Name, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
+                if (isDistanceCoveredPerCheckTooHigh) {
+                    // at this speed I could miss the arrival window
+                    D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss front half depth {2:0.00} of arrival window.",
+                        Name, checksRemainingBeforeArrival, halfArrivalCaptureDepth);
+                    if (CurrentSpeed.TryDecreaseSpeed(out correctedSpeed)) {
+                        //D.Log(ShowDebugLog, "{0} is reducing speed to {1}.", Name, correctedSpeed.GetValueName());
+                        return true;
                     }
+
+                    // Can't reduce speed further yet still covering too much ground per check so reduce check period to minimum
+                    correctedPeriod = new GameTimeDuration(MinHoursPerProgressCheckPeriodAllowed);
+                    maxDistanceCoveredDuringNextProgressCheck = correctedPeriod.TotalInHours * _engineRoom.IntendedCurrentSpeedValue;
+                    isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
+                    D.Warn(isDistanceCoveredPerCheckTooHigh, "{0} cannot cover less distance per check so could miss arrival window. DistanceCoveredBetweenChecks {1:0.00} > HalfArrivalCaptureDepth {2:0.00}.",
+                        Name, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
+                    return true;
                 }
             }
-            else if (checksRemainingBeforeArrival > MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin) {
-                if (isIncreaseAboveApSpeedAllowed || CurrentSpeed < ApSpeed) {
-                    if (CurrentSpeed.TryIncreaseSpeed(out correctedSpeed)) {
-                        D.Log(ShowDebugLog, "{0} is increasing speed to {1}.", Name, correctedSpeed.GetValueName());
-                        return true;
+            else {
+                //D.Log(ShowDebugLog, "{0} ChecksRemainingBeforeArrival {1:0.0} > Threshold {2:0.0}.", Name, checksRemainingBeforeArrival, checksRemainingThreshold);
+                if (checksRemainingBeforeArrival > MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin) {
+                    if (isIncreaseAboveApSpeedAllowed || CurrentSpeed < ApSpeed) {
+                        if (CurrentSpeed.TryIncreaseSpeed(out correctedSpeed)) {
+                            D.Log(ShowDebugLog, "{0} is increasing speed to {1}.", Name, correctedSpeed.GetValueName());
+                            return true;
+                        }
                     }
                 }
             }
@@ -2601,15 +2588,16 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// Refreshes the progress check period.
         /// <remarks>Current algorithm is a HACK.</remarks>
         /// </summary>
-        /// <param name="currentProgressCheckPeriod">The current progress check period.</param>
+        /// <param name="currentPeriod">The current progress check period.</param>
         /// <returns></returns>
-        private GameTimeDuration __RefreshProgressCheckPeriod(GameTimeDuration currentProgressCheckPeriod) {
-            float currentProgressCheckPeriodHours = currentProgressCheckPeriod.TotalInHours;
+        private GameTimeDuration __RefreshProgressCheckPeriod(GameTimeDuration currentPeriod) {
+            float currentProgressCheckPeriodHours = currentPeriod.TotalInHours;
             float intendedSpeedValueChangeRatio = _engineRoom.IntendedCurrentSpeedValue / _engineRoom.__PreviousIntendedCurrentSpeedValue;
             // increase in speed reduces progress check period
             float refreshedProgressCheckPeriodHours = currentProgressCheckPeriodHours / intendedSpeedValueChangeRatio;
             if (refreshedProgressCheckPeriodHours < MinHoursPerProgressCheckPeriodAllowed) {
-                D.Warn("{0}.__RefreshProgressCheckPeriod() generated period hours {1:0.00} < MinAllowed {2:0.00}. Correcting.",
+                // 5.9.16 eliminated warning as this can occur when currentPeriod is at or close to minimum. This is a HACK after all
+                D.Log(ShowDebugLog, "{0}.__RefreshProgressCheckPeriod() generated period hours {1:0.0000} < MinAllowed {2:0.00}. Correcting.",
                     Name, refreshedProgressCheckPeriodHours, MinHoursPerProgressCheckPeriodAllowed);
                 refreshedProgressCheckPeriodHours = MinHoursPerProgressCheckPeriodAllowed;
             }
@@ -2625,7 +2613,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <returns></returns>
         private Vector3 CalcDetourOffset(StationaryLocation detour) {
             if (_isApFleetwideMove) {
-                // make separate detour offsets as there may be alot of ships encountering this detour
+                // make separate detour offsets as there may be a lot of ships encountering this detour
                 Quaternion shipCurrentRotation = _ship.transform.rotation;
                 Vector3 shipToDetourDirection = (detour.Position - _ship.Position).normalized;
                 Quaternion shipRotationChgReqdToFaceDetour = Quaternion.FromToRotation(_ship.CurrentHeading, shipToDetourDirection);
@@ -2649,10 +2637,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         /// <param name="headingConfirmed">Delegate that fires when the ship gets to the new heading.</param>
         internal void ChangeHeading(Vector3 newHeading, Action headingConfirmed = null) {
             DisengagePilot(); // kills ChangeHeading job if pilot running
-            if (IsHeadingJobRunning) {
-                D.Warn("{0} received sequential ChangeHeading calls from Captain.", Name);
-                _headingJob.Kill();
-            }
+            D.Warn(IsHeadingJobRunning, "{0} received sequential ChangeHeading calls from Captain.", Name);
             ChangeHeading_Internal(newHeading, headingConfirmed);
         }
 
@@ -2672,7 +2657,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             // in which case the assert would fail the next frame. By allowing the coroutine to respond, that response occurs one frame later,
             // allowing the assert to successfully pass before the execution of onHeadingConfirmed can initiate a new autopilot order.
 
-            D.Assert(!IsHeadingJobRunning, "{0}.ChangeHeading Job should not be running.", Name);
+            if (IsHeadingJobRunning) {
+                // 5.8.16 allowing heading changes to kill existing heading jobs so course corrections don't get skipped if job running
+                D.Log(ShowDebugLog, "{0} is killing existing heading job and starting another.", Name);
+                _headingJob.Kill();
+            }
             _ship.Data.IntendedHeading = newHeading;
             _engineRoom.HandleTurnBeginning();
 
@@ -2687,9 +2676,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     }
                 }
                 else {
-                    // 3.26.16 Killed scenerios better understood: 1) External ChangeHeading call while in AutoPilot, 
-                    // 2) sequential external ChangeHeading calls, 3) AutoPilot detouring around an obstacle, and 
-                    // 4) AutoPilot resuming course to Target after detour
+                    // 5.8.16 Killed scenarios better understood: 1) External ChangeHeading call while in AutoPilot, 
+                    // 2) sequential external ChangeHeading calls, 3) AutoPilot detouring around an obstacle,  
+                    // 4) AutoPilot resuming course to Target after detour, and 5) AutoPilot course correction
 
                     // Thoughts: All Killed scenarios will result in an immediate call to this ChangeHeading_Internal method. Responding now 
                     // (a frame later) with either onHeadingConfirmed or changing _ship.IsHeadingConfirmed is unnecessary and potentially 
@@ -2829,21 +2818,26 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
                     _doesApObstacleCheckPeriodNeedRefresh = false;
                 }
-                yield return Yielders.GetWaitForHours(_apObstacleCheckPeriod.TotalInHours);
-                //yield return new WaitForHours(_apObstacleCheckPeriod);
+                yield return new WaitForHours(_apObstacleCheckPeriod);
             }
             RefreshCourse(courseRefreshMode, detour);
             ContinueCourseToTargetVia(detour);
         }
 
         private GameTimeDuration __GenerateObstacleCheckPeriod() {
-            float relativeObstacleDensity;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
+            float relativeObstacleFreq;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
+            float defaultHours;
+            ValueRange<float> hoursRange;
             switch (_ship.Topography) {
                 case Topography.OpenSpace:
-                    relativeObstacleDensity = 0.01F;
+                    relativeObstacleFreq = 40F;
+                    defaultHours = 20F;
+                    hoursRange = new ValueRange<float>(5F, 100F);
                     break;
                 case Topography.System:
-                    relativeObstacleDensity = 1F;
+                    relativeObstacleFreq = 4F;
+                    defaultHours = 3F;
+                    hoursRange = new ValueRange<float>(1F, 10F);
                     break;
                 case Topography.DeepNebula:
                 case Topography.Nebula:
@@ -2851,15 +2845,46 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_ship.Topography));
             }
-            var obstacleCheckFrequency = relativeObstacleDensity * _engineRoom.IntendedCurrentSpeedValue;
-            if (obstacleCheckFrequency * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > FpsReadout.FramesPerSecond) {
+            float speedValue = _engineRoom.IntendedCurrentSpeedValue;
+            float hoursBetweenChecks = speedValue > Constants.ZeroF ? relativeObstacleFreq / speedValue : defaultHours;
+            hoursBetweenChecks = hoursRange.Clamp(hoursBetweenChecks);
+
+            float checksPerHour = 1F / hoursBetweenChecks;
+            if (checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > FpsReadout.FramesPerSecond) {
                 // check frequency is higher than the game engine can run
                 D.Warn("{0} obstacleChecksPerSec {1:0.#} > FPS {2:0.#}.",
-                    Name, obstacleCheckFrequency * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, FpsReadout.FramesPerSecond);
+                    Name, checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, FpsReadout.FramesPerSecond);
             }
-            float hoursPerCheck = 1F / obstacleCheckFrequency;
-            return new GameTimeDuration(hoursPerCheck);
+            return new GameTimeDuration(hoursBetweenChecks);
         }
+        //private GameTimeDuration __GenerateObstacleCheckPeriod() {
+        //    float relativeObstacleDensity;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
+        //    switch (_ship.Topography) {
+        //        case Topography.OpenSpace:
+        //            relativeObstacleDensity = 0.01F;
+        //            break;
+        //        case Topography.System:
+        //            relativeObstacleDensity = 1F;
+        //            break;
+        //        case Topography.DeepNebula:
+        //        case Topography.Nebula:
+        //        case Topography.None:
+        //        default:
+        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_ship.Topography));
+        //    }
+        //    var obstacleCheckFrequency = relativeObstacleDensity * _engineRoom.IntendedCurrentSpeedValue;   // 0.4 - 
+        //    if(obstacleCheckFrequency == Constants.ZeroF) {
+        //        // Stopped
+        //        obstacleCheckFrequency = 0.4F;  // HACK
+        //    }
+        //    if (obstacleCheckFrequency * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > FpsReadout.FramesPerSecond) {
+        //        // check frequency is higher than the game engine can run
+        //        D.Warn("{0} obstacleChecksPerSec {1:0.#} > FPS {2:0.#}.",
+        //            Name, obstacleCheckFrequency * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, FpsReadout.FramesPerSecond);
+        //    }
+        //    float hoursBetweenChecks = 1F / obstacleCheckFrequency;      // 
+        //    return new GameTimeDuration(hoursBetweenChecks);
+        //}
 
         private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out AutoPilotDestinationProxy detour) {
             detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _ship.Command.Data.UnitMaxFormationRadius);
@@ -2903,7 +2928,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         }
 
         /// <summary>
-        /// Checks for an obstacle enroute to the provided <c>destination</c>. Returns true if one
+        /// Checks for an obstacle en-route to the provided <c>destination</c>. Returns true if one
         /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
         /// </summary>
         /// <param name="destination">The current destination. May be the AutoPilotTarget or an obstacle detour.</param>
@@ -3529,8 +3554,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             /// <param name="intendedNewSpeedValue">The new speed value in units per hour.</param>
             /// <returns></returns>
             internal void ChangeSpeed(Speed newSpeed, float intendedNewSpeedValue) {
-                D.Log(ShowDebugLog, "{0}'s actual speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
-                Name, ActualSpeedValue, newSpeed.GetValueName(), intendedNewSpeedValue);
+                //D.Log(ShowDebugLog, "{0}'s actual speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
+                //Name, ActualSpeedValue, newSpeed.GetValueName(), intendedNewSpeedValue);
 
                 __PreviousIntendedCurrentSpeedValue = IntendedCurrentSpeedValue;
                 CurrentSpeed = newSpeed;
@@ -3589,7 +3614,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
             private void HandleCurrentDragChanged() {
                 // Warning: Don't use rigidbody.drag anywhere else as it gets set here after all other
-                // results of changing ShipData.CurrentDrag have already propogated through. 
+                // results of changing ShipData.CurrentDrag have already propagated through. 
                 // Use ShipData.CurrentDrag as it will always be the correct value.
                 // CurrentDrag is initially set at CommenceOperations
                 _shipRigidbody.drag = _shipData.CurrentDrag;
@@ -3650,7 +3675,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                         D.Assert(propulsionPower > Constants.ZeroF, "{0} forward propulsion power set to zero.", Name);
                         isFullPropulsionPowerNeeded = false;
                     }
-                    yield return new WaitForFixedUpdate();
+                    yield return Yielders.WaitForFixedUpdate;
                 }
             }
 
@@ -3704,7 +3729,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
             private IEnumerator OperateReversePropulsion() {
                 while (ActualForwardSpeedValue > IntendedCurrentSpeedValue) {
                     ApplyReverseThrust();
-                    yield return new WaitForFixedUpdate();
+                    yield return Yielders.WaitForFixedUpdate;
                 }
                 // the final thrust in reverse took us below our desired forward speed, so set it there
                 float intendedForwardSpeed = IntendedCurrentSpeedValue * _gameTime.GameSpeedAdjustedHoursPerSecond;
@@ -3809,7 +3834,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                     if (currentDate > errorDate) {
                         D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while avoiding collision.", Name, currentDate, errorDate);
                     }
-                    yield return new WaitForFixedUpdate();
+                    yield return Yielders.WaitForFixedUpdate;
                 }
             }
 
@@ -4138,7 +4163,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
         //    /// <summary>
         //    /// Sets the engine power output values needed to achieve the requested speed. This speed has already
-        //    /// been tested for acceptability, ie. it has been clamped.
+        //    /// been tested for acceptability, i.e. it has been clamped.
         //    /// </summary>
         //    /// <param name="acceptableRequestedSpeed">The acceptable requested speed in units/hr.</param>
         //    private void SetPowerOutputFor(float acceptableRequestedSpeed) {

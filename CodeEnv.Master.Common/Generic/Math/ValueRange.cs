@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ValueRange.cs
-// Immutable helper struct that holds a range of values in the form of a min and max value and 
+// Immutable helper class that holds a range of values in the form of a min and max value and 
 // provides a simple method to determine whether a value is within that range, inclusive.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,11 +20,14 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Immutable helper struct that holds a range of values in the form of a min and max value and 
+    /// Immutable helper class that holds a range of values in the form of a min and max value and 
     /// provides a simple method to determine whether a value is within that range, inclusive. 
+    /// <remarks>5.7.16 Converted from struct to class per the original design. 
+    /// See http://stackoverflow.com/questions/5343006/is-there-a-c-sharp-type-for-representing-an-integer-range 
+    /// </remarks>
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public struct ValueRange<T> where T : IComparable {
+    public class ValueRange<T> where T : IComparable<T> {
 
         private static string _toStringFormat = "[{0}-{1}]";
 
@@ -32,8 +35,7 @@ namespace CodeEnv.Master.Common {
 
         public T Maximum { get; private set; }
 
-        public ValueRange(T min, T max)
-            : this() {
+        public ValueRange(T min, T max) {
             Utility.Validate(IsValid(min, max));
             Minimum = min;
             Maximum = max;
@@ -59,7 +61,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Determines if this Range is inside the bounds of another range
+        /// Determines if this Range is inside the bounds of another range.
         /// </summary>
         /// <param name="range">The parent range to test on</param>
         /// <returns>True if range is inclusive, else false</returns>
@@ -68,7 +70,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Determines if another range is inside the bounds of this range
+        /// Determines if another range is inside the bounds of this range.
         /// </summary>
         /// <param name="range">The child range to test</param>
         /// <returns>True if range is inside, else false</returns>
@@ -77,10 +79,26 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Presents the Range in readable format
+        /// Returns the value clamped by Minimum and Maximum.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        public T Clamp(T value) {
+            if (ContainsValue(value)) {
+                return value;
+            }
+            if (Minimum.CompareTo(value) > 0) {
+                return Minimum;
+            }
+            return Maximum;
+        }
+
+        /// <summary>
+        /// Presents the Range in readable format.
         /// </summary>
         /// <returns>String representation of the Range</returns>
         public override string ToString() { return _toStringFormat.Inject(Minimum, Maximum); }
+
 
     }
 }

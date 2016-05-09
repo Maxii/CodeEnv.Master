@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeapon : ARangedEquipment, IDisposable {
 
+        private static readonly GameTimeDuration FiringSolutionCheckPeriod = new GameTimeDuration(TempGameValues.HoursBetweenFiringSolutionChecks);
+
         /// <summary>
         /// Occurs when this weapon is ready to fire using one of the included firing solutions.
         /// </summary>
@@ -160,9 +162,9 @@ namespace CodeEnv.Master.GameContent {
         * This weapon does not need to track Owner changes. When the owner of the item with this weapon changes, the weapon's 
         * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. In addition,
         * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance via CheckActiveOrdnanceTargeting().
-        * When the owner of an item detected by this weapon changes, the Monitor recategorizes the detectedItem into the right list - 
+        * When the owner of an item detected by this weapon changes, the Monitor re-categorizes the detectedItem into the right list - 
         * enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to CheckActiveOrdnanceTargeting(), 
-        * calls HandleEnemyTargetInRangeChanged(), niether or both.
+        * calls HandleEnemyTargetInRangeChanged(), neither or both.
         *******************************************************************************************************************************/
 
         /***********************************************************************************************************************************************
@@ -411,7 +413,7 @@ namespace CodeEnv.Master.GameContent {
                     IsFiringSequenceUnderway = true;
                     OnReadyToFire(firingSolutions);
                 }
-                yield return new WaitForHours(TempGameValues.HoursBetweenFiringSolutionChecks);
+                yield return new WaitForHours(FiringSolutionCheckPeriod);
             }
         }
 

@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
+    private const int UpdateOrbitCounterThreshold = 4;
+
     private const string NameFormat = "{0}.{1}";
 
     public string Name { get { return NameFormat.Inject(OrbitData.OrbitedItem.name, GetType().Name); } }
@@ -94,6 +96,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     private IList<IDisposable> _subscriptions;
     private IGameManager _gameMgr;
+    private int _updateOrbitCounter;
 
     protected override void Awake() {
         base.Awake();
@@ -119,8 +122,13 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     protected override void Update() {
         base.Update();
-        float deltaTimeSinceLastUpdate = _gameTime.DeltaTime;
-        UpdateOrbit(deltaTimeSinceLastUpdate);
+        if (_updateOrbitCounter >= UpdateOrbitCounterThreshold) {
+            float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * _updateOrbitCounter;
+            UpdateOrbit(deltaTimeSinceLastUpdate);
+            _updateOrbitCounter = Constants.Zero;
+            return;
+        }
+        _updateOrbitCounter++;
     }
 
     /// <summary>

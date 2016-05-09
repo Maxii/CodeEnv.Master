@@ -359,7 +359,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
             var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
-            yield return new WaitForHours(10.2F);
+            yield return new WaitForHours(10.2F);   // HACK
         }
 
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);

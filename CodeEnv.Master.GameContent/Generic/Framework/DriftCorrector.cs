@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class DriftCorrector : IDisposable {
 
-        private const float CorrectionFactor = 10F;
+        private const float CorrectionFactor = 50F;
 
         private const string NameFormat = "{0}.{1}";
 
@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
                     _rigidbody.velocity = _transform.TransformDirection(localVelocityWithoutDrift);
                 }
                 else {
-                    D.Log("{0}: DriftCorrection killed.", Name);
+                    //D.Log("{0}: DriftCorrection killed.", Name);
                 }
             });
         }
@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
                 ApplyCorrection(currentDriftVelocityPerSec);
                 cumDriftDistanceDuringCorrection += currentDriftVelocityPerSec * Time.fixedDeltaTime;
                 fixedUpdateCount++;
-                yield return new WaitForFixedUpdate();
+                yield return Yielders.WaitForFixedUpdate;
             }
             if (cumDriftDistanceDuringCorrection.sqrMagnitude > 0.02F) { // HACK > 0.14 magnitude
                 D.LogBold("{0}: Cumulative Drift during Correction = {1}.", Name, cumDriftDistanceDuringCorrection.ToPreciseString());

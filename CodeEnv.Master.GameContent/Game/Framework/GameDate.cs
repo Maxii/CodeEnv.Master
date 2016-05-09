@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable, data container structure that holds the game date.
-    /// <remarks>WARNING: Not suitable for a dictionary key.</remarks>
+    /// <remarks>5.7.16: Now suitable for a dictionary key.</remarks>
     /// </summary>
     public struct GameDate : IEquatable<GameDate> {
 
@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public const string FullDateFormat = "{0}.{1:D3}.{2:00.0}";  //= "{0}.{1:D3}.{2:D2}";
 
         public static readonly GameDate GameStartDate = new GameDate(Constants.ZeroF, Constants.Zero, GameTime.GameStartYear);    // 2700.000.00.0
-        public static readonly GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - GameConstants.HoursPrecision, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19.9
+        public static readonly GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - GameTime.HoursPrecision, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19.9
 
         #region Comparison Operators Override
 
@@ -40,9 +40,6 @@ namespace CodeEnv.Master.GameContent {
         public static bool operator <(GameDate left, GameDate right) {
             return left.TotalHoursSinceGameStart < right.TotalHoursSinceGameStart;
         }
-        //public static bool operator <(GameDate left, GameDate right) {
-        //    return left.TotalHoursSinceGameStart < right.TotalHoursSinceGameStart - GameConstants.HoursPrecision;
-        //}
 
         public static bool operator <=(GameDate left, GameDate right) {
             if (left < right) {
@@ -54,9 +51,6 @@ namespace CodeEnv.Master.GameContent {
         public static bool operator >(GameDate left, GameDate right) {
             return left.TotalHoursSinceGameStart > right.TotalHoursSinceGameStart;
         }
-        //public static bool operator >(GameDate left, GameDate right) {
-        //    return left.TotalHoursSinceGameStart > right.TotalHoursSinceGameStart + GameConstants.HoursPrecision;
-        //}
 
         public static bool operator >=(GameDate left, GameDate right) {
             if (left > right) {
@@ -106,15 +100,8 @@ namespace CodeEnv.Master.GameContent {
             GameDate currentDate = GameTime.Instance.CurrentDate;
             float totalHoursSinceGameStart = currentDate.TotalHoursSinceGameStart;
             totalHoursSinceGameStart += timeFromCurrentDate.TotalInHours;
-            Initialize(GameUtility.RoundHours(totalHoursSinceGameStart));
+            Initialize(totalHoursSinceGameStart);
         }
-        //public GameDate(GameTimeDuration timeFromCurrentDate)
-        //    : this() {
-        //    GameDate currentDate = GameTime.Instance.CurrentDate;
-        //    float totalHoursSinceGameStart = currentDate.TotalHoursSinceGameStart;
-        //    totalHoursSinceGameStart += timeFromCurrentDate.TotalInHours;
-        //    Initialize(totalHoursSinceGameStart);
-        //}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameDate"/> struct.
@@ -131,61 +118,37 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="year">The year.</param>
         public GameDate(float hourOfDay, int dayOfYear, int year)
             : this() {
-            Utility.ValidateForRange(hourOfDay, Constants.ZeroF, GameTime.HoursPerDay - GameConstants.HoursPrecision);
+            Utility.ValidateForRange(hourOfDay, Constants.ZeroF, GameTime.HoursPerDay - GameTime.HoursPrecision);
             Utility.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);
             Utility.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
 
             float totalHoursSinceGameStart = (year - GameTime.GameStartYear) * GameTime.DaysPerYear * GameTime.HoursPerDay;
             totalHoursSinceGameStart += dayOfYear * GameTime.HoursPerDay;
             totalHoursSinceGameStart += hourOfDay;
-            Initialize(GameUtility.RoundHours(totalHoursSinceGameStart));
+            Initialize(GameTime.ConvertHoursValue(totalHoursSinceGameStart));
         }
-        //public GameDate(float hourOfDay, int dayOfYear, int year)
-        //    : this() {
-        //    Utility.ValidateForRange(hourOfDay, Constants.ZeroF, GameTime.HoursPerDay - GameConstants.HoursPrecision);
-        //    Utility.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);
-        //    Utility.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
-
-        //    float totalHoursSinceGameStart = (year - GameTime.GameStartYear) * GameTime.DaysPerYear * GameTime.HoursPerDay;
-        //    totalHoursSinceGameStart += dayOfYear * GameTime.HoursPerDay;
-        //    totalHoursSinceGameStart += hourOfDay;
-        //    Initialize(totalHoursSinceGameStart);
-        //}
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GameDate"/> struct synched to the provided elapsed time in seconds.
+        /// Initializes a new instance of the <see cref="GameDate"/> struct synced to the provided elapsed time in seconds.
         /// To be used only by GameTime.
         /// </summary>
         /// <param name="gameClockInSecs">The game clock in seconds.</param>
         internal GameDate(float gameClockInSecs)
             : this() {
-            float totalHoursSinceGameStart = GameUtility.RoundHours(gameClockInSecs * GameTime.HoursPerSecond);
+            float totalHoursSinceGameStart = GameTime.ConvertHoursValue(gameClockInSecs * GameTime.HoursPerSecond);
             Initialize(totalHoursSinceGameStart);
         }
-        //internal GameDate(float gameClockInSecs)
-        //    : this() {
-        //    float totalHoursSinceGameStart = gameClockInSecs * GameTime.HoursPerSecond;
-        //    Initialize(totalHoursSinceGameStart);
-        //}
 
         private void Initialize(float totalHoursSinceGameStart) {
-            totalHoursSinceGameStart.ValidateHours();
+            GameTime.ValidateHoursValue(totalHoursSinceGameStart);
             TotalHoursSinceGameStart = totalHoursSinceGameStart;
             int elapsedDays = Mathf.FloorToInt(totalHoursSinceGameStart / GameTime.HoursPerDay);
             int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
             Year = GameTime.GameStartYear + Mathf.FloorToInt(totalHoursSinceGameStart / hoursPerYear);
             DayOfYear = elapsedDays % GameTime.DaysPerYear;
             HourOfDay = totalHoursSinceGameStart % GameTime.HoursPerDay;
-            HourOfDay.ValidateHours();
+            GameTime.ValidateHoursValue(HourOfDay);
         }
-        //private void Initialize(float totalHoursSinceGameStart) {
-        //    TotalHoursSinceGameStart = totalHoursSinceGameStart;
-        //    int elapsedDays = Mathf.FloorToInt(totalHoursSinceGameStart / GameTime.HoursPerDay);
-        //    int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
-        //    Year = GameTime.GameStartYear + Mathf.FloorToInt(totalHoursSinceGameStart / hoursPerYear);
-        //    DayOfYear = elapsedDays % GameTime.DaysPerYear;
-        //    HourOfDay = totalHoursSinceGameStart % GameTime.HoursPerDay;
-        //}
 
         /// <summary>
         /// Returns <c>true</c> if this GameDate is equal to other GameDate for use
@@ -222,13 +185,6 @@ namespace CodeEnv.Master.GameContent {
                 return hash;
             }
         }
-        //public override int GetHashCode() {
-        //    int hash = 17;
-        //    // Rule: If two things are equal then they MUST return the same value for GetHashCode()
-        //    // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
-        //    // I don't know how to do this when Hours uses Approx so I'll gaurantee it and live with conflicts
-        //    return hash;
-        //}
 
         #endregion
 
@@ -239,13 +195,8 @@ namespace CodeEnv.Master.GameContent {
         #region IEquatable<GameDate> Members
 
         public bool Equals(GameDate other) {
-            // - Mathf.Epsilon useful for 0F comparison only. See http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
-            return Mathfx.Approx(TotalHoursSinceGameStart, other.TotalHoursSinceGameStart, UnityConstants.FloatEqualityPrecision);
+            return TotalHoursSinceGameStart == other.TotalHoursSinceGameStart;  // Can't use Approx if comply with "If equal, HashCode must return same value"
         }
-        //public bool Equals(GameDate other) {
-        //    // - Mathf.Epsilon useful for 0F comparison only. See http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
-        //    return Mathfx.Approx(TotalHoursSinceGameStart, other.TotalHoursSinceGameStart, GameConstants.HoursPrecision);
-        //}
 
         #endregion
 

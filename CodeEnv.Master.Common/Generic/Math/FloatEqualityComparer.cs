@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FloatEqualityComparer.cs
-// My own less expensive, more reliable float equality comparer.
+// My own float equality comparer used to avoid boxing in Dictionaries.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
 
     /// <summary>
-    /// My own less expensive, more reliable float equality comparer.
+    /// My own float equality comparer used to avoid boxing in Dictionaries.
     /// </summary>
     public class FloatEqualityComparer : IEqualityComparer<float> {
 
@@ -29,21 +29,14 @@ namespace CodeEnv.Master.Common {
 
         #region IEqualityComparer<float> Members
 
-        public bool Equals(float value, float other) {
-            return value == other;
-            //bool result = Mathfx.Approx(value, other, _precision);
-            //D.Log(value < 5, "{0} == {1} results in {2}.", value, other, result);
-            //return result;
+        public int GetHashCode(float value) {
+            // Rule: If two things are equal then they MUST return the same value for GetHashCode()
+            // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
+            return value.GetHashCode();
         }
 
-        public int GetHashCode(float value) {
-            return value.GetHashCode();
-            //unchecked { // 5.6.16 GotOverflow exception http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
-            //    int hash = 17;  // 17 = some prime number
-            //    hash = hash * 31 + value.GetHashCode(); // 31 = another prime number
-            //    hash = hash * 31 + _precision.GetHashCode();
-            //    return hash;
-            //}
+        public bool Equals(float value, float other) {
+            return value == other;
         }
 
         #endregion

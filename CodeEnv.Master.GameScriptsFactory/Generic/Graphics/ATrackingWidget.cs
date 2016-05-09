@@ -322,7 +322,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     protected abstract void SetPosition();
 
     /// <summary>
-    /// Refreshes this <see cref="ATrackingWidget"/>'s position, called from OccasionalUpdate(). 
+    /// Refreshes this <see cref="ATrackingWidget"/>'s position, called from Update(). 
     /// This base class version does nothing. AWorldTrackingWidgets do not need to constantly update 
     /// their position as they are parented to gameObjects in world space. 
     /// AUITrackingWidgets do need to constantly reposition to track their target as they reside under UIRoot. 

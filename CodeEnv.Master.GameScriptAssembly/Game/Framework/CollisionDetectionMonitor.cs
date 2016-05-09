@@ -147,7 +147,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     }
 
     private void HandleObstaclesEncounteredWhilePaused() {
-        D.Log(ShowDebugLog, "{0} handling obstacles encountered while paused, if any.", Name);
+        //D.Log(ShowDebugLog, "{0} handling obstacles encountered while paused, if any.", Name);
         __ValidateObstaclesEncounteredWhilePaused();
         if (!_enteringObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
             _enteringObstaclesEncounteredWhilePaused.ForAll(obs => ParentItem.HandlePendingCollisionWith(obs));

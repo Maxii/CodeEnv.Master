@@ -27,20 +27,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ItemHudManager : IDisposable {
 
+        private static readonly GameTimeDuration HudRefreshPeriod = new GameTimeDuration(GeneralSettings.Instance.HudRefreshPeriod);
+
         public bool IsHudShowing { get { return IsHudRefreshJobRunning; } }
 
         private bool IsHudRefreshJobRunning { get { return _hudRefreshJob != null && _hudRefreshJob.IsRunning; } }
 
-        /// <summary>
-        /// The number of hours between refreshes of the HUD.
-        /// </summary>
-        private float _hudRefreshPeriod;
         private APublisher _publisher;
         private Job _hudRefreshJob;
 
         public ItemHudManager(APublisher publisher) {
             _publisher = publisher;
-            _hudRefreshPeriod = GeneralSettings.Instance.HudRefreshPeriod;
         }
 
         // Note: Not pausing _hudRefreshJob when paused as I want to be able to look at item status while paused
@@ -73,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
             var itemHud = References.HoveredItemHudWindow;
             while (true) {
                 itemHud.Show(_publisher.ItemHudText);
-                yield return new WaitForHours(_hudRefreshPeriod);
+                yield return new WaitForHours(HudRefreshPeriod);
             }
         }
 

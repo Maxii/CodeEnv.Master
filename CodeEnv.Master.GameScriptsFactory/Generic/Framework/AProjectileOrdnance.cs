@@ -60,7 +60,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     private bool _hasWeaponFired;
     private BoxCollider _collider;
     private AProjectileDisplayManager _displayMgr;
-    private int __checkProgressCounter;
+    private int _checkProgressCounter;
 
     /// <summary>
     /// The velocity to restore in gameSpeed-adjusted units per second after the pause is resumed.
@@ -110,13 +110,12 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected sealed override void Update() {   // OPTIMIZE a call to all projectiles to check progress could be done centrally
         base.Update();
-        if (__checkProgressCounter >= CheckProgressCounterThreshold) {
+        if (_checkProgressCounter >= CheckProgressCounterThreshold) {
             CheckProgress();
-            __checkProgressCounter = Constants.Zero;
+            _checkProgressCounter = Constants.Zero;
+            return;
         }
-        else {
-            __checkProgressCounter++;
-        }
+        _checkProgressCounter++;
     }
 
     /// <summary>

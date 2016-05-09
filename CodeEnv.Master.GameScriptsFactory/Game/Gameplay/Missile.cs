@@ -227,12 +227,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     private IEnumerator UpdateCourse() {
-        do {
+        while (true) {
             CheckCourse();
-            yield return Yielders.GetWaitForHours(_courseUpdatePeriod.TotalInHours);
-            //yield return new WaitForHours(_courseUpdatePeriod);
+            yield return new WaitForHours(_courseUpdatePeriod);
         }
-        while (true);
     }
 
     private void CheckCourse() {

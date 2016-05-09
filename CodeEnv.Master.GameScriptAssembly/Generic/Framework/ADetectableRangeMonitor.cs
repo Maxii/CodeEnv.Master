@@ -51,7 +51,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
+        //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
             return;
@@ -65,7 +65,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 return;
             }
             if (_gameMgr.IsPaused) {
-                D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", Name, detectedObject.FullName);
+                D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1} while paused.", Name, detectedObject.FullName);
                 RecordObjectEnteringWhilePaused(detectedObject);
                 return;
             }
@@ -75,7 +75,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
+        //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", Name, other.name);
             return;
@@ -85,7 +85,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         if (lostDetectionObject != null) {
             D.Log(ShowDebugLog, "{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
             if (_gameMgr.IsPaused) {
-                D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", Name, lostDetectionObject.FullName);
+                D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1} while paused.", Name, lostDetectionObject.FullName);
                 RecordObjectExitingWhilePaused(lostDetectionObject);
                 return;
             }

@@ -39,6 +39,22 @@ namespace CodeEnv.Master.GameContent {
 
         #region Static Constants
 
+        /// <summary>
+        /// The maximum precision used by Hours in the game.
+        /// <remarks>0.1 hour tolerance is about the best I can expect at an FPS as low as 25 
+        /// (0.04 secs between updates to GameTime) and GameSettings.HoursPerSecond of 2.0
+        /// => 0.04 * 2.0 = 0.08 hours tolerance. Granularity will be better at higher FPS, 
+        /// but I can't count on it.</remarks>
+        /// </summary>
+        public const float HoursPrecision = 0.1F;
+
+        /// <summary>
+        /// The multiplier and divider used to convert hours as a float to GameTime Hours 
+        /// with the proper precision. The inverse of HoursPrecision.
+        /// </summary>
+        public const float HoursConversionFactor = 1F / HoursPrecision;
+
+
         public static readonly int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static readonly int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         /// <summary>
@@ -47,6 +63,31 @@ namespace CodeEnv.Master.GameContent {
         public static readonly float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
         public static readonly int GameStartYear = GeneralSettings.Instance.GameStartYear;
         public static readonly int GameEndYear = GeneralSettings.Instance.GameEndYear;
+
+        #endregion
+
+        #region Static Methods
+
+        /// <summary>
+        /// Validates the provided hours value is no more precise than GameConstants.HoursPrecision.
+        /// </summary>
+        /// <param name="hours">The hours.</param>
+        public static void ValidateHoursValue(float hours) {
+            float convertedHours = ConvertHoursValue(hours);
+            //D.Log("{0:0.000} validating against {1:0.000}.", hours, convertedHours);
+            D.Assert(Mathfx.Approx(convertedHours, hours, UnityConstants.FloatEqualityPrecision), "Hours: {0} != ConvertedHours: {1}.", hours, convertedHours);
+        }
+
+        /// <summary>
+        /// Converts the provided hours value to the precision used by hours in dates and durations.
+        /// </summary>
+        /// <param name="hours">The hours value to convert.</param>
+        /// <returns></returns>
+        public static float ConvertHoursValue(float hours) {
+            float convertedHours = Mathf.Round(hours * HoursConversionFactor) / HoursConversionFactor;
+            //D.Log("{0:0.000} hours converted to {1:0.000}", hours, convertedHours);
+            return convertedHours;
+        }
 
         #endregion
 
@@ -226,7 +267,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected sealed override void Initialize() {
             UnityEngine.Time.timeScale = Constants.OneF;
-            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > GameConstants.HoursPrecision, "See {0}.HoursEqualTolerance notes.", GetType().Name);
+            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision, "See {0}.HoursPrecision notes above.", GetType().Name);
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();

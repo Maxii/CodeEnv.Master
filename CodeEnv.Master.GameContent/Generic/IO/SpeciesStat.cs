@@ -15,13 +15,27 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Immutable struct containing externally acquirable values for Species.
     /// </summary>
-    public struct SpeciesStat {
+    public struct SpeciesStat : IEquatable<SpeciesStat> {
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(SpeciesStat left, SpeciesStat right) {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(SpeciesStat left, SpeciesStat right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
 
         public Species Species { get; private set; }
 
@@ -60,9 +74,56 @@ namespace CodeEnv.Master.GameContent {
             CountermeasureReloadPeriodMultiplier = countermeasureReloadPeriodMultiplier;
         }
 
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is SpeciesStat)) { return false; }
+            return Equals((SpeciesStat)obj);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See Page 254, C# 4.0 in a Nutshell.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = 17;
+                hash = hash * 31 + Name.GetHashCode();
+                hash = hash * 31 + Name_Plural.GetHashCode();
+                hash = hash * 31 + Description.GetHashCode();
+                hash = hash * 31 + ImageAtlasID.GetHashCode();
+                hash = hash * 31 + ImageFilename.GetHashCode();
+                hash = hash * 31 + SensorRangeMultiplier.GetHashCode();
+                hash = hash * 31 + WeaponRangeMultiplier.GetHashCode();
+                hash = hash * 31 + ActiveCountermeasureRangeMultiplier.GetHashCode();
+                hash = hash * 31 + WeaponReloadPeriodMultiplier.GetHashCode();
+                hash = hash * 31 + CountermeasureReloadPeriodMultiplier.GetHashCode();
+                return hash;
+            }
+        }
+
+        #endregion
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region IEquatable<SpeciesStat> Members
+
+        public bool Equals(SpeciesStat other) {
+            return Name == other.Name && Name_Plural == other.Name_Plural && Description == other.Description && ImageAtlasID == other.ImageAtlasID
+                && ImageFilename == other.ImageFilename && SensorRangeMultiplier == other.SensorRangeMultiplier
+                && WeaponRangeMultiplier == other.WeaponRangeMultiplier
+                && ActiveCountermeasureRangeMultiplier == other.ActiveCountermeasureRangeMultiplier
+                && WeaponReloadPeriodMultiplier == other.WeaponReloadPeriodMultiplier
+                && CountermeasureReloadPeriodMultiplier == other.CountermeasureReloadPeriodMultiplier;
+        }
+
+        #endregion
+
 
     }
 }
