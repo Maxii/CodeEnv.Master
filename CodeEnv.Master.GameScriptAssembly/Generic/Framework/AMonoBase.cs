@@ -27,7 +27,7 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract Base class for types that are derived from MonoBehaviour.
-/// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
+/// NOTE: Unity will never call the 'overridable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
 public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
@@ -154,7 +154,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     }
 
     /// <summary>
-    /// Called as a result of Destroy(gameobject) and following OnDisable() which follows
+    /// Called as a result of Destroy(gameObject) and following OnDisable() which follows
     /// OnApplicationQuit(). Clients except AMonoSingleton should not override this method.
     /// </summary>
     protected virtual void OnDestroy() {
@@ -207,7 +207,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// Invokes the specified method after a random time delay without using the Error-prone method name string.
     /// </summary>
     /// <param name="task">The method to invoke encapsulated as a Action delegate. The method must be parameterless and return void.</param>
-    /// <param name="minTime">The minimun amount of delay time.</param>
+    /// <param name="minTime">The minimum amount of delay time.</param>
     /// <param name="maxTime">The maximum amount of delay time.</param>
     public void InvokeRandom(Action task, float minTime, float maxTime) {
         float time = UnityEngine.Random.Range(minTime, maxTime);
@@ -219,8 +219,8 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// with CancelInvoke() or CancelInvoke(Task).
     /// </summary>
     /// <param name="task">The method to invoke encapsulated as a Action delegate. The method must be parameterless and return void.</param>
-    /// <param name="minTime">The minimun amount of delay time between invokations.</param>
-    /// <param name="maxTime">The maximum amount of delay time between invokations.</param>
+    /// <param name="minTime">The minimum amount of delay time between invocations.</param>
+    /// <param name="maxTime">The maximum amount of delay time between invocations.</param>
     /// <returns></returns>
     public IEnumerator InvokeRandomRepeating(Action task, float minTime, float maxTime) {
         while (true) {
@@ -231,7 +231,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     }
 
     /// <summary>
-    /// Cancels any invokation of the specified method.
+    /// Cancels any invocation of the specified method.
     /// </summary>
     /// <param name="task">The method to cancel encapsulated as a Action delegate. The method must be parameterless and return void.</param>
     public void CancelInvoke(Action task) {
@@ -338,7 +338,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <summary>
     /// Sets the properties backing field to the new value if it has changed and raises PropertyChanged and PropertyChanging
     /// events to any subscribers. Also provides local method access for doing any additional processing work that should be
-    /// done outside the setter. This is useful when you have dependant properties in the same object that should change as a 
+    /// done outside the setter. This is useful when you have dependent properties in the same object that should change as a 
     /// result of the initial property change.
     /// </summary>
     /// <typeparam name="T">Property Type</typeparam>
@@ -381,14 +381,14 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     }
 
     protected void OnPropertyChanging<T>(string propertyName, T newValue) {
-        var handler = PropertyChanging; // threadsafe approach
+        var handler = PropertyChanging; // thread safe approach
         if (handler != null) {
             handler(this, new PropertyChangingValueEventArgs<T>(propertyName, newValue));   // My custom modification to provide the newValue
         }
     }
 
     protected void OnPropertyChanged(string propertyName) {
-        var handler = PropertyChanged; // threadsafe approach
+        var handler = PropertyChanged; // thread safe approach
         if (handler != null) {
             handler(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -399,7 +399,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         var stackTrace = new System.Diagnostics.StackTrace();
         var frame = stackTrace.GetFrames()[2];
         var caller = frame.GetMethod();
-        if (!caller.Name.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
+        if (!caller.Name.Equals("set_{0}".Inject(propertyName), StringComparison.InvariantCulture)) {
             throw new InvalidOperationException("Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, caller.Name));
         }
     }
@@ -469,7 +469,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
             else {
                 fullMethodName = stackFrame.GetMethod().Name;
             }
-            string transformName = transform.name + "(from transform)";
+            string transformName = "{0}(from transform)".Inject(transform.name);
             Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(transformName, GetType().Name, fullMethodName));
         }
     }

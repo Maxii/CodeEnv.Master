@@ -168,7 +168,7 @@ namespace CodeEnv.Master.GameContent {
         public void RecordGamePlayOptions(GamePlayOptionSettings settings) {
             GameSpeedOnLoad = settings.GameSpeedOnLoad;
             IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
-            //D.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+            //D.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = {0}.", IsZoomOutOnCursorEnabled);
             IsResetOnFocusEnabled = settings.IsResetOnFocusEnabled;
             IsCameraRollEnabled = settings.IsCameraRollEnabled;
             IsPauseOnLoadEnabled = settings.IsPauseOnLoadEnabled;

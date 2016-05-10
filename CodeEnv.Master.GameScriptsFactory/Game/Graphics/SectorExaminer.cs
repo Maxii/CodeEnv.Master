@@ -32,6 +32,8 @@ using UnityEngine;
 /// </summary>
 public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
+    private const string SectorIDLabelText = "Sector {0}\nGridBox {1}.";
+
     /// <summary>
     /// The distance from the front of the camera (in sectors) this examiner uses to determine which sector to highlight.
     /// </summary>
@@ -66,10 +68,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     /// </summary>
     private BoxCollider _collider;
     private ICtxControl _ctxControl;
-
-    private string _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.";
     private ITrackingWidget _sectorIDLabel;
-
     private PlayerViewMode _viewMode;
     private InputManager _inputMgr;
     private GameInputHelper _inputHelper;
@@ -137,7 +136,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 _collider.enabled = true;
                 break;
             case PlayerViewMode.NormalView:
-                // turn off wireframe, sectorID label, collider, contextMenu and Hud
+                // turn off wireframe, sectorID label, collider, contextMenu and HUD
                 DynamicallySubscribe(false);
                 if (IsSectorViewJobRunning) {
                     _sectorViewJob.Kill();
@@ -203,7 +202,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         if (_sectorIDLabel == null) {
             _sectorIDLabel = InitializeSectorIDLabel();
         }
-        _sectorIDLabel.Set(_sectorIDLabelText.Inject(CurrentSectorIndex, _sectorGrid.GetGridBoxLocation(CurrentSectorIndex)));
+        _sectorIDLabel.Set(SectorIDLabelText.Inject(CurrentSectorIndex, _sectorGrid.GetGridBoxLocation(CurrentSectorIndex)));
     }
 
     private ITrackingWidget InitializeSectorIDLabel() {
@@ -305,12 +304,12 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     #region Archive
 
-    // The Wireframe Hotspot approach alternative to using a small collider
+    // The Wireframe Hot spot approach alternative to using a small collider
     ///// <summary>
     ///// Called when a mouse button is pressed and is not consumed by another object. This implementation
     ///// is a custom context menu picker for the SectorViewer.
     ///// </summary>
-    ///// <param name="button">The Ngui mousebutton.</param>
+    ///// <param name="button">The Ngui mouse button.</param>
     ///// <param name="isDown">if set to <c>true</c> [is down].</param>
     //private void OnUnconsumedPress(NguiMouseButton button, bool isDown) {
     //    if (_viewMode == PlayerViewMode.SectorView && button == NguiMouseButton.Right && !isDown) {

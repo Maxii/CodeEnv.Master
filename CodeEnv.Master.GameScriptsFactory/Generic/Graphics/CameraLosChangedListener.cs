@@ -31,6 +31,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     private const string NameFormat = "{0}.{1}";
 
+    private const string MeshGoNameFormat = "{0} Invisible Bounds";
+
     private static readonly Vector2 DefaultMeshSize = new Vector2(4F, 4F);
 
     private static readonly Vector3[] DefaultMeshLocalCorners = new Vector3[] { new Vector3(-2F, -2F),
@@ -183,7 +185,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         if (!_meshCache.ContainsKey(cacheKey)) {
             Vector3[] meshLocalCorners = _widget != null ? _widget.localCorners : DefaultMeshLocalCorners;
             _meshCache.Add(cacheKey, MakeBoundsMesh(UnityUtility.GetBounds(meshLocalCorners)));
-            _meshCache[cacheKey].name = cacheKey + " Invisible Bounds";
+            _meshCache[cacheKey].name = MeshGoNameFormat.Inject(cacheKey);
         }
         else {
             //D.Log("{0} is reusing {1} mesh.", Name, _meshCache[cacheKey].name);

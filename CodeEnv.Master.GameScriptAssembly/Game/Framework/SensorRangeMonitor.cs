@@ -14,6 +14,8 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+#define ENABLE_PROFILER
+
 // default namespace
 
 using System;
@@ -79,7 +81,6 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     protected override void HandleDetectedObjectAdded(ISensorDetectable newlyDetectedItem) {
         newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
-
         var mortalItem = newlyDetectedItem as IMortalItem;
         if (mortalItem != null) {
             mortalItem.deathOneShot += DetectedItemDeathEventHandler;

@@ -30,12 +30,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct CombatStrength : IEquatable<CombatStrength>, IComparable<CombatStrength> {
 
-        private static string _noneToStringFormat = _offensiveToStringFormat + " : {8}";
-        private static string _offensiveToStringFormat = "{0}[{1}]: {2}{3}, {4}{5}, {6}{7}";
-        private static string _defensiveToStringFormat = "{0}[{1}]: {2}, {3}, {4} : {5}";
+        private const string NoneToStringFormat = OffensiveToStringFormat + " : {8}";
+        private const string OffensiveToStringFormat = "{0}[{1}]: {2}{3}, {4}{5}, {6}{7}";
+        private const string DefensiveToStringFormat = "{0}[{1}]: {2}, {3}, {4} : {5}";
 
-        private static string _offensiveToTextHudFormat = "{0}{1}, {2}{3}, {4}{5}";
-        private static string _defensiveToTextHudFormat = "{0}, {1}, {2} : {3}";
+        private const string OffensiveToTextHudFormat = "{0}{1}, {2}{3}, {4}{5}";
+        private const string DefensiveToTextHudFormat = "{0}, {1}, {2} : {3}";
 
         #region Operators Override
 
@@ -176,10 +176,10 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new offensive instance of the <see cref="CombatStrength"/> struct.
         /// </summary>
         /// <param name="beamDeliveryStrength">The beam delivery strength.</param>
-        /// <param name="projDeliveryStrength">The proj delivery strength.</param>
+        /// <param name="projDeliveryStrength">The projectile delivery strength.</param>
         /// <param name="missileDeliveryStrength">The missile delivery strength.</param>
         /// <param name="beamDamagePotential">The beam damage potential.</param>
-        /// <param name="projDamagePotential">The proj damage potential.</param>
+        /// <param name="projDamagePotential">The projectile damage potential.</param>
         /// <param name="missileDamagePotential">The missile damage potential.</param>
         private CombatStrength(WDVStrength beamDeliveryStrength, WDVStrength projDeliveryStrength, WDVStrength missileDeliveryStrength,
             DamageStrength beamDamagePotential, DamageStrength projDamagePotential, DamageStrength missileDamagePotential)
@@ -201,7 +201,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new defensive instance of the <see cref="CombatStrength"/> struct.
         /// </summary>
         /// <param name="beamInterceptStrength">The beam intercept strength.</param>
-        /// <param name="projInterceptStrength">The proj intercept strength.</param>
+        /// <param name="projInterceptStrength">The projectile intercept strength.</param>
         /// <param name="missileInterceptStrength">The missile intercept strength.</param>
         /// <param name="totalDamageMitigation">The total damage mitigation.</param>
         private CombatStrength(WDVStrength beamInterceptStrength, WDVStrength projInterceptStrength, WDVStrength missileInterceptStrength,
@@ -265,11 +265,11 @@ namespace CodeEnv.Master.GameContent {
 
         public string ToTextHud() {
             if (Mode == CombatMode.Defensive) {
-                return _defensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), ProjectileDeliveryStrength.ToTextHud(),
+                return DefensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), ProjectileDeliveryStrength.ToTextHud(),
                     MissileDeliveryStrength.ToTextHud(), TotalDamageMitigation.ToTextHud());
             }
             if (Mode == CombatMode.Offensive) {
-                return _offensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), BeamDamagePotential.ToTextHud(),
+                return OffensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), BeamDamagePotential.ToTextHud(),
                     ProjectileDeliveryStrength.ToTextHud(), ProjectileDamagePotential.ToTextHud(), MissileDeliveryStrength.ToTextHud(),
                     MissileDamagePotential.ToTextHud());
             }
@@ -278,13 +278,13 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ToString() {
             if (Mode == CombatMode.Defensive) {
-                return _defensiveToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, ProjectileDeliveryStrength, MissileDeliveryStrength, TotalDamageMitigation);
+                return DefensiveToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, ProjectileDeliveryStrength, MissileDeliveryStrength, TotalDamageMitigation);
             }
             if (Mode == CombatMode.Offensive) {
-                return _offensiveToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
+                return OffensiveToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
                    ProjectileDamagePotential, MissileDeliveryStrength, MissileDamagePotential);
             }
-            return _noneToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
+            return NoneToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
                 ProjectileDamagePotential, MissileDeliveryStrength, MissileDamagePotential, TotalDamageMitigation);
         }
 

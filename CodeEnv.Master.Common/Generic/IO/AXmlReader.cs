@@ -24,6 +24,8 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="T">The derived class type.</typeparam>
     public abstract class AXmlReader<T> : AGenericSingleton<T> where T : AXmlReader<T> {
 
+        private const string XmlFilepathFormat = "{0}{1}.xml";
+
         /// <summary>
         /// The tag name of the root of the Xml DOM.
         /// </summary>
@@ -51,7 +53,7 @@ namespace CodeEnv.Master.Common {
         protected virtual void InitializeValuesAndReferences() { }
 
         private XElement LoadAndValidateXElement() {
-            string xmlFilePath = UnityConstants.DataLibraryDir + XmlFilename + ".xml";
+            string xmlFilePath = XmlFilepathFormat.Inject(UnityConstants.DataLibraryDir, XmlFilename);  //string xmlFilePath = UnityConstants.DataLibraryDir + XmlFilename + ".xml";
             D.Log("The path to the Xml file is {0}.", xmlFilePath);
             XElement xElement = XElement.Load(xmlFilePath);
             D.Assert(ValidateElement(xElement), "Invalid XDocument found at {0}.", xmlFilePath);

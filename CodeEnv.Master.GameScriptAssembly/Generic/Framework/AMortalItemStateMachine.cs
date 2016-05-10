@@ -31,6 +31,7 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItemStateMachine : AMortalItem {
 
+    private const string MethodNameFormat = "{0}_{1}";
     private const string ExitStateText = "ExitState";
     private const string EnterStateText = "EnterState";
 
@@ -77,7 +78,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         var actionSpecified = false;
         //Try to get an Action delegate for the message
         Action a = null;
-        //Try to uncache a delegate
+        //Try to find a cached delegate
         if (_actions.TryGetValue(message, out a)) {
             //If we got one then call it
             actionSpecified = true;
@@ -459,7 +460,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
     /// <typeparam name="T">The type of delegate.</typeparam>
-    /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
+    /// <param name="methodRoot">Substring of the methodName that follows "StateName_", e.g. EnterState from State1_EnterState.</param>
     /// <param name="Default">The default delegate to use if a method of the proper name is not found.</param>
     /// <returns></returns>
     private T ConfigureDelegate<T>(string methodRoot, T Default) where T : class {
@@ -471,7 +472,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         Delegate returnValue;
         if (!lookup.TryGetValue(methodRoot, out returnValue)) {
 
-            var mtd = GetType().GetMethod(state.currentState.ToString() + "_" + methodRoot, System.Reflection.BindingFlags.Instance
+            var mtd = GetType().GetMethod(MethodNameFormat.Inject(state.currentState.ToString(), methodRoot), System.Reflection.BindingFlags.Instance
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
@@ -602,7 +603,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     // A similar problem occurs if the state machine supports state change notification events. Changing state while executing 
     // CurrentState_set means the first state change notification that occurs is the new state, not the state that caused CurrentState_set
-    // to be called again. In otherwords, the state change notifications get out of sync. This problem is not present in 
+    // to be called again. In other words, the state change notifications get out of sync. This problem is not present in 
     // AMortalItemStateMachine as it doesn't support state change notifications.
 
     private bool __hasCurrentState_setFinishedWithoutInterveningSet = true;
@@ -635,7 +636,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// </summary>
     private class InterruptableCoroutine {
 
-        private string Name { get { return _fsm.FullName + "_" + _coroutineName; } }
+        private const string NameFormat = "{0}_{1}";
+
+        private string Name { get { return NameFormat.Inject(_fsm.FullName, _coroutineName); } }
 
         /// <summary>
         /// Returns the appropriate state name depending on whether this Coroutine
@@ -735,7 +738,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             //Get the result of the yield
                             var result = _enumerator.Current;   // the return value of the yield
                             //Check if it is a coroutine
-                            if (result is IEnumerator) {    // wait until another coroutine completes, eg. CustomYieldInstruction
+                            if (result is IEnumerator) {    // wait until another coroutine completes, e.g. CustomYieldInstruction
                                 //D.Log(ShowDebugLog, "{0} CodeBlock is IEnumerator. State: {1}.", Name, ApplicableStateName); 
                                 //Push the current coroutine and execute the new one
                                 _stack.Push(_enumerator);
@@ -747,7 +750,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                                 //D.Log(ShowDebugLog, "{0} CodeBlock is YieldInstruction. State: {1}.", Name, ApplicableStateName); 
                                 //To be able to interrupt yield instructions we need to run them as a separate coroutine and wait for them
                                 _stack.Push(_enumerator);
-                                //Create the coroutine to wait for the yieldinstruction
+                                //Create the coroutine to wait for the yield instruction
                                 _enumerator = WaitForCoroutine(result as YieldInstruction);
                                 yield return null;
                             }

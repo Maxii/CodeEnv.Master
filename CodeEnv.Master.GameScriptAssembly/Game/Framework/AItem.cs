@@ -82,7 +82,7 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
     public string FullName {
         get {
             if (Data == null) {
-                return transform.name + "(from transform)";
+                return "{0}(from transform)".Inject(transform.name);
             }
             return Data.FullName;
         }

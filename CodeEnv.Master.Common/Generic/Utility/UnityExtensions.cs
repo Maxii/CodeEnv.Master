@@ -32,10 +32,10 @@ namespace CodeEnv.Master.Common {
         #region Get Safe/Single Component Extensions
 
         /// <summary>
-        /// Gets the component of Type T in this gameobject. Logs a warning if the component cannot be found.
+        /// Gets the component of Type T in this gameObject. Logs a warning if the component cannot be found.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="go">The GameObject obstensibly containing the Component.</param>
+        /// <param name="go">The GameObject ostensibly containing the Component.</param>
         /// <returns>The component of type T or null if not found.</returns>
         public static T GetSafeComponent<T>(this GameObject go) where T : Component {
             T component = go.GetComponent<T>();
@@ -135,10 +135,10 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Gets the single component of Type T in immediate children. Does not include components
-        /// of type T in the gameobject itself. Throws an exception if none are found or more than one exists.
+        /// of type T in the gameObject itself. Throws an exception if none are found or more than one exists.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="go">The source gameobject.</param>
+        /// <param name="go">The source gameObject.</param>
         /// <param name="includeInactive">if set to <c>true</c> [include inactive].</param>
         /// <returns> The component of type T. </returns>
         public static T GetSingleComponentInImmediateChildren<T>(this GameObject go, bool includeInactive = false) where T : Component {
@@ -148,7 +148,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Gets the components of Type T in  immediate children. Does not include components
-        /// of type T in the gameobject itself.
+        /// of type T in the gameObject itself.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="go">The source gameObject.</param>
@@ -204,7 +204,7 @@ namespace CodeEnv.Master.Common {
         ///  Logs a warning if the interface cannot be found.
         /// </summary>
         /// <typeparam name="I"></typeparam>
-        /// <param name="go">The gameobject.</param>
+        /// <param name="go">The gameObject.</param>
         /// <returns></returns>
         public static I GetSafeInterface<I>(this GameObject go) where I : class {
             I i = go.GetComponent<I>();
@@ -253,10 +253,10 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Gets the single interface of Type I in immediate children. Does not include interfaces
-        /// of type I in the gameobject itself. Throws an exception if none are found or more than one exists.
+        /// of type I in the gameObject itself. Throws an exception if none are found or more than one exists.
         /// </summary>
         /// <typeparam name="I"></typeparam>
-        /// <param name="go">The source gameobject.</param>
+        /// <param name="go">The source gameObject.</param>
         /// <returns> The interface of type I. </returns>
         public static I GetSingleInterfaceInImmediateChildren<I>(this GameObject go) where I : class {
             var interfaces = go.GetComponentsInChildren<I>().Where(i => (i as Component).transform.parent == go.transform);
@@ -546,7 +546,7 @@ namespace CodeEnv.Master.Common {
         /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
         public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
-            //var actualdeviation = Quaternion.Angle(__FixQuaternion(sourceRotation), __FixQuaternion(otherRotation));
+            //var actualDeviation = Quaternion.Angle(__FixQuaternion(sourceRotation), __FixQuaternion(otherRotation));
             D.Warn(allowedDeviation < UnityConstants.AngleEqualityPrecision, "Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
             allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
             var actualDeviation = Quaternion.Angle(sourceRotation, otherRotation);

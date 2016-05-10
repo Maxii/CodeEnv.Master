@@ -28,13 +28,15 @@ using UnityEngine;
 /// </summary>
 public class RowElementIndexer : AMonoBase {
 
+    private const string ToStringFormat = "{0} Index: {1}";
+
     [Tooltip("Index of the element within the row beginning on the left at 0")]
     public int index = -1;
 
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return GetType().Name + " Index: " + index;
+        return ToStringFormat.Inject(GetType().Name, index);
     }
 
 }

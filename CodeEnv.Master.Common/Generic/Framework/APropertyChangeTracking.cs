@@ -12,7 +12,7 @@
 // Partially derived from material by Daniel Moore Copyright (C) 2011:
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
 // (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, 
-// publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished 
+// publish, distribute, sub-license, and/or sell copies of the Software, and to permit persons to whom the Software is furnished 
 // to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies 
 // or substantial portions of the Software.
 // </remarks>
@@ -31,7 +31,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Abstract base class for classes that wish to communicate changes to their properties. Capabilities include 1) knowing when one or more of their properties have changed ,and 2)
     /// notifying subscribers of said change both before and after it occurs. To subscribe: publisher.SubscribeToPropertyChang{ed, ing]&lt;TSource, TProp&gt;(pub => pub.Foo, OnFooChang[ed, ing]);
-    /// Implement OnFooChang[ed, ing]() in the subscriber. There is no need to accomodate a XXXArgs parameter containing the property name as
+    /// Implement OnFooChang[ed, ing]() in the subscriber. There is no need to accommodate a XXXArgs parameter containing the property name as
     /// the OnFooChang[ed, ing] method is property name specific.
     /// </summary>
     public abstract class APropertyChangeTracking : IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Sets the properties backing field to the new value if it has changed and raises PropertyChanged and PropertyChanging
         /// events to any subscribers. Also provides local method access for doing any additional processing work that should be
-        /// done outside the setter. This is useful when you have dependant properties in the same object that should change as a 
+        /// done outside the setter. This is useful when you have dependent properties in the same object that should change as a 
         /// result of the initial property change.
         /// </summary>
         /// <typeparam name="T">Property Type</typeparam>
@@ -82,14 +82,14 @@ namespace CodeEnv.Master.Common {
         }
 
         protected void OnPropertyChanging<T>(string propertyName, T newValue) {
-            var handler = PropertyChanging; // threadsafe approach
+            var handler = PropertyChanging; // thread safe approach
             if (handler != null) {
                 handler(this, new PropertyChangingValueEventArgs<T>(propertyName, newValue));   // My custom modification to provide the newValue
             }
         }
 
         protected void OnPropertyChanged(string propertyName) {
-            var handler = PropertyChanged; // threadsafe approach
+            var handler = PropertyChanged; // thread safe approach
             if (handler != null) {
                 handler(this, new PropertyChangedEventArgs(propertyName));
             }
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.Common {
             var stackTrace = new System.Diagnostics.StackTrace();
             var frame = stackTrace.GetFrames()[2];
             var caller = frame.GetMethod();
-            if (!caller.Name.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
+            if (!caller.Name.Equals("set_{0}".Inject(propertyName), StringComparison.InvariantCulture)) {
                 throw new InvalidOperationException("Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, caller.Name));
             }
         }

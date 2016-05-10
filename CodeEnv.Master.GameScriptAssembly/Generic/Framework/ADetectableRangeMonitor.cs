@@ -14,6 +14,8 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+#define ENABLE_PROFILER
+
 // default namespace
 
 using System;
@@ -105,7 +107,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void RangeDistancePropChangedHandler() {
         base.RangeDistancePropChangedHandler();
-        if (IsOperational) {    // avoids attempting to redetect objects with the collider off
+        if (IsOperational) {    // avoids attempting to re-detect objects with the collider off
             ReacquireAllDetectableObjectsInRange();
         }
     }

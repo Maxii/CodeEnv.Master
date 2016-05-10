@@ -198,7 +198,7 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
             else {
                 fullMethodName = stackFrame.GetMethod().Name;
             }
-            string transformName = transform.name + "(from transform)";
+            string transformName = "{0}(from transform)".Inject(transform.name);
             Debug.Log("{0}.{1}_{2}.{3}() beginning execution.".Inject(transformName, GetType().Name, InstanceCount, fullMethodName));
         }
     }

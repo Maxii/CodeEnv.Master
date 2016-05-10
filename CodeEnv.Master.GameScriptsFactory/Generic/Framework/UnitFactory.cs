@@ -310,7 +310,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures donot use RangeMonitors.
+    /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures do not use RangeMonitors.
     /// </summary>
     /// <param name="passiveCmStats">The cm stats.</param>
     /// <returns></returns>
@@ -451,8 +451,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = unusedMonitors.First();
             }
             else {
+                D.Assert(_weaponRangeMonitorPrefab.layer == (int)Layers.Collide_DefaultOnly);
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
-                monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
+                monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeComponent<WeaponRangeMonitor>();
             }
             monitor.ParentItem = element;
@@ -524,8 +525,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = unusedMonitors.First();
             }
             else {
+                D.Assert(_countermeasureRangeMonitorPrefab.layer == (int)Layers.Collide_ProjectileOnly);
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _countermeasureRangeMonitorPrefab);
-                monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
+                monitorGo.layer = (int)Layers.Collide_ProjectileOnly;   // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeComponent<ActiveCountermeasureRangeMonitor>();
             }
             monitor.ParentItem = element;
@@ -539,7 +541,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     ///the mountPlaceholder's MountSlotID and Facing. In the future, this will be done in an ElementDesignScreen where the player picks the mountPlaceholder.
     /// </summary>
     /// <param name="hullCategory">The hull category.</param>
-    /// <param name="weapStats">The weap stats.</param>
+    /// <param name="weapStats">The weapon stats.</param>
     /// <returns></returns>
     public IEnumerable<WeaponDesign> __MakeWeaponDesigns(ShipHullCategory hullCategory, IEnumerable<AWeaponStat> weapStats) {
         IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
@@ -574,7 +576,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     ///the mountPlaceholder's MountSlotID and Facing. In the future, this will be done in an ElementDesignScreen where the player picks the mountPlaceholder.
     /// </summary>
     /// <param name="hullCategory">The hull category.</param>
-    /// <param name="weapStats">The weap stats.</param>
+    /// <param name="weapStats">The weapon stats.</param>
     /// <returns></returns>
     public IEnumerable<WeaponDesign> __MakeWeaponDesigns(FacilityHullCategory hullCategory, IEnumerable<AWeaponStat> weapStats) {
         IList<WeaponDesign> weapDesigns = new List<WeaponDesign>(weapStats.Count());
@@ -623,8 +625,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = unusedSensorMonitors.First();
             }
             else {
+                D.Assert(_sensorRangeMonitorPrefab.layer == (int)Layers.Collide_DefaultOnly);
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
-                monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
+                monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeComponent<SensorRangeMonitor>();
             }
             monitor.ParentItem = command;

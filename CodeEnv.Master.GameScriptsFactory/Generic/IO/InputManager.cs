@@ -45,7 +45,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
     private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskUtility.CreateExclusiveMask(
     Layers.DeepSpace, Layers.UI, Layers.AvoidableObstacleZone, Layers.CollisionDetectionZone, Layers.Shields, Layers.IgnoreRaycast,
-    Layers.Water);
+    Layers.Water, Layers.Collide_DefaultOnly, Layers.Collide_ProjectileOnly);
 
     /// <summary>
     /// The EventDispatcher (World or UI) mask that does not allow any events to be raised.

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.Common {
 
         Water = 4,  // not used
         /// <summary>
-        /// Layer used by UI Elements that are fixed on the screen, aka don't popup. Added by Unity 4.5.
+        /// Layer used by UI Elements that are fixed on the screen, aka don't pop up. Added by Unity 4.5.
         /// </summary>
         UI = 5,
 
@@ -45,7 +45,7 @@ namespace CodeEnv.Master.Common {
         *************************************************************************************************/
 
         /// <summary>
-        /// Layer used by UI Elements that popup on the screen. Allows the normal UI layer 
+        /// Layer used by UI Elements that pop up on the screen. Allows the normal UI layer 
         /// to be masked off which keeps it from responding to Ngui events.
         /// Includes partial screen menus, fullScreen menus, dialogs and ContextMenus.
         /// </summary>
@@ -160,6 +160,16 @@ namespace CodeEnv.Master.Common {
         /// collide with each other and AvoidableObstacleZone layer objects to detect impending collisions.
         /// </summary>
         CollisionDetectionZone = 26,
+
+        /// <summary>
+        /// Layer used by the ActiveCountermeasure Monitor to only trigger on Projectile layer objects, aka Projectiles.
+        /// </summary>
+        Collide_ProjectileOnly = 29,
+
+        /// <summary>
+        /// Layer used by the Sensor and Weapon RangeMonitors to only trigger on Default layer objects.
+        /// </summary>
+        Collide_DefaultOnly = 30,
 
         /// <summary>
         /// Layer that allows the dedicated DeepSpace Background camera to cull all meshes

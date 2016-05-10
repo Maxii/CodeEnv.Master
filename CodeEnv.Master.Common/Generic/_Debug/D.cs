@@ -31,7 +31,7 @@ namespace CodeEnv.Master.Common {
         /// Sends the specified message object (typically a composite message string) to the Unity.Debug log.
         /// </summary>
         /// <param name="obj">A System.Object to use ToString() or a composite message format string.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message format string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message format string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Log(object obj, params object[] paramList) {
             string objText = obj as string;
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.Common {
         /// Sends the specified message object (typically a composite message string) to the Unity.Debug log.
         /// </summary>
         /// <param name="obj">A System.Object to use ToString() or a composite message format string.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message format string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message format string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void LogBold(object obj, params object[] paramList) {
             string objText = obj as string;
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="formattedMsg">The formatted text message.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Log(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="formattedMsg">The formatted text message.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void LogBold(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
@@ -152,7 +152,7 @@ namespace CodeEnv.Master.Common {
         /// Sends the composite message format string to the Unity.Debug warning log.
         /// </summary>
         /// <param name="formattedMsg">The formatted text message.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Warn(string formattedMsg, params object[] paramList) {
             Debug.LogWarningFormat(formattedMsg, paramList);
@@ -165,7 +165,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="formattedMsg">The formatted text message.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message string.</param>
         public static void Warn(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogWarningFormat(formattedMsg, paramList);
@@ -205,7 +205,7 @@ namespace CodeEnv.Master.Common {
         /// Sends the composite message format string to the Unity.Debug Error log.
         /// </summary>
         /// <param name="formattedMsg">The formatted text message.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Error(string formattedMsg, params object[] paramList) {
             Debug.LogErrorFormat(formattedMsg, paramList);
@@ -216,7 +216,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="context">The context object.</param>
         /// <param name="formattedMsg">The formatted text message.</param>
-        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void ErrorContext(Object context, string formattedMsg, params object[] paramList) {
             Debug.LogErrorFormat(context, formattedMsg, paramList);
@@ -234,7 +234,7 @@ namespace CodeEnv.Master.Common {
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Assert(bool condition, Object context, string formattedMsg, params object[] paramList) {
             if (!condition) {
-                Debug.LogErrorFormat(context, "Assert failed! " + formattedMsg, paramList);
+                Debug.LogErrorFormat(context, "Assert failed! {0}".Inject(formattedMsg), paramList);
                 //Debug.Break();  // if in an infinite loop, error log never reaches console so console's ErrorPause doesn't engage
                 throw new UnityException();
             }
@@ -249,9 +249,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void Assert(bool condition, string format, params object[] paramList) {
+        public static void Assert(bool condition, string formattedMsg, params object[] paramList) {
             if (!condition) {
-                Debug.LogErrorFormat("Assert failed! " + format, paramList);
+                Debug.LogErrorFormat("Assert failed! {0}".Inject(formattedMsg), paramList);
             }
         }
 
@@ -267,7 +267,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Tests the specified condition and if it fails raises an exception that is gauranteed to
+        /// Tests the specified condition and if it fails raises an exception that is guaranteed to
         /// stop the editor, even if in an infinite loop.
         /// </summary>
         /// <param name="condition">if <c>true</c> the assert passes.</param>
@@ -281,7 +281,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Tests the specified condition and if it fails raises an exception that is gauranteed to
+        /// Tests the specified condition and if it fails raises an exception that is guaranteed to
         /// stop the editor, even if in an infinite loop.
         /// <remarks>Warning: object null conditional tests generate nullReferenceExceptions if object is used in paramList
         /// </remarks>
@@ -294,7 +294,7 @@ namespace CodeEnv.Master.Common {
         public static void AssertException(bool condition, string formattedMsg, params object[] paramList) {
             if (!condition) {
                 // Debug.Break() pauses editor play but only at the end of the frame. If infinite loop, no end of frame ever occurs
-                throw new UnityException("Assert failed! " + formattedMsg.Inject(paramList));
+                throw new UnityException("Assert failed! {0}".Inject(formattedMsg).Inject(paramList));
             }
         }
 

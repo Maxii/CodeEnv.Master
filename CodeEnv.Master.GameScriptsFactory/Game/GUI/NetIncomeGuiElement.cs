@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement> {
 
-    private static string _tooltipFormat = "Income: {0}" + Constants.NewLine + "Expense: {1}";
+    private static readonly string TooltipFormat = "Income: {0}" + Constants.NewLine + "Expense: {1}";
 
     public override GuiElementID ElementID { get { return GuiElementID.NetIncome; } }
 
@@ -103,7 +103,7 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
             }
         }
         _label.text = labelContent;
-        _tooltipContent = _tooltipFormat.Inject(incomeTooltipContent, expenseTooltipContent);
+        _tooltipContent = TooltipFormat.Inject(incomeTooltipContent, expenseTooltipContent);
     }
 
     public override void Reset() {

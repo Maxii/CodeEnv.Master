@@ -32,6 +32,8 @@ namespace CodeEnv.Master.Common {
     [Obsolete]  // still current, just not used
     public abstract class AStateMachine<E> : APropertyChangeTracking where E : struct {
 
+        private const string MethodNameFormat = "{0}_{1}";
+
         /// <summary>
         /// A coroutine executor that can be interrupted
         /// </summary>
@@ -115,7 +117,7 @@ namespace CodeEnv.Master.Common {
                                     //we need to run them as a separate coroutine
                                     //and wait for them
                                     _stack.Push(_enumerator);
-                                    //Create the coroutine to wait for the yieldinstruction
+                                    //Create the coroutine to wait for the yield instruction
                                     _enumerator = WaitForCoroutine(result as YieldInstruction);
                                     yield return null;
                                 }
@@ -260,7 +262,7 @@ namespace CodeEnv.Master.Common {
             var actionSpecified = false;
             //Try to get an Action delegate for the message
             Action a = null;
-            //Try to uncache a delegate
+            //Try to find a cached delegate
             if (_actions.TryGetValue(message, out a)) {
                 //If we got one then call it
                 actionSpecified = true;
@@ -353,7 +355,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="behaviour">The MonoBehaviour this state machine is attached too.</param>
         public AStateMachine(MonoBehaviour behaviour) {
             _behaviour = behaviour;
-            //Create the interruptable coroutines
+            //Create the interruptible coroutines
             enterStateCoroutine = new InterruptableCoroutine(behaviour);
             exitStateCoroutine = new InterruptableCoroutine(behaviour);
         }
@@ -583,7 +585,7 @@ namespace CodeEnv.Master.Common {
         /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
+        /// <param name="methodRoot">Substring of the methodName that follows "StateName_", e.g. EnterState from State1_EnterState.</param>
         /// <param name="Default">The default delegate to use if a method of the proper name is not found.</param>
         /// <returns></returns>
         private T ConfigureDelegate<T>(string methodRoot, T Default) where T : class {
@@ -595,7 +597,7 @@ namespace CodeEnv.Master.Common {
             Delegate returnValue;
             if (!lookup.TryGetValue(methodRoot, out returnValue)) {
 
-                var mtd = GetType().GetMethod(state.currentState.ToString() + "_" + methodRoot, System.Reflection.BindingFlags.Instance
+                var mtd = GetType().GetMethod(MethodNameFormat.Inject(state.currentState.ToString(), methodRoot), System.Reflection.BindingFlags.Instance
                     | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
                 if (mtd != null) {

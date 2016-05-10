@@ -36,6 +36,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     where T : AMonoSingleton<T>
     where E : struct {
 
+    private const string MethodNameFormat = "{0}_{1}";
+
     #region RelayToCurrentState
 
     /// <summary>
@@ -78,7 +80,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         var actionSpecified = false;
         //Try to get an Action delegate for the message
         Action a = null;
-        //Try to uncache a delegate
+        //Try to find a cached delegate
         if (_actions.TryGetValue(message, out a)) {
             //If we got one then call it
             actionSpecified = true;
@@ -152,7 +154,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     //    var actionSpecified = false;
     //    //Try to get an Action delegate for the message
     //    Action a = null;
-    //    //Try to uncache a delegate
+    //    //Try to find a cached delegate
     //    if (_actions.TryGetValue(message, out a)) {
     //        //If we got one then call it
     //        actionSpecified = true;
@@ -504,7 +506,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
     /// <typeparam name="R"></typeparam>
-    /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
+    /// <param name="methodRoot">Substring of the methodName that follows "StateName_", e.g. EnterState from State1_EnterState.</param>
     /// <param name="Default">The default delegate to use if a method of the proper name is not found.</param>
     /// <returns></returns>
     private R ConfigureDelegate<R>(string methodRoot, R Default) where R : class {
@@ -516,7 +518,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         Delegate returnValue;
         if (!lookup.TryGetValue(methodRoot, out returnValue)) {
 
-            var mtd = GetType().GetMethod(state.currentState.ToString() + "_" + methodRoot, System.Reflection.BindingFlags.Instance
+            var mtd = GetType().GetMethod(MethodNameFormat.Inject(state.currentState.ToString(), methodRoot), System.Reflection.BindingFlags.Instance
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
@@ -712,7 +714,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
                                 //we need to run them as a separate coroutine
                                 //and wait for them
                                 _stack.Push(_enumerator);
-                                //Create the coroutine to wait for the yieldinstruction
+                                //Create the coroutine to wait for the yield instruction
                                 _enumerator = WaitForCoroutine(result as YieldInstruction);
                                 yield return null;
                             }

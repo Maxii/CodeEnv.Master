@@ -27,14 +27,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct DamageStrength : IEquatable<DamageStrength>, IComparable<DamageStrength> {
 
-        private static string _toStringFormat = "{0}({1},{2},{3})";
+        private const string ToStringFormat = "{0}({1},{2},{3})";
 
-        private static string _labelFormatWithTotal = "{0}" + Constants.NewLine
+        private static readonly string LabelFormatWithTotal = "{0}" + Constants.NewLine
                                              + "T: {1}" + Constants.NewLine
                                              + "A: {2}" + Constants.NewLine
                                              + "K: {3}";
 
-        private static string _labelFormatNoTotal = "T: {0}" + Constants.NewLine
+        private static readonly string LabelFormatNoTotal = "T: {0}" + Constants.NewLine
                                              + "A: {1}" + Constants.NewLine
                                              + "K: {2}";
 
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         public static DamageStrength operator -(DamageStrength attacker, DamageStrength defender) {
             var t = attacker.Thermal - defender.Thermal;
-            //D.Log("Termal result: " + t);
+            //D.Log("Thermal result: " + t);
             if (t < Constants.ZeroF) { t = Constants.ZeroF; }
             var a = attacker.Atomic - defender.Atomic;
             //D.Log("Atomic result: " + a);
@@ -176,9 +176,9 @@ namespace CodeEnv.Master.GameContent {
 
             if (includeTotalValue) {
                 string total = Total.FormatValue();
-                return _labelFormatWithTotal.Inject(total, thermal, atomic, kinetic);
+                return LabelFormatWithTotal.Inject(total, thermal, atomic, kinetic);
             }
-            return _labelFormatNoTotal.Inject(thermal, atomic, kinetic);
+            return LabelFormatNoTotal.Inject(thermal, atomic, kinetic);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -214,11 +214,11 @@ namespace CodeEnv.Master.GameContent {
                 return string.Empty;
             }
             string totalText = includeTotal ? Total.FormatValue() : string.Empty;
-            return _toStringFormat.Inject(totalText, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+            return ToStringFormat.Inject(totalText, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+            return ToStringFormat.Inject(GetType().Name, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
         }
 
         #region IEquatable<DamageStrength> Members

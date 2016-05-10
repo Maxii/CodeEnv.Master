@@ -26,8 +26,8 @@ using UnityEngine;
 /// </summary>
 public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
-    private static string _labelFormat = "{0} " + GameConstants.IconMarker_Distance + Constants.NewLine + Constants.NewLine + "{1}";
-    private static string _tooltipFormat = "Distance in sectors to closest owned base {0} = {1}.";
+    private const string TooltipFormat = "Distance in sectors to closest owned base {0} = {1}.";
+    private static readonly string LabelFormat = "{0} " + GameConstants.IconMarker_Distance + Constants.NewLine + Constants.NewLine + "{1}";
 
     public override GuiElementID ElementID { get { return GuiElementID.Location; } }
 
@@ -101,10 +101,10 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
                 distanceText = Constants.FormatFloat_1DpMax.Inject(_closestBaseDistanceInSectors.Value);
             }
         }
-        _label.text = _labelFormat.Inject(distanceText, SectorIndex);
+        _label.text = LabelFormat.Inject(distanceText, SectorIndex);
 
         string baseText = myClosestBase != null ? myClosestBase.DisplayName : _unknown;
-        _tooltipContent = _tooltipFormat.Inject(baseText, distanceText);
+        _tooltipContent = TooltipFormat.Inject(baseText, distanceText);
     }
 
     public override void Reset() {

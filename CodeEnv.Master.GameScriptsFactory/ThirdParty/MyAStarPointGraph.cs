@@ -24,7 +24,7 @@ namespace Pathfinding {
 
     /// <summary>
     /// My implementation of the AStar PointGraph Generator using the points generated from SectorGrid's GridFramework. 
-    /// WARNING: These graphs ARE NOT MonoBehaviours, inspite of the authors usage of Awake().
+    /// WARNING: These graphs ARE NOT MonoBehaviours, in spite of the authors usage of Awake().
     /// </summary>
     public class MyAStarPointGraph : PointGraph {
 
@@ -104,12 +104,12 @@ namespace Pathfinding {
             //    constraint.constrainTags, constraint.tags, constraint.constrainDistance);
 
             //if (minConstNode != null) {
-            //    D.Log("Constaint criteria met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
+            //    D.Log("Constraint criteria met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
             //        nnInfo.constClampedPosition, Vector3.Distance(nnInfo.constClampedPosition, position), position,
             //        constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
             //}
             //else {
-            //    D.Log("Constraint critieria NOT met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
+            //    D.Log("Constraint criteria NOT met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
             //        nnInfo.clampedPosition, Vector3.Distance(nnInfo.clampedPosition, position), position,
             //        constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
             //}
@@ -127,7 +127,7 @@ namespace Pathfinding {
             IDictionary<Topography, IList<Vector3>> graphWaypointsLookupByTag = ConstructGraphWaypoints();
             PopulateNodes(graphWaypointsLookupByTag);
             // ********************************************************************
-            D.Log("{0} Pathfinding nodes.", nodeCount);
+            //D.Log("{0} Pathfinding nodes.", nodeCount);
 
             if (maxDistance >= 0) {
                 //To avoid too many allocations, these lists are reused for each node
@@ -165,7 +165,7 @@ namespace Pathfinding {
                     node.connectionCosts = costs.ToArray();
                 }
                 int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
-                D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
+                //D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
             }
         }
 
@@ -194,7 +194,7 @@ namespace Pathfinding {
                     }
                 }
             });
-            D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
+            //D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
             return sectorsToScan;
         }
 
@@ -278,7 +278,7 @@ namespace Pathfinding {
             // WARNING: The approach used below to populate nodes is the only one that worked. I tried making
             // a separate nodes array, populating it manually, then assigning it to nodes as well as using AddNode().
             // In both cases, the Editor showed 0 total nodes even though they were really built. The approach below
-            // is copied directly from that approach used in PointGraph.ScanInternal when deriving nodes from gameobjects
+            // is copied directly from that approach used in PointGraph.ScanInternal when deriving nodes from gameObjects
 
             nodes = new PointNode[waypointCount];
             nodeCount = waypointCount;

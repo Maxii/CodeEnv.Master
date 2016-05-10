@@ -37,7 +37,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Short for 'sinusoidal interpolation', interpolatex while easing around the end, when value is near one.
+        /// Short for 'sinusoidal interpolation', interpolate while easing around the end, when value is near one.
         /// </summary>
         /// <param name="start">The start.</param>
         /// <param name="end">The end.</param>
@@ -188,7 +188,6 @@ namespace CodeEnv.Master.Common {
             else
                 retval = start + (end - start) * value;
 
-            // Debug.Log("Start: "  + start + "   End: " + end + "  Value: " + value + "  Half: " + half + "  Diff: " + diff + "  Retval: " + retval);
             return retval;
         }
 

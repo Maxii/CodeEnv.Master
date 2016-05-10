@@ -24,6 +24,8 @@ using UnityEngine;
 /// </summary>
 public class NguiEventLogger : AMonoBase {
 
+    private const string NameFormat = "{0}(from transform)";
+
     void OnClick() {
         LogNguiEvent();
     }
@@ -49,12 +51,12 @@ public class NguiEventLogger : AMonoBase {
     }
 
     /// <summary>
-    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// Logs the method name called. WARNING:  Coroutines show up as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
     /// <param name="parameter">The parameter.</param>
     public void LogNguiEvent(object parameter = null) {
         var stackFrame = new System.Diagnostics.StackFrame(1);
-        string name = transform.name + "(from transform)";
+        string name = NameFormat.Inject(transform.name);
         string paramName = parameter != null ? parameter.ToString() : string.Empty;
         Debug.Log("{0}.{1}({2}) called.".Inject(name, stackFrame.GetMethod().Name, paramName));
     }

@@ -26,7 +26,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct WDVStrength : IEquatable<WDVStrength>, IComparable<WDVStrength> {
 
-        public static float MaxValue = 100F;
+        private const string VehicleIconFormat = "{0} {1}";
+
+        private const float MaxValue = 100F;
 
         #region Operators Override
 
@@ -59,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         /// The value returned will never be negative but can be Zero if the interdictingStrength was equal to or exceeded the interdictedStrength.
         /// </summary>
         /// <param name="interdictingStrength">The strength of the interdicting object.</param>
-        /// <param name="interdictedStrength">The strength of the object being interdected.</param>
+        /// <param name="interdictedStrength">The strength of the object being interdicted.</param>
         /// <returns>
         /// The remaining WDVStrength (if any).
         /// </returns>
@@ -151,7 +153,7 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Category));
             }
-            return vehicleIcon + " {0}".Inject(Value.FormatValue());
+            return VehicleIconFormat.Inject(vehicleIcon, Value.FormatValue());
         }
 
         #region Object.Equals and GetHashCode Override

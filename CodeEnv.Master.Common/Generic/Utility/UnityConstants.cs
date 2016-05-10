@@ -34,7 +34,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Gets the unity entry project dir. 
+        /// Gets the unity entry project directory. 
         /// Note:  The project folder can always be acquired by System.IO.Directory.GetCurrentDirectory as the editor requires that
         /// the current working directory be set to the project folder at all times.
         /// Warning: This only works on my systems which have UnityEnvDir defined as an environment variable.
@@ -121,15 +121,15 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        // Common Texture names used by Unity's builtin shaders
+        // Common Texture names used by Unity's built-in shaders
         public const string MainDiffuseTexture = "_MainTex";
         public const string NormalMapTexture = "_BumpMap";
         public const string ReflectionCubeMapTexture = "_Cube";
 
-        // Common Color names used by Unity's builtin shaders - use with material.SetColor(name, Color)
+        // Common Color names used by Unity's built-in shaders - use with material.SetColor(name, Color)
         public const string MaterialColor_Main = "_Color";   // the main color of a material, can also be accessed via color property
-        public const string MaterialColor_Specular = "_SpecColor"; // the specular color of a material, used in specular/vertexlit shaders
-        public const string MaterialColor_Emissive = "_Emission"; // the emissive color of a material, used in vertexlit shaders
+        public const string MaterialColor_Specular = "_SpecColor"; // the specular color of a material, used in specular/vertex-lit shaders
+        public const string MaterialColor_Emissive = "_Emission"; // the emissive color of a material, used in vertex-lit shaders
         public const string MaterialColor_Reflection = "_ReflectColor";  // the reflection color of a material, used in reflective shaders
         public const string MaterialColor_Outline = "_OutlineColor"; // the outline color of a material, typically used in toon shaders?
 
@@ -146,7 +146,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// My default precision for Unity float equality comparisons.
         /// 1M times less precise than Unity's built in == comparison.
-        /// WARNING: Donot use Mathf.Epsilon for any comparisons except with 0F.
+        /// WARNING: Do not use Mathf.Epsilon for any comparisons except with 0F.
         /// see http://docs.unity3d.com/ScriptReference/Mathf.Epsilon.html
         /// </summary>
         public const float FloatEqualityPrecision = .0001F;
