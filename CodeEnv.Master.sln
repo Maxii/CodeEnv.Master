@@ -584,6 +584,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeadCode", "DeadCode", "{F1
 		DeadCode\ZoomOutOnCursorOptionChangedEvent.cs = DeadCode\ZoomOutOnCursorOptionChangedEvent.cs
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PoolManager", "..\..\Plugins\PoolManager\PoolManager.csproj", "{BFD6CF0B-1826-49F8-8102-5C2ED1294A71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -646,6 +648,10 @@ Global
 		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFD6CF0B-1826-49F8-8102-5C2ED1294A71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFD6CF0B-1826-49F8-8102-5C2ED1294A71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFD6CF0B-1826-49F8-8102-5C2ED1294A71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFD6CF0B-1826-49F8-8102-5C2ED1294A71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -661,5 +667,6 @@ Global
 		{6150DE6A-13CE-45C9-9254-1486A6BC6661} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{99D34A21-2FF7-4FB8-89B6-2552CE630941} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{F1A439E5-BEAD-4292-B4F1-A14733522D52} = {F3C8D421-1D12-4B2D-B500-B261B04BA5C6}
+		{BFD6CF0B-1826-49F8-8102-5C2ED1294A71} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 	EndGlobalSection
 EndGlobal

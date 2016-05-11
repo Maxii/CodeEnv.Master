@@ -39,7 +39,7 @@ public class VisualEffectScale : AMonoBase {
     /// the effect (most common is explosion) for an editorScale of 1.0.
     /// <remarks>editorScale of 1.0 is the right size for the largest planet of Radius 5.0.</remarks>
     /// </summary>
-    private static float _radiusToScaleNormalizeFactor = 0.2F;
+    private const float _radiusToScaleNormalizeFactor = 0.2F;
 #pragma warning restore 0414
 
     /// <summary>

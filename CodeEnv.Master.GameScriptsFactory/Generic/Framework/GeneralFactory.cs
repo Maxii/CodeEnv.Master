@@ -20,6 +20,7 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using PathologicalGames;
 using UnityEngine;
 
 /// <summary>
@@ -107,6 +108,16 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         explosionScaleControl.ItemRadius = itemRadius;
         return explosionGo.GetComponent<ParticleSystem>();
     }
+
+    public IExplosion_Pooled SpawnExplosionInstance(Vector3 itemPosition) {
+        SpawnPool explosionPool = PoolManager.Pools["Explosions"];
+        Transform explosionPrefab = explosionPool.prefabs["Explosion_Pooled"];
+        Transform explosionInstanceTransform = explosionPool.Spawn(explosionPrefab, itemPosition, Quaternion.identity);
+        IExplosion_Pooled explosionInstance = explosionInstanceTransform.GetComponent<IExplosion_Pooled>();
+
+        return explosionInstance;
+    }
+
 
     /// <summary>
     /// Makes a GameObject that will auto destruct when its AudioSource (added by client) finishes playing. The position

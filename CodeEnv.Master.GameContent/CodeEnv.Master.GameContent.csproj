@@ -332,6 +332,7 @@
     <Compile Include="Generic\Interfaces\IShipAttackable.cs" />
     <Compile Include="Generic\Interfaces\ITrackingSprite.cs" />
     <Compile Include="Game\Graphics\MissileDisplayManager.cs" />
+    <Compile Include="IExplosion_Pooled.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

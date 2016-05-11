@@ -47,6 +47,9 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         ParticleSystem MakeAutoDestructExplosionInstance(float itemRadius, Vector3 itemPosition);
 
+        IExplosion_Pooled SpawnExplosionInstance(Vector3 itemPosition);
+
+
         /// <summary>
         /// Makes a GameObject that will auto destruct when its AudioSource (added by client) finishes playing. The position
         /// is important as the AudioSFX playing is 3D. Being too far away from the AudioListener on the MainCamera
