@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: IInterceptableOrdnance.cs
-// Interface for Weapon ordnance that can be intercepted by Active Countermeasures.
+// Interface for ordnance that can be intercepted by Active Countermeasures.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,10 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for Weapon ordnance that can be intercepted by Active Countermeasures.
+    /// Interface for ordnance that can be intercepted by Active Countermeasures.
     /// </summary>
     public interface IInterceptableOrdnance : IOrdnance, IDetectable {
 

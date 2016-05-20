@@ -56,7 +56,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Explosion_Pooled.cs" />
+    <Compile Include="Generic\Framework\AOrdnance.cs" />
+    <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
+    <Compile Include="Game\Gameplay\Beam.cs" />
+    <Compile Include="Game\Gameplay\Projectile.cs" />
+    <Compile Include="Game\Graphics\Explosion.cs" />
     <Compile Include="Game\GUI\FacilityCtxControl_User.cs" />
     <Compile Include="Game\GUI\FacilityCtxControl_AI.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />
@@ -64,7 +68,6 @@
     <Compile Include="Game\Gameplay\LOSTurret.cs" />
     <Compile Include="Game\Gameplay\MissileTube.cs" />
     <Compile Include="Generic\Framework\AHull.cs" />
-    <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\AUnitElementItem.cs" />
     <Compile Include="Generic\Framework\AWeaponMount.cs" />
@@ -97,8 +100,6 @@
     <Compile Include="Generic\Graphics\ACompositionGuiElement.cs" />
     <Compile Include="Game\GUI\FleetCompositionGuiElement.cs" />
     <Compile Include="Game\GUI\FleetsTableWindow.cs" />
-    <Compile Include="Generic\Framework\AOrdnance.cs" />
-    <Compile Include="Game\Gameplay\Beam.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuElement.cs" />
     <Compile Include="Generic\Graphics\ATextTooltip.cs" />
     <Compile Include="Generic\Graphics\ACtxControl_User.cs" />
@@ -176,8 +177,6 @@
     <Compile Include="Game\GUI\AudioOptionMenuAcceptButton.cs" />
     <Compile Include="Game\Framework\SectorItem.cs" />
     <Compile Include="Generic\Graphics\MenuCancelButton.cs" />
-    <Compile Include="Game\Gameplay\Missile.cs" />
-    <Compile Include="Game\Gameplay\Bullet.cs" />
     <Compile Include="Generic\IO\SFXManager.cs" />
     <Compile Include="Generic\Graphics\GuiElement.cs" />
     <Compile Include="Game\GUI\GuiWindow.cs" />
@@ -224,6 +223,8 @@
     <Compile Include="Game\GUI\SelectedUniverseCenterForm.cs" />
     <Compile Include="Game\GUI\ShipCtxControl_AI.cs" />
     <Compile Include="Game\GUI\PlanetCtxControl.cs" />
+    <Compile Include="Game\Gameplay\Missile.cs" />
+    <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenu.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuButton.cs" />

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Bullet.cs
+// File: Bullet_UnPooled.cs
 // Unguided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,8 @@ using UnityEngine;
 /// <summary>
 /// Unguided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
 /// </summary>
-public class Bullet : AProjectileOrdnance {
+[Obsolete]
+public class Bullet_UnPooled : AProjectileOrdnance_UnPooled {
 
     [SerializeField]
     private GameObject _muzzleEffect = null;

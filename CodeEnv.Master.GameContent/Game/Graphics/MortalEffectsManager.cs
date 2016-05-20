@@ -24,46 +24,40 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MortalEffectsManager : EffectsManager {
 
+        private bool IsExplosionEffectPlaying { get { return _explosionEffect != null && _explosionEffect.IsPlaying; } }
+
+        private IEffect _explosionEffect;
+
         public MortalEffectsManager(IEffectsClient effectsClient) // IMPROVE this could be IMortalEffectsClient w/Position, Radius and DisplayMgr
             : base(effectsClient) { }
 
-        public override void StartEffect(EffectID effectID) {
-            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(MortalEffectsManager).Name, effectID.GetValueName());
-            if (effectID == EffectID.Dying) {
-                _effectsClient.DisplayMgr.EnableDisplay(toEnable: false, isDead: true);
-
+        public override void StartEffect(EffectSequenceID effectSeqID) {
+            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(MortalEffectsManager).Name, effectSeqID.GetValueName());
+            if (effectSeqID == EffectSequenceID.Dying) {
                 // separate explosionSFXGo from ItemGo so destruction of ItemGo does not destroy explosionSFX before it is completed
                 GameObject explosionSFXGo = _generalFactory.MakeAutoDestruct3DAudioSFXInstance("ExplosionSFX", _effectsClient.Position);
                 References.SFXManager.PlaySFX(explosionSFXGo, SfxGroupID.Explosions);
 
-                IExplosion_Pooled explosion = _generalFactory.SpawnExplosionInstance(_effectsClient.Position);
-                explosion.explosionFinishedOneShot += (source, args) => {
-                    _effectsClient.HandleEffectFinished(effectID);
+                _explosionEffect = _myPoolMgr.Spawn(EffectID.Explosion, _effectsClient.Position);
+                _explosionEffect.effectFinishedOneShot += (source, args) => {
+                    _effectsClient.HandleEffectSequenceFinished(effectSeqID);
                 };
-                explosion.Play(_effectsClient.Radius);
+                _explosionEffect.Play(_effectsClient.Radius);
                 return;
             }
-            base.StartEffect(effectID); // currently just calls HandleEffectFinished
+            base.StartEffect(effectSeqID); // currently just calls HandleEffectFinished
         }
-        //public override void StartEffect(EffectID effectID) {
-        //    //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(MortalEffectsManager).Name, effectID.GetValueName());
-        //    if (effectID == EffectID.Dying) {
-        //        _effectsClient.DisplayMgr.EnableDisplay(toEnable: false, isDead: true);
 
-        //        // separate explosionSFXGo from ItemGo so destruction of ItemGo does not destroy explosionSFX before it is completed
-        //        GameObject explosionSFXGo = _generalFactory.MakeAutoDestruct3DAudioSFXInstance("ExplosionSFX", _effectsClient.Position);
-        //        References.SFXManager.PlaySFX(explosionSFXGo, SfxGroupID.Explosions);
+        #region Event and Prop Change Handlers
 
-        //        var explosion = _generalFactory.MakeAutoDestructExplosionInstance(_effectsClient.Radius, _effectsClient.Position);
-        //        explosion.Play(withChildren: true);
-        //        WaitJobUtility.WaitForParticleSystemCompletion(explosion, includeChildren: true, waitFinished: delegate {
-        //            //D.Log("{0}.{1} explosion particle system has completed.", _effectsClient.FullName, GetType().Name);
-        //            _effectsClient.HandleEffectFinished(effectID);
-        //        });
-        //        return;
-        //    }
-        //    base.StartEffect(effectID); // currently just calls HandleEffectFinished
-        //}
+        protected override void IsPausedPropChangedHandler() {
+            base.IsPausedPropChangedHandler();
+            if (IsExplosionEffectPlaying) {
+                _explosionEffect.IsPaused = _gameMgr.IsPaused;
+            }
+        }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

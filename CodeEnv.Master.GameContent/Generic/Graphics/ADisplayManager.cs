@@ -25,13 +25,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ADisplayManager : APropertyChangeTracking {
 
+        protected const string NameFormat = "{0}.{1}";
+
         protected static readonly Color HiddenMeshColor = GameColor.Clear.ToUnityColor();
+
+        protected virtual string Name { get { return NameFormat.Inject(_trackedItemGo.name, GetType().Name); } }
 
         private bool _isInMainCameraLOS = true;
         /// <summary>
         /// Indicates whether this item is within the main camera's Line Of Sight.
         /// Note: All items start out thinking they are in the main camera's LOS. This is because cameraLOSChangedListeners 
-        /// automatically send out an onBecameInvisible event when they first awake, independant of whether they are
+        /// automatically send out an onBecameInvisible event when they first awake, independent of whether they are
         /// visible or not. This is followed by a onBecameVisible event if they are in fact visible. This way, this property will
         /// always change at least once, communicating that change to any listeners.
         /// </summary>
@@ -55,12 +59,13 @@ namespace CodeEnv.Master.GameContent {
 
         private bool _isDisplayEnabled;
         /// <summary>
-        /// Indicates whether the DisplayMgr is allowed to display material on the screen.
+        /// Indicates whether the DisplayMgr is allowed to display to the screen.
         /// True or false, InCameraLOS continues to operate.
+        /// <remarks>If disabling because of client death, use IMortalDisplayManager.HandleDeath().</remarks>
         /// </summary>
-        protected bool IsDisplayEnabled {
+        public bool IsDisplayEnabled {
             get { return _isDisplayEnabled; }
-            set { SetProperty<bool>(ref _isDisplayEnabled, value, "IsDisplayEnabled"); }
+            set { SetProperty<bool>(ref _isDisplayEnabled, value, "IsDisplayEnabled", IsDisplayEnabledPropChangedHandler); }
         }
 
         protected MeshRenderer _primaryMeshRenderer;
@@ -92,25 +97,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void InitializeOther(GameObject trackedItemGo) { }
 
-        /// <summary>
-        /// Controls whether this DisplayMgr is allowed to display material to the screen.
-        /// The optional <c>isDead</c> parameter when <c>true</c> disables the
-        /// _primaryMeshRenderer thereby discontinuing InCameraLOS functionality.
-        /// <remarks>Done this way as I currently have no effective method of making
-        /// primary meshes disappear when the item is dead.</remarks>
-        /// </summary>
-        /// <param name="toEnable">if set to <c>true</c> [to enable].</param>
-        /// <param name="isDead">if set to <c>true</c> [is dead].</param>
-        public void EnableDisplay(bool toEnable, bool isDead = false) {
-            D.Assert(!(toEnable && isDead));    // should never both be true
-            if (IsDisplayEnabled != toEnable) {
-                IsDisplayEnabled = toEnable;
-                D.Log("{0}.IsDisplayEnabled changed.", GetType().Name);
-                IsDisplayEnabledPropChangedHandler();
-            }
-            if (isDead) { _primaryMeshRenderer.enabled = false; }
-        }
-
         #region Event and Property Change Handlers
 
         private void PrimaryMeshInCameraLosChangedEventHandler(object sender, EventArgs e) {
@@ -118,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void IsDisplayEnabledPropChangedHandler() {
-            D.Log("{0}.IsDisplayEnabled changed to {1}.", GetType().Name, IsDisplayEnabled);
+            D.Log("{0}.IsDisplayEnabled changed to {1}.", Name, IsDisplayEnabled);
             AssessComponentsToShowOrOperate();
         }
 
@@ -132,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         private void ShowPrimaryMesh(bool toShow) {
             // can't disable meshRenderer as lose OnMeshInCameraLOSChanged events
             if (__isPrimaryMeshShowing == toShow) {
-                //D.Log("{0} recording duplicate call to ShowPrimaryMesh({1}).", GetType().Name, toShow);
+                //D.Log("{0} recording duplicate call to ShowPrimaryMesh({1}).", Name, toShow);
                 return;
             }
             if (toShow) {
@@ -174,7 +160,7 @@ namespace CodeEnv.Master.GameContent {
         protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
             if ((Layers)meshGo.layer != _meshLayer) {
                 D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}.",
-                    GetType().Name, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName());
+                    Name, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName());
                 UnityUtility.SetLayerRecursively(meshGo.transform, _meshLayer);
             }
         }

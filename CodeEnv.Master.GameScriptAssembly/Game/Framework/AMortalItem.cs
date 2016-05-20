@@ -104,6 +104,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         if (IsHudShowing) {
             ShowHud(false);
         }
+        (DisplayMgr as IMortalDisplayManager).HandleDeath();
     }
 
     /// <summary>

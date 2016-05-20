@@ -35,6 +35,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Vector3 MuzzleFacing { get; }
 
+        /// <summary>
+        /// The Muzzle Transform. Used as the parent of the BeamOrdnance gameObject while being fired.
+        /// </summary>
+        Transform Muzzle { get; }
+
         AWeapon Weapon { get; set; }
 
         bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution);

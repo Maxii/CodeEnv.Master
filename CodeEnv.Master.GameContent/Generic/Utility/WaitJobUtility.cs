@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
             _gameMgr = References.GameManager;
             _runningJobs = new List<Job>();
             Subscribe();
-            // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
+            // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 
         private void Subscribe() {
@@ -77,24 +77,53 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Waits the designated number of hours, then executes the provided delegate.
-        /// Automatically accounts for Pausing and GameSpeed changes.
+        /// Waits the designated number of seconds, then executes the provided delegate.
+        /// Warning: Does NOT account for Pausing or GameSpeed changes.
         /// Usage:
-        /// WaitForHours(hours, onWaitFinished: (jobWasKilled) =&gt; {
+        /// WaitForSeconds(seconds, waitFinished: (jobWasKilled) =&gt; {
         /// Code to execute after the wait;
         /// });
         /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
         /// immediately return which means the code you have following it will execute
-        /// before the code assigned to the onWaitFinished delegate.
+        /// before the code assigned to the waitFinished delegate.
+        /// </summary>
+        /// <param name="seconds">The seconds to wait.</param>
+        /// <param name="waitFinished">The delegate to execute once the wait is finished. The
+        /// signature is waitFinished(jobWasKilled).</param>
+        /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
+        public static Job WaitForSeconds(float seconds, Action<bool> waitFinished) {
+            D.Assert(_isGameRunning);
+            var job = new Job(WaitForSeconds(seconds), toStart: true, jobCompleted: (jobWasKilled) => {
+                waitFinished(jobWasKilled);
+                RemoveCompletedJobs();
+            });
+            _runningJobs.Add(job);
+            return job;
+        }
+
+        private static IEnumerator WaitForSeconds(float seconds) {
+            yield return Yielders.GetWaitForSeconds(seconds);
+        }
+
+        /// <summary>
+        /// Waits the designated number of hours, then executes the provided delegate.
+        /// Automatically accounts for Pausing and GameSpeed changes.
+        /// Usage:
+        /// WaitForHours(hours, waitFinished: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the waitFinished delegate.
         /// </summary>
         /// <param name="hours">The hours to wait.</param>
-        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
-        /// signature is onWaitFinished(jobWasKilled).</param>
+        /// <param name="waitFinished">The delegate to execute once the wait is finished. The
+        /// signature is waitFinished(jobWasKilled).</param>
         /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
-        public static Job WaitForHours(float hours, Action<bool> onWaitFinished) {
+        public static Job WaitForHours(float hours, Action<bool> waitFinished) {
             D.Assert(_isGameRunning);
             var job = new Job(WaitForHours(hours), toStart: true, jobCompleted: (jobWasKilled) => {
-                onWaitFinished(jobWasKilled);
+                waitFinished(jobWasKilled);
                 RemoveCompletedJobs();
             });
             _runningJobs.Add(job);

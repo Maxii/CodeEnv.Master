@@ -44,9 +44,11 @@ namespace CodeEnv.Master.GameContent {
 
         private static GameTime _gameTime = GameTime.Instance;
 
+        public string ClientName { private get; set; }
+
         private bool IsDriftCorrectionEngaged { get { return _driftCorrectionJob != null && _driftCorrectionJob.IsRunning; } }
 
-        private string Name { get { return NameFormat.Inject(_clientName, typeof(DriftCorrector).Name); } }
+        private string Name { get { return NameFormat.Inject(ClientName, typeof(DriftCorrector).Name); } }
 
         /// <summary>
         /// The signed drift velocity (in units per second) in the lateral (x, + = right)
@@ -55,14 +57,13 @@ namespace CodeEnv.Master.GameContent {
         private Vector2 CurrentDriftVelocityPerSec { get { return _transform.InverseTransformDirection(_rigidbody.velocity); } }
 
         private Job _driftCorrectionJob;
-        private string _clientName;
         private Rigidbody _rigidbody;
         private Transform _transform;
         private IGameManager _gameMgr;
 
-        public DriftCorrector(string clientName, Transform transform, Rigidbody rigidbody) {
+        public DriftCorrector(Transform transform, Rigidbody rigidbody, string optionalClientName = "Unknown") {
             D.Assert(!rigidbody.useGravity);    // can be isKinematic until operations commence
-            _clientName = clientName;
+            ClientName = optionalClientName;
             _transform = transform;
             _rigidbody = rigidbody;
             _gameMgr = References.GameManager;

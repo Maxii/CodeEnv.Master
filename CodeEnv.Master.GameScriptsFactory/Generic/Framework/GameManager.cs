@@ -154,7 +154,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     /// <summary>
     /// The current GameState. 
-    /// WARNING: Donot subscribe to this. 
+    /// WARNING: Do not subscribe to this. 
     /// Use the events as I can find out who has subscribed to them.
     /// </summary>
     public override GameState CurrentState {

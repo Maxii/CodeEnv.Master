@@ -29,7 +29,8 @@ namespace CodeEnv.Master.GameContent {
     /// when a new instance is created.
     ///     - Persistent MonoSingletons: 
     ///         - no issues as they all persist
-    ///     - Non-persistent MonoSingletons: MainCameraControl, GuiCameraControl, DynamicObjectsFolder, SectorGrid, SphericalHighlight, Tooltip
+    ///     - Non-persistent MonoSingletons: MainCameraControl, GuiCameraControl, DynamicObjectsFolder, SectorGrid, SphericalHighlight, 
+    ///         Tooltip, MyPoolManager
     ///         - all need to refresh the reference on instantiation in InitializeOnInstance
     ///         - all should null the reference in Cleanup
     ///     - Non-persistent StdGenericSingletons: 
@@ -43,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
     /// 
     /// IMPROVE: Alternative ways of gaining these references without access to these loose
     /// scripts are 1) for non-MonoBehaviour classes use Constructor Dependency
-    /// Injection - ie. ClassConstructor(ICameraControl cameraCntl), 2) find the loose
+    /// Injection - i.e. ClassConstructor(ICameraControl cameraCntl), 2) find the loose
     /// script instance gameObject using a tag or name, then access the instance using
     /// gameObject.GetInterface() and 3) use static Property Dependency Injection (like below),
     /// but on the class that has the dependency, rather than this intermediate class. This third
@@ -72,6 +73,7 @@ namespace CodeEnv.Master.GameContent {
         public static ITooltipHudWindow TooltipHudWindow { get; set; }
         public static ISelectedItemHudWindow SelectedItemHudWindow { get; set; }
         public static IHoveredHudWindow HoveredItemHudWindow { get; set; }
+        public static IMyPoolManager MyPoolManager { get; set; }
 
         #endregion
 

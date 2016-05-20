@@ -29,10 +29,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="firingSolution">The firing solution.</param>
         void TraverseTo(LosWeaponFiringSolution firingSolution);
 
-        /// <summary>
-        /// The Muzzle GameObject, used as the parent of the BeamOrdnance gameObject while being fired.
-        /// </summary>
-        GameObject Muzzle { get; }
     }
 }
 

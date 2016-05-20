@@ -39,18 +39,6 @@ namespace CodeEnv.Master.GameContent {
         IShipCloseOrbitSimulator MakeShipCloseOrbitSimulatorInstance(OrbitData orbitData);
 
         /// <summary>
-        /// Makes an instance of an explosion, scaled to work with the item it is being applied too.
-        /// Parented to the DynamicObjectsFolder. Destroys itself when completed.
-        /// </summary>
-        /// <param name="itemRadius">The item radius.</param>
-        /// <param name="itemPosition">The item position.</param>
-        /// <returns></returns>
-        ParticleSystem MakeAutoDestructExplosionInstance(float itemRadius, Vector3 itemPosition);
-
-        IExplosion_Pooled SpawnExplosionInstance(Vector3 itemPosition);
-
-
-        /// <summary>
         /// Makes a GameObject that will auto destruct when its AudioSource (added by client) finishes playing. The position
         /// is important as the AudioSFX playing is 3D. Being too far away from the AudioListener on the MainCamera
         /// will result in no audio. Parented to the DynamicObjectsFolder.

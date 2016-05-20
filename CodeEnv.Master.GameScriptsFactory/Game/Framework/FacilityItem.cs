@@ -352,7 +352,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     IEnumerator Repairing_EnterState() {
         LogEvent();
-        StartEffect(EffectID.Repairing);
+        StartEffectSequence(EffectSequenceID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
@@ -369,7 +369,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         Data.Sensors.ForAll(s => s.IsDamaged = false);
         D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
-        StopEffect(EffectID.Repairing);
+        StopEffectSequence(EffectSequenceID.Repairing);
         Return();
     }
 
@@ -438,10 +438,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     void Dead_EnterState() {
         LogEvent();
         HandleDeath();
-        StartEffect(EffectID.Dying);
+        StartEffectSequence(EffectSequenceID.Dying);
     }
 
-    void Dead_UponEffectFinished(EffectID effectID) {
+    void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
         DestroyMe();
     }
@@ -450,10 +450,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region StateMachine Support Methods
 
-    public override void HandleEffectFinished(EffectID effectID) {
-        base.HandleEffectFinished(effectID);
+    public override void HandleEffectSequenceFinished(EffectSequenceID effectSeqID) {
+        base.HandleEffectSequenceFinished(effectSeqID);
         if (CurrentState == FacilityState.Dead) {   // OPTIMIZE avoids 'method not found' warning spam
-            UponEffectFinished(effectID);
+            UponEffectSequenceFinished(effectSeqID);
         }
     }
 

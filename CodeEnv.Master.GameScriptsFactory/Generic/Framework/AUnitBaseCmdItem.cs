@@ -90,7 +90,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     /// Removes the element from the Unit.
     /// <remarks>4.19.16 Just discovered I still had asserts in place that require that the Base's HQElement die last, 
     /// a holdover from when Bases distributed damage to protect the HQ until last. I'm allowing Bases to change their
-    /// HQElement if it dies now until I determine how I want Base.HQELements to operate gameplay-wise.</remarks>
+    /// HQElement if it dies now until I determine how I want Base.HQELements to operate game play wise.</remarks>
     /// </summary>
     /// <param name="element">The element.</param>
     public override void RemoveElement(AUnitElementItem element) {
@@ -296,12 +296,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     protected void Dead_EnterState() {
         LogEvent();
         HandleDeath();
-        StartEffect(EffectID.Dying);    // currently no death effect for a BaseCmd, just its elements
+        StartEffectSequence(EffectSequenceID.Dying);    // currently no death effect for a BaseCmd, just its elements
     }
 
-    protected void Dead_UponEffectFinished(EffectID effectID) {
+    protected void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
-        D.Assert(effectID == EffectID.Dying);
+        D.Assert(effectSeqID == EffectSequenceID.Dying);
         DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
@@ -309,10 +309,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #region StateMachine Support Methods
 
-    public override void HandleEffectFinished(EffectID effectID) {
-        base.HandleEffectFinished(effectID);
+    public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
+        base.HandleEffectSequenceFinished(effectID);
         if (CurrentState == BaseState.Dead) {   // TEMP avoids 'method not found' warning spam
-            UponEffectFinished(effectID);
+            UponEffectSequenceFinished(effectID);
         }
     }
 

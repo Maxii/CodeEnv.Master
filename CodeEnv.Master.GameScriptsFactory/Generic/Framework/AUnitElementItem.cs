@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using PathologicalGames;
 using UnityEngine;
 
 /// <summary>
@@ -201,8 +202,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     /*******************************************************************************************************************************************
      * This implementation attempts to calculate a firing solution against every target thought to be in range and leaves it up to the 
-     * element to determine which one to use, if any. If the element declines to fire (would be ineffective, not proper state (ie. refitting), target 
-     * died or diplo relations changed while weapon being aimed, etc.), then the weapon continues to look for firing solutions to put forward.
+     * element to determine which one to use, if any. If the element declines to fire (would be ineffective, not proper state (IE. refitting), target 
+     * died or diplomatic relations changed while weapon being aimed, etc.), then the weapon continues to look for firing solutions to put forward.
      * This approach works best where many weapons or countermeasures may not bear even when the target is in range.
      ********************************************************************************************************************************************/
 
@@ -233,12 +234,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     /// <summary>
     /// Initiates the process of firing the provided weapon at the enemy target defined by the provided firing solution.
-    /// If the conditions for firing the weapon at the target are satisfied (within range, can be beared upon,
+    /// If the conditions for firing the weapon at the target are satisfied (within range, can be borne upon,
     /// no interfering obstacles, etc.), the weapon will be fired.
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     protected void InitiateFiringSequence(WeaponFiringSolution firingSolution) {
-        StartEffect(EffectID.Attacking);
+        StartEffectSequence(EffectSequenceID.Attacking);
         LosWeaponFiringSolution losFiringSolution = firingSolution as LosWeaponFiringSolution;
         if (losFiringSolution != null) {
             var losWeapon = losFiringSolution.Weapon;
@@ -253,16 +254,36 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         }
     }
 
+    /// <summary>
+    /// Spawns and launches the ordnance.
+    /// <remarks>Physics.IgnoreCollision below resets the trigger state of each collider, thereby
+    /// generating sequential OnTriggerExit and OnTriggerEnter events in any Monitor in the area.</remarks>
+    /// <see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/>
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="target">The target.</param>
     private void LaunchOrdnance(AWeapon weapon, IElementAttackable target) {
-        var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
-        var projectileOrdnance = ordnance as AProjectileOrdnance;
-        if (projectileOrdnance != null) {
-            projectileOrdnance.Launch(target, weapon, Topography);
+        Vector3 launchLoc = weapon.WeaponMount.MuzzleLocation;
+        Quaternion launchRotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
+        WDVCategory category = weapon.DeliveryVehicleCategory;
+        Transform ordnanceTransform;
+        if (category == WDVCategory.Beam) {
+            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
+            ordnanceTransform.gameObject.layer = (int)Layers.TransparentFX; // UNCLEAR necessary, aka does Spawn with parent change layer?
+            Beam beam = ordnanceTransform.GetComponent<Beam>();
+            beam.Launch(target, weapon);
+        }
+        else if (category == WDVCategory.Missile) {
+            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation); Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);
+            Missile missile = ordnanceTransform.GetComponent<Missile>();
+            missile.ElementVelocityAtLaunch = _rigidbody.velocity;
+            missile.Launch(target, weapon, Topography);
         }
         else {
-            var beamOrdnance = ordnance as Beam;
-            D.Assert(beamOrdnance != null);
-            beamOrdnance.Launch(target, weapon);
+            D.Assert(category == WDVCategory.Projectile);
+            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation); Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);
+            Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
+            projectile.Launch(target, weapon, Topography);
         }
         //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
@@ -273,26 +294,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
          * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
          **************************************************************************************************************************************************/
     }
-    //private void LaunchOrdnance(AWeapon weapon, IElementAttackable target) {
-    //    var ordnance = GeneralFactory.Instance.MakeOrdnanceInstance(weapon, gameObject);
-    //    var projectileOrdnance = ordnance as AProjectileOrdnance;
-    //    if (projectileOrdnance != null) {
-    //        projectileOrdnance.Launch(target, weapon, Topography, IsVisualDetailDiscernibleToUser);
-    //    }
-    //    else {
-    //        var beamOrdnance = ordnance as Beam;
-    //        D.Assert(beamOrdnance != null);
-    //        beamOrdnance.Launch(target, weapon, IsVisualDetailDiscernibleToUser);
-    //    }
-    //    //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
-    //    /***********************************************************************************************************************************************
-    //     * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
-    //     * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
-    //     * death cinematic plays out. Once the target is destroyed, its collider becomes disabled, allowing ordnance to pass through and potentially
-    //     * collide with other items until it runs out of range and self terminates. This behaviour holds for both projectile and beam ordnance. In the
-    //     * case of missile ordnance, once its target is dead it self destructs as waiting until the target is destroyed results in 'transform destroyed' errors.
-    //     **************************************************************************************************************************************************/
-    //}
 
     private void HandleWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         bool isMsgReceived = UponWeaponReadyToFire(firingSolutions);
@@ -506,7 +507,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             LaunchOrdnance(losWeapon, target);
         }
         else {
-            // target moved out of range, died or changed diplo during aiming process
+            // target moved out of range, died or changed diplomatic during aiming process
             losWeapon.HandleElementDeclinedToFire();
         }
         losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
@@ -573,7 +574,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected void UponEffectFinished(EffectID effectID) { RelayToCurrentState(effectID); }
+    protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
     protected void UponApTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
@@ -681,16 +682,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// ordnance moves, even if it first appears inside the monitor's collider.
     /// </summary>
     /// <param name="ordnanceFired">The ordnance fired.</param>
-    [Obsolete]
-    public void HandleFiredUponBy(IInterceptableOrdnance ordnanceFired) {
-        float ordnanceDistanceFromElement = Vector3.Distance(ordnanceFired.Position, Position);
-        _countermeasureRangeMonitors.ForAll(rm => {
-            if (rm.RangeDistance > ordnanceDistanceFromElement) {
-                // ordance was fired inside the collider
-                rm.AddOrdnanceLaunchedFromInsideMonitor(ordnanceFired);
-            }
-        });
-    }
+    //[Obsolete]
+    //public void HandleFiredUponBy(IInterceptableOrdnance_UnPooled ordnanceFired) {
+    //    float ordnanceDistanceFromElement = Vector3.Distance(ordnanceFired.Position, Position);
+    //    _countermeasureRangeMonitors.ForAll(rm => {
+    //        if (rm.RangeDistance > ordnanceDistanceFromElement) {
+    //            // ordnance was fired inside the collider
+    //            rm.AddOrdnanceLaunchedFromInsideMonitor(ordnanceFired);
+    //        }
+    //    });
+    //}
 
     public override void TakeHit(DamageStrength damagePotential) {
         LogEvent();
@@ -709,15 +710,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         float damageSeverity;
         bool isElementAlive = ApplyDamage(damage, out damageSeverity);
         if (!isElementAlive) {
-            IsOperational = false;  // InitiateDeath();    // should immediately propogate thru to Cmd's alive status
+            IsOperational = false;  // InitiateDeath();    // should immediately propagate thru to Cmd's alive status
         }
         if (IsHQ && Command.IsOperational) {
             isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
         }
 
         if (isElementAlive) {
-            var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
-            StartEffect(hitAnimation);
+            var hitAnimation = isCmdHit ? EffectSequenceID.CmdHit : EffectSequenceID.Hit;
+            StartEffectSequence(hitAnimation);
             AssessNeedForRepair();
         }
     }

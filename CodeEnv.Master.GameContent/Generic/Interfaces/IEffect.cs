@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IExplosion_Pooled.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: IEffect.cs
+// Interface for easy access to Effect MonoBehaviours.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,24 +17,19 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Interface for easy access to Effect MonoBehaviours.
     /// </summary>
-    public interface IExplosion_Pooled {
+    public interface IEffect {
 
-
-        event EventHandler explosionFinishedOneShot;
+        event EventHandler effectFinishedOneShot;
 
         bool IsPaused { get; set; }
 
-        void Play(float itemRadius);
+        bool IsPlaying { get; }
+
+        void Play(float effectRadius);
     }
 }
 

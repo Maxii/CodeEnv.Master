@@ -73,7 +73,6 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
     }
 
-
     /// <summary>
     /// Makes and returns an instance of IShipCloseOrbitSimulator for this OrbitData.
     /// </summary>
@@ -88,36 +87,6 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         orbitSimGo.name = closeOrbitableItem.FullName + Constants.Space + typeof(ShipCloseOrbitSimulator).Name;  // OPTIMIZE
         return orbitSim;
     }
-
-    /// <summary>
-    /// Makes an instance of an explosion, scaled to work with the item it is being applied too.
-    /// Parented to the DynamicObjectsFolder. Destroys itself when completed.
-    /// </summary>
-    /// <param name="itemRadius">The item radius.</param>
-    /// <param name="itemPosition">The item position.</param>
-    /// <returns></returns>
-    public ParticleSystem MakeAutoDestructExplosionInstance(float itemRadius, Vector3 itemPosition) {
-        var explosionPrefab = RequiredPrefabs.Instance.explosion;
-        GameObject explosionGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, explosionPrefab.gameObject);
-        explosionGo.layer = (int)Layers.TransparentFX;
-        explosionGo.transform.position = itemPosition;
-
-        var explosionScaleControl = explosionGo.GetSafeComponent<VisualEffectScale>();
-        var destroyOnCompletionComponent = UnityUtility.ValidateComponentPresence<DestroyEffectOnCompletion>(explosionGo);
-        D.Assert(destroyOnCompletionComponent.effectType == DestroyEffectOnCompletion.EffectType.Particle);
-        explosionScaleControl.ItemRadius = itemRadius;
-        return explosionGo.GetComponent<ParticleSystem>();
-    }
-
-    public IExplosion_Pooled SpawnExplosionInstance(Vector3 itemPosition) {
-        SpawnPool explosionPool = PoolManager.Pools["Explosions"];
-        Transform explosionPrefab = explosionPool.prefabs["Explosion_Pooled"];
-        Transform explosionInstanceTransform = explosionPool.Spawn(explosionPrefab, itemPosition, Quaternion.identity);
-        IExplosion_Pooled explosionInstance = explosionInstanceTransform.GetComponent<IExplosion_Pooled>();
-
-        return explosionInstance;
-    }
-
 
     /// <summary>
     /// Makes a GameObject that will auto destruct when its AudioSource (added by client) finishes playing. The position
@@ -135,49 +104,6 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         var destroyOnCompletion = go.AddComponent<DestroyEffectOnCompletion>();
         destroyOnCompletion.effectType = DestroyEffectOnCompletion.EffectType.AudioSFX;
         return go;
-    }
-
-    /// <summary>
-    /// Makes an instance of Ordnance.
-    /// <remarks>Physics.IgnoreCollision below resets the trigger state of each collider, thereby
-    /// generating sequential OnTriggerExit and OnTriggerEnter events in any Monitor in the area.</remarks>
-    /// <see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/>
-    /// </summary>
-    /// <param name="weapon">The weapon.</param>
-    /// <param name="firingElement">The GameObject firing this ordnance.</param>
-    /// <returns></returns>
-    /// <exception cref="System.NotImplementedException"></exception>
-    public AOrdnance MakeOrdnanceInstance(AWeapon weapon, GameObject firingElement) {
-        AOrdnance prefab;
-        GameObject ordnanceGo;
-        switch (weapon.DeliveryVehicleCategory) {
-            case WDVCategory.Beam:
-                prefab = RequiredPrefabs.Instance.beam;
-                GameObject muzzle = (weapon.WeaponMount as ILOSWeaponMount).Muzzle;
-                ordnanceGo = UnityUtility.AddChild(muzzle, prefab.gameObject);
-                ordnanceGo.layer = (int)Layers.TransparentFX;
-                break;
-            case WDVCategory.Missile:
-                prefab = RequiredPrefabs.Instance.missile;
-                ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
-                Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
-                Missile missile = ordnanceGo.GetSafeComponent<Missile>();
-                missile.ElementVelocityAtLaunch = firingElement.GetComponent<Rigidbody>().velocity;
-                ordnanceGo.layer = (int)Layers.Projectiles;
-                break;
-            case WDVCategory.Projectile:
-                prefab = RequiredPrefabs.Instance.projectile;
-                ordnanceGo = UnityUtility.AddChild(_dynamicObjectsFolderGo, prefab.gameObject);
-                Physics.IgnoreCollision(ordnanceGo.GetComponent<Collider>(), firingElement.GetComponent<Collider>());
-                ordnanceGo.layer = (int)Layers.Projectiles;
-                break;
-            case WDVCategory.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapon.DeliveryVehicleCategory));
-        }
-        ordnanceGo.transform.position = weapon.WeaponMount.MuzzleLocation;
-        ordnanceGo.transform.rotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
-        return ordnanceGo.GetSafeComponent<AOrdnance>();    //ordnanceGo.GetSafeInterface<IOrdnance>();
     }
 
     private void Cleanup() {

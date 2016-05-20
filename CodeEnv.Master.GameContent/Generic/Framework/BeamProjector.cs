@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -29,9 +30,9 @@ namespace CodeEnv.Master.GameContent {
         public float Duration { get { return Stat.Duration; } }
 
         /// <summary>
-        /// The maximum inaccuracy of this Weapon's Turret mount when traversing in degrees.
+        /// The maximum inaccuracy of this Weapon's bearing when launched in degrees.
         /// </summary>
-        public override float MaxTraverseInaccuracy { get { return Stat.MaxTraverseInaccuracy; } }
+        public override float MaxLaunchInaccuracy { get { return Stat.MaxLaunchInaccuracy; } }
 
         protected new BeamWeaponStat Stat { get { return base.Stat as BeamWeaponStat; } }
 

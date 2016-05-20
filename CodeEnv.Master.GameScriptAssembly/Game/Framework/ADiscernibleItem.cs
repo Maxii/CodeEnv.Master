@@ -27,8 +27,8 @@ using UnityEngine;
 /// </summary>
 public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsClient, ISelectable {
 
-    public event EventHandler<EffectEventArgs> effectStarting;
-    public event EventHandler<EffectEventArgs> effectFinished;
+    public event EventHandler<EffectSeqEventArgs> effectSeqStarting;
+    public event EventHandler<EffectSeqEventArgs> effectSeqFinished;
 
     private bool _isDiscernibleToUser;
     public bool IsDiscernibleToUser {
@@ -90,7 +90,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         InitializeDisplayManager();
         // always start enabled as UserPlayerIntelCoverage must be > None for this method to be called,
         // or, in the case of SystemItem, its members coverage must be > their starting coverage
-        DisplayMgr.EnableDisplay(true);
+        DisplayMgr.IsDisplayEnabled = true; //DisplayMgr.EnableDisplay(true);
 
         EffectsMgr = InitializeEffectsManager();
         _highlighter = InitializeHighlighter();
@@ -131,7 +131,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     /// <summary>
-    /// Assesses the discernability of this item to the user.
+    /// Assesses the discernibility of this item to the user.
     /// </summary>
     protected abstract void AssessIsDiscernibleToUser();
 
@@ -179,26 +179,26 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     /// Allows derived classes to take action after the finish of an effect.
     /// This base method fires the onEffectFinished event.
     /// </summary>
-    /// <param name="effectID">The effect identifier.</param>
-    public virtual void HandleEffectFinished(EffectID effectID) {
-        OnEffectFinished(effectID);
+    /// <param name="effectSeqID">The effect identifier.</param>
+    public virtual void HandleEffectSequenceFinished(EffectSequenceID effectSeqID) {
+        OnEffectSeqFinished(effectSeqID);
     }
 
-    protected void StartEffect(EffectID effectID) {
-        OnEffectStarting(effectID);
+    protected void StartEffectSequence(EffectSequenceID effectSeqID) {
+        OnEffectSeqStarting(effectSeqID);
         if (IsVisualDetailDiscernibleToUser) {
             D.Assert(EffectsMgr != null);   // if DisplayMgr is initialized, so is EffectsMgr
-            EffectsMgr.StartEffect(effectID);
+            EffectsMgr.StartEffect(effectSeqID);
         }
         else {
-            // Not going to show the effect. Complete the handshake so any dependancies can continue
-            HandleEffectFinished(effectID);
+            // Not going to show the effect. Complete the handshake so any dependencies can continue
+            HandleEffectSequenceFinished(effectSeqID);
         }
     }
 
-    protected void StopEffect(EffectID effectID) {
+    protected void StopEffectSequence(EffectSequenceID effectSeqID) {
         if (EffectsMgr != null) {
-            EffectsMgr.StopEffect(effectID);
+            EffectsMgr.StopEffect(effectSeqID);
         }
         // if EffectsMgr never initialized, then caller of StartEffect already got its HandleEffectFinished callback
     }
@@ -393,15 +393,15 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         DoubleClickEventHandler(gameObject);
     }
 
-    private void OnEffectStarting(EffectID effectID) {
-        if (effectStarting != null) {
-            effectStarting(this, new EffectEventArgs(effectID));
+    private void OnEffectSeqStarting(EffectSequenceID effectSeqID) {
+        if (effectSeqStarting != null) {
+            effectSeqStarting(this, new EffectSeqEventArgs(effectSeqID));
         }
     }
 
-    protected void OnEffectFinished(EffectID effectID) {
-        if (effectFinished != null) {
-            effectFinished(this, new EffectEventArgs(effectID));
+    protected void OnEffectSeqFinished(EffectSequenceID effectSeqID) {
+        if (effectSeqFinished != null) {
+            effectSeqFinished(this, new EffectSeqEventArgs(effectSeqID));
         }
     }
 
@@ -414,18 +414,21 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+        if (EffectsMgr != null) {
+            EffectsMgr.Dispose();
+        }
     }
 
     #endregion
 
     #region Nested Classes
 
-    public class EffectEventArgs : EventArgs {
+    public class EffectSeqEventArgs : EventArgs {
 
-        public EffectID EffectID { get; private set; }
+        public EffectSequenceID EffectSeqID { get; private set; }
 
-        public EffectEventArgs(EffectID effectID) {
-            EffectID = effectID;
+        public EffectSeqEventArgs(EffectSequenceID effectSeqID) {
+            EffectSeqID = effectSeqID;
         }
     }
 
@@ -474,7 +477,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     public Vector3 GetOffset(WidgetPlacement placement) {
 
-        float circumRadius = Mathf.Sqrt(2) * Radius / 2F;   // distance to hypotenus of right triangle
+        float circumRadius = Mathf.Sqrt(2) * Radius / 2F;   // distance to hypotenuse of right triangle
         switch (placement) {
             case WidgetPlacement.Above:
                 return new Vector3(Constants.ZeroF, Radius, Constants.ZeroF);

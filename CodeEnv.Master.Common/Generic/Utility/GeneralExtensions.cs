@@ -293,7 +293,7 @@ namespace CodeEnv.Master.Common {
             return -1;
         }
 
-        ///<summary>Finds the index of the first occurence of an item in an enumerable.</summary>
+        ///<summary>Finds the index of the first occurrence of an item in an enumerable.</summary>
         ///<param name="items">The enumerable to search.</param>
         ///<param name="item">The item to find.</param>
         ///<returns>The index of the first matching item, or -1 if the item was not found.</returns>
@@ -545,7 +545,7 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="TProp">The type of the publisher's property.</typeparam>
         /// <param name="source">The publisher.</param>
         /// <param name="propertySelector">The lambda property selector: pub => pub.Property</param>
-        /// <param name="onChanged">The subsciber's no parameter/no return method to call when the property changed.</param>
+        /// <param name="onChanged">The subscriber's no parameter/no return method to call when the property changed.</param>
         public static IDisposable SubscribeToPropertyChanged<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action onChanged) where TSource : INotifyPropertyChanged {
             Utility.ValidateNotNull(source);
             Utility.ValidateNotNull(propertySelector);
@@ -574,8 +574,8 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="TProp">The type of the publisher's property.</typeparam>
         /// <param name="source">The publisher.</param>
         /// <param name="propertySelector">The lambda property selector: pub =&gt; pub.Property</param>
-        /// <param name="onChanging">The subsciber's one parameter/no return method to call when the property is in the process of changing.</param>
-        /// <returns>IDisposable for Unsubscribing</returns>
+        /// <param name="onChanging">The subscriber's one parameter/no return method to call when the property is in the process of changing.</param>
+        /// <returns>IDisposable for unsubscribing</returns>
         public static IDisposable SubscribeToPropertyChanging<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action<TProp> onChanging) where TSource : INotifyPropertyChanging {
             Utility.ValidateNotNull(source);
             Utility.ValidateNotNull(propertySelector);

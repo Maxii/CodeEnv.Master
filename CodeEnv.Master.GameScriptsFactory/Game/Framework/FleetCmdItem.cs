@@ -530,8 +530,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// Returns the AutoPilot settings for this move order.
     /// </summary>
     /// <param name="moveOrder">The move order.</param>
-    /// <param name="apMoveTgt">The ap move TGT.</param>
-    /// <param name="apMoveSpeed">The ap move speed.</param>
+    /// <param name="apMoveTgt">The move target.</param>
+    /// <param name="apMoveSpeed">The move speed.</param>
     /// <param name="apMoveTgtStandoffDistance">The move TGT standoff distance.</param>
     private void GetApMoveOrderSettings(FleetOrder moveOrder, out IFleetNavigable apMoveTgt, out Speed apMoveSpeed, out float apMoveTgtStandoffDistance) {
         D.Assert(moveOrder.Directive == FleetDirective.Move || moveOrder.Directive == FleetDirective.FullSpeedMove);
@@ -1418,12 +1418,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void Dead_EnterState() {
         LogEvent();
         HandleDeath();
-        StartEffect(EffectID.Dying);
+        StartEffectSequence(EffectSequenceID.Dying);
     }
 
-    void Dead_UponEffectFinished(EffectID effectID) {
+    void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
-        D.Assert(effectID == EffectID.Dying);
+        D.Assert(effectSeqID == EffectSequenceID.Dying);
         DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
@@ -1431,10 +1431,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #region StateMachine Support Methods
 
-    public override void HandleEffectFinished(EffectID effectID) {
-        base.HandleEffectFinished(effectID);
+    public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
+        base.HandleEffectSequenceFinished(effectID);
         if (CurrentState == FleetState.Dead) {   // TEMP avoids 'method not found' warning spam
-            UponEffectFinished(effectID);
+            UponEffectSequenceFinished(effectID);
         }
     }
 
@@ -1822,7 +1822,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         Dead
 
-        // ShowHit no longer applicable to Cmds as there is no mesh
+        // ShowHit no longer applicable to Cmd as there is no mesh
         //TODO Docking, Embarking, etc.
     }
 
@@ -1832,7 +1832,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         /// <summary>
         /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
-        /// must be used. Logic: If the req'd turn to reach the detour is sharp (above this value), then
+        /// must be used. Logic: If the reqd turn to reach the detour is sharp (above this value), then
         /// we are either very close or the obstacle is very large so it is time to redirect around the obstacle.
         /// </summary>
         private const float DetourTurnAngleThreshold = 15F;
@@ -1865,7 +1865,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             get {
                 if (ApTarget.IsMobile) {
                     var sqrDistanceTgtTraveled = Vector3.SqrMagnitude(ApTarget.Position - _apTgtPositionAtLastCoursePlot);
-                    //D.Log(ShowDebugLog, "{0}.IsCourseReplotNeeded called. {1} > {2}?, Dest: {3}, PrevDest: {4}.", 
+                    //D.Log(ShowDebugLog, "{0}.IsCourseReplotNeeded called. {1} > {2}?, Destination: {3}, PrevDest: {4}.", 
                     //Name, sqrDistanceTgtTraveled, _apTgtMovementReplotThresholdDistanceSqrd, ApTarget.Position, _apTgtPositionAtLastCoursePlot);
                     return sqrDistanceTgtTraveled > _apTgtMovementReplotThresholdDistanceSqrd;
                 }
@@ -1895,7 +1895,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         /// <summary>
         /// If <c>true </c> the flagship has reached its current destination. In most cases, this
-        /// "destination" is an interum waypoint provided by this fleet navigator, but it can also be the
+        /// "destination" is an interim waypoint provided by this fleet navigator, but it can also be the
         /// 'final' destination, aka ApTarget.
         /// </summary>
         private bool _hasFlagshipReachedDestination;
@@ -2044,7 +2044,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
                     currentWaypoint = ApCourse[_currentApCourseIndex];
                     if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
-                        // there is an obstacle enroute to the next waypoint, so use the detour provided instead
+                        // there is an obstacle en-route to the next waypoint, so use the detour provided instead
                         RefreshApCourse(CourseRefreshMode.AddWaypoint, detour);
                         currentWaypoint = detour;
                         apTgtCourseIndex = ApCourse.Count - 1;
@@ -2065,7 +2065,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         #region Obstacle Checking
 
         /// <summary>
-        /// Checks for an obstacle enroute to the provided <c>destination</c>. Returns true if one
+        /// Checks for an obstacle en-route to the provided <c>destination</c>. Returns true if one
         /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
         /// </summary>
         /// <param name="destination">The current destination. May be the ApTarget or an obstacle detour.</param>
@@ -2198,7 +2198,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         /// <summary>
         /// Coroutine that waits while the ships in the fleet align themselves with their requested heading.
-        /// IMPROVE This can be replaced by WaitJobUtility.WaitWhileCondition if no rqmt for errorDate.
+        /// IMPROVE This can be replaced by WaitJobUtility.WaitWhileCondition if no requirement for errorDate.
         /// </summary>
         /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
         /// <returns></returns>
@@ -2329,7 +2329,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <summary>
         /// Constructs a new course for this fleet from the <c>astarFixedCourse</c> provided.
         /// </summary>
-        /// <param name="astarFixedCourse">The astar fixed course.</param>
+        /// <param name="astarFixedCourse">The AStar fixed course.</param>
         private void ConstructApCourse(IList<Vector3> astarFixedCourse) {
             D.Assert(!astarFixedCourse.IsNullOrEmpty(), "{0}'s astarFixedCourse contains no path to {1}.".Inject(Name, ApTarget.FullName));
             ApCourse.Clear();
@@ -2343,7 +2343,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         /// <summary>
         /// Improves the existing course with System entry or exit points if applicable. If it is determined that a system entry or exit
-        /// point is needed, the existing course will be modified to minimize the amount of InSystem travel time req'd to reach the target. 
+        /// point is needed, the existing course will be modified to minimize the amount of InSystem travel time reqd to reach the target. 
         /// </summary>
         private void ImproveApCourseWithSystemAccessPoints() {
             SystemItem fleetSystem = null;
@@ -2481,7 +2481,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // since there is very little cost to running EngageCourseToTarget every frame.
 
         /// <summary>
-        /// Resets the values used when replotting a course.
+        /// Resets the values used when re-plotting a course.
         /// </summary>
         private void ResetApCourseReplotValues() {
             _apTgtPositionAtLastCoursePlot = ApTarget.Position;
@@ -2496,7 +2496,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
             // Note: WaitForFleetToAlign Job is designed to assist ships, not the FleetCmd. It can still be running 
             // if the Fleet disengages its autoPilot while ships are turning. This would occur when the fleet issues 
-            // a new set of orders immediately after issueing a prior set, thereby interrupting ship's execution of 
+            // a new set of orders immediately after issuing a prior set, thereby interrupting ship's execution of 
             // the first set. Each ship will remove their fleetIsAligned delegate once their autopilot is interrupted
             // by this new set of orders. The final ship to remove their delegate will shut down the Job.
         }
@@ -3428,7 +3428,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         ShipItem ship = element as ShipItem;
 
         if (!IsOperational) {
-            // If not operational, this positioning is occuring during construction so place the ship now where it belongs
+            // If not operational, this positioning is occurring during construction so place the ship now where it belongs
             base.PositionElementInFormation(element, stationOffset);
         }
 

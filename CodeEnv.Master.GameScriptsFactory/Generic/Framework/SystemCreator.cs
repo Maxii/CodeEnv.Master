@@ -32,11 +32,11 @@ using UnityEngine;
 /// <remarks>Naming approach: 
 /// <list type="bullet" >
 /// <item>
-///     <description>System: The name of the system is delivered by this SystemCreator using the name of its gameobject.  </description>
+///     <description>System: The name of the system is delivered by this SystemCreator using the name of its gameObject.  </description>
 /// </item>
 /// <item>
 ///     <description>Stars, Settlements, Planets and Moons: All names are automatically constructed using the name of the
-/// system or planet, and the orbit slot they end up residing within (eg. Regulas 1a).</description>
+/// system or planet, and the orbit slot they end up residing within (e.g. Regulus 1a).</description>
 /// </item>
 ///  </remarks>
 /// </summary>
@@ -429,7 +429,7 @@ public class SystemCreator : AMonoBase {
 
         _system.SettlementOrbitData = allSystemOrbitSlots[settlementOrbitSlotIndex];
 
-        // now divy up the remaining slots among the planets
+        // now divide up the remaining slots among the planets
         IList<PlanetItem> planetsToDestroy = null;
         Stack<int>[] slots;
         foreach (var planet in _planets) {
@@ -675,7 +675,7 @@ public class SystemCreator : AMonoBase {
             //D.Log("{0}'s orbit slot index {1} OrbitPeriod = {2}.", SystemName, slotIndex, orbitPeriod);
             GameObject planetsFolder = _system.transform.FindChild("Planets").gameObject;
             // planetsFolder used in place of _system so orbiters don't inherit the layer of the system
-            D.Assert(planetsFolder != null);    // in case I accidently change name of PlanetsFolder
+            D.Assert(planetsFolder != null);    // in case I accidentally change name of PlanetsFolder
             bool toActivelyOrbit = slotIndex == settlementOrbitSlotIndex ? TempGameValues.DoSettlementsActivelyOrbit : true;
             allOrbitSlots[slotIndex] = new OrbitData(planetsFolder, insideRadius, outsideRadius, _system.IsMobile, orbitPeriod, toActivelyOrbit);
         }

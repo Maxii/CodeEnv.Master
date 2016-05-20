@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: BulletDisplayManager.cs
-// DisplayManager for bullet ordnance which handles the display of the ordnance's operating 
+// File: ProjectileDisplayManager.cs
+// DisplayManager for projectile ordnance which handles the display of the ordnance's operating 
 // effect which can be either ParticleSystems or Icons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -21,18 +21,18 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// DisplayManager for bullet ordnance which handles the display of the ordnance's operating 
+    /// DisplayManager for projectile ordnance which handles the display of the ordnance's operating 
     /// effect which can be either ParticleSystems or Icons.
     /// </summary>
-    public class BulletDisplayManager : AProjectileDisplayManager {
+    public class ProjectileDisplayManager : AProjectileDisplayManager {
 
         private static readonly Vector2 IconSize = new Vector2(4F, 4F);
 
-        public BulletDisplayManager(IWidgetTrackable trackedBullet, Layers meshLayer, ParticleSystem operatingEffect)
-            : base(trackedBullet, meshLayer, operatingEffect) {
+        public ProjectileDisplayManager(IWidgetTrackable trackedProjectile, Layers meshLayer, ParticleSystem operatingEffect)
+            : base(trackedProjectile, meshLayer, operatingEffect) {
         }
 
-        protected override IconInfo MakeIconInfo() {
+        protected override IconInfo MakeIconInfo() {    // HACK
             return new IconInfo("Flat", AtlasID.MyGui, GameColor.White, IconSize, WidgetPlacement.Over, _meshLayer);
         }
 

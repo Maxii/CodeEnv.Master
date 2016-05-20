@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: AOrdnance.cs
-// Abstract base class for Beam, Missile and Projectile Ordnance.
+// Abstract base class for Beam, Missile and Projectile Ordnance. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,8 +18,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using PathologicalGames;
 using UnityEngine;
 
 /// <summary>
@@ -27,19 +30,21 @@ using UnityEngine;
 /// </summary>
 public abstract class AOrdnance : AMonoBase, IOrdnance {
 
-    private const string FullNameFormat = "{0}_{1}";
-    private static int __instanceCount = 1;
+    private const string NameFormat = "{0}_{1}";
+    private static int __InstanceCount = 1;
 
     public event EventHandler deathOneShot;
 
-    public string Name { get; private set; }
+    public string Name { get { return transform.name; } }
 
-    public string FullName { get { return FullNameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name); } }
+    public string FullName { get { return Weapon != null ? NameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name) : Name; } }
 
     private IElementAttackable _target;
     public IElementAttackable Target {
         get { return _target; }
-        private set { SetProperty<IElementAttackable>(ref _target, value, "Target"); }
+        private set {
+            SetProperty<IElementAttackable>(ref _target, value, "Target");
+        }
     }
 
     public Vector3 CurrentHeading { get { return transform.forward; } }
@@ -75,37 +80,47 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected GameTime _gameTime;
     protected IList<IDisposable> _subscriptions;
     private int __instanceID;
+    private string _rootName;
+    private bool _isNameInitialized;
 
     protected override void Awake() {
         base.Awake();
-        __instanceID = __instanceCount;
-        __instanceCount++;
         _gameMgr = GameManager.Instance;
         _gameTime = GameTime.Instance;
-        Subscribe();
+        _subscriptions = new List<IDisposable>();
         enabled = false;
     }
 
-    protected virtual void Subscribe() {
-        _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
+    private void InitializeName() {
+        //D.Log("InitializeName before renaming. Name = {0}.", Name);
+        string pooledPrefabName = Name;
+        string subStringToRemove = "(Clone)";
+        int index = pooledPrefabName.IndexOf(subStringToRemove);
+        string prefabNameSansClone = index < 0 ? pooledPrefabName : pooledPrefabName.Remove(index, subStringToRemove.Length);
+        transform.name = prefabNameSansClone;
+        _rootName = prefabNameSansClone;
+        //D.Log("InitializeName after renaming. Name = {0}.", Name);
+        _isNameInitialized = true;
     }
 
     protected void PrepareForLaunch(IElementAttackable target, AWeapon weapon) {
+        //D.Log("{0} is assigning target {1}.", Name, target.FullName);
         Target = target;
         Weapon = weapon;
-        SubscribeToWeaponChanges();
+        Subscribe();
 
         DeliveryVehicleStrength = weapon.DeliveryVehicleStrength;
 
-        SyncName();
+        AssignName();
         weapon.HandleFiringInitiated(target, this);
 
         _range = weapon.RangeDistance;
         IsOperational = true;
     }
 
-    private void SubscribeToWeaponChanges() {
+    protected virtual void Subscribe() {
+        D.Assert(_subscriptions.IsNullOrEmpty());
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
         _subscriptions.Add(Weapon.SubscribeToPropertyChanged<AWeapon, bool>(weap => weap.IsWeaponDiscernibleToUser, IsWeaponDiscernibleToUserPropChangedHandler));
     }
 
@@ -116,6 +131,19 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected abstract void ShowImpactEffects(Vector3 position, Quaternion rotation);
 
     #region Event and Property Change Handlers
+
+    protected virtual void OnSpawned() {
+        if (!_isNameInitialized) {
+            InitializeName();
+        }
+        D.Assert(Target == null);
+        D.Assert(Weapon == null);
+        D.Assert(__instanceID == Constants.Zero);
+        D.Assert(_range == Constants.ZeroF);
+        D.Assert(!IsOperational);
+        __instanceID = __InstanceCount;
+        __InstanceCount++;
+    }
 
     protected virtual void IsWeaponDiscernibleToUserPropChangedHandler() {
         AssessShowMuzzleEffects();
@@ -132,13 +160,25 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         }
     }
 
+    protected virtual void OnDespawned() {
+        //D.Log("{0}.OnDespawned called.", Name);
+        Unsubscribe();
+        Target = null;
+        Weapon = null;
+        __instanceID = Constants.Zero;
+        _range = Constants.ZeroF;
+        RestoreRootName();
+    }
+
     #endregion
 
     protected void ReportTargetHit() {
+        //D.Log("{0}.ReportTargetHit called.", Name);
         Weapon.HandleTargetHit(Target);
     }
 
     protected void ReportTargetMissed() {
+        //D.Log("{0}.ReportTargetMissed called.", Name);
         Weapon.HandleTargetMissed(Target);
     }
 
@@ -148,16 +188,19 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// object that was not its target.
     /// </summary>
     protected void ReportInterdiction() {
+        //D.Log("{0}.ReportInterdiction called.", Name);
         Weapon.HandleOrdnanceInterdicted(Target);
     }
 
     /// <summary>
-    /// Synchronizes Name and transform's name and adds instanceID.
-    /// Must be called after Awake() as UnityUtility.AddChild can't get rid of "Clone" until after Awake runs.
+    /// Adds __instanceID to the root name.
     /// </summary>
-    private void SyncName() {
-        Name = transform.name + __instanceID;
-        transform.name = Name;
+    private void AssignName() {
+        transform.name = NameFormat.Inject(_rootName, __instanceID);
+    }
+
+    private void RestoreRootName() {
+        transform.name = _rootName;
     }
 
     protected void TerminateNow() {
@@ -168,17 +211,31 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         //D.Log("{0} is terminating.", Name); 
         enabled = false;
         IsOperational = false;
+
         PrepareForTermination();
+        ResetEffectsForReuse();
 
         OnDeath();
-        Destroy(gameObject);
+        Despawn();
+    }
+
+    protected virtual void Despawn() {
+        //D.Log("{0} is about to despawn.", Name);
+        MyPoolManager.Instance.DespawnOrdnance(transform);
     }
 
     /// <summary>
-    /// Called when this ordnance is about to be terminated, this is a derived class'
-    /// opportunity to do any cleanup (stop audio, etc.) prior to the gameObject being destroyed.
+    /// Called while terminating, this is a derived class'
+    /// opportunity to do any cleanup (stop audio, etc.) prior to the gameObject being despawned.
     /// </summary>
     protected virtual void PrepareForTermination() { }
+
+    /// <summary>
+    /// Called after PrepareForTermination, all derived classes must reset each of their effects 
+    /// so they are ready for reuse when Spawned again.
+    /// <remarks>This method is only for preparing for reuse. Stopping effects should be handled by PrepareForTermination.</remarks>
+    /// </summary>
+    protected abstract void ResetEffectsForReuse();
 
     #region Cleanup
 
@@ -186,7 +243,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Unsubscribe();
     }
 
-    private void Unsubscribe() {
+    protected virtual void Unsubscribe() {
         _subscriptions.ForAll(d => d.Dispose());
         _subscriptions.Clear();
     }

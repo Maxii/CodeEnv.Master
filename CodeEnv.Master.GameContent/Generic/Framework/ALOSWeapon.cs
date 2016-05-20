@@ -31,9 +31,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The maximum inaccuracy of this Weapon's Turret mount when traversing in degrees.
+        /// The maximum inaccuracy of this Weapon's bearing when launched in degrees.
         /// </summary>
-        public abstract float MaxTraverseInaccuracy { get; }
+        public abstract float MaxLaunchInaccuracy { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ALOSWeapon"/> class.

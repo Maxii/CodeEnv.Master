@@ -28,17 +28,6 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #region Prefabs
 
-    [Header("Ordnance")]
-    public Bullet projectile;
-    public Beam beam;
-    public Missile missile;
-
-    [Header("Effects")]
-    /// <summary>
-    /// Explosion prefab that adjusts its scale to the scale of the Item exploding.
-    /// </summary>
-    public ParticleSystem explosion;
-
     [Header("Tracking Widgets")]
     /// <summary>
     /// A generic prefab for labels that track the world object they are parented too.

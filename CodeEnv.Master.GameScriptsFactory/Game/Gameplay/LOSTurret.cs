@@ -84,15 +84,15 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         }
     }
 
-    public override Vector3 MuzzleFacing { get { return (_muzzle.position - _barrel.position).normalized; } }
+    public override Vector3 MuzzleFacing { get { return (Muzzle.position - _barrel.position).normalized; } }
 
     /// <summary>
     /// The inaccuracy of this Turret when traversing in degrees.
     /// Affects both hub rotation and barrel elevation.
     /// </summary>
-    public float TraverseInaccuracy { get; private set; }
+    private float AllowedTraverseInaccuracy { get { return UnityConstants.AngleEqualityPrecision; } }
 
-    public GameObject Muzzle { get { return _muzzle.gameObject; } }
+    //public GameObject Muzzle { get { return _muzzle.gameObject; } }
 
     public new ALOSWeapon Weapon {
         get { return base.Weapon as ALOSWeapon; }
@@ -159,7 +159,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     }
 
     /// <summary>
-    /// Trys to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
+    /// Tries to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
     /// firing solution, otherwise <c>false</c>.
     /// </summary>
     /// <param name="enemyTarget">The enemy target.</param>
@@ -276,8 +276,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         //float reqdHubRotationInDegrees = Quaternion.Angle(startingHubRotation, reqdHubRotation);
         //float reqdBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, reqdBarrelElevation);
         //D.Log("Initiating {0} traversal. ReqdHubRotationInDegrees: {1:0.#}, ReqdBarrelElevationInDegrees: {2:0.#}.", Name, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
-        bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, TraverseInaccuracy);
-        bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
+        bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, AllowedTraverseInaccuracy);
+        bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, AllowedTraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
         //float actualHubRotationInDegrees = 0F;
         //float actualBarrelElevationInDegrees = 0F;
@@ -291,7 +291,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 Quaternion inprocessRotation = Quaternion.RotateTowards(previousHubRotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, inprocessRotation);
                 //D.Log("{0}: AllowedHubRotationChange = {1}, ActualHubRotationChange = {2}.", Name, allowedHubRotationChange, rotationChangeInDegrees);
-                isHubRotationCompleted = inprocessRotation.IsSame(reqdHubRotation, TraverseInaccuracy);
+                isHubRotationCompleted = inprocessRotation.IsSame(reqdHubRotation, AllowedTraverseInaccuracy);
                 _hub.rotation = inprocessRotation;
             }
 
@@ -301,7 +301,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 Quaternion inprocessElevation = Quaternion.RotateTowards(previousBarrelElevation, reqdBarrelElevation, allowedBarrelElevationChange);
                 //float elevationChangeInDegrees = Quaternion.Angle(previousBarrelElevation, inprocessElevation);
                 //D.Log("{0}: AllowedBarrelElevationChange = {1}, ActualBarrelElevationChange = {2}.", Name, allowedBarrelElevationChange, elevationChangeInDegrees);
-                isBarrelElevationCompleted = inprocessElevation.IsSame(reqdBarrelElevation, TraverseInaccuracy);
+                isBarrelElevationCompleted = inprocessElevation.IsSame(reqdBarrelElevation, AllowedTraverseInaccuracy);
                 _barrel.localRotation = inprocessElevation;
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
@@ -326,9 +326,10 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     }
 
     /// <summary>
-    /// Tests whether this turret can traverse to acquire the provided targetPosition. Returns <c>true</c> if the turret can traverse far enough to
-    /// bear on the targetPosition, <c>false</c> otherwise. Returns the calculated hub rotation
-    /// and barrel elevation values required for the turret to bear on the target, even if the turret cannot traverse that far.
+    /// Tests whether this turret can traverse to acquire the provided targetPosition. 
+    /// Returns <c>true</c> if the turret can traverse far enough to bear on the targetPosition, <c>false</c> otherwise. 
+    /// Returns the calculated hub rotation and barrel elevation values required for the turret to bear on the target, 
+    /// even if the turret cannot traverse that far.
     /// <remarks>Uses rotated versions of the UpTurret prefab where the rotation is added to the turret object itself so that it appears
     /// to the hub like the ship is rotated.</remarks>
     /// </summary>
@@ -371,7 +372,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             //D.Log("{0}: CalculatedBarrelElevationAngle = {1}.", Name, reqdBarrelElevation.eulerAngles);
         }
         else {
-            // target is directly above/infrontof/below turret so return barrels to their amidships bearing to hit it?
+            // target is directly above/inFrontOf/below turret so return barrels to their amidships bearing to hit it?
             //D.Log("{0}: Target is directly in front of turret so barrels elevating to max.", Name);
             reqdBarrelElevation = _barrelMaxElevation;
         }
@@ -387,11 +388,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     }
 
     #region Event and Property Change Handlers
-
-    protected override void WeaponPropSetHandler() {
-        base.WeaponPropSetHandler();
-        TraverseInaccuracy = CalcTraverseInaccuracy();
-    }
 
     private void IsPausedPropChangedHandler() {
         PauseJobs(_gameMgr.IsPaused);
@@ -417,10 +413,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         var latestDateToCompleteHubRotation = GameUtility.CalcWarningDateForRotation(HubRotationRate, HubMaxRotationTraversal);
         var latestDateToCompleteBarrelElevation = GameUtility.CalcWarningDateForRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
         return latestDateToCompleteHubRotation >= latestDateToCompleteBarrelElevation ? latestDateToCompleteHubRotation : latestDateToCompleteBarrelElevation;
-    }
-
-    private float CalcTraverseInaccuracy() {
-        return UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, Weapon.MaxTraverseInaccuracy);
     }
 
     protected override void Cleanup() {

@@ -48,7 +48,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
     /// <summary>
-    /// Sets the intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
+    /// Sets the Intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
     /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
     /// the item to regress its IntelCoverage.
     /// </summary>
@@ -77,8 +77,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
-        var toEnableDisplayMgr = UserIntelCoverage != IntelCoverage.None;
-        DisplayMgr.EnableDisplay(toEnableDisplayMgr);
+        DisplayMgr.IsDisplayEnabled = UserIntelCoverage != IntelCoverage.None;
         HandleIntelCoverageChanged();
     }
 

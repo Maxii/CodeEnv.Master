@@ -44,7 +44,20 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <summary>
     /// 360 degrees in one rotation.
     /// </summary>
-    private static int _degreesPerRotation = Constants.DegreesPerRotation;
+    private const int _degreesPerRotation = Constants.DegreesPerRotation;
+
+    /// <summary>
+    /// The layers the main 3DCameras are allowed to render.
+    /// </summary>
+    private static LayerMask _mainCamerasCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX, Layers.Cull_Tiny,
+        Layers.Cull_1, Layers.Cull_2, Layers.Cull_3, Layers.Cull_4, Layers.Cull_8, Layers.Cull_15, Layers.Cull_200, Layers.Cull_400, Layers.Cull_1000, Layers.Cull_3000,
+        Layers.SystemOrbitalPlane, Layers.Projectiles, Layers.Shields);
+
+    /// <summary>
+    /// The layers the main 3DCameras light will shine on.
+    /// Cull_200 and Cull_400 are used by planet meshes, atmospheres, etc.
+    /// </summary>
+    private static LayerMask _mainCamerasLightCullingMask = _mainCamerasCullingMask.RemoveFromMask(Layers.SystemOrbitalPlane, Layers.Cull_200, Layers.Cull_400);
 
     #region Camera Control Configurations
     // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
@@ -90,7 +103,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     public MouseButtonDragConfiguration dragFollowOrbit = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, sensitivity = 5F, activate = true };
     public MouseButtonDragConfiguration dragFreePanTilt = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Right, sensitivity = 3F, activate = true };
 
-    // Truck and Pedestal: Trucking (moving left and right) and Pedestalling (moving up and down) occurs only in Freeform space, repositioning the camera along it's current horizontal and vertical axis'.
+    // Truck and Pedestal: Trucking (moving left and right) and Pedestaling (moving up and down) occurs only in Freeform space, repositioning the camera along it's current horizontal and vertical axis'.
     // Attempting to Truck or Pedestal while focused or following is not allowed (as it makes no sense) and will immediately cause a change to the Freeform state.
     public MouseButtonDragConfiguration dragFreeTruck = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Middle, modifiers = new KeyModifiers { altKeyReqd = true }, sensitivity = 1F, activate = true };
     public MouseButtonDragConfiguration dragFreePedestal = new MouseButtonDragConfiguration { mouseButton = NguiMouseButton.Middle, modifiers = new KeyModifiers { shiftKeyReqd = true }, sensitivity = 1F, activate = true };
@@ -108,17 +121,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #endregion
 
     // LEARNINGS
-    // Edge-based requested values need to be normalized for framerate using timeSinceLastUpdate as the changeValue is a defacto 1 per frame by definition.
-    // Key-based requested values DONOT need to be normalized for framerate using timeSinceLastUpdate as Input.GetAxis() is not framerate dependant.
-    // NguiEvents: The values of dragDelta and scrollWheelDelta increase/decrease with lower/higher framerates so the change per second is not framerate dependant.
+    // Edge-based requested values need to be normalized for frame rate using timeSinceLastUpdate as the changeValue is a defacto 1 per frame by definition.
+    // Key-based requested values DONOT need to be normalized for frame rate using timeSinceLastUpdate as Input.GetAxis() is not frame rate dependent.
+    // NguiEvents: The values of dragDelta and scrollWheelDelta increase/decrease with lower/higher frame rates so the change per second is not frame rate dependent.
     // Using requestedDistanceToTarget as a scaler when determining the requested position change to make increases/decreases the requested movement 
     //     the further/closer the camera is to the target.
     // No need to include UniverseRadius in camera movement calculations as the size of the universe is already accounted for by the distance to the dummyTarget.
 
     // IMPROVE
-    // Should Tilt/EdgePan have some Pedastal/Truck added like Star Ruler?
+    // Should Tilt/EdgePan have some Pedestal/Truck added like Star Ruler?
     // Need more elegant rotation and translation functions when selecting a focusTarget - aka Slerp, Mathf.SmoothDamp/Angle, etc. see my Mathfx, Radical's Easing
-    // Dragging the mouse with any button held down works offscreen OK, but upon release offscreen, immediately enables edge scrolling and panning
+    // Dragging the mouse with any button held down works off screen OK, but upon release off screen, immediately enables edge scrolling and panning
     // Implement Camera controls such as clip planes, FieldOfView, RenderSettings.[flareStrength, haloStrength, ambientLight]
 
     #region Fields
@@ -135,7 +148,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private Index3D _sectorIndex;
     /// <summary>
-    /// Readonly. The location of the camera in sector space.
+    /// Read only. The location of the camera in sector space.
     /// </summary>
     public Index3D SectorIndex {
         get { return _sectorIndex; }
@@ -211,12 +224,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // not currently used
     //private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
 
-    /// <summary>
-    /// The layers the main 3DCameras are allowed to render.
-    /// </summary>
-    private LayerMask _mainCamerasCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.TransparentFX, Layers.Cull_Tiny,
-        Layers.Cull_1, Layers.Cull_2, Layers.Cull_3, Layers.Cull_4, Layers.Cull_8, Layers.Cull_15, Layers.Cull_200, Layers.Cull_400, Layers.Cull_1000, Layers.Cull_3000,
-        Layers.SystemOrbitalPlane, Layers.Projectiles, Layers.Shields);
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -320,7 +327,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if ((edgeFocusTilt.activate && edgeFocusZoom.activate) || (edgeFreeTilt.activate && edgeFreeZoom.activate) || (edgeFollowTilt.activate && edgeFollowZoom.activate)) {
             isValid = false;
         }
-        D.Assert(isValid, "Incompatable Camera Configuration.");
+        D.Assert(isValid, "Incompatible Camera Configuration.");
     }
 
     private void InitializeMainCamera() {   // called from OnGameStateChanged()
@@ -342,11 +349,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // Ngui GuiCamera depth = 1
         MainCamera_Near.depth = -1F;
         MainCamera_Far.depth = -2F;
-        // SpaceUnity skybox camera depth = -3F
+        // SpaceUnity sky box camera depth = -3F
 
         // MainCamera_Near will always be set to depth only. 
         MainCamera_Near.clearFlags = CameraClearFlags.Depth;
-        // MainCamera_Far must be set manually during development. Set it to Depth also if SpaceUnity skybox is active, otherwise Skybox or SolidColor if not
+        // MainCamera_Far must be set manually during development. Set it to Depth also if SpaceUnity sky box is active, otherwise Sky box or SolidColor if not
 
         // IMPORTANT Max far to near clip plane ratio <= 10,000
         MainCamera_Far.farClipPlane = _universeRadius * 2F;
@@ -383,7 +390,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         Light directionalLight = gameObject.GetComponentInChildren<Light>(includeInactive: true);
         directionalLight.type = LightType.Directional;
         directionalLight.color = GameColor.White.ToUnityColor();
-        directionalLight.cullingMask = _mainCamerasCullingMask;
+        directionalLight.cullingMask = _mainCamerasLightCullingMask;
         directionalLight.intensity = 1F;
     }
 
@@ -391,7 +398,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// Refreshes the MainCameras FieldOfView to the provided value in degrees.
     /// Default is 50 degrees if not provided.
     /// </summary>
-    /// <param name="fov">The fov.</param>
+    /// <param name="fov">The field of view.</param>
     private void RefreshCamerasFOV(float fov = CameraFieldOfView_Default) {
         if (!MainCamera_Near.fieldOfView.ApproxEquals(fov)) {
             _mainCameras.ForAll(cam => cam.fieldOfView = fov);
@@ -460,7 +467,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void ResetAtCurrentLocation() {
         SphereCollider dummyTargetCollider = _dummyTarget.GetComponent<SphereCollider>();
         dummyTargetCollider.enabled = false;
-        // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
+        // the collider is disabled so the placement algorithm doesn't accidentally find it already in front of the camera
         PlaceDummyTargetAtUniverseEdgeInDirection(transform.forward);
         dummyTargetCollider.enabled = true;
         SyncRotation();
@@ -509,7 +516,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                     __restoredGameFlag = false;
                 }
                 else {
-                    InitializeMainCamera(); // deferred init until clear game is new
+                    InitializeMainCamera(); // deferred initialization until clear game is new
                 }
                 _gameMgr.RecordGameStateProgressionReadiness(this, GameState.Waiting, isReady: true);
                 break;
@@ -1194,7 +1201,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // the distance change value used to modify _optimalDistanceToTarget as determined by inputValue and distanceChgAllowedPerUnitInput
         float distanceChange = Constants.ZeroF;
 
-        #region Realtime Tracking of Target Direction Archive
+        #region Real time Tracking of Target Direction Archive
 
         // Doesn't appear to be needed as the delta each frame is very small, probably because
         // the camera is continuously repositioned to face the target, aka _targetDirection = transform.forward
@@ -1211,7 +1218,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         #endregion
 
-        //bool isActivatedFound = false;    // debug help for detecting whether more than one config isActivated during a frame
+        //bool isActivatedFound = false;    // debug help for detecting whether more than one configuration isActivated during a frame
 
         if (dragFollowOrbit.IsActivated) {
             Vector2 dragDelta = _inputMgr.GetDragDelta();
@@ -1673,7 +1680,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     /// <summary>
     /// Converts RaycastHit[] to a collection of eligible hits that implement the ICameraTargetable interface. 
-    /// Hits that don't implement ICameraTargetable (eg. OrbitalPlane, Icons, etc.) have their parents searched 
+    /// Hits that don't implement ICameraTargetable (e.g. OrbitalPlane, Icons, etc.) have their parents searched 
     /// for the interface. If found, that transform is substituted as the transform that was hit.
     /// </summary>
     /// <param name="hits">The hits.</param>
@@ -1804,7 +1811,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     /// <summary>
     /// Validates that this activated configuration is the only one that is activated during this update.
-    /// Detects whether another active config is overwriting a previous one.
+    /// Detects whether another active configuration is overwriting a previous one.
     /// </summary>
     /// <param name="isActivatedAlreadyFound">if set to <c>true</c> [is activated already found].</param>
     private void __ValidateConfigIsOnlyActivated(ref bool isActivatedAlreadyFound) {
@@ -1880,7 +1887,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     public enum CameraState {
         None = 0,
         /// <summary>
-        /// Transitional state preceeding Focused allowing the camera's approach to the selected focus 
+        /// Transitional state preceding Focused allowing the camera's approach to the selected focus 
         /// game object to complete before the input controls are enabled in Focused
         /// </summary>
         Focusing = 1,
@@ -2050,7 +2057,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         /// 
         /// Dragging a mouse provides a value of about 10 every frame.
         /// 
-        /// The mouse scrollwheel provides a value of 0.1 - 0.3 every frame, depending on how fast the scroll wheel is being rolled. A
+        /// The mouse scrollWheel provides a value of 0.1 - 0.3 every frame, depending on how fast the scroll wheel is being rolled. A
         /// single tick of the scroll wheel provides a value of 0.1.
         /// 
         /// At this time, this factor is not used to normalize rotation gameSpeed.
@@ -2079,10 +2086,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     ///// <summary>
     ///// Tries to show the context menu. 
-    ///// NOTE: This is a preprocess method for ContextMenuPickHandler.PressEventHandler(isDown) which is designed to show
+    ///// NOTE: This is a pre-process method for ContextMenuPickHandler.PressEventHandler(isDown) which is designed to show
     ///// the context menu if the method is called both times (isDown = true, then isDown = false) over the same object.
     ///// Unfortunately, that also means the context menu will show if a drag starts and ends over the same 
-    ///// ISelectable object. Therefore, this preprocess method is here to detect whether a drag is occurring before 
+    ///// ISelectable object. Therefore, this pre-process method is here to detect whether a drag is occurring before 
     ///// passing it on to show the context menu.
     ///// </summary>
     ///// <param name="isDown">if set to <c>true</c> [is down].</param>

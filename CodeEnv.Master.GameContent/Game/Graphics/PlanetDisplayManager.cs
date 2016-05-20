@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// DisplayManager for Planets.
     /// </summary>
-    public class PlanetDisplayManager : AIconDisplayManager {
+    public class PlanetDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
         protected override int IconDepth { get { return -6; } }
 
@@ -78,6 +78,7 @@ namespace CodeEnv.Master.GameContent {
             return References.TrackingWidgetFactory.MakeConstantSizeTrackingSprite(_trackedItem, IconInfo);
         }
 
+
         #region Hide Primary Mesh Archive
 
         // Once showing (aka DisplayMgr instance created when first discerned) a Planet/Moon never has to 
@@ -110,6 +111,17 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
+        #region IMortalDisplayManager Members
+
+        /// <summary>
+        /// Called on the death of the client. Disables the display and ends all InCameraLOS calls.
+        /// </summary>
+        public void HandleDeath() {
+            IsDisplayEnabled = false;
+            _primaryMeshRenderer.enabled = false;
+        }
+
+        #endregion
 
     }
 

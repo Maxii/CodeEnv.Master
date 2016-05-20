@@ -186,7 +186,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
                 break;
             case PlanetoidState.Dead:
                 HandleDeath();
-                StartEffect(EffectID.Dying);
+                StartEffectSequence(EffectSequenceID.Dying);
                 break;
             case PlanetoidState.None:
             default:
@@ -299,11 +299,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
 
     // IsAttackingAllowedBy(Player) see IUnitAttackableTarget Members
 
-    [System.Obsolete]
-    public void HandleFiredUponBy(IInterceptableOrdnance ordnanceFired) {
-        // does nothing as planetoids have no activeCMs to attempt to intercept
-    }
-
     public override void TakeHit(DamageStrength damagePotential) {
         if (_debugSettings.AllPlayersInvulnerable) {
             return;
@@ -324,7 +319,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollo
             IsOperational = false;
             return;
         }
-        StartEffect(EffectID.Hit);
+        StartEffectSequence(EffectSequenceID.Hit);
         //__GenerateHitImpactMedia();
     }
 

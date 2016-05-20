@@ -54,18 +54,18 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns the WDVStrength remaining (a positive WDVStrength) of the interdictedStrength (right operand) after interdiction 
-        /// by the interdictingStrength (left operand). If the interdictingStrength's Category does not match the interdictedStrength's Category then 
+        /// Returns the WDVStrength remaining (a positive WDVStrength) of the interdictedStrength (right operand) after interdiction
+        /// by the interdictingStrength (left operand). If the interdictingStrength's Category does not match the interdictedStrength's Category then
         /// the interception is a failure and the interdictedStrength is returned. If the Categories match, then the
         /// interdiction is successful and the value returned represents the remaining interdictedStrength, if any.
         /// The value returned will never be negative but can be Zero if the interdictingStrength was equal to or exceeded the interdictedStrength.
         /// </summary>
-        /// <param name="interdictingStrength">The strength of the interdicting object.</param>
         /// <param name="interdictedStrength">The strength of the object being interdicted.</param>
+        /// <param name="interdictingStrength">The strength of the interdicting object.</param>
         /// <returns>
         /// The remaining WDVStrength (if any).
         /// </returns>
-        public static WDVStrength operator -(WDVStrength interdictingStrength, WDVStrength interdictedStrength) {
+        public static WDVStrength operator -(WDVStrength interdictedStrength, WDVStrength interdictingStrength) {
             D.Assert(interdictingStrength.Category != WDVCategory.None && interdictedStrength.Category != WDVCategory.None);
             if (interdictedStrength.Category != interdictingStrength.Category) {
                 // intercepting countermeasure vehicle is not the right tech reqd to intercept this ordnance delivery vehicle so it has no effect

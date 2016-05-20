@@ -101,7 +101,7 @@ namespace CodeEnv.Master.GameContent {
         /*****************************************************************************************************************************************
         * This countermeasure does not need to track Owner changes. When the owner of the item with this countermeasure changes, the countermeasure's 
         * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. 
-        * When the owner of an item detected by this countermeasure changes, the Monitor recategorizes the detectedItem into the right list 
+        * When the owner of an item detected by this countermeasure changes, the Monitor re-categorizes the detectedItem into the right list 
         * taking appropriate action as a result.
         *****************************************************************************************************************************************/
 
@@ -241,7 +241,7 @@ namespace CodeEnv.Master.GameContent {
         private void InitiateReloadCycle() {
             //D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
             D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
-            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
+            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, waitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     HandleReloaded();
                 }
@@ -337,7 +337,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
         #region Firing Solutions Check Job Archive
 

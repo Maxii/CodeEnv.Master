@@ -35,7 +35,7 @@ public class MissileTube : AWeaponMount {
     [SerializeField]
     private Transform _tubeMouth = null;
 
-    public override Vector3 MuzzleFacing { get { return (_muzzle.position - _tubeMouth.position).normalized; } }
+    public override Vector3 MuzzleFacing { get { return (Muzzle.position - _tubeMouth.position).normalized; } }
 
     protected override void Validate() {
         base.Validate();
@@ -43,7 +43,7 @@ public class MissileTube : AWeaponMount {
     }
 
     /// <summary>
-    /// Trys to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
+    /// Tries to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
     /// firing solution, otherwise <c>false</c>.
     /// </summary>
     /// <param name="enemyTarget">The enemy target.</param>

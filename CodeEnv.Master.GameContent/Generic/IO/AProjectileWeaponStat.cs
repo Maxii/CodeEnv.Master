@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum speed of this projectile in units per hour in Topography.OpenSpace.
         /// </summary>
-        public float OrdnanceMaxSpeed { get; private set; }
+        public float MaxSpeed { get; private set; }
 
         public float OrdnanceMass { get; private set; }
 
@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(ordnanceMaxSpeed > Constants.ZeroF);
             D.Assert(ordnanceMass > Constants.ZeroF);
             D.Assert(ordnanceDrag > Constants.ZeroF);
-            OrdnanceMaxSpeed = ordnanceMaxSpeed;
+            MaxSpeed = ordnanceMaxSpeed;
             OrdnanceMass = ordnanceMass;
             OrdnanceDrag = ordnanceDrag;
         }

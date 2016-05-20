@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract DisplayManager for Elements.
     /// </summary>
-    public abstract class AElementDisplayManager : AIconDisplayManager {
+    public abstract class AElementDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
         private GameColor _meshColor;
         /// <summary>
@@ -164,6 +164,18 @@ namespace CodeEnv.Master.GameContent {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();
             }
+        }
+
+        #endregion
+
+        #region IMortalDisplayManager Members
+
+        /// <summary>
+        /// Called on the death of the client. Disables the display and ends all InCameraLOS calls.
+        /// </summary>
+        public void HandleDeath() {
+            IsDisplayEnabled = false;
+            _primaryMeshRenderer.enabled = false;
         }
 
         #endregion

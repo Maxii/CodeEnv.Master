@@ -198,7 +198,7 @@ namespace CodeEnv.Master.GameContent {
                 if (onCompletion != null) { onCompletion(); }
                 return;
             }
-            WaitJobUtility.WaitForHours(delayInHours, onWaitFinished: (jobWasKilled) => {
+            WaitJobUtility.WaitForHours(delayInHours, waitFinished: (jobWasKilled) => {
                 if (gameObject == null) {
                     D.Warn("Trying to destroy GameObject {0} that has already been destroyed.", goName);
                 }

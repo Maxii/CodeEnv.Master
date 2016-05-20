@@ -336,7 +336,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             float ordMass = 5F;
             float ordDrag = 0.01F;
             float ordTurnRate = 700F;   // degrees per hour
-            float ordCourseUpdateFreq = 1F; // course updates per hour
+            float ordCourseUpdateFreq = 0.5F; // course updates per hour
             float baseRangeDistance = rangeCat.GetBaseWeaponRange();
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
@@ -355,7 +355,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             AWeaponStat weapStat;
             RangeCategory rangeCat;
             float baseRangeDistance;
-            float maxTraverseInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
+            float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
             float reloadPeriod;
             string name;
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
@@ -375,7 +375,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                     name = "Phaser Projector";
                     float duration = UnityEngine.Random.Range(1F, 2F);
                     weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxTraverseInaccuracy);
+                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxLaunchInaccuracy);
                     break;
                 case WDVCategory.Projectile:
                     rangeCat = RangeCategory.Medium;
@@ -386,7 +386,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                     float ordMass = 1F;
                     float ordDrag = 0.02F;
                     weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxTraverseInaccuracy);
+                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));

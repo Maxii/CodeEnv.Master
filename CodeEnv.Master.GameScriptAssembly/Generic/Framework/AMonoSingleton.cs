@@ -34,9 +34,10 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     protected bool IsExtraCopy { get; private set; }
 
     /// <summary>
-    /// Indicates whether this instance is a root GameObject, aka it has no parent.
-    /// If it is a root GameObject AND it is also persistent across scenes, then DontDestroyOnLoad 
+    /// Indicates whether this instance is a root GameObject, aka it has no parent. Default is false.
+    /// <remarks>If it is a root GameObject AND it is also persistent across scenes, then DontDestroyOnLoad 
     /// is used on this instance to keep it AND its children from being destroyed on a scene transition.
+    /// </remarks>
     /// </summary>
     protected virtual bool IsRootGameObject { get { return false; } }
 

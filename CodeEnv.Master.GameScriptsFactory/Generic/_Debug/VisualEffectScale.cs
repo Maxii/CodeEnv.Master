@@ -28,9 +28,10 @@ using UnityEditor;
 /// Scales the size of the visual effect this script is attached too. The scale factor
 /// used is derived from <c>editorScale</c> and the Radius of the Item the effect
 /// is being used for.
-/// <remarks>Derived from F3DParticleScale.</remarks>
+/// <remarks>Warning: Only works in Editor. Derived from F3DParticleScale.</remarks>
 /// </summary>
 [ExecuteInEditMode]
+[System.Obsolete("Limited to Editor usage. Use ParticleScaler for runtime scaling.")]
 public class VisualEffectScale : AMonoBase {
 
 #pragma warning disable 0414

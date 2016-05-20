@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EffectID.cs
-//  Enum specifying the ID of the Effect to show.
+// File: EffectSequenceID.cs
+//  Enum specifying the ID of the EffectSequence to show.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum specifying the ID of the Effect to show.
+    /// Enum specifying the ID of the EffectSequence to show.
+    /// <remarks>Identifies one or more effects that should play in sequence.
+    /// The effects themselves are identified by EffectID.</remarks>
     /// </summary>
-    public enum EffectID {
+    public enum EffectSequenceID {
 
         None,
 

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: IOrdnance.cs
-// Interface for Ordnance of all types.
+// Interface for easy access to Ordnance of all types.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for Ordnance of all types.
+    /// Interface for easy access to Ordnance MonoBehaviours of all types.
     /// </summary>
     public interface IOrdnance {
 

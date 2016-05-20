@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// DisplayManager for UnitCommands.
     /// </summary>
-    public class UnitCmdDisplayManager : AIconDisplayManager {
+    public class UnitCmdDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
         /******************************************************************************************
          * For detail on this color change system, see AElementDisplayManager
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
             _primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             // renderer's existing MaterialPropertyBlock color is also black, implying that the existing property block is the default, at least wrt color
             _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, primaryMeshColor);
-            //D.Log("{0}.PrimaryMeshMPB color after init = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
+            //D.Log("{0}.PrimaryMeshMPB color after initialization = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
 
             if (_hiddenMeshMPB == null) {
                 _hiddenMeshMPB = new MaterialPropertyBlock();
@@ -145,6 +145,18 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region IMortalDisplayManager Members
+
+        /// <summary>
+        /// Called on the death of the client. Disables the display and ends all InCameraLOS calls.
+        /// </summary>
+        public void HandleDeath() {
+            IsDisplayEnabled = false;
+            _primaryMeshRenderer.enabled = false;
+        }
+
+        #endregion
     }
 
 }

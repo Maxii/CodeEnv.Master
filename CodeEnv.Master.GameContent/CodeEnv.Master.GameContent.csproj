@@ -53,8 +53,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\EffectID.cs" />
     <Compile Include="Generic\Graphics\AProjectileDisplayManager.cs" />
-    <Compile Include="Game\Graphics\BulletDisplayManager.cs" />
+    <Compile Include="Game\Graphics\ProjectileDisplayManager.cs" />
     <Compile Include="Generic\Framework\DriftCorrector.cs" />
     <Compile Include="Generic\Framework\AutoPilotDestinationProxy.cs" />
     <Compile Include="Generic\Interfaces\IFleetNavigable.cs" />
@@ -239,7 +240,6 @@
     <Compile Include="Generic\Interfaces\IHighlightable.cs" />
     <Compile Include="Generic\Interfaces\IHighlighter.cs" />
     <Compile Include="Generic\Framework\MobileLocation.cs" />
-    <Compile Include="Generic\Interfaces\IOrdnance.cs" />
     <Compile Include="Generic\Interfaces\ISFXManager.cs" />
     <Compile Include="Generic\Interfaces\IBillboard.cs" />
     <Compile Include="Generic\Interfaces\IEffectsClient.cs" />
@@ -283,7 +283,6 @@
     <Compile Include="Generic\Interfaces\IRangedEquipmentMonitor.cs" />
     <Compile Include="Generic\Interfaces\IActiveCountermeasureRangeMonitor.cs" />
     <Compile Include="Generic\Interfaces\ICountermeasure.cs" />
-    <Compile Include="Generic\Interfaces\IInterceptableOrdnance.cs" />
     <Compile Include="Generic\IO\ShipHullStat.cs" />
     <Compile Include="Generic\Interfaces\IDetectable.cs" />
     <Compile Include="Generic\Interfaces\IShield.cs" />
@@ -332,11 +331,16 @@
     <Compile Include="Generic\Interfaces\IShipAttackable.cs" />
     <Compile Include="Generic\Interfaces\ITrackingSprite.cs" />
     <Compile Include="Game\Graphics\MissileDisplayManager.cs" />
-    <Compile Include="IExplosion_Pooled.cs" />
+    <Compile Include="Generic\Interfaces\IEffect.cs" />
+    <Compile Include="Generic\Interfaces\IInterceptableOrdnance.cs" />
+    <Compile Include="Generic\Interfaces\IOrdnance.cs" />
+    <Compile Include="Generic\Interfaces\IMyPoolManager.cs" />
+    <Compile Include="Generic\Interfaces\IMortalDisplayManager.cs" />
+    <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
-    <Compile Include="Game\Graphics\EffectID.cs" />
+    <Compile Include="Game\Graphics\EffectSequenceID.cs" />
     <Compile Include="Generic\Framework\WDVCategory.cs" />
     <Compile Include="Generic\Framework\ShipOrder.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />
@@ -387,7 +391,6 @@
   <ItemGroup>
     <Folder Include="Generic\Deferred\" />
     <Folder Include="Generic\Math\" />
-    <Folder Include="ThirdParty\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Plugins\Vectrosity\Vectrosity.csproj">

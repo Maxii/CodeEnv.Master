@@ -26,12 +26,12 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The turn rate of the ordnance in degrees per hour .
         /// </summary>
-        public float OrdnanceTurnRate { get; private set; }
+        public float TurnRate { get; private set; }
 
         /// <summary>
         /// How often the ordnance's course is updated in updates per hour.
         /// </summary>
-        public float OrdnanceCourseUpdateFrequency { get; private set; }
+        public float CourseUpdateFrequency { get; private set; }
 
         /// <summary>
         /// The maximum steering inaccuracy of the missile in degrees.
@@ -69,8 +69,8 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
             D.Warn(maxSteeringInaccuracy > 5F, "{0} MaxSteeringInaccuracy of {1:0.#} is very high.", Name, MaxSteeringInaccuracy);
-            OrdnanceTurnRate = turnRate;
-            OrdnanceCourseUpdateFrequency = courseUpdateFreq;
+            TurnRate = turnRate;
+            CourseUpdateFrequency = courseUpdateFreq;
             MaxSteeringInaccuracy = maxSteeringInaccuracy;
         }
 

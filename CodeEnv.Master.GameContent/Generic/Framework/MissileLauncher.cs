@@ -29,17 +29,17 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The turn rate of the ordnance in degrees per hour .
         /// </summary>
-        public float OrdnanceTurnRate { get { return Stat.OrdnanceTurnRate; } }
+        public float TurnRate { get { return Stat.TurnRate; } }
 
         /// <summary>
         /// How often the ordnance's course is updated in updates per hour.
         /// </summary>
-        public float OrdnanceCourseUpdateFrequency { get { return Stat.OrdnanceCourseUpdateFrequency; } }
+        public float CourseUpdateFrequency { get { return Stat.CourseUpdateFrequency; } }
 
         /// <summary>
         /// The maximum speed of this launcher's missile in units per hour in Topography.OpenSpace.
         /// </summary>
-        public float OrdnanceMaxSpeed { get { return Stat.OrdnanceMaxSpeed; } }
+        public float MaxSpeed { get { return Stat.MaxSpeed; } }
 
         public float OrdnanceMass { get { return Stat.OrdnanceMass; } }
 
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum steering inaccuracy of this weapon's missile ordnance in degrees.
         /// </summary>
-        public float OrdnanceMaxSteeringInaccuracy { get { return Stat.MaxSteeringInaccuracy; } }
+        public float MaxSteeringInaccuracy { get { return Stat.MaxSteeringInaccuracy; } }
 
         protected new MissileWeaponStat Stat { get { return base.Stat as MissileWeaponStat; } }
 

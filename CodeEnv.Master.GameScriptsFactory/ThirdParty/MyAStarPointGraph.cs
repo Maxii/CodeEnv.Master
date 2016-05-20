@@ -164,7 +164,7 @@ namespace Pathfinding {
                     connectionCount += connections.Count;
                     node.connectionCosts = costs.ToArray();
                 }
-                int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
+                //int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
                 //D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
             }
         }

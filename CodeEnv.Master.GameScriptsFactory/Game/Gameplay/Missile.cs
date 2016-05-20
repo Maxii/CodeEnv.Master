@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: Missile.cs
-// Guided Ordnance containing effects for muzzle flash, inFlight operation and impact.
+// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,12 +19,11 @@
 using System;
 using System.Collections;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Guided Ordnance containing effects for muzzle flash, inFlight operation and impact.
+/// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 /// </summary>
 public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
@@ -56,18 +55,18 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// actual max speed reached to be lower than this MaxSpeed value.
     /// </summary>
     public override float MaxSpeed {
-        get { return _maxSpeed > Constants.ZeroF ? _maxSpeed : Weapon.OrdnanceMaxSpeed; }
+        get { return _maxSpeed > Constants.ZeroF ? _maxSpeed : Weapon.MaxSpeed; }
     }
 
     /// <summary>
     /// The turn rate in degrees per hour .
     /// </summary>
-    public float TurnRate { get { return Weapon.OrdnanceTurnRate; } }
+    public float TurnRate { get { return Weapon.TurnRate; } }
 
     /// <summary>
     /// The frequency the course is updated in updates per hour.
     /// </summary>
-    public float CourseUpdateFrequency { get { return Weapon.OrdnanceCourseUpdateFrequency; } }
+    public float CourseUpdateFrequency { get { return Weapon.CourseUpdateFrequency; } }
 
     private float _steeringInaccuracy;
     /// <summary>
@@ -101,6 +100,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private bool IsCourseUpdateJobRunning { get { return _courseUpdateJob != null && _courseUpdateJob.IsRunning; } }
 
+    private bool IsWaitForImpactEffectCompletionJobRunning { get { return _waitForImpactEffectCompletionJob != null && _waitForImpactEffectCompletionJob.IsRunning; } }
+
+    private bool IsWaitForMuzzleEffectCompletionJobRunning { get { return _waitForMuzzleEffectCompletionJob != null && _waitForMuzzleEffectCompletionJob.IsRunning; } }
+
+    private Job _waitForMuzzleEffectCompletionJob;
+    private Job _waitForImpactEffectCompletionJob;
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
     private Job _courseUpdateJob;
@@ -109,6 +114,11 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private bool _hasPushedOver;
     private DriftCorrector _driftCorrector;
 
+    protected override void Awake() {
+        base.Awake();
+        _driftCorrector = new DriftCorrector(transform, _rigidbody);
+    }
+
     public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
         base.Launch(target, weapon, topography);
         _positionLastRangeCheck = Position;
@@ -116,8 +126,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
         SteeringInaccuracy = CalcSteeringInaccuracy();
         target.deathOneShot += TargetDeathEventHandler;
-        _driftCorrector = new DriftCorrector(FullName, transform, _rigidbody);
-
+        _driftCorrector.ClientName = FullName;
         enabled = true;
     }
 
@@ -126,38 +135,60 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     protected override void ValidateEffects() {
-        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
-        D.Assert(_impactEffect.playOnAwake);
-        D.Assert(!_impactEffect.gameObject.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _impactEffect.name));
         D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
-        D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.".Inject(GetType().Name, _muzzleEffect.name));
+        D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.", GetType().Name, _muzzleEffect.name);
         if (_operatingEffect != null) {
             // ParticleSystem Operating Effect can be null. If so, it will be replaced by an Icon
             D.Assert(!_operatingEffect.playOnAwake);
+            D.Assert(_operatingEffect.loop);
         }
+        D.Assert(_impactEffect != null, "{0} has no impact effect.", Name);
+        D.Assert(!_impactEffect.playOnAwake);   // Awake only called once during GameObject life -> can't use with pooling
+        D.Assert(_impactEffect.gameObject.activeSelf, "{0}.{1} should start active.", GetType().Name, _impactEffect.name);
     }
 
     protected override void ShowMuzzleEffect() {
+        D.Assert(!IsWaitForMuzzleEffectCompletionJobRunning);
         // relocate this Effect so it doesn't move with the projectile while showing
         UnityUtility.AttachChildToParent(_muzzleEffect, DynamicObjectsFolder.Instance.gameObject);
         _muzzleEffect.layer = (int)Layers.TransparentFX;
         _muzzleEffect.transform.position = Position;
         _muzzleEffect.transform.rotation = transform.rotation;
-        _muzzleEffect.SetActive(true);    // auto destroyed on completion
+        _muzzleEffect.SetActive(true);
+        _waitForMuzzleEffectCompletionJob = WaitJobUtility.WaitForSeconds(0.2F, waitFinished: (jobWasKilled) => {
+            _muzzleEffect.SetActive(false);
+        });
         //TODO Add audio
     }
 
+    // OPTIMIZE particle system should be at correct scale to begin with so no runtime scaling reqd
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
-        if (_impactEffect != null) { // impactEffect is destroyed once used but method can be called after that
-            // relocate this effect as this projectile could be destroyed before the effect is done playing
-            UnityUtility.AttachChildToParent(_impactEffect.gameObject, DynamicObjectsFolder.Instance.gameObject);
-            _impactEffect.gameObject.layer = (int)Layers.TransparentFX;
-            _impactEffect.transform.position = position;
-            _impactEffect.transform.rotation = rotation;
-            _impactEffect.gameObject.SetActive(true);    // auto destroyed on completion
+        base.ShowImpactEffects(position, rotation);
+        D.Assert(!_impactEffect.isPlaying); // should not be called more than once
+        D.Assert(!IsWaitForImpactEffectCompletionJobRunning);   // should not be called more than once
+        D.Assert(IsOperational);
+        ParticleScaler.Scale(_impactEffect, __ImpactEffectScalerValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+        _impactEffect.transform.position = position;
+        _impactEffect.transform.rotation = rotation;
+        _impactEffect.Play();
+        _waitForImpactEffectCompletionJob = WaitJobUtility.WaitForParticleSystemCompletion(_impactEffect, includeChildren: true, waitFinished: (jobWasKilled) => {
+            if (IsOperational) {
+                // ordnance has not already been terminated by other paths such as the death of the target
+                TerminateNow();
+            }
+        });
 
-            GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
-            SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion
+        GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
+        SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion    // FIXME ??
+    }
+
+    protected override void HandleImpactEffectsBegun() {
+        base.HandleImpactEffectsBegun();
+        if (IsChangeHeadingJobRunning) {
+            _changeHeadingJob.Kill();   // shutdown any heading changes
+        }
+        if (IsCourseUpdateJobRunning) {
+            _courseUpdateJob.Kill();    // shutdown course correction checks
         }
     }
 
@@ -174,25 +205,30 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         return distanceTraveled;
     }
 
-    protected override void FixedUpdate() {
-        base.FixedUpdate();
-        ApplyThrust();
-    }
-
-    private void ApplyThrust() {
-        // Note: Rigidbody.drag already adjusted for any Topography changes
-        float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);
-        var gameSpeedAdjustedThrust = LocalSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
-        _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
-        //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
-    }
-
     private void HandlePushover() {
         //D.Log("{0} has reached pushover. Checking course to target {1}.", Name, Target.FullName);
         LaunchCourseUpdateJob();
     }
 
     #region Event and Property Change Handlers
+
+    protected override void OnSpawned() {
+        base.OnSpawned();
+        D.Assert(_cumDistanceTraveled == Constants.ZeroF);
+        D.Assert(_positionLastRangeCheck == Vector3.zero);
+        D.Assert(_courseUpdateJob == null);
+        D.Assert(_changeHeadingJob == null);
+        D.Assert(_waitForImpactEffectCompletionJob == null);
+        D.Assert(_waitForMuzzleEffectCompletionJob == null);
+        D.Assert(_courseUpdatePeriod == default(GameTimeDuration));
+        D.Assert(!_hasPushedOver);
+        D.Assert(!enabled);
+    }
+
+    protected override void FixedUpdate() {
+        base.FixedUpdate();
+        ApplyThrust();
+    }
 
     /// <summary>
     /// Must terminate the missile in a timely fashion on Target death as
@@ -216,7 +252,27 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _driftCorrector.Pause(_gameMgr.IsPaused);
     }
 
+    protected override void OnDespawned() {
+        base.OnDespawned();
+        _cumDistanceTraveled = Constants.ZeroF;
+        _positionLastRangeCheck = Vector3.zero;
+        _courseUpdateJob = null;
+        _changeHeadingJob = null;
+        _waitForImpactEffectCompletionJob = null;
+        _waitForMuzzleEffectCompletionJob = null;
+        _courseUpdatePeriod = default(GameTimeDuration);
+        _hasPushedOver = false;
+    }
+
     #endregion
+
+    private void ApplyThrust() {
+        // Note: Rigidbody.drag already adjusted for any Topography changes
+        float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);
+        var gameSpeedAdjustedThrust = LocalSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
+        //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
+    }
 
     private void LaunchCourseUpdateJob() {
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
@@ -244,8 +300,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private void LaunchChangeHeadingJob(Vector3 newHeading) {
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
         if (IsChangeHeadingJobRunning) {
-            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", Name);   // -> course update freq is too high or turnRate too low
-            _changeHeadingJob.Kill();                  // missile should be able to complete a turn between course updates
+            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", Name);
+            // -> course update freq is too high or turnRate too low as missile should be able to complete a turn between course updates
+            _changeHeadingJob.Kill();
         }
         HandleTurnBeginning();
         GameDate errorDate = GameUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
@@ -297,7 +354,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     private float CalcSteeringInaccuracy() {
-        return UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, Weapon.OrdnanceMaxSteeringInaccuracy);
+        return UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, Weapon.MaxSteeringInaccuracy);
     }
 
     protected override float GetDistanceTraveled() {
@@ -313,10 +370,29 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (IsCourseUpdateJobRunning) {
             _courseUpdateJob.IsPaused = toPause;
         }
+        if (IsWaitForMuzzleEffectCompletionJobRunning) {
+            _waitForMuzzleEffectCompletionJob.IsPaused = toPause;
+        }
+        if (IsWaitForImpactEffectCompletionJobRunning) {
+            _waitForImpactEffectCompletionJob.IsPaused = toPause;
+        }
     }
 
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
+        if (_muzzleEffect.activeSelf) {
+            _muzzleEffect.SetActive(false);
+        }
+        if (_impactEffect.isPlaying) {
+            // ordnance was terminated by other paths such as the death of the target
+            _impactEffect.Stop();
+        }
+        if (IsWaitForImpactEffectCompletionJobRunning) {
+            _waitForImpactEffectCompletionJob.Kill();
+        }
+        if (IsWaitForMuzzleEffectCompletionJobRunning) {
+            _waitForMuzzleEffectCompletionJob.Kill();
+        }
         if (IsChangeHeadingJobRunning) {
             _changeHeadingJob.Kill();
         }
@@ -325,6 +401,29 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
         _driftCorrector.Disengage();
         Target.deathOneShot -= TargetDeathEventHandler;
+        // FIXME what about audio?
+    }
+
+    protected override void ResetEffectsForReuse() {
+        // reattach to projectile for reuse
+        UnityUtility.AttachChildToParent(_muzzleEffect, gameObject);
+        _muzzleEffect.layer = (int)Layers.TransparentFX;
+
+        if (_operatingEffect != null) {
+            _operatingEffect.Clear();
+            // operatingEffect stays as a child of this projectile and doesn't change position or rotation
+        }
+        else {
+            // if icon has been destroyed, it won't be created again when reused. This will throw an error if not present
+#pragma warning disable 0219
+            ITrackingSprite operatingIcon = gameObject.GetSingleInterfaceInChildren<ITrackingSprite>();
+#pragma warning restore 0219
+        }
+
+        ParticleScaler.Scale(_impactEffect, 1F / __ImpactEffectScalerValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+        _impactEffect.transform.localPosition = Vector3.zero;
+        _impactEffect.transform.localRotation = Quaternion.identity;
+        _impactEffect.Clear();
     }
 
     protected override void Cleanup() {
@@ -334,6 +433,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
         if (_changeHeadingJob != null) {
             _changeHeadingJob.Dispose();
+        }
+        if (_waitForImpactEffectCompletionJob != null) {
+            _waitForImpactEffectCompletionJob.Dispose();
+        }
+        if (_waitForMuzzleEffectCompletionJob != null) {
+            _waitForMuzzleEffectCompletionJob.Dispose();
         }
         _driftCorrector.Dispose();
     }
@@ -347,6 +452,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     public void Terminate() { TerminateNow(); }
 
     #endregion
+
 
 }
 

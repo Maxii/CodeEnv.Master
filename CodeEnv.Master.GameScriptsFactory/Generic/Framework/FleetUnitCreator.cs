@@ -148,7 +148,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     protected override void __IssueFirstUnitOrder(Action onCompleted) {
         LogEvent();
-        WaitJobUtility.WaitForHours(1F, onWaitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
+        WaitJobUtility.WaitForHours(1F, waitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
             if (move) {                                               // avoids script execution order issue when this creator receives IsRunning before other creators
                 if (attack) {
                     __GetFleetAttackUnderway();

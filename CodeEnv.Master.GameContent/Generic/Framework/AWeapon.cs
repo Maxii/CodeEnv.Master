@@ -38,7 +38,10 @@ namespace CodeEnv.Master.GameContent {
         private bool _isWeaponDiscernibleToUser;
         public bool IsWeaponDiscernibleToUser {
             get { return _isWeaponDiscernibleToUser; }
-            set { SetProperty<bool>(ref _isWeaponDiscernibleToUser, value, "IsWeaponDiscernibleToUser"); }
+            set {
+                //D.Log("{0}.IsWeaponDiscernibleToUser set to {1}.", Name, value);
+                SetProperty<bool>(ref _isWeaponDiscernibleToUser, value, "IsWeaponDiscernibleToUser");
+            }
         }
 
         private IWeaponRangeMonitor _rangeMonitor;
@@ -285,7 +288,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void OrdnanceDeathEventHandler(object sender, EventArgs e) {
             IOrdnance terminatedOrdnance = sender as IOrdnance;
-            RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
+            if (terminatedOrdnance != null) {
+                RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
+            }
         }
 
         protected override void IsOperationalPropChangedHandler() {
@@ -334,6 +339,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceFired">The ordnance fired.</param>
         protected abstract void RecordFiredOrdnance(IOrdnance ordnanceFired);
 
+
         /// <summary>
         /// Removes the fired ordnance from the record as having been fired.
         /// </summary>
@@ -348,7 +354,7 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
             D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
-            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
+            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, waitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     HandleReloaded();
                 }

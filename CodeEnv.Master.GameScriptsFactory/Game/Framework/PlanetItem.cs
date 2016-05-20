@@ -121,15 +121,15 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
         return new IconInfo("Icon02", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, Layers.Cull_1000);
     }
 
-    public override void HandleEffectFinished(EffectID effectID) {
-        base.HandleEffectFinished(effectID);
+    public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
+        base.HandleEffectSequenceFinished(effectID);
         D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
         switch (effectID) {
-            case EffectID.Dying:
+            case EffectSequenceID.Dying:
                 if (ChildMoons.Any()) {
                     // planet has completed showing its death so moons need to show theirs too
                     ChildMoons.ForAll(moon => {
-                        moon.effectFinished += MoonDeathEffectFinishedEventHandler; // no unsubscribing needed as all are destroyed
+                        moon.effectSeqFinished += MoonDeathEffectFinishedEventHandler; // no unsubscribing needed as all are destroyed
                         moon.HandlePlanetDying();
                     });
                 }
@@ -137,9 +137,9 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
                     DestroyMe();
                 }
                 break;
-            case EffectID.Hit:
+            case EffectSequenceID.Hit:
                 break;
-            case EffectID.None:
+            case EffectSequenceID.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(effectID));
         }
@@ -160,8 +160,8 @@ public class PlanetItem : APlanetoidItem, IPlanetItem, IShipCloseOrbitable, IShi
         AssessIcon();
     }
 
-    private void MoonDeathEffectFinishedEventHandler(object sender, EffectEventArgs e) {
-        D.Assert(e.EffectID == EffectID.Dying);
+    private void MoonDeathEffectFinishedEventHandler(object sender, EffectSeqEventArgs e) {
+        D.Assert(e.EffectSeqID == EffectSequenceID.Dying);
         HandleMoonDeathEffectFinished();
     }
 

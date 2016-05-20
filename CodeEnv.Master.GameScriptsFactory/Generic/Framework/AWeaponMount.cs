@@ -28,7 +28,8 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
 
     //[FormerlySerializedAs("muzzle")]
     [SerializeField]
-    protected Transform _muzzle = null;
+    private Transform _muzzle = null;
+    public Transform Muzzle { get { return _muzzle; } }
 
     public virtual string Name { get { return transform.name; } }
 
@@ -64,7 +65,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     }
 
     /// <summary>
-    /// Trys to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
+    /// Tries to develop a firing solution from this WeaponMount to the provided target. If successful, returns <c>true</c> and provides the
     /// firing solution, otherwise <c>false</c>.
     /// </summary>
     /// <param name="enemyTarget">The enemy target.</param>

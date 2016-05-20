@@ -18,7 +18,7 @@
 // </remarks>
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -51,10 +51,12 @@ namespace CodeEnv.Master.Common {
         protected void SetProperty<T>(ref T backingStore, T value, string propertyName, Action onChanged = null, Action<T> onChanging = null) {
             VerifyCallerIsProperty(propertyName);
             if (EqualityComparer<T>.Default.Equals(backingStore, value)) {
-                TryWarn<T>(backingStore, value, propertyName);
-                return;
+                if (!CheckForDestroyedMonobehaviourInterface(backingStore)) {
+                    __TryWarn<T>(backingStore, value, propertyName);
+                    return;
+                }
             }
-            D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
+            //D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
             if (onChanging != null) { onChanging(value); }
             OnPropertyChanging<T>(propertyName, value);
@@ -66,8 +68,37 @@ namespace CodeEnv.Master.Common {
             OnPropertyChanged(propertyName);
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if the backingStore of Type T is an interface for a MonoBehaviour that
+        /// has been (or is about to be) destroyed, <c>false</c> otherwise.
+        /// <remarks>Interfaces for MonoBehaviours have an unusual behaviour when it comes to equality comparisons to null.
+        /// If the MonoBehaviour underlying the interface of Type T is slated for destruction, T's DefaultEqualityComparer will return
+        /// <c>true</c> when compared to null due to UnityEngine.Object's override of Equals(). However, T <c>backingStore</c> == null
+        /// will return <c>false</c> under the same circumstances. As a result, when <c>backingStore</c> is an Interface for a MonoBehaviour
+        /// slated for destruction and <c>value</c> is null, the default equality check in SetProperty() sees them as equal and
+        /// therefore DOES NOT set <c>backingStore</c> to null. This unexpected behaviour can lead to errors that are hard
+        /// to diagnose. This method checks for that condition. If found, SetProperty allows the null <c>value</c> to be assigned
+        /// to <c>backingStore</c> resulting in the expected outcome, aka <c>backingStore</c> == null returning <c>true</c>.</remarks>
+        /// <see cref="http://answers.unity3d.com/questions/586144/destroyed-monobehaviour-not-comparing-to-null.html"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="backingStore">The backing store.</param>
+        /// <returns></returns>
+        private bool CheckForDestroyedMonobehaviourInterface<T>(T backingStore) {
+            Type tType = typeof(T);
+            if (tType.IsInterface) {
+                //D.Log("{0} found Interface of Type {1}.", GetType().Name, tType.Name);
+                if (backingStore != null && backingStore.Equals(null)) {
+                    // backingStore is a destroyed MonoBehaviour Interface and value is null since backingStore.Equals(value) to get here
+                    //D.Log("{0} found MonoBehaviour Interface of Type {1} slated for destruction.", GetType().Name, tType.Name);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
-        private static void TryWarn<T>(T backingStore, T value, string propertyName) {
+        private static void __TryWarn<T>(T backingStore, T value, string propertyName) {
             Type tType = typeof(T);
             if (!tType.IsValueType) {
                 if (value != null) {

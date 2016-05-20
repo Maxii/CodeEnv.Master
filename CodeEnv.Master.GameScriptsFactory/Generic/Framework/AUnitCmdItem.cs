@@ -401,7 +401,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
 
     private void UponTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
-    protected void UponEffectFinished(EffectID effectID) { RelayToCurrentState(effectID); }
+    protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
@@ -505,8 +505,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         iconEventListener.onPress -= PressEventHandler;
     }
 
-    // subscriptions contained completely within this gameobject (both subscriber
-    // and subscribee) donot have to be cleaned up as all instances are destroyed
+    // subscriptions contained completely within this gameObject (both subscriber
+    // and subscribed) do not have to be cleaned up as all instances are destroyed
 
     #endregion
 

@@ -25,13 +25,11 @@ namespace CodeEnv.Master.GameContent {
 
         string FullName { get; }
 
-        ADisplayManager DisplayMgr { get; }
-
         Vector3 Position { get; }
 
         float Radius { get; }
 
-        void HandleEffectFinished(EffectID effectID);
+        void HandleEffectSequenceFinished(EffectSequenceID effectID);
 
     }
 }

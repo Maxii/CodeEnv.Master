@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
         private string _qualitySettingKey = "Quality Setting";
 
         //********************************************************************************************
-        // WARNING: Changing the name of a Property here requires a comensurate change in the name returned by GuiMenuElementIDExtensions
+        // WARNING: Changing the name of a Property here requires a commensurate change in the name returned by GuiMenuElementIDExtensions
         // Note: Notifications are not needed for properties that cannot change during a game instance
         public UniverseSizeGuiSelection UniverseSizeSelection { get; private set; }
         public int PlayerCount { get; private set; }
@@ -319,8 +319,8 @@ namespace CodeEnv.Master.GameContent {
         /// Retrieves all PlayerPrefs and makes them accessible as Properties from this instance. This is where
         /// we set the value at initial startup (there is no preference recorded to disk yet) rather than relying on the default value.
         /// </summary>
-        /// <remarks>I considered externalizing these initial startup values, but as they are only used once, there is little value to the modder
-        /// having access to them.
+        /// <remarks>I considered externalizing these initial startup values, 
+        /// but as they are only used once, there is little value to the modder having access to them.
         /// </remarks>
         public void Retrieve() {
             UniverseSizeSelection = RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeGuiSelection.Normal);
@@ -387,7 +387,7 @@ namespace CodeEnv.Master.GameContent {
                 string decryptedStringValue = DecryptToString(PlayerPrefs.GetString(key));
                 T pref;
                 if (!Enums<T>.TryParse(decryptedStringValue, out pref)) {
-                    D.Error("Unable to parse Preference {0} of Type {1}.", decryptedStringValue, typeof(T).Name);
+                    D.Error("{0}: Unable to parse Preference {1} of Type {2}.", typeof(PlayerPrefsManager).Name, decryptedStringValue, typeof(T).Name);
                 }
                 return pref;
             }
@@ -403,7 +403,7 @@ namespace CodeEnv.Master.GameContent {
             var playerColorPrefs = new GameColor[] {UserPlayerColor, AIPlayer1Color, AIPlayer2Color, AIPlayer3Color, AIPlayer4Color,
             AIPlayer5Color, AIPlayer6Color, AIPlayer7Color };
             playerColorPrefs.ForAll(pref => {
-                D.Assert(pref.EqualsAnyOf(TempGameValues.AllPlayerColors), "{0}: PlayerColorPref {1} is invalid.", GetType().Name, pref.GetValueName());
+                D.Assert(pref.EqualsAnyOf(TempGameValues.AllPlayerColors), "{0}: PlayerColorPref {1} is invalid.", typeof(PlayerPrefsManager).Name, pref.GetValueName());
             });
         }
 

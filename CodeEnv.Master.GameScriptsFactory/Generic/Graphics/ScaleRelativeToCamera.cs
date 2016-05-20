@@ -36,7 +36,6 @@ public class ScaleRelativeToCamera : AMonoBase {
     public Vector3 Scale { get; private set; }
 
     private Vector3 _initialScale;
-    private int _scaleRefreshCounter;
 
     protected override void Awake() {
         base.Awake();
@@ -72,6 +71,8 @@ public class ScaleRelativeToCamera : AMonoBase {
     #region Occasional RefreshScale Update Archive
 
     //private const int ScaleRefreshCountThreshold = 4;
+
+    //private int _scaleRefreshCounter;
 
     //protected override void Update() {
     //    base.Update();

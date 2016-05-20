@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// DisplayManager for Moons.
     /// </summary>
-    public class MoonDisplayManager : ADisplayManager {
+    public class MoonDisplayManager : ADisplayManager, IMortalDisplayManager {
 
         private IRevolver _revolver;
 
@@ -65,6 +65,18 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region IMortalDisplayManager Members
+
+        /// <summary>
+        /// Called on the death of the client. Disables the display and ends all InCameraLOS calls.
+        /// </summary>
+        public void HandleDeath() {
+            IsDisplayEnabled = false;
+            _primaryMeshRenderer.enabled = false;
+        }
+
+        #endregion
 
     }
 

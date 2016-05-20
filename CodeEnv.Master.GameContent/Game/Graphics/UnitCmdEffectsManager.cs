@@ -26,14 +26,11 @@ namespace CodeEnv.Master.GameContent {
         public UnitCmdEffectsManager(IEffectsClient effectsClient)
             : base(effectsClient) { }
 
-        public override void StartEffect(EffectID effectID) {
-            if (effectID == EffectID.Dying) {
-                // turn off the Cmd's icon and highlight around the HQ Element
-                _effectsClient.DisplayMgr.EnableDisplay(toEnable: false, isDead: true);
-
+        public override void StartEffect(EffectSequenceID effectSeqID) {
+            if (effectSeqID == EffectSequenceID.Dying) {
                 // no effects for now 
             }
-            base.StartEffect(effectID); // currently just calls HandleEffectFinished
+            base.StartEffect(effectSeqID); // currently just calls HandleEffectFinished
         }
 
         public override string ToString() {

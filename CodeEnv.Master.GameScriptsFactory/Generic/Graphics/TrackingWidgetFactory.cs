@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: TrackingWidgetFactory.cs
-// Singleton Factory that creates preconfigured ITrackingWidgets.
+// Singleton Factory that creates pre-configured ITrackingWidgets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Singleton Factory that creates preconfigured ITrackingWidgets.
+/// Singleton Factory that creates pre-configured ITrackingWidgets.
 /// </summary>
 public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, ITrackingWidgetFactory, IDisposable {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes

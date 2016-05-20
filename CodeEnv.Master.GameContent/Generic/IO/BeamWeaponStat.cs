@@ -24,9 +24,9 @@ namespace CodeEnv.Master.GameContent {
     public class BeamWeaponStat : AWeaponStat {
 
         /// <summary>
-        /// The maximum  inaccuracy of the weapon's turret mount when traversing in degrees.
+        /// The maximum inaccuracy of the weapon's bearing when launched in degrees.
         /// </summary>
-        public float MaxTraverseInaccuracy { get; private set; }
+        public float MaxLaunchInaccuracy { get; private set; }
 
         /// <summary>
         /// The firing duration in hours.
@@ -50,15 +50,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
         /// <param name="duration">The firing duration in hours.</param>
-        /// <param name="maxTraverseInaccuracy">The maximum traverse inaccuracy in degrees.</param>
+        /// <param name="maxLaunchInaccuracy">The maximum launch inaccuracy in degrees.</param>
         public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
             float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength,
-            float reloadPeriod, DamageStrength damagePotential, float duration, float maxTraverseInaccuracy)
+            float reloadPeriod, DamageStrength damagePotential, float duration, float maxLaunchInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential) {
             D.Assert(duration > Constants.ZeroF);
-            D.Warn(maxTraverseInaccuracy > 5F, "{0} MaxTraverseInaccuracy of {1:0.#} is very high.", Name, MaxTraverseInaccuracy);
+            D.Warn(maxLaunchInaccuracy > 5F, "{0} MaxLaunchInaccuracy of {1:0.#} is very high.", Name, MaxLaunchInaccuracy);
             Duration = duration;
-            MaxTraverseInaccuracy = maxTraverseInaccuracy;
+            MaxLaunchInaccuracy = maxLaunchInaccuracy;
         }
 
     }

@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
             : base(trackedMissile, meshLayer, operatingEffect) {
         }
 
-        protected override IconInfo MakeIconInfo() {
+        protected override IconInfo MakeIconInfo() {    // HACK
             return new IconInfo("Flat", AtlasID.MyGui, GameColor.White, IconSize, WidgetPlacement.Over, _meshLayer);
         }
 

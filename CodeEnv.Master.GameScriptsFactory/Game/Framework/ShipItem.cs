@@ -1264,7 +1264,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
 
     IEnumerator Repairing_EnterState() {
         LogEvent();
-        StartEffect(EffectID.Repairing);
+        StartEffectSequence(EffectSequenceID.Repairing);
 
         var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
         while (Data.CurrentHitPoints < repairCompleteHitPoints) {
@@ -1282,7 +1282,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         Data.IsFtlDamaged = false;
         //D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
-        StopEffect(EffectID.Repairing);
+        StopEffectSequence(EffectSequenceID.Repairing);
         Return();
     }
 
@@ -1385,10 +1385,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
     void Dead_EnterState() {
         LogEvent();
         HandleDeath();
-        StartEffect(EffectID.Dying);
+        StartEffectSequence(EffectSequenceID.Dying);
     }
 
-    void Dead_UponEffectFinished(EffectID effectID) {
+    void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
         DestroyMe();
     }
@@ -1506,10 +1506,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
         _itemBeingOrbited = null;
     }
 
-    public override void HandleEffectFinished(EffectID effectID) {
-        base.HandleEffectFinished(effectID);
+    public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
+        base.HandleEffectSequenceFinished(effectID);
         if (CurrentState == ShipState.Dead) {   // OPTIMIZE avoids 'method not found' warning spam
-            UponEffectFinished(effectID);
+            UponEffectSequenceFinished(effectID);
         }
     }
 
@@ -3534,7 +3534,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ITopographyChangeListener, 
                 _shipRigidbody = shipRigidbody;
                 _gameMgr = GameManager.Instance;
                 _gameTime = GameTime.Instance;
-                _driftCorrector = new DriftCorrector(Name, ship.transform, shipRigidbody);
+                _driftCorrector = new DriftCorrector(ship.transform, shipRigidbody, Name);
                 Subscribe();
             }
 

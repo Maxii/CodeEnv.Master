@@ -29,20 +29,6 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // projectileOrdnance have rigidbodies
 
-    /// <summary>
-    /// Adds the ordnance launched to the list of detected items. 
-    /// Part of a workaround to allow 'detection' of ordnance launched inside the monitor's collider. 
-    /// Note: Obsolete as all interceptable ordnance has a rigidbody which is detected by this monitor when the 
-    /// ordnance moves, even if it first appears inside the monitor's collider.
-    /// </summary>
-    /// <param name="ordnance">The ordnance.</param>
-    [System.Obsolete]
-    public void AddOrdnanceLaunchedFromInsideMonitor(IInterceptableOrdnance ordnance) {
-        D.Assert(ordnance.IsOperational);
-        D.Log(ShowDebugLog, "{0} is adding {1} to detected items as it was fired from inside this monitor's collider.", Name, ordnance.Name);
-        AddDetectedObject(ordnance);
-    }
-
     protected override void AssignMonitorTo(ActiveCountermeasure activeCM) {
         activeCM.RangeMonitor = this;
     }

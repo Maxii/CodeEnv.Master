@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: Beam.cs
-// Beam ordnance on the way to a target containing effects for muzzle flash, beam operation and impact.
+// Beam ordnance on the way to a target containing effects for muzzle flash, beam operation and impact. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Beam ordnance on the way to a target containing effects for muzzle flash, beam operation and impact. 
+/// Beam ordnance on the way to a target containing effects for muzzle flash, beam operation and impact.  
 /// </summary>
 public class Beam : AOrdnance, ITerminatableOrdnance {
 
@@ -120,32 +120,50 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         base.Awake();
         _operatingEffectRenderer = UnityUtility.ValidateComponentPresence<LineRenderer>(gameObject);
 
-        // No effects should show unless toShowEffects says so
+        // No effects should initially show
         _operatingEffectRenderer.enabled = false;
         _initialBeamAnimationOffset = UnityEngine.Random.Range(0F, 5F);
         ValidateEffects();
+        _beamEnd = TrackingWidgetFactory.Instance.MakeTrackableLocation(parent: gameObject);
+        _beamEndListener = TrackingWidgetFactory.Instance.MakeInvisibleCameraLosChangedListener(_beamEnd, Layers.Cull_15);
     }
 
     private void ValidateEffects() {
         D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
         D.Assert(!_muzzleEffect.playOnAwake);
+        D.Assert(_muzzleEffect.loop);
         D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
         D.Assert(!_impactEffect.playOnAwake);
+        D.Assert(_impactEffect.loop);
     }
 
     public void Launch(IElementAttackable target, AWeapon weapon) {
         PrepareForLaunch(target, weapon);
-        D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.".Inject(Name, Layers.TransparentFX.GetValueName()));
-        weapon.isOperationalChanged += WeaponIsOperationalChangedEventHandler;
-        _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // start beam where ordnance located
+        D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.", Name, Layers.TransparentFX.GetValueName());
 
-        _beamEnd = TrackingWidgetFactory.Instance.MakeTrackableLocation(gameObject);
-        _beamEndListener = TrackingWidgetFactory.Instance.MakeInvisibleCameraLosChangedListener(_beamEnd, Layers.Cull_15);
-        _beamEndListener.inCameraLosChanged += BeamEndInCameraLosChangedEventHandler;
+        _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);
+        AdjustHeadingForInaccuracy();
 
         AssessShowMuzzleEffects();
         AssessShowOperatingEffects();
         enabled = true;
+    }
+
+    protected override void Subscribe() {
+        base.Subscribe();
+        Weapon.isOperationalChanged += WeaponIsOperationalChangedEventHandler;
+        _beamEndListener.inCameraLosChanged += BeamEndInCameraLosChangedEventHandler;
+    }
+
+    private void AdjustHeadingForInaccuracy() {
+        Quaternion initialRotation = transform.rotation;
+        Vector3 initialEulerHeading = initialRotation.eulerAngles;
+        float inaccuracyInDegrees = Weapon.MaxLaunchInaccuracy;
+        float newHeadingX = initialEulerHeading.x + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
+        float newHeadingY = initialEulerHeading.y + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
+        Vector3 adjustedEulerHeading = new Vector3(newHeadingX, newHeadingY, initialEulerHeading.z);
+        transform.rotation = Quaternion.Euler(adjustedEulerHeading);
+        //D.Log("{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", Name, Quaternion.Angle(initialRotation, transform.rotation));
     }
 
     protected override void Update() {
@@ -183,12 +201,14 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private void PrepareBeamForShowing(RaycastHit impactInfo) {
         D.Assert(ToShowOperatingEffects);
+        //_operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);  // keep beam start where ordnance located
+
         float beamLength = _isCurrentImpact ? Vector3.Distance(transform.position, impactInfo.point) : _range;
         // end the beam line at either the impact point or its range
         Vector3 localBeamEnd = new Vector3(0F, 0F, beamLength);
         _operatingEffectRenderer.SetPosition(index: 1, position: localBeamEnd);
         _beamEnd.transform.localPosition = localBeamEnd;
-        // Set beam scaling based off its length?
+        // UNCLEAR Set beam scaling based off its length?
         float beamSizeMultiplier = beamLength * (_beamAnimationScale / 10F);
         _operatingEffectRenderer.material.SetTextureScale(UnityConstants.MainDiffuseTexture, new Vector2(beamSizeMultiplier, 1F));
     }
@@ -243,6 +263,23 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     #region Event and Property Change Handlers
 
+    protected override void OnSpawned() {
+        base.OnSpawned();
+        D.Assert(_beamEnd != null);
+        D.Assert(_beamEndListener != null);
+        D.Assert(_operatingEffectRenderer != null);
+        D.Assert(_operatingEffectRenderer.enabled == false);
+        D.Assert(_cumHoursOperating == Constants.ZeroF);
+        D.Assert(_cumHoursOfImpactOnImpactedTarget == Constants.ZeroF);
+        D.Assert(_impactedTarget == null);
+        D.Assert(_isCurrentImpact == false);
+        D.Assert(_isIntendedTargetHit == false);
+        D.Assert(_isInterdicted == false);
+        D.Assert(_animateOperatingEffectJob == null);
+        D.Assert(_impactLocation == Vector3.zero);
+        D.Assert(enabled == false);
+    }
+
     private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
         var weapon = sender as AEquipment;
         D.Assert(!weapon.IsOperational);    // no beam should exist when the weapon just becomes operational
@@ -269,6 +306,19 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         PauseAudio(_gameMgr.IsPaused);
     }
 
+    protected override void OnDespawned() {
+        base.OnDespawned();
+        _cumHoursOperating = Constants.ZeroF;
+        _cumHoursOfImpactOnImpactedTarget = Constants.ZeroF;
+        _impactedTarget = null;
+        _isCurrentImpact = false;
+        _isIntendedTargetHit = false;
+        _isInterdicted = false;
+        _animateOperatingEffectJob = null;
+        _impactLocation = Vector3.zero;
+        _operatingAudioSource = null;
+    }
+
     #endregion
 
     private void RefreshImpactLocation(RaycastHit impactInfo) {
@@ -293,7 +343,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
 
         DamageStrength cumDamageToApply = DamagePotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
-        D.Log("{0} is applying hit of strength {1} to {2}.", Name, cumDamageToApply, _impactedTarget.DisplayName);
+        //D.Log("{0} is applying hit of strength {1} to {2}.", Name, cumDamageToApply, _impactedTarget.DisplayName);
         _impactedTarget.TakeHit(cumDamageToApply);
 
         if (_impactedTarget == Target) {
@@ -328,13 +378,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void AssessShowOperatingEffects() {
         var toShow = ToShowOperatingEffects;
         ShowOperatingEffects(toShow);
+        //D.Log("{0}.AssessShow(), toShow = {1}.", Name, toShow);
     }
 
     private void ShowOperatingEffects(bool toShow) {
-        if (_gameMgr.IsPaused) {
-            // no operating effect status changes while paused as this can get Jobs out of sync
-            return;
-        }
         // Beam visibility
         _operatingEffectRenderer.enabled = toShow;
 
@@ -343,7 +390,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _animateOperatingEffectJob.Kill();
         }
         if (toShow) {
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");    // OPTIMIZE not needed with IsPaused return above
             _animateOperatingEffectJob = new Job(AnimateBeam(), toStart: true);
             if (_gameMgr.IsPaused) {
                 _animateOperatingEffectJob.IsPaused = true;
@@ -407,18 +453,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
-    protected override void PrepareForTermination() {
-        base.PrepareForTermination();
-        if (IsOperatingAudioPlaying) {
-            //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
-            _operatingAudioSource.Stop();
-        }
-        AssessCombatResults();
-        Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
-        // beamEndListener is a child so no need to unsubscribe
-        Weapon.HandleFiringComplete(this);
-    }
-
     private void AssessCombatResults() {
         if (_isIntendedTargetHit) {
             // Intended Target was hit at least once during beam's duration
@@ -453,11 +487,45 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
+    protected override void PrepareForTermination() {
+        base.PrepareForTermination();
+        if (IsOperatingAudioPlaying) {
+            //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
+            _operatingAudioSource.Stop();
+        }
+        _operatingEffectRenderer.enabled = false;
+        if (IsAnimateOperatingEffectJobRunning) {
+            _animateOperatingEffectJob.Kill();
+        }
+        AssessCombatResults();
+        Weapon.HandleFiringComplete(this);
+    }
+
+    protected override void ResetEffectsForReuse() {
+        _muzzleEffect.Clear();
+        _impactEffect.Clear();
+        _impactEffect.transform.localPosition = Vector3.zero;
+        _impactEffect.transform.localRotation = Quaternion.identity;
+    }
+
+    protected override void Despawn() { // OPTIMIZE 5.19.16 not really necessary
+        //D.Log("{0} is about to despawn and re-parent to OrdnanceSpawnPool.", Name);
+        MyPoolManager.Instance.DespawnOrdnance(transform, MyPoolManager.Instance.OrdnanceSpawnPool);
+    }
+
     protected override void Cleanup() {
         base.Cleanup();
         if (_animateOperatingEffectJob != null) {
             _animateOperatingEffectJob.Dispose();
         }
+    }
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        if (Weapon != null) {    // Weapon is not null when destroyed while firing
+            Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
+        }
+        _beamEndListener.inCameraLosChanged -= BeamEndInCameraLosChangedEventHandler;
     }
 
     public override string ToString() {
@@ -469,6 +537,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     public void Terminate() { TerminateNow(); }
 
     #endregion
+
 
 }
 

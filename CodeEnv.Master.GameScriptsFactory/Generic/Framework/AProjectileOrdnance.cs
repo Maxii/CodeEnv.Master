@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -17,17 +17,21 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact. 
+/// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact.  
 /// </summary>
 public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, ITopographyChangeListener, IWidgetTrackable {
 
     private const int CheckProgressCounterThreshold = 16;
+
+    protected const float __ImpactEffectScalerValue = .01F;
 
     /// <summary>
     /// The maximum speed of this projectile in units per hour when in Topography.OpenSpace.
@@ -76,6 +80,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         // rigidbody drag and mass now set from Launch
         _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         ValidateEffects();
+        _displayMgr = InitializeDisplayMgr();
     }
 
     protected abstract void ValidateEffects();
@@ -95,14 +100,12 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
         weapon.HandleFiringComplete(this);
-
-        _displayMgr = InitializeDisplayMgr();
     }
 
     private AProjectileDisplayManager InitializeDisplayMgr() {
         AProjectileDisplayManager displayMgr = MakeDisplayMgr();
         displayMgr.Initialize();
-        displayMgr.EnableDisplay(true);
+        displayMgr.IsDisplayEnabled = true;
         return displayMgr;
     }
 
@@ -145,6 +148,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
         //Name, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
         //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(transform.position, Target.Position));
+        bool isImpactEffectRunning = false;
         var impactedGo = collision.collider.gameObject;
         var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
         if (impactedTarget != null) {
@@ -153,20 +157,25 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             ContactPoint contactPoint = collision.contacts[0];
             // The application of impact force is already handled by the physics engine when regular rigidbodies collide
             TryApplyImpactForce(impactedGo, contactPoint);
-            if (impactedTarget.IsVisualDetailDiscernibleToUser) {
-                // target is being viewed by user so show impact effect
-                //D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
-                var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
-                // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
-                ShowImpactEffects(impactEffectLocation);
-            }
             if (impactedTarget.IsOperational) {
-                impactedTarget.TakeHit(DamagePotential);
                 if (impactedTarget == Target) {
                     ReportTargetHit();
                 }
                 else {
                     ReportInterdiction();
+                }
+                impactedTarget.TakeHit(DamagePotential);
+                // if target is killed by this hit, TerminateNow will be immediately called by Weapon
+            }
+            if (impactedTarget.IsOperational) {
+                // target survived the hit
+                if (impactedTarget.IsVisualDetailDiscernibleToUser) {
+                    // target is being viewed by user so show impact effect
+                    //D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
+                    var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
+                    // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
+                    ShowImpactEffects(impactEffectLocation);
+                    isImpactEffectRunning = true;
                 }
             }
         }
@@ -176,8 +185,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             D.Assert(otherOrdnance == null);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
         }
 
-        if (IsOperational) {
-            // ordnance has not already been terminated by other paths such as the death of the target
+        if (IsOperational && !isImpactEffectRunning) {
+            // ordnance has not already been terminated by other paths such as the death of the target and impact effect is not running
             TerminateNow();
         }
     }
@@ -206,11 +215,26 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected override void AssessShowMuzzleEffects() {
         if (ToShowMuzzleEffects) {
-            ShowMuzzleEffect();    // effect will destroy itself when completed
+            ShowMuzzleEffect();
         }
     }
 
     protected abstract void ShowMuzzleEffect();
+
+    protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
+        HandleImpactEffectsBegun();
+    }
+
+    /// <summary>
+    /// Handles any shutdown reqd when the impact effect begins. Termination won't take place until the effect is done. 
+    /// This is not necessary if the effect isn't showing as the projectile immediately terminates.
+    /// </summary>
+    protected virtual void HandleImpactEffectsBegun() {
+        _displayMgr.IsDisplayEnabled = false;   // make the projectile disappear
+        _collider.enabled = false;              // shutdown collisions
+        enabled = false;                        // shutdown progress checks and propulsion
+        _rigidbody.velocity = Vector3.zero;     // freeze movement including any bounce or deflection as a result of the collision
+    }
 
     /// <summary>
     /// Returns the force of impact on collision.
@@ -225,6 +249,17 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected abstract float GetDistanceTraveled();
 
     #region Event and Property Change Handlers
+
+    protected override void OnSpawned() {
+        base.OnSpawned();
+        D.Assert(_displayMgr != null);
+        D.Assert(_rigidbody != null);
+        D.Assert(_collider != null);
+        D.Assert(_launchPosition == Vector3.zero);
+        D.Assert(!_hasWeaponFired);
+        D.Assert(_checkProgressCounter == Constants.Zero);
+        _collider.enabled = true;
+    }
 
     protected sealed override void OnCollisionEnter(Collision collision) {
         base.OnCollisionEnter(collision);
@@ -241,6 +276,15 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
         PauseVelocity(_gameMgr.IsPaused);
+    }
+
+    protected override void OnDespawned() {
+        base.OnDespawned();
+        _launchPosition = Vector3.zero;
+        _hasWeaponFired = false;
+        _checkProgressCounter = Constants.Zero;
+        _rigidbody.velocity = Vector3.zero;
+        // Note: deactivating this gameObject when despawned removes Physics.IgnoreCollision
     }
 
     #endregion
@@ -273,7 +317,9 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
-        _displayMgr.EnableDisplay(false, isDead: true);
+        // Deactivating the gameObject when despawned will disable the PrimaryMeshRenderer stopping LOS events.
+        // Don't also do it here using DisplayMgr.HandleDeath() as it won't be enabled again when re-spawned.
+        _displayMgr.IsDisplayEnabled = false;
     }
 
     #region IInterceptableOrdnance Members
@@ -296,7 +342,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         }
         else {
             //D.Log("{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
-            DeliveryVehicleStrength = interceptStrength - DeliveryVehicleStrength;
+            DeliveryVehicleStrength = DeliveryVehicleStrength - interceptStrength;
             if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
                 ReportInterdiction();
                 if (IsOperational) {

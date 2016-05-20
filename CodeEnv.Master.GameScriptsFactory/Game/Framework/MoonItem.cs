@@ -80,21 +80,21 @@ public class MoonItem : APlanetoidItem, IMoonItem {
         // which causes planet to try to destroy itself twice
     }
 
-    public override void HandleEffectFinished(EffectID effectID) {
+    public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         // complete override reqd to call OnEffectFinished in the right sequence
         switch (effectID) {
-            case EffectID.Dying:
+            case EffectSequenceID.Dying:
                 ParentPlanet.RemoveMoon(this);  // remove from planet list just before planet checks whether this is last moon
-                OnEffectFinished(effectID); // if the planet is causing the moons death, event causes planet to check whether this is the last moon
+                OnEffectSeqFinished(effectID); // if the planet is causing the moons death, event causes planet to check whether this is the last moon
                 if (!_isParentPlanetDying) {
                     // if the planet dying is the cause of this moons death, than the planet will destroy all the game objects
                     DestroyMe();
                 }
                 break;
-            case EffectID.Hit:
-                OnEffectFinished(effectID);
+            case EffectSequenceID.Hit:
+                OnEffectSeqFinished(effectID);
                 break;
-            case EffectID.None:
+            case EffectSequenceID.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentState));
         }
