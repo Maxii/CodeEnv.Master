@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         IShipCloseOrbitSimulator CloseOrbitSimulator { get; }
 
-        Player Owner { get; }
-
         /// <summary>
         /// A collection of assembly stations that are local to the item.
         /// </summary>
@@ -35,9 +33,9 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsCloseOrbitAllowedBy(Player player);
 
-        void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint);
+        void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint);
 
-        bool IsInCloseOrbit(IShipItem ship);
+        bool IsInCloseOrbit(IShip_Ltd ship);
 
 
     }

@@ -32,7 +32,9 @@ public class SectorCtxControl : ACtxControl {
                                                                                            FleetDirective.Move,
                                                                                            FleetDirective.FullSpeedMove,
                                                                                            FleetDirective.Explore,
-                                                                                           FleetDirective.Guard };
+                                                                                           FleetDirective.Guard
+                                                                                      };
+
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
@@ -51,7 +53,7 @@ public class SectorCtxControl : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override void PopulateMenu_UserRemoteFleetIsSelected() {
@@ -87,10 +89,10 @@ public class SectorCtxControl : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _sector;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

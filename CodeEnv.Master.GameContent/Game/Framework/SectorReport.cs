@@ -26,26 +26,49 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        [System.Obsolete]
-        public float Density { get; private set; }
-
-        public SectorReport(SectorData data, Player player, ISectorItem item)
-            : base(player, item) {
-            AssignValues(data);
+        public SectorReport(SectorData data, Player player, ISector_Ltd item)
+            : base(data, player, item) {
         }
 
-        private void AssignValues(AItemData data) {
+        protected override void AssignValues(AItemData data) {
             var sData = data as SectorData;
-            Name = sData.Name;
-            Owner = sData.Owner;
-            Position = sData.Position;
-            SectorIndex = sData.SectorIndex;
-            //Density = sData.Density;
+            var accessCntlr = sData.InfoAccessCntlr;
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+                Name = sData.Name;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+                Position = sData.Position;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+                Owner = sData.Owner;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+                SectorIndex = sData.SectorIndex;
+            }
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Archive
+
+        //public SectorReport(SectorData data, Player player, ISector item)
+        //    : base(player, item) {
+        //    AssignValues(data);
+        //}
+
+        //private void AssignValues(AItemData data) {
+        //    var sData = data as SectorData;
+        //    Name = sData.Name;
+        //    Owner = sData.Owner;
+        //    Position = sData.Position;
+        //    SectorIndex = sData.SectorIndex;
+        //    //Density = sData.Density;
+        //}
+
+        #endregion
 
     }
 }

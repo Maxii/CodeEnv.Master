@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// An INavigableTarget wrapping a stationary location in world space.
+    /// An INavigable target wrapping a stationary location in world space.
     /// </summary>
     /// <seealso cref="CodeEnv.Master.GameContent.INavigable" />
     /// <seealso cref="System.IEquatable{CodeEnv.Master.GameContent.StationaryLocation}" />

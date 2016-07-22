@@ -47,7 +47,6 @@ public class RowOrganizer : AMonoBase {
     private void InitializeLocalReferences() {
         D.Assert(separatorPrefab != null, gameObject, "{0}.{1} separatorPrefab not set.", gameObject.name, GetType().Name);
         _separatorWidth = separatorPrefab.width;
-        //_rowWidget = gameObject.GetSafeMonoBehaviour<UIWidget>();
         _rowWidget = gameObject.GetSafeComponent<UIWidget>();
         _rowMemberLocalPositionY = -_rowWidget.height / 2;
     }
@@ -55,8 +54,7 @@ public class RowOrganizer : AMonoBase {
     private void PositionRowElements() {
         DestroyExistingSeparators();
 
-        //var rowElements = gameObject.GetSafeMonoBehavioursInImmediateChildrenOnly<RowElementIndexer>();
-        var rowElements = gameObject.GetSafeComponentsInImmediateChildren<RowElementIndexer>();
+        var rowElements = gameObject.GetSafeComponentsInImmediateChildren<ElementIndexer>();
         _elementHeight = ValidateElements(rowElements);
 
         var orderedElements = rowElements.OrderBy(re => re.index);
@@ -75,14 +73,14 @@ public class RowOrganizer : AMonoBase {
     /// </summary>
     /// <param name="rowElements">The row elements.</param>
     /// <returns></returns>
-    private int ValidateElements(RowElementIndexer[] rowElements) {
+    private int ValidateElements(ElementIndexer[] rowElements) {
         int height = Constants.Zero;
         var indexesFound = new List<int>(rowElements.Length);
         rowElements.ForAll(e => {
 
             int index = e.index;
-            D.Assert(index != Constants.MinusOne, "{0}.{1} not set.".Inject(e.gameObject.name, typeof(RowElementIndexer).Name));
-            D.Warn(indexesFound.Contains(index), "Duplicate {0} index {1} found. Order will not be deterministic.", typeof(RowElementIndexer).Name, index);
+            D.Assert(index != Constants.MinusOne, "{0}.{1} not set.".Inject(e.gameObject.name, typeof(ElementIndexer).Name));
+            D.Warn(indexesFound.Contains(index), "Duplicate {0} index {1} found. Order will not be deterministic.", typeof(ElementIndexer).Name, index);
             indexesFound.Add(index);
 
             if (height == Constants.Zero) {
@@ -104,7 +102,7 @@ public class RowOrganizer : AMonoBase {
     /// <param name="localPositionX">The value to set the element's localPosition.x.</param>
     /// <param name="addSeparator">if set to <c>true</c> [add separator].</param>
     /// <returns></returns>
-    private int PositionElement(RowElementIndexer element, int localPositionX, bool addSeparator) {
+    private int PositionElement(ElementIndexer element, int localPositionX, bool addSeparator) {
         //D.Log("{0} setting {1} to localPosition.x = {2}.", GetType().Name, element.GetType().Name, localPositionX);
         element.transform.localPosition = new Vector3(localPositionX, _rowMemberLocalPositionY);
         element.transform.SetSiblingIndex(element.index);
@@ -127,7 +125,7 @@ public class RowOrganizer : AMonoBase {
 
     private void DestroyExistingSeparators() {
         var rowWidgets = gameObject.GetSafeComponentsInImmediateChildren<UIWidget>();
-        var separatorWidgets = rowWidgets.Where(w => w.gameObject.GetComponent<RowElementIndexer>() == null);
+        var separatorWidgets = rowWidgets.Where(w => w.gameObject.GetComponent<ElementIndexer>() == null);
         if (separatorWidgets.Any()) {
             separatorWidgets.ForAll(sep => DestroyImmediate(sep.gameObject));
         }

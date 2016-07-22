@@ -24,8 +24,16 @@ using UnityEngine;
 
 /// <summary>
 /// Detects IInterceptableOrdnance that enter and exit the range of its active countermeasures and notifies each countermeasure of such.
+/// <remarks>ActiveCountermeasureRangeMonitor assumes that Short, Medium and LongRange countermeasures all detect
+/// ordnance using the element's "Proximity Detectors" that are always operational. They do not rely on Sensors to detect the ordnance, 
+/// nor are they effected by sensors as all ordnance info is available since ordnance pays no attention to IntelCoverage.</remarks>
 /// </summary>
 public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterceptableOrdnance, ActiveCountermeasure>, IActiveCountermeasureRangeMonitor {
+
+    public new IUnitElement ParentItem {
+        get { return base.ParentItem as IUnitElement; }
+        set { base.ParentItem = value as IUnitElement; }
+    }
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // projectileOrdnance have rigidbodies
 
@@ -35,13 +43,13 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
         var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
-        D.Log(ShowDebugLog, "{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", Name, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
+        D.Log(ShowDebugLog, "{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", FullName, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
         if (newlyDetectedOrdnance.Owner == Owner) {
             // its one of ours
             if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
                 // ... and its not a danger so ignore it
                 RemoveDetectedObject(newlyDetectedOrdnance);
-                D.Log(ShowDebugLog, "{0} removed detected item {1} owned by us moving away.", Name, newlyDetectedOrdnance.FullName);
+                D.Log(ShowDebugLog, "{0} removed detected item {1} owned by us moving away.", FullName, newlyDetectedOrdnance.FullName);
                 return;
             }
         }
@@ -97,6 +105,13 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     #endregion
 
+    protected override void ReviewRelationsWithAllDetectedObjects() {
+        // 7.14.16 Ordnance Owner's DiploRelations with the owner of this Monitor is not a factor when determining what threat to intercept.
+        // IMPROVE not entirely true as ordnance owned by our Owner is allowed to continue if not a threat to 
+        // the parent of this monitor. Improving on this is optional and probably not worth the effort to 
+        // track all ordnance as the only time this will matter is when an element's owner is changed.
+    }
+
     private bool ConfirmNotIncoming(IInterceptableOrdnance detectedOrdnance) {
         var ordnanceHeading = detectedOrdnance.CurrentHeading;
         var bearingToOrdnance = detectedOrdnance.Position - transform.position;
@@ -105,7 +120,15 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     }
 
     protected override float RefreshRangeDistance() {
-        return _equipmentList.First().RangeDistance;    // currently no qty effects on range distance
+        float baselineRange = RangeCategory.GetBaselineActiveCountermeasureRange();
+        // IMPROVE add factors based on IUnitElement Type and/or Category. DONOT vary by Cmd
+        return baselineRange * Owner.CountermeasureRangeMultiplier;
+    }
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        // It is important to cleanup the subscriptions for each threat detected when this Monitor is dying of natural causes. 
+        IsOperational = false;
     }
 
     public override string ToString() {

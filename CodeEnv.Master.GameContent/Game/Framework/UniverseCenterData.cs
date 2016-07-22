@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
+        public new UniverseCenterInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as UniverseCenterInfoAccessController; } }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
@@ -41,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="radius">The radius.</param>
         /// <param name="closeOrbitInnerRadius">The close orbit inner radius.</param>
-        public UniverseCenterData(IUniverseCenterItem ucenter, CameraFocusableStat cameraStat, float radius, float closeOrbitInnerRadius)
+        public UniverseCenterData(IUniverseCenter ucenter, CameraFocusableStat cameraStat, float radius, float closeOrbitInnerRadius)
             : base(ucenter, TempGameValues.NoPlayer, cameraStat) {
             Radius = radius;
             CloseOrbitInnerRadius = closeOrbitInnerRadius;
@@ -52,6 +54,10 @@ namespace CodeEnv.Master.GameContent {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
+        }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new UniverseCenterInfoAccessController(this);
         }
 
         #region Event and Property Change Handlers

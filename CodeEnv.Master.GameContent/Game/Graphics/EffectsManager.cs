@@ -25,13 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class EffectsManager : IDisposable {
 
-        protected IEffectsClient _effectsClient;
+        protected IEffectsMgrClient _effectsClient;
         protected IGeneralFactory _generalFactory;
         protected IMyPoolManager _myPoolMgr;
         protected IGameManager _gameMgr;
         protected IList<IDisposable> _subscriptions;
 
-        public EffectsManager(IEffectsClient effectsClient) {
+        public EffectsManager(IEffectsMgrClient effectsClient) {
             _effectsClient = effectsClient;
             _generalFactory = References.GeneralFactory;
             _gameMgr = References.GameManager;

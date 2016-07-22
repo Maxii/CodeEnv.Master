@@ -35,14 +35,14 @@ public class StarbaseTableRowForm : ACommandTableRowForm {
 
     protected override void AssignValueToCompositionGuiElement() {
         base.AssignValueToCompositionGuiElement();
-        var report = Report as StarbaseReport;
-        _compositionElement.IconInfo = (report.Item as StarbaseCmdItem).IconInfo;
+        var report = Report as StarbaseCmdReport;
+        _compositionElement.IconInfo = StarbaseIconInfoFactory.Instance.MakeInstance(report);
         _compositionElement.Category = report.Category;
     }
 
     protected override void AssignValueToStrategicResourcesGuiElement() {
         base.AssignValueToStrategicResourcesGuiElement();
-        var report = Report as StarbaseReport;
+        var report = Report as StarbaseCmdReport;
         _resourcesElement.Resources = report.Resources;
     }
 

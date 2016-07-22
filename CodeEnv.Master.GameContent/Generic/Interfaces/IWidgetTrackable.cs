@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IWidgetTrackable.cs
-//  Interface for GameObjects that are trackable by UI or World Widgets.
+// Interface for GameObjects that are capable of having their position tracked by UI or World Widgets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    ///  Interface for GameObjects that are trackable by UI or World Widgets.
+    /// Interface for GameObjects that are capable of having their position tracked by UI or World Widgets.
     /// </summary>
     public interface IWidgetTrackable {
 
@@ -29,12 +29,12 @@ namespace CodeEnv.Master.GameContent {
         Vector3 Position { get; }
 
         /// <summary>
-        /// Gets the transform of this IWidgetTrackable target.
+        /// Gets the transform of this IWidgetTrackable object.
         /// </summary>
         Transform transform { get; }
 
         /// <summary>
-        /// Gets the offset used to place the widget, relative to this IWidgetTrackable target.
+        /// Gets the offset used to place the widget, relative to this IWidgetTrackable object.
         /// </summary>
         /// <param name="placement">The placement.</param>
         /// <returns></returns>

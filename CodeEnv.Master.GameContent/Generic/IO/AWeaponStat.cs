@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeaponStat : ARangedEquipmentStat {
 
-        private static string _toStringFormat = "{0}: Name[{1}], DeliveryVehicleStrength[{2}], DamagePotential[{3}], Range[{4}({5:0.})].";
+        private const string _toStringFormat = "{0}: Name[{1}], DeliveryVehicleStrength[{2}], DamagePotential[{3}], Range[{4}].";
 
         public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
 
@@ -45,14 +45,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
         public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod,
             DamageStrength damagePotential)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) {
             DeliveryVehicleStrength = deliveryVehicleStrength;
             ReloadPeriod = reloadPeriod;
             DamagePotential = damagePotential;
@@ -60,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override sealed string ToString() {
             return _toStringFormat.Inject(GetType().Name, Name, DeliveryVehicleStrength.ToString(), DamagePotential.ToString(),
-                RangeCategory.GetEnumAttributeText(), BaseRangeDistance);
+                RangeCategory.GetValueName());
         }
 
     }

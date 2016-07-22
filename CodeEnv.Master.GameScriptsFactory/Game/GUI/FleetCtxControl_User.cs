@@ -34,7 +34,6 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                                                                                             FleetDirective.Patrol,
                                                                                             FleetDirective.Guard,
                                                                                             FleetDirective.Explore,
-                                                                                            FleetDirective.CloseOrbit,
                                                                                             FleetDirective.Attack,
                                                                                             FleetDirective.Repair,
                                                                                             FleetDirective.Disband,
@@ -72,7 +71,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         _fleetMenuOperator = fleetCmd;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_fleetMenuOperator.IsSelected) {
             D.Assert(_fleetMenuOperator == selected as FleetCmdItem);
             return true;
@@ -82,12 +81,12 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool TryIsSelectedItemUserRemoteShip(ISelectable selected, out ShipItem selectedShip) {
         selectedShip = selected as ShipItem;
-        return selectedShip != null && selectedShip.Owner.IsUser;
+        return selectedShip != null && selectedShip.IsUserOwned;
     }
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(FleetDirective directive) {
@@ -96,17 +95,17 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 return _fleetMenuOperator.Data.Health == Constants.OneHundredPercent && _fleetMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
             case FleetDirective.Attack:
                 return !_fleetMenuOperator.IsAttackCapable;
-            case FleetDirective.Join:
             case FleetDirective.AssumeFormation:
+            case FleetDirective.Scuttle:
+                return _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+            case FleetDirective.Disband:
+            case FleetDirective.Join:
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
             case FleetDirective.Explore:
-            case FleetDirective.CloseOrbit:
             case FleetDirective.Refit:
             case FleetDirective.Withdraw:   // TODO should be in battle
             case FleetDirective.Retreat:    // TODO should be in battle
-            case FleetDirective.Disband:
-            case FleetDirective.Scuttle:
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -126,8 +125,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = _userKnowledge.MyFleets.Except(_fleetMenuOperator).Cast<INavigable>();
                 return true;
             case FleetDirective.Patrol:
-                // Note: Easy access to patrol friendly systems. Other patrol targets should be explicitly chosen by user
-                targets = _userKnowledge.Systems.Where(sys => sys.Owner.IsFriendlyWith(_user)).Cast<INavigable>();
+                // TODO: More selective of patrol friendly systems. Other patrol targets should be explicitly chosen by user
+                targets = _userKnowledge.Systems.Cast<IPatrollable>().Where(sys => sys.IsPatrollingAllowedBy(_user)).Cast<INavigable>();
                 return true;
             case FleetDirective.Guard:
                 // Note: Easy access to guard my systems and bases. Other guard targets should be explicitly chosen by user
@@ -140,14 +139,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 var systemsNeedingExploration = systemsAllowingExploration.Where(sys => !sys.IsFullyExploredBy(_user)).Cast<INavigable>();
                 targets = systemsNeedingExploration;
                 return true;
-            case FleetDirective.CloseOrbit:
-                targets = _userKnowledge.MyBases.Cast<INavigable>().Union(_userKnowledge.MyPlanets.Cast<INavigable>());
-                return true;
             case FleetDirective.Attack:
-                // Note: Easy access to attack fleets and bases of war opponents. Other attack targets should be explicitly chosen by user
-                var knownFleetsAtWar = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user));
-                var knownBasesAtWar = _userKnowledge.Bases.Where(b => b.Owner.IsAtWarWith(_user));
-                targets = knownFleetsAtWar.Cast<INavigable>().Union(knownBasesAtWar.Cast<INavigable>());
+                // TODO: More selective of fleets and bases of war opponents. Other attack targets should be explicitly chosen by user
+                targets = _userKnowledge.Commands.Cast<IUnitAttackable>().Where(cmd => cmd.IsAttackingAllowedBy(_user)).Cast<INavigable>();
                 return true;
             case FleetDirective.Repair:
             case FleetDirective.Refit:
@@ -192,20 +186,20 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
-        IssueFleetMenuOperatorOrder(itemID);
+        IssueUserFleetMenuOperatorOrder(itemID);
     }
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
     protected override void HandleMenuPick_UserRemoteShipIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteShipIsSelected(itemID);
-        IssueRemoteShipOrder(itemID);
+        IssueRemoteUserShipOrder(itemID);
     }
 
-    private void IssueFleetMenuOperatorOrder(int itemID) {
+    private void IssueUserFleetMenuOperatorOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
@@ -214,18 +208,20 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target as IFleetNavigable);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
-    private void IssueRemoteShipOrder(int itemID) {
+    private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
+        D.Assert(directive == ShipDirective.Join);  // HACK
         IShipNavigable target = _fleetMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        bool toNotifyCmd = false;
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, toNotifyCmd, target);
     }
 
     public override string ToString() {

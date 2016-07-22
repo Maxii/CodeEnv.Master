@@ -25,7 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         public DamageStrength DamageMitigation { get; private set; }
 
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PassiveCountermeasureStat"/> class.
         /// </summary>

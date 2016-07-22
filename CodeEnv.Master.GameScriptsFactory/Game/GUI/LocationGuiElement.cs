@@ -46,7 +46,8 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         get { return _position; }
         set {
             D.Assert(!_isPositionSet);  // only occurs once between Resets
-            SetProperty<Vector3?>(ref _position, value, "Position", PositionPropSetHandler);
+            _position = value;
+            PositionPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -92,11 +93,11 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
             isPositionValid = true;
         }
 
-        IBaseCmdItem myClosestBase = null;
+        IUnitBaseCmd myClosestBase = null;
         string distanceText = _unknown;
         if (isPositionValid) {
             // can return false if there are no bases currently owned by the user
-            if (GameManager.Instance.UserPlayerKnowledge.TryFindMyClosestItem<IBaseCmdItem>(position, out myClosestBase)) {
+            if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(position, out myClosestBase)) {
                 _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorIndex, myClosestBase.SectorIndex);
                 distanceText = Constants.FormatFloat_1DpMax.Inject(_closestBaseDistanceInSectors.Value);
             }

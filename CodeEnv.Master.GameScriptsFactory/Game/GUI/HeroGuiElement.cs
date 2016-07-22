@@ -37,7 +37,8 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
         get { return __heroName; }
         set {
             D.Assert(!__isHeroNameSet); // only happens once between Resets
-            SetProperty<string>(ref __heroName, value, "__HeroName", __HeroNamePropSetHandler);
+            __heroName = value;
+            __HeroNamePropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -93,7 +94,6 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
 
     public override void Reset() {
         // UNDONE
-        __heroName = null;
         __isHeroNameSet = false;
     }
 

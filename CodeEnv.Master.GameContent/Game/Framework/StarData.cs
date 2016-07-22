@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -56,6 +57,8 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
+        public new StarInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarInfoAccessController; } }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         /// <summary>
@@ -65,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="star">The star.</param>
         /// <param name="starStat">The stat.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        public StarData(IStarItem star, StarStat starStat, CameraFocusableStat cameraStat)
+        public StarData(IStar star, StarStat starStat, CameraFocusableStat cameraStat)
             : this(star, starStat, cameraStat, TempGameValues.NoPlayer) { }
 
         /// <summary>
@@ -75,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starStat">The stat.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public StarData(IStarItem star, StarStat starStat, CameraFocusableStat cameraStat, Player owner)
+        public StarData(IStar star, StarStat starStat, CameraFocusableStat cameraStat, Player owner)
             : base(star, owner, cameraStat) {
             Category = starStat.Category;
             Radius = starStat.Radius;
@@ -90,6 +93,10 @@ namespace CodeEnv.Master.GameContent {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
+        }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new StarInfoAccessController(this);
         }
 
         public override string ToString() {

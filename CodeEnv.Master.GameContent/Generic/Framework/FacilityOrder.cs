@@ -23,9 +23,22 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityOrder {
 
+        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, Notify = {3}, Target = {4}, StandingOrder = {5}]";
+
+        private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[] {
+                                                                                                    FacilityDirective.Refit,
+                                                                                                    FacilityDirective.Repair,
+                                                                                                    FacilityDirective.Disband,
+                                                                                                    FacilityDirective.Scuttle,
+                                                                                                    FacilityDirective.StopAttack,
+                                                                                                };
+        // No need for FollowonOrder until facilities can move, albeit slowly
+
         public FacilityOrder StandingOrder { get; set; }
 
-        public IUnitAttackableTarget Target { get; private set; }
+        public IUnitAttackable Target { get; private set; }
+
+        public bool ToNotifyCmd { get; private set; }
 
         /// <summary>
         /// The source of this order. 
@@ -39,15 +52,22 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
+        /// <param name="toNotifyCmd">if set to <c>true</c> the facility will notify its Cmd of the outcome.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public FacilityOrder(FacilityDirective directive, OrderSource source, IUnitAttackableTarget target = null) {
+        public FacilityOrder(FacilityDirective directive, OrderSource source, bool toNotifyCmd = false, IUnitAttackable target = null) {
+            if (directive.EqualsAnyOf(DirectivesWithNullTarget)) {
+                D.Assert(target == null, "{0} target should be null.", this);
+            }
             Directive = directive;
             Source = source;
+            ToNotifyCmd = toNotifyCmd;
             Target = target;
         }
 
-        public override string ToString() { // IMPROVE
-            return new ObjectAnalyzer().ToString(this);
+        public override string ToString() {
+            string targetText = Target != null ? Target.FullName : "none";
+            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, standingOrderText);
         }
 
     }

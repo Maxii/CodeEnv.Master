@@ -22,23 +22,15 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for targets that can be attacked by unit elements.
     /// </summary>
-    public interface IElementAttackable : IShipNavigable, ISensorDetectable {
-
-        event EventHandler deathOneShot;
-
-        string Name { get; }
+    public interface IElementAttackable : IShipNavigable, ISensorDetectable, IAttackable {
 
         new string FullName { get; }
-
-        new string DisplayName { get; }
 
         new Vector3 Position { get; }
 
         bool IsVisualDetailDiscernibleToUser { get; }
 
         void TakeHit(DamageStrength attackerStrength);
-
-        bool IsAttackingAllowedBy(Player player);
 
     }
 }

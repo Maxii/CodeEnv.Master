@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string UnitName { get; private set; }
         public float MaxHitPoints { get; private set; }
-        public int MaxCmdEffectiveness { get; private set; }
+        public float MaxCmdEffectiveness { get; private set; }
         public Formation UnitFormation { get; private set; }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdEffect">The maximum command effectiveness.</param>
         /// <param name="formation">The formation.</param>
-        public UnitCmdStat(string unitName, float maxHitPts, int maxCmdEffect, Formation formation) {
+        public UnitCmdStat(string unitName, float maxHitPts, float maxCmdEffect, Formation formation) {
             UnitName = unitName;
             MaxHitPoints = maxHitPts;
             MaxCmdEffectiveness = maxCmdEffect;

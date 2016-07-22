@@ -21,25 +21,21 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and HudContent Publisher for Settlements.
     /// </summary>
-    public class SettlementPublisher : ACmdPublisher<SettlementReport, SettlementCmdData> {
+    public class SettlementPublisher : ACmdPublisher<SettlementCmdReport, SettlementCmdData> {
 
         public override ColoredStringBuilder ItemHudText {
             get { return SettlementDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private ISettlementCmdItem _item;
+        private ISettlementCmd_Ltd _item;
 
-        public SettlementPublisher(SettlementCmdData data, ISettlementCmdItem item)
+        public SettlementPublisher(SettlementCmdData data, ISettlementCmd_Ltd item)
             : base(data) {
             _item = item;
         }
 
-        protected override SettlementReport GenerateReport(Player player) {
-            return new SettlementReport(_data, player, _item);
-        }
-
-        protected override bool IsCachedReportCurrent(Player player, out SettlementReport cachedReport) {
-            return base.IsCachedReportCurrent(player, out cachedReport) && IsEqual(cachedReport.ElementReports, _item.GetElementReports(player));
+        protected override SettlementCmdReport MakeReportInstance(Player player) {
+            return new SettlementCmdReport(_data, player, _item);
         }
 
         public override string ToString() {

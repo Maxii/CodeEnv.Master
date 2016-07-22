@@ -238,7 +238,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
     private void TargetDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem deadTarget = sender as IMortalItem;
+        IElementAttackable deadTarget = sender as IElementAttackable;
         D.Assert(deadTarget == Target);
         if (IsOperational) {
             //D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);

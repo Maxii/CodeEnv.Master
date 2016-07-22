@@ -27,11 +27,11 @@ using CodeEnv.Master.GameContent;
 public class FleetsTableWindow : ACommandsTableWindow {
 
     protected override AItemReport GetUserReportFor(AItem item) {
-        return (item as FleetCmdItem).GetUserReport();
+        return (item as FleetCmdItem).UserReport;
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return _gameMgr.UserPlayerKnowledge.Fleets.Cast<AItem>();
+        return _gameMgr.UserAIManager.Knowledge.Fleets.Cast<AItem>();
     }
 
     #region Sorting

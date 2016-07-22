@@ -32,6 +32,8 @@ using MoreLinq;
 /// </summary>  // Has Editor
 public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
+    public DebugFleetFormation formation = DebugFleetFormation.Random;
+
     /// <summary>
     /// Indicates whether this Fleet should move to a destination.
     /// </summary>
@@ -161,35 +163,22 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         });
     }
 
-    private void __GetFleetUnderway() {
+    private void __GetFleetUnderway() { // 7.12.16 Removed 'not enemy' criteria for move
         LogEvent();
         Player fleetOwner = _owner;
-        var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
-        IEnumerable<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Where(sb => !fleetOwner.IsEnemyOf(sb.Owner)).Cast<IFleetNavigable>();
+        var fleetOwnerKnowledge = GameManager.Instance.GetAIManagerFor(fleetOwner).Knowledge;
+        List<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Cast<IFleetNavigable>().ToList();
+        moveTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IFleetNavigable>());
+        moveTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IFleetNavigable>());
+        //moveTgts.AddRange(fleetOwnerKnowledge.Systems.Cast<IFleetNavigable>());   // UNCLEAR or Stars?
+        moveTgts.AddRange(fleetOwnerKnowledge.Stars.Cast<IFleetNavigable>());
+        if (fleetOwnerKnowledge.UniverseCenter != null) {
+            moveTgts.Add(fleetOwnerKnowledge.UniverseCenter as IFleetNavigable);
+        }
+
         if (!moveTgts.Any()) {
-            // in case no starbases qualify
-            moveTgts = fleetOwnerKnowledge.Settlements.Where(s => !fleetOwner.IsEnemyOf(s.Owner)).Cast<IFleetNavigable>();
-            if (!moveTgts.Any()) {
-                // in case no Settlements qualify
-                moveTgts = fleetOwnerKnowledge.Planets.Where(p => !fleetOwner.IsEnemyOf(p.Owner)).Cast<IFleetNavigable>();
-                if (!moveTgts.Any()) {
-                    // in case no Planets qualify
-                    moveTgts = fleetOwnerKnowledge.Systems.Where(sys => !fleetOwner.IsEnemyOf(sys.Owner)).Cast<IFleetNavigable>();
-                    if (!moveTgts.Any()) {
-                        // in case no Systems qualify
-                        moveTgts = fleetOwnerKnowledge.Stars.Where(star => star.GetIntelCoverage(fleetOwner) == IntelCoverage.Basic || !fleetOwner.IsEnemyOf(star.Owner)).Cast<IFleetNavigable>();
-                        if (!moveTgts.Any()) {
-                            // in case no Stars qualify
-                            moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>();
-                            if (!moveTgts.Any()) {
-                                D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been canceled.", UnitName);
-                                return;
-                            }
-                            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
-                        }
-                    }
-                }
-            }
+            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
+            moveTgts.AddRange(SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
         }
         IFleetNavigable destination;
         if (findFarthest) {
@@ -205,26 +194,17 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
     private void __GetFleetAttackUnderway() {
         LogEvent();
         Player fleetOwner = _owner;
-        var fleetOwnerKnowledge = GameManager.Instance.PlayersKnowledge.GetKnowledge(fleetOwner);
-        IEnumerable<IUnitAttackableTarget> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackableTarget>().Where(f => f.IsAttackingAllowedBy(fleetOwner));
+        var fleetOwnerKnowledge = GameManager.Instance.GetAIManagerFor(fleetOwner).Knowledge;
+        List<IUnitAttackable> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(fleetOwner)).ToList();
+        attackTgts.AddRange(fleetOwnerKnowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner)));
+        attackTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackingAllowedBy(fleetOwner)));
+        attackTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackingAllowedBy(fleetOwner)));
         if (attackTgts.IsNullOrEmpty()) {
-            // in case no Fleets qualify
-            attackTgts = fleetOwnerKnowledge.Starbases.Cast<IUnitAttackableTarget>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner));
-            if (attackTgts.IsNullOrEmpty()) {
-                // in case no Starbases qualify
-                attackTgts = fleetOwnerKnowledge.Settlements.Cast<IUnitAttackableTarget>().Where(s => s.IsAttackingAllowedBy(fleetOwner));
-                if (attackTgts.IsNullOrEmpty()) {
-                    // in case no Settlements qualify
-                    attackTgts = fleetOwnerKnowledge.Planets.Cast<IUnitAttackableTarget>().Where(p => p.IsAttackingAllowedBy(fleetOwner));
-                    if (attackTgts.IsNullOrEmpty()) {
-                        D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
-                        __GetFleetUnderway();
-                        return;
-                    }
-                }
-            }
+            D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
+            __GetFleetUnderway();
+            return;
         }
-        IUnitAttackableTarget attackTgt;
+        IUnitAttackable attackTgt;
         if (findFarthest) {
             attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
         }
@@ -235,12 +215,109 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
     }
 
+    #region GetFleetUnderway Archive
+
+    //private void __GetFleetUnderway() { // 7.12.16 Removed 'not enemy' criteria for move
+    //    LogEvent();
+    //    Player fleetOwner = _owner;
+    //    var fleetOwnerKnowledge = GameManager.Instance.GetAIManagerFor(fleetOwner).Knowledge;
+    //    IEnumerable<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Cast<IFleetNavigable>();
+    //    if (!moveTgts.Any()) {
+    //        // in case no starbases qualify
+    //        moveTgts = fleetOwnerKnowledge.Settlements.Cast<IFleetNavigable>();
+    //        if (!moveTgts.Any()) {
+    //            // in case no Settlements qualify
+    //            moveTgts = fleetOwnerKnowledge.Planets.Cast<IFleetNavigable>();
+    //            if (!moveTgts.Any()) {
+    //                // in case no Planets qualify
+    //                moveTgts = fleetOwnerKnowledge.Systems.Cast<IFleetNavigable>();
+    //                if (!moveTgts.Any()) {
+    //                    // in case no Systems qualify
+    //                    moveTgts = fleetOwnerKnowledge.Stars.Cast<IFleetNavigable>();
+    //                    if (!moveTgts.Any()) {
+    //                        // in case no Stars qualify
+    //                        moveTgts = SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>();
+    //                        if (!moveTgts.Any()) {
+    //                            D.Error("{0} can find no MoveTargets of any sort. MoveOrder has been canceled.", UnitName);
+    //                            return;
+    //                        }
+    //                        D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    //    IFleetNavigable destination;
+    //    if (findFarthest) {
+    //        destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+    //    }
+    //    else {
+    //        destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+    //    }
+    //    //D.Log("{0} destination is {1}.", UnitName, destination.FullName);
+    //    _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
+    //}
+
+    //private void __GetFleetAttackUnderway() {
+    //    LogEvent();
+    //    Player fleetOwner = _owner;
+    //    var fleetOwnerKnowledge = GameManager.Instance.GetAIManagerFor(fleetOwner).Knowledge;
+    //    IEnumerable<IUnitAttackable> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(fleetOwner));
+    //    if (attackTgts.IsNullOrEmpty()) {
+    //        // in case no Fleets qualify
+    //        attackTgts = fleetOwnerKnowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner));
+    //        if (attackTgts.IsNullOrEmpty()) {
+    //            // in case no Starbases qualify
+    //            attackTgts = fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackingAllowedBy(fleetOwner));
+    //            if (attackTgts.IsNullOrEmpty()) {
+    //                // in case no Settlements qualify
+    //                attackTgts = fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackingAllowedBy(fleetOwner));
+    //                if (attackTgts.IsNullOrEmpty()) {
+    //                    D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
+    //                    __GetFleetUnderway();
+    //                    return;
+    //                }
+    //            }
+    //        }
+    //    }
+    //    IUnitAttackable attackTgt;
+    //    if (findFarthest) {
+    //        attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+    //    }
+    //    else {
+    //        attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+    //    }
+    //    //D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
+    //    _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
+    //}
+
+    #endregion
+
     protected override int GetMaxLosWeaponsAllowed(ShipHullCategory hullCategory) {
         return hullCategory.__MaxLOSWeapons();
     }
 
     protected override int GetMaxMissileWeaponsAllowed(ShipHullCategory hullCategory) {
         return hullCategory.__MaxMissileWeapons();
+    }
+
+    private Formation __ConvertFormation(DebugFleetFormation debugFormation) {
+        switch (debugFormation) {
+            case DebugFleetFormation.Wedge:
+                return Formation.Wedge;
+            case DebugFleetFormation.Globe:
+                return Formation.Globe;
+            case DebugFleetFormation.Diamond:
+                return Formation.Diamond;
+            case DebugFleetFormation.Plane:
+                return Formation.Plane;
+            case DebugFleetFormation.Spread:
+                return Formation.Spread;
+            case DebugFleetFormation.Random:
+                return Enums<Formation>.GetRandomExcept(default(Formation));
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugFormation));
+        }
     }
 
     private ShipCombatStance SelectCombatStance() {
@@ -268,9 +345,9 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipDat
 
     private UnitCmdStat __MakeCmdStat() {
         float maxHitPts = 10F;
-        int maxCmdEffect = 100;
-        Formation formation = Enums<Formation>.GetRandomExcept(default(Formation), Formation.Wedge);
-        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, formation);
+        float maxCmdEffect = 1.0F;
+        Formation specifiedFormation = __ConvertFormation(formation);
+        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, specifiedFormation);
     }
 
     private CameraFleetCmdStat __MakeCmdCameraStat(float maxElementRadius) {

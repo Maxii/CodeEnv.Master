@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -24,15 +24,23 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterReport : AIntelItemReport {
 
-        public UniverseCenterReport(UniverseCenterData data, Player player, IUniverseCenterItem item)
+        public UniverseCenterReport(UniverseCenterData data, Player player, IUniverseCenter_Ltd item)
             : base(data, player, item) {
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageBasic(data);
-            Name = data.Name;
-            Owner = data.Owner;
-            Position = data.Position;
+        protected override void AssignValues(AItemData data) {
+            var ucData = data as UniverseCenterData;
+            var accessCntlr = ucData.InfoAccessCntlr;
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+                Name = ucData.Name;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+                Position = ucData.Position;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+                Owner = ucData.Owner;
+            }
         }
 
         public override string ToString() {

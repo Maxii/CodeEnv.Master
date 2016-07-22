@@ -48,7 +48,7 @@ public class PlanetoidCtxControl : ACtxControl {
         _planetoidMenuOperator = planetoid;
     }
 
-    protected sealed override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected sealed override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_planetoidMenuOperator.IsSelected) {
             D.Assert(_planetoidMenuOperator == selected as APlanetoidItem);
             return true;
@@ -58,7 +58,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected sealed override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected sealed override void PopulateMenu_UserMenuOperatorIsSelected() {
@@ -76,7 +76,7 @@ public class PlanetoidCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
@@ -97,10 +97,10 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected sealed override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _planetoidMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

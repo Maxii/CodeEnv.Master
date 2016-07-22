@@ -118,7 +118,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     public IList<Player> AllPlayers { get; private set; }
 
-    public Player UserPlayer { get { return AllPlayers.Single(p => p.IsUser); } }
+    public Player UserPlayer { get; private set; }
 
     public IList<Player> AIPlayers { get { return AllPlayers.Where(p => !p.IsUser).ToList(); } }
 
@@ -171,22 +171,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         set { SetProperty<PlayersDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
     }
 
-    private PlayersKnowledge _playersKnowledge;
     /// <summary>
-    /// A collection of PlayerKnowledge instances, one for each player.
+    /// The User's AIManager instance.
     /// </summary>
-    public PlayersKnowledge PlayersKnowledge {
-        get { return _playersKnowledge; }
-        private set { SetProperty<PlayersKnowledge>(ref _playersKnowledge, value, "PlayersKnowledge"); }
-    }
-
-    /// <summary>
-    /// The User's PlayerKnowledge instance.
-    /// </summary>
-    public PlayerKnowledge UserPlayerKnowledge { get { return PlayersKnowledge.GetUserKnowledge(); } }
+    public PlayerAIManager UserAIManager { get { return _playerAiMgrLookup[UserPlayer]; } }
 
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
+    private IDictionary<Player, PlayerAIManager> _playerAiMgrLookup;
     private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
     private GameTime _gameTime;
     private PlayerPrefsManager _playerPrefsMgr;
@@ -236,12 +228,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (References.InputHelper != null) { (References.InputHelper as IDisposable).Dispose(); }
         if (References.GeneralFactory != null) { (References.GeneralFactory as IDisposable).Dispose(); }
         if (References.TrackingWidgetFactory != null) { (References.TrackingWidgetFactory as IDisposable).Dispose(); }
+        if (References.FormationGenerator != null) { (References.FormationGenerator as IDisposable).Dispose(); }
 
         References.InputHelper = GameInputHelper.Instance;
         if (CurrentScene == GameScene) {
             // not used in LobbyScene
             References.GeneralFactory = GeneralFactory.Instance;
             References.TrackingWidgetFactory = TrackingWidgetFactory.Instance;
+            References.FormationGenerator = FormationGenerator.Instance;
         }
     }
 
@@ -352,7 +346,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private IEnumerator AssessReadinessToProgressGameState() {
         //D.Log("Entering AssessReadinessToProgressGameState.");
-        float startTime = Time.time;
+        System.DateTime startTime = System.DateTime.UtcNow;
         while (CurrentState != GameState.Running) {
             D.Assert(CurrentState != GameState.Lobby);
             D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(CurrentState), "{0} key not found.", CurrentState.GetValueName());
@@ -364,16 +358,16 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 ProgressState();
                 //D.Log("State after ProgressState = {0}.", CurrentState.GetValueName());
             }
-            __CheckTime(startTime);
+            if (DebugSettings.Instance.EnableStartupTimeout) {
+                __CheckTime(startTime);
+            }
             yield return null;
         }
         //D.Log("Exiting AssessReadinessToProgressGameState.");
     }
 
-    // FYI - does not catch delay caused by PathfindingMgr's scan, probably because AstarPath sets Time.timeScale = 0 while scanning
-    private void __CheckTime(float startTime) {
-        //D.Log("{0}.GameStateProgressionSystem time waiting = {1}.", GetType().Name, Time.time - startTime);
-        if (Time.time - startTime > 5F) {
+    private void __CheckTime(System.DateTime startTime) {
+        if ((System.DateTime.UtcNow - startTime).TotalSeconds > 10F) {
             __progressCheckJob.Kill();
         }
     }
@@ -404,51 +398,41 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         Player userPlayer = GameSettings.UserPlayer;
         AllPlayers.Add(userPlayer);
+        UserPlayer = userPlayer;
         for (int i = 0; i < aiPlayerCount; i++) {
             Player aiPlayer = GameSettings.AIPlayers[i];
-            // if not startupSimulation, all relationships default to None
-            if (GameSettings.__IsStartupSimulation) {
-                switch (i) {
-                    case 0:
-                        // makes sure there will always be an AIPlayer with DiploRelation.None
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.None);
-                        break;
-                    case 1:
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.War);
-                        break;
-                    case 2:
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.ColdWar);
-                        break;
-                    case 3:
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.Ally);
-                        break;
-                    case 4:
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.Friend);
-                        break;
-                    case 5:
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.Neutral);
-                        break;
-                    case 6:
-                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.War);
-                        break;
-                    default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(i));
-                }
-                userPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(userPlayer));
-            }
-            D.Log("AI Player {0} created. User relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(userPlayer).GetValueName());
+
+            // the relationship between all players always starts out here as None
             AllPlayers.Add(aiPlayer);
+            //D.Log("AI Player {0} created..", aiPlayer.LeaderName);
         }
-        PlayersKnowledge = new PlayersKnowledge(AllPlayers);
         PlayersDesigns = new PlayersDesigns(AllPlayers);
     }
 
     /// <summary>
-    /// Populates each player's PlayerKnowledge with the initial knowledge known to all players.
+    /// Gets <c>player</c>'s AIManager instance.
     /// </summary>
-    private void InitializeAllPlayersStartingKnowledge() {
-        IEnumerable<IStarItem> allStars = SystemCreator.AllStars.Cast<IStarItem>();
-        PlayersKnowledge.InitializeAllPlayersStartingKnowledge(__UniverseInitializer.Instance.UniverseCenter, allStars);
+    public PlayerAIManager GetAIManagerFor(Player player) {
+        return _playerAiMgrLookup[player];
+    }
+
+    private void InitializePlayerAIManagers() {
+        IEnumerable<IStar_Ltd> allStars = SystemCreator.AllStars.Cast<IStar_Ltd>();
+        var uCenter = __UniverseInitializer.Instance.UniverseCenter;
+        IDictionary<Player, PlayerAIManager> tempLookup = new Dictionary<Player, PlayerAIManager>(AllPlayers.Count);
+        AllPlayers.ForAll(player => {
+            PlayerKnowledge plyrKnowledge;
+            if (_debugSettings.AllIntelCoverageComprehensive) {
+                IEnumerable<IPlanetoid_Ltd> allPlanetoids = SystemCreator.AllPlanetoids.Cast<IPlanetoid_Ltd>();
+                plyrKnowledge = new PlayerKnowledge(player, uCenter, allStars, allPlanetoids);
+            }
+            else {
+                plyrKnowledge = new PlayerKnowledge(player, uCenter, allStars);
+            }
+            PlayerAIManager plyrAiMgr = new PlayerAIManager(player, plyrKnowledge);
+            tempLookup.Add(player, plyrAiMgr);
+        });
+        _playerAiMgrLookup = tempLookup;
     }
 
     #endregion
@@ -614,8 +598,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (IsPaused) {
             RequestPauseStateChange(toPause: false, toOverride: true);
         }
-        if (PlayersKnowledge != null) {
-            PlayersKnowledge.Dispose();
+        if (_playerAiMgrLookup != null) {
+            _playerAiMgrLookup.Values.ForAll(pAiMgr => pAiMgr.Dispose());
         }
     }
 
@@ -699,12 +683,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Lobby_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void Lobby_ExitState() {
         LogEvent();
         // Transitioning to Loading (the level) whether a new or saved game
         D.Assert(CurrentState == GameState.Loading);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -713,6 +699,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Loading_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
         // Start state progression checks here as Loading is always called whether a new game, loading saved game or startup simulation
         StartGameStateProgressionReadinessChecks();
 
@@ -749,6 +736,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
         // Transitioning to Building if new game, or Restoring if saved game
         D.Assert(CurrentState == GameState.Building || CurrentState == GameState.Restoring);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -757,6 +745,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Building_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: false);
 
@@ -780,6 +769,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
         // Building is only for new games, so next state is Waiting
         D.Assert(CurrentState == GameState.Waiting);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -788,6 +778,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Restoring_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
         RecordGameStateProgressionReadiness(Instance, GameState.Restoring, isReady: false);
     }
 
@@ -813,6 +804,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void Restoring_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.Waiting);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -821,15 +813,18 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Waiting_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void Waiting_UponProgressState() {
+        LogEvent();
         CurrentState = GameState.BuildAndDeploySystems;
     }
 
     void Waiting_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.BuildAndDeploySystems);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -838,6 +833,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void BuildAndDeploySystems_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void BuildAndDeploySystems_UponProgressState() {
@@ -848,7 +844,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void BuildAndDeploySystems_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.GeneratingPathGraphs);
-        InitializeAllPlayersStartingKnowledge();
+        InitializePlayerAIManagers();   // HACK needs another state rather than using Exit method
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -857,6 +854,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void GeneratingPathGraphs_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void GeneratingPathGraphs_UponProgressState() {
@@ -867,6 +865,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void GeneratingPathGraphs_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.PrepareUnitsForDeployment);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -875,6 +874,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void PrepareUnitsForDeployment_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void PrepareUnitsForDeployment_UponProgressState() {
@@ -885,6 +885,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void PrepareUnitsForDeployment_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.DeployingUnits);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -893,6 +894,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void DeployingUnits_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void DeployingUnits_UponProgressState() {
@@ -903,6 +905,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void DeployingUnits_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.RunningCountdown_1);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -911,6 +914,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void RunningCountdown_1_EnterState() {
         LogEvent();
+        __RecordStateStartTime();
     }
 
     void RunningCountdown_1_UponProgressState() {
@@ -921,6 +925,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void RunningCountdown_1_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.Running);
+        __ReportTimeElapsedInState();
     }
 
     #endregion
@@ -966,16 +971,20 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (__progressCheckJob != null) {
             __progressCheckJob.Dispose();
         }
+        if (_playerAiMgrLookup != null) {
+            _playerAiMgrLookup.Values.ForAll(pAiMgr => pAiMgr.Dispose());
+        }
         DisposeOfGlobals();
         References.GameManager = null;  // last, as Globals may use it when disposing
     }
 
     /// <summary>
     /// Releases unmanaged and - optionally - managed resources.
+    /// <remarks>Globals here refers to GenericSingletons that once instantiated,
+    /// hang around thru new game transitions until Disposed here.</remarks>
     /// </summary>
     private void DisposeOfGlobals() {
         _gameTime.Dispose();
-        PlayersKnowledge.Dispose();
         WaitJobUtility.Instance.Dispose();
         GameInputHelper.Instance.Dispose();
 
@@ -992,6 +1001,24 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+#pragma warning disable 0414
+
+    private System.DateTime __stateStartTime;
+
+#pragma warning restore 0414
+
+    private void __RecordStateStartTime() {
+        __stateStartTime = System.DateTime.UtcNow;
+    }
+
+    private void __ReportTimeElapsedInState() {
+        //D.Log("GameState {0} took {1:0.####} to execute.", LastState, (float)(System.DateTime.UtcNow - __stateStartTime).TotalSeconds);
+    }
+
+    #endregion
 
     #region Nested Classes
 

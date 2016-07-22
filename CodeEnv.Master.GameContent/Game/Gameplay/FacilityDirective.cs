@@ -29,12 +29,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Attack,
 
-
         /// <summary>
         /// Facilities can repair inplace. Only Base Cmd or Captain may order a Facility to repair itself.
         /// </summary>
         Repair,
-
 
         /// <summary>
         /// Facilities can refit inplace when not under attack. Only Base Cmd may order a Facility to refit.

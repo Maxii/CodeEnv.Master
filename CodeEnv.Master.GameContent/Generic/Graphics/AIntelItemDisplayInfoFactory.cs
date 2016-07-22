@@ -26,10 +26,10 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AIntelItemReport
         where FactoryType : AIntelItemDisplayInfoFactory<ReportType, FactoryType> {
 
-        protected override bool TryMakeColorizedText(ContentID contentID, ReportType report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                if (contentID == ContentID.IntelState) {
+                if (infoID == AccessControlInfoID.IntelState) {
                     isSuccess = true;
                     colorizedText = ConstructIntelText(report.Intel);
                 }

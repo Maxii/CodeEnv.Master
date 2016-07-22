@@ -41,12 +41,16 @@
       <PropertyValue>2.0</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>InjuredHealthThreshold</PropertyName>
+      <PropertyName>HealthThreshold_Damaged</PropertyName>
       <PropertyValue>0.80</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>CriticalHealthThreshold</PropertyName>
-      <PropertyValue>0.40</PropertyValue>
+      <PropertyName>HealthThreshold_BadlyDamaged</PropertyName>
+      <PropertyValue>0.50</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>HealthThreshold_CriticallyDamaged</PropertyName>
+      <PropertyValue>0.20</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>ContentApprovalThreshold</PropertyName>

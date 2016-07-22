@@ -6,9 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ICameraFollowable.cs
-// Interface designating the game object it is attached too as an
-// object that can be followed by the camera. Game objects that implement this
-// interface will be moveable as following an object that can't move is pointless.
+// Interface for items that can be followed by the camera.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface designating the game object it is attached too as an
-    /// object that can be followed by the camera. Game objects that implement this
-    /// interface will be moveable as following an object that can't move is pointless.
+    /// Interface for items that can be followed by the camera. Items that implement this
+    /// interface will be mobile as following an object that can't move is pointless.
     /// </summary>
     public interface ICameraFollowable : ICameraFocusable {
 

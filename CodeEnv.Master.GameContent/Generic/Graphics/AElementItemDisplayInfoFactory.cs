@@ -22,40 +22,36 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract generic base factory that makes instances of text containing info about ElementItems.
     /// </summary>
     public abstract class AElementItemDisplayInfoFactory<ReportType, FactoryType> : AMortalItemDisplayInfoFactory<ReportType, FactoryType>
-        where ReportType : AElementItemReport
+        where ReportType : AUnitElementReport
         where FactoryType : AElementItemDisplayInfoFactory<ReportType, FactoryType> {
 
-        protected override bool TryMakeColorizedText(ContentID contentID, ReportType report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.ParentName:
+                switch (infoID) {
+                    case AccessControlInfoID.ParentName:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.ParentName != null ? report.ParentName : _unknown);
                         break;
-                    case ContentID.Offense:
+                    case AccessControlInfoID.Offense:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.OffensiveStrength.HasValue ? report.OffensiveStrength.Value.ToTextHud() : _unknown);
                         break;
-                    case ContentID.WeaponsRange:
+                    case AccessControlInfoID.WeaponsRange:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.WeaponsRange.HasValue ? report.WeaponsRange.Value.ToString() : _unknown);
                         break;
-                    case ContentID.SensorRange:
+                    case AccessControlInfoID.Science:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.SensorRange.HasValue ? report.SensorRange.Value.ToString() : _unknown);
+                        colorizedText = _phrase.Inject(report.Science.HasValue ? GetFormat(infoID).Inject(report.Science.Value) : _unknown);
                         break;
-                    case ContentID.Science:
+                    case AccessControlInfoID.Culture:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Science.HasValue ? GetFormat(contentID).Inject(report.Science.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.Culture.HasValue ? GetFormat(infoID).Inject(report.Culture.Value) : _unknown);
                         break;
-                    case ContentID.Culture:
+                    case AccessControlInfoID.NetIncome:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Culture.HasValue ? GetFormat(contentID).Inject(report.Culture.Value) : _unknown);
-                        break;
-                    case ContentID.NetIncome:
-                        isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Income.HasValue && report.Expense.HasValue ? GetFormat(contentID).Inject(report.Income.Value - report.Expense.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.Income.HasValue && report.Expense.HasValue ? GetFormat(infoID).Inject(report.Income.Value - report.Expense.Value) : _unknown);
                         break;
                 }
             }

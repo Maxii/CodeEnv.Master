@@ -31,8 +31,8 @@ public class BaseCtxControl_AI : ACtxControl {
                                                                                         FleetDirective.Move,
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
-                                                                                        FleetDirective.Guard,
-                                                                                        FleetDirective.CloseOrbit };
+                                                                                        FleetDirective.Guard
+                                                                                      };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -49,7 +49,7 @@ public class BaseCtxControl_AI : ACtxControl {
         _baseMenuOperator = baseCmd;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_baseMenuOperator.IsSelected) {
             D.Assert(_baseMenuOperator == selected as AUnitBaseCmdItem);
             return true;
@@ -59,13 +59,13 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_baseMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                return !(_baseMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
@@ -74,8 +74,6 @@ public class BaseCtxControl_AI : ACtxControl {
                 return !(_baseMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
                 return !(_baseMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
-            case FleetDirective.CloseOrbit:
-                return (_baseMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -87,10 +85,10 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _baseMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

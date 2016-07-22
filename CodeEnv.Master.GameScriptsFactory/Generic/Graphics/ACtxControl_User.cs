@@ -57,7 +57,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)
         : base(ctxObjectGO, uniqueSubmenusReqd, menuPosition) {
-        _userKnowledge = GameManager.Instance.UserPlayerKnowledge;
+        _userKnowledge = GameManager.Instance.UserAIManager.Knowledge;
         D.Assert(_userKnowledge != null);
     }
 

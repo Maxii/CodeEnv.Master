@@ -25,26 +25,26 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityDisplayInfoFactory : AElementItemDisplayInfoFactory<FacilityReport, FacilityDisplayInfoFactory> {
 
-        private static ContentID[] _contentIDsToDisplay = new ContentID[] {                         
-            ContentID.Name,
-            ContentID.ParentName,
-            ContentID.Owner,
-            ContentID.Category,
-            ContentID.Health,
-            ContentID.Defense,
-            ContentID.Offense,
-            ContentID.WeaponsRange,
-            ContentID.SensorRange,
-            ContentID.Science,
-            ContentID.Culture,
-            ContentID.NetIncome,
-            ContentID.Mass,
+        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
+            AccessControlInfoID.Name,
+            AccessControlInfoID.ParentName,
+            AccessControlInfoID.Owner,
+            AccessControlInfoID.Category,
+            AccessControlInfoID.Health,
+            AccessControlInfoID.Defense,
+            AccessControlInfoID.Offense,
+            AccessControlInfoID.WeaponsRange,
+            //AccessControlInfoID.SensorRange,  // makes no sense
+            AccessControlInfoID.Science,
+            AccessControlInfoID.Culture,
+            AccessControlInfoID.NetIncome,
+            AccessControlInfoID.Mass,
 
-            ContentID.CameraDistance,
-            ContentID.IntelState
+            AccessControlInfoID.CameraDistance,
+            AccessControlInfoID.IntelState
         };
 
-        protected override ContentID[] ContentIDsToDisplay { get { return _contentIDsToDisplay; } }
+        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private FacilityDisplayInfoFactory() {
             Initialize();
@@ -52,16 +52,16 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(ContentID contentID, FacilityReport report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, FacilityReport report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.Category:
+                switch (infoID) {
+                    case AccessControlInfoID.Category:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.Category != FacilityHullCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }
             }
             return isSuccess;

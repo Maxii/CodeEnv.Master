@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -40,7 +40,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// <summary>
     /// All the detectable Items in range of this Monitor.
     /// </summary>
-    private IList<IDetectableType> _objectsDetected;
+    protected IList<IDetectableType> _objectsDetected;
+
     private IList<IDetectableType> __objectsDetectedViaWorkaround;
 
     protected override void InitializeValuesAndReferences() {
@@ -55,19 +56,19 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         base.OnTriggerEnter(other);
         //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
-            D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", Name, other.name);
+            //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", FullName, other.name);
             return;
         }
 
         var detectedObject = other.GetComponent<IDetectableType>();
         if (detectedObject != null) {
-            D.Log(ShowDebugLog, "{0} detected {1} at {2:0.} units.", Name, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
+            //D.Log(ShowDebugLog, "{0} detected {1} at {2:0.} units.", FullName, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
             if (!detectedObject.IsOperational) {
-                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
+                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
                 return;
             }
             if (_gameMgr.IsPaused) {
-                D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1} while paused.", Name, detectedObject.FullName);
+                D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, detectedObject.FullName);
                 RecordObjectEnteringWhilePaused(detectedObject);
                 return;
             }
@@ -79,18 +80,20 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         base.OnTriggerExit(other);
         //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
-            D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", Name, other.name);
+            //D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", FullName, other.name);
             return;
         }
 
         var lostDetectionObject = other.GetComponent<IDetectableType>();
         if (lostDetectionObject != null) {
-            D.Log(ShowDebugLog, "{0} lost detection of {1} at {2:0.} units.", Name, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
+            //D.Log(ShowDebugLog, "{0} lost detection of {1} at {2:0.} units.", FullName, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
             if (_gameMgr.IsPaused) {
-                D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1} while paused.", Name, lostDetectionObject.FullName);
+                D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1} while paused.", FullName, lostDetectionObject.FullName);
                 RecordObjectExitingWhilePaused(lostDetectionObject);
                 return;
             }
+
+            __WarnOnErroneousTriggerExit(lostDetectionObject);
             RemoveDetectedObject(lostDetectionObject);
         }
     }
@@ -109,6 +112,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         base.RangeDistancePropChangedHandler();
         if (IsOperational) {    // avoids attempting to re-detect objects with the collider off
             ReacquireAllDetectableObjectsInRange();
+        }
+        if (!_isResetting) {
+            __ValidateRangeDistance();
         }
     }
 
@@ -149,6 +155,57 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     #endregion
 
     /// <summary>
+    /// Adds the provided object to the list of ObjectsDetected.
+    /// </summary>
+    /// <param name="detectedObject">The detected object.</param>
+    protected void AddDetectedObject(IDetectableType detectedObject) {
+        D.Assert(detectedObject.IsOperational);
+        if (!_objectsDetected.Contains(detectedObject)) {
+            _objectsDetected.Add(detectedObject);
+            //D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
+            HandleDetectedObjectAdded(detectedObject);
+        }
+        else {
+            __ValidateObjectWasBulkDetected(detectedObject);
+        }
+    }
+
+    /// <summary>
+    /// Removes the provided object from the list of ObjectsDetected.
+    /// </summary>
+    /// <param name="previouslyDetectedObject">The object we just lost detection of.</param>
+    protected void RemoveDetectedObject(IDetectableType previouslyDetectedObject) {
+        bool isRemoved = _objectsDetected.Remove(previouslyDetectedObject);
+        if (isRemoved) {
+            if (previouslyDetectedObject.IsOperational) {
+                //D.Log(ShowDebugLog, "{0} no longer tracking {1}. Items remaining: {2}.", FullName, previouslyDetectedObject.FullName, _objectsDetected.Select(i => i.FullName).Concatenate());
+                //D.Log(ShowDebugLog, "{0} no longer tracking {1} at distance = {2:0.#}.", FullName, previouslyDetectedObject.FullName, Vector3.Distance(previouslyDetectedObject.Position, transform.position));
+            }
+            else {
+                D.Log(ShowDebugLog, "{0} no longer tracking dead {1}.", FullName, previouslyDetectedObject.FullName);
+            }
+
+            // Works in conjunction with __ValidateObjectWasBulkDetected(IDetectableType detectedObject)
+            if (__objectsDetectedViaWorkaround.Contains(previouslyDetectedObject)) {
+                __objectsDetectedViaWorkaround.Remove(previouslyDetectedObject);
+            }
+
+            HandleDetectedObjectRemoved(previouslyDetectedObject);
+        }
+        else {
+            if (!previouslyDetectedObject.IsOperational) {
+                // Note: Sometimes OnTriggerExit fires when an object is destroyed within the collider's radius. However, it is not reliable
+                // so I remove it manually when I detect the object's death (prior to its destruction). 
+                // When this happens, the object will no longer be present to be removed.
+                D.Log(ShowDebugLog, "{0} attempted to remove dead {1} {2} which was previously removed.", FullName, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
+            }
+            else {
+                D.Error("{0} reports {1} {2} not present to be removed.", FullName, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
+            }
+        }
+    }
+
+    /// <summary>
     /// Called immediately after an object has been added to the list of objects detected by this monitor.
     /// </summary>
     /// <param name="newlyDetectedObject">The newly detected object.</param>
@@ -161,40 +218,26 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected abstract void HandleDetectedObjectRemoved(IDetectableType lostDetectionObject);
 
     /// <summary>
-    /// Adds the provided object to the list of ObjectsDetected.
+    /// Handles a change in relations between players. Called by the monitor's ParentItem when the 
+    /// DiplomaticRelationship between ParentItem.Owner and <c>otherPlayer</c> changes.
     /// </summary>
-    /// <param name="detectedObject">The detected object.</param>
-    protected void AddDetectedObject(IDetectableType detectedObject) {
-        D.Assert(detectedObject.IsOperational);
-        if (!_objectsDetected.Contains(detectedObject)) {
-            _objectsDetected.Add(detectedObject);
-            D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
-            HandleDetectedObjectAdded(detectedObject);
-        }
+    /// <param name="otherPlayer">The other player.</param>
+    /// <param name="priorRelationship">The prior relationship.</param>
+    /// <param name="newRelationship">The new relationship.</param>
+    public void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        D.Log(ShowDebugLog, @"{0} received a relationship change event. Initiating review of relationship with all detected objects. 
+            {1} & {2}'s NewRelationship = {3}.", FullName, Owner.Name, otherPlayer.Name, newRelationship.GetValueName());
+        ReviewRelationsWithAllDetectedObjects();
     }
 
     /// <summary>
-    /// Removes the provided object from the list of ObjectsDetected.
+    /// Reviews the DiplomaticRelationship of all detected objects (via attempting to access their owner) with the objective of
+    /// making sure each object is in the right relationship container, if any.
+    /// <remarks>OPTIMIZE The implementation of this method can be made more efficient using info from the RelationsChanged event.
+    /// Deferred for now until it is clear what info will be provided in the end.</remarks>
     /// </summary>
-    /// <param name="previouslyDetectedObject">The object we just lost detection of.</param>
-    protected void RemoveDetectedObject(IDetectableType previouslyDetectedObject) {
-        bool isRemoved = _objectsDetected.Remove(previouslyDetectedObject);
-        if (isRemoved) {
-            D.Log(ShowDebugLog, "{0} has removed {1}. Items remaining = {2}.", Name, previouslyDetectedObject.FullName, _objectsDetected.Select(i => i.FullName).Concatenate());
-            if (previouslyDetectedObject.IsOperational) {
-                D.Log(ShowDebugLog, "{0} no longer tracking {1} {2} at distance = {3}.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName, Vector3.Distance(previouslyDetectedObject.Position, transform.position));
-            }
-            else {
-                D.Log(ShowDebugLog, "{0} no longer tracking dead {1} {2}.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
-            }
-            HandleDetectedObjectRemoved(previouslyDetectedObject);
-        }
-        else {
-            // Note: Sometimes OnTriggerExit fires when an object is destroyed within the collider's radius. However, it is not reliable
-            // so I remove it manually when I detect the object's death (prior to its destruction). When this happens, the object will no longer be present to be removed.
-            D.Log(ShowDebugLog, "{0} reports {1} {2} not present to be removed.", Name, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
-        }
-    }
+    protected abstract void ReviewRelationsWithAllDetectedObjects();
+
 
     /// <summary>
     /// All items currently detected are removed.
@@ -236,17 +279,17 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         D.Assert(_objectsDetected.Count == Constants.Zero);
         __objectsDetectedViaWorkaround.Clear();
 
-        D.Log(ShowDebugLog, "{0}.BulkDetectAllCollidersInRange() called.", Name);
+        //D.Log(ShowDebugLog, "{0}.BulkDetectAllCollidersInRange() called.", FullName);
         var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
         var allDetectableObjectsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
         foreach (var detectableObject in allDetectableObjectsInRange) {
             if (!detectableObject.IsOperational) {
-                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, detectableObject.FullName);
+                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectableObject.FullName);
                 continue;
             }
-            D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", Name, detectableObject.FullName);
+            //D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", FullName, detectableObject.FullName);
+            AddDetectedObject(detectableObject);    // must preceed next line as __ValidateObjectWasBulkDetected() depends on it
             __objectsDetectedViaWorkaround.Add(detectableObject);
-            AddDetectedObject(detectableObject);
         }
     }
 
@@ -261,7 +304,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
         if (CheckForPreviousPausedExitOf(enteringObject)) {
             // while paused, previously exited and now entered so record to take action when unpaused
-            D.Warn("{0} removing entering object {1} already recorded as exited while paused.", Name, enteringObject.FullName);
+            D.Warn("{0} removing entering object {1} already recorded as exited while paused.", FullName, enteringObject.FullName);
             _exitingObjectsDetectedWhilePaused.Remove(enteringObject);
         }
         _enteringObjectsDetectedWhilePaused.Add(enteringObject);
@@ -273,7 +316,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
         if (CheckForPreviousPausedEntryOf(exitingObject)) {
             // while paused, previously entered and now exited so eliminate record as no action should be taken when unpaused
-            D.Warn("{0} removing exiting object {1} already recorded as entered while paused.", Name, exitingObject.FullName);
+            D.Warn("{0} removing exiting object {1} already recorded as entered while paused.", FullName, exitingObject.FullName);
             _enteringObjectsDetectedWhilePaused.Remove(exitingObject);
             return;
         }
@@ -281,7 +324,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     private void HandleObjectsDetectedWhilePaused() {
-        D.Log(ShowDebugLog, "{0} handling objects detected while paused, if any.", Name);
+        D.Log(ShowDebugLog, "{0} handling objects detected while paused, if any.", FullName);
         __ValidateObjectsDetectedWhilePaused();
         if (!_enteringObjectsDetectedWhilePaused.IsNullOrEmpty()) {
             _enteringObjectsDetectedWhilePaused.ForAll(obj => AddDetectedObject(obj));
@@ -399,11 +442,42 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     #endregion
 
-    protected override void ResetForReuse() {
-        base.ResetForReuse();
+    protected override void CompleteResetForReuse() {
+        base.CompleteResetForReuse();
         D.Assert(_objectsDetected.Count == Constants.Zero);
         __objectsDetectedViaWorkaround.Clear();
     }
+
+    #region Debug
+
+    /// <summary>
+    /// Hook for derived classes to validate the new RangeDistance value.
+    /// Default does nothing.
+    /// </summary>
+    protected virtual void __ValidateRangeDistance() { }
+
+    private void __ValidateObjectWasBulkDetected(IDetectableType detectedObject) {
+        if (__objectsDetectedViaWorkaround.Contains(detectedObject)) {
+            //D.Log(ShowDebugLog, "{0} is ignoring detection of {1} that was previously bulk detected.", FullName, detectedObject.FullName);
+            __objectsDetectedViaWorkaround.Remove(detectedObject);
+        }
+        else {
+            // newly re-detected object that wasn't initially detected by BulkDetect
+            D.Error("{0} has re-detected {1} that is already detected.", FullName, detectedObject.FullName);
+        }
+    }
+
+    private void __WarnOnErroneousTriggerExit(IDetectableType lostDetectionObject) {
+        float lostDetectionObjectDistance;
+        float rangeDistanceThreshold = RangeDistance * 0.95F;   // HACK
+        if (lostDetectionObject.IsOperational &&
+            (lostDetectionObjectDistance = Vector3.Distance(lostDetectionObject.Position, transform.position)) < rangeDistanceThreshold) {
+            D.Warn("{0}.OnTriggerExit() called. Distance to {1} {2:0.#} < Threshold {3:0.#}.",
+                FullName, lostDetectionObject.FullName, lostDetectionObjectDistance, rangeDistanceThreshold);
+        }
+    }
+
+    #endregion
 
 }
 

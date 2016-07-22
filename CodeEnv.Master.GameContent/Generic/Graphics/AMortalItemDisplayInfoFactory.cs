@@ -25,33 +25,33 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AMortalItemReport
         where FactoryType : AMortalItemDisplayInfoFactory<ReportType, FactoryType> {
 
-        protected override bool TryMakeColorizedText(ContentID contentID, ReportType report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.SectorIndex:
+                switch (infoID) {
+                    case AccessControlInfoID.SectorIndex:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.SectorIndex.ToString());
                         break;
-                    case ContentID.MaxHitPoints:
+                    case AccessControlInfoID.MaxHitPoints:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.MaxHitPoints.HasValue ? GetFormat(contentID).Inject(report.MaxHitPoints.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.MaxHitPoints.HasValue ? GetFormat(infoID).Inject(report.MaxHitPoints.Value) : _unknown);
                         break;
-                    case ContentID.CurrentHitPoints:
+                    case AccessControlInfoID.CurrentHitPoints:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CurrentHitPoints.HasValue ? GetFormat(contentID).Inject(report.CurrentHitPoints.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.CurrentHitPoints.HasValue ? GetFormat(infoID).Inject(report.CurrentHitPoints.Value) : _unknown);
                         break;
-                    case ContentID.Health:
+                    case AccessControlInfoID.Health:
                         isSuccess = true;
                         colorizedText = GetColorizedHealthText(report.Health, report.MaxHitPoints);
                         break;
-                    case ContentID.Defense:
+                    case AccessControlInfoID.Defense:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.DefensiveStrength.HasValue ? report.DefensiveStrength.Value.ToTextHud() : _unknown);
                         break;
-                    case ContentID.Mass:
+                    case AccessControlInfoID.Mass:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Mass.HasValue ? GetFormat(contentID).Inject(report.Mass.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.Mass.HasValue ? GetFormat(infoID).Inject(report.Mass.Value) : _unknown);
                         break;
                 }
             }
@@ -62,9 +62,9 @@ namespace CodeEnv.Master.GameContent {
             GameColor healthColor = GameColor.White;
             string colorizedHealthText = Constants.QuestionMark;
             if (health.HasValue) {
-                healthColor = (health.Value > GeneralSettings.Instance.InjuredHealthThreshold) ? GameColor.Green :
-                            (health.Value > GeneralSettings.Instance.CriticalHealthThreshold) ? GameColor.Yellow :
-                                                                                                    GameColor.Red;
+                healthColor = (health.Value > GeneralSettings.Instance.HealthThreshold_Damaged) ? GameColor.Green :
+                            (health.Value > GeneralSettings.Instance.HealthThreshold_BadlyDamaged) ? GameColor.Yellow :
+                            (health.Value > GeneralSettings.Instance.HealthThreshold_CriticallyDamaged) ? GameColor.Orange : GameColor.Red; ;
                 colorizedHealthText = Constants.FormatPercent_0Dp.Inject(health.Value).SurroundWith(healthColor);
             }
 

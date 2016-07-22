@@ -44,12 +44,29 @@ namespace CodeEnv.Master.Common {
         }
 
         private bool _disableRepair;
+        /// <summary>
+        /// If <c>true</c> disables Repairing, overriding RepairAnyDamage.
+        /// </summary>
         public bool DisableRepair {
             get {
                 CheckValuesInitialized();
                 return _disableRepair;
             }
             private set { _disableRepair = value; }
+        }
+
+        private bool _repairAnyDamage;
+        /// <summary>
+        /// If <c>true</c> any damage incurred initiates Repairing. Effectively
+        /// ignores the damageThreshold provided to AssessNeedForRepair(damageThreshold).
+        /// If DisableRepair is <c>true</c>, this setting is ignored.
+        /// </summary>
+        public bool RepairAnyDamage {
+            get {
+                CheckValuesInitialized();
+                return _repairAnyDamage;
+            }
+            private set { _repairAnyDamage = value; }
         }
 
         private bool _disableRetreat;
@@ -127,12 +144,30 @@ namespace CodeEnv.Master.Common {
         }
 
         private bool _allIntelCoverageComprehensive;
+        /// <summary>
+        /// Determines whether the initial IntelCoverage for each player about each Item
+        /// in the Universe starts at its default or at Comprehensive. Starting at default
+        /// means, in general, IntelCoverage of an item can improve. Starting at Comprehensive
+        /// means no improvement possible.
+        /// <remarks>If <c>true</c> every player knows everything about every item they detect. 
+        /// It DOES NOT MEAN that they have detected everything or that players have met yet.
+        /// Players meet when they first detect a HQ Element owned by another player.</remarks>
+        /// </summary>
         public bool AllIntelCoverageComprehensive {
             get {
                 CheckValuesInitialized();
                 return _allIntelCoverageComprehensive;
             }
             private set { _allIntelCoverageComprehensive = value; }
+        }
+
+        private bool _enableStartupTimeout;
+        public bool EnableStartupTimeout {
+            get {
+                CheckValuesInitialized();
+                return _enableStartupTimeout;
+            }
+            private set { _enableStartupTimeout = value; }
         }
 
         private DebugSettings() {

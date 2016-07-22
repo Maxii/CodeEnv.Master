@@ -57,7 +57,6 @@
     <Compile Include="Generic\AGuiWindowEditor.cs" />
     <Compile Include="Game\DestroyEffectOnCompletionEditor.cs" />
     <Compile Include="Game\FleetCreatorEditor.cs" />
-    <Compile Include="Game\MyAStarPointGraphEditor.cs" />
     <Compile Include="Game\SettlementCreatorEditor.cs" />
     <Compile Include="Game\StarbaseCreatorEditor.cs" />
     <Compile Include="Game\SystemCreatorEditor.cs" />
@@ -68,6 +67,8 @@
     <Compile Include="Game\StarbasesTableWindowEditor.cs" />
     <Compile Include="Game\SystemsTableWindowEditor.cs" />
     <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
+    <Compile Include="Game\MyPathfindingGraphEditor.cs" />
+    <Compile Include="Game\SectorGridEditor.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuButtonInspector.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuInspector.cs" />
     <Compile Include="ThirdParty\ContextMenu\ACtxMenuItemInspector.cs" />

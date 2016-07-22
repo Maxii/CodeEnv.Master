@@ -484,25 +484,44 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     #region Debug
 
+    // WARNING: KeyDuplication compile error in Unity with overriding optional parameters in MonoBehaviours   
+
+    private const string AMonoBaseDebugLogEventMethodNameFormat = "{0}(from transform).{1}.{2}()";
     protected DebugSettings _debugSettings;
 
     /// <summary>
-    /// Logs the method name called.
+    /// Logs a warning statement that the method that calls this has been called.
+    /// <remarks>Typically used to ID method calls that I don't expect to occur.</remarks>
     /// </summary>
-    public virtual void LogEvent() { // WARNING: KeyDuplication compile error in Unity with LogEvent(object parameter = null)
+    public virtual void LogEventWarning() {
+        string methodName = GetMethodName();
+        string fullMethodName = AMonoBaseDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, methodName);
+        Debug.LogWarning("Unclear why {0} was called.".Inject(fullMethodName));
+    }
+
+    /// <summary>
+    /// Logs a statement that the method that calls this has been called.
+    /// Logging only occurs if DebugSettings.EnableEventLogging is true.
+    /// </summary>
+    public virtual void LogEvent() {
         if (_debugSettings.EnableEventLogging) {
-            var stackFrame = new System.Diagnostics.StackFrame(1);
-            string fullMethodName = stackFrame.GetMethod().ReflectedType.Name;
-            if (fullMethodName.Contains(Constants.LessThan)) {
-                string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
-                fullMethodName = coroutineMethodName;
-            }
-            else {
-                fullMethodName = stackFrame.GetMethod().Name;
-            }
-            string transformName = "{0}(from transform)".Inject(transform.name);
-            Debug.Log("{0}.{1}.{2}() beginning execution.".Inject(transformName, GetType().Name, fullMethodName));
+            string methodName = GetMethodName();
+            string fullMethodName = AMonoBaseDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, methodName);
+            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }
+    }
+
+    protected string GetMethodName() {
+        var stackFrame = new System.Diagnostics.StackFrame(2);
+        string methodName = stackFrame.GetMethod().ReflectedType.Name;
+        if (methodName.Contains(Constants.LessThan)) {
+            string coroutineMethodName = methodName.Substring(methodName.IndexOf(Constants.LessThan) + 1, methodName.IndexOf(Constants.GreaterThan) - 1);
+            methodName = coroutineMethodName;
+        }
+        else {
+            methodName = stackFrame.GetMethod().Name;
+        }
+        return methodName;
     }
 
     #endregion

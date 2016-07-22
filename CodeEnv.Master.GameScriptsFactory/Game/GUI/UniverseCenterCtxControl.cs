@@ -32,7 +32,6 @@ public class UniverseCenterCtxControl : ACtxControl {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
-                                                                                        FleetDirective.CloseOrbit,
                                                                                         FleetDirective.Explore};
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -49,7 +48,7 @@ public class UniverseCenterCtxControl : ACtxControl {
         _universeCenterMenuOperator = universeCenter;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_universeCenterMenuOperator.IsSelected) {
             D.Assert(_universeCenterMenuOperator == selected as UniverseCenterItem);
             return true;
@@ -59,7 +58,7 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
@@ -75,8 +74,6 @@ public class UniverseCenterCtxControl : ACtxControl {
             case FleetDirective.Explore:
                 var explorableUCenter = _universeCenterMenuOperator as IFleetExplorable;
                 return explorableUCenter.IsFullyExploredBy(_user) || !explorableUCenter.IsExploringAllowedBy(_user);
-            case FleetDirective.CloseOrbit:
-                return !(_universeCenterMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -88,10 +85,10 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _universeCenterMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

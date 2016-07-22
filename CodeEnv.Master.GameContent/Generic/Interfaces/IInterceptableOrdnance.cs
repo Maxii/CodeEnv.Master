@@ -21,8 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IInterceptableOrdnance : IOrdnance, IDetectable {
 
-        new Player Owner { get; }
-
         WDVStrength DeliveryVehicleStrength { get; }
 
         void TakeHit(WDVStrength interceptStrength);

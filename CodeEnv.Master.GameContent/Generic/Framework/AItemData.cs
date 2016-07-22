@@ -55,6 +55,11 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
         }
 
+        /// <summary>
+        /// Used for controlling other player's access to Item Info.
+        /// </summary>
+        public AInfoAccessController InfoAccessCntlr { get; private set; }
+
         protected IItem Item { get; private set; }
 
         /// <summary>
@@ -65,7 +70,14 @@ namespace CodeEnv.Master.GameContent {
         public AItemData(IItem item, Player owner) {
             Item = item;
             _owner = owner;
+            // 7.9.16 Initialize(); now called by AItem.InitializeOnData to move out of constructor
         }
+
+        public virtual void Initialize() {
+            InfoAccessCntlr = InitializeInfoAccessController();
+        }
+
+        protected abstract AInfoAccessController InitializeInfoAccessController();
 
         public virtual void CommenceOperations() {
             D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);

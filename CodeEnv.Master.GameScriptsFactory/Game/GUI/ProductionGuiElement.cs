@@ -35,7 +35,8 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
         get { return __producingName; }
         set {
             D.Assert(!__isProductionSet);   // occurs only once between Resets
-            SetProperty<string>(ref __producingName, value, "__ProducingName", __ProducingNamePropSetHandler);
+            __producingName = value;
+            __ProducingNamePropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -94,7 +95,6 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
 
     public override void Reset() {
         // UNDONE
-        __producingName = null;
         __isProductionSet = false;
     }
 

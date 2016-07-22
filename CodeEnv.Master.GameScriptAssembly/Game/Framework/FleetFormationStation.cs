@@ -23,8 +23,12 @@ using UnityEngine;
 
 /// <summary>
 /// Formation station for a ship in a Fleet formation.
+/// <remarks>6.23.16 This Station is a MonoBehaviour because its' position relative to the Cmd
+/// is key to its functionality. As Cmd moves and rotates, this station moves as its child using
+/// its' local position value thereby keeping its position continuously accurate. This would be very
+/// hard to do using a regular class.</remarks>
 /// </summary>
-public class FleetFormationStation : AMonoBase, IFleetFormationStation, IShipNavigable {
+public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigable {
 
     private const string NameFormat = "{0}.{1}";
 
@@ -36,22 +40,22 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, IShipNav
     /// </summary>
     public bool IsOnStation { get { return DistanceToStation + AssignedShip.CollisionDetectionZoneRadius < Radius; } }
 
-    private bool _isLocalOffsetSet;
-    private Vector3 _localOffset;
     /// <summary>
     /// The offset of this station from FleetCmd in local space.
     /// </summary>
-    public Vector3 LocalOffset {
-        get { return _localOffset; }
-        set { SetProperty<Vector3>(ref _localOffset, value, "LocalOffset", OnLocalOffsetSet); }
+    public Vector3 LocalOffset { get { return StationInfo.LocalOffset; } }
+
+    private FormationStationSlotInfo _stationInfo;
+    public FormationStationSlotInfo StationInfo {
+        get { return _stationInfo; }
+        set { SetProperty<FormationStationSlotInfo>(ref _stationInfo, value, "StationInfo", StationInfoPropChangedHandler); }
     }
 
-    private IShipItem _assignedShip;
-    public IShipItem AssignedShip {
+    private IShip _assignedShip;
+    public IShip AssignedShip {
         get { return _assignedShip; }
         set {
-            D.Assert(_assignedShip == null);    // OPTIMIZE for now only one assignment
-            SetProperty<IShipItem>(ref _assignedShip, value, "AssignedShip");
+            SetProperty<IShip>(ref _assignedShip, value, "AssignedShip");
         }
     }
 
@@ -61,16 +65,30 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, IShipNav
 
     // Note: FormationStation's facing, as a child of FleetCmd, is always the same as FleetCmd's and Flagship's facing
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void Validate() {
+        base.Validate();
+        // TODO
+    }
+
+    #region Event and Prop Change Handlers
+
+    private void StationInfoPropChangedHandler() {
+        transform.localPosition = StationInfo.LocalOffset;
+    }
+
+    private void OnSpawned() {
+        //D.Log("{0}.OnSpawned() called.", FullName);
         InitializeDebugShowFleetFormationStation();
     }
 
-    private void OnLocalOffsetSet() {
-        D.Assert(!_isLocalOffsetSet);
-        _isLocalOffsetSet = true;
-        transform.localPosition = LocalOffset;
+    private void OnDespawned() {
+        //D.Log("{0}.OnDespawned() called.", FullName);
+        StationInfo = default(FormationStationSlotInfo);
+        D.Assert(AssignedShip == null);
+        CleanupDebugShowFleetFormationStation();
     }
+
+    #endregion
 
     protected override void Cleanup() {
         CleanupDebugShowFleetFormationStation();
@@ -116,9 +134,19 @@ public class FleetFormationStation : AMonoBase, IFleetFormationStation, IShipNav
 
     #region INavigable Members
 
-    public string DisplayName { get { return NameFormat.Inject(AssignedShip.DisplayName, GetType().Name); } }
+    public string DisplayName {
+        get {
+            string nameText = AssignedShip != null ? AssignedShip.DisplayName : "NoAssignedShip";
+            return NameFormat.Inject(nameText, GetType().Name);
+        }
+    }
 
-    public string FullName { get { return NameFormat.Inject(AssignedShip.FullName, GetType().Name); } }
+    public string FullName {
+        get {
+            string nameText = AssignedShip != null ? AssignedShip.FullName : "NoAssignedShip";
+            return NameFormat.Inject(nameText, GetType().Name);
+        }
+    }
 
     public bool IsMobile { get { return true; } }
 

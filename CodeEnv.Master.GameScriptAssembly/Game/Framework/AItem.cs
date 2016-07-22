@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IItem, IShipNavigable {
+public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     /// <summary>
     /// Occurs when the owner of this <c>AItem</c> is about to change.
@@ -38,6 +38,12 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
     /// Occurs when the owner of this <c>AItem</c> has changed.
     /// </summary>
     public event EventHandler ownerChanged;
+
+    /// <summary>
+    /// Occurs when InfoAccess rights change for a player on an item.
+    /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
+    /// </summary>
+    public event EventHandler<InfoAccessChangedEventArgs> infoAccessChanged;
 
     /// <summary>
     /// Debug flag in editor indicating whether to show the D.Log for this item.
@@ -58,6 +64,16 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
             SetProperty<AItemData>(ref _data, value, "Data", DataPropSetHandler);
         }
     }
+
+    /// <summary>
+    /// Returns <c>true</c> if this item is owned by the User, <c>false</c> otherwise.
+    /// <remarks>Shortcut that avoids having to access Owner to determine. If the user player
+    /// is using this method (e.g. via ContextMenus), he/she always has access rights to the answer
+    /// as if they own it, they have owner access, and if they don't own it, whether they have
+    /// owner access rights is immaterial as the answer will always be false. The only time the
+    /// AI will use it is when I intend for the AI to "cheat", aka gang up on the user.</remarks>
+    /// </summary>
+    public bool IsUserOwned { get { return Owner.IsUser; } }
 
     public virtual Topography Topography { get { return Data.Topography; } }
 
@@ -106,6 +122,8 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
 
     public Player Owner { get { return Data.Owner; } }
 
+    protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
+
     protected IList<IDisposable> _subscriptions;
     protected IInputManager _inputMgr;
     protected ItemHudManager _hudManager;
@@ -134,7 +152,9 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
     /// <summary>
     /// Called once when Data is set, clients should initialize values that require the availability of Data.
     /// </summary>
-    protected abstract void InitializeOnData();
+    protected virtual void InitializeOnData() {
+        Data.Initialize();
+    }
 
     /// <summary>
     ///  Subscribes to changes to values contained in Data. Called when Data is set.
@@ -235,6 +255,12 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
         }
     }
 
+    protected void OnInfoAccessChanged(Player player) {
+        if (infoAccessChanged != null) {
+            infoAccessChanged(this, new InfoAccessChangedEventArgs(player));
+        }
+    }
+
     #endregion
 
     #region Cleanup
@@ -261,6 +287,26 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
 
     #endregion
 
+    #region Debug
+
+    public Player Owner_Debug { get { return Data.Owner; } }
+
+    private const string AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
+
+    /// <summary>
+    /// Logs a statement that the method that calls this has been called.
+    /// Logging only occurs if DebugSettings.EnableEventLogging and ShowDebugLog are true.
+    /// </summary>
+    public override void LogEvent() {
+        if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
+            string methodName = GetMethodName();
+            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(FullName, methodName);
+            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
+        }
+    }
+
+    #endregion
+
     #region INavigable Members
 
     public virtual bool IsMobile { get { return false; } }
@@ -270,6 +316,19 @@ public abstract class AItem : AMonoBase, IItem, IShipNavigable {
     #region IShipNavigable Members
 
     public abstract AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
+
+    #endregion
+
+    #region IItem_Ltd Members
+
+    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
+        owner = Data.Owner;
+        return InfoAccessCntlr.HasAccessToInfo(requestingPlayer, AccessControlInfoID.Owner);
+    }
+
+    public bool IsOwnerAccessibleTo(Player player) {
+        return InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner);
+    }
 
     #endregion
 

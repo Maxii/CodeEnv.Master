@@ -23,13 +23,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IShipOrbitable : IShipNavigable {
 
-        void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint);
+        void AssumeHighOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint);
 
+        /// <summary>
+        /// Determines whether assuming high orbit is allowed by [the specified player].
+        /// <remarks>7.15.16 Currently always true.</remarks>
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
         bool IsHighOrbitAllowedBy(Player player);
 
-        bool IsInHighOrbit(IShipItem ship);
+        bool IsInHighOrbit(IShip_Ltd ship);
 
-        void HandleBrokeOrbit(IShipItem ship);
+        void HandleBrokeOrbit(IShip_Ltd ship);
 
     }
 }

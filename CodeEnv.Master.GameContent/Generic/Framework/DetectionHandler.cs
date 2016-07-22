@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -29,14 +29,14 @@ namespace CodeEnv.Master.GameContent {
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
         /// of the sensor used and the owner of the Cmd.
         /// </summary>
-        private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>> _detectionLookup;
+        private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>> _detectionLookup;
         private IIntelItem _item;
         private IGameManager _gameMgr;
 
         public DetectionHandler(IIntelItem item) {
             _item = item;
-            _gameMgr = References.GameManager;  // OPTIMIZE AllPlayers or AllPlayers - 1? Does item owner detect its own items this way?
-            _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmdItem>>>(_gameMgr.AllPlayers.Count);
+            _gameMgr = References.GameManager;
+            _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>>(_gameMgr.AllPlayers.Count);
             Subscribe();
         }
 
@@ -45,19 +45,19 @@ namespace CodeEnv.Master.GameContent {
             _item.ownerChanged += OwnerChangedEventHandler;
         }
 
-        public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-            D.Log("{0}.{1}.HandleDetectionBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
-            Player detectingPlayer = cmdItem.Owner;
+        public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
+            D.Assert(_item.IsOperational, "{0} should not be detected by {1} when dead!", _item.FullName, cmdItem.FullName);
+            //D.Log("{0}.{1}.HandleDetectionBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
 
-            IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
+            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmdItem>>();
+                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmd_Ltd>>();
                 _detectionLookup.Add(detectingPlayer, rangeLookup);
             }
 
-            IList<IUnitCmdItem> cmds;
+            IList<IUnitCmd_Ltd> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
-                cmds = new List<IUnitCmdItem>();
+                cmds = new List<IUnitCmd_Ltd>();
                 rangeLookup.Add(sensorRange, cmds);
             }
             D.Assert(!cmds.Contains(cmdItem), "{0} attempted to add duplicate {1}.".Inject(_item.FullName, cmdItem.FullName));
@@ -67,18 +67,18 @@ namespace CodeEnv.Master.GameContent {
             UpdatePlayerKnowledge(detectingPlayer);
         }
 
-        public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-            D.Assert(sensorRange != RangeCategory.None);
-            D.Log("{0}.{1}.HandleDetectionLostBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
-            Player detectingPlayer = cmdItem.Owner;
+        public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
+            D.Assert(sensorRange != RangeCategory.None);    // 7.20.16 detected items no longer notified of lost detection when they die
+            D.Assert(_item.IsOperational, "{0} should not be notified by {1} of detection lost when dead!", _item.FullName, cmdItem.FullName);
+            //D.Log("{0}.{1}.HandleDetectionLostBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
 
-            IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
+            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
                 D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", _item.FullName, cmdItem.FullName);
                 return;
             }
 
-            IList<IUnitCmdItem> cmds;
+            IList<IUnitCmd_Ltd> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
                 D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", _item.FullName, cmdItem.FullName, sensorRange.GetValueName());
                 return;
@@ -107,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <remarks>
         /// This version is used in cases where the <c>itemOwner</c> is changing,
-        /// thereby not allowing an effective comparison to _data.Owner.
+        /// thereby not allowing an effective comparison to _item.Owner.
         /// </remarks>
         /// <param name="player">The player.</param>
         /// <param name="itemOwner">The item owner.</param>
@@ -120,7 +120,7 @@ namespace CodeEnv.Master.GameContent {
                 newCoverage = IntelCoverage.Comprehensive;
             }
             else {
-                IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
+                IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
                 if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
                     D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
                     return;
@@ -140,30 +140,33 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (_item.SetIntelCoverage(player, newCoverage)) {
-                D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _item.FullName, player.LeaderName, newCoverage.GetValueName());
+                //D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _item.FullName, player.LeaderName, newCoverage.GetValueName());
             }
         }
 
         private void UpdatePlayerKnowledge(Player player) {
-            IDictionary<RangeCategory, IList<IUnitCmdItem>> rangeLookup;
+            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
                 D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
                 return;
             }
 
-            var playerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(player);
+            var playerAiMgr = _gameMgr.GetAIManagerFor(player);
             if (rangeLookup.Keys.Count > Constants.Zero) {
                 // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
-                if (!_item.IsOperational) {
-                    // Item is dead so defer any knowledge update until the final DistanceRange key is removed, 
-                    // at which time playerKnowledge.HandleItemDetectionLost will be called
-                    return;
-                }
-                playerKnowledge.HandleItemDetection(_item);
+
+                // 7.20.16 removed as detected items no longer notified of lost detection when they die
+                ////if (!_item.IsOperational) {   
+                ////    // Item is dead so defer any knowledge update until the final DistanceRange key is removed, 
+                ////    // at which time playerKnowledge.HandleItemDetectionLost will be called
+                ////    return;
+                ////}
+
+                playerAiMgr.HandleItemDetection(_item as ISensorDetectable);
             }
             else {
                 // there are no DistanceRange keys so player has no Cmds in sensor range of this item
-                playerKnowledge.HandleItemDetectionLost(_item);
+                playerAiMgr.HandleItemDetectionLost(_item as ISensorDetectable);
             }
         }
 
@@ -241,7 +244,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
         #region Archive
 

@@ -23,11 +23,26 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
-        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, StandingOrder: {3}";
+        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
+
+        private static readonly ShipDirective[] DirectivesWithNullTarget = new ShipDirective[] {
+                                                                                                    ShipDirective.AssumeStation,
+                                                                                                    ShipDirective.Entrench,
+                                                                                                    ShipDirective.Refit,
+                                                                                                    ShipDirective.Repair,
+                                                                                                    ShipDirective.Retreat,
+                                                                                                    ShipDirective.Scuttle,
+                                                                                                    ShipDirective.StopAttack,
+                                                                                                    ShipDirective.Disengage
+                                                                                                };
 
         public ShipOrder StandingOrder { get; set; }
 
+        public ShipOrder FollowonOrder { get; set; }
+
         public IShipNavigable Target { get; private set; }
+
+        public bool ToNotifyCmd { get; private set; }
 
         /// <summary>
         /// The source of this order. 
@@ -41,20 +56,27 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
-        /// <param name="target">The target of this order. Default is null.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source, IShipNavigable target = null) {
+        /// <param name="toNotifyCmd">if set to <c>true</c> the ship will notify its Command of the outcome.</param>
+        /// <param name="target">The target of this order. No need for FormationStation. Default is null.</param>
+        public ShipOrder(ShipDirective directive, OrderSource source, bool toNotifyCmd = false, IShipNavigable target = null) {
             if (directive == ShipDirective.Move) {
                 D.Assert(GetType() == typeof(ShipMoveOrder));
+                D.Assert(!toNotifyCmd);
+            }
+            if (directive.EqualsAnyOf(DirectivesWithNullTarget)) {
+                D.Assert(target == null, "{0} target should be null.", this);
             }
             Directive = directive;
             Source = source;
+            ToNotifyCmd = toNotifyCmd;
             Target = target;
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.FullName : "null";
-            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "null";
-            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, standingOrderText);
+            string targetText = Target != null ? Target.FullName : "none";
+            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
+            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
         }
 
     }

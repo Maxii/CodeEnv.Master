@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         /// Ships can attempt to assume their station in the fleet formation at any time and any location. When this order is given, 
         /// the ship attempts to move to its station within the formation. Only Fleet Cmd or the Ship's Captain may order a ship to assume
         /// its station. Ships in orbit donot pay attention to formations. If this order is received 
-        /// from Fleet Cmd by a ship in orbit, the ship will immediately break orbit and move to their formation station.
+        /// by a ship in orbit, the ship will immediately break orbit and move to their formation station.
         /// </summary>
         AssumeStation,
 
@@ -53,18 +53,16 @@ namespace CodeEnv.Master.GameContent {
         Attack,
 
         /// <summary>
-        /// Ships can repair at Bases owned by the ship's owner. Only Fleet Cmd or Captain may order a ship to repair itself.
-        /// UNCLEAR where else can repairs take place and to what degree?
+        /// Ships can repair where they are currently located, including in space and at planets and Bases they are allowed to orbit. 
+        /// Only Fleet Cmd or the Ship's Captain may order a ship to repair.
         /// </summary>
         Repair,
-
 
         /// <summary>
         /// Ships can refit at Bases owned by the ship's owner. Only Fleet Cmd may order a ship to refit.
         /// UNCLEAR should ships be able to refit at ally bases? What about when base is under attack?
         /// </summary>
         Refit,
-
 
         /// <summary>
         /// Ships can leave one fleet and join another owned by the ship's owner. A Join order is only issueable
@@ -73,10 +71,18 @@ namespace CodeEnv.Master.GameContent {
         Join,
 
         /// <summary>
-        /// Ships can withdraw into a more protected formation station while being protected by other ships in the fleet.
-        /// A withdrawal order can be issued by the User, Fleet Cmd or the Ship's Captain.
+        /// Ships can entrench where they are currently located, diverting engine power from creating movement into protecting itself.
+        /// An entrench order can be issued by Fleet Cmd or the Ship's Captain.
         /// </summary>
-        Withdraw,
+        Entrench,
+
+        /// <summary>
+        /// Ships disengage from active or potential combat with the enemy by redeploying to a more protected station 
+        /// of the formation, if any are available. Ships whose CombatStance is Disengage will automatically be issued a
+        /// Disengage order by the Captain when ordered to Attack. A Disengage order can be issued by the User, 
+        /// Fleet Cmd or the Ship's Captain.
+        /// </summary>
+        Disengage,
 
         /// <summary>
         /// The ship retreats away from the enemy at best speed. Only Fleet Cmd may order the ship to retreat.
@@ -86,20 +92,17 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Ships can explore Stars and Planets which involves going into orbit for a period to scan it. Only Fleet Cmd may
         /// order a ship to explore a star or planet. Ships may not 'explore' (orbit) a Star or Planet they are at war with.
-        /// the System. Planetoids and the Star itself are actually explored by ships by going into orbit for a time period.
         /// </summary>
         Explore,
 
         /// <summary>
         /// Ships can disband at Bases owned by the ship's owner. Ships can only be ordered to Disband by Fleet Cmd or
-        /// the User.
-        /// When a ship is disbanded, the owner of the ship retains a percentage of the resources used to build it.
+        /// the User. When a ship is disbanded, the owner of the ship retains a percentage of the resources used to build it.
         /// </summary>
         Disband,
 
         /// <summary>
-        /// Ships can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only
-        /// issuable by the User.
+        /// Ships can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only issuable by the User.
         /// </summary>
         Scuttle,
 

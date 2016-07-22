@@ -47,7 +47,8 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
         get { return _strength; }
         set {
             D.Assert(!_isStrengthSet);  // only occurs once between Resets
-            SetProperty<CombatStrength?>(ref _strength, value, "Strength", StrengthPropSetHandler);
+            _strength = value;
+            StrengthPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 

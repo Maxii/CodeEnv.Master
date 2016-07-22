@@ -30,9 +30,9 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     private const string NameFormat = "{0}.{1}[{2}, {3:0.} Units]";
 
-    public sealed override string Name {
+    public sealed override string FullName {
         get {
-            if (ParentItem == null) { return base.Name; }
+            if (ParentItem == null) { return base.FullName; }
             return NameFormat.Inject(ParentItem.FullName, GetType().Name, RangeCategory.GetValueName(), RangeDistance);
         }
     }
@@ -63,6 +63,11 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         AssessIsOperational();
     }
 
+    protected override void RangeDistancePropChangedHandler() {
+        base.RangeDistancePropChangedHandler();
+        RefreshEquipmentRangeDistance();
+    }
+
     #endregion
 
     public virtual void Add(EquipmentType pieceOfEquipment) {
@@ -75,7 +80,7 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         AssignMonitorTo(pieceOfEquipment);
         _equipmentList.Add(pieceOfEquipment);
         pieceOfEquipment.isOperationalChanged += EquipmentIsOperationalChangedEventHandler;
-        // RangeDistance is set when when a piece of equipment first becomes operational.
+        // RangeDistance is set when when a piece of equipment first becomes operational
     }
 
     protected abstract void AssignMonitorTo(EquipmentType pieceOfEquipment);
@@ -95,18 +100,18 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
      *************************************************************************************************************************************/
 
     /// <summary>
-    /// Refreshes the range distance of this monitor. The range of a monitor can be affected
-    /// by a number of factors including an owner change and the quantity of equipment that
-    /// is currently operational.
+    /// Refreshes the range distance of this monitor. The range of a monitor can be affected by a number of factors 
+    /// including an owner change and the quantity of equipment that is currently operational.
     /// </summary>
     /// <returns></returns>
     protected abstract float RefreshRangeDistance();
 
-    /// <summary>
-    /// Resets this Monitor in preparation for reuse by the same Parent.  
-    /// </summary>
-    protected override void ResetForReuse() {
-        base.ResetForReuse();
+    private void RefreshEquipmentRangeDistance() {
+        _equipmentList.ForAll(e => e.RangeDistance = RangeDistance);
+    }
+
+    protected override void CompleteResetForReuse() {
+        base.CompleteResetForReuse();
         RangeCategory = RangeCategory.None;
         D.Assert(_equipmentList.Count == Constants.Zero);
     }

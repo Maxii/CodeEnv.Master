@@ -29,23 +29,39 @@ using UnityEngine;
 /// <summary>
 ///  Abstract class for AUnitCmdItem's that are Base Commands.
 /// </summary>
-public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseOrbitable, IGuardable, IPatrollable {
+public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCmd_Ltd, IShipCloseOrbitable, IGuardable, IPatrollable {
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding patrol stations from the item's position.
+    /// </summary>
+    private const float PatrolStationDistanceMultiplier = 4F;
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding guard stations from the item's position.
+    /// </summary>
+    private const float GuardStationDistanceMultiplier = 2F;
 
     public override bool IsAvailable { get { return CurrentState == BaseState.Idling; } }
 
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
-        get { return _currentOrder; }
+        private get { return _currentOrder; }
         set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
-    public new AUnitBaseCmdItemData Data {
-        get { return base.Data as AUnitBaseCmdItemData; }
+    public new AUnitBaseCmdData Data {
+        get { return base.Data as AUnitBaseCmdData; }
         set { base.Data = value; }
     }
 
-    private IList<IShipItem> _shipsInHighOrbit;
-    private IList<IShipItem> _shipsInCloseOrbit;
+    public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
+
+    private float CloseOrbitInnerRadius { get { return UnitMaxFormationRadius; } }
+
+    private IList<IShip_Ltd> _shipsInHighOrbit;
+    private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
 
@@ -60,7 +76,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * 5F; // HACK
+        float radiusOfSphereContainingPatrolStations = CloseOrbitOuterRadius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
@@ -71,7 +87,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     private IList<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
-        float distanceFromPosition = Data.CloseOrbitOuterRadius * 2F;   // HACK
+        float distanceFromPosition = CloseOrbitOuterRadius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
         guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
@@ -79,11 +95,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         return guardStations;
     }
 
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        // 7.11.16 Moved from CommenceOperations as need to be Idling to receive initial events once sensors
+        // are operational. Events include initial discovery of players which result in Relationship changes
+        CurrentState = BaseState.Idling;
+    }
+
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        CurrentState = BaseState.Idling;
+        //CurrentState = BaseState.Idling;
     }
 
     /// <summary>
@@ -109,6 +132,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     }
 
     /// <summary>
+    /// Returns the capacity for repair available from this Base. Bases repair ships and facilities.
+    /// UOM is hitPts per day. IMPROVE capacity should be affected by base composition -> repair facility, etc.
+    /// IMPROVE bases should have a max capacity for concurrent repairs.
+    /// </summary>
+    /// <param name="isAlly">if set to <c>true</c> [is ally].</param>
+    /// <param name="isElementInCloseOrbit">if set to <c>true</c> [is close orbit].</param>
+    /// <returns></returns>
+    public float GetRepairCapacity(bool isElementAlly = true, bool isElementInCloseOrbit = true) {
+        if (isElementAlly) {
+            return isElementInCloseOrbit ? 20F : 15F;   // HACK
+        }
+        return isElementInCloseOrbit ? 12F : 8F;   // HACK
+    }
+
+    /// <summary>
     /// Selects and returns a new HQElement.
     /// Throws an InvalidOperationException if there are no elements to select from.
     /// </summary>
@@ -123,12 +161,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         transform.position = HQElement.Position;
     }
 
-    protected override void SetDeadState() {
+    protected override void InitiateDeadState() {
+        UponDeath();
         CurrentState = BaseState.Dead;
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
     }
 
     /// <summary>
@@ -148,12 +187,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #endregion
 
+    #region Orders
+
+    public bool IsCurrentOrderDirectiveAnyOf(params BaseDirective[] directives) {
+        return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
+    }
+
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
-        while (CurrentState == BaseState.Attacking) {
-            UponNewOrderReceived();
-        }
-        D.Assert(CurrentState != BaseState.Attacking);
+        //while (CurrentState == BaseState.Attacking) { // TODO no Call()ed states currently
+        //    UponNewOrderReceived();
+        //}
+        //D.Assert(CurrentState != BaseState.Attacking);
 
         if (CurrentOrder != null) {
             D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
@@ -178,11 +223,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         }
     }
 
+    #endregion
+
     #region StateMachine
 
-    public new BaseState CurrentState {
+    protected new BaseState CurrentState {
         get { return (BaseState)base.CurrentState; }
-        protected set {
+        set {
             if (base.CurrentState != null && CurrentState == value) {
                 D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
             }
@@ -210,9 +257,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     protected void Idling_EnterState() {
         LogEvent();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+    }
+
+    protected void Idling_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        // TODO
     }
 
     protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    protected void Idling_UponDeath() {
         LogEvent();
     }
 
@@ -224,63 +281,68 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #region ExecuteAttackOrder
 
-    protected IEnumerator ExecuteAttackOrder_EnterState() {
+    private IUnitAttackable _fsmAttackTarget; // UNCLEAR is there an _fsmTgt for other states?
+
+    protected void ExecuteAttackOrder_EnterState() {
         LogEvent();
-        Call(BaseState.Attacking);
-        yield return null;   // required so Return()s here
-        CurrentState = BaseState.Idling;
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
+        _fsmAttackTarget = CurrentOrder.Target as IUnitAttackable;
+
+        bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmAttackTarget, toSubscribe: true);
+        D.Assert(isSubscribed);
+
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, toNotifyCmd: true, target: _fsmAttackTarget);
+        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
+    }
+
+    protected void ExecuteAttackOrder_UponOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
+        LogEvent();
+        if (directive != FacilityDirective.Attack) {
+            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", FullName, CurrentState.GetValueName(), typeof(FacilityDirective).Name, directive.GetValueName());
+            return;
+        }
+        // TODO What? It will be common for an attack by a facility to fail for cause unreachable as its target moves out of range...
+    }
+
+    protected void ExecuteAttackOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmAttackTarget == deadFsmTgt, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmAttackTarget.FullName, deadFsmTgt.FullName));
+        // TODO Notify Superiors of success - unit target death
+    }
+
+    protected void ExecuteAttackOrder_UponDeath() {
+        LogEvent();
+        // TODO Notify superiors of our death
     }
 
     protected void ExecuteAttackOrder_ExitState() {
         LogEvent();
+        bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmAttackTarget, toSubscribe: false);
+        D.Assert(isUnsubscribed);
+        _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
     #endregion
 
-    #region Attacking
-
-    private IUnitAttackableTarget _fsmAttackTarget;
-
-    protected void Attacking_EnterState() {
-        LogEvent();
-        _fsmAttackTarget = CurrentOrder.Target as IUnitAttackableTarget;
-        _fsmAttackTarget.deathOneShot += FsmTargetDeathEventHandler;
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.CmdStaff, _fsmAttackTarget);
-        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
-    }
-
-    protected void Attacking_UponTargetDeath(IMortalItem deadTarget) {
-        LogEvent();
-        D.Assert(_fsmAttackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmAttackTarget.FullName, deadTarget.FullName));
-        Return();
-    }
-
-    protected void Attacking_UponNewOrderReceived() {
-        LogEvent();
-        Return();
-    }
-
-    protected void Attacking_ExitState() {
-        LogEvent();
-        _fsmAttackTarget.deathOneShot -= FsmTargetDeathEventHandler;
-        _fsmAttackTarget = null;
-    }
-
-    #endregion
-
-    #region Repair
+    #region Repairing
 
     protected void Repairing_EnterState() { }
 
     #endregion
 
-    #region Refit
+    #region Refitting
 
     protected void Refitting_EnterState() { }
 
     #endregion
 
-    #region Disband
+    #region Disbanding
 
     protected void Disbanding_EnterState() { }
 
@@ -295,7 +357,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     protected void Dead_EnterState() {
         LogEvent();
-        HandleDeath();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
+        HandleDeathFromDeadState();
         StartEffectSequence(EffectSequenceID.Dying);    // currently no death effect for a BaseCmd, just its elements
     }
 
@@ -307,7 +371,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #endregion
 
-    #region StateMachine Support Methods
+    #region StateMachine Support Members
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         base.HandleEffectSequenceFinished(effectID);
@@ -315,6 +379,61 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
             UponEffectSequenceFinished(effectID);
         }
     }
+
+    /// <summary>
+    /// Handles the results of the facility's attempt to execute the provided directive.
+    /// </summary>
+    /// <param name="directive">The directive.</param>
+    /// <param name="facility">The facility.</param>
+    /// <param name="isSuccess">if set to <c>true</c> the directive was successfully completed. May still be ongoing.</param>
+    /// <param name="target">The target. Can be null.</param>
+    /// <param name="failCause">The failure cause if not successful.</param>
+    internal void HandleOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
+        UponOrderOutcome(directive, facility, isSuccess, target, failCause);
+    }
+
+    #region Relays
+
+    private void UponOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
+        RelayToCurrentState(directive, facility, isSuccess, target, failCause);
+    }
+
+    #endregion
+
+    private bool _isFsmTgtDeathAlreadySubscribed;
+
+    /// <summary>
+    /// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
+    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
+    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
+    /// </summary>
+    /// <param name="fsmTgt">The target used by the State Machine. TODO Less specific Type?</param>
+    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
+    /// <returns></returns>
+    private bool AttemptFsmTgtDeathSubscribeChange(IUnitAttackable fsmTgt, bool toSubscribe) {
+        Utility.ValidateNotNull(fsmTgt);
+        var mortalFsmTgt = fsmTgt as IMortalItem;
+        if (mortalFsmTgt != null) {
+            if (!toSubscribe) {
+                mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
+            }
+            else if (!_isFsmTgtDeathAlreadySubscribed) {
+                mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
+            }
+            else {
+                D.Warn("{0}: Attempting to subcribe to {1}'s death when already subscribed.", FullName, fsmTgt.FullName);
+            }
+            _isFsmTgtDeathAlreadySubscribed = toSubscribe;
+            return true;
+        }
+        return false;
+    }
+
+
+    #region Combat Support
+
+
+    #endregion
 
     #endregion
 
@@ -336,7 +455,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         None,
         Idling,
         ExecuteAttackOrder,
-        Attacking,
+        //Attacking,
 
         Repairing,
         Refitting,
@@ -353,22 +472,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     public IShipCloseOrbitSimulator CloseOrbitSimulator {
         get {
             if (_closeOrbitSimulator == null) {
-                OrbitData closeOrbitData = new OrbitData(gameObject, Data.CloseOrbitInnerRadius, Data.CloseOrbitOuterRadius, IsMobile);
+                OrbitData closeOrbitData = new OrbitData(gameObject, CloseOrbitInnerRadius, CloseOrbitOuterRadius, IsMobile);
                 _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
             }
             return _closeOrbitSimulator;
         }
     }
 
-    public void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInCloseOrbit == null) {
-            _shipsInCloseOrbit = new List<IShipItem>();
+            _shipsInCloseOrbit = new List<IShip_Ltd>();
         }
         _shipsInCloseOrbit.Add(ship);
         shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
     }
 
-    public bool IsInCloseOrbit(IShipItem ship) {
+    public bool IsInCloseOrbit(IShip_Ltd ship) {
         if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
             return false;
         }
@@ -376,6 +495,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     }
 
     public bool IsCloseOrbitAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !Owner.IsEnemyOf(player);
     }
 
@@ -383,7 +505,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
 
     #region IShipOrbitable Members
 
-    public void HandleBrokeOrbit(IShipItem ship) {
+    public void HandleBrokeOrbit(IShip_Ltd ship) {
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
@@ -396,7 +518,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
             D.Assert(isRemoved);
             D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius;
+            float minOutsideOfOrbitCaptureRadius = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
             D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
                 ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
@@ -409,16 +531,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
         D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
     }
 
-    public bool IsInHighOrbit(IShipItem ship) {
+    public bool IsInHighOrbit(IShip_Ltd ship) {
         if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
             return false;
         }
         return true;
     }
 
-    public void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+    public void AssumeHighOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInHighOrbit == null) {
-            _shipsInHighOrbit = new List<IShipItem>();
+            _shipsInHighOrbit = new List<IShip_Ltd>();
         }
         _shipsInHighOrbit.Add(ship);
         ConnectHighOrbitRigidbodyToShipOrbitJoint(shipOrbitJoint);
@@ -438,7 +560,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return Data.CloseOrbitOuterRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+            return CloseOrbitOuterRadius + Data.CameraStat.OptimalViewingDistanceAdder;
         }
         set { base.OptimalCameraViewingDistance = value; }
     }
@@ -448,7 +570,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     #region IFleetNavigable Members
 
     public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-        return Vector3.Distance(fleetPosition, Position) - Data.UnitMaxFormationRadius;
+        return Vector3.Distance(fleetPosition, Position) - UnitMaxFormationRadius;
     }
 
     #endregion
@@ -456,7 +578,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     #region IShipNavigable Members
 
     public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-        float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
+        float innerShellRadius = CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
@@ -480,6 +602,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsPatrollingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 
@@ -498,6 +623,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipCloseO
     }
 
     public bool IsGuardingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 

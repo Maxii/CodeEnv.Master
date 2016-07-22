@@ -26,9 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntelItemData : ADiscernibleItemData {
 
-        public event EventHandler userIntelCoverageChanged;
-
-        public event EventHandler<IntelEventArgs> intelCoverageChanged;
+        public event EventHandler<IntelCoverageChangedEventArgs> intelCoverageChanged;
 
         protected virtual IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
 
@@ -45,10 +43,14 @@ namespace CodeEnv.Master.GameContent {
         public AIntelItemData(IIntelItem item, Player owner, ACameraItemStat cameraStat)
             : base(item, owner, cameraStat) {
             _gameMgr = References.GameManager;
-            //InitializePlayersIntel(); now called by AIntelItem.InitializeOnData to move out of constructor
         }
 
-        public void InitializePlayersIntel() {
+        public override void Initialize() {
+            InitializePlayersIntel();   // must occur before InfoAccessCntlr gets initialized in base
+            base.Initialize();
+        }
+
+        private void InitializePlayersIntel() {
             int playerCount = _gameMgr.AIPlayers.Count + 1;
             //D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
@@ -96,7 +98,12 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public IntelCoverage GetIntelCoverage(Player player) { return GetIntelCopy(player).CurrentCoverage; }
+        /// <summary>
+        /// Gets the IntelCoverage that the provided <c>player</c> has currently achieved for this Item.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
+        public IntelCoverage GetIntelCoverage(Player player) { return GetIntel(player).CurrentCoverage; }
 
         /// <summary>
         /// Returns a copy of the intel instance for this player.
@@ -119,10 +126,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnIntelCoverageChanged(Player player) {
             if (intelCoverageChanged != null) {
-                intelCoverageChanged(this, new IntelEventArgs(player));
-            }
-            if (player.IsUser && userIntelCoverageChanged != null) {
-                userIntelCoverageChanged(this, new EventArgs());
+                intelCoverageChanged(this, new IntelCoverageChangedEventArgs(player));
             }
         }
 
@@ -130,11 +134,14 @@ namespace CodeEnv.Master.GameContent {
 
         #region Nested Classes
 
-        public class IntelEventArgs : EventArgs {
+        public class IntelCoverageChangedEventArgs : EventArgs {
 
+            /// <summary>
+            /// The player whos IntelCoverage of this item changed .
+            /// </summary>
             public Player Player { get; private set; }
 
-            public IntelEventArgs(Player player) {
+            public IntelCoverageChangedEventArgs(Player player) {
                 Player = player;
             }
 

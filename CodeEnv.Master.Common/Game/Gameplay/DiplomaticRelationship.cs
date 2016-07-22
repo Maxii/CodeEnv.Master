@@ -29,9 +29,9 @@ namespace CodeEnv.Master.Common {
 
         Neutral,
 
-        Friend,
+        Friendly,
 
-        Ally,
+        Alliance,
 
         Self
 

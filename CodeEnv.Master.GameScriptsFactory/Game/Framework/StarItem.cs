@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
+public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
     private static readonly Vector2 IconSize = new Vector2(24F, 24F);
 
@@ -40,23 +40,25 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     public override float Radius { get { return Data.Radius; } }
 
-    private StarPublisher _publisher;
-    public StarPublisher Publisher {
-        get { return _publisher = _publisher ?? new StarPublisher(Data, this); }
-    }
+    public StarReport UserReport { get { return Publisher.GetUserReport(); } }
 
-    public new StarDisplayManager DisplayMgr { get { return base.DisplayMgr as StarDisplayManager; } }
-
-    public ISystemItem System { get; private set; }
+    public SystemItem ParentSystem { get; private set; }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
+
+    protected new StarDisplayManager DisplayMgr { get { return base.DisplayMgr as StarDisplayManager; } }
+
+    private StarPublisher _publisher;
+    private StarPublisher Publisher {
+        get { return _publisher = _publisher ?? new StarPublisher(Data, this); }
+    }
 
     private DetectionHandler _detectionHandler;
     private SphereCollider _primaryCollider;
     private SphereCollider _obstacleZoneCollider;
     private DetourGenerator _detourGenerator;
-    private IList<IShipItem> _shipsInHighOrbit;
-    private IList<IShipItem> _shipsInCloseOrbit;
+    private IList<IShip_Ltd> _shipsInHighOrbit;
+    private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
 
@@ -65,7 +67,7 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
         InitializePrimaryCollider();
         InitializeObstacleZone();
         D.Assert(category == Data.Category);
-        System = gameObject.GetSingleComponentInParents<SystemItem>();
+        ParentSystem = gameObject.GetSingleComponentInParents<SystemItem>();
         _detectionHandler = new DetectionHandler(this);
     }
 
@@ -133,7 +135,6 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
         _obstacleZoneCollider.enabled = true;
     }
 
-    public StarReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -154,13 +155,13 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
     }
 
     private IconInfo MakeIconInfo() {
-        var report = GetUserReport();
+        var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
         return new IconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, Layers.TransparentFX);
     }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedStar, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedStar, UserReport);
     }
 
     #region Event and Property Change Handlers
@@ -245,7 +246,12 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     #region IShipCloseOrbitable Members
 
-    public bool IsCloseOrbitAllowedBy(Player player) { return !Owner.IsAtWarWith(player); }
+    public bool IsCloseOrbitAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
+        return !Owner.IsAtWarWith(player);
+    }
 
     private IShipCloseOrbitSimulator _closeOrbitSimulator;
     public IShipCloseOrbitSimulator CloseOrbitSimulator {
@@ -258,22 +264,22 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
         }
     }
 
-    public void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInCloseOrbit == null) {
-            _shipsInCloseOrbit = new List<IShipItem>();
+            _shipsInCloseOrbit = new List<IShip_Ltd>();
         }
         _shipsInCloseOrbit.Add(ship);
         shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
     }
 
-    public bool IsInCloseOrbit(IShipItem ship) {
+    public bool IsInCloseOrbit(IShip_Ltd ship) {
         if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
             return false;
         }
         return true;
     }
 
-    public IList<StationaryLocation> LocalAssemblyStations { get { return (System as IGuardable).GuardStations; } }
+    public IList<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IGuardable).GuardStations; } }
 
     #endregion
 
@@ -281,20 +287,20 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     private Rigidbody _highOrbitRigidbody;
 
-    public void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+    public void AssumeHighOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInHighOrbit == null) {
-            _shipsInHighOrbit = new List<IShipItem>();
+            _shipsInHighOrbit = new List<IShip_Ltd>();
         }
         _shipsInHighOrbit.Add(ship);
 
         Rigidbody highOrbitRigidbody;
         if (_highOrbitRigidbody != null) {
-            D.Assert(!System.Planets.Any());
+            D.Assert(!ParentSystem.Planets.Any());
             highOrbitRigidbody = _highOrbitRigidbody;
         }
         else {
-            if (System.Planets.Any()) {
-                IPlanetItem innermostPlanet = System.Planets.MinBy(p => Vector3.SqrMagnitude(p.Position - Position));
+            if (ParentSystem.Planets.Any()) {
+                PlanetItem innermostPlanet = ParentSystem.Planets.MinBy(p => Vector3.SqrMagnitude(p.Position - Position)) as PlanetItem;
                 highOrbitRigidbody = innermostPlanet.CelestialOrbitSimulator.OrbitRigidbody;
             }
             else {
@@ -309,14 +315,14 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     public bool IsHighOrbitAllowedBy(Player player) { return true; }
 
-    public bool IsInHighOrbit(IShipItem ship) {
+    public bool IsInHighOrbit(IShip_Ltd ship) {
         if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
             return false;
         }
         return true;
     }
 
-    public void HandleBrokeOrbit(IShipItem ship) {
+    public void HandleBrokeOrbit(IShip_Ltd ship) {
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
@@ -329,7 +335,7 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
             D.Assert(isRemoved);
             D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius;
+            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
             D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
                 ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
@@ -344,23 +350,23 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     #endregion
 
-    #region IDetectable Members
+    #region ISensorDetectable Members
 
-    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionBy(cmdItem, sensorRangeCat);
+    public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRangeCat);
+    public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
     #endregion
 
     #region IHighlightable Members
 
-    public override float HighlightRadius { get { return Radius * Screen.height * 1.5F; } }
+    public override float CircleHighlightEffectRadius { get { return Radius * Screen.height * 1.5F; } }
 
-    public override float HoverHighlightRadius { get { return Radius + 5F; } }
+    public override float SphericalHighlightEffectRadius { get { return Radius + 5F; } }
 
     #endregion
 
@@ -397,6 +403,9 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
     }
 
     public bool IsExploringAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !Owner.IsAtWarWith(player);
     }
 
@@ -406,5 +415,10 @@ public class StarItem : AIntelItem, IStarItem, IFleetNavigable, IShipCloseOrbita
 
     #endregion
 
+    #region IStar_Ltd Members
+
+    ISystem_Ltd IStar_Ltd.ParentSystem { get { return ParentSystem as ISystem_Ltd; } }  // Explicit interface to return more limited System ref
+
+    #endregion
 }
 

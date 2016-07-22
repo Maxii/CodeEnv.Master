@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         private void ShowCircle(HighlightID id) {
             if (_circles == null) {
                 string circlesTitle = "{0} Circle Highlight".Inject(_highlightableObject.DisplayName);
-                float innerCircleRadius = _highlightableObject.HighlightRadius;
+                float innerCircleRadius = _highlightableObject.CircleHighlightEffectRadius;
                 D.Assert(_trackedTransform != null, "{0} _trackedTransform is null.".Inject(circlesTitle));
                 _circles = new HighlightCircle(circlesTitle, _trackedTransform, innerCircleRadius, _shouldHighlightSizeOnScreenChange, maxCircles: 3);
                 _circles.Colors = new List<GameColor>() { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };

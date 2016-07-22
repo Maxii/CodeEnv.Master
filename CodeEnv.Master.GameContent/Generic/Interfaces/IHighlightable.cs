@@ -22,16 +22,14 @@ namespace CodeEnv.Master.GameContent {
     public interface IHighlightable : IWidgetTrackable {
 
         /// <summary>
-        /// The radius around the Item to use for the highlight when hovered.
-        /// This value is used by the SphericalHighlight effect.
+        /// The radius around the Item to use for a SphericalHighlight effect.
         /// </summary>
-        float HoverHighlightRadius { get; }
+        float SphericalHighlightEffectRadius { get; }
 
         /// <summary>
-        /// The radius around the Item to use for a normal highlight.
-        /// This value is used by the HighlightCircle effect.
+        /// The radius around the Item to use for a CircleHighlight effect.
         /// </summary>
-        float HighlightRadius { get; }
+        float CircleHighlightEffectRadius { get; }
 
     }
 }

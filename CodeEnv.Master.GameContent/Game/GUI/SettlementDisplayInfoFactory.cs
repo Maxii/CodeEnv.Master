@@ -23,36 +23,36 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes instances of text containing info about Settlements.
     /// </summary>
-    public class SettlementDisplayInfoFactory : AUnitCmdDisplayInfoFactory<SettlementReport, SettlementDisplayInfoFactory> {
+    public class SettlementDisplayInfoFactory : AUnitCmdDisplayInfoFactory<SettlementCmdReport, SettlementDisplayInfoFactory> {
 
-        private static ContentID[] _contentIDsToDisplay = new ContentID[] {                         
-            ContentID.Name,
-            ContentID.ParentName,
-            ContentID.Category,
-            ContentID.Composition,
-            ContentID.Owner,
+        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
+            AccessControlInfoID.Name,
+            AccessControlInfoID.ParentName,
+            AccessControlInfoID.Category,
+            AccessControlInfoID.Composition,
+            AccessControlInfoID.Owner,
 
-            ContentID.CurrentCmdEffectiveness,
-            ContentID.Formation,
-            ContentID.UnitOffense,
-            ContentID.UnitDefense,
-            ContentID.UnitHealth,
-            ContentID.UnitWeaponsRange,
-            ContentID.UnitSensorRange,
-            ContentID.UnitScience,
-            ContentID.UnitCulture,
-            ContentID.UnitNetIncome,
+            AccessControlInfoID.CurrentCmdEffectiveness,
+            AccessControlInfoID.Formation,
+            AccessControlInfoID.UnitOffense,
+            AccessControlInfoID.UnitDefense,
+            AccessControlInfoID.UnitHealth,
+            AccessControlInfoID.UnitWeaponsRange,
+            AccessControlInfoID.UnitSensorRange,
+            AccessControlInfoID.UnitScience,
+            AccessControlInfoID.UnitCulture,
+            AccessControlInfoID.UnitNetIncome,
 
-            ContentID.Capacity,
-            ContentID.Resources,
-            ContentID.Population,
-            ContentID.Approval,
+            AccessControlInfoID.Capacity,
+            AccessControlInfoID.Resources,
+            AccessControlInfoID.Population,
+            AccessControlInfoID.Approval,
 
-            ContentID.CameraDistance,
-            ContentID.IntelState
+            AccessControlInfoID.CameraDistance,
+            AccessControlInfoID.IntelState
         };
 
-        protected override ContentID[] ContentIDsToDisplay { get { return _contentIDsToDisplay; } }
+        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private SettlementDisplayInfoFactory() {
             Initialize();
@@ -60,36 +60,36 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(ContentID contentID, SettlementReport report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, SettlementCmdReport report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.Category:
+                switch (infoID) {
+                    case AccessControlInfoID.Category:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.Category != SettlementCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
-                    case ContentID.Composition:
+                    case AccessControlInfoID.Composition:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.UnitComposition != null ? report.UnitComposition.ToString() : _unknown);
                         break;
-                    case ContentID.Capacity:
+                    case AccessControlInfoID.Capacity:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Capacity.HasValue ? GetFormat(contentID).Inject(report.Capacity.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : _unknown);
                         break;
-                    case ContentID.Resources:
+                    case AccessControlInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : _unknown);
                         break;
-                    case ContentID.Population:
+                    case AccessControlInfoID.Population:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Population.HasValue ? GetFormat(contentID).Inject(report.Population.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.Population.HasValue ? GetFormat(infoID).Inject(report.Population.Value) : _unknown);
                         break;
-                    case ContentID.Approval:
+                    case AccessControlInfoID.Approval:
                         isSuccess = true;
                         colorizedText = GetColorizedApprovalText(report.Approval);
                         break;
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }
             }
             return isSuccess;

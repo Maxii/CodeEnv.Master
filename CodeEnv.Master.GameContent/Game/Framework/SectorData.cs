@@ -37,16 +37,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        /// <summary>
-        /// UNDONE
-        /// The density of matter in space in this sector. Intended to be
-        /// applied to pathfinding points in the sector as a 'penalty' to
-        /// influence path creation. Should also increase drag on a ship
-        /// in the sector to reduce its speed for a given thrust. The value
-        /// should probably be a function of the OpeYield in the sector.
-        /// </summary>
-        [System.Obsolete]
-        public float Density { get; set; }
+        public new SectorInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SectorInfoAccessController; } }
 
         private IList<IDisposable> _systemDataSubscribers;
 
@@ -56,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sectorTransform">The sector transform.</param>
         /// <param name="index">The index.</param>
-        public SectorData(ISectorItem sector, Index3D index)
+        public SectorData(ISector sector, Index3D index)
             : this(sector, index, TempGameValues.NoPlayer) { }
 
         /// <summary>
@@ -65,15 +56,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sector">The sector.</param>
         /// <param name="index">The index.</param>
         /// <param name="owner">The owner.</param>
-        public SectorData(ISectorItem sector, Index3D index, Player owner)
+        public SectorData(ISector sector, Index3D index, Player owner)
             : base(sector, owner) {
             SectorIndex = index;
             Topography = Topography.OpenSpace;
         }
 
-        private void SubscribeToSystemDataValueChanges() {
-            _systemDataSubscribers = new List<IDisposable>();
-            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new SectorInfoAccessController(this);
         }
 
         #region Event and Property Change Handlers
@@ -90,6 +80,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        private void SubscribeToSystemDataValueChanges() {
+            _systemDataSubscribers = new List<IDisposable>();
+            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
+        }
 
         private void Cleanup() {
             Unsubscribe();

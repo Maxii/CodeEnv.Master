@@ -21,25 +21,21 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and HudContent Publisher for Starbases.
     /// </summary>
-    public class StarbasePublisher : ACmdPublisher<StarbaseReport, StarbaseCmdData> {
+    public class StarbasePublisher : ACmdPublisher<StarbaseCmdReport, StarbaseCmdData> {
 
         public override ColoredStringBuilder ItemHudText {
             get { return StarbaseDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IStarbaseCmdItem _item;
+        private IStarbaseCmd_Ltd _item;
 
-        public StarbasePublisher(StarbaseCmdData data, IStarbaseCmdItem item)
+        public StarbasePublisher(StarbaseCmdData data, IStarbaseCmd_Ltd item)
             : base(data) {
             _item = item;
         }
 
-        protected override StarbaseReport GenerateReport(Player player) {
-            return new StarbaseReport(_data, player, _item);
-        }
-
-        protected override bool IsCachedReportCurrent(Player player, out StarbaseReport cachedReport) {
-            return base.IsCachedReportCurrent(player, out cachedReport) && IsEqual(cachedReport.ElementReports, _item.GetElementReports(player));
+        protected override StarbaseCmdReport MakeReportInstance(Player player) {
+            return new StarbaseCmdReport(_data, player, _item);
         }
 
         public override string ToString() {

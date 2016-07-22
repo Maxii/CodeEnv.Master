@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedSettlementForm.cs
-// Form used by the SelectedItemHudWindow to display info from a SettlementReport when a settlement is selected. 
+// Form used by the SelectedItemHudWindow to display info from a SettlementCmdReport when a settlement is selected. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form used by the SelectedItemHudWindow to display info from a SettlementReport when a settlement is selected. 
+/// Form used by the SelectedItemHudWindow to display info from a SettlementCmdReport when a settlement is selected. 
 /// </summary>
 public class SelectedSettlementForm : ASelectedItemForm {
 
@@ -29,7 +29,7 @@ public class SelectedSettlementForm : ASelectedItemForm {
     protected override void AssignValueToStrategicResourcesGuiElement() {
         base.AssignValueToStrategicResourcesGuiElement();
         _resourcesElement.Reset();  // IMPORTANT Always Reset GuiElements used by AItemSelectedForms as the same instance is being reused
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _resourcesElement.Resources = report.Resources;
     }
 

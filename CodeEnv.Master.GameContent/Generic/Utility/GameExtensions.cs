@@ -60,6 +60,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Sums the sequence of ResourceYields.
+        /// </summary>
+        /// <param name="sequence">The sequence.</param>
+        /// <returns></returns>
+        public static ResourceYield Sum(this IEnumerable<ResourceYield> sequence) {
+            ResourceYield sum = default(ResourceYield);
+            foreach (var cs in sequence) {
+                sum += cs;
+            }
+            return sum;
+        }
+
+        /// <summary>
         /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
         /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
         /// </summary>
@@ -91,20 +104,34 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns the tag value used by the AStar Pathfinding system. AStar uses
+        /// Sums the sequence of CombatStrengths.
+        /// </summary>
+        /// <param name="sequence">The sequence.</param>
+        /// <returns></returns>
+        public static CombatStrength Sum(this IEnumerable<CombatStrength> sequence) {
+            CombatStrength sum = default(CombatStrength);
+            foreach (var cs in sequence) {
+                sum += cs;
+            }
+            return sum;
+        }
+
+        /// <summary>
+        /// Returns the tag value used by the AStar Pathfinding system for this Topography. 
+        /// <remarks>This is necessary in order to introduce Topography.None as the default
+        /// value used for error detection. To be the default value, it must have an int value of 0.
+        /// However, AStar uses the tag value 0 (aka x0000) when populating its tagPenaltyArray,
+        /// done in FleetCmdItem.GenerateCourse(). Therefore, this method is necessary to get this
+        /// tagValue from the Topography constant as (int)TopographyConstant would return 0 for None.
+        /// </remarks>
+        /// <remarks>In an earlier version AStar used
         /// this value to populate an array of penalty values associated with the BitMask
-        /// version of the tag. i.e. SystemTagValue = 3, bitMaskVersion = x1000, aka <c>1 << 3</c>.
-        ///Note: This is necessary in order to introduce Topography.None as the default
-        ///value used for error detection. To be the default value, it must have an int value of 0.
-        ///However, AStar uses the tag value 0 (aka x0000) when populating its tagPenaltyArray,
-        ///done in FleetCmdItem.GenerateCourse(). Therefore, this method is necessary to get this
-        ///tagValue from the Topography constant as (int)TopographyConstant would return
-        ///0 for None.
+        /// version of the tag. i.e. SystemTagValue = 3, bitMaskVersion = x1000, aka <c>1 &lt;&lt; 3</c>.</remarks>
         /// </summary>
         /// <param name="topography">The topography.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static int AStarTagValue(this Topography topography) {
+        public static uint AStarTagValue(this Topography topography) {
             switch (topography) {
                 case Topography.OpenSpace:
                     return 0;
@@ -131,6 +158,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sensors">The sensors.</param>
         /// <returns></returns>
+        [Obsolete]
         public static float CalcSensorRangeDistance(this IEnumerable<Sensor> sensors) {
             if (!sensors.Any()) {
                 return Constants.ZeroF;

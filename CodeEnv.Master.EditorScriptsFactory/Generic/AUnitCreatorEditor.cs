@@ -16,6 +16,7 @@
 
 // default namespace
 
+using CodeEnv.Master.GameContent;
 using UnityEditor;
 using UnityEngine;
 
@@ -62,7 +63,7 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("CMs/Cmd", creator.countermeasuresPerCmd, 0, 3);
 
         creator.enableTrackingLabel = GUILayout.Toggle(creator.enableTrackingLabel, "Enable Tracking Label");
-        creator.showHQDebugLog = GUILayout.Toggle(creator.showHQDebugLog, "Show HQ DebugLog");
+        creator.showHQDebugLog = GUILayout.Toggle(creator.showHQDebugLog, new GUIContent("Show Cmd/HQ DebugLog", "Shows DebugLogs of both the Cmd and the HQ Element."));
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

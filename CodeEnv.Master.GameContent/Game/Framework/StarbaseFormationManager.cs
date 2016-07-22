@@ -25,12 +25,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbaseFormationManager : AFormationManager {
 
-        protected override int MaxElementCountPerUnit { get { return TempGameValues.MaxFacilitiesPerBase; } }
-
         public StarbaseFormationManager(IFormationMgrClient starbaseCmd) : base(starbaseCmd) { }
 
-        protected override IList<Vector3> GenerateFormationStationOffsets(Formation formation, out float maxFormationRadius) {
-            return FormationFactory.Instance.GenerateMaxStarbaseFormation(formation, out maxFormationRadius);
+        protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
+            return References.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
         }
 
         public override string ToString() {

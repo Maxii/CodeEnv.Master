@@ -17,6 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -490,28 +492,32 @@ namespace CodeEnv.Master.GameContent {
         #region Range Category
 
         /// <summary>
-        /// Gets the base weapon range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// Gets the baseline weapon range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The weapon range category.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static float GetBaseWeaponRange(this RangeCategory rangeCategory) {
+        public static float GetBaselineWeaponRange(this RangeCategory rangeCategory) {
+            float range = Constants.ZeroF;
             switch (rangeCategory) {
                 case RangeCategory.Short:
-                    return 7F;
+                    range = 7F;
+                    break;
                 case RangeCategory.Medium:
-                    return 10F;
+                    range = 10F;
+                    break;
                 case RangeCategory.Long:
-                    return 15F;
+                    range = 15F;
+                    break;
                 case RangeCategory.None:
-                    return Constants.ZeroF;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCategory));
             }
+            return range;
         }
 
         /// <summary>
-        /// Gets the base sensor range distance spread (prior to any player modifiers being applied) for this RangeCategory.
+        /// Gets the baseline sensor range distance spread (prior to any player modifiers being applied) for this RangeCategory.
         /// Allows me to create different distance values for a specific RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The sensor range category.</param>
@@ -533,11 +539,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the base sensor range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// Gets the baseline sensor range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The sensor range category.</param>
         /// <returns></returns>
-        public static float GetBaseSensorRange(this RangeCategory rangeCategory) {
+        public static float GetBaselineSensorRange(this RangeCategory rangeCategory) {
             switch (rangeCategory) {
                 case RangeCategory.Short:
                     return 150F;
@@ -552,21 +558,21 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the base active countermeasure range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// Gets the baseline active countermeasure range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The countermeasure range category.</param>
         /// <returns></returns>
-        public static float GetBaseActiveCountermeasureRange(this RangeCategory rangeCategory) {
-            return rangeCategory.GetBaseWeaponRange() / 2F;
+        public static float GetBaselineActiveCountermeasureRange(this RangeCategory rangeCategory) {
+            return rangeCategory.GetBaselineWeaponRange() / 2F;
         }
 
         /// <summary>
-        /// Gets the base shield range distance (prior to any owner modifiers being applied) for this RangeCategory.
+        /// Gets the baseline shield range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
         /// <param name="rangeCategory">The shield range category.</param>
         /// <returns></returns>
-        public static float GetBaseShieldRange(this RangeCategory rangeCategory) {
-            return rangeCategory.GetBaseWeaponRange() / 4F;
+        public static float GetBaselineShieldRange(this RangeCategory rangeCategory) {
+            return rangeCategory.GetBaselineWeaponRange() / 4F;
         }
 
         #endregion
@@ -765,6 +771,45 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        #region DiplomaticRelationship 
+
+        public static bool IsEnemy(this DiplomaticRelationship relation) {
+            switch (relation) {
+                case DiplomaticRelationship.War:
+                case DiplomaticRelationship.ColdWar:
+                    return true;
+                case DiplomaticRelationship.None:
+                case DiplomaticRelationship.Neutral:
+                case DiplomaticRelationship.Friendly:
+                case DiplomaticRelationship.Alliance:
+                case DiplomaticRelationship.Self:
+                    return false;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(relation));
+            }
+        }
+
+        public static bool IsFriendly(this DiplomaticRelationship relation) {
+            switch (relation) {
+                case DiplomaticRelationship.None:
+                case DiplomaticRelationship.Neutral:
+                case DiplomaticRelationship.War:
+                case DiplomaticRelationship.ColdWar:
+                    return false;
+                case DiplomaticRelationship.Friendly:
+                case DiplomaticRelationship.Alliance:
+                case DiplomaticRelationship.Self:
+                    return true;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(relation));
+            }
+        }
+
+
+
+        #endregion
+
 
         /**************************************************************************************************************/
 

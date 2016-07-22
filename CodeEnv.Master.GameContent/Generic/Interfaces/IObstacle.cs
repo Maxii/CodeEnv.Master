@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IObstacle.cs
-// Interface for an Item that can be an obstacle to ship passage.
+// Interface for an Item that can be an obstacle to ship/fleet passage.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,12 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for an Item that can be an obstacle to ship passage. 
+    /// Interface for an Item that can be an obstacle to ship/fleet passage. 
     /// Items include other ships, facilities, planetoids, stars and the UCenter.
     /// </summary>
-    public interface IObstacle {
+    public interface IObstacle : IDebugable {
 
         Vector3 Position { get; }
-
-        string FullName { get; }
 
         bool IsMobile { get; }
 

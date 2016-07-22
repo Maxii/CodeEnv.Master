@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// AUnitBaseCmdItems that are Settlements.
 /// </summary>
-public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICameraFollowable  [not currently in motion]*/ {
+public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCmd_Ltd /*, ICameraFollowable  [not currently in motion]*/ {
 
     public new SettlementCmdData Data {
         get { return base.Data as SettlementCmdData; }
@@ -34,12 +34,16 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     private SystemItem _parentSystem;
     public SystemItem ParentSystem {
-        get { return _parentSystem; }
+        private get { return _parentSystem; }
         set {
-            D.Assert(_parentSystem == null);  // only happens once
+            if (_parentSystem != null) {
+                D.Error("Parent System {0} of {1} can only be set once.", _parentSystem.FullName, FullName);
+            }
             SetProperty<SystemItem>(ref _parentSystem, value, "ParentSystem", ParentSystemPropSetHandler);
         }
     }
+
+    public SettlementCmdReport UserReport { get { return Publisher.GetUserReport(); } }
 
     private IOrbitSimulator _celestialOrbitSimulator;
     public IOrbitSimulator CelestialOrbitSimulator {
@@ -52,7 +56,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
     }
 
     private SettlementPublisher _publisher;
-    public SettlementPublisher Publisher {
+    private SettlementPublisher Publisher {
         get { return _publisher = _publisher ?? new SettlementPublisher(Data, this); }
     }
 
@@ -68,9 +72,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
 
     #endregion
 
-    public SettlementReport GetUserReport() { return Publisher.GetUserReport(); }
-
-    public SettlementReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public SettlementCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
@@ -84,15 +86,15 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICamer
     }
 
     protected override IconInfo MakeIconInfo() {
-        return SettlementIconInfoFactory.Instance.MakeInstance(GetUserReport());
+        return SettlementIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, UserReport);
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
         RemoveSettlementFromSystem();
     }
 

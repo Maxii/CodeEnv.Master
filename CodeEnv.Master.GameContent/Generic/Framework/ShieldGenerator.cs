@@ -28,22 +28,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShieldGenerator : ARangedEquipment, ICountermeasure, IDisposable {
 
-        private static string _nameFormat = "{0}[{1}({2:0.})]";
-
         /// <summary>
         /// Occurs when this ShieldGenerator changes from having any charge to having
         /// no charge, or vis-versa.
         /// </summary>
         public event EventHandler hasChargeChanged;
 
-        public override string Name {
-            get {
-                return _nameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
-            }
-        }
-
         public override string FullName {
-            get { return Shield != null ? _fullNameFormat.Inject(Shield.Name, Name) : Name; }
+            get { return Shield != null ? _fullNameFormat.Inject(Shield.FullName, Name) : Name; }
         }
 
         private IShield _shield;
@@ -57,10 +49,6 @@ namespace CodeEnv.Master.GameContent {
                 float reloadPeriodMultiplier = Shield != null ? Shield.Owner.CountermeasureReloadPeriodMultiplier : Constants.OneF;
                 return Stat.ReloadPeriod * reloadPeriodMultiplier;
             }
-        }
-
-        protected override float RangeMultiplier {
-            get { return Shield != null ? Shield.Owner.CountermeasureRangeMultiplier : Constants.OneF; }
         }
 
         /// <summary>
@@ -141,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational);
             D.Assert(HasCharge);
 
-            D.Log("{0}.{1} with charge {2.0.#) is attempting to absorb a {3:0.#} impact.", Shield.Name, Name, CurrentCharge, deliveryVehicleImpactValue);
+            D.Log("{0}.{1} with charge {2.0.#) is attempting to absorb a {3:0.#} impact.", Shield.FullName, Name, CurrentCharge, deliveryVehicleImpactValue);
             bool isHitCompletelyAbsorbed = true;
             unabsorbedImpactValue = Constants.ZeroF;
             if (CurrentCharge < deliveryVehicleImpactValue) {
@@ -156,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
                 CurrentCharge -= deliveryVehicleImpactValue;
                 AssessRechargeState();
             }
-            D.Log(!HasCharge, "{0}.{1} has failed.", Shield.Name, Name);
+            D.Log(!HasCharge, "{0}.{1} has failed.", Shield.FullName, Name);
             return isHitCompletelyAbsorbed;
         }
 
@@ -220,12 +208,12 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(HasCharge);
             D.Assert(!_isRecharging);
-            D.Log("{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.Name, Name, TrickleChargeRate);
+            D.Log("{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.FullName, Name, TrickleChargeRate);
             _isRecharging = true;
             _rechargeJob = new Job(Recharge(), toStart: true, jobCompleted: (jobWasKilled) => {
                 _isRecharging = false;
                 if (!jobWasKilled) {
-                    D.Log("{0}.{1} completed recharging.", Shield.Name, Name);
+                    D.Log("{0}.{1} completed recharging.", Shield.FullName, Name);
                 }
             });
         }
@@ -265,11 +253,11 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!HasCharge);
             D.Assert(!_isReloading);
             _isReloading = true;
-            D.Log("{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.Name, Name, ReloadPeriod);
+            D.Log("{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.FullName, Name, ReloadPeriod);
             _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, waitFinished: (jobWasKilled) => {
                 _isReloading = false;
                 if (!jobWasKilled) {
-                    D.Log("{0}.{1} completed reload.", Shield.Name, Name);
+                    D.Log("{0}.{1} completed reload.", Shield.FullName, Name);
                     HandleReloaded();
                 }
             });

@@ -162,25 +162,7 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        /// <summary>
-        /// Allows syntax like: <c>if(reallyLongStringVariableName.EqualsAnyOf(string1, string2, string3)</c>, or
-        /// <c>if(reallyLongIntVariableName.EqualsAnyOf(1, 2, 4, 8)</c>, or
-        /// <c>if(reallyLongMethodParameterName.EqualsAnyOf(SomeEnum.value1, SomeEnum.value2, SomeEnum.value3)</c>
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source">The source calling the Extension method.</param>
-        /// <param name="itemsToCompare">The array of items to compare to the source.</param>
-        /// <returns></returns>
-        /// <exception cref="System.ArgumentException">Source argument cannot be IEnumerable.</exception>
-        /// <exception cref="System.ArgumentNullException">source</exception>
-        public static bool EqualsAnyOf<T>(this T source, params T[] itemsToCompare) {
-            //  'this' source can never be null without the CLR throwing a Null reference exception
-            if (source is IEnumerable<T>) {
-                throw new ArgumentException("Source argument cannot be IEnumerable.");
-            }
-            Utility.ValidateNotNullOrEmpty(itemsToCompare);
-            return itemsToCompare.Contains<T>(source);
-        }
+        #region Enumerables
 
         /// <summary>
         /// Evaluates the equality of two sequences with an option to ignore order of the members.
@@ -199,28 +181,6 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Used from an instance of Random to get a 50/50 chance.
-        /// </summary>
-        /// <param name="sourceRNG">A Random Number Generator instance.</param>
-        /// <returns></returns>
-        public static bool CoinToss(this System.Random sourceRNG) {
-            //  'this' sourceRNG can never be null without the CLR throwing a Null reference exception
-            return sourceRNG.Next(2) == 0;
-        }
-
-        /// <summary>
-        /// Randomly picks an arg from itemsToPickFrom. Used from an instance of Random.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="sourceRNG">The Random Number Generator instance.</param>
-        /// <param name="itemsToPickFrom">The array of items of Type T to pick from.</param>
-        /// <returns></returns>
-        public static T OneOf<T>(this System.Random sourceRNG, params T[] itemsToPickFrom) {
-            Utility.ValidateNotNullOrEmpty(itemsToPickFrom);
-            return itemsToPickFrom[sourceRNG.Next(itemsToPickFrom.Length)];
-        }
-
-        /// <summary>
         /// Provides for the application of a work action to all the elements in an IEnumerable source sequence.
         /// Throws an exception of source sequence is null. If it is empty, the method simply returns.
         /// Syntax: <code>sequenceOfTypeT.ForAll((T n) => Console.WriteLine(n.ToString()));</code> read as
@@ -236,42 +196,6 @@ namespace CodeEnv.Master.Common {
             sequence.ToList<T>().ForEach(actionToExecute);
             // Warning: Per Microsoft, modifying the underlying collection in the body of the action is not supported and causes undefined behaviour.
             // Starting in .Net 4.5, an InvalidOperationException will be thrown if this occurs. Prior to this no exception is thrown.
-        }
-
-        /// <summary>
-        /// Checks the range of the number against an allowed variation percentage around the number.
-        /// </summary>
-        /// <param name="number">The number.</param>
-        /// <param name="target">The target value.</param>
-        /// <param name="allowedPercentageVariation">Optional allowed percentage variation as a whole number. 1.0 = one percent variation, the default.</param>
-        /// <returns></returns>
-        public static bool CheckRange(this float number, float target, float allowedPercentageVariation = 1.0F) {
-            float allowedLow = (100F - allowedPercentageVariation) / 100 * target;
-            float allowedHigh = (100F + allowedPercentageVariation) / 100 * target;
-            return Utility.IsInRange(number, allowedLow, allowedHigh);
-        }
-
-        /// <summary>
-        /// Returns value formatted for display. If value is greater than threshold then no decimal point is included.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <param name="showZero">if value is Zero and set to <c>true</c> then "0" is returned. If <c>false</c> then string.Empty is returned.</param>
-        /// <param name="threshold">The value above which no decimal point is included.</param>
-        /// <returns></returns>
-        public static string FormatValue(this float value, bool showZero = true, float threshold = 10F) {
-            Utility.ValidateNotNegative(value);
-            Utility.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
-
-            string formattedValue = string.Empty;
-            if (value == Constants.ZeroF) {
-                if (showZero) {
-                    formattedValue = Constants.FormatFloat_0Dp.Inject(value);
-                }
-            }
-            else {
-                formattedValue = value < threshold ? Constants.FormatFloat_2DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
-            }
-            return formattedValue;
         }
 
         ///<summary>Finds the index of the first item matching an expression in an enumerable.</summary>
@@ -367,6 +291,106 @@ namespace CodeEnv.Master.Common {
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> sequence) {
             return RandomExtended.Shuffle<T>(sequence.ToArray());
         }
+
+        /// <summary>
+        /// Returns <c>true</c> if the sequence contains any duplicates, <c>false</c> otherwise.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sequence">The sequence.</param>
+        /// <param name="duplicate">The first duplicate found, if any.</param>
+        /// <returns></returns>
+        public static bool ContainsDuplicates<T>(this IEnumerable<T> sequence, out T duplicate) {
+            var set = new HashSet<T>();
+            foreach (var t in sequence) {
+                if (!set.Add(t)) {
+                    duplicate = t;
+                    return true;
+                }
+            }
+            duplicate = default(T);
+            return false;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Allows syntax like: <c>if(reallyLongStringVariableName.EqualsAnyOf(string1, string2, string3)</c>, or
+        /// <c>if(reallyLongIntVariableName.EqualsAnyOf(1, 2, 4, 8)</c>, or
+        /// <c>if(reallyLongMethodParameterName.EqualsAnyOf(SomeEnum.value1, SomeEnum.value2, SomeEnum.value3)</c>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source calling the Extension method.</param>
+        /// <param name="itemsToCompare">The array of items to compare to the source.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException">Source argument cannot be IEnumerable.</exception>
+        /// <exception cref="System.ArgumentNullException">source</exception>
+        public static bool EqualsAnyOf<T>(this T source, params T[] itemsToCompare) {
+            //  'this' source can never be null without the CLR throwing a Null reference exception
+            if (source is IEnumerable<T>) {
+                throw new ArgumentException("Source argument cannot be IEnumerable.");
+            }
+            Utility.ValidateNotNullOrEmpty(itemsToCompare);
+            return itemsToCompare.Contains<T>(source);
+        }
+
+        /// <summary>
+        /// Used from an instance of Random to get a 50/50 chance.
+        /// </summary>
+        /// <param name="sourceRNG">A Random Number Generator instance.</param>
+        /// <returns></returns>
+        public static bool CoinToss(this System.Random sourceRNG) {
+            //  'this' sourceRNG can never be null without the CLR throwing a Null reference exception
+            return sourceRNG.Next(2) == 0;
+        }
+
+        /// <summary>
+        /// Randomly picks an arg from itemsToPickFrom. Used from an instance of Random.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sourceRNG">The Random Number Generator instance.</param>
+        /// <param name="itemsToPickFrom">The array of items of Type T to pick from.</param>
+        /// <returns></returns>
+        public static T OneOf<T>(this System.Random sourceRNG, params T[] itemsToPickFrom) {
+            Utility.ValidateNotNullOrEmpty(itemsToPickFrom);
+            return itemsToPickFrom[sourceRNG.Next(itemsToPickFrom.Length)];
+        }
+
+        /// <summary>
+        /// Checks the range of the number against an allowed variation percentage around the number.
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="target">The target value.</param>
+        /// <param name="allowedPercentageVariation">Optional allowed percentage variation as a whole number. 1.0 = one percent variation, the default.</param>
+        /// <returns></returns>
+        public static bool CheckRange(this float number, float target, float allowedPercentageVariation = 1.0F) {
+            float allowedLow = (100F - allowedPercentageVariation) / 100 * target;
+            float allowedHigh = (100F + allowedPercentageVariation) / 100 * target;
+            return Utility.IsInRange(number, allowedLow, allowedHigh);
+        }
+
+        /// <summary>
+        /// Returns value formatted for display. If value is greater than threshold then no decimal point is included.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="showZero">if value is Zero and set to <c>true</c> then "0" is returned. If <c>false</c> then string.Empty is returned.</param>
+        /// <param name="threshold">The value above which no decimal point is included.</param>
+        /// <returns></returns>
+        public static string FormatValue(this float value, bool showZero = true, float threshold = 10F) {
+            Utility.ValidateNotNegative(value);
+            Utility.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
+
+            string formattedValue = string.Empty;
+            if (value == Constants.ZeroF) {
+                if (showZero) {
+                    formattedValue = Constants.FormatFloat_0Dp.Inject(value);
+                }
+            }
+            else {
+                formattedValue = value < threshold ? Constants.FormatFloat_2DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
+            }
+            return formattedValue;
+        }
+
 
         /// <summary>
         /// Returns true if targetValue is within <c>UnityConstants.FloatEqualityPrecision</c> of the value of source.

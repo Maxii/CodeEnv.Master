@@ -18,8 +18,9 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Interface for Items that individual ships can be ordered to explore.
+    /// Includes UCenter, Stars and Planets.
     /// </summary>
-    public interface IShipExplorable : IExplorable, IShipNavigable {
+    public interface IShipExplorable : IExplorable, IShipCloseOrbitable {
 
         /// <summary>
         /// Tells the item the player has fully explored it.

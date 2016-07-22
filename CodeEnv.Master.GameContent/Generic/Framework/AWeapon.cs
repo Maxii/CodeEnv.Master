@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string FullName {
-            get { return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.Name, Name) : Name; }
+            get { return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.FullName, Name) : Name; }
         }
 
         public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
@@ -78,10 +78,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public Player Owner { get { return RangeMonitor.Owner; } }
-
-        protected override float RangeMultiplier {
-            get { return RangeMonitor != null ? Owner.WeaponRangeMultiplier : Constants.OneF; }
-        }
 
         protected new AWeaponStat Stat { get { return base.Stat as AWeaponStat; } }
 
@@ -186,10 +182,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void HandleEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
-            //D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+            D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
             if (isInRange) {
-                if (CheckIfQualified(enemyTarget)) {
-                    D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget));
+                if (IsQualifiedEnemyTarget(enemyTarget)) {
+                    D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget), "{0} found {1} already being tracked as enemy.", FullName, enemyTarget.FullName);
                     _qualifiedEnemyTargets.Add(enemyTarget);
                 }
             }
@@ -346,7 +342,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="terminatedOrdnance">The dead ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
 
-        private bool CheckIfQualified(IElementAttackable enemyTarget) {
+        private bool IsQualifiedEnemyTarget(IElementAttackable enemyTarget) {
             return true;    // UNDONE
         }
 
@@ -450,7 +446,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         private void RecordShotFired(IElementAttackable target) {
-            string targetName = target.Name;
+            string targetName = target.DisplayName;
             CombatResult combatResult;
             if (!_combatResults.TryGetValue(target, out combatResult)) {
                 combatResult = new CombatResult(FullName, targetName);

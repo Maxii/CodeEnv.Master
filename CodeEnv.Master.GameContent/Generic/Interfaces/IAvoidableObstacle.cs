@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IAvoidableObstacle.cs
-// Interface for IObstacle Items that can be avoided before ship passage is impeded.
+// Interface for IObstacle Items that can be avoided before ship/fleet passage is impeded.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for IObstacle Items that can be avoided before ship passage is impeded.
+    /// Interface for IObstacle Items that can be avoided before ship/fleet passage is impeded.
     /// </summary>
     public interface IAvoidableObstacle : IObstacle {
 

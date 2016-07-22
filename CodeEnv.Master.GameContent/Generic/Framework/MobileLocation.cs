@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// An INavigableTarget wrapping a mobile location in world space.
+    /// An INavigable target wrapping a mobile location in world space.
     /// </summary>
     public class MobileLocation : IFleetNavigable, IShipNavigable {
 

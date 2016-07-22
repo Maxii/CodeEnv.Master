@@ -39,7 +39,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         set {
             D.Assert(!_isCurrentHitPtsSet); // happens only once between Resets
             _currentHitPts = value;
-            CurrentHitPtsPropSetHandler();
+            CurrentHitPtsPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -50,7 +50,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         set {
             D.Assert(!_isMaxHitPtsSet);  // happens only once between Resets
             _maxHitPts = value;
-            MaxHitPtsPropSetHandler();
+            MaxHitPtsPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -61,7 +61,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         set {
             D.Assert(!_isHealthSet);    // happens only once between Resets
             _health = value;
-            HealthPropSetHandler();
+            HealthPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -103,16 +103,20 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
             return;
         }
 
+        GeneralSettings generalSettings = GeneralSettings.Instance;
         GameColor healthColor;
         float healthValue = Health.Value;
-        if (healthValue > GeneralSettings.Instance.InjuredHealthThreshold) {
-            healthColor = GameColor.Green;  // Healthy
+        if (healthValue > generalSettings.HealthThreshold_Damaged) {
+            healthColor = GameColor.Green;
         }
-        else if (healthValue > GeneralSettings.Instance.CriticalHealthThreshold) {
-            healthColor = GameColor.Yellow; // Injured
+        else if (healthValue > generalSettings.HealthThreshold_BadlyDamaged) {
+            healthColor = GameColor.Yellow;
+        }
+        else if (healthValue > generalSettings.HealthThreshold_CriticallyDamaged) {
+            healthColor = GameColor.Orange;
         }
         else {
-            healthColor = GameColor.Red;    // Critical
+            healthColor = GameColor.Red;
         }
 
         string currentHitPtsValueText = _unknown;

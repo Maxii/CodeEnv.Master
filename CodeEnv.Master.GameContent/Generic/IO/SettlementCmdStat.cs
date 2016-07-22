@@ -33,9 +33,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxCmdEffect">The maximum command effect.</param>
         /// <param name="formation">The formation.</param>
         /// <param name="population">The population.</param>
-        public SettlementCmdStat(string unitName, float maxHitPts, int maxCmdEffect, Formation formation, int population)
+        public SettlementCmdStat(string unitName, float maxHitPts, float maxCmdEffect, Formation formation, int population)
             : base(unitName, maxHitPts, maxCmdEffect, formation) {
-            D.Assert(formation == Formation.Circle, "{0} {1} = {2}.", unitName, typeof(Formation).Name, formation.GetValueName());
             Population = population;
         }
 

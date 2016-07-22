@@ -75,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
         public static void ValidateHoursValue(float hours) {
             float convertedHours = ConvertHoursValue(hours);
             //D.Log("{0:0.000} validating against {1:0.000}.", hours, convertedHours);
-            D.Assert(Mathfx.Approx(convertedHours, hours, UnityConstants.FloatEqualityPrecision), "Hours: {0} != ConvertedHours: {1}.", hours, convertedHours);
+            D.Assert(Mathfx.Approx(convertedHours, hours, UnityConstants.FloatEqualityPrecision), "Hours: {0:0.000000} != ConvertedHours: {1:0.000000}.", hours, convertedHours);
         }
 
         /// <summary>

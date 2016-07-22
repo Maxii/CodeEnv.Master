@@ -56,14 +56,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The PWR RQMT.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range cat.</param>
-        /// <param name="baseRangeDistance">The base range distance.</param>
         /// <param name="maximumCharge">The maximum charge.</param>
         /// <param name="trickleChargeRate">The trickle charge rate.</param>
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
         public ShieldGeneratorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
+            float pwrRqmt, float expense, RangeCategory rangeCat, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) {
             MaximumCharge = maximumCharge;
             TrickleChargeRate = trickleChargeRate;
             ReloadPeriod = reloadPeriod;

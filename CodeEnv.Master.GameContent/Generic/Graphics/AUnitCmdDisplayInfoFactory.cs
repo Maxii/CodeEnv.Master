@@ -22,64 +22,64 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract generic base factory that makes instances of text containing info about UnitCommands.
     /// </summary>
     public abstract class AUnitCmdDisplayInfoFactory<ReportType, FactoryType> : AMortalItemDisplayInfoFactory<ReportType, FactoryType>
-        where ReportType : ACmdReport
+        where ReportType : AUnitCmdReport
         where FactoryType : AUnitCmdDisplayInfoFactory<ReportType, FactoryType> {
 
-        protected override bool TryMakeColorizedText(ContentID contentID, ReportType report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.ParentName:
+                switch (infoID) {
+                    case AccessControlInfoID.ParentName:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.ParentName != null ? report.ParentName : _unknown);
                         break;
-                    case ContentID.CurrentCmdEffectiveness:
+                    case AccessControlInfoID.CurrentCmdEffectiveness:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CurrentCmdEffectiveness.HasValue ? GetFormat(contentID).Inject(report.CurrentCmdEffectiveness.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.CurrentCmdEffectiveness.HasValue ? GetFormat(infoID).Inject(report.CurrentCmdEffectiveness.Value) : _unknown);
                         break;
-                    case ContentID.Formation:
+                    case AccessControlInfoID.Formation:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.UnitFormation != Formation.None ? report.UnitFormation.GetValueName() : _unknown);
                         break;
-                    case ContentID.UnitOffense:
+                    case AccessControlInfoID.UnitOffense:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.UnitOffensiveStrength.HasValue ? report.UnitOffensiveStrength.Value.ToTextHud() : _unknown);
                         break;
-                    case ContentID.UnitDefense:
+                    case AccessControlInfoID.UnitDefense:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.UnitDefensiveStrength.HasValue ? report.UnitDefensiveStrength.Value.ToTextHud() : _unknown);
                         break;
-                    case ContentID.UnitMaxHitPts:
+                    case AccessControlInfoID.UnitMaxHitPts:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitMaxHitPoints.HasValue ? GetFormat(contentID).Inject(report.UnitMaxHitPoints.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitMaxHitPoints.HasValue ? GetFormat(infoID).Inject(report.UnitMaxHitPoints.Value) : _unknown);
                         break;
-                    case ContentID.UnitCurrentHitPts:
+                    case AccessControlInfoID.UnitCurrentHitPts:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitCurrentHitPoints.HasValue ? GetFormat(contentID).Inject(report.UnitCurrentHitPoints.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitCurrentHitPoints.HasValue ? GetFormat(infoID).Inject(report.UnitCurrentHitPoints.Value) : _unknown);
                         break;
-                    case ContentID.UnitHealth:
+                    case AccessControlInfoID.UnitHealth:
                         isSuccess = true;
                         colorizedText = GetColorizedHealthText(report.UnitHealth, report.MaxHitPoints);
                         break;
-                    case ContentID.UnitWeaponsRange:
+                    case AccessControlInfoID.UnitWeaponsRange:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.UnitWeaponsRange.HasValue ? report.UnitWeaponsRange.Value.ToString() : _unknown);
                         break;
-                    case ContentID.UnitSensorRange:
+                    case AccessControlInfoID.UnitSensorRange:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.UnitSensorRange.HasValue ? report.UnitSensorRange.Value.ToString() : _unknown);
                         break;
-                    case ContentID.UnitScience:
+                    case AccessControlInfoID.UnitScience:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitScience.HasValue ? GetFormat(contentID).Inject(report.UnitScience.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitScience.HasValue ? GetFormat(infoID).Inject(report.UnitScience.Value) : _unknown);
                         break;
-                    case ContentID.UnitCulture:
+                    case AccessControlInfoID.UnitCulture:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitCulture.HasValue ? GetFormat(contentID).Inject(report.UnitCulture.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitCulture.HasValue ? GetFormat(infoID).Inject(report.UnitCulture.Value) : _unknown);
                         break;
-                    case ContentID.UnitNetIncome:
+                    case AccessControlInfoID.UnitNetIncome:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitIncome.HasValue && report.UnitExpense.HasValue ? GetFormat(contentID).Inject(report.UnitIncome.Value - report.UnitExpense.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.UnitIncome.HasValue && report.UnitExpense.HasValue ? GetFormat(infoID).Inject(report.UnitIncome.Value - report.UnitExpense.Value) : _unknown);
                         break;
                 }
             }

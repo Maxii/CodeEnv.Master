@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCategory, FacilityData, FacilityHullStat, SettlementCmdItem> {
 
+    public DebugBaseFormation formation = DebugBaseFormation.Random;
+
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override FacilityHullStat CreateElementHullStat(FacilityHullCategory hullCat, string elementName) {
@@ -135,11 +137,29 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityHullCate
         return hullCategory.__MaxMissileWeapons();
     }
 
+    private Formation __ConvertFormation(DebugBaseFormation debugFormation) {
+        switch (debugFormation) {
+            case DebugBaseFormation.Globe:
+                return Formation.Globe;
+            case DebugBaseFormation.Diamond:
+                return Formation.Diamond;
+            case DebugBaseFormation.Plane:
+                return Formation.Plane;
+            case DebugBaseFormation.Spread:
+                return Formation.Spread;
+            case DebugBaseFormation.Random:
+                return Enums<Formation>.GetRandomExcept(default(Formation), Formation.Wedge);
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugFormation));
+        }
+    }
+
     private SettlementCmdStat __MakeCmdStat() {
         float maxHitPts = 10F;
-        int maxCmdEffect = 100;
+        float maxCmdEffect = 1.0F;
         int population = 100;
-        return new SettlementCmdStat(UnitName, maxHitPts, maxCmdEffect, Formation.Circle, population);
+        Formation chosenFormation = __ConvertFormation(formation);
+        return new SettlementCmdStat(UnitName, maxHitPts, maxCmdEffect, chosenFormation, population);
     }
 
     private CameraUnitCmdStat __MakeCmdCameraStat(float maxElementRadius) {

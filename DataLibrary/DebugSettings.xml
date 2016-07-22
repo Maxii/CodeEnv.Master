@@ -14,9 +14,13 @@
     </Setting>
     <Setting>
       <PropertyName>DisableRepair</PropertyName>
-      <PropertyValue>true</PropertyValue>
+      <PropertyValue>false</PropertyValue>
     </Setting>
-      <Setting>
+    <Setting>
+      <PropertyName>RepairAnyDamage</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
       <PropertyName>DisableRetreat</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
@@ -42,7 +46,11 @@
     </Setting>
     <Setting>
       <PropertyName>AllIntelCoverageComprehensive</PropertyName>
-      <PropertyValue>true</PropertyValue>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnableStartupTimeout</PropertyName>
+      <PropertyValue>false</PropertyValue>
     </Setting>
 
   </Boolean>

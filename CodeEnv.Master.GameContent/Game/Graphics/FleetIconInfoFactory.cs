@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Singleton. Factory that makes instances of IconInfo for Fleets.
     /// </summary>
-    public class FleetIconInfoFactory : ACmdIconInfoFactory<FleetReport, FleetIconInfoFactory> {
+    public class FleetIconInfoFactory : ACmdIconInfoFactory<FleetCmdReport, FleetIconInfoFactory> {
 
         protected override AtlasID AtlasID { get { return AtlasID.Fleet; } }
 
@@ -40,37 +40,53 @@ namespace CodeEnv.Master.GameContent {
             _xmlReader = FleetIconInfoXmlReader.Instance;
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(FleetReport fleetReport) {
-            switch (fleetReport.Category) {
+        protected override IconSelectionCriteria[] GetSelectionCriteria(FleetCmdReport userRqstdCmdReport) {
+            if (userRqstdCmdReport.IntelCoverage == IntelCoverage.None) {
+                // Reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+                return new IconSelectionCriteria[] { IconSelectionCriteria.None };
+            }
+
+            if (userRqstdCmdReport.Category == FleetCategory.None) {
+                D.Assert(userRqstdCmdReport.UnitComposition == null); // UnitComposition should not be known if Category isn't known
+                // User has no permission to know category so return unknown icon criteria
+                return new IconSelectionCriteria[] { IconSelectionCriteria.Unknown };
+            }
+
+            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
+            switch (userRqstdCmdReport.Category) {
                 case FleetCategory.Flotilla:
-                    return IconSelectionCriteria.Level1;
+                    criteria.Add(IconSelectionCriteria.Level1);
+                    break;
                 case FleetCategory.Squadron:
-                    return IconSelectionCriteria.Level2;
+                    criteria.Add(IconSelectionCriteria.Level2);
+                    break;
                 case FleetCategory.TaskForce:
-                    return IconSelectionCriteria.Level3;
+                    criteria.Add(IconSelectionCriteria.Level3);
+                    break;
                 case FleetCategory.BattleGroup:
-                    return IconSelectionCriteria.Level4;
+                    criteria.Add(IconSelectionCriteria.Level4);
+                    break;
                 case FleetCategory.Armada:
-                    return IconSelectionCriteria.Level5;
+                    criteria.Add(IconSelectionCriteria.Level5);
+                    break;
                 case FleetCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(fleetReport.Category));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(userRqstdCmdReport.Category));
             }
-        }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetReport fleetReport) {
-            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<ShipHullCategory> elementCategories = fleetReport.UnitComposition.GetUniqueElementCategories();
-            if (elementCategories.Contains(ShipHullCategory.Science)) {
-                criteria.Add(IconSelectionCriteria.Science);
+            if (userRqstdCmdReport.UnitComposition != null) {   // check for access rights
+                IEnumerable<ShipHullCategory> elementCategories = userRqstdCmdReport.UnitComposition.GetUniqueElementCategories();
+                if (elementCategories.Contains(ShipHullCategory.Science)) {
+                    criteria.Add(IconSelectionCriteria.Science);
+                }
+                if (elementCategories.Contains(ShipHullCategory.Troop)) {
+                    criteria.Add(IconSelectionCriteria.Troop);
+                }
+                if (elementCategories.Contains(ShipHullCategory.Colonizer)) {
+                    criteria.Add(IconSelectionCriteria.Colony);
+                }
             }
-            if (elementCategories.Contains(ShipHullCategory.Troop)) {
-                criteria.Add(IconSelectionCriteria.Troop);
-            }
-            if (elementCategories.Contains(ShipHullCategory.Colonizer)) {
-                criteria.Add(IconSelectionCriteria.Colony);
-            }
-            return criteria;
+            return criteria.ToArray();
         }
 
         protected override string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria) {

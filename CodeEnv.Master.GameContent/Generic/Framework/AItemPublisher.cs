@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         public ReportType GetReport(Player player) {
             ReportType cachedReport;
             if (!IsCachedReportCurrent(player, out cachedReport)) {
-                cachedReport = GenerateReport(player);
+                cachedReport = MakeReportInstance(player);
                 CacheReport(player, cachedReport);
                 D.Log("{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
                 _data.AcceptChanges();
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
             return cachedReport;
         }
 
-        protected abstract ReportType GenerateReport(Player player);
+        protected abstract ReportType MakeReportInstance(Player player);
 
         protected virtual bool IsCachedReportCurrent(Player player, out ReportType cachedReport) {
             return TryGetCachedReport(player, out cachedReport) && !_data.IsChanged;

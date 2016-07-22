@@ -35,44 +35,44 @@ public class SettlementTableRowForm : ACommandTableRowForm {
 
     protected override void AssignValueToApprovalGuiElement() {
         base.AssignValueToApprovalGuiElement();
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _approvalElement.Approval = report.Approval;
     }
 
     protected override void AssignValueToCompositionGuiElement() {
         base.AssignValueToCompositionGuiElement();
-        var report = Report as SettlementReport;
-        _compositionElement.IconInfo = (report.Item as SettlementCmdItem).IconInfo;
+        var report = Report as SettlementCmdReport;
+        _compositionElement.IconInfo = SettlementIconInfoFactory.Instance.MakeInstance(report);
         _compositionElement.Category = report.Category;
     }
 
     protected override void AssignValueToEnergyGuiElement() {
         base.AssignValueToEnergyGuiElement();
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _energyLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Energy)) : _unknown;
     }
 
     protected override void AssignValueToOrganicsGuiElement() {
         base.AssignValueToOrganicsGuiElement();
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _organicsLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Organics)) : _unknown;
     }
 
     protected override void AssignValueToParticulatesGuiElement() {
         base.AssignValueToParticulatesGuiElement();
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _particulatesLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Particulates)) : _unknown;
     }
 
     protected override void AssignValueToPopulationGuiElement() {
         base.AssignValueToPopulationGuiElement();
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _populationLabel.text = report.Population.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Population.Value) : _unknown;
     }
 
     protected override void AssignValueToStrategicResourcesGuiElement() {
         base.AssignValueToStrategicResourcesGuiElement();
-        var report = Report as SettlementReport;
+        var report = Report as SettlementCmdReport;
         _resourcesElement.Resources = report.Resources;
     }
 

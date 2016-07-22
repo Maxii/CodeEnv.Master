@@ -66,7 +66,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
 
     protected override void IsOperationalPropChangedHandler() {
         string shieldStateMsg = IsOperational ? "is being raised" : "has failed";
-        D.Log(ShowDebugLog, "{0} {1}.", Name, shieldStateMsg);
+        D.Log(ShowDebugLog, "{0} {1}.", FullName, shieldStateMsg);
         HandleDebugShieldIsOperationalChanged();
     }
 
@@ -92,7 +92,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
             }
         }
         bool isShieldStillUp = unabsorbedImpact == Constants.ZeroF;
-        D.Log(ShowDebugLog && !isShieldStillUp, "{0} has failed.", Name);
+        D.Log(ShowDebugLog && !isShieldStillUp, "{0} has failed.", FullName);
         return isShieldStillUp;
     }
 
@@ -101,8 +101,10 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     }
 
     protected override float RefreshRangeDistance() {
-        // little value in setting RangeDistance to 0 when no generators are operational
-        return _equipmentList.First().RangeDistance;  // currently no qty effects on range distance
+        float baselineRange = RangeCategory.GetBaselineShieldRange();
+        // IMPROVE add factors based on IUnitElement Type and/or Category. DONOT vary by Cmd
+        float range = baselineRange;
+        return range;
     }
 
     protected override void Cleanup() {

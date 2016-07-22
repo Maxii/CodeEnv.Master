@@ -16,12 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
     /// Interface for Items that are patrollable by Fleets.
+    /// Includes Systems, Sectors, Bases and the UniverseCenter.    // IDEA: Coincident with IGuardable
     /// </summary>
-    public interface IPatrollable : INavigable {
+    public interface IPatrollable : INavigable {    // IDEA: Could : IFleetNavigable but why?
+
+        /// <summary>
+        /// Occurs when InfoAccess rights change for a player on an item.
+        /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
+        /// </summary>
+        event EventHandler<InfoAccessChangedEventArgs> infoAccessChanged;
 
         /// <summary>
         /// Returns a copy of the list of Patrol Stations around this IPatrollable Item.
@@ -34,9 +42,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         IList<StationaryLocation> LocalAssemblyStations { get; }
 
-        Player Owner { get; }
+        Player Owner_Debug { get; }
 
         Speed PatrolSpeed { get; }
+
+        bool TryGetOwner(Player requestingPlayer, out Player owner);
+
+        bool IsOwnerAccessibleTo(Player player);
 
         bool IsPatrollingAllowedBy(Player player);
 

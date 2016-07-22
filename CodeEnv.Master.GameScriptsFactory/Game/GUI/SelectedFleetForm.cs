@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedFleetForm.cs
-// Form used by the SelectedItemHudWindow to display info from a FleetReport when a fleet is selected.
+// Form used by the SelectedItemHudWindow to display info from a FleetCmdReport when a fleet is selected.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form used by the SelectedItemHudWindow to display info from a FleetReport when a fleet is selected.
+/// Form used by the SelectedItemHudWindow to display info from a FleetCmdReport when a fleet is selected.
 /// </summary>
 public class SelectedFleetForm : ASelectedItemForm {
 

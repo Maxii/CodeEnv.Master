@@ -30,8 +30,8 @@ public class PlanetCtxControl : PlanetoidCtxControl {
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Move,
-                                                                                        FleetDirective.CloseOrbit,
-                                                                                        FleetDirective.Attack };
+                                                                                        FleetDirective.Attack
+                                                                                      };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives { get { return _userRemoteFleetDirectives; } }
 
@@ -40,13 +40,11 @@ public class PlanetCtxControl : PlanetoidCtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
-            case FleetDirective.CloseOrbit:
-                return !(_planetoidMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

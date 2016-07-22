@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Abstract base class for Unit Creators. Primarily used as
@@ -55,9 +56,9 @@ public abstract class ACreator : AMonoBase {
 
     #region Nested Classes
 
-    public enum __DiploStateWithUser {    // avoids offering None or Self
-        Ally,
-        Friend,
+    public enum __DiploStateWithUser {    // avoids offering None and Self
+        Alliance,
+        Friendly,
         Neutral,
         ColdWar,
         War
@@ -88,7 +89,23 @@ public abstract class ACreator : AMonoBase {
         Max
     }
 
-    #endregion
+    public enum DebugFleetFormation {
+        Random,
+        Globe,
+        Plane,
+        Diamond,
+        Spread,
+        Wedge
+    }
 
+    public enum DebugBaseFormation {
+        Random,
+        Globe,
+        Plane,
+        Diamond,
+        Spread
+    }
+
+    #endregion
 }
 

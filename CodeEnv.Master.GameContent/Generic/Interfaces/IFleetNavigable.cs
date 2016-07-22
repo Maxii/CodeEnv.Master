@@ -21,7 +21,10 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// INavigable destination that can be navigated to by Fleets.
-    /// <remarks>Elements, FormationStations and CloseOrbitSimulators are not IFleetNavigable.</remarks>
+    /// <remarks>Elements, FormationStations and CloseOrbitSimulators are not IFleetNavigable.
+    /// Stationary and MobileLocations are IFleetNavigable as GuardStation, PatrolStation and 
+    /// AssemblyStation destinations are all StationaryLocations.</remarks>
+    /// <remarks>Used only by FleetNavigator.</remarks>
     /// </summary>
     public interface IFleetNavigable : INavigable {
 

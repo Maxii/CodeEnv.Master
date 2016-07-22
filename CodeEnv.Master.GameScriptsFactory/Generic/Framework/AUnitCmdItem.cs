@@ -27,7 +27,20 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFleetNavigable, IUnitAttackableTarget, IFormationMgrClient {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigable, IUnitAttackable, IFormationMgrClient {
+
+    public Formation UnitFormation { get { return Data.UnitFormation; } }
+
+    /// <summary>
+    /// The maximum radius of this Unit's current formation, independant of the number of elements currently assigned a
+    /// station in the formation or whether the Unit's elements are located on their formation station. 
+    /// Value encompasses each element's "KeepoutZone" (Facility: AvoidableObstacleZone, Ship: CollisionDetectionZone) 
+    /// when the element is OnStation. 
+    /// </summary>
+    public float UnitMaxFormationRadius {
+        get { return Data.UnitMaxFormationRadius; }
+        set { Data.UnitMaxFormationRadius = value; }
+    }
 
     private Transform _unitContainer;
     /// <summary>
@@ -49,9 +62,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
     }
 
     private bool __showHQDebugLog;
+    /// <summary>
+    /// Indicates whether the Cmd and HQELement should show their debug logs.
+    /// </summary>
     public bool __ShowHQDebugLog {
         get { return __showHQDebugLog; }
-        set { SetProperty<bool>(ref __showHQDebugLog, value, "__ShowHQDebugLog"); }
+        set { SetProperty<bool>(ref __showHQDebugLog, value, "__ShowHQDebugLog", __ShowHQDebugLogPropChangedHandler); }
     }
 
     public IconInfo IconInfo {
@@ -66,8 +82,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
 
     public override float Radius { get { return Data.Radius; } }
 
-    public new AUnitCmdItemData Data {
-        get { return base.Data as AUnitCmdItemData; }
+    public new AUnitCmdData Data {
+        get { return base.Data as AUnitCmdData; }
         set { base.Data = value; }
     }
 
@@ -88,10 +104,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
     public IList<ISensorRangeMonitor> SensorRangeMonitors { get; private set; }
 
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
+    protected AFormationManager FormationMgr { get; private set; }
+    protected PlayerKnowledge OwnerKnowledge { get; private set; }
 
-    protected PlayerKnowledge _ownerKnowledge;
-
-    private AFormationManager _formationMgr;
     private ITrackingWidget _trackingLabel;
 
     #region Initialization
@@ -100,7 +115,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         base.InitializeOnAwake();
         Elements = new List<AUnitElementItem>();
         SensorRangeMonitors = new List<ISensorRangeMonitor>();
-        _formationMgr = InitializeFormationMgr();
+        FormationMgr = InitializeFormationMgr();
     }
 
     protected abstract AFormationManager InitializeFormationMgr();
@@ -114,7 +129,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, UnitFormationPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdData, Formation>(d => d.UnitFormation, UnitFormationPropChangedHandler));
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -159,7 +174,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
 
     protected override void FinalInitialize() {
         base.FinalInitialize();
-        _ownerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(Owner);
+        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
         AssessIcon();
     }
 
@@ -177,7 +192,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         Data.AddElement(element.Data);
         element.Command = this;
         element.AttachAsChildOf(UnitContainer);
-        Subscribe(element);
         //TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
@@ -197,7 +211,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
             return;                         // added resulting in _formationMgr adding all elements into the formation at once
         }
         AssessIcon();
-        _formationMgr.AddAndPositionNonHQElement(element);
+        FormationMgr.AddAndPositionNonHQElement(element);
     }
 
     /// <summary>
@@ -242,7 +256,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         bool isRemoved = Elements.Remove(element);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
         Data.RemoveElement(element.Data);
-        Unsubscribe(element);
 
         DetachSensorsFromMonitors(element.Data.Sensors);
         if (!IsOperational) {
@@ -254,20 +267,26 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
             return;
         }
         AssessIcon();
-        _formationMgr.RemoveElement(element);
+        FormationMgr.HandleElementRemoval(element);
     }
 
-    private void Subscribe(AUnitElementItem element) {
-        element.Data.userIntelCoverageChanged += ElementUserIntelCoverageChangedEventHandler;
-        //element.onDeathOneShot += HandleSubordinateElementDeath;  // element now informs command AFTER it broadcasts its onDeathEvent
-        // previously, sequencing issues surfaced, depending on the order in which subscribers signed up for the event
+    /// <summary>
+    /// Attempts to takeover this Cmd's ownership with player. Returns <c>true</c> if successful, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="takeoverStrength">The takeover strength. A value between 0 and 1.0.</param>
+    /// <returns></returns>
+    public bool __AttemptTakeover(Player player, float takeoverStrength) {
+        D.Assert(player != Owner);
+        Utility.ValidateForRange(takeoverStrength, Constants.ZeroPercent, Constants.OneHundredPercent);
+        if (takeoverStrength > Data.CurrentCmdEffectiveness) {   // TEMP takeoverStrength vs loyalty?
+            Data.Owner = player;
+            return true;
+        }
+        return false;
     }
 
-    private void Unsubscribe(AUnitElementItem element) {
-        element.Data.userIntelCoverageChanged -= ElementUserIntelCoverageChangedEventHandler;
-    }
-
-    public void HandleSubordinateElementDeath(IUnitElementItem deadSubordinateElement) {
+    public void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
         D.Log(ShowDebugLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
         RemoveElement(deadSubordinateElement as AUnitElementItem);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
@@ -282,7 +301,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         Elements.ForAll(e => e.__SimulateAttacked());
     }
 
-    private void AssessIcon() {
+    public void AssessIcon() {
         if (DisplayMgr == null) { return; }
 
         var iconInfo = RefreshIconInfo();
@@ -308,13 +327,35 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         }
     }
 
-    protected override void HandleIntelCoverageChanged() {
-        base.HandleIntelCoverageChanged();
-        AssessIcon();   // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
+    // 7.20.16 Not needed as Cmd is not detectable. The only way Cmd IntelCoverage changes is when HQELement Coverage changes.
+    // Icon needs to be assessed when any of Cmd's elements has its coverage changed as that can change which icon to show
+    // protected override void HandleUserIntelCoverageChanged() {
+    //    base.HandleUserIntelCoverageChanged();
+    //    AssessIcon();   
+    // }
+
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    /// <summary>
+    /// Handles a change in relations between players.
+    /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
+    /// and Element state machines rest with the Cmd. They implement HandleRelationsChanged and UponRelationsChanged.
+    /// In all cases where the order is issued by either Cmd or User, the element FSM does not need to pay attention to Relations
+    /// changes as their orders will be changed if a Relations change requires it, determined by Cmd. When the Captain
+    /// overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
+    /// in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
+    /// Upshot: Elements FSMs can ignore Relations changes.
+    /// </remarks>
+    /// </summary>
+    /// <param name="otherPlayer">The other player.</param>
+    /// <param name="priorRelationship">The prior relationship.</param>
+    /// <param name="newRelationship">The new relationship.</param>
+    public void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        SensorRangeMonitors.ForAll(srm => srm.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
+        Elements.ForAll(e => e.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
+        UponRelationsChanged(otherPlayer, priorRelationship, newRelationship);
     }
 
     #region Event and Property Change Handlers
@@ -340,22 +381,22 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
     }
 
     private void HQElementPropChangedHandler() {
-        HQElement.IsHQ = true;        //HQElement.Data.IsHQ = true;
-        Data.HQElementData = HQElement.Data;    // Data.Radius now returns Radius of new HQElement
+        HQElement.IsHQ = true;
+        Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
         if (__ShowHQDebugLog) {
             HQElement.ShowDebugLog = true;
         }
         //D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
-        _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
+        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
         if (DisplayMgr != null) {
             DisplayMgr.ResizePrimaryMesh(Radius);
         }
     }
 
     protected void FsmTargetDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem deadTarget = sender as IMortalItem;
-        UponTargetDeath(deadTarget);
+        IMortalItem deadFsmTgt = sender as IMortalItem;
+        UponFsmTargetDeath(deadFsmTgt);
     }
 
     protected override void OwnerPropChangedHandler() {
@@ -367,14 +408,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
             DisplayMgr.MeshColor = Owner.Color;
         }
         AssessIcon();
+        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
+        UponOwnerChanged();
     }
 
     private void UnitFormationPropChangedHandler() {
-        _formationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElementItem>().ToList());
-    }
-
-    private void ElementUserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
-        AssessIcon();
+        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
     }
 
     protected override void IsDiscernibleToUserPropChangedHandler() {
@@ -387,27 +426,53 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
         Elements.ForAll(e => e.AssessHighlighting());
     }
 
+    private void __ShowHQDebugLogPropChangedHandler() {
+        ShowDebugLog = __ShowHQDebugLog;
+    }
+
     #endregion
 
-    # region StateMachine Support Methods
+    #region StateMachine Support Members
+
+    /// <summary>
+    /// The reported cause of a failure to complete execution of an Order.
+    /// </summary>
+    protected UnitItemOrderFailureCause _orderFailureCause;
 
     protected void Dead_ExitState() {
-        D.Error("{0}.Dead_ExitState should not occur.", FullName);
+        LogEventWarning();
     }
+
+    #region Relays
 
     private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         RelayToCurrentState(deadSubordinateElement);
     }
 
-    private void UponTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
+    /// <summary>
+    /// Called prior to entering the Dead state, this method notifies the current
+    /// state that the unit is dying, allowing any current state housekeeping
+    /// required before entering the Dead state.
+    /// </summary>
+    protected void UponDeath() { RelayToCurrentState(); }
+
+    private void UponFsmTargetDeath(IMortalItem deadFsmTarget) { RelayToCurrentState(deadFsmTarget); }
 
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
+    protected void UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        RelayToCurrentState(otherPlayer, priorRelationship, newRelationship);
+    }
+
+    protected void UponOwnerChanged() {
+        RelayToCurrentState();
+    }
+
     #endregion
 
-    # region Combat Support Methods
+    #region Combat Support
 
     /// <summary>
     /// Checks for damage to this Command when its HQElement takes a hit. Returns true if 
@@ -480,6 +545,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
 
     #endregion
 
+    #endregion
+
     #region Cleanup
 
     protected override void Cleanup() {
@@ -530,7 +597,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return Data.UnitMaxFormationRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+            return UnitMaxFormationRadius + Data.CameraStat.OptimalViewingDistanceAdder;
         }
         set { base.OptimalCameraViewingDistance = value; }
     }
@@ -541,30 +608,28 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, IFle
 
     #region IHighlightable Members
 
-    public override float HoverHighlightRadius { get { return Data.UnitMaxFormationRadius; } }
+    public override float SphericalHighlightEffectRadius { get { return UnitMaxFormationRadius; } }
 
-    public override float HighlightRadius { get { return Screen.height * 0.03F; } }
+    public override float CircleHighlightEffectRadius { get { return Screen.height * 0.03F; } }
 
     #endregion
 
     #region IFormationMgrClient Members
 
-    public virtual void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
-        (element as AUnitElementItem).transform.position = HQElement.Position + stationOffset;
-        //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.", element.FullName, element.Position, stationOffset, HQElement.FullName, HQElement.Position);
-    }
-
-    public virtual void CleanupAfterFormationChanges() { }
-
-    #endregion
-
-    #region  IUnitAttackableTarget Members
-
-    public bool IsAttackingAllowedBy(Player player) {
-        return Owner.IsEnemyOf(player);
+    /// <summary>
+    /// Positions the element in formation. This base class version simply places the 
+    /// element at the designated offset location from the HQElement.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="stationSlotInfo">The slot information.</param>
+    public virtual void PositionElementInFormation(IUnitElement element, FormationStationSlotInfo stationSlotInfo) {
+        (element as AUnitElementItem).transform.localPosition = stationSlotInfo.LocalOffset;
+        //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.",
+        //element.FullName, element.Position, stationSlotInfo.LocalOffset, HQElement.FullName, HQElement.Position);
     }
 
     #endregion
+
 
 }
 

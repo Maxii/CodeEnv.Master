@@ -109,9 +109,11 @@ namespace CodeEnv.Master.GameContent {
         public const float LargestShipCollisionDetectionZoneRadius = 0.35F; // Carrier
 
         /// <summary>
-        /// The radius of each FormationStation in a fleet formation.
+        /// The radius of each FormationStation in a fleet formation = 0.7.
+        /// <remarks>FormationPlaceholder cells have been adjusted to have edges of 1.5 to space formation
+        /// stations so they don't overlap.</remarks>
         /// </summary>
-        public static readonly float FleetFormationStationRadius = LargestShipCollisionDetectionZoneRadius * 2F;
+        public static readonly float FleetFormationStationRadius = LargestShipCollisionDetectionZoneRadius * 2F;    // 0.7
 
         public const float LargestFacilityObstacleZoneRadius = 0.7F;  // Central Hub
 

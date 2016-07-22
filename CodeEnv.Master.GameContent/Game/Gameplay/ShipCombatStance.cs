@@ -17,22 +17,25 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// A ship's primary tactical approach to engaging in combat 
-    /// with its target.
+    /// A ship's primary tactical approach to engaging in combat with its target.
     /// </summary>
     public enum ShipCombatStance {
 
         None,
 
         /// <summary>
-        /// The ship will attempt to dis-engage from the battlefield to minimize damage,
-        /// withdrawing if necessary.   //TODO Disengage and withdrawal not yet implemented
+        /// The ship will attempt to dis-engage from the battlefield to minimize damage.
+        /// Practically, it withdraws to a more protected station in the formation, if needed.
+        /// <remarks>Flagships cannot Disengage as they should already be located in a protected station
+        /// of the formation. This means Flagships don't withdraw, which makes sense as moving to
+        /// a different station in the formation would cause all other ships to move too.</remarks>
         /// </summary>
         Disengage,
 
         /// <summary>
-        /// The ship will not choose to pursue a target but will actively defend itself
+        /// The ship will not choose to pursue a target. It will Entrench and defend itself
         /// without withdrawing.
+        /// <remarks>This should be the setting for all Flagships.</remarks>
         /// </summary>
         Defensive,
 

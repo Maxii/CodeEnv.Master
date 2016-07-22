@@ -63,6 +63,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
+        public new PlanetoidInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as PlanetoidInfoAccessController; } }
+
         public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
 
         /// <summary>
@@ -72,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="planetoid">The planetoid.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="planetoidStat">The stat.</param>
-        public PlanetoidData(IPlanetoidItem planetoid, CameraFollowableStat cameraStat, PlanetoidStat planetoidStat)
+        public PlanetoidData(IPlanetoid planetoid, CameraFollowableStat cameraStat, PlanetoidStat planetoidStat)
             : this(planetoid, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), planetoidStat) { }
 
         /// <summary>
@@ -82,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
-        public PlanetoidData(IPlanetoidItem planetoid, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
+        public PlanetoidData(IPlanetoid planetoid, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
             : this(planetoid, TempGameValues.NoPlayer, cameraStat, passiveCMs, planetoidStat) { }
 
         /// <summary>
@@ -93,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
-        public PlanetoidData(IPlanetoidItem planetoid, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
+        public PlanetoidData(IPlanetoid planetoid, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
             : base(planetoid, owner, cameraStat, planetoidStat.MaxHitPoints, passiveCMs) {
             Mass = planetoidStat.Mass;
             Category = planetoidStat.Category;
@@ -108,6 +110,10 @@ namespace CodeEnv.Master.GameContent {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
+        }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new PlanetoidInfoAccessController(this);
         }
 
         public override string ToString() {

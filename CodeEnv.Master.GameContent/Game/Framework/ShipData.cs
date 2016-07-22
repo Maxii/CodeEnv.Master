@@ -19,12 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
     /// Data associated with a ShipItem.
     /// </summary>
-    public class ShipData : AUnitElementItemData {
+    public class ShipData : AUnitElementData {
 
         #region FTL
 
@@ -172,7 +173,9 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
 
-        protected new IShipItem Item { get { return base.Item as IShipItem; } }
+        public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
+
+        protected new IShip Item { get { return base.Item as IShip; } }
 
         private new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
@@ -192,7 +195,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="enginesStat">The engines stat.</param>
         /// <param name="combatStance">The combat stance.</param>
-        public ShipData(IShipItem ship, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
+        public ShipData(IShip ship, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
             ShipHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors,
             IEnumerable<ShieldGenerator> shieldGenerators, EnginesStat enginesStat, ShipCombatStance combatStance)
             : base(ship, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
@@ -210,11 +213,43 @@ namespace CodeEnv.Master.GameContent {
             _intendedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
         }
 
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new ShipInfoAccessController(this);
+        }
+
         public override void CommenceOperations() {
             base.CommenceOperations();
             Topography = References.SectorGrid.GetSpaceTopography(Position);    // will set CurrentDrag
             //D.Log("{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
             IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
+        }
+
+        /// <summary>
+        /// Returns the capacity for repair available to this ship in the RepairMode provided.
+        /// UOM is hitPts per day. IMPROVE Acquire value from data fields.
+        /// </summary>
+        /// <param name="mode">The RepairMode.</param>
+        /// <returns></returns>
+        public float GetRepairCapacity(RepairMode mode) {
+            switch (mode) {
+                case RepairMode.Self:
+                    return 2F;    // HACK
+                case RepairMode.PlanetHighOrbit:
+                    return 4F;    // HACK
+                case RepairMode.PlanetCloseOrbit:
+                    return 6F;    // HACK
+                case RepairMode.AlliedPlanetHighOrbit:
+                    return 8F;    // HACK
+                case RepairMode.AlliedPlanetCloseOrbit:
+                    return 10F;    // HACK
+                case RepairMode.BaseHighOrbit:
+                case RepairMode.BaseCloseOrbit:
+                case RepairMode.AlliedBaseHighOrbit:
+                case RepairMode.AlliedBaseCloseOrbit:
+                case RepairMode.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
+            }
         }
 
         #region Event and Property Change Handlers
@@ -262,6 +297,78 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Nested Classes
+
+        public enum RepairMode {
+
+            None,
+
+            /// <summary>
+            /// Repairing executed in a slot of the Formation
+            /// using facilities and materials available on the ship.
+            /// </summary>
+            Self,
+
+            /// <summary>
+            /// Repairing executed in high orbit around a non-allied planet
+            /// using facilities available on the ship and materials that can
+            /// be acquired (LR) from the planet.
+            /// </summary>
+            PlanetHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in high orbit around an allied planet
+            /// using facilities available on the planet and ship, and materials that can
+            /// be delivered (LR) by the inhabitants of the planet.
+            /// </summary>
+            AlliedPlanetHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around a non-allied planet
+            /// using facilities available on the ship and materials that can
+            /// be acquired (SR) from the planet.
+            /// </summary>
+            PlanetCloseOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around an allied planet
+            /// using facilities available on the planet and ship, and materials that can
+            /// be delivered (SR) by the inhabitants of the planet.
+            /// </summary>
+            AlliedPlanetCloseOrbit,
+
+            /// <summary>
+            /// Repairing executed in high orbit around a non-allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (LR) by the inhabitants of the base.
+            /// </summary>
+            BaseHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around a non-allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (SR) by the inhabitants of the base.
+            /// </summary>
+            BaseCloseOrbit,
+
+            /// <summary>
+            /// Repairing executed in high orbit around an allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (LR) by the inhabitants of the base.
+            /// </summary>
+            AlliedBaseHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around an allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (SR) by the inhabitants of the base.
+            /// </summary>
+            AlliedBaseCloseOrbit
+
+        }
+
+        #endregion
 
     }
 }

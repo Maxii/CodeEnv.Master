@@ -19,6 +19,7 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEditor;
+using UnityEngine;
 
 /// <summary>
 /// Custom editor for StarbaseUnitCreators.  
@@ -27,6 +28,17 @@ using UnityEditor;
 public class StarbaseCreatorEditor : AUnitCreatorEditor<StarbaseUnitCreator> {
 
     protected override int GetMaxElements() { return TempGameValues.MaxFacilitiesPerBase; }
+
+    public override void OnInspectorGUI() {
+        base.OnInspectorGUI();
+
+        var starbaseCreator = target as StarbaseUnitCreator;
+        starbaseCreator.formation = (ACreator.DebugBaseFormation)EditorGUILayout.EnumPopup("Unit Formation", starbaseCreator.formation);
+
+        if (GUI.changed) {
+            EditorUtility.SetDirty(target);
+        }
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

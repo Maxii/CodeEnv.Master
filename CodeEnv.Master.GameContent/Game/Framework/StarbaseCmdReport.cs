@@ -1,0 +1,210 @@
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright>
+// Copyright © 2012 - 2015 Strategic Forge
+//
+// Email: jim@strategicforge.com
+// </copyright> 
+// <summary> 
+// File: StarbaseCmdReport.cs
+// Immutable report for StarbaseCmdItems.
+// </summary> 
+// -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
+namespace CodeEnv.Master.GameContent {
+
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+
+    /// <summary>
+    /// Immutable report for StarbaseCmdItems.
+    /// </summary>
+    public class StarbaseCmdReport : AUnitCmdReport {
+
+        public StarbaseCategory Category { get; private set; }
+
+        public int? Capacity { get; private set; }
+
+        public ResourceYield? Resources { get; private set; }
+
+        /// <summary>
+        /// The Composition of the Unit this report is about. The unit's elements
+        /// reported will be limited to those elements the Player requesting
+        /// the report has knowledge of. 
+        /// <remarks>Can be null - even though the Player will 
+        /// always know about the HQElement of the Unit (since he knows about
+        /// the UnitCmd itself), he may not know the Category of the HQElement.
+        /// </remarks>
+        /// </summary>
+        public BaseComposition UnitComposition { get; private set; }
+
+        // 7.10.16 Eliminated usage of ElementReports to calculate partial Unit values.
+        // 7.18.16 If Cmd's IntelCoverage does not allow full view of selected values
+        // a partial value is calculated from element's data and their infoAccessCntlr. 
+
+        public StarbaseCmdReport(StarbaseCmdData cmdData, Player player, IStarbaseCmd_Ltd item)
+            : base(cmdData, player, item) {
+        }
+
+        protected override void AssignValues(AItemData data) {
+            var sbData = data as StarbaseCmdData;
+            var accessCntlr = sbData.InfoAccessCntlr;
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitDefense)) {
+                UnitDefensiveStrength = sbData.UnitDefensiveStrength;
+            }
+            else {
+                UnitDefensiveStrength = CalcPartialUnitDefensiveStrength(GetElementsData(sbData));
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitOffense)) {
+                UnitOffensiveStrength = sbData.UnitOffensiveStrength;
+            }
+            else {
+                UnitOffensiveStrength = CalcPartialUnitOffensiveStrength(GetElementsData(sbData));
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitMaxHitPts)) {
+                UnitMaxHitPoints = sbData.UnitMaxHitPoints;
+            }
+            else {
+                UnitMaxHitPoints = CalcPartialUnitMaxHitPoints(GetElementsData(sbData));
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitCurrentHitPts)) {
+                UnitCurrentHitPoints = sbData.UnitCurrentHitPoints;
+            }
+            else {
+                UnitCurrentHitPoints = CalcPartialUnitCurrentHitPoints(GetElementsData(sbData));
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitHealth)) {
+                UnitHealth = sbData.UnitHealth;
+            }
+            else {
+                // Calculate HitPts before attempting calc of partial unit health
+                UnitHealth = CalcPartialUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitScience)) {
+                UnitScience = sbData.UnitScience;
+            }
+            else {
+                UnitScience = CalcPartialUnitScience(GetElementsData(sbData));
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitCulture)) {
+                UnitCulture = sbData.UnitCulture;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitNetIncome)) {
+                UnitIncome = sbData.UnitIncome;
+                UnitExpense = sbData.UnitExpense;
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+                Name = sbData.Name;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+                ParentName = sbData.ParentName;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+                Position = sbData.Position;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+                Owner = sbData.Owner;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentCmdEffectiveness)) {
+                CurrentCmdEffectiveness = sbData.CurrentCmdEffectiveness;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitSensorRange)) {
+                UnitSensorRange = sbData.UnitSensorRange;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitWeaponsRange)) {
+                UnitWeaponsRange = sbData.UnitWeaponsRange;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+                SectorIndex = sbData.SectorIndex;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Formation)) {
+                UnitFormation = sbData.UnitFormation;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+                Capacity = sbData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+                Resources = sbData.Resources;
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Composition)) { // must preceed Category
+                UnitComposition = sbData.UnitComposition;
+            }
+            else {
+                UnitComposition = CalcPartialUnitComposition(sbData);
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+                Category = sbData.Category;
+            }
+            else {
+                Category = CalcPartialCmdCategory(sbData);
+            }
+        }
+
+        private BaseComposition CalcPartialUnitComposition(StarbaseCmdData cmdData) {
+            var elementsData = GetElementsData(cmdData).Cast<FacilityData>();
+            IList<FacilityHullCategory> knownElementCategories = new List<FacilityHullCategory>();
+            foreach (var eData in elementsData) {
+                var accessCntlr = eData.InfoAccessCntlr;
+                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+                    knownElementCategories.Add(eData.HullCategory);
+                }
+            }
+            if (knownElementCategories.Count > Constants.Zero) {
+                // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
+                return new BaseComposition(knownElementCategories);
+            }
+            return null;
+        }
+
+        private StarbaseCategory CalcPartialCmdCategory(StarbaseCmdData cmdData) {
+            if (UnitComposition != null) {
+                return cmdData.GenerateCmdCategory(UnitComposition);
+            }
+            return StarbaseCategory.None;
+        }
+
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region Archive
+
+        //private void AssignValuesFromElementReports(StarbaseCmdData cmdData) {
+        //    var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(FacilityHullCategory));
+        //    if (knownElementCategories.Any()) { // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
+        //        UnitComposition = new BaseComposition(knownElementCategories);
+        //    }
+        //    Category = UnitComposition != null ? cmdData.GenerateCmdCategory(UnitComposition) : StarbaseCategory.None;
+        //    AssignValuesFrom(ElementReports);
+        //}
+
+        //protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+        //    base.AssignIncrementalValues_IntelCoverageComprehensive(data);
+        //    var sData = data as StarbaseCmdData;
+        //    Capacity = sData.Capacity;
+        //}
+
+        //protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+        //    base.AssignIncrementalValues_IntelCoverageBroad(data);
+        //    var sData = data as StarbaseCmdData;
+        //    Resources = sData.Resources;
+        //}
+
+        #endregion
+
+    }
+}
+

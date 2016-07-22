@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IDetectable.cs
-// Base Interface for objects that are detectable by Monitors.
+// Base Interface for GameObjects that are detectable by DectableRangeMonitors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,15 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Base Interface for objects that are detectable by Monitors.
+    /// Base Interface for GameObjects that are detectable by DectableRangeMonitors.
     /// </summary>
-    public interface IDetectable {
-
-        Player Owner { get; }
+    public interface IDetectable : IDebugable {
 
         bool IsOperational { get; }
-
-        string FullName { get; }
 
         Vector3 Position { get; }
 

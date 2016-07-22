@@ -30,10 +30,10 @@ using UnityEngine;
 /// </summary>
 public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
-    private MyAStarPointGraph _graph;
-    public MyAStarPointGraph Graph {
+    private MyPathfindingGraph _graph;
+    public MyPathfindingGraph Graph {
         get { return _graph; }
-        private set { SetProperty<MyAStarPointGraph>(ref _graph, value, "Graph"); }
+        private set { SetProperty<MyPathfindingGraph>(ref _graph, value, "Graph"); }
     }
 
     private AstarPath _astarPath;
@@ -53,25 +53,30 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void InitializeAstarPath() {
+        LogEvent();
         _astarPath = AstarPath.active;
         // As we can't reliably know which Awake() will be called first, scanOnStartup must be set to false in inspector to avoid initial scan
         D.Assert(_astarPath.scanOnStartup == false);
-        // IMPROVE 600 seems a good max distance from a worldspace position to a node from my experimentation
-        // This distance is used during the construction of a path. MaxDistance is used in the generation of a point graph
-        // Assumptions:
-        // points surrounding obstacles are set at 0.05 grids away (0.5 * 0.1) from obstacle center
-        // interior sector points are 0.25 grids away from sector center (0.5 * 0.5) ~ 520 (0.25 x sectorDiag of 2078)
-        //_astarPath.maxNearestNodeDistance = 600F; // trying no constraint for now - controlled by FleetCmdModel.GenerateCourse()
-        //_astarPath.logPathResults = PathLog.Heavy;    // Editor controls will work if save change as prefab
-
-        // Can't programmatically set TagNames. They appear to only be setable through the Editor
+        __ValidateTagNames();
         Subscribe();
+    }
+
+    /// <summary>
+    /// Validates the AStar tag names.
+    /// <remarks>I can't programmatically set TagNames, so I'll validate the values I've typed into the editor.</remarks>
+    /// </summary>
+    private void __ValidateTagNames() {
+        string[] tagNames = _astarPath.GetTagNames();
+        D.Assert(tagNames[(int)Topography.OpenSpace.AStarTagValue()] == Topography.OpenSpace.GetValueName());
+        D.Assert(tagNames[(int)Topography.Nebula.AStarTagValue()] == Topography.Nebula.GetValueName());
+        D.Assert(tagNames[(int)Topography.DeepNebula.AStarTagValue()] == Topography.DeepNebula.GetValueName());
+        D.Assert(tagNames[(int)Topography.System.AStarTagValue()] == Topography.System.GetValueName());
     }
 
     private void Subscribe() {
         _gameMgr.gameStateChanged += GameStateChangedEventHandler;
         AstarPath.OnLatePostScan += GraphScansCompletedEventHandler;
-        AstarPath.OnGraphsUpdated += GraphRuntimeUpdateCompletedEventHandler;
+        AstarPath.OnGraphsUpdated += GraphUpdateCompletedEventHandler;
     }
 
     #region Event and Property Change Handler
@@ -89,22 +94,28 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void GraphScansCompletedEventHandler(AstarPath astarPath) {
-        Graph = astarPath.graphs[0] as MyAStarPointGraph;
+        Graph = astarPath.graphs[0] as MyPathfindingGraph;  // as MyAStarPointGraph
         _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: true);
         // WARNING: I must not directly cause the game state to change as the other subscribers to GameStateChanged may not have been called yet. 
         // This GraphScansCompletedEvent occurs while we are still processing OnGameStateChanged.
     }
 
-    private void GraphRuntimeUpdateCompletedEventHandler(AstarPath astarPath) {
+    /// <summary>
+    /// Event handler for completed GraphObjectUpdates during runtime.
+    /// </summary>
+    /// <param name="astarPath">The astar path.</param>
+    private void GraphUpdateCompletedEventHandler(AstarPath astarPath) {
         D.Assert(astarPath.graphs[0] == Graph);
-        D.Log("{0} node count after graph update.", Graph.nodeCount);
+        int connectionCount = Constants.Zero;
+        int walkableNodeCount = Constants.Zero;
         Graph.GetNodes(delegate (GraphNode node) {   // while return true, passes each node to this anonymous method
-            if (!node.Walkable) {
-                D.Log("Node {0} is not walkable.", (Vector3)node.position);
-                return false;   // no need to pass any more nodes
+            if (node.Walkable) {
+                walkableNodeCount++;
+                connectionCount += (node as PointNode).connections.Length;
             }
             return true;    // pass the next node
         });
+        D.Log("{0} after graph update: WalkableNodeCount = {1}, ConnectionCount = {2}.", GetType().Name, walkableNodeCount, connectionCount);
     }
 
     #endregion
@@ -116,7 +127,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     private void Unsubscribe() {
         _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
         AstarPath.OnLatePostScan -= GraphScansCompletedEventHandler;
-        AstarPath.OnGraphsUpdated -= GraphRuntimeUpdateCompletedEventHandler;
+        AstarPath.OnGraphsUpdated -= GraphUpdateCompletedEventHandler;
     }
 
     public override string ToString() {

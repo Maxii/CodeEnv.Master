@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -24,23 +25,25 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class FleetCompositionGuiElement : ACompositionGuiElement {
 
+    private bool _isCategorySet = false;
     private FleetCategory _category;
     public FleetCategory Category {
         get { return _category; }
         set {
-            D.Assert(_category == default(FleetCategory));  // only happens once between Resets
-            SetProperty<FleetCategory>(ref _category, value, "Category", CategoryPropSetHandler);
+            D.Assert(!_isCategorySet);  // only happens once between Resets
+            _category = value;  // value can be None if no element category is accessible
+            CategoryPropSetHandler();  // SetProperty() only calls handler when changed
         }
-        // Note: Once a cmd is detected, an estimation of its category is always available based on the elements that have been detected
     }
 
     protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
 
-    protected override bool AreAllValuesSet { get { return IconInfo != default(IconInfo) && Category != default(FleetCategory); } }
+    protected override bool AreAllValuesSet { get { return IconInfo != default(IconInfo) && _isCategorySet; } }
 
     #region Event and Property Change Handlers
 
     private void CategoryPropSetHandler() {
+        _isCategorySet = true;
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
@@ -48,11 +51,11 @@ public class FleetCompositionGuiElement : ACompositionGuiElement {
 
     #endregion
 
-    protected override string GetCategoryName() { return Category.GetValueName(); }
+    protected override string GetTextForCategory() { return Category != FleetCategory.None ? Category.GetValueName() : _unknown; }
 
     public override void Reset() {
         base.Reset();
-        _category = default(FleetCategory);
+        _isCategorySet = false;
     }
 
     protected override void Cleanup() { }

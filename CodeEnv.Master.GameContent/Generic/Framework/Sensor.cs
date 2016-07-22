@@ -25,28 +25,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Sensor : ARangedEquipment {
 
-        private static string _nameFormat = "{0}[{1}({2:0.})]";
-
         private ISensorRangeMonitor _rangeMonitor;
         public ISensorRangeMonitor RangeMonitor {
             get { return _rangeMonitor; }
             set { SetProperty<ISensorRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
         }
 
-        public override string Name {
-            get {
-                return _nameFormat.Inject(base.Name, RangeCategory.GetEnumAttributeText(), RangeDistance);
-            }
-        }
-
         public override string FullName {
             get {
-                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.Name, Name) : Name;
+                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.FullName, Name) : Name;
             }
-        }
-
-        protected override float RangeMultiplier {
-            get { return RangeMonitor != null ? RangeMonitor.Owner.SensorRangeMultiplier : Constants.OneF; }
         }
 
         protected new SensorStat Stat { get { return base.Stat as SensorStat; } }

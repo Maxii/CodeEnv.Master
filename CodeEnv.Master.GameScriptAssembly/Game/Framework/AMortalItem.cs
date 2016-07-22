@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AIntelItem's that can die.
 /// </summary>
-public abstract class AMortalItem : AIntelItem, IMortalItem {
+public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IAttackable {
 
     public event EventHandler deathOneShot;
 
@@ -72,9 +72,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
      ********************************************************************************************************************************/
 
     /// <summary>
-    ///Derived classes should set a state of Dead in their state machines.
+    /// Hook for derived classes to initiate transition to their DeadState.
     /// </summary>
-    protected abstract void SetDeadState();
+    protected abstract void InitiateDeadState();
 
     /// <summary>
     /// Execute any preparation work that must occur prior to others hearing about this Item's death.
@@ -91,9 +91,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     /// <summary>
-    /// Handles the death shutdown process, called by Dead_EnterState.
+    /// Handles the death shutdown process, called by the item's Dead state.
     /// </summary>
-    protected virtual void HandleDeath() {
+    protected virtual void HandleDeathFromDeadState() {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         if (IsFocus) {
             HandleDeathWhileIsFocus();
@@ -136,7 +136,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         base.IsOperationalPropChangedHandler();
         if (!IsOperational) {
             D.Log(ShowDebugLog, "{0} is initiating death sequence.", FullName);
-            SetDeadState();
+            InitiateDeadState();
             //PrepareForDeathNotification();
             OnDeath();
             //CleanupAfterDeathNotification();
@@ -167,7 +167,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #endregion
 
-    #region Combat Support Methods
+    #region State Machine Support Members
+
+    #region Combat Support
 
     public abstract void TakeHit(DamageStrength attackerWeaponStrength);
 
@@ -203,6 +205,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #endregion
 
+    #endregion
+
     /// <summary>
     /// Execute any cleanup work that must occur immediately after others hearing about this Item's death.
     /// The normal death shutdown process is handled by HandleDeath() which is called by the 
@@ -230,26 +234,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #endregion
 
-    #region Debug
+    #region IAttackable Members
 
-    private const string LogEventFormat = "{0}.{1}() beginning execution.";
-
-    /// <summary>
-    /// Logs the method name called.
-    /// </summary>
-    public override void LogEvent() {
-        if (_debugSettings.EnableEventLogging && ShowDebugLog) {
-            var stackFrame = new System.Diagnostics.StackFrame(1);
-            string fullMethodName = stackFrame.GetMethod().ReflectedType.Name;
-            if (fullMethodName.Contains(Constants.LessThan)) {
-                string coroutineMethodName = fullMethodName.Substring(fullMethodName.IndexOf(Constants.LessThan) + 1, fullMethodName.IndexOf(Constants.GreaterThan) - 1);
-                fullMethodName = coroutineMethodName;
-            }
-            else {
-                fullMethodName = stackFrame.GetMethod().Name;
-            }
-            Debug.Log(LogEventFormat.Inject(FullName, fullMethodName));
+    public bool IsAttackingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return false;
         }
+        return Owner.IsEnemyOf(player);
     }
 
     #endregion

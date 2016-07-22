@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementItem, ICameraFollowable, IShipAttackable, ISensorDetectable {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, IUnitElement_Ltd, ICameraFollowable, IShipAttackable, ISensorDetectable {
 
     private const string __HQNameAddendum = "[HQ]";
 
@@ -44,8 +44,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     public abstract bool IsAttackCapable { get; }
 
-    public new AUnitElementItemData Data {
-        get { return base.Data as AUnitElementItemData; }
+    public new AUnitElementData Data {
+        get { return base.Data as AUnitElementData; }
         set { base.Data = value; }
     }
 
@@ -67,24 +67,30 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         set { SetProperty<bool>(ref _isHQ, value, "IsHQ", IsHQPropChangedHandler); }
     }
 
-    private IUnitCmdItem _command;
-    public IUnitCmdItem Command {
+    private AUnitCmdItem _command;
+    public AUnitCmdItem Command {
         get { return _command; }
-        set { SetProperty<IUnitCmdItem>(ref _command, value, "Command"); }
+        set { SetProperty<AUnitCmdItem>(ref _command, value, "Command"); }
     }
 
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
-
-    protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
-    protected IList<IActiveCountermeasureRangeMonitor> _countermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
-    protected IList<IShield> _shields = new List<IShield>();
-    protected Rigidbody _rigidbody;
-    protected PlayerKnowledge _ownerKnowledge;
+    protected PlayerKnowledge OwnerKnowledge { get; private set; }
+    protected IList<IWeaponRangeMonitor> WeaponRangeMonitors { get; private set; }
+    protected IList<IActiveCountermeasureRangeMonitor> CountermeasureRangeMonitors { get; private set; }
+    protected IList<IShield> Shields { get; private set; }
+    protected Rigidbody Rigidbody { get; private set; }
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
 
     #region Initialization
+
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        WeaponRangeMonitors = new List<IWeaponRangeMonitor>();
+        CountermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
+        Shields = new List<IShield>();
+    }
 
     protected override void Subscribe() {
         base.Subscribe();
@@ -107,12 +113,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     protected virtual void InitializePrimaryRigidbody() {
-        _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _rigidbody.useGravity = false;
+        Rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        Rigidbody.useGravity = false;
         // Note: if physics is allowed to induce rotation, then ChangeHeading behaves unpredictably when HQ, 
         // presumably because Cmd is attached to HQ with a fixed joint?
-        _rigidbody.freezeRotation = true;   // covers both Ship and Facility for when I put Facility under physics control
-        _rigidbody.isKinematic = true;      // avoid physics affects until CommenceOperations, if at all
+        Rigidbody.freezeRotation = true;   // covers both Ship and Facility for when I put Facility under physics control
+        Rigidbody.isKinematic = true;      // avoid physics affects until CommenceOperations, if at all
     }
 
     private void AttachEquipment() {
@@ -146,8 +152,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected override void FinalInitialize() {
         base.FinalInitialize();
-        _ownerKnowledge = _gameMgr.PlayersKnowledge.GetKnowledge(Owner);
-        _rigidbody.isKinematic = false;
+        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
+        Rigidbody.isKinematic = false;
     }
 
     #endregion
@@ -166,8 +172,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         transform.parent = unitContainer;
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
         // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
         // in-route ordnance to show its impact effect while the item is showing its death.
         Data.Weapons.ForAll(w => {
@@ -190,7 +196,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     /// </summary>
     protected override void AssignAlternativeFocusOnDeath() {
         base.AssignAlternativeFocusOnDeath();
-        (Command as ICameraFocusable).IsFocus = true;
+        Command.IsFocus = true;
     }
 
     /********************************************************************************************************************************************
@@ -214,9 +220,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     private void Attach(AWeapon weapon) {
         D.Assert(weapon.RangeMonitor != null);
         var monitor = weapon.RangeMonitor;
-        if (!_weaponRangeMonitors.Contains(monitor)) {
+        if (!WeaponRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
-            _weaponRangeMonitors.Add(monitor);
+            WeaponRangeMonitors.Add(monitor);
         }
         weapon.readytoFire += WeaponReadyToFireEventHandler;
     }
@@ -274,14 +280,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             beam.Launch(target, weapon);
         }
         else if (category == WDVCategory.Missile) {
-            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation); Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);
+            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
+            //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
             Missile missile = ordnanceTransform.GetComponent<Missile>();
-            missile.ElementVelocityAtLaunch = _rigidbody.velocity;
+            missile.ElementVelocityAtLaunch = Rigidbody.velocity;
             missile.Launch(target, weapon, Topography);
         }
         else {
             D.Assert(category == WDVCategory.Projectile);
-            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation); Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);
+            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
+            //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
             Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
             projectile.Launch(target, weapon, Topography);
         }
@@ -302,6 +310,20 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             var weapon = firingSolutions.First().Weapon;    // all the same weapon
             weapon.HandleElementDeclinedToFire();
         }
+    }
+
+    private void HandleLosWeaponAimed(LosWeaponFiringSolution firingSolution) {
+        var target = firingSolution.EnemyTarget;
+        var losWeapon = firingSolution.Weapon;
+        D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
+        if (target.IsOperational && target.IsAttackingAllowedBy(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
+            LaunchOrdnance(losWeapon, target);
+        }
+        else {
+            // target moved out of range, died or changed diplomatic during aiming process
+            losWeapon.HandleElementDeclinedToFire();
+        }
+        losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
     }
 
     #region Weapons Firing Archive
@@ -414,9 +436,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     private void Attach(ActiveCountermeasure activeCM) {
         D.Assert(activeCM.RangeMonitor != null);
         var monitor = activeCM.RangeMonitor;
-        if (!_countermeasureRangeMonitors.Contains(monitor)) {
+        if (!CountermeasureRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
-            _countermeasureRangeMonitors.Add(monitor);
+            CountermeasureRangeMonitors.Add(monitor);
         }
     }
 
@@ -431,9 +453,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     private void Attach(ShieldGenerator generator) {
         D.Assert(generator.Shield != null);
         var shield = generator.Shield;
-        if (!_shields.Contains(shield)) {
+        if (!Shields.Contains(shield)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
-            _shields.Add(shield);
+            Shields.Add(shield);
         }
     }
 
@@ -446,6 +468,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     }
 
     #endregion
+
+    #region Icon and Highlighting
 
     private void AssessIcon() {
         D.Assert(DisplayMgr != null);
@@ -499,19 +523,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         ShowHighlights(HighlightID.None);
     }
 
-    private void HandleLosWeaponAimed(LosWeaponFiringSolution firingSolution) {
-        var target = firingSolution.EnemyTarget;
-        var losWeapon = firingSolution.Weapon;
-        D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
-        if (target.IsOperational && target.Owner.IsEnemyOf(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
-            LaunchOrdnance(losWeapon, target);
-        }
-        else {
-            // target moved out of range, died or changed diplomatic during aiming process
-            losWeapon.HandleElementDeclinedToFire();
-        }
-        losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
-    }
+    #endregion
 
     #region Event and Property Change Handlers
 
@@ -533,6 +545,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
             AssessIcon();
         }
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
+        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
     }
 
     private void WeaponReadyToFireEventHandler(object sender, AWeapon.WeaponFiringSolutionEventArgs e) {
@@ -547,10 +560,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         base.IsVisualDetailDiscernibleToUserPropChangedHandler();
         Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
     }
-    //protected override void IsVisualDetailDiscernibleToUserPropChangedHandler() {
-    //    base.IsVisualDetailDiscernibleToUserPropChangedHandler();
-    //    Data.Weapons.ForAll(w => w.ToShowEffects = IsVisualDetailDiscernibleToUser);
-    //}
 
     private void IsElementIconsEnabledPropChangedHandler() {
         if (DisplayMgr != null) {
@@ -560,6 +569,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
+    protected override void HandleUserIntelCoverageChanged() {
+        base.HandleUserIntelCoverageChanged();
+        Command.AssessIcon();
+    }
+
     protected override void HandleLeftDoubleClick() {
         base.HandleLeftDoubleClick();
         Command.IsSelected = true;
@@ -567,16 +581,54 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected abstract void __ValidateRadius(float radius);
 
-    # region StateMachine Support Methods
+    /// <summary>
+    /// Handles a change in relations between players.
+    /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
+    /// and Element state machines rest with the Cmd. They implement HandleRelationsChanged and UponRelationsChanged.
+    /// In all cases where the order is issued by either Cmd or User, the element FSM does not need to pay attention to Relations
+    /// changes as their orders will be changed if a Relations change requires it, determined by Cmd. When the Captain
+    /// overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
+    /// in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
+    /// Upshot: Elements FSMs can ignore Relations changes.
+    /// </remarks>
+    /// </summary>
+    /// <param name="otherPlayer">The other player.</param>
+    /// <param name="priorRelationship">The prior relationship.</param>
+    /// <param name="newRelationship">The new relationship.</param>
+    public void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
+        CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
+        // 7.14.16 UNDONE   //UponRelationsChanged(otherPlayer, priorRelationship, newRelationship);    
+    }
+
+
+    #region StateMachine Support Members
+
+    /// <summary>
+    /// The reported cause of a failure to complete execution of an Order.
+    /// </summary>
+    protected UnitItemOrderFailureCause _orderFailureCause;
 
     protected void Dead_ExitState() {
-        LogEvent();
-        D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
+        LogEventWarning();
     }
+
+    #region Relays
 
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
-    protected void UponApTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
+    /// <summary>
+    /// Called prior to entering the Dead state, this method notifies the current
+    /// state that the element is dying, allowing any current state housekeeping
+    /// required before entering the Dead state.
+    /// </summary>
+    protected void UponDeath() { RelayToCurrentState(); }
+
+    /// <summary>
+    /// Called when the current target being used by the State Machine dies.
+    /// </summary>
+    /// <param name="deadFsmTgt">The dead target.</param>
+    protected void UponFsmTargetDeath(IMortalItem deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
 
     private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         return RelayToCurrentState(firingSolutions);
@@ -584,9 +636,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
+    protected void UponDamageIncurred() { RelayToCurrentState(); }
+
     #endregion
 
-    #region Combat Support Methods
+    #region Combat Support
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
@@ -617,7 +671,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         });
     }
 
-    protected abstract void AssessNeedForRepair();
+    #endregion
 
     #endregion
 
@@ -657,7 +711,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         BoxCollider boxCollider = collision.collider as BoxCollider;
         string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
         D.Log(ShowDebugLog, "While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
-            CurrentState.ToString(), FullName, collision.collider.name, colliderSizeMsg, _rigidbody.velocity.ToPreciseString());
+            CurrentState.ToString(), FullName, collision.collider.name, colliderSizeMsg, Rigidbody.velocity.ToPreciseString());
         //D.Log(ShowDebugLog, "{0}: Detail on collision - Distance between collider centers = {1:0.##}", FullName, Vector3.Distance(Position, collision.collider.transform.position));
         // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
     }
@@ -665,33 +719,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
     #endregion
 
     #region IElementAttackable Members
-
-    public bool IsAttackingAllowedBy(Player player) {
-        return Owner.IsEnemyOf(player);
-    }
-
-    /// <summary>
-    /// Called by the ordnanceFired to notify its target of the launch
-    /// of the ordnance. This workaround is necessary in cases where the ordnance is
-    /// launched inside the target's ActiveCountermeasureRangeMonitor
-    /// collider sphere since GameObjects instantiated inside a collider are
-    /// not detected by OnTriggerEnter(). The target will only take action on
-    /// this FYI if it determines that the ordnance will not be detected by one or
-    /// more of its monitors.
-    /// Note: Obsolete as all interceptable ordnance has a rigidbody which is detected by the monitor when the 
-    /// ordnance moves, even if it first appears inside the monitor's collider.
-    /// </summary>
-    /// <param name="ordnanceFired">The ordnance fired.</param>
-    //[Obsolete]
-    //public void HandleFiredUponBy(IInterceptableOrdnance_UnPooled ordnanceFired) {
-    //    float ordnanceDistanceFromElement = Vector3.Distance(ordnanceFired.Position, Position);
-    //    _countermeasureRangeMonitors.ForAll(rm => {
-    //        if (rm.RangeDistance > ordnanceDistanceFromElement) {
-    //            // ordnance was fired inside the collider
-    //            rm.AddOrdnanceLaunchedFromInsideMonitor(ordnanceFired);
-    //        }
-    //    });
-    //}
 
     public override void TakeHit(DamageStrength damagePotential) {
         LogEvent();
@@ -710,7 +737,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         float damageSeverity;
         bool isElementAlive = ApplyDamage(damage, out damageSeverity);
         if (!isElementAlive) {
-            IsOperational = false;  // InitiateDeath();    // should immediately propagate thru to Cmd's alive status
+            IsOperational = false;  // should immediately propagate thru to Cmd's alive status
         }
         if (IsHQ && Command.IsOperational) {
             isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
@@ -719,7 +746,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
         if (isElementAlive) {
             var hitAnimation = isCmdHit ? EffectSequenceID.CmdHit : EffectSequenceID.Hit;
             StartEffectSequence(hitAnimation);
-            AssessNeedForRepair();
+            UponDamageIncurred();
         }
     }
 
@@ -739,21 +766,33 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElementIt
 
     #endregion
 
-    #region IDetectable Members
+    #region ISensorDetectable Members
 
-    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
+    public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
+    public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
     #endregion
 
     #region IHighlightable Members
 
-    public override float HighlightRadius { get { return Radius * Screen.height * 1F; } }
+    public override float CircleHighlightEffectRadius { get { return Radius * Screen.height * 1F; } }
+
+    #endregion
+
+    #region IUnitElement Members
+
+    IUnitCmd IUnitElement.Command { get { return Command as IUnitCmd; } }
+
+    #endregion
+
+    #region IUnitElement_Ltd Members
+
+    IUnitCmd_Ltd IUnitElement_Ltd.Command { get { return Command as IUnitCmd_Ltd; } }
 
     #endregion
 

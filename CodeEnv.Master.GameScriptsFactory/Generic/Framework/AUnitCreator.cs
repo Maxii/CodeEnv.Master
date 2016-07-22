@@ -36,7 +36,7 @@ using UnityEngine;
 public abstract class AUnitCreator<ElementType, ElementHullCategoryType, ElementDataType, ElementHullStatType, CommandType> : ACreator
     where ElementType : AUnitElementItem
     where ElementHullCategoryType : struct
-    where ElementDataType : AUnitElementItemData
+    where ElementDataType : AUnitElementData
     where ElementHullStatType : AHullStat
     where CommandType : AUnitCmdItem {
 
@@ -125,7 +125,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         var gameState = _gameMgr.CurrentState;
         switch (gameState) {
             case GameState.Building:
-                _owner = ValidateAndInitializeOwner();
                 _availableLosWeaponStats = __CreateAvailableLosWeaponStats(TempGameValues.MaxLosWeaponsForAnyElement);
                 _availableMissileWeaponStats = __CreateAvailableMissileWeaponStats(TempGameValues.MaxMissileWeaponsForAnyElement);
                 _availablePassiveCountermeasureStats = __CreateAvailablePassiveCountermeasureStats(9);
@@ -137,7 +136,18 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             case GameState.Waiting:
             case GameState.BuildAndDeploySystems:
             case GameState.GeneratingPathGraphs:
+                break;
             case GameState.PrepareUnitsForDeployment:
+                // 7.8.16 Warning: This is the latest _owner can be initialized before it is needed. Temporarily moved here 
+                // from Building to allow access to PlayerAIManager which is not available until after BuildAndDeploySystems
+                // as it needs Stars and UCenter to populate initial knowledge of universe.
+                _owner = ValidateAndInitializeOwner();
+                if (_owner == null) {
+                    D.Warn("{0}.{1} found insufficient players to create unit so destroying unit before created.", UnitName, GetType().Name);
+                    Destroy(gameObject);
+                    return;
+                }
+                break;
             case GameState.DeployingUnits:
             case GameState.RunningCountdown_1:
             case GameState.Running:
@@ -162,7 +172,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
 
     private static void UnitDeathHandler(object sender, EventArgs e) {
         CommandType command = sender as CommandType;
-        AllUnitCommands.Remove(command);
+        _allUnitCommands.Remove(command);
     }
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {
@@ -337,12 +347,11 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             float ordDrag = 0.01F;
             float ordTurnRate = 700F;   // degrees per hour
             float ordCourseUpdateFreq = 0.5F; // course updates per hour
-            float baseRangeDistance = rangeCat.GetBaseWeaponRange();
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
 
             var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag,
+                rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag,
                 ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
             statsList.Add(weapStat);
         }
@@ -354,7 +363,6 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         for (int i = 0; i < quantity; i++) {
             AWeaponStat weapStat;
             RangeCategory rangeCat;
-            float baseRangeDistance;
             float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
             float reloadPeriod;
             string name;
@@ -370,23 +378,21 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             switch (deliveryVehicleCategory) {
                 case WDVCategory.Beam:
                     rangeCat = RangeCategory.Short;
-                    baseRangeDistance = rangeCat.GetBaseWeaponRange();
                     reloadPeriod = UnityEngine.Random.Range(3F, 5F);
                     name = "Phaser Projector";
                     float duration = UnityEngine.Random.Range(1F, 2F);
                     weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxLaunchInaccuracy);
+                        deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxLaunchInaccuracy);
                     break;
                 case WDVCategory.Projectile:
                     rangeCat = RangeCategory.Medium;
-                    baseRangeDistance = rangeCat.GetBaseWeaponRange();
                     reloadPeriod = UnityEngine.Random.Range(2F, 4F);
                     name = "KineticKill Projector";
                     float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);
                     float ordMass = 1F;
                     float ordDrag = 0.02F;
                     weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
+                        deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));
@@ -469,10 +475,9 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
             }
-            float baseRangeDistance = rangeCat.GetBaseActiveCountermeasureRange();
             DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
             var countermeasureStat = new ActiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, baseRangeDistance, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
+                rangeCat, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
             statsList.Add(countermeasureStat);
         }
         return statsList;
@@ -483,7 +488,7 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
             RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
-            //DistanceRange rangeCat = DistanceRange.Long;
+            //RangeCategory rangeCat = RangeCategory.Long;
             switch (rangeCat) {
                 case RangeCategory.Short:
                     name = "ProximityDetector";
@@ -498,9 +503,8 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
             }
-            float baseRangeDistance = rangeCat.GetBaseSensorRange();
             var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, baseRangeDistance);
+                rangeCat);
             statsList.Add(sensorStat);
         }
         return statsList;
@@ -510,14 +514,13 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         IList<ShieldGeneratorStat> statsList = new List<ShieldGeneratorStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             RangeCategory rangeCat = RangeCategory.Short;
-            float baseRangeDistance = rangeCat.GetBaseShieldRange();
             string name = "Deflector Generator";
             float maxCharge = 20F;
             float trickleChargeRate = 1F;
             float reloadPeriod = 20F;
             DamageStrength damageMitigation = default(DamageStrength);  // none for now
             var generatorStat = new ShieldGeneratorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 1F, 0F, 0F,
-                rangeCat, baseRangeDistance, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
+                rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
             statsList.Add(generatorStat);
         }
         return statsList;
@@ -738,11 +741,11 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         }
         DiplomaticRelationship desiredRelationship;
         switch (ownerRelationshipWithUser) {
-            case __DiploStateWithUser.Ally:
-                desiredRelationship = DiplomaticRelationship.Ally;
+            case __DiploStateWithUser.Alliance:
+                desiredRelationship = DiplomaticRelationship.Alliance;
                 break;
-            case __DiploStateWithUser.Friend:
-                desiredRelationship = DiplomaticRelationship.Friend;
+            case __DiploStateWithUser.Friendly:
+                desiredRelationship = DiplomaticRelationship.Friendly;
                 break;
             case __DiploStateWithUser.Neutral:
                 desiredRelationship = DiplomaticRelationship.Neutral;
@@ -756,15 +759,40 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithUser));
         }
-        IEnumerable<Player> aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(userPlayer) == desiredRelationship);
 
-        if (!aiOwnerCandidates.Any()) {
-            D.Log("{0}.{1} couldn't find an AIPlayer with desired user relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetValueName());
-            desiredRelationship = DiplomaticRelationship.None;
-            aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(userPlayer) == desiredRelationship);
+        Player aiOwner = null;
+        IEnumerable<Player> aiOwnerCandidates;
+        var userPlayerAIMgr = _gameMgr.UserAIManager;
+        if (userPlayerAIMgr.__TryGetPlayersWithAssignedInitialRelationship(desiredRelationship, out aiOwnerCandidates)) {
+            aiOwner = aiOwnerCandidates.Shuffle().First();
         }
-        Player aiOwner = aiOwnerCandidates.Shuffle().First();
-        D.Log("{0}.{1} picked AI Owner {2}. User relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetValueName());
+        else {
+            IEnumerable<Player> playersWithAssignedInitialRelationshipWithUser = userPlayerAIMgr.__PlayersWithAssignedInitialRelationships;
+            if (!_gameMgr.IsRunning) {
+                D.Assert(_gameMgr.AIPlayers.All(aiPlayer => aiPlayer.IsRelationship(userPlayer, DiplomaticRelationship.None)));
+                aiOwnerCandidates = _gameMgr.AIPlayers.Except(playersWithAssignedInitialRelationshipWithUser);
+            }
+            else {
+                // accommodate delayed operations
+                IEnumerable<Player> unmetPlayersWithNoUserRelationshipYet = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.IsRelationship(userPlayer, DiplomaticRelationship.None));
+                aiOwnerCandidates = unmetPlayersWithNoUserRelationshipYet.Except(playersWithAssignedInitialRelationshipWithUser);
+            }
+
+            if (aiOwnerCandidates.Any()) {
+                aiOwner = aiOwnerCandidates.Shuffle().First();
+                D.Assert(!aiOwner.IsKnown(userPlayer));
+                var aiOwnerAIMgr = _gameMgr.GetAIManagerFor(aiOwner);
+                aiOwnerAIMgr.__AssignInitialDiploRelation(userPlayer, desiredRelationship);
+
+                D.Assert(!userPlayer.IsKnown(aiOwner));
+                userPlayerAIMgr.__AssignInitialDiploRelation(aiOwner, desiredRelationship);
+            }
+            // else no AI players matched desiredRelationship and no AI players left with unassigned relationship, so not enough players
+        }
+
+        if (aiOwner != null) {
+            D.Log("{0}.{1} picked AI Owner {2}. User relationship upon detection will be {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetValueName());
+        }
         return aiOwner;
     }
 

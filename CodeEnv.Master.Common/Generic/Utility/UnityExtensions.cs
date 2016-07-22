@@ -287,7 +287,7 @@ namespace CodeEnv.Master.Common {
         #region Vector Extensions
 
         public static void ValidateNormalized(this Vector3 v) {
-            if (!v.IsSameAs(v.normalized)) {
+            if (v.IsSameAs(Vector3.zero) || !v.IsSameAs(v.normalized)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentOutOfRangeException(ErrorMessages.NotNormalized.Inject(v, callingMethodName));
             }
@@ -309,6 +309,8 @@ namespace CodeEnv.Master.Common {
         /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
         public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+            D.Assert(!sourceDir.IsSameAs(Vector3.zero));
+            D.Assert(!dir.IsSameAs(Vector3.zero));
             return UnityUtility.AreDirectionsWithinTolerance(sourceDir.normalized, dir.normalized, allowedDeviation);
         }
 
@@ -429,7 +431,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Sets the x value of this transform's local position.
+        /// Sets the y value of this transform's local position.
         /// </summary>
         /// <param name="t">The transform.</param>
         /// <param name="y">The y.</param>
@@ -439,7 +441,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Sets the x value of this transform's local position.
+        /// Sets the z value of this transform's local position.
         /// </summary>
         /// <param name="t">The transform.</param>
         /// <param name="z">The z.</param>

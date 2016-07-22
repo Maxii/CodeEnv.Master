@@ -26,7 +26,31 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
+public class SystemItem : ADiscernibleItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// radius of the inscribed sphere used to generate the item's surrounding approach waypoints.
+    /// </summary>
+    public const float RadiusMultiplierForApproachWaypointsInscribedSphere = 1.1F;   // 1.1 x 120 = 132
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding interior waypoints from the item's position.
+    /// </summary>
+    public const float InteriorWaypointDistanceMultiplier = 0.5F;
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding patrol stations from the item's position.
+    /// </summary>
+    private const float PatrolStationDistanceMultiplier = 0.4F;
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding guard stations from the item's position.
+    /// </summary>
+    private const float GuardStationDistanceMultiplier = 0.3F;
 
     private bool _isTrackingLabelEnabled;
     public bool IsTrackingLabelEnabled {
@@ -63,26 +87,29 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     public StarItem Star {
         get { return _star; }
         set {
-            D.Assert(_star == null, "{0}'s Star can only be set once.".Inject(FullName));
+            D.Assert(_star == null, "{0}'s Star can only be set once.", FullName);
             SetProperty<StarItem>(ref _star, value, "Star", StarPropSetHandler);
         }
     }
 
-    public IList<IPlanetItem> Planets { get; private set; }
+    public IEnumerable<IMoon_Ltd> Moons { get { return _moons.Cast<IMoon_Ltd>(); } }
 
-    public IList<IMoonItem> Moons { get; private set; }
+    public IEnumerable<IPlanetoid_Ltd> Planetoids { get { return _planetoids.Cast<IPlanetoid_Ltd>(); } }
 
-    public IList<IPlanetoidItem> Planetoids { get; private set; }
-
-    private SystemPublisher _publisher;
-    public SystemPublisher Publisher {
-        get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
-    }
+    public SystemReport UserReport { get { return Publisher.GetUserReport(); } }
 
     public override float Radius { get { return Data.Radius; } }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
+    private SystemPublisher _publisher;
+    private SystemPublisher Publisher {
+        get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
+    }
+
+    private IList<APlanetoidItem> _planetoids;
+    private IList<MoonItem> _moons;
+    private IList<PlanetItem> _planets;
     private ITrackingWidget _trackingLabel;
     private MeshCollider _orbitalPlaneCollider;
 
@@ -90,13 +117,14 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        Planetoids = new List<IPlanetoidItem>();    // OPTIMIZE size of each of these lists
-        Planets = new List<IPlanetItem>();
-        Moons = new List<IMoonItem>();
+        _planetoids = new List<APlanetoidItem>();    // OPTIMIZE size of each of these lists
+        _planets = new List<PlanetItem>();
+        _moons = new List<MoonItem>();
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
     protected override void InitializeOnData() {
+        base.InitializeOnData();
         // no primary collider that needs data, no ship transit ban zone, no ship orbit slot
     }
 
@@ -140,7 +168,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Radius / 2F;
+        float radiusOfSphereContainingPatrolStations = Radius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
@@ -151,7 +179,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
 
     private IList<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
-        float distanceFromPosition = Radius / 3F;   // HACK
+        float distanceFromPosition = Radius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
         guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
@@ -170,39 +198,38 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
 
     public void AddPlanetoid(APlanetoidItem planetoid) {
         D.Assert(!planetoid.IsOperational);
-        Planetoids.Add(planetoid);
+        _planetoids.Add(planetoid);
         var planet = planetoid as PlanetItem;
         if (planet != null) {
-            Planets.Add(planet);
+            _planets.Add(planet);
         }
         else {
-            Moons.Add(planetoid as MoonItem);
+            _moons.Add(planetoid as MoonItem);
         }
         Data.AddPlanetoid(planetoid.Data);
     }
 
-    public void RemovePlanetoid(IPlanetoidItem planetoid) {
+    public void RemovePlanetoid(IPlanetoid planetoid) {
         D.Assert(!planetoid.IsOperational);
-        bool isRemoved = Planetoids.Remove(planetoid as APlanetoidItem);
+        bool isRemoved = _planetoids.Remove(planetoid as APlanetoidItem);
         var planet = planetoid as PlanetItem;
         if (planet != null) {
-            isRemoved = isRemoved & Planets.Remove(planet);
+            isRemoved = isRemoved & _planets.Remove(planet);
         }
         else {
-            isRemoved = isRemoved & Moons.Remove(planetoid as MoonItem);
+            isRemoved = isRemoved & _moons.Remove(planetoid as MoonItem);
         }
         isRemoved = isRemoved & Data.RemovePlanetoid((planetoid as APlanetoidItem).Data);
         D.Assert(isRemoved);
     }
 
-    public SystemReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public SystemReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public StarReport GetStarReport(Player player) { return Star.GetReport(player); }
 
     public PlanetoidReport[] GetPlanetoidReports(Player player) {
-        return Planetoids.Select(p => p.GetReport(player)).ToArray();
+        return Planetoids.Select(p => (p as APlanetoidItem).GetReport(player)).ToArray();
     }
 
     /// <summary>
@@ -210,7 +237,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     /// </summary>
     /// <param name="player">The player.</param>
     /// <returns></returns>
-    public SettlementReport GetSettlementReport(Player player) {
+    public SettlementCmdReport GetSettlementReport(Player player) {
         return Settlement != null ? Settlement.GetReport(player) : null;
     }
 
@@ -229,7 +256,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, UserReport);
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -296,7 +323,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
 
     #region IHighlightable Members
 
-    public override float HighlightRadius { get { return Radius * Screen.height * 1F; } }
+    public override float CircleHighlightEffectRadius { get { return Radius * Screen.height * 1F; } }
 
     #endregion
 
@@ -309,7 +336,7 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
             return distanceToFleet - Radius;
         }
         // fleet is inside system so don't cast into star
-        return Star.GetObstacleCheckRayLength(fleetPosition);
+        return (Star as IFleetNavigable).GetObstacleCheckRayLength(fleetPosition);
     }
 
     #endregion
@@ -350,6 +377,9 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 
@@ -368,6 +398,9 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     }
 
     public bool IsGuardingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 
@@ -376,16 +409,27 @@ public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, IFleet
     #region IFleetExplorable Members
 
     public bool IsFullyExploredBy(Player player) {
-        bool isStarExplored = Star.IsFullyExploredBy(player);
-        bool areAllPlanetsExplored = Planets.Cast<IShipExplorable>().All(p => p.IsFullyExploredBy(player)); //bool areAllPlanetsExplored = Planets.All(p => p.IsFullyExploredBy(player));
+        bool isStarExplored = (Star as IShipExplorable).IsFullyExploredBy(player);
+        bool areAllPlanetsExplored = Planets.Cast<IShipExplorable>().All(p => p.IsFullyExploredBy(player));
         return isStarExplored && areAllPlanetsExplored;
     }
 
     // LocalAssemblyStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !Owner.IsAtWarWith(player);
     }
+
+    #endregion
+
+    #region ISystem_Ltd Members
+
+    IStar_Ltd ISystem_Ltd.Star { get { return Star as IStar_Ltd; } }
+
+    public IEnumerable<IPlanet_Ltd> Planets { get { return _planets.Cast<IPlanet_Ltd>(); } }
 
     #endregion
 

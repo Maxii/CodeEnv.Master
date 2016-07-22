@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SensorStat : ARangedEquipmentStat {
 
-        private static string _toStringFormat = "{0}: Name[{1}], Range[{2}({3:0.})].";
+        private const string _toStringFormat = "{0}: Name[{1}], Range[{2}].";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.
@@ -37,14 +37,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
-        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
         public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, float baseRangeDistance)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance) {
-        }
+            float expense, RangeCategory rangeCat)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) { }
 
         public override string ToString() {
-            return _toStringFormat.Inject(typeof(Sensor).Name, Name, RangeCategory.GetEnumAttributeText(), BaseRangeDistance);
+            return _toStringFormat.Inject(typeof(Sensor).Name, Name, RangeCategory.GetValueName());
         }
 
     }

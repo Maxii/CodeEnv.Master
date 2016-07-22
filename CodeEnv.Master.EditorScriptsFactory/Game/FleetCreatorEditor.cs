@@ -31,6 +31,8 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
         base.OnInspectorGUI();
 
         var fleetCreator = target as FleetUnitCreator;
+        fleetCreator.formation = (ACreator.DebugFleetFormation)EditorGUILayout.EnumPopup("Unit Formation", fleetCreator.formation);
+
         fleetCreator.move = GUILayout.Toggle(fleetCreator.move, "Get Fleet Underway");
         if (fleetCreator.move) {
             EditorGUI.indentLevel++;
@@ -40,7 +42,8 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
         }
         fleetCreator.ftlStartsDamaged = GUILayout.Toggle(fleetCreator.ftlStartsDamaged, "FTL Starts Damaged");
 
-        fleetCreator.stanceExclusions = (FleetUnitCreator.ShipCombatStanceExclusions)EditorGUILayout.EnumPopup("CombatStanceExclusions", fleetCreator.stanceExclusions);
+        fleetCreator.stanceExclusions = (FleetUnitCreator.ShipCombatStanceExclusions)EditorGUILayout.EnumPopup(
+            new GUIContent("Excluded Stances", "HQ Elements when selected will always be Defensive"), fleetCreator.stanceExclusions);
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

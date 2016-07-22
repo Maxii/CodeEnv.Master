@@ -27,14 +27,14 @@ namespace CodeEnv.Master.GameContent {
             get { return ShipDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IShipItem _item;
+        private IShip_Ltd _item;
 
-        public ShipPublisher(ShipData data, IShipItem item)
+        public ShipPublisher(ShipData data, IShip_Ltd item)
             : base(data) {
             _item = item;
         }
 
-        protected override ShipReport GenerateReport(Player player) {
+        protected override ShipReport MakeReportInstance(Player player) {
             return new ShipReport(_data, player, _item);
         }
 

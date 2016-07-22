@@ -117,8 +117,14 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     #region Event and Property Change Handlers
 
     private void CurrentSectorIndexPropChangedHandler() {
-        transform.position = _sectorGrid.GetSector(CurrentSectorIndex).Position;
-        UpdateSectorIDLabel();
+        Vector3 sectorPosition;
+        if (_sectorGrid.TryGetSectorPosition(CurrentSectorIndex, out sectorPosition)) {
+            transform.position = sectorPosition;
+            UpdateSectorIDLabel();
+        }
+        else {
+            D.Warn("{0}: Camera is beyond built Sectors.", GetType().Name);
+        }
     }
 
     private void CameraSectorIndexPropChangedHandler() {
@@ -152,8 +158,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 }
 
                 // OPTIMIZE cache sector and sectorView
-                var sector = _sectorGrid.GetSector(CurrentSectorIndex);
-                if (sector != null) {  // can be null if camera is located where no sector object was created
+                SectorItem sector;
+                if (_sectorGrid.TryGetSector(CurrentSectorIndex, out sector)) {
                     if (sector.IsHudShowing) {
                         sector.ShowHud(false);
                     }
@@ -184,7 +190,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             if (_ctxControl == null) {
                 _ctxControl = InitializeContextMenu();
             }
-            _ctxControl.TryShowContextMenu();
+            _ctxControl.AttemptShowContextMenu();
         }
     }
 

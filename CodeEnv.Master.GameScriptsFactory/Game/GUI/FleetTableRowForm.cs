@@ -35,14 +35,14 @@ public class FleetTableRowForm : ACommandTableRowForm {
 
     protected override void AssignValueToCompositionGuiElement() {
         base.AssignValueToCompositionGuiElement();
-        var report = Report as FleetReport;
-        _compositionElement.IconInfo = (report.Item as FleetCmdItem).IconInfo;
+        var report = Report as FleetCmdReport;
+        _compositionElement.IconInfo = FleetIconInfoFactory.Instance.MakeInstance(report);
         _compositionElement.Category = report.Category;
     }
 
     protected override void AssignValueToSpeedGuiElement() {
         base.AssignValueToSpeedGuiElement();
-        var report = Report as FleetReport;
+        var report = Report as FleetCmdReport;
         _speedLabel.text = report.UnitFullSpeed.HasValue ? Constants.FormatFloat_1DpMax.Inject(report.UnitFullSpeed.Value) : _unknown;
     }
 

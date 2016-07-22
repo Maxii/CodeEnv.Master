@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float ArrivalWindowDepth { get; private set; }
 
-        public bool IsFastMover { get { return Destination is IShipItem || Destination is IFleetCmdItem; } }
+        public bool IsFastMover { get { return Destination is IShip || Destination is IFleetCmd; } }
 
         public float InnerRadius { get; private set; }
         public float OuterRadius { get; private set; }
@@ -42,6 +42,8 @@ namespace CodeEnv.Master.GameContent {
         public IShipNavigable Destination { get; private set; }
 
         private Vector3 _destOffset;
+        private float _innerRadiusSqrd;
+        private float _outerRadiusSqrd;
 
         public AutoPilotDestinationProxy(IShipNavigable destination, Vector3 destOffset, float innerRadius, float outerRadius) {
             Utility.ValidateNotNull(destination);
@@ -50,13 +52,15 @@ namespace CodeEnv.Master.GameContent {
             Destination = destination;
             _destOffset = destOffset;
             InnerRadius = innerRadius;
+            _innerRadiusSqrd = innerRadius * innerRadius;
             OuterRadius = outerRadius;
+            _outerRadiusSqrd = outerRadius * outerRadius;
             ArrivalWindowDepth = outerRadius - innerRadius;
         }
 
         public bool HasArrived(Vector3 shipPosition) {
-            float shipDistanceToDest = Vector3.Distance(Position, shipPosition);
-            if (shipDistanceToDest > InnerRadius && shipDistanceToDest < OuterRadius) {
+            float shipSqrdDistanceToDest = Vector3.SqrMagnitude(Position - shipPosition);
+            if (shipSqrdDistanceToDest.IsGreaterThanOrEqualTo(_innerRadiusSqrd) && shipSqrdDistanceToDest.IsLessThanOrEqualTo(_outerRadiusSqrd)) {
                 // ship has arrived
                 return true;
             }

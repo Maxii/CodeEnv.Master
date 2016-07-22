@@ -82,6 +82,7 @@ namespace CodeEnv.Master.GameContent {
         public static IGeneralFactory GeneralFactory { get; set; }
         public static ITrackingWidgetFactory TrackingWidgetFactory { get; set; }
         public static IGameInputHelper InputHelper { get; set; }
+        public static IFormationGenerator FormationGenerator { get; set; }
 
         #endregion
 

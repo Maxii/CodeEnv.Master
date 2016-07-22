@@ -38,7 +38,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     /// </summary>
     /// <param name="ship">The ship.</param>
     /// <returns></returns>
-    private bool CheckWeatherToManuallyPlaceShipInCloseOrbit(IShipItem ship) {
+    private bool CheckWeatherToManuallyPlaceShipInCloseOrbit(IShip ship) {
         float shipDistanceToOrbitedObject = Vector3.Distance(ship.Position, transform.position);    // same as OrbitedItem
         float minOutsideOfOrbitCaptureRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
         return shipDistanceToOrbitedObject < minOutsideOfOrbitCaptureRadius;
@@ -58,7 +58,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     ///// <param name="closeOrbitPlacementPosition">The close orbit placement position.</param>
     ///// <returns></returns>
     //[System.Obsolete]
-    //public bool TryDetermineCloseOrbitPlacementPosition(IShipItem ship, out Vector3 closeOrbitPlacementPosition) {
+    //public bool TryDetermineCloseOrbitPlacementPosition(IShip_Ltd ship, out Vector3 closeOrbitPlacementPosition) {
     //    if (CheckWeatherToManuallyPlaceShipInCloseOrbit(ship)) {
     //        // ship is too far inside of orbitSlot to use AutoPilot so just place it where it belongs
     //        float slotMeanRadius = OrbitData.MeanRadius;

@@ -38,7 +38,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         set {
             D.Assert(!_isApprovalSet); // should only happen once between Resets
             _approval = value;
-            ApprovalPropSetHandler();
+            ApprovalPropSetHandler();   // SetProperty() only calls handler when changed
         }
     }
 

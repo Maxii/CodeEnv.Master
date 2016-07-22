@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -23,13 +24,15 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Data associated with a FacilityItem.
     /// </summary>
-    public class FacilityData : AUnitElementItemData {
+    public class FacilityData : AUnitElementData {
 
         public FacilityHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
         public override Index3D SectorIndex {
             get { return References.SectorGrid.GetSectorIndex(Position); } // Settlement Facilities get relocated
         }
+
+        public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
@@ -45,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="topography">The topography.</param>
-        public FacilityData(IFacilityItem facility, Player owner, CameraFollowableStat cameraStat,
+        public FacilityData(IFacility facility, Player owner, CameraFollowableStat cameraStat,
             IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
             IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Topography topography)
             : base(facility, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
@@ -53,6 +56,10 @@ namespace CodeEnv.Master.GameContent {
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
+        }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new FacilityInfoAccessController(this);
         }
 
         public override string ToString() {

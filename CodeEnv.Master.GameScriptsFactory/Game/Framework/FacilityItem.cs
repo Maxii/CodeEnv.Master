@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitElementItems that are Facilities.
 /// </summary>
-public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle {
+public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidableObstacle {
 
     private static readonly Vector2 IconSize = new Vector2(16F, 16F);
 
@@ -60,12 +60,14 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     /// the element may return to it after the Captain's order has been executed. 
     /// </summary>
     public FacilityOrder CurrentOrder {
-        get { return _currentOrder; }
+        private get { return _currentOrder; }
         set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
+    public FacilityReport UserReport { get { return Publisher.GetUserReport(); } }
+
     private FacilityPublisher _publisher;
-    public FacilityPublisher Publisher {
+    private FacilityPublisher Publisher {
         get { return _publisher = _publisher ?? new FacilityPublisher(Data, this); }
     }
 
@@ -118,20 +120,26 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         }
     }
 
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
+        // events once sensors are operational. Events include initial discovery of players which result in Relationship changes
+        CurrentState = FacilityState.Idling;
+    }
+
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
         _obstacleZoneCollider.enabled = true;
-        CurrentState = FacilityState.Idling;
+        //CurrentState = FacilityState.Idling;
     }
 
-    public FacilityReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedFacility, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedFacility, UserReport);
     }
 
     #region Event and Property Change Handlers
@@ -140,19 +148,25 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         HandleNewOrder();
     }
 
+    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
+        IMortalItem deadFsmTgt = sender as IMortalItem;
+        UponFsmTargetDeath(deadFsmTgt);
+    }
+
     #endregion
 
-    protected override void SetDeadState() {
+    protected override void InitiateDeadState() {
+        UponDeath();
         CurrentState = FacilityState.Dead;
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
         // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
     }
 
     protected override IconInfo MakeIconInfo() {
-        var report = GetUserReport();
+        var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
         return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, Layers.Cull_200);
     }
@@ -178,6 +192,36 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         }
     }
 
+    #region Orders
+
+    public bool IsCurrentOrderDirectiveAnyOf(params FacilityDirective[] directives) {
+        return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
+    }
+
+    /// <summary>
+    /// The Captain uses this method to issue orders.
+    /// </summary>
+    /// <param name="captainsOverrideOrder">The captains override order.</param>
+    /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
+    private void OverrideCurrentOrder(FacilityOrder captainsOverrideOrder, bool retainSuperiorsOrder) {
+        D.Assert(captainsOverrideOrder.Source == OrderSource.Captain, "{0}'s override order {1} came from {2}.", FullName, captainsOverrideOrder, captainsOverrideOrder.Source.GetValueName());
+        D.Assert(captainsOverrideOrder.StandingOrder == null, "{0} attempting to override current order {1} with order {2} containing an embedded standing order.", FullName, CurrentOrder, captainsOverrideOrder);
+        D.Assert(!captainsOverrideOrder.ToNotifyCmd, "{0}'s override order {1} should not contain instructions to notify Cmd.", FullName, captainsOverrideOrder);
+        // if the captain says to, and the current existing order is from his superior, then record it as a standing order
+        FacilityOrder standingOrder = null;
+        if (retainSuperiorsOrder && CurrentOrder != null) {
+            if (CurrentOrder.Source != OrderSource.Captain) {
+                // the current order is from the Captain's superior so retain it
+                standingOrder = CurrentOrder;
+            }
+            else {
+                // the current order is from the Captain, so its standing order, if any, should be retained
+                standingOrder = CurrentOrder.StandingOrder;
+            }
+        }
+        captainsOverrideOrder.StandingOrder = standingOrder;
+        CurrentOrder = captainsOverrideOrder;
+    }
 
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
@@ -188,8 +232,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
         if (CurrentOrder != null) {
             D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
-            FacilityDirective order = CurrentOrder.Directive;
-            switch (order) {
+            FacilityDirective directive = CurrentOrder.Directive;
+            __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
+
+            switch (directive) {
                 case FacilityDirective.Attack:
                     CurrentState = FacilityState.ExecuteAttackOrder;
                     break;
@@ -211,41 +257,39 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
                     break;
                 case FacilityDirective.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
         }
     }
 
-    /// <summary>
-    /// The Captain uses this method to issue orders.
-    /// </summary>
-    /// <param name="order">The order.</param>
-    /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
-    /// <param name="target">The target.</param>
-    private void OverrideCurrentOrder(FacilityDirective order, bool retainSuperiorsOrder, IUnitAttackableTarget target = null) {
-        // if the captain says to, and the current existing order is from his superior, then record it as a standing order
-        FacilityOrder standingOrder = null;
-        if (retainSuperiorsOrder && CurrentOrder != null) {
-            if (CurrentOrder.Source != OrderSource.Captain) {
-                // the current order is from the Captain's superior so retain it
-                standingOrder = CurrentOrder;
-            }
-            else if (CurrentOrder.StandingOrder != null) {
-                // the current order is from the Captain, but there is a standing order in it so retain it
-                standingOrder = CurrentOrder.StandingOrder;
-            }
+    private void __ValidateKnowledgeOfOrderTarget(IUnitAttackable target, FacilityDirective directive) {
+        if (directive == FacilityDirective.Disband || directive == FacilityDirective.Refit || directive == FacilityDirective.StopAttack) {
+            // directives aren't yet implemented
+            return;
         }
-        FacilityOrder newOrder = new FacilityOrder(order, OrderSource.Captain, target) {
-            StandingOrder = standingOrder
-        };
-        CurrentOrder = newOrder;
+        if (directive == FacilityDirective.Scuttle || directive == FacilityDirective.Repair) {
+            D.Assert(target == null);
+            return;
+        }
+        D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+            FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
     }
+
+    #endregion
 
     #region StateMachine
 
-    public new FacilityState CurrentState {
+    // 7.6.16 Primary responsibility for handling Relations changes(existing relationship with a player changes) in Cmd
+    // and Element state machines rest with the Cmd. They implement HandleRelationsChanged and UponRelationsChanged.
+    // In all cases where the order is issued by either Cmd or User, the element does not need to pay attention to Relations
+    // changes as their orders will be changed if a Relations change requires it, determined by Cmd. When the Captain
+    // overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
+    // in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
+    // Upshot: Elements can ignore Relations changes
+
+    protected new FacilityState CurrentState {
         get { return (FacilityState)base.CurrentState; }
-        protected set {
+        set {
             if (base.CurrentState != null && CurrentState == value) {
                 D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
             }
@@ -271,16 +315,27 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region Idling
 
+    // Idling is entered upon completion of an order or when the item initially commences operations
+
     IEnumerator Idling_EnterState() {
         LogEvent();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
         if (CurrentOrder != null) {
-            // check for a standing order to execute if the current order (just completed) was issued by the Captain
-            if (CurrentOrder.Source == OrderSource.Captain && CurrentOrder.StandingOrder != null) {
-                D.Log(ShowDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetValueName());
+            // check for a standing order to execute
+            if (CurrentOrder.StandingOrder != null) {
+                D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder);
+
+                OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
+                D.Assert(standingOrderSource == OrderSource.CmdStaff || standingOrderSource == OrderSource.User, "{0} StandingOrder {1} source can't be {2}.",
+                    FullName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield return null;
+                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", FullName, CurrentOrder);
             }
+            D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", FullName, CurrentOrder);
+            CurrentOrder = null;
         }
     }
 
@@ -294,6 +349,17 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         __ReportCollision(collision);
     }
 
+    void Idling_UponDamageIncurred() {
+        LogEvent();
+        if (AssessNeedForRepair(Constants.OneHundredPercent)) {
+            InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
+        }
+    }
+
+    void Idling_UponDeath() {
+        LogEvent();
+    }
+
     void Idling_ExitState() {
         LogEvent();
     }
@@ -302,16 +368,26 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region ExecuteAttackOrder
 
-    private IElementAttackable _fsmPrimaryAttackTgt; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IElementAttackable _fsmPrimaryAttackTgt;    // UNDONE
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         LogEvent();
 
-        IUnitAttackableTarget attackTgtFromOrder = CurrentOrder.Target;
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.Assert(CurrentOrder.ToNotifyCmd);
+
+        IUnitAttackable attackTgtFromOrder = CurrentOrder.Target;
+
         while (attackTgtFromOrder.IsOperational) {
             //TODO Primary target needs to be picked, and if it dies, its death handled ala ShipItem
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
-            // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
+            // if not in range, then primary target will be null, so UponWeaponReadyToFire will attack other targets of opportunity, if any
+
+            //bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmPrimaryAttackTgt, toSubscribe: true);
+            //D.Assert(isSubscribed);
+
+            //TODO Implement communication of results to BaseCmd ala Ship -> FleetCmd
+            // Command.HandleFacilityAttackAttemptFinished(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
             yield return null;
         }
         CurrentState = FacilityState.Idling;
@@ -327,8 +403,27 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         __ReportCollision(collision);
     }
 
+    void ExecuteAttackOrder_UponDamageIncurred() {
+        LogEvent();
+        if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
+            InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
+        }
+    }
+
+    void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAttackOrder_UponDeath() {
+        LogEvent();
+        // TODO
+    }
+
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
+        //bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmPrimaryAttackTgt, toSubscribe: false);
+        //D.Assert(isUnsubscribed);
         _fsmPrimaryAttackTgt = null;
     }
 
@@ -338,8 +433,52 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     IEnumerator ExecuteRepairOrder_EnterState() {
         LogEvent();
+        D.Assert(!_debugSettings.DisableRepair);
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
         Call(FacilityState.Repairing);
         yield return null;  // required so Return()s here
+
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // No Cmd notification reqd in this state. Dead state will follow
+                    break;
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                // Should not designate a failure cause when needing repair while repairing
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
+            yield return null;
+        }
+
+        // If there was a failure generated by Repairing, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+
+        CurrentState = FacilityState.Idling;
+    }
+
+    void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        LogEvent();
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
+    }
+
+    void ExecuteRepairOrder_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
+    }
+
+    void ExecuteRepairOrder_UponDamageIncurred() {
+        LogEvent();
+        // No need to AssessNeedForRepair() as already Repairing
+    }
+
+    void ExecuteRepairOrder_UponDeath() {
+        LogEvent();
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -350,23 +489,32 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #region Repairing
 
+    // 7.2.16 Call()ed State
+
     IEnumerator Repairing_EnterState() {
         LogEvent();
+        D.Assert(!_debugSettings.DisableRepair);
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
         StartEffectSequence(EffectSequenceID.Repairing);
 
-        var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
-        while (Data.CurrentHitPoints < repairCompleteHitPoints) {
-            var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
+        float repairCapacityPerDay = GetRepairCapacity();
+        while (Data.Health < Constants.OneHundredPercent) {
+            var repairedHitPts = repairCapacityPerDay;
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
-            yield return new WaitForHours(10.2F);   // HACK
+            yield return new WaitForHours(GameTime.HoursPerDay);
         }
 
+        // HACK
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
         Data.ActiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
         Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.ForAll(w => w.IsDamaged = false);
         Data.Sensors.ForAll(s => s.IsDamaged = false);
+        if (IsHQ) {
+            Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
+        }
         D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
         StopEffectSequence(EffectSequenceID.Repairing);
@@ -386,6 +534,16 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     void Repairing_UponNewOrderReceived() {
         LogEvent();
         Return();
+    }
+
+    void Repairing_UponDamageIncurred() {
+        LogEvent();
+        // No need to AssessNeedForRepair() as already Repairing
+    }
+
+    void Repairing_UponDeath() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
     }
 
     void Repairing_ExitState() {
@@ -409,6 +567,10 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         //}
         //OnStopShow();   // must occur while still in target state
         Return();
+    }
+
+    void Refitting_UponDamageIncurred() {
+        LogEvent();
     }
 
     void Refitting_ExitState() {
@@ -437,7 +599,9 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     void Dead_EnterState() {
         LogEvent();
-        HandleDeath();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
+        HandleDeathFromDeadState();
         StartEffectSequence(EffectSequenceID.Dying);
     }
 
@@ -448,7 +612,7 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
 
     #endregion
 
-    #region StateMachine Support Methods
+    #region StateMachine Support Members
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectSeqID) {
         base.HandleEffectSequenceFinished(effectSeqID);
@@ -457,22 +621,87 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
         }
     }
 
-    #endregion
+    private bool _isFsmTgtDeathAlreadySubscribed;
 
-    #endregion
-
-    #region Combat Support Methods
-
-    protected override void AssessNeedForRepair() {
-        if (_debugSettings.DisableRepair) {
-            return;
-        }
-        if (Data.Health < 0.30F) {
-            if (CurrentOrder == null || CurrentOrder.Directive != FacilityDirective.Repair) {
-                OverrideCurrentOrder(FacilityDirective.Repair, retainSuperiorsOrder: true);
+    /// <summary>
+    /// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
+    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
+    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
+    /// </summary>
+    /// <param name="fsmAttackTgt">The target used by the State Machine. TODO Less specific type?</param>
+    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
+    /// <returns></returns>
+    private bool AttemptFsmTgtDeathSubscribeChange(IElementAttackable fsmAttackTgt, bool toSubscribe) {
+        Utility.ValidateNotNull(fsmAttackTgt);
+        var mortalFsmTgt = fsmAttackTgt as IMortalItem;
+        if (mortalFsmTgt != null) {
+            if (!toSubscribe) {
+                mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
             }
+            else if (!_isFsmTgtDeathAlreadySubscribed) {
+                mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
+            }
+            else {
+                D.Warn("{0}: Attempting to subcribe to {1}'s death when already subscribed.", FullName, fsmAttackTgt.FullName);
+            }
+            _isFsmTgtDeathAlreadySubscribed = toSubscribe;
+            return true;
         }
+        return false;
     }
+
+    #region Relays
+
+
+    #endregion
+
+    #region Repair Support
+
+    /// <summary>
+    /// Assesses this element's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="healthThreshold">The health threshold.</param>
+    /// <returns></returns>
+    private bool AssessNeedForRepair(float healthThreshold) {
+        D.Assert(CurrentState != FacilityState.Repairing);
+        if (_debugSettings.DisableRepair) {
+            return false;
+        }
+        if (_debugSettings.RepairAnyDamage) {
+            healthThreshold = Constants.OneHundredPercent;
+        }
+        if (Data.Health < healthThreshold) {
+            D.Log(ShowDebugLog, "{0} has determined it needs Repair.", FullName);
+            return true;
+        }
+        return false;
+    }
+
+    private void InitiateRepair(bool retainSuperiorsOrderOnRepairCompletion) {
+        D.Assert(CurrentState != FacilityState.Repairing);
+        D.Assert(!_debugSettings.DisableRepair);
+        D.Assert(Data.Health < Constants.OneHundredPercent);
+
+        FacilityOrder repairOrder = new FacilityOrder(FacilityDirective.Repair, OrderSource.Captain);
+        OverrideCurrentOrder(repairOrder, retainSuperiorsOrderOnRepairCompletion);
+    }
+
+    /// <summary>
+    /// Returns the capacity for repair available to repair this facility.
+    /// UOM is hitPts per day.
+    /// </summary>
+    /// <returns></returns>
+    private float GetRepairCapacity() {
+        return Command.GetRepairCapacity();
+    }
+
+    #endregion
+
+    #region Combat Support
+
+    #endregion
+
+    #endregion
 
     #endregion
 
@@ -630,14 +859,15 @@ public class FacilityItem : AUnitElementItem, IFacilityItem, IAvoidableObstacle 
     #region IAvoidableObstacle Members
 
     public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
-        var formation = Command.Data.UnitFormation;
+        var formation = Command.UnitFormation;
         switch (formation) {
-            case Formation.Circle:
+            case Formation.Plane:
+            case Formation.Spread:
                 return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
-
             case Formation.Globe:
-                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
             case Formation.Wedge:
+            case Formation.Diamond:
+                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
             case Formation.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));

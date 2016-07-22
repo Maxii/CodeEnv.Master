@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract class for ADiscernibleItem's that have knowledge of each player's IntelCoverage.
 /// </summary>
-public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
+public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd {
 
     public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
@@ -34,13 +34,9 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     #region Initialization
 
-    protected override void InitializeOnData() {
-        Data.InitializePlayersIntel();  // moved here to move out of Data constructor
-    }
-
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        Data.userIntelCoverageChanged += UserIntelCoverageChangedEventHandler;
+        Data.intelCoverageChanged += IntelCoverageChangedEventHandler;
     }
 
     #endregion
@@ -66,34 +62,41 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     #region Event and Property Change Handlers
 
-    private void UserIntelCoverageChangedEventHandler(object sender, EventArgs e) {
+    private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
         if (!IsOperational) {
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        D.Log(ShowDebugLog, "{0}.UserIntelCoverageChangedHandler() called. IntelCoverage = {1}.", FullName, UserIntelCoverage.GetValueName());
+        Player playerWhosCoverageChgd = e.Player;
+        D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
+        if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
+            HandleUserIntelCoverageChanged();
+        }
+
+        Player playerWhosInfoAccessChgd = playerWhosCoverageChgd;
+        OnInfoAccessChanged(playerWhosInfoAccessChgd);
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Handles a change in the User's IntelCoverage of this item.
+    /// </summary>
+    protected virtual void HandleUserIntelCoverageChanged() {
         AssessIsDiscernibleToUser();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
         DisplayMgr.IsDisplayEnabled = UserIntelCoverage != IntelCoverage.None;
-        HandleIntelCoverageChanged();
     }
-
-    #endregion
-
-    /// <summary>
-    /// Hook for handling a change in IntelCoverage for derived classes.
-    /// </summary>
-    protected virtual void HandleIntelCoverageChanged() { }
 
     #region Cleanup
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
         if (Data != null) { // Data can be null for a time when creators delay builds
-            Data.userIntelCoverageChanged -= UserIntelCoverageChangedEventHandler;
+            Data.intelCoverageChanged -= IntelCoverageChangedEventHandler;
         }
     }
 

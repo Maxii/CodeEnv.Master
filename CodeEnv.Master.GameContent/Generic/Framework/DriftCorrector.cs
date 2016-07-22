@@ -99,7 +99,7 @@ namespace CodeEnv.Master.GameContent {
                 yield return Yielders.WaitForFixedUpdate;
             }
             if (cumDriftDistanceDuringCorrection.sqrMagnitude > 0.02F) { // HACK > 0.14 magnitude
-                D.LogBold("{0}: Cumulative Drift during Correction = {1}.", Name, cumDriftDistanceDuringCorrection.ToPreciseString());
+                //D.Log("{0}: Cumulative Drift during Correction = {1}.", Name, cumDriftDistanceDuringCorrection.ToPreciseString());
             }
         }
 

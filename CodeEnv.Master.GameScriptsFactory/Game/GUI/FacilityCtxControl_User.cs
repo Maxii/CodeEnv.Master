@@ -42,7 +42,7 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
         _facilityMenuOperator = facility;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_facilityMenuOperator.IsSelected) {
             D.Assert(_facilityMenuOperator == selected as FacilityItem);
             return true;
@@ -54,7 +54,7 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
         switch (directive) {
             case FacilityDirective.Disband:
             case FacilityDirective.Scuttle:
-                return false;
+                return _facilityMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -66,10 +66,10 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
     protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
-        IssueFacilityMenuOperatorOrder(itemID);
+        IssueUserFacilityMenuOperatorOrder(itemID);
     }
 
-    private void IssueFacilityMenuOperatorOrder(int itemID) {
+    private void IssueUserFacilityMenuOperatorOrder(int itemID) {
         FacilityDirective directive = (FacilityDirective)_directiveLookup[itemID];
         D.Log("{0} selected directive {1} from context menu.", _facilityMenuOperator.FullName, directive.GetValueName());
         _facilityMenuOperator.CurrentOrder = new FacilityOrder(directive, OrderSource.User);

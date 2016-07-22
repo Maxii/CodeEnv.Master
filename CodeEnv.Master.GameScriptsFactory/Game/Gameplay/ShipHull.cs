@@ -33,7 +33,6 @@ public class ShipHull : AHull, IShipHull {
     [SerializeField]
     private ShipHullCategory _hullCategory = ShipHullCategory.None;
 
-
     public ShipHullCategory HullCategory { get { return _hullCategory; } }
 
     protected override int MaxAllowedLosWeapons { get { return _hullCategory.__MaxLOSWeapons(); } }

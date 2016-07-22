@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IEffect _explosionEffect;
 
-        public MortalEffectsManager(IEffectsClient effectsClient) // IMPROVE this could be IMortalEffectsClient w/Position, Radius and DisplayMgr
+        public MortalEffectsManager(IEffectsMgrClient effectsClient) // IMPROVE this could be IMortalEffectsClient w/Position, Radius and DisplayMgr
             : base(effectsClient) { }
 
         public override void StartEffect(EffectSequenceID effectSeqID) {

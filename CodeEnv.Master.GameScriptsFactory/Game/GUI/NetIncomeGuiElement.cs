@@ -35,7 +35,8 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
         get { return _income; }
         set {
             D.Assert(!_isIncomeSet);    // only happens once between Resets
-            SetProperty<float?>(ref _income, value, "Income", IncomePropSetHandler);
+            _income = value;
+            IncomePropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
@@ -45,7 +46,8 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
         get { return _expense; }
         set {
             D.Assert(!_isExpenseSet);    // only happens once between Resets
-            SetProperty<float?>(ref _expense, value, "Expense", ExpensePropSetHandler);
+            _expense = value;
+            ExpensePropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 

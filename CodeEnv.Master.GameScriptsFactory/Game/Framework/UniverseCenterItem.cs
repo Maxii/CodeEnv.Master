@@ -25,8 +25,26 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigable, IShipCloseOrbitable, ISensorDetectable, IAvoidableObstacle,
+public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_Ltd, IFleetNavigable, ISensorDetectable, IAvoidableObstacle,
     IPatrollable, IFleetExplorable, IShipExplorable, IGuardable {
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// radius of the inscribed sphere used to generate the item's surrounding waypoints.
+    /// </summary>
+    public const float RadiusMultiplierForWaypointInscribedSphere = 2.5F;
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding patrol stations from the item's position.
+    /// </summary>
+    private const float PatrolStationDistanceMultiplier = 2F;
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding guard stations from the item's position.
+    /// </summary>
+    private const float GuardStationDistanceMultiplier = 2F;
 
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
@@ -35,8 +53,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     public override float Radius { get { return Data.Radius; } }
 
+    public UniverseCenterReport UserReport { get { return Publisher.GetUserReport(); } }
+
     private UniverseCenterPublisher _publisher;
-    public UniverseCenterPublisher Publisher {
+    private UniverseCenterPublisher Publisher {
         get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data, this); }
     }
 
@@ -44,8 +64,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
     private SphereCollider _primaryCollider;
     private SphereCollider _obstacleZoneCollider;
     private DetourGenerator _detourGenerator;
-    private IList<IShipItem> _shipsInHighOrbit;
-    private IList<IShipItem> _shipsInCloseOrbit;
+    private IList<IShip_Ltd> _shipsInHighOrbit;
+    private IList<IShip_Ltd> _shipsInCloseOrbit;
     private Rigidbody _highOrbitRigidbody;
 
     #region Initialization
@@ -95,7 +115,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * 2F;
+        float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
@@ -106,7 +126,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     private IList<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
-        float distanceFromPosition = Data.CloseOrbitOuterRadius * 2F; // HACK
+        float distanceFromPosition = Data.CloseOrbitOuterRadius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
         guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
@@ -122,12 +142,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
         _obstacleZoneCollider.enabled = true;
     }
 
-    public UniverseCenterReport GetUserReport() { return Publisher.GetUserReport(); }
-
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedUniverseCenter, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedUniverseCenter, UserReport);
     }
 
     #region Event and Property Change Handlers
@@ -193,9 +211,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     #region IShipOrbitable Members
 
-    public void AssumeHighOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+    public void AssumeHighOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInHighOrbit == null) {
-            _shipsInHighOrbit = new List<IShipItem>();
+            _shipsInHighOrbit = new List<IShip_Ltd>();
         }
         _shipsInHighOrbit.Add(ship);
 
@@ -209,14 +227,14 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     public bool IsHighOrbitAllowedBy(Player player) { return true; }
 
-    public bool IsInHighOrbit(IShipItem ship) {
+    public bool IsInHighOrbit(IShip_Ltd ship) {
         if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
             return false;
         }
         return true;
     }
 
-    public void HandleBrokeOrbit(IShipItem ship) {
+    public void HandleBrokeOrbit(IShip_Ltd ship) {
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
@@ -229,7 +247,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
             D.Assert(isRemoved);
             D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius;
+            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
             D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
                 ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
@@ -246,7 +264,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     #region IShipCloseOrbitable Members
 
-    public bool IsCloseOrbitAllowedBy(Player player) { return !Owner.IsAtWarWith(player); }
+    public bool IsCloseOrbitAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
+        return !Owner.IsAtWarWith(player);
+    }
 
     private IShipCloseOrbitSimulator _closeOrbitSimulator;
     public IShipCloseOrbitSimulator CloseOrbitSimulator {
@@ -259,15 +282,15 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
         }
     }
 
-    public void AssumeCloseOrbit(IShipItem ship, FixedJoint shipOrbitJoint) {
+    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInCloseOrbit == null) {
-            _shipsInCloseOrbit = new List<IShipItem>();
+            _shipsInCloseOrbit = new List<IShip_Ltd>();
         }
         _shipsInCloseOrbit.Add(ship);
         shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
     }
 
-    public bool IsInCloseOrbit(IShipItem ship) {
+    public bool IsInCloseOrbit(IShip_Ltd ship) {
         if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
             return false;
         }
@@ -284,14 +307,14 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     #endregion
 
-    #region IDetectable Members
+    #region ISensorDetectable Members
 
-    public void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.HandleDetectionBy(cmdItem, sensorRange);
+    public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRange) {
-        _detectionHandler.HandleDetectionLostBy(cmdItem, sensorRange);
+    public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
     #endregion
@@ -324,7 +347,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
 
     #region IHighlightable Members
 
-    public override float HoverHighlightRadius { get { return Radius + 10F; } }
+    public override float SphericalHighlightEffectRadius { get { return Radius + 10F; } }
 
     #endregion
 
@@ -345,6 +368,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 
@@ -363,6 +389,9 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
     }
 
     public bool IsGuardingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 
@@ -377,7 +406,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IFleetNavigab
     // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsExploringAllowedBy(Player player) {
-        // currently owner can only be NoPlayer which by definition is not at war with anyone
+        // OPTIMIZE currently owner can only be NoPlayer which by definition is not at war with anyone
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !Owner.IsAtWarWith(player);
     }
 

@@ -331,6 +331,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void InitializeMainCamera() {   // called from OnGameStateChanged()
+
         InitializeFields();
         SetCameraSettings();
         InitializeCameraLight();

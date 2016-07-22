@@ -57,7 +57,13 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     [Header("Misc")]
     public SectorItem sector;
-    public FleetFormationStation fleetFormationStation;
+
+    [Header("Formations")]
+    public GameObject globeFormation;
+    public GameObject wedgeFormation;
+    public GameObject planeFormation;
+    public GameObject diamondFormation;
+    public GameObject spreadFormation;
 
     [Header("Orbit Simulators")]
     public OrbitSimulator orbitSimulator;

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: INavigable.cs
-// Interface for a destination that Ships and Fleets can navigate to.
+// Base Interface for a destination that can be navigated to.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,19 +21,14 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    ///Interface for a destination that Ships and Fleets can navigate to.
+    /// Base Interface for a destination that can be navigated to.
     /// </summary>
-    public interface INavigable {
+    public interface INavigable : IDebugable {
 
         /// <summary>
         /// The name to use for displaying in the UI.
         /// </summary>
         string DisplayName { get; }
-
-        /// <summary>
-        /// The name to use for debugging.
-        /// </summary>
-        string FullName { get; }
 
         Vector3 Position { get; }
 

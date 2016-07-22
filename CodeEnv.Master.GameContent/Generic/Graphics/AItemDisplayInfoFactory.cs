@@ -30,120 +30,117 @@ namespace CodeEnv.Master.GameContent {
 
         protected static string _unknown = Constants.QuestionMark;
 
-        private static IDictionary<ContentID, string> _defaultPhraseLookup = new Dictionary<ContentID, string>() {
+        private static IDictionary<AccessControlInfoID, string> _defaultPhraseLookup = new Dictionary<AccessControlInfoID, string>() {
 
-                {ContentID.Name, "Name: {0}"},
-                {ContentID.ParentName, "Parent: {0}"},
-                {ContentID.Owner, "Owner: {0}"},
-                {ContentID.Category, "Category: {0}"},
-                {ContentID.SectorIndex, "Sector: {0}"},
-                {ContentID.Position, "Position: {0}"},
-                //{ContentID.Density, "Density: {0}"},
+                {AccessControlInfoID.Name, "Name: {0}"},
+                {AccessControlInfoID.ParentName, "Parent: {0}"},
+                {AccessControlInfoID.Owner, "Owner: {0}"},
+                {AccessControlInfoID.Category, "Category: {0}"},
+                {AccessControlInfoID.SectorIndex, "Sector: {0}"},
+                {AccessControlInfoID.Position, "Position: {0}"},
 
-                {ContentID.Composition, CommonTerms.Composition + ": {0}"},
-                {ContentID.Formation, "Formation: {0}"},
-                {ContentID.CurrentCmdEffectiveness, "Cmd Eff: {0}"},
-                {ContentID.UnitWeaponsRange, "UnitWeaponsRange: {0}"},
-                {ContentID.UnitSensorRange, "UnitSensorRange: {0}"},
-                {ContentID.UnitOffense, "UnitOffense: {0}"},
-                {ContentID.UnitDefense, "UnitDefense: {0}"},
-                {ContentID.UnitCurrentHitPts, "UnitCurrentHitPts: {0}"},
-                {ContentID.UnitMaxHitPts, "UnitMaxHitPts: {0}"},
-                {ContentID.UnitHealth, "UnitHealth: {0}, UnitMaxHP: {1}"},
-                {ContentID.UnitFullSpeed, "UnitFullSpeedValue: {0}"},
-                {ContentID.UnitMaxTurnRate, "UnitMaxTurnRate:  {0}"},
+                {AccessControlInfoID.Composition, CommonTerms.Composition + ": {0}"},
+                {AccessControlInfoID.Formation, "Formation: {0}"},
+                {AccessControlInfoID.CurrentCmdEffectiveness, "Cmd Eff: {0}"},
+                {AccessControlInfoID.UnitWeaponsRange, "UnitWeaponsRange: {0}"},
+                {AccessControlInfoID.UnitSensorRange, "UnitSensorRange: {0}"},
+                {AccessControlInfoID.UnitOffense, "UnitOffense: {0}"},
+                {AccessControlInfoID.UnitDefense, "UnitDefense: {0}"},
+                {AccessControlInfoID.UnitCurrentHitPts, "UnitCurrentHitPts: {0}"},
+                {AccessControlInfoID.UnitMaxHitPts, "UnitMaxHitPts: {0}"},
+                {AccessControlInfoID.UnitHealth, "UnitHealth: {0}, UnitMaxHP: {1}"},
+                {AccessControlInfoID.UnitFullSpeed, "UnitFullSpeedValue: {0}"},
+                {AccessControlInfoID.UnitMaxTurnRate, "UnitMaxTurnRate:  {0}"},
 
-                {ContentID.Target, "Target: {0}"},
-                {ContentID.TargetDistance, "TargetDistance: {0}"},
-                {ContentID.CurrentSpeed, "Speed: {0}"},
-                {ContentID.FullSpeed, "FullSpeedValue: {0}"},
-                {ContentID.MaxTurnRate, "MaxTurnRate: {0}"},
-                {ContentID.CombatStance, "Stance: {0}"},
+                {AccessControlInfoID.Target, "Target: {0}"},
+                {AccessControlInfoID.TargetDistance, "TargetDistance: {0}"},
+                {AccessControlInfoID.CurrentSpeed, "Speed: {0}"},
+                {AccessControlInfoID.FullSpeed, "FullSpeedValue: {0}"},
+                {AccessControlInfoID.MaxTurnRate, "MaxTurnRate: {0}"},
+                {AccessControlInfoID.CombatStance, "Stance: {0}"},
 
-                {ContentID.Population, "Population: {0}"},
+                {AccessControlInfoID.Population, "Population: {0}"},
 
-                {ContentID.CurrentHitPoints, "CurrentHitPts: {0}"},
-                {ContentID.MaxHitPoints, "MaxHitPts: {0}"},
-                {ContentID.Health, "Health: {0}, MaxHP: {1}"},
-                {ContentID.Defense, "Defense: {0}"},
-                {ContentID.Offense, "Offense: {0}"},
-                {ContentID.Mass, "Mass: {0}"},
-                {ContentID.WeaponsRange, "WeaponsRange: {0}"},
-                {ContentID.SensorRange, "SensorRange: {0}"},
+                {AccessControlInfoID.CurrentHitPoints, "CurrentHitPts: {0}"},
+                {AccessControlInfoID.MaxHitPoints, "MaxHitPts: {0}"},
+                {AccessControlInfoID.Health, "Health: {0}, MaxHP: {1}"},
+                {AccessControlInfoID.Defense, "Defense: {0}"},
+                {AccessControlInfoID.Offense, "Offense: {0}"},
+                {AccessControlInfoID.Mass, "Mass: {0}"},
+                {AccessControlInfoID.WeaponsRange, "WeaponsRange: {0}"},
+                {AccessControlInfoID.SensorRange, "SensorRange: {0}"},
 
-                {ContentID.Science, "Science: {0}"},
-                {ContentID.Culture, "Culture: {0}"},
-                {ContentID.NetIncome, "NetIncome: {0}"},
-                {ContentID.UnitScience, "UnitScience: {0}"},
-                {ContentID.UnitCulture, "UnitCulture: {0}"},
-                {ContentID.UnitNetIncome, "UnitNetIncome: {0}"},
-                {ContentID.Approval, "Approval: {0}"},
+                {AccessControlInfoID.Science, "Science: {0}"},
+                {AccessControlInfoID.Culture, "Culture: {0}"},
+                {AccessControlInfoID.NetIncome, "NetIncome: {0}"},
+                {AccessControlInfoID.UnitScience, "UnitScience: {0}"},
+                {AccessControlInfoID.UnitCulture, "UnitCulture: {0}"},
+                {AccessControlInfoID.UnitNetIncome, "UnitNetIncome: {0}"},
+                {AccessControlInfoID.Approval, "Approval: {0}"},
 
-                {ContentID.Capacity, "Capacity: {0}"},
-                {ContentID.Resources, "[800080]Resources:[-] {0}"},
-                {ContentID.OrbitalSpeed, "RelativeOrbitSpeed: {0}"},
+                {AccessControlInfoID.Capacity, "Capacity: {0}"},
+                {AccessControlInfoID.Resources, "[800080]Resources:[-] {0}"},
+                {AccessControlInfoID.OrbitalSpeed, "RelativeOrbitSpeed: {0}"},
 
-                {ContentID.CameraDistance, "CameraDistance: {0}"},
-                {ContentID.IntelState, "< {0} >"}
+                {AccessControlInfoID.CameraDistance, "CameraDistance: {0}"},
+                {AccessControlInfoID.IntelState, "< {0} >"}
         };
 
-        private static IDictionary<ContentID, string> _defaultNumberFormatLookup = new Dictionary<ContentID, string>() {
+        private static IDictionary<AccessControlInfoID, string> _defaultNumberFormatLookup = new Dictionary<AccessControlInfoID, string>() {
 
-                //{ContentID.Density, Constants.FormatFloat_1DpMax},
+                {AccessControlInfoID.CurrentCmdEffectiveness, Constants.FormatFloat_2Dp},
+                {AccessControlInfoID.UnitCurrentHitPts, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.UnitMaxHitPts, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.UnitFullSpeed, Constants.FormatFloat_2Dp},
+                {AccessControlInfoID.UnitMaxTurnRate, Constants.FormatFloat_0Dp},
 
-                {ContentID.CurrentCmdEffectiveness, Constants.FormatInt_1DMin},
-                {ContentID.UnitCurrentHitPts, Constants.FormatFloat_0Dp},
-                {ContentID.UnitMaxHitPts, Constants.FormatFloat_0Dp},
-                {ContentID.UnitFullSpeed, Constants.FormatFloat_2Dp},
-                {ContentID.UnitMaxTurnRate, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.TargetDistance, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.CurrentSpeed, Constants.FormatFloat_2DpMax},
+                {AccessControlInfoID.FullSpeed, Constants.FormatFloat_2DpMax},
+                {AccessControlInfoID.MaxTurnRate, Constants.FormatFloat_0Dp},
 
-                {ContentID.TargetDistance, Constants.FormatFloat_0Dp},
-                {ContentID.CurrentSpeed, Constants.FormatFloat_2DpMax},
-                {ContentID.FullSpeed, Constants.FormatFloat_2DpMax},
-                {ContentID.MaxTurnRate, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.Population, Constants.FormatInt_1DMin},
+                {AccessControlInfoID.Capacity, Constants.FormatInt_1DMin},
 
-                {ContentID.Population, Constants.FormatInt_1DMin},
-                {ContentID.Capacity, Constants.FormatInt_1DMin},
+                {AccessControlInfoID.Science, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.Culture, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.NetIncome, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.UnitScience, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.UnitCulture, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.UnitNetIncome, Constants.FormatFloat_0Dp},
 
-                {ContentID.Science, Constants.FormatFloat_0Dp},
-                {ContentID.Culture, Constants.FormatFloat_0Dp},
-                {ContentID.NetIncome, Constants.FormatFloat_0Dp},
-                {ContentID.UnitScience, Constants.FormatFloat_0Dp},
-                {ContentID.UnitCulture, Constants.FormatFloat_0Dp},
-                {ContentID.UnitNetIncome, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.CurrentHitPoints, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.MaxHitPoints, Constants.FormatFloat_0Dp},
+                {AccessControlInfoID.Mass, Constants.FormatInt_1DMin},
 
-                {ContentID.CurrentHitPoints, Constants.FormatFloat_0Dp},
-                {ContentID.MaxHitPoints, Constants.FormatFloat_0Dp},
-                {ContentID.Mass, Constants.FormatInt_1DMin},
-
-                {ContentID.OrbitalSpeed, Constants.FormatFloat_3DpMax},
-                {ContentID.CameraDistance, Constants.FormatFloat_1DpMax}
+                {AccessControlInfoID.OrbitalSpeed, Constants.FormatFloat_3DpMax},
+                {AccessControlInfoID.CameraDistance, Constants.FormatFloat_1DpMax}
         };
 
         /// <summary>
-        /// Gets the numerical format for this contentID.
+        /// Gets the numerical format for this infoID.
         /// </summary>
-        /// <param name="contentID">The content identifier.</param>
+        /// <param name="infoID">The info identifier.</param>
         /// <returns></returns>
-        protected static string GetFormat(ContentID contentID) {
+        protected static string GetFormat(AccessControlInfoID infoID) {
             string valueFormat;
-            if (!_defaultNumberFormatLookup.TryGetValue(contentID, out valueFormat)) {
-                D.Warn("{0} reports no default numerical format for {1} found.", Instance.GetType().Name, contentID.GetValueName());
+            if (!_defaultNumberFormatLookup.TryGetValue(infoID, out valueFormat)) {
+                D.Warn("{0} reports no default numerical format for {1} found.", Instance.GetType().Name, infoID.GetValueName());
                 valueFormat = "{0}";
             }
             return valueFormat;
         }
 
-        protected static string GetPhrase(ContentID contentID) {
+        protected static string GetPhrase(AccessControlInfoID infoID) {
             string phrase;
-            if (!_defaultPhraseLookup.TryGetValue(contentID, out phrase)) {
-                D.Warn("{0} reports no phrase for {1} found.", Instance.GetType().Name, contentID.GetValueName());
+            if (!_defaultPhraseLookup.TryGetValue(infoID, out phrase)) {
+                D.Warn("{0} reports no phrase for {1} found.", Instance.GetType().Name, infoID.GetValueName());
                 phrase = "DefaultPhrase {0}";
             }
             return phrase;
         }
 
-        protected abstract ContentID[] ContentIDsToDisplay { get; }
+        protected abstract AccessControlInfoID[] InfoIDsToDisplay { get; }
 
         /// <summary>
         /// The _phrase to use when constructing each ColorizedText string. 
@@ -158,43 +155,43 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public ColoredStringBuilder MakeInstance(ReportType report) {
             ColoredStringBuilder csb = new ColoredStringBuilder();
-            var contentIDs = ContentIDsToDisplay;
-            int lastIDIndex = contentIDs.Length - Constants.One;
+            var infoIDs = InfoIDsToDisplay;
+            int lastIDIndex = infoIDs.Length - Constants.One;
             for (int i = 0; i <= lastIDIndex; i++) {
-                ContentID contentID = contentIDs[i];
+                AccessControlInfoID infoID = infoIDs[i];
                 string colorizedText;
-                if (TryMakeColorizedText(contentID, report, out colorizedText)) {
+                if (TryMakeColorizedText(infoID, report, out colorizedText)) {
                     csb.Append(colorizedText);
                     if (i < lastIDIndex) {
                         csb.AppendLine();
                     }
                 }
                 else {
-                    D.Warn("{0} reports missing {1}: {2}.", GetType().Name, typeof(ContentID).Name, contentID.GetValueName());
+                    D.Warn("{0} reports missing {1}: {2}.", GetType().Name, typeof(AccessControlInfoID).Name, infoID.GetValueName());
                 }
             }
             return csb;
         }
 
-        protected virtual bool TryMakeColorizedText(ContentID contentID, ReportType report, out string colorizedText) {
+        protected virtual bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
             bool isSuccess = false;
-            _phrase = GetPhrase(contentID);
-            switch (contentID) {
-                case ContentID.Name:
+            _phrase = GetPhrase(infoID);
+            switch (infoID) {
+                case AccessControlInfoID.Name:
                     isSuccess = true;
                     colorizedText = _phrase.Inject(report.Name != null ? report.Name : _unknown);
                     break;
-                case ContentID.Owner:
+                case AccessControlInfoID.Owner:
                     isSuccess = true;
                     colorizedText = _phrase.Inject(report.Owner != null ? report.Owner.LeaderName.SurroundWith(report.Owner.Color) : _unknown);
                     break;
-                case ContentID.Position:
+                case AccessControlInfoID.Position:
                     isSuccess = true;
                     colorizedText = _phrase.Inject(report.Position.HasValue ? report.Position.Value.ToString() : _unknown);
                     break;
-                case ContentID.CameraDistance:
+                case AccessControlInfoID.CameraDistance:
                     isSuccess = true;
-                    colorizedText = _phrase.Inject(GetFormat(contentID).Inject(report.__PositionForCameraDistance.DistanceToCamera()));
+                    colorizedText = _phrase.Inject(GetFormat(infoID).Inject(report.__PositionForCameraDistance.DistanceToCamera()));
                     // This approach returns the distance to DummyTarget in Item tooltip after doing a Freeform zoom on open space
                     // colorizedText = _phrase.Inject(GetFormat(contentID).Inject(References.MainCameraControl.DistanceToCameraTarget));
                     break;
@@ -205,80 +202,79 @@ namespace CodeEnv.Master.GameContent {
             return isSuccess;
         }
 
-        #region Nested Classes
+        #region Archive
 
         /// <summary>
         /// Unique identifier for each line item of content present in a text tooltip.
         /// </summary>
-        public enum ContentID {
+        //public enum ContentID {
 
-            None,
+        //    None,
 
-            Name,
-            ParentName,
-            Owner,
+        //    Name,
+        //    ParentName,
+        //    Owner,
 
-            IntelState,
+        //    IntelState,
 
-            Category,
+        //    Category,
 
-            Capacity,
-            Resources,
+        //    Capacity,
+        //    Resources,
 
-            MaxHitPoints,
-            CurrentHitPoints,
-            Health,
-            Defense,
-            Mass,
+        //    MaxHitPoints,
+        //    CurrentHitPoints,
+        //    Health,
+        //    Defense,
+        //    Mass,
 
-            Science,
-            Culture,
-            NetIncome,
+        //    Science,
+        //    Culture,
+        //    NetIncome,
 
-            Approval,
-            Position,
+        //    Approval,
+        //    Position,
 
-            SectorIndex,
+        //    SectorIndex,
 
-            WeaponsRange,
-            SensorRange,
-            Offense,
+        //    WeaponsRange,
+        //    SensorRange,
+        //    Offense,
 
-            Target,
-            CombatStance,
-            CurrentSpeed,
-            FullSpeed,
-            MaxTurnRate,
+        //    Target,
+        //    CombatStance,
+        //    CurrentSpeed,
+        //    FullSpeed,
+        //    MaxTurnRate,
 
-            Composition,
-            Formation,
-            CurrentCmdEffectiveness,
+        //    Composition,
+        //    Formation,
+        //    CurrentCmdEffectiveness,
 
-            UnitWeaponsRange,
-            UnitSensorRange,
-            UnitOffense,
-            UnitDefense,
-            UnitMaxHitPts,
-            UnitCurrentHitPts,
-            UnitHealth,
+        //    UnitWeaponsRange,
+        //    UnitSensorRange,
+        //    UnitOffense,
+        //    UnitDefense,
+        //    UnitMaxHitPts,
+        //    UnitCurrentHitPts,
+        //    UnitHealth,
 
-            Population,
-            UnitScience,
-            UnitCulture,
-            UnitNetIncome,
+        //    Population,
+        //    UnitScience,
+        //    UnitCulture,
+        //    UnitNetIncome,
 
-            UnitFullSpeed,
-            UnitMaxTurnRate,
+        //    UnitFullSpeed,
+        //    UnitMaxTurnRate,
 
-            [System.Obsolete]
-            Density,
+        //    [System.Obsolete]
+        //    Density,
 
-            CameraDistance,
-            TargetDistance,
-            OrbitalSpeed
-        }
+        //    CameraDistance,
+        //    TargetDistance,
+        //    OrbitalSpeed
+        //}
 
-        #region Archive
 
         //public class ColoredTextList_Intel : ColoredTextList {
 
@@ -416,8 +412,6 @@ namespace CodeEnv.Master.GameContent {
         //        return TextElements.Concatenate();
         //    }
         //}
-        #endregion
-
         #endregion
 
     }

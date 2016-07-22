@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? Mass { get; protected set; }
 
-        public AMortalItemReport(AMortalItemData data, Player player, IMortalItem item)
+        public AMortalItemReport(AMortalItemData data, Player player, IMortalItem_Ltd item)
             : base(data, player, item) {
         }
 

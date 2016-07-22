@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedStarbaseForm.cs
-// Form used by the SelectedItemHudWindow to display info from a StarbaseReport when a starbase is selected.  
+// Form used by the SelectedItemHudWindow to display info from a StarbaseCmdReport when a starbase is selected.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form used by the SelectedItemHudWindow to display info from a StarbaseReport when a starbase is selected.  
+/// Form used by the SelectedItemHudWindow to display info from a StarbaseCmdReport when a starbase is selected.  
 /// </summary>
 public class SelectedStarbaseForm : ASelectedItemForm {
 

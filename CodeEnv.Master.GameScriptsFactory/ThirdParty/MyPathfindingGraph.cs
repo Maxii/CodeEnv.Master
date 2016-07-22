@@ -1,0 +1,1017 @@
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright>
+// Copyright © 2012 - 2016 
+//
+// Email: jim@strategicforge.com
+// </copyright> 
+// <summary> 
+// File: MyPathfindingGraph.cs
+// My implementation of the AStar Graph Generator using the points generated from SectorGrid's GridFramework. 
+// </summary> 
+// -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
+namespace Pathfinding {
+
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+    using CodeEnv.Master.GameContent;
+    using Serialization;
+    using Serialization.JsonFx;
+    using UnityEngine;
+
+    /// <summary>
+    /// My implementation of the AStar Graph Generator using the points generated from SectorGrid's GridFramework. 
+    /// WARNING: These graphs ARE NOT MonoBehaviours, in spite of the authors usage of Awake().
+    /// </summary>
+    [JsonOptIn]
+    public class MyPathfindingGraph : NavGraph, IUpdatableGraph {
+
+        // 6.13.16 AStarPro 3.8.2 no longer requires a tag mask
+        //public static readonly int OpenSpaceTagMask = 1 << Topography.OpenSpace.AStarTagValue();   // x0001 
+        //public static readonly int NebulaTagMask = 1 << Topography.Nebula.AStarTagValue();         // x0010 
+        //public static readonly int DeepNebulaTagMask = 1 << Topography.DeepNebula.AStarTagValue(); // x0100 
+        //public static readonly int SystemTagMask = 1 << Topography.System.AStarTagValue();         // x1000 
+
+        /// <summary>
+        /// The size of the grid of Sectors this Pathfinding system will scan for waypoint interconnection.
+        /// </summary>
+        private static readonly Index3D __MaxAllowedSectorGridSizeToScan = new Index3D(4, 4, 4);  // limit to divisible by 2
+
+        private static readonly Int3[] ThreeDNeighbours = {
+            new Int3(-1,  0, -1),
+            new Int3(0,  0, -1),
+            new Int3(1,  0, -1),
+
+            new Int3(-1,  0,  0),
+            new Int3(0,  0,  0),
+            new Int3(1,  0,  0),
+
+            new Int3(-1,  0,  1),
+            new Int3(0,  0,  1),
+            new Int3(1,  0,  1),
+
+
+            new Int3(-1, -1, -1),
+            new Int3(0, -1, -1),
+            new Int3(1, -1, -1),
+
+            new Int3(-1, -1,  0),
+            new Int3(0, -1,  0),
+            new Int3(1, -1,  0),
+
+            new Int3(-1, -1,  1),
+            new Int3(0, -1,  1),
+            new Int3(1, -1,  1),
+
+
+            new Int3(-1,  1, -1),
+            new Int3(0,  1, -1),
+            new Int3(1,  1, -1),
+
+            new Int3(-1,  1,  0),
+            new Int3(0,  1,  0),
+            new Int3(1,  1,  0),
+
+            new Int3(-1,  1,  1),
+            new Int3(0,  1,  1),
+            new Int3(1,  1,  1),
+        };
+
+        /** Max distance for a connection to be valid.
+         * The value 0 (zero) will be read as infinity and thus all nodes not restricted by
+         * other constraints will be added as connections.
+         *
+         * A negative value will disable any neighbours to be added.
+         * It will completely stop the connection processing to be done, so it can save you processing
+         * power if you don't these connections.
+         */
+        [JsonMember]
+        public float maxDistance;
+
+        [JsonMember]
+        public bool autoLinkNodes = true;
+
+        /** Optimizes the graph for sparse graphs.
+         *
+         * This can reduce calculation times for both scanning and for normal path requests by huge amounts.
+         *
+         * You should enable this when your #maxDistance and/or #limits variables are set relatively low compared to the world
+         * size. It reduces the number of node-node checks that need to be done during scan, and can also optimize getting the nearest node from the graph (such as when querying for a path).
+         *
+         * Try enabling and disabling this option, check the scan times logged when you scan the graph to see if your graph is suited for this optimization
+         * or if it makes it slower.
+         *
+         * The gain of using this optimization increases with larger graphs, the default scan algorithm is brute force and requires O(n^2) checks, 
+         * this optimization along with a graph suited for it, requires only O(n) checks during scan.
+         *
+         * \note
+         * When you have this enabled, you will not be able to move nodes around using scripting unless you recalculate the lookup structure at the same time.
+         * \see RebuildNodeLookup
+         *
+         * \astarpro
+         */
+        [JsonMember]
+        public bool optimizeForSparseGraph;
+
+        /** All nodes in this graph.
+         * Note that only the first #nodeCount will be non-null.
+         *
+         * You can also use the GetNodes method to get all nodes.
+         */
+        public PointNode[] nodes;
+
+        /** Number of nodes in this graph.
+         *
+         * \warning Do not edit directly
+         */
+        public int nodeCount;
+
+        private Dictionary<Int3, PointNode> _nodeLookup;
+        private Int3 _minLookup;
+        private Int3 _maxLookup;
+        private Int3 _lookupCellSize;
+
+        public override int CountNodes() {
+            return nodeCount;
+        }
+
+        public override void GetNodes(GraphNodeDelegateCancelable del) {
+            if (nodes == null) { return; }
+            for (int i = 0; i < nodeCount && del(nodes[i]); i++) { }
+        }
+
+        public override NNInfo GetNearest(Vector3 position, NNConstraint constraint, GraphNode hint) {
+            return GetNearestForce(position, constraint);
+        }
+
+        public override NNInfo GetNearestForce(Vector3 position, NNConstraint constraint) {
+
+            if (nodes == null) return new NNInfo();
+
+            float maxDistSqr = constraint.constrainDistance ? AstarPath.active.maxNearestNodeDistanceSqr : float.PositiveInfinity;
+
+            float minDist = float.PositiveInfinity;
+            GraphNode minNode = null;
+
+            float minConstDist = float.PositiveInfinity;
+            GraphNode minConstNode = null;
+
+            if (optimizeForSparseGraph) {
+                Int3 lookupStart = WorldToLookupSpace((Int3)position);
+
+                Int3 size = lookupStart - _minLookup;
+
+                int mw = 0;
+                mw = System.Math.Max(mw, System.Math.Abs(size.x));
+                mw = System.Math.Max(mw, System.Math.Abs(size.y));
+                mw = System.Math.Max(mw, System.Math.Abs(size.z));
+
+                size = lookupStart - _maxLookup;
+                mw = System.Math.Max(mw, System.Math.Abs(size.x));
+                mw = System.Math.Max(mw, System.Math.Abs(size.y));
+                mw = System.Math.Max(mw, System.Math.Abs(size.z));
+
+                PointNode node;
+
+                if (_nodeLookup.TryGetValue(lookupStart, out node)) {
+                    while (node != null) {
+                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                        if (dist < minDist) { minDist = dist; minNode = node; }
+                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                        node = node.next;
+                    }
+                }
+
+                for (int w = 1; w <= mw; w++) {
+                    if (w >= 20) {
+                        Debug.LogWarning("Aborting GetNearest call at maximum distance because it has iterated too many times.\n" +
+                            "If you get this regularly, check your settings for PointGraph -> <b>Optimize For Sparse Graph</b> and " +
+                            "PointGraph -> <b>Optimize For 2D</b>.\nThis happens when the closest node was very far away (20*link distance between nodes). " +
+                            "When optimizing for sparse graphs, getting the nearest node from far away positions is <b>very slow</b>.\n");
+                        break;
+                    }
+
+                    if (_lookupCellSize.y == 0) {
+                        Int3 reference = lookupStart + new Int3(-w, 0, -w);
+
+                        for (int x = 0; x <= 2 * w; x++) {
+                            if (_nodeLookup.TryGetValue(reference + new Int3(x, 0, 0), out node)) {
+                                while (node != null) {
+                                    float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                    if (dist < minDist) { minDist = dist; minNode = node; }
+                                    if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                    node = node.next;
+                                }
+                            }
+                            if (_nodeLookup.TryGetValue(reference + new Int3(x, 0, 2 * w), out node)) {
+                                while (node != null) {
+                                    float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                    if (dist < minDist) { minDist = dist; minNode = node; }
+                                    if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                    node = node.next;
+                                }
+                            }
+                        }
+
+                        for (int x = 1; x < 2 * w; x++) {
+                            if (_nodeLookup.TryGetValue(reference + new Int3(0, 0, x), out node)) {
+                                while (node != null) {
+                                    float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                    if (dist < minDist) { minDist = dist; minNode = node; }
+                                    if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                    node = node.next;
+                                }
+                            }
+                            if (_nodeLookup.TryGetValue(reference + new Int3(2 * w, 0, x), out node)) {
+                                while (node != null) {
+                                    float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                    if (dist < minDist) { minDist = dist; minNode = node; }
+                                    if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                    node = node.next;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        Int3 reference = lookupStart + new Int3(-w, -w, -w);
+
+                        for (int x = 0; x <= 2 * w; x++) {
+                            for (int y = 0; y <= 2 * w; y++) {
+                                if (_nodeLookup.TryGetValue(reference + new Int3(x, y, 0), out node)) {
+                                    while (node != null) {
+                                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                        if (dist < minDist) { minDist = dist; minNode = node; }
+                                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                        node = node.next;
+                                    }
+                                }
+                                if (_nodeLookup.TryGetValue(reference + new Int3(x, y, 2 * w), out node)) {
+                                    while (node != null) {
+                                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                        if (dist < minDist) { minDist = dist; minNode = node; }
+                                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                        node = node.next;
+                                    }
+                                }
+                            }
+                        }
+
+                        for (int x = 1; x < 2 * w; x++) {
+                            for (int y = 0; y <= 2 * w; y++) {
+                                if (_nodeLookup.TryGetValue(reference + new Int3(0, y, x), out node)) {
+                                    while (node != null) {
+                                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                        if (dist < minDist) { minDist = dist; minNode = node; }
+                                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                        node = node.next;
+                                    }
+                                }
+                                if (_nodeLookup.TryGetValue(reference + new Int3(2 * w, y, x), out node)) {
+                                    while (node != null) {
+                                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                        if (dist < minDist) { minDist = dist; minNode = node; }
+                                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                        node = node.next;
+                                    }
+                                }
+                            }
+                        }
+
+                        for (int x = 1; x < 2 * w; x++) {
+                            for (int y = 1; y < 2 * w; y++) {
+                                if (_nodeLookup.TryGetValue(reference + new Int3(x, 0, y), out node)) {
+                                    while (node != null) {
+                                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                        if (dist < minDist) { minDist = dist; minNode = node; }
+                                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                        node = node.next;
+                                    }
+                                }
+                                if (_nodeLookup.TryGetValue(reference + new Int3(x, 2 * w, y), out node)) {
+                                    while (node != null) {
+                                        float dist = (position - (Vector3)node.position).sqrMagnitude;
+                                        if (dist < minDist) { minDist = dist; minNode = node; }
+                                        if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) { minConstDist = dist; minConstNode = node; }
+
+                                        node = node.next;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (minConstNode != null) {
+                        // Only search one more layer
+                        mw = System.Math.Min(mw, w + 1);
+                    }
+                }
+            }
+            else {
+
+                for (int i = 0; i < nodeCount; i++) {
+                    PointNode node = nodes[i];
+                    float dist = (position - (Vector3)node.position).sqrMagnitude;
+
+                    if (dist < minDist) {
+                        minDist = dist;
+                        minNode = node;
+                    }
+
+                    if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) {
+                        minConstDist = dist;
+                        minConstNode = node;
+                    }
+                }
+            }
+
+            var nnInfo = new NNInfo(minNode);
+
+            nnInfo.constrainedNode = minConstNode;
+
+            if (minConstNode != null) {
+                nnInfo.constClampedPosition = (Vector3)minConstNode.position;
+            }
+            else if (minNode != null) {
+                nnInfo.constrainedNode = minNode;
+                nnInfo.constClampedPosition = (Vector3)minNode.position;
+            }
+
+            #region Debugging
+
+            //D.Log("Constraint: GraphMask: {0}, ConstrainArea: {1}, Area: {2}, ConstrainWalkability: {3}, \nWalkable: {4}, ConstrainTags: {5}, Tags: {6}, ConstrainDistance: {7}.",
+            //    constraint.graphMask, constraint.constrainArea, constraint.area, constraint.constrainWalkability, constraint.walkable,
+            //    constraint.constrainTags, constraint.tags, constraint.constrainDistance);
+
+            //if (minConstNode != null) {
+            //    D.Log("Constraint criteria met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
+            //        nnInfo.constClampedPosition, Vector3.Distance(nnInfo.constClampedPosition, position), position,
+            //        constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
+            //}
+            //else {
+            //    D.Log("Constraint criteria NOT met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
+            //        nnInfo.clampedPosition, Vector3.Distance(nnInfo.clampedPosition, position), position,
+            //        constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
+            //}
+
+            #endregion
+
+            return nnInfo;
+        }
+
+        /** Add a node with the specified type to the graph at the specified position.
+         *
+         * \param position The node will be set to this position.
+         * \note Vector3 can be casted to Int3 using (Int3)myVector.
+         *
+         * \note This needs to be called when it is safe to update nodes, which is
+         * - when scanning
+         * - during a graph update
+         * - inside a callback registered using AstarPath.RegisterSafeUpdate
+         *
+         * \see AstarPath.RegisterSafeUpdate
+         */
+        public PointNode AddNode(Int3 position) {
+            if (nodes == null || nodeCount == nodes.Length) {
+                var nds = new PointNode[nodes != null ? System.Math.Max(nodes.Length + 4, nodes.Length * 2) : 4];
+                for (int i = 0; i < nodeCount; i++) nds[i] = nodes[i];
+                nodes = nds;
+            }
+
+            PointNode node = new PointNode(active);
+
+            node.SetPosition(position);
+            node.GraphIndex = graphIndex;
+            node.Walkable = true;
+
+            nodes[nodeCount] = node;
+            nodeCount++;
+
+            AddToLookup(node);
+
+            return node;
+        }
+
+        /** Rebuilds the lookup structure for nodes.
+         *
+         * This is used when #optimizeForSparseGraph is enabled.
+         *
+         * You should call this method every time you move a node in the graph manually and
+         * you are using #optimizeForSparseGraph, otherwise pathfinding might not work correctly.
+         *
+         * \astarpro
+         */
+        public void RebuildNodeLookup() {
+            if (!optimizeForSparseGraph) { return; }
+
+            if (maxDistance == 0) {
+                _lookupCellSize = (Int3)Vector3.zero;
+            }
+            else {
+                _lookupCellSize.x = Mathf.CeilToInt(Int3.Precision * maxDistance);
+                _lookupCellSize.y = Mathf.CeilToInt(Int3.Precision * maxDistance);
+                _lookupCellSize.z = Mathf.CeilToInt(Int3.Precision * maxDistance);
+            }
+
+            if (_nodeLookup == null) _nodeLookup = new Dictionary<Int3, PointNode>();
+
+            _nodeLookup.Clear();
+
+            for (int i = 0; i < nodeCount; i++) {
+                PointNode node = nodes[i];
+                AddToLookup(node);
+            }
+        }
+
+        public void AddToLookup(PointNode node) {
+            if (_nodeLookup == null) { return; }
+
+            Int3 lookupPosition = WorldToLookupSpace(node.position);
+
+            if (_nodeLookup.Count == 0) {
+                _minLookup = lookupPosition;
+                _maxLookup = lookupPosition;
+            }
+            else {
+                _minLookup = new Int3(System.Math.Min(_minLookup.x, lookupPosition.x), System.Math.Min(_minLookup.y, lookupPosition.y), System.Math.Min(_minLookup.z, lookupPosition.z));
+                _maxLookup = new Int3(System.Math.Max(_minLookup.x, lookupPosition.x), System.Math.Max(_minLookup.y, lookupPosition.y), System.Math.Max(_minLookup.z, lookupPosition.z));
+            }
+
+            // Does not cover all cases, but at least some of them
+            if (node.next != null) {
+                throw new System.Exception("This node has already been added to the lookup structure.");
+            }
+
+            PointNode linkedListRoot;
+            if (_nodeLookup.TryGetValue(lookupPosition, out linkedListRoot)) {
+                // Insert in between
+                node.next = linkedListRoot.next;
+                linkedListRoot.next = node;
+            }
+            else {
+                _nodeLookup[lookupPosition] = node;
+            }
+        }
+
+        private Int3 WorldToLookupSpace(Int3 position) {
+            Int3 lookupPosition = Int3.zero;
+
+            lookupPosition.x = _lookupCellSize.x != 0 ? position.x / _lookupCellSize.x : 0;
+            lookupPosition.y = _lookupCellSize.y != 0 ? position.y / _lookupCellSize.y : 0;
+            lookupPosition.z = _lookupCellSize.z != 0 ? position.z / _lookupCellSize.z : 0;
+
+            return lookupPosition;
+        }
+
+        /************************** My Work Start ********************************************************************************/
+
+        private float _nodeSeparationDistance;
+        private IDictionary<StarbaseCmdItem, GraphUpdateObject> _starbaseGuos = new Dictionary<StarbaseCmdItem, GraphUpdateObject>();
+
+        public override void ScanInternal(OnScanStatus statusCallback) {
+            var walkableOpenSpaceWaypoints = GenerateWalkableOpenSpaceWaypoints();
+            var walkableSystemWaypoints = GenerateWalkableInteriorSystemWaypoints();
+
+            int waypointCount = walkableOpenSpaceWaypoints.Count + walkableSystemWaypoints.Count;
+
+            // Make the Nodes array
+            nodes = new PointNode[waypointCount];
+            nodeCount = waypointCount;
+
+            int nextNodeIndex = Constants.Zero;
+            AddNodes(walkableOpenSpaceWaypoints, Topography.OpenSpace.AStarTagValue(), ref nextNodeIndex);  // OpenSpaceTagMask
+            //D.Log("NextNodeIndex = {0}.", nextNodeIndex);
+            AddNodes(walkableSystemWaypoints, Topography.System.AStarTagValue(), ref nextNodeIndex);    // SystemTagMask
+            //D.Log("NextNodeIndex = {0}.", nextNodeIndex);
+
+            //D.Log("Pathfinding walkable node count = {0}.", nodeCount);
+
+            MakeConnections();
+        }
+
+        private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
+            D.Assert(_nodeSeparationDistance != Constants.ZeroF);   // method should fullow GenerateWalkableOpenSpaceWaypoints
+            List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
+            var systems = SystemCreator.AllSystems;
+            if (systems.Any()) {
+                systems.ForAll(sys => {
+                    var aSystemInteriorWaypoints = MyMath.CalcVerticesOfInscribedBoxInsideSphere(sys.Position, sys.Radius * SystemItem.InteriorWaypointDistanceMultiplier);
+                    allSystemInteriorWaypoints.AddRange(aSystemInteriorWaypoints);
+                });
+            }
+            return allSystemInteriorWaypoints;
+        }
+
+        private IList<Vector3> GenerateWalkableOpenSpaceWaypoints() {
+#pragma warning disable 0219
+            System.DateTime startTime = System.DateTime.UtcNow;
+#pragma warning restore 0219
+            List<Vector3> walkableOpenSpaceWaypoints = new List<Vector3>();
+
+            // Generate System approach waypoints surrounding systems, deriving maxNodeDistance
+            List<Vector3> systemApproachWaypoints = new List<Vector3>();
+            float distanceBetweenSystemApproachWaypoints = Constants.ZeroF;         // 174.7
+            float maxNodeDistance = Constants.ZeroF;    // 282.6 // max distance allowed before waypoints are skipped
+            var allSystems = SystemCreator.AllSystems;
+            bool hasSystems = allSystems.Any();
+            if (hasSystems) {
+                foreach (SystemItem system in allSystems) { // 6.15.16 replaced box with icosahedron whos edges are all the same length
+                    float previousDistanceBetweenWaypoints = distanceBetweenSystemApproachWaypoints;
+                    float previousMaxNodeDistance = maxNodeDistance;
+                    float systemApproachWaypointsInscribedSphereRadius = system.Radius * SystemItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
+                    var aSystemApproachWaypoints = MyMath.CalcVerticesOfIcosahedronAroundInscribedSphere(system.Position, systemApproachWaypointsInscribedSphereRadius, out distanceBetweenSystemApproachWaypoints, out maxNodeDistance);
+                    if (previousMaxNodeDistance > Constants.ZeroF) {
+                        D.Assert(Mathfx.Approx(previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints, .1F), "{0} != {1}.", previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints);
+                        D.Assert(Mathfx.Approx(previousMaxNodeDistance, maxNodeDistance, .1F), "{0} != {1}.", previousMaxNodeDistance, maxNodeDistance);
+                    }
+                    systemApproachWaypoints.AddRange(aSystemApproachWaypoints);
+                }
+            }
+            else {
+                // HACK for no systems
+                distanceBetweenSystemApproachWaypoints = 174.7F;
+                maxNodeDistance = 282.6F;
+            }
+            //D.Log("Added {0} SystemApproachWaypoints. Icosahedron EdgeLength = {1:0.#}, MaxAllowedNodeDistance = {2:0.#}.",
+            //    systemApproachWaypoints.Count, edgeLength, maxNodeDistance);
+
+            _nodeSeparationDistance = Mathf.Floor(maxNodeDistance) - 7F;       // HACK 275F
+            float proposedMaxDistance = _nodeSeparationDistance + 5F;                 // HACK 280F
+            if (!Mathfx.Approx(maxDistance, proposedMaxDistance, 1F)) {
+                D.Warn("{0}: Changing MaxNodeSeparationDistance, aka 'MaxDistance' from {1:0.#} to {2:0.#}.", GetType().Name, maxDistance, proposedMaxDistance);
+                maxDistance = proposedMaxDistance;
+            }
+
+            //D.Log("{0} took {1:0.####} secs generating {2} SystemApproachWaypoints for {3} Systems.",
+            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count);
+            startTime = System.DateTime.UtcNow;
+
+            // populate all space with sector navigation waypoints separated by nodeSeparationDistance
+            var allSectors = __GetAllowedSectorsToScan();
+            List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 25);
+            float distanceToCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
+            //D.Log("{0}: Distance to Sector Corners = {1:0.#}.", GetType().Name, distanceToCorners);
+            foreach (var sector in allSectors) {
+                List<Vector3> aSectorWaypoints = new List<Vector3>(17);
+                aSectorWaypoints.Add(sector.Position);
+                float distanceFromCenter = _nodeSeparationDistance;
+                // propogate sector nav waypoints outward, inside corners
+                while (distanceFromCenter < distanceToCorners) {    // 275, 550, 825
+                    aSectorWaypoints.AddRange(MyMath.CalcVerticesOfInscribedBoxInsideSphere(sector.Position, distanceFromCenter));
+                    distanceFromCenter += _nodeSeparationDistance;
+                }
+                // place a sector nav waypoint inside each corner (outside of radius)
+                sectorNavWaypoints.AddRange(aSectorWaypoints);
+            }
+#pragma warning disable 0219
+            int sectorNavWaypointCount = sectorNavWaypoints.Count;
+#pragma warning restore 0219
+            //D.Log("{0} took {1:0.####} secs generating {2} SectorNavWaypoints for {3} sectors.",
+            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
+            startTime = System.DateTime.UtcNow;
+
+
+            //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
+            // With Sector Radius of 600 and NodeSeparationDistance of 275, expect sector to sector waypoint distance ~ 90
+
+            // Remove SectorNavigationWaypoints present inside sphere containing SystemApproachWaypoints    
+            // https://en.wikipedia.org/wiki/Regular_icosahedron#Dimensions
+            float systemApproachWaypointsCircumscribedSphereRadius = distanceBetweenSystemApproachWaypoints * 0.9510565163F;
+            float radiusOfSphereContainingSystemApproachWaypoints = systemApproachWaypointsCircumscribedSphereRadius + 1F;
+
+            if (hasSystems) {
+                foreach (var system in allSystems) {
+                    List<Vector3> tmpSectorNavWaypoints = new List<Vector3>(sectorNavWaypoints.Count);
+                    foreach (var sectorNavWaypoint in sectorNavWaypoints) {
+                        if (!MyMath.IsPointInsideSphere(system.Position, radiusOfSphereContainingSystemApproachWaypoints, sectorNavWaypoint)) {
+                            tmpSectorNavWaypoints.Add(sectorNavWaypoint);
+                        }
+                    }
+                    sectorNavWaypoints = tmpSectorNavWaypoints;
+                }
+            }
+            //D.Log("{0} took {1:0.####} secs removing {2} SectorNavWaypoints from {3} Systems.",
+            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count);
+            startTime = System.DateTime.UtcNow;
+            sectorNavWaypointCount = sectorNavWaypoints.Count;
+
+            float uCenterWaypointsInscribedSphereRadius = Constants.ZeroF;
+            IEnumerable<Vector3> universeCenterWaypoints = Enumerable.Empty<Vector3>();
+            var universeCenter = UniverseFolder.Instance.GetComponentInChildren<UniverseCenterItem>();
+            if (universeCenter != null) {
+                float distanceBetweenUCenterWaypoints;
+                uCenterWaypointsInscribedSphereRadius = universeCenter.Data.CloseOrbitOuterRadius * UniverseCenterItem.RadiusMultiplierForWaypointInscribedSphere;
+                universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronAroundInscribedSphere(universeCenter.Position, uCenterWaypointsInscribedSphereRadius, out distanceBetweenUCenterWaypoints);
+                D.Assert(distanceBetweenUCenterWaypoints <= _nodeSeparationDistance, "{0} > {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
+                //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", GetType().Name, distanceBetweenUCenterWaypoints);
+
+                // remove SectorNavigationWaypoints present inside sphere containing UniverseCenterWaypoints
+                float uCenterWaypointsCircumscribedSphereRadius = distanceBetweenUCenterWaypoints * 0.9510565163F;
+                float radiusOfSphereContainingUCenterWaypoints = uCenterWaypointsCircumscribedSphereRadius + 1F;
+                List<Vector3> tmpSectorNavWaypoints = new List<Vector3>(sectorNavWaypoints.Count);
+                foreach (var sectorNavWaypoint in sectorNavWaypoints) {
+                    if (!MyMath.IsPointInsideSphere(universeCenter.Position, radiusOfSphereContainingUCenterWaypoints, sectorNavWaypoint)) {
+                        tmpSectorNavWaypoints.Add(sectorNavWaypoint);
+                    }
+                }
+                sectorNavWaypoints = tmpSectorNavWaypoints;
+            }
+
+            //D.Log("{0} took {1:0.####} secs removing {2} SectorNavWaypoints around UniverseCenter.",
+            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count);
+            //startTime = Time.time;
+
+            walkableOpenSpaceWaypoints.AddRange(sectorNavWaypoints);
+            walkableOpenSpaceWaypoints.AddRange(universeCenterWaypoints);
+            walkableOpenSpaceWaypoints.AddRange(systemApproachWaypoints);
+
+            return walkableOpenSpaceWaypoints;
+        }
+
+        private void AddNodes(IList<Vector3> waypoints, uint tag, ref int nextNodeIndex) {
+            int lastNodeIndex = nextNodeIndex + waypoints.Count;
+            for (int index = nextNodeIndex; index < lastNodeIndex; index++) {
+                PointNode node = new PointNode(active);
+                node.SetPosition((Int3)waypoints[index - nextNodeIndex]);
+                node.Walkable = true;
+                node.GraphIndex = graphIndex;
+                node.Tag = tag;
+                nodes[index] = node;
+            }
+            nextNodeIndex = lastNodeIndex;
+        }
+
+        /// <summary>
+        /// Gets the sectors this pathfinding system is allowed to scan for waypoint interconnection. 
+        /// This method reduces the total sector count to a manageable value so the scan time is not onerous. 
+        /// This allows SectorGrid to build out a large number of sectors for testing without requiring the
+        /// Pathfinding system to make interconnections between all the waypoints in all sectors.
+        /// </summary>
+        /// <returns></returns>
+        private IList<SectorItem> __GetAllowedSectorsToScan() {
+            IList<SectorItem> sectorsToScan = new List<SectorItem>();
+
+            int maxIndexX = __MaxAllowedSectorGridSizeToScan.x / 2;
+            int maxIndexY = __MaxAllowedSectorGridSizeToScan.y / 2;
+            int maxIndexZ = __MaxAllowedSectorGridSizeToScan.z / 2;
+            var allSectors = SectorGrid.Instance.AllSectors;
+            allSectors.ForAll(s => {
+                var index = s.SectorIndex;
+                if (Mathf.Abs(index.x) <= maxIndexX) {
+                    if (Mathf.Abs(index.y) <= maxIndexY) {
+                        if (Mathf.Abs(index.z) <= maxIndexZ) {
+                            //D.Log("{0} adding Sector {1} to scan.", GetType().Name, s);
+                            sectorsToScan.Add(s);
+                        }
+                    }
+                }
+            });
+            //D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
+            return sectorsToScan;
+        }
+
+        private void MakeConnections() {
+            if (optimizeForSparseGraph) {
+                RebuildNodeLookup();
+            }
+
+            if (maxDistance >= 0) {
+                //To avoid too many allocations, these lists are reused for each node
+                var connections = new List<PointNode>(3);
+                var costs = new List<uint>(3);
+
+                //Loop through all nodes and add connections to other nodes
+                int connectionCount = 0;
+                int invalidConnectionCount = 0;
+                for (int i = 0; i < nodes.Length; i++) {
+                    connections.Clear();
+                    costs.Clear();
+
+                    PointNode node = nodes[i];
+
+                    if (optimizeForSparseGraph) {
+                        Int3 lookupPosition = WorldToLookupSpace(node.position);
+
+                        int l = _lookupCellSize.y == 0 ? 9 : ThreeDNeighbours.Length;
+
+                        for (int j = 0; j < l; j++) {
+                            Int3 np = lookupPosition + ThreeDNeighbours[j];
+
+                            PointNode other;
+                            if (_nodeLookup.TryGetValue(np, out other)) {
+                                while (other != null) {
+                                    float dist;
+                                    if (IsValidConnection(node, other, out dist)) {
+                                        connections.Add(other);
+                                        /** \todo Is this equal to .costMagnitude */
+                                        costs.Add((uint)Mathf.RoundToInt(dist * Int3.FloatPrecision));
+                                    }
+                                    else {
+                                        invalidConnectionCount++;
+                                    }
+                                    other = other.next;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        // Only brute force is available in the free version
+                        for (int j = 0; j < nodes.Length; j++) {
+                            if (i == j) {
+                                continue;
+                            }
+
+                            PointNode other = nodes[j];
+
+                            float dist;
+                            if (IsValidConnection(node, other, out dist)) {
+                                connections.Add(other);
+                                /** \todo Is this equal to .costMagnitude */
+                                costs.Add((uint)Mathf.RoundToInt(dist * Int3.FloatPrecision));
+                            }
+                            else {
+                                invalidConnectionCount++;
+                            }
+                        }
+                    }
+                    node.connections = connections.ToArray();
+                    connectionCount += connections.Count;
+                    node.connectionCosts = costs.ToArray();
+                }
+
+                int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
+                D.Log("{0}/{1} valid pathfinding connections.", connectionCount, totalConnectionsAttempted);
+            }
+        }
+
+        /** Returns if the connection between \a a and \a b is valid.
+         * Checks for obstructions using raycasts (if enabled) and checks for height differences.\n
+         * As a bonus, it outputs the distance between the nodes too if the connection is valid
+         */
+        private bool IsValidConnection(PointNode a, PointNode b, out float dist) {
+            dist = Constants.ZeroF;
+
+            if (a.Walkable && b.Walkable) {
+                var dir = (Vector3)(a.position - b.position);
+
+                dist = dir.magnitude;
+                if (maxDistance == 0 || dist < maxDistance) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Updates the graph during runtime adding or removing the waypoints (marking them as walkable or unwalkable) and connections 
+        /// associated with this starbase. The method determines add/remove based on whether the starbase has previously been recorded.
+        /// </summary>
+        /// <param name="baseCmd">The Starbase command.</param>
+        public void UpdateGraph(StarbaseCmdItem baseCmd) {
+            GraphUpdateObject guo = null;
+            if (_starbaseGuos.TryGetValue(baseCmd, out guo)) {
+                // this base is being removed
+                //D.LogBold("{0}: RevertFromBackup() called upon loss of {1}.", GetType().Name, baseCmd.FullName);
+                //guo.RevertFromBackup(); // FIXME DOES NOT WORK reverses the node changes made when base was added 
+                guo.setWalkability = true;
+                //D.Log("{0}: Resetting node walkability to {1} upon loss of {2}.", GetType().Name, guo.setWalkability, baseCmd.FullName);
+                active.UpdateGraphs(guo);
+                _starbaseGuos.Remove(baseCmd);
+            }
+            else {
+                // Base is being added so create GUO that makes the base/sector position node unwalkable
+                float baseRadius = baseCmd.CloseOrbitOuterRadius;
+                Vector3 baseUnwalkableAreaSize = Vector3.one * baseRadius;
+                Bounds baseUnwalkableBounds = new Bounds(baseCmd.Position, baseUnwalkableAreaSize);
+                //D.Log("{0} Unwalkable Bounds {1} contains {2} = {3}.", baseCmd.FullName, baseUnwalkableBounds, baseCmd.Position, baseUnwalkableBounds.Contains(baseCmd.Position));
+                GraphUpdateObject baseUnwalkableGuo = new GraphUpdateObject(baseUnwalkableBounds) {
+                    modifyWalkability = true,
+                    setWalkability = false,     // default
+                    updatePhysics = true,       // default
+                    trackChangedNodes = false,   // = true; allows RevertFromBackup DOES NOT WORK
+                    requiresFloodFill = true    // default
+                };
+                active.UpdateGraphs(baseUnwalkableGuo);
+                _starbaseGuos.Add(baseCmd, baseUnwalkableGuo);
+            }
+        }
+
+        // NOTE: For now, no UpdateGraph(Settlement). Settlements aren't likely to be on top of existing waypoints, and,
+        // surrounding them with waypoints makes no sense if I allow them to orbit
+
+        /************************** My Work End ********************************************************************************/
+
+        public override void PostDeserialization() {
+            RebuildNodeLookup();
+        }
+
+        public override void RelocateNodes(Matrix4x4 oldMatrix, Matrix4x4 newMatrix) {
+            base.RelocateNodes(oldMatrix, newMatrix);
+            RebuildNodeLookup();
+        }
+
+#if ASTAR_NO_JSON
+        public override void SerializeSettings (GraphSerializationContext ctx) {
+            base.SerializeSettings(ctx);
+
+            ctx.SerializeUnityObject(root);
+            ctx.writer.Write(searchTag ?? "");
+            ctx.writer.Write(maxDistance);
+            ctx.SerializeVector3(limits);
+            ctx.writer.Write(raycast);
+            ctx.writer.Write(use2DPhysics);
+            ctx.writer.Write(thickRaycast);
+            ctx.writer.Write(thickRaycastRadius);
+            ctx.writer.Write(recursive);
+            ctx.writer.Write(autoLinkNodes);
+            ctx.writer.Write((int)mask);
+            ctx.writer.Write(optimizeForSparseGraph);
+            ctx.writer.Write(optimizeFor2D);
+        }
+
+        public override void DeserializeSettings (GraphSerializationContext ctx) {
+            base.DeserializeSettings(ctx);
+
+            root = ctx.DeserializeUnityObject() as Transform;
+            searchTag = ctx.reader.ReadString();
+            maxDistance = ctx.reader.ReadSingle();
+            limits = ctx.DeserializeVector3();
+            raycast = ctx.reader.ReadBoolean();
+            use2DPhysics = ctx.reader.ReadBoolean();
+            thickRaycast = ctx.reader.ReadBoolean();
+            thickRaycastRadius = ctx.reader.ReadSingle();
+            recursive = ctx.reader.ReadBoolean();
+            autoLinkNodes = ctx.reader.ReadBoolean();
+            mask = (LayerMask)ctx.reader.ReadInt32();
+            optimizeForSparseGraph = ctx.reader.ReadBoolean();
+            optimizeFor2D = ctx.reader.ReadBoolean();
+        }
+#endif
+
+        public override void SerializeExtraInfo(GraphSerializationContext ctx) {
+            // Serialize node data
+
+            if (nodes == null) ctx.writer.Write(-1);
+
+            // Length prefixed array of nodes
+            ctx.writer.Write(nodeCount);
+            for (int i = 0; i < nodeCount; i++) {
+                // -1 indicates a null field
+                if (nodes[i] == null) ctx.writer.Write(-1);
+                else {
+                    ctx.writer.Write(0);
+                    nodes[i].SerializeNode(ctx);
+                }
+            }
+        }
+
+        public override void DeserializeExtraInfo(GraphSerializationContext ctx) {
+            int count = ctx.reader.ReadInt32();
+
+            if (count == -1) {
+                nodes = null;
+                return;
+            }
+
+            nodes = new PointNode[count];
+            nodeCount = count;
+
+            for (int i = 0; i < nodes.Length; i++) {
+                if (ctx.reader.ReadInt32() == -1) continue;
+                nodes[i] = new PointNode(active);
+                nodes[i].DeserializeNode(ctx);
+            }
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IUpdatableGraph Members
+
+        public GraphUpdateThreading CanUpdateAsync(GraphUpdateObject o) {
+            return GraphUpdateThreading.UnityThread;
+        }
+
+        public void UpdateAreaInit(GraphUpdateObject o) { }
+
+        /** Updates an area in the list graph.
+         * Recalculates possibly affected connections, i.e all connectionlines passing trough the bounds of the \a guo will be recalculated
+         * \astarpro */
+        public void UpdateArea(GraphUpdateObject guo) {
+            if (nodes == null) {
+                return;
+            }
+
+            for (int i = 0; i < nodeCount; i++) {
+                if (guo.bounds.Contains((Vector3)nodes[i].position)) {
+                    guo.WillUpdateNode(nodes[i]);
+                    guo.Apply(nodes[i]);
+                }
+            }
+
+            // Make connection changes
+            if (guo.updatePhysics) {
+                //Use a copy of the bounding box, we should not change the GUO's bounding box since it might be used for other graph updates
+                Bounds bounds = guo.bounds;
+
+                //Create two temporary arrays used for holding new connections and costs
+                List<GraphNode> tmp_arr = Pathfinding.Util.ListPool<GraphNode>.Claim();
+                List<uint> tmp_arr2 = Pathfinding.Util.ListPool<uint>.Claim();
+
+                int connectionsAdded = Constants.Zero;
+                int connectionsRemoved = Constants.Zero;
+
+                for (int i = 0; i < nodeCount; i++) {
+                    PointNode node = nodes[i];
+                    var a = (Vector3)node.position;
+
+                    List<GraphNode> conn = null;
+                    List<uint> costs = null;
+
+                    for (int j = 0; j < nodeCount; j++) {
+                        if (j == i) continue;
+
+                        var b = (Vector3)nodes[j].position;
+                        if (VectorMath.SegmentIntersectsBounds(bounds, a, b)) {
+                            float dist;
+                            PointNode other = nodes[j];
+                            bool contains = node.ContainsConnection(other);
+                            bool validConnection = IsValidConnection(node, other, out dist);
+
+                            if (!contains && validConnection) {
+                                // A new connection should be added
+
+                                if (conn == null) {
+                                    tmp_arr.Clear();
+                                    tmp_arr2.Clear();
+                                    conn = tmp_arr;
+                                    costs = tmp_arr2;
+                                    conn.AddRange(node.connections);
+                                    costs.AddRange(node.connectionCosts);
+                                }
+
+                                uint cost = (uint)Mathf.RoundToInt(dist * Int3.FloatPrecision);
+                                conn.Add(other);
+                                connectionsAdded++;
+                                costs.Add(cost);
+                            }
+                            else if (contains && !validConnection) {
+                                // A connection should be removed
+
+                                if (conn == null) {
+                                    tmp_arr.Clear();
+                                    tmp_arr2.Clear();
+                                    conn = tmp_arr;
+                                    costs = tmp_arr2;
+                                    conn.AddRange(node.connections);
+                                    costs.AddRange(node.connectionCosts);
+                                }
+
+                                int p = conn.IndexOf(other);
+
+                                //Shouldn't have to check for it, but who knows what might go wrong
+                                if (p != -1) {
+                                    conn.RemoveAt(p);
+                                    connectionsRemoved++;
+                                    costs.RemoveAt(p);
+                                }
+                            }
+                        }
+                    }
+
+                    // Save the new connections if any were changed
+                    if (conn != null) {
+                        node.connections = conn.ToArray();
+                        node.connectionCosts = costs.ToArray();
+                    }
+                }
+
+                // Release buffers back to the pool
+                Pathfinding.Util.ListPool<GraphNode>.Release(tmp_arr);
+                Pathfinding.Util.ListPool<uint>.Release(tmp_arr2);
+
+                // Connections are single direction so each node pair will have 2
+                D.Log("Pathfinding GraphUpdate has occurred. ConnectionsAdded: {0}, ConnectionsRemoved: {1}.", connectionsAdded, connectionsRemoved);
+            }
+        }
+
+        #endregion
+
+    }
+}
+

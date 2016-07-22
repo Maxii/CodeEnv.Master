@@ -275,8 +275,15 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        //This function returns a point which is a projection from a point to a line.
-        //The line is regarded infinite. If the line is finite, use ProjectPointOnLineSegment() instead.
+        /// <summary>
+        /// This method returns a point which is a projection from a point onto an infinite line.
+        /// Could also be called GetClosestPointOnInfiniteLine.
+        /// If the line is finite, use ProjectPointOnLineSegment() instead.
+        /// </summary>
+        /// <param name="linePoint">A line point.</param>
+        /// <param name="lineVec">The line vector, aka direction.</param>
+        /// <param name="point">The point.</param>
+        /// <returns></returns>
         public static Vector3 ProjectPointOnLine(Vector3 linePoint, Vector3 lineVec, Vector3 point) {
 
             //get vector from point on line to point in space
@@ -287,10 +294,17 @@ namespace CodeEnv.Master.Common {
             return linePoint + lineVec * t;
         }
 
-        //This function returns a point which is a projection from a point to a line segment.
-        //If the projected point lies outside of the line segment, the projected point will 
-        //be clamped to the appropriate line edge.
-        //If the line is infinite instead of a segment, use ProjectPointOnLine() instead.
+        /// <summary>
+        /// This method returns a point which is a projection from a point to a line segment.
+        /// Could also be called GetClosestPointOnLineSegment.
+        /// If the projected point lies outside of the line segment, the projected point will 
+        /// be clamped to the appropriate line edge.
+        /// If the line is infinite instead of a segment, use ProjectPointOnLine() instead.
+        /// </summary>
+        /// <param name="linePoint1">The line point1.</param>
+        /// <param name="linePoint2">The line point2.</param>
+        /// <param name="point">The point.</param>
+        /// <returns></returns>
         public static Vector3 ProjectPointOnLineSegment(Vector3 linePoint1, Vector3 linePoint2, Vector3 point) {
 
             Vector3 vector = linePoint2 - linePoint1;

@@ -24,11 +24,6 @@ namespace CodeEnv.Master.GameContent {
         public RangeCategory RangeCategory { get; private set; }
 
         /// <summary>
-        /// The base (no owner multiplier applied) range distance in units.
-        /// </summary>
-        public float BaseRangeDistance { get; private set; }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ARangedEquipmentStat" /> class.
         /// </summary>
         /// <param name="name">The name of the RangedEquipment.</param>
@@ -40,13 +35,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power needed to operate this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category.</param>
-        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
         public ARangedEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance)
+            float pwrRqmt, float expense, RangeCategory rangeCat)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense) {
             RangeCategory = rangeCat;
-            BaseRangeDistance = baseRangeDistance;
         }
+
 
     }
 }

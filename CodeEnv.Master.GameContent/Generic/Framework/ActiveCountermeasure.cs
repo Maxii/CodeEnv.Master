@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override string FullName {
             get {
-                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.Name, Name) : Name;
+                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.FullName, Name) : Name;
             }
         }
 
@@ -68,10 +68,6 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
 
         public float InterceptAccuracy { get { return Stat.InterceptAccuracy; } }
-
-        protected override float RangeMultiplier {
-            get { return RangeMonitor != null ? RangeMonitor.Owner.CountermeasureRangeMultiplier : Constants.OneF; }
-        }
 
         protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
 
@@ -118,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
             var threat = firingSolution.Threat;
             HandleFiringInitiated(threat);
 
-            D.Log("{0} is firing on {1}. Qualified Threats = {2}.", Name, threat.Name, _qualifiedThreats.Select(t => t.Name).Concatenate());
+            D.Log("{0} is firing on {1}. Qualified Threats = {2}.", FullName, threat.FullName, _qualifiedThreats.Select(t => t.FullName).Concatenate());
             bool isThreatHit = false;
             float hitChance = InterceptAccuracy;
             if (RandomExtended.Chance(hitChance)) {
@@ -144,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="threat">The ordnance threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void HandleThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
-            D.Log("{0} received HandleThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.Name, isInRange);
+            D.Log("{0} received HandleThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.FullName, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(threat)) {
                     D.Assert(!_qualifiedThreats.Contains(threat));
@@ -177,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
         /// this was a public method called by the fired ordnance.</remarks>
         /// <param name="threatFiredOn">The target fired on.</param>
         private void HandleFiringInitiated(IInterceptableOrdnance threatFiredOn) {
-            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.Name));
+            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.FullName));
             D.Assert(_qualifiedThreats.Contains(threatFiredOn));
 
             _isLoaded = false;

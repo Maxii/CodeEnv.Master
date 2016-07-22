@@ -45,16 +45,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
         /// <param name="duration">The firing duration in hours.</param>
         /// <param name="maxLaunchInaccuracy">The maximum launch inaccuracy in degrees.</param>
+
         public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength,
+            float pwrRqmt, float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength,
             float reloadPeriod, DamageStrength damagePotential, float duration, float maxLaunchInaccuracy)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
             D.Assert(duration > Constants.ZeroF);
             D.Warn(maxLaunchInaccuracy > 5F, "{0} MaxLaunchInaccuracy of {1:0.#} is very high.", Name, MaxLaunchInaccuracy);
             Duration = duration;

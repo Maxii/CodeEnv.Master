@@ -52,7 +52,7 @@ public class FleetCtxControl_AI : ACtxControl {
         _fleetMenuOperator = fleetCmd;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_fleetMenuOperator.IsSelected) {
             D.Assert(_fleetMenuOperator == selected as FleetCmdItem);
             return true;
@@ -66,18 +66,18 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool TryIsSelectedItemUserRemoteBase(ISelectable selected, out AUnitBaseCmdItem selectedBase) {
         selectedBase = selected as AUnitBaseCmdItem;
-        return selectedBase != null && selectedBase.Owner.IsUser;
+        return selectedBase != null && selectedBase.IsUserOwned;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                return !(_fleetMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
@@ -90,7 +90,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackableTarget).IsAttackingAllowedBy(_user);
+                return !(_fleetMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -102,24 +102,24 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
     protected override void HandleMenuPick_UserRemoteBaseIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteBaseIsSelected(itemID);
-        IssueRemoteBaseOrder(itemID);
+        IssueRemoteUserBaseOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
-    private void IssueRemoteBaseOrder(int itemID) {
+    private void IssueRemoteUserBaseOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        IUnitAttackableTarget target = _fleetMenuOperator;
+        IUnitAttackable target = _fleetMenuOperator;
         var remoteBase = _remoteUserOwnedSelectedItem as AUnitBaseCmdItem;
         remoteBase.CurrentOrder = new BaseOrder(directive, OrderSource.User, target);
     }

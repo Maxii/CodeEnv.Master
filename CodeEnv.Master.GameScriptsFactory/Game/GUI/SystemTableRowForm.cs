@@ -26,17 +26,17 @@ public class SystemTableRowForm : ATableRowForm {
 
     public override FormID FormID { get { return FormID.SystemTableRow; } }
 
-    protected override void AssignValueToEnergyGuiElement() {
-        base.AssignValueToEnergyGuiElement();
-        var report = Report as SystemReport;
-        _energyLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Energy)) : _unknown;
-    }
-
     protected override void AssignValueToLocationGuiElement() {
         base.AssignValueToLocationGuiElement();
         var report = Report as SystemReport;
         _locationElement.SectorIndex = report.SectorIndex;
         _locationElement.Position = report.Position;
+    }
+
+    protected override void AssignValueToEnergyGuiElement() {
+        base.AssignValueToEnergyGuiElement();
+        var report = Report as SystemReport;
+        _energyLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Energy)) : _unknown;
     }
 
     protected override void AssignValueToOrganicsGuiElement() {

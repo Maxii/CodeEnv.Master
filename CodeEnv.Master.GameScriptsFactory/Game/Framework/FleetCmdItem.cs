@@ -30,7 +30,7 @@ using UnityEngine;
 /// <summary>
 /// AUnitCmdItems that are Fleets.
 /// </summary>
-public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
+public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollowable {
 
     private static ShipHullCategory[] _desiredExplorationShipCategories = { ShipHullCategory.Science,
                                                                             ShipHullCategory.Scout,
@@ -51,12 +51,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     private FleetOrder _currentOrder;
     public FleetOrder CurrentOrder {
-        get { return _currentOrder; }
+        private get { return _currentOrder; }
         set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
+    public FleetCmdReport UserReport { get { return Publisher.GetUserReport(); } }
+
+    protected new FleetFormationManager FormationMgr { get { return base.FormationMgr as FleetFormationManager; } }
+
     private FleetPublisher _publisher;
-    public FleetPublisher Publisher {
+    private FleetPublisher Publisher {
         get { return _publisher = _publisher ?? new FleetPublisher(Data, this); }
     }
 
@@ -105,11 +109,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         _hqJoint = gameObject.AddComponent<FixedJoint>();
     }
 
+    protected override void FinalInitialize() {
+        base.FinalInitialize();
+        // 7.11.16 Moved from CommenceOperations as need to be Idling to receive initial events once sensors
+        // are operational. Events include initial discovery of players which result in Relationship changes
+        CurrentState = FleetState.Idling;
+    }
+
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        CurrentState = FleetState.Idling;
+        //CurrentState = FleetState.Idling;
     }
 
     public void TransferShip(ShipItem ship, FleetCmdItem fleetCmd) {
@@ -138,9 +149,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
     }
 
-    public FleetReport GetUserReport() { return Publisher.GetUserReport(); }
 
-    public FleetReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public ShipReport[] GetElementReports(Player player) {
         return Elements.Cast<ShipItem>().Select(s => s.GetReport(player)).ToArray();
@@ -152,7 +162,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// </summary>
     /// <returns></returns>
     private ShipItem SelectHQElement() {
-        return Elements.MaxBy(e => e.Data.Health) as ShipItem;  // IMPROVE
+        var flagship = Elements.MaxBy(e => e.Data.Health) as ShipItem;
+        // IMPROVE to include large defense and small offense criteria as will be located in HQ formation slot (usually in center)
+        // and will have a CombatStance of Defensive - will entrench rather than pursue targets
+        return flagship;
     }
 
     protected override void AttachCmdToHQElement() {
@@ -167,27 +180,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         //D.Log(ShowDebugLog, "{0} after attached by FixedJoint, rotation = {1}, {2}.rotation = {3}.", HQElement.FullName, HQElement.transform.rotation, FullName, transform.rotation);
     }
 
-    /// <summary>
-    /// Handles the results of the exploringShip's attempt to explore the exploreTgt.
-    /// </summary>
-    /// <param name="exploringShip">The exploring ship.</param>
-    /// <param name="exploreTgt">The explore target.</param>
-    /// <param name="isExploreAttemptSuccessful">if set to <c>true</c> the exploration was successfully completed, 
-    /// <c>false</c> if the exploration failed.</param>
-    internal void HandleShipExploreAttemptFinished(ShipItem exploringShip, IShipExplorable exploreTgt, bool isExploreAttemptSuccessful) {
-        UponShipExploreAttemptFinished(exploringShip, exploreTgt, isExploreAttemptSuccessful);
-    }
-
-    internal void HandleShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
-        UponShipOrbitAttemptFinished(ship, isOrbitAttemptSuccessful);
-    }
-
-    protected override void SetDeadState() {
+    protected override void InitiateDeadState() {
+        UponDeath();
         CurrentState = FleetState.Dead;
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
     }
 
     /// <summary>
@@ -200,11 +199,43 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedFleet, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedFleet, UserReport);
     }
 
     protected override IconInfo MakeIconInfo() {
-        return FleetIconInfoFactory.Instance.MakeInstance(GetUserReport());
+        return FleetIconInfoFactory.Instance.MakeInstance(UserReport);
+    }
+
+    public bool RequestPermissionToWithdraw(ShipItem ship, ShipItem.WithdrawPurpose purpose) {
+        return true;    // TODO false if fight to the death...
+    }
+
+    /// <summary>
+    /// Requests a change in the ship's formation station assignment based on the stationSelectionCriteria provided.
+    /// Returns <c>true</c> if the ship's formation station assignment was changed, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    /// <param name="stationSelectionCriteria">The station selection criteria.</param>
+    /// <returns></returns>
+    public bool RequestFormationStationChange(ShipItem ship, AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria) {
+        int iterateCount = Constants.Zero;
+        while (iterateCount < 3) {
+            if (RequestFormationStationChange(ship, stationSelectionCriteria, ref iterateCount)) {
+                return true;
+            }
+            // TODO modify stationSelectionCriteria here to search for criteria that fits an available slot
+        }
+        return false;
+    }
+
+    private bool RequestFormationStationChange(ShipItem ship, AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria, ref int iterateCount) {
+        if (FormationMgr.IsSlotAvailable(stationSelectionCriteria)) {
+            D.Log(ShowDebugLog, "{0} rqst for formation station change has been approved.", ship.FullName);
+            FormationMgr.AddAndPositionNonHQElement(ship, stationSelectionCriteria);
+            return true;
+        }
+        iterateCount++;
+        return false;
     }
 
     #region Event and Property Change Handlers
@@ -229,14 +260,25 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #endregion
 
+    #region Orders
+
+    public bool IsCurrentOrderDirectiveAnyOf(params FleetDirective[] directives) {
+        return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
+    }
+
+    /// <summary>
+    /// Convenience method that has the CmdStaff issue an inplace AssumeFormation order.
+    /// </summary>
+    private void IssueAssumeFormationOrderFromCmdStaff() {
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+    }
+
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
-        while (CurrentState == FleetState.Moving || CurrentState == FleetState.Patrolling || CurrentState == FleetState.AssumingFormation
-            || CurrentState == FleetState.AssumingCloseOrbit) {
+        while (CurrentState == FleetState.Moving || CurrentState == FleetState.Patrolling || CurrentState == FleetState.AssumingFormation || CurrentState == FleetState.Guarding) {
             UponNewOrderReceived();
         }
-        D.Assert(CurrentState != FleetState.Moving && CurrentState != FleetState.Patrolling && CurrentState != FleetState.AssumingFormation
-            && CurrentState != FleetState.AssumingCloseOrbit);
+        D.Assert(CurrentState != FleetState.Moving && CurrentState != FleetState.Patrolling && CurrentState != FleetState.AssumingFormation && CurrentState != FleetState.Guarding);
 
         if (CurrentOrder != null) {
             D.LogBold(ShowDebugLog, "{0} received new order {1}. CurrentState: {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
@@ -247,13 +289,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
             switch (directive) {
                 case FleetDirective.Move:
-                    CurrentState = FleetState.ExecuteMoveOrder;
-                    break;
                 case FleetDirective.FullSpeedMove:
-                    CurrentState = FleetState.ExecuteFullSpeedMoveOrder;
-                    break;
-                case FleetDirective.CloseOrbit:
-                    CurrentState = FleetState.ExecuteCloseOrbitOrder;
+                    CurrentState = FleetState.ExecuteMoveOrder;
                     break;
                 case FleetDirective.Attack:
                     CurrentState = FleetState.ExecuteAttackOrder;
@@ -310,29 +347,35 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             D.Assert(target == null);
             return;
         }
-        if (directive == FleetDirective.Move || directive == FleetDirective.FullSpeedMove) {
-            //if (target is StationaryLocation || target is MobileLocation) {
-            //    return;
-            //}
-            if (target is SectorItem) {
-                return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
-            }
+        if (target is SectorItem) {
+            return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
         }
-        D.Assert(_ownerKnowledge.HasKnowledgeOf(target as IDiscernibleItem), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+        D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
             FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
     }
 
+    #endregion
 
     #region StateMachine
 
-    public new FleetState CurrentState {
+    // 7.6.16 RelationsChange event methods added. Accommodates a change in relations when you know the current owner.
+    // TODO Doesn't account for ownership changes that occur to the targets which may swap an enemy for a friend or vise versa
+
+    protected new FleetState CurrentState {
         get { return (FleetState)base.CurrentState; }
-        protected set { base.CurrentState = value; }
+        set { base.CurrentState = value; }  // No duplicate warning desired            
     }
 
     protected new FleetState LastState {
         get { return base.LastState != null ? (FleetState)base.LastState : default(FleetState); }
     }
+
+    /// <summary>
+    /// The target the State Machine uses to communicate between states. Valid during the Call()ed states Moving, 
+    /// AssumingFormation, Patrolling and Guarding and during the states that Call() them until nulled by that state.
+    /// The state that sets this value during its EnterState() is responsible for nulling it during its ExitState().
+    /// </summary>
+    private IFleetNavigable _fsmTgt;
 
     #region None
 
@@ -351,14 +394,24 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     void Idling_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
 
         Data.Target = null; // temp to remove target from data after order has been completed or failed
     }
 
-    void Idling_UponShipAssumedStation(ShipItem ship) {
+    void Idling_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        // Do nothing as no effect
+    }
+
+    void Idling_UponOwnerChanged() {
+        LogEvent();
+        // Already available for orders from new owner
+    }
+
+    void Idling_UponDeath() {
         LogEvent();
     }
 
@@ -368,68 +421,350 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #endregion
 
+    #region Moving
+
+    // 7.2.16 Call()ed State
+
+    /// <summary>
+    /// The speed of the AutoPilot Move. Valid during the Moving state and during the state 
+    /// that sets it and Call()s the Moving state until the Moving state Return()s.
+    /// The state that sets this value during its EnterState() is not responsible for nulling 
+    /// it during its ExitState() as that is handled by Moving_ExitState().
+    /// </summary>
+    private Speed _apMoveSpeed;
+
+    /// <summary>
+    /// The standoff distance from the target of the AutoPilot Move. Valid only in the Moving state.
+    /// <remarks>Ship 'arrival' at some IFleetNavigable targets should be further away than the amount the target would 
+    /// normally designate when returning its AutoPilotTarget. IFleetNavigable target examples include enemy bases and
+    /// fleets where the ships in this fleet should 'arrive' outside of the enemy's max weapons range.</remarks>
+    /// </summary>
+    private float _apMoveTgtStandoffDistance;
+
+    void Moving_EnterState() {
+        LogEvent();
+        D.Assert(_fsmTgt != null);
+        D.Assert(_apMoveSpeed != default(Speed));
+
+        IFleetNavigable apTgt = _fsmTgt;
+        _navigator.PlotPilotCourse(apTgt, _apMoveSpeed, _apMoveTgtStandoffDistance);
+    }
+
+    void Moving_UponApCoursePlotSuccess() {
+        LogEvent();
+        _navigator.EngagePilot();
+    }
+
+    void Moving_UponApCoursePlotFailure() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        Return();
+    }
+
+    void Moving_UponApTargetUnreachable() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        Return();
+    }
+
+    void Moving_UponApTargetReached() {
+        LogEvent();
+        Return();
+    }
+
+    void Moving_UponEnemyDetected() {
+        LogEvent();
+        // TODO determine state that Call()ed => LastState and go intercept if applicable
+        Return();
+    }
+
+    void Moving_UponNewOrderReceived() {
+        LogEvent();
+        Return();
+    }
+
+    void Moving_UponRelationsChanged(Player relationsChgdPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        if (ShouldMovingBeReassessedDueToRelationsChange(relationsChgdPlayer, priorRelationship, newRelationship)) {
+            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            Return();
+        }
+    }
+
+    private bool ShouldMovingBeReassessedDueToRelationsChange(Player relationsChgdPlayer, DiplomaticRelationship priorRelations, DiplomaticRelationship newRelations) {
+        switch (LastState) {
+            case FleetState.ExecuteExploreOrder:
+                IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
+                if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
+                    D.Assert(relationsChgdPlayer == fleetExploreTgt.Owner_Debug);
+                    return true;
+                }
+                return false;
+            case FleetState.ExecutePatrolOrder:
+                IPatrollable patrolTgt = _fsmTgt as IPatrollable;
+                if (!patrolTgt.IsPatrollingAllowedBy(Owner)) {
+                    D.Assert(relationsChgdPlayer == patrolTgt.Owner_Debug);
+                    return true;
+                }
+                return false;
+            case FleetState.ExecuteGuardOrder:
+                IGuardable guardTgt = _fsmTgt as IGuardable;
+                if (!guardTgt.IsGuardingAllowedBy(Owner)) {
+                    D.Assert(relationsChgdPlayer == guardTgt.Owner_Debug);
+                    return true;
+                }
+                return false;
+            case FleetState.ExecuteAttackOrder:
+                IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
+                if (!unitAttackTgt.IsAttackingAllowedBy(Owner)) {
+                    D.Assert(relationsChgdPlayer == unitAttackTgt.Owner_Debug);
+                    return true;
+                }
+                return false;
+            case FleetState.ExecuteMoveOrder:
+                var unitCmdMoveTgt = _fsmTgt as IUnitCmd_Ltd;
+                if (unitCmdMoveTgt != null) {   // only Units have weapons
+                    Player unitCmdMoveTgtOwner;
+                    if (unitCmdMoveTgt.TryGetOwner(Owner, out unitCmdMoveTgtOwner)) {
+                        if (unitCmdMoveTgtOwner == relationsChgdPlayer) {
+                            // moving to fleet or base owned by player whos relations with us changed
+                            if (newRelations.IsEnemy()) {
+                                // now an enemy
+                                if (!priorRelations.IsEnemy()) {
+                                    // definitely reassess as changed from non-enemy to enemy
+                                    return true;
+                                }
+                                // else no need to reassess as no change in being an enemy
+                            }
+                            else {
+                                // not an enemy now
+                                if (priorRelations.IsEnemy()) {
+                                    // changed from enemy to non-enemy so reassess as StandoffDistance can be shortened
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                // Could also be moving to 1) an AssemblyStation from within a System or Sector, 2) a System or Sector
+                // from outside, 3) a Planet, Star or UniverseCenter. Since none of these can fire on us, no reason to worry
+                // about recalculating StandoffDistance.
+                return false;
+            case FleetState.ExecuteJoinFleetOrder:
+            case FleetState.ExecuteAssumeFormationOrder:
+                return false;
+            case FleetState.Guarding:
+            case FleetState.Patrolling:
+            case FleetState.Moving:
+            case FleetState.AssumingFormation:
+            case FleetState.Idling:
+            case FleetState.Dead:
+            // doesn't Call() Moving
+            case FleetState.Entrenching:
+            case FleetState.GoRepair:
+            case FleetState.Repairing:
+            case FleetState.GoRefit:
+            case FleetState.Refitting:
+            case FleetState.GoRetreat:
+            case FleetState.GoDisband:
+            case FleetState.Disbanding:
+            // not yet implemented
+            case FleetState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(LastState));
+        }
+    }
+
+    void Moving_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void Moving_UponFsmTargetDeath(IMortalItem deadFsmTarget) {
+        LogEvent();
+        if (_fsmTgt is StationaryLocation) {
+            D.Assert(deadFsmTarget is IPatrollable || deadFsmTarget is IGuardable);
+        }
+        else {
+            D.Assert(_fsmTgt == deadFsmTarget, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTarget.FullName);
+        }
+        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        Return();
+    }
+
+    void Moving_UponDeath() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        Return();
+    }
+
+    void Moving_ExitState() {
+        LogEvent();
+        _apMoveSpeed = Speed.None;
+        _apMoveTgtStandoffDistance = Constants.ZeroF;
+        _navigator.DisengagePilot();
+    }
+
+    #endregion
+
     #region ExecuteAssumeFormationOrder
 
     IEnumerator ExecuteAssumeFormationOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
 
-        if (CurrentOrder.Target != null) {
+        IFleetNavigable assumeFormationTarget = CurrentOrder.Target;
+        if (assumeFormationTarget != null) {
             // a LocalAssyStation target was specified so move there together first
-            StationaryLocation assumeFormationTarget = (StationaryLocation)CurrentOrder.Target;
-            _fsmApMoveTgt = assumeFormationTarget;
-            _fsmApMoveSpeed = Speed.Standard;
-            _fsmApMoveTgtStandoffDistance = Constants.ZeroF;
+            D.Assert(assumeFormationTarget is StationaryLocation);
+            _fsmTgt = assumeFormationTarget;
+            _apMoveSpeed = Speed.Standard;
+            _apMoveTgtStandoffDistance = Constants.ZeroF;
             Call(FleetState.Moving);
             yield return null;  // reqd so Return()s here
 
-            D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteAssumeFormationOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-            D.Assert(!CheckForDeathOf(_fsmApMoveTgt));
+            if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+                switch (_orderFailureCause) {
+                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                        // TODO Initiate Fleet Repair and communicate failure to boss?
+                        break;
+                    case UnitItemOrderFailureCause.UnitItemDeath:
+                        // TODO Communicate failure to boss?
+                        break;
+                    case UnitItemOrderFailureCause.TgtDeath:
+                    case UnitItemOrderFailureCause.TgtUncatchable:
+                    case UnitItemOrderFailureCause.TgtRelationship:
+                    case UnitItemOrderFailureCause.TgtUnreachable:
+                    case UnitItemOrderFailureCause.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+                }
+                yield return null;
+            }
+
+            // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+            D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+
+            _fsmTgt = null; // only used to Move to the target if any
         }
 
         Call(FleetState.AssumingFormation);
         yield return null;
 
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
+            yield return null;
+        }
+
+        // If there was a failure generated by AssumingFormation, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+
         CurrentState = FleetState.Idling;
+    }
+
+    void ExecuteAssumeFormationOrder_UponEnemyDetected() {
+        LogEventWarning();
+    }
+
+    void ExecuteAssumeFormationOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEventWarning();
+        // Do nothing as no effect
+    }
+
+    void ExecuteAssumeFormationOrder_UponOwnerChanged() {
+        LogEvent();
+        // Already doing what I need to do
+    }
+
+    // Can't have _UponFsmTargetDeath() as the _fsmTgt is either null or a StationaryLocation that can't die
+
+    void ExecuteAssumeFormationOrder_UponDeath() {
+        LogEventWarning();
     }
 
     void ExecuteAssumeFormationOrder_ExitState() {
         LogEvent();
-        _fsmApMoveTgt = null;
+        _fsmTgt = null;
+        _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
     #endregion
 
     #region AssumingFormation
 
-    private int _fsmShipCountOffStation;
+    // 7.2.16 Call()ed State
+
+    /// <summary>
+    /// The current number of ships the fleet is waiting for to arrive on station.
+    /// <remarks>The fleet does not wait for ships that communicate their inability to get to their station,
+    /// such as when they are heavily damaged and trying to repair.</remarks>
+    /// </summary>
+    private int _fsmShipWaitForOnStationCount;
 
     void AssumingFormation_EnterState() {
         LogEvent();
-        D.Assert(_fsmShipCountOffStation == Constants.Zero);
-        _fsmShipCountOffStation = Elements.Count;
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
+        }
+        D.Assert(_fsmShipWaitForOnStationCount == Constants.Zero);
+        _fsmShipWaitForOnStationCount = Elements.Count;
 
-        var shipAssumeFormationOrder = new ShipOrder(ShipDirective.AssumeStation, CurrentOrder.Source);
+        D.Log(ShowDebugLog, "{0} issuing {1} order to all ships.", FullName, ShipDirective.AssumeStation.GetValueName());
+        var shipAssumeFormationOrder = new ShipOrder(ShipDirective.AssumeStation, CurrentOrder.Source, toNotifyCmd: true);
         Elements.ForAll(e => {
             var ship = e as ShipItem;
-            D.Log(ShowDebugLog, "{0} issuing {1} order to {2}.", FullName, ShipDirective.AssumeStation.GetValueName(), ship.FullName);
             ship.CurrentOrder = shipAssumeFormationOrder;
         });
     }
 
-    void AssumingFormation_UponShipAssumedStation(ShipItem ship) {
-        _fsmShipCountOffStation--;
-        if (_fsmShipCountOffStation == Constants.Zero) {
-            Return();
+    void AssumingFormation_UponOrderOutcome(ShipDirective directive, ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+        LogEvent();
+        if (directive != ShipDirective.AssumeStation) {
+            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", FullName, CurrentState.GetValueName(), typeof(ShipDirective).Name, directive.GetValueName());
+            return;
         }
-    }
 
-    void AssumingFormation_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
-        _fsmShipCountOffStation--;
-        if (_fsmShipCountOffStation == Constants.Zero) {
+        D.Assert(target == null);
+        if (isSuccess) {
+            _fsmShipWaitForOnStationCount--;
+        }
+        else {
+            switch (failCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // Ship will get repaired, but even if it goes to its formationStation to do so
+                    // it won't communicate its success back to Cmd since Captain ordered it, not Cmd
+                    _fsmShipWaitForOnStationCount--;
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    _fsmShipWaitForOnStationCount--;
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+            }
+        }
+        if (_fsmShipWaitForOnStationCount == Constants.Zero) {
             Return();
         }
     }
@@ -439,49 +774,117 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         Return();
     }
 
+    void AssumingFormation_UponEnemyDetected() {
+        LogEvent();
+    }
+
+    void AssumingFormation_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        // Do nothing as no effect
+    }
+
+    void AssumingFormation_UponOwnerChanged() {
+        LogEvent();
+        // Already doing what I need to do
+    }
+
+    void AssumingFormation_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    // Can't have _UponFsmTargetDeath() as the _fsmTgt is null
+
+    void AssumingFormation_UponDeath() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        Return();
+    }
+
     void AssumingFormation_ExitState() {
         LogEvent();
-        _fsmShipCountOffStation = Constants.Zero;
+        _fsmShipWaitForOnStationCount = Constants.Zero;
     }
 
     #endregion
 
-    #region ExecuteFullSpeedMoveOrder
+    #region ExecuteFullSpeedMoveOrder Archive
 
-    // Note: Duplicated functionality of ExecuteMoveOrder so no rqmt to test for _fsmMoveSpeed being previously set
+    //// Note: Duplicated functionality of ExecuteMoveOrder so no rqmt to test for _apMoveSpeed being previously set
 
-    IEnumerator ExecuteFullSpeedMoveOrder_EnterState() {
-        LogEvent();
+    //IEnumerator ExecuteFullSpeedMoveOrder_EnterState() {
+    //    LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
-        }
+    //    if (_fsmTgt != null) {
+    //        D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
+    //    }
 
-        GetApMoveOrderSettings(CurrentOrder, out _fsmApMoveTgt, out _fsmApMoveSpeed, out _fsmApMoveTgtStandoffDistance);
-        Call(FleetState.Moving);
-        yield return null;  // required so Return()s here
+    //    D.Assert(CurrentOrder.Target != null);
 
-        if (_fsmApMoveTgtUnreachable) {
-            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
-            yield return null;
-        }
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
-            yield return null;
-        }
+    //    GetApMoveOrderSettings(CurrentOrder, out _fsmTgt, out _apMoveSpeed, out _apMoveTgtStandoffDistance);
+    //    AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
 
-        if (AssessWhetherToAssumeFormationAfterMove()) {
-            Call(FleetState.AssumingFormation);
-            yield return null;  // reqd so Return()s here
-        }
-        CurrentState = FleetState.Idling;
-    }
+    //    Call(FleetState.Moving);
+    //    yield return null;  // required so Return()s here
 
-    void ExecuteFullSpeedMoveOrder_ExitState() {
-        LogEvent();
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
-    }
+    //    if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+    //        switch (_orderFailureCause) {
+    //            case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+    //                // TODO Initiate Fleet Repair and communicate failure to boss?
+    //                break;
+    //            case UnitItemOrderFailureCause.UnitItemDeath:
+    //                // TODO Communicate failure to boss?
+    //                break;
+    //            case UnitItemOrderFailureCause.TgtDeath:
+    //            case UnitItemOrderFailureCause.TgtUncatchable:
+    //                // TODO Communicate failure to boss?
+    //                // failure occurred while Moving so AssumeFormation where we are at
+    //                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+    //                break;
+    //            case UnitItemOrderFailureCause.TgtRelationship:
+    //            case UnitItemOrderFailureCause.TgtUnreachable:
+    //            case UnitItemOrderFailureCause.None:
+    //            default:
+    //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+    //        }
+    //        yield return null;
+    //    }
+
+    //    // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+    //    D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+
+    //    if (AssessWhetherToAssumeFormationAfterMove()) {
+    //        Call(FleetState.AssumingFormation);
+    //        yield return null;  // reqd so Return()s here
+    //    }
+    //    CurrentState = FleetState.Idling;
+    //}
+
+    //void ExecuteFullSpeedMoveOrder_UponEnemyDetected() {
+    //    LogEventWarning();
+    //    // TODO
+    //}
+
+    //void ExecuteFullSpeedMoveOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+    //    LogEventWarning();
+    //    // TODO
+    //}
+
+    //void ExecuteFullSpeedMoveOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+    //    LogEventWarning();
+    //    D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+    //    // TODO Communicate failure to boss?
+    //}
+
+    //void ExecuteFullSpeedMoveOrder_UponDeath() {
+    //    LogEventWarning();
+    //}
+
+    //void ExecuteFullSpeedMoveOrder_ExitState() {
+    //    LogEvent();
+    //    AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+    //    _fsmTgt = null;
+    //    _orderFailureCause = UnitItemOrderFailureCause.None;
+    //}
 
     #endregion
 
@@ -490,22 +893,43 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     IEnumerator ExecuteMoveOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
 
-        GetApMoveOrderSettings(CurrentOrder, out _fsmApMoveTgt, out _fsmApMoveSpeed, out _fsmApMoveTgtStandoffDistance);
+        D.Assert(CurrentOrder.Target != null);
+
+        GetApMoveOrderSettings(CurrentOrder, out _fsmTgt, out _apMoveSpeed, out _apMoveTgtStandoffDistance);
+        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
+
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApMoveTgtUnreachable) {
-            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                    // TODO Communicate failure to boss?
+                    // failure occurred while Moving so AssumeFormation where we are at
+                    IssueAssumeFormationOrderFromCmdStaff();
+                    break;
+                case UnitItemOrderFailureCause.TgtRelationship:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
-            yield return null;
-        }
+
+        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
 
         if (AssessWhetherToAssumeFormationAfterMove()) {
             Call(FleetState.AssumingFormation);
@@ -520,7 +944,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// </summary>
     /// <returns></returns>
     private bool AssessWhetherToAssumeFormationAfterMove() {
-        if (_fsmApMoveTgt is SystemItem || _fsmApMoveTgt is SectorItem || _fsmApMoveTgt is StationaryLocation || _fsmApMoveTgt is FleetCmdItem) {
+        if (_fsmTgt is SystemItem || _fsmTgt is SectorItem || _fsmTgt is StationaryLocation || _fsmTgt is FleetCmdItem) {
             return true;
         }
         return false;
@@ -530,7 +954,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// Returns the AutoPilot settings for this move order.
     /// </summary>
     /// <param name="moveOrder">The move order.</param>
-    /// <param name="apMoveTgt">The move target.</param>
+    /// <param name="apMoveTgt">The resulting move target which can be a StationaryLocation.</param>
     /// <param name="apMoveSpeed">The move speed.</param>
     /// <param name="apMoveTgtStandoffDistance">The move TGT standoff distance.</param>
     private void GetApMoveOrderSettings(FleetOrder moveOrder, out IFleetNavigable apMoveTgt, out Speed apMoveSpeed, out float apMoveTgtStandoffDistance) {
@@ -542,26 +966,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         // Determine move target
         IFleetNavigable moveTgt = null;
         IFleetNavigable moveOrderTgt = moveOrder.Target;
-        var systemTgt = moveOrderTgt as SystemItem;
-        if (systemTgt != null) {
+        ISystem_Ltd systemMoveTgt = moveOrderTgt as ISystem_Ltd;
+        if (systemMoveTgt != null) {
             // move target is a system
             if (Topography == Topography.System) {
                 // fleet is currently in a system
-                var fleetSystem = SectorGrid.Instance.GetSectorContaining(Position).System;
-                if (fleetSystem == systemTgt) {
-                    // move target of a system from inside the same system is the closest patrol point within that system
-                    moveTgt = GameUtility.GetClosest(Position, systemTgt.GuardStations);
+                ISector_Ltd fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
+                ISystem_Ltd fleetSystem = fleetSector.System;
+                if (fleetSystem == systemMoveTgt) {
+                    // move target of a system from inside the same system is the closest assembly station within that system
+                    moveTgt = GameUtility.GetClosest(Position, systemMoveTgt.LocalAssemblyStations);
                 }
             }
         }
         else {
-            var sectorTgt = moveOrderTgt as SectorItem;
-            if (sectorTgt != null) {
+            ISector_Ltd sectorMoveTgt = moveOrderTgt as ISector_Ltd;
+            if (sectorMoveTgt != null) {
                 // target is a sector
-                var fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
-                if (fleetSector == sectorTgt) {
-                    // move target of a sector from inside the same sector is the closest patrol point with that sector
-                    moveTgt = GameUtility.GetClosest(Position, sectorTgt.GuardStations);
+                ISector_Ltd fleetSector = SectorGrid.Instance.GetSectorContaining(Position);
+                if (fleetSector == sectorMoveTgt) {
+                    // move target of a sector from inside the same sector is the closest assembly station within that sector
+                    moveTgt = GameUtility.GetClosest(Position, sectorMoveTgt.LocalAssemblyStations);
                 }
             }
         }
@@ -602,391 +1027,306 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         return standoffDistance;
     }
 
+    void ExecuteMoveOrder_UponEnemyDetected() {
+        LogEventWarning();
+        // TODO
+    }
+
+    void ExecuteMoveOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEventWarning();
+        // TODO
+    }
+
+    void ExecuteMoveOrderOrder_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void ExecuteMoveOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEventWarning();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        // TODO Communicate failure to boss?
+    }
+
+    void ExecuteMoveOrder_UponDeath() {
+        LogEventWarning();
+    }
+
     void ExecuteMoveOrder_ExitState() {
         LogEvent();
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
-    }
-
-    #endregion
-
-    #region Moving
-
-    /***********************************************************************************************************
-     * Note on _fsmApMoveTgt as a non-Item: Anytime Moving is Call()ed and _fsmApMoveTgt is a non-Item 
-     * (Stationary or MobileLocation), then the check for whether it is Mortal will always fail, resulting 
-     * in no death subscription, even when the non-Item is associated with an Item that can die, e.g. Patrolling 
-     * around a Base. In this case, the Call()ing State must subscribe to the death of the Item so that Moving 
-     * will detect the death and Return(). 
-     * 
-     * In these cases, there is always a rqmt to save the Item in a separate field as the Call()ing State's 
-     * ExitState will need to unsubscribe from the death. There is no real way around this separate field rqmt 
-     * as Moving can also Return() when another order is issued. In this case, _fsmApMoveTgt as a non-Item
-     * will not be usable to unsubscribe, and there will be no opportunity to change it back to 
-     * the Item as the ExitState will be called immediately as a result of the new order.
-     ***********************************************************************************************************/
-
-    /// <summary>
-    /// The IFleetNavigable Target of the AutoPilot Move. Valid during the Moving state and during the state 
-    /// that sets it and Call()s the Moving state until nulled by the state that set it.
-    /// The state that sets this value during its EnterState() is responsible for nulling it during its ExitState().
-    /// </summary>
-    private IFleetNavigable _fsmApMoveTgt;
-
-    /// <summary>
-    /// The speed of the AutoPilot Move. Valid during the Moving state and during the state 
-    /// that sets it and Call()s the Moving state until the Moving state Return()s.
-    /// The state that sets this value during its EnterState() is not responsible for nulling 
-    /// it during its ExitState() as that is handled by Moving_ExitState().
-    /// </summary>
-    private Speed _fsmApMoveSpeed;
-
-    /// <summary>
-    /// The standoff distance from the target of the AutoPilot Move.
-    /// <remarks>Ship 'arrival' at some IFleetNavigable targets should be further away than the amount the target would 
-    /// normally designate when returning its AutoPilotTarget. IFleetNavigable target examples include enemy bases and
-    /// fleets where the ships in this fleet should 'arrive' outside of the enemy's max weapons range.</remarks>
-    /// </summary>
-    private float _fsmApMoveTgtStandoffDistance;
-    private bool _fsmApMoveTgtUnreachable;
-
-    void Moving_EnterState() {
-        LogEvent();
-        var mortalMoveTarget = _fsmApMoveTgt as AMortalItem;
-        if (mortalMoveTarget != null) {
-            mortalMoveTarget.deathOneShot += FsmTargetDeathEventHandler;
-        }
-        _navigator.PlotPilotCourse(_fsmApMoveTgt, _fsmApMoveSpeed, _fsmApMoveTgtStandoffDistance);
-    }
-
-    void Moving_UponApCoursePlotSuccess() {
-        LogEvent();
-        _navigator.EngagePilot();
-    }
-
-    void Moving_UponApCoursePlotFailure() {
-        LogEvent();
-        _fsmApMoveTgtUnreachable = true;
-        Return();
-    }
-
-    void Moving_UponApTargetUnreachable() {
-        LogEvent();
-        _fsmApMoveTgtUnreachable = true;
-        Return();
-    }
-
-    void Moving_UponTargetDeath(IMortalItem deadTarget) {
-        LogEvent();
-        if (_fsmApMoveTgt is StationaryLocation) {
-            D.Assert(deadTarget is IPatrollable || deadTarget is IGuardable);
-        }
-        else {
-            D.Assert(_fsmApMoveTgt == deadTarget, "{0}.target {1} is not dead target {2}.",
-                FullName, _fsmApMoveTgt.FullName, deadTarget.FullName);
-        }
-        Return();
-    }
-
-    void Moving_UponApTargetReached() {
-        LogEvent();
-        Return();
-    }
-
-    void Moving_UponEnemyDetected() {
-        LogEvent();
-        // TODO determine state that Call()ed => LastState and go intercept if applicable
-        Return();
-    }
-
-    void Moving_UponNewOrderReceived() {
-        LogEvent();
-        Return();
-    }
-
-    void Moving_ExitState() {
-        LogEvent();
-        var mortalMoveTarget = _fsmApMoveTgt as AMortalItem;
-        if (mortalMoveTarget != null) {
-            mortalMoveTarget.deathOneShot -= FsmTargetDeathEventHandler;
-        }
-        _fsmApMoveSpeed = Speed.None;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;
-        _navigator.DisengagePilot();
-    }
-
-    #endregion
-
-    #region ExecuteCloseOrbitOrder
-
-    IEnumerator ExecuteCloseOrbitOrder_EnterState() {
-        LogEvent();
-
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
-        }
-
-        var orbitTgt = CurrentOrder.Target as IShipCloseOrbitable;
-        D.Assert(orbitTgt != null);
-        if (!__ValidateOrbit(orbitTgt)) {
-            // no need for a assumeFormationTgt as we haven't moved to the orbitTgt yet
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
-            yield return null;
-        }
-
-        _fsmApMoveSpeed = Speed.Standard;
-        _fsmApMoveTgt = orbitTgt as IFleetNavigable;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't go into close orbit around an enemy
-        Call(FleetState.Moving);
-        yield return null;  // reqd so Return()s here
-
-        D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteCloseOrbitOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
-            yield return null;
-        }
-
-        if (!__ValidateOrbit(orbitTgt)) {
-            StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, orbitTgt.LocalAssemblyStations);
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
-            yield return null;
-        }
-
-        Call(FleetState.AssumingCloseOrbit);
-        yield return null;  // reqd so Return()s here
-
-        CurrentState = FleetState.Idling;
-    }
-
-    /// <summary>
-    /// Checks the continued validity of the current orbit order of target and warns
-    /// if no longer valid. If no longer valid, returns false whereon the fleet should take an action
-    /// reflecting that the order it was trying to execute is no longer valid.
-    /// <remarks>Check is necessary every time there is another decision to make while executing the order as
-    /// 1) the diplomatic state between the owners can change.</remarks>
-    /// </summary>
-    /// <param name="orbitTgt">The orbit TGT.</param>
-    private bool __ValidateOrbit(IShipCloseOrbitable orbitTgt) {
-        bool isValid = true;
-        if (!orbitTgt.IsCloseOrbitAllowedBy(Owner)) {
-            D.Warn("{0} Orbit order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
-                FullName, orbitTgt.FullName, orbitTgt.Owner.LeaderName, Owner.GetRelations(orbitTgt.Owner).GetValueName());
-            isValid = false;
-        }
-        return isValid;
-    }
-
-    void ExecuteCloseOrbitOrder_ExitState() {
-        LogEvent();
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
-    }
-
-    #endregion
-
-    #region AssumingCloseOrbit
-
-    private int _fsmShipCountWaitingToOrbit;
-
-    void AssumingCloseOrbit_EnterState() {
-        LogEvent();
-        D.Assert(_fsmShipCountWaitingToOrbit == Constants.Zero);
-        _fsmShipCountWaitingToOrbit = Elements.Count;
-        IShipCloseOrbitable orbitTgt = _fsmApMoveTgt as IShipCloseOrbitable;
-
-        var shipAssumeCloseOrbitOrder = new ShipOrder(ShipDirective.AssumeCloseOrbit, CurrentOrder.Source, orbitTgt);
-        Elements.ForAll(e => {
-            var ship = e as ShipItem;
-            D.Log(ShowDebugLog, "{0} issuing {1} order to {2}.", FullName, ShipDirective.AssumeCloseOrbit.GetValueName(), ship.FullName);
-            ship.CurrentOrder = shipAssumeCloseOrbitOrder;
-        });
-    }
-
-    void AssumingCloseOrbit_UponShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
-        if (isOrbitAttemptSuccessful) {
-            _fsmShipCountWaitingToOrbit--;
-            if (_fsmShipCountWaitingToOrbit == Constants.Zero) {
-                Return();
-            }
-        }
-        else {
-            // a ship's orbit attempt failed so ships are no longer allowed to orbit the orbitTgt
-            IShipCloseOrbitable orbitTgt = _fsmApMoveTgt as IShipCloseOrbitable;
-            StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, orbitTgt.LocalAssemblyStations);
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, CurrentOrder.Source, assumeFormationTgt);
-        }
-    }
-
-    void AssumingCloseOrbit_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
-        _fsmShipCountWaitingToOrbit--;
-        if (_fsmShipCountWaitingToOrbit == Constants.Zero) {
-            Return();
-        }
-    }
-
-    void AssumingCloseOrbit_UponNewOrderReceived() {
-        LogEvent();
-        Return();
-    }
-
-    void AssumingCloseOrbit_ExitState() {
-        LogEvent();
-        _fsmShipCountWaitingToOrbit = Constants.Zero;
+        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+        _fsmTgt = null;
+        _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
     #endregion
 
     #region ExecuteExploreOrder
 
-    private IDictionary<IShipExplorable, ShipItem> _shipSystemExploreTgtsAssignments;
+    private IDictionary<IShipExplorable, ShipItem> _shipSystemExploreTgtAssignments;
 
     IEnumerator ExecuteExploreOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
 
-        var exploreTgt = CurrentOrder.Target as IFleetExplorable;
-        D.Assert(exploreTgt != null);
-        if (!__ValidateExplore(exploreTgt)) {
-            // no need for a assumeFormationTgt as we haven't moved to the exploreTgt yet
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
-            yield return null;
-        }
+        IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable; // Fleet explorable targets are non-enemy owned sectors, systems and UCenter
+        D.Assert(fleetExploreTgt != null);
+        D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
+        D.Assert(!fleetExploreTgt.IsFullyExploredBy(Owner));
 
-        _fsmApMoveTgt = exploreTgt;
-        _fsmApMoveSpeed = Speed.Standard;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't explore a target owned by an enemy
+        _fsmTgt = fleetExploreTgt;
+        bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
+        D.Assert(!isSubscribed);    // OPTIMIZE Fleet explorable targets cannot die
+
+
+        _apMoveSpeed = Speed.Standard;
+        _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't explore a target owned by an enemy
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteExploreOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-        D.Assert(!CheckForDeathOf(_fsmApMoveTgt));  // Fleet explore targets are Systems, sectors and the UCenter
-
-        StationaryLocation closestLocalAssyStation;
-        if (!__ValidateExplore(exploreTgt)) {
-            closestLocalAssyStation = GameUtility.GetClosest(Position, exploreTgt.LocalAssemblyStations);
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtRelationship:
+                    // TODO Communicate failure to boss?
+                    // failure occurred while Moving so AssumeFormation where we are at
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
 
-        var systemExploreTgt = exploreTgt as SystemItem;
+        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+
+        ISystem_Ltd systemExploreTgt = fleetExploreTgt as ISystem_Ltd;
         if (systemExploreTgt != null) {
             ExploreSystem(systemExploreTgt);
         }
         else {
-            var sectorExploreTgt = exploreTgt as SectorItem;
+            ISector_Ltd sectorExploreTgt = fleetExploreTgt as ISector_Ltd;
             if (sectorExploreTgt != null) {
-                if (sectorExploreTgt.System != null) {
-                    ExploreSystem(sectorExploreTgt.System);
-                }
+                // Sector without a System is by definition fully explored so can't get here
+                D.Assert(sectorExploreTgt.System != null);
+                ExploreSystem(sectorExploreTgt.System);
             }
             else {
-                var uCenterExploreTgt = exploreTgt as UniverseCenterItem;
+                IUniverseCenter_Ltd uCenterExploreTgt = fleetExploreTgt as IUniverseCenter_Ltd;
                 D.Assert(uCenterExploreTgt != null);
                 IList<ShipItem> exploreShips;
-                bool shipsFound = TryGetShips(out exploreShips, availableOnly: false, avoidHQ: true, qty: 1, priorityCats: _desiredExplorationShipCategories);
-                D.Assert(shipsFound);
-                AssignShipToExploreItem(exploreShips[0], uCenterExploreTgt);
+                bool hasShips = TryGetShips(out exploreShips, availableOnly: false, avoidHQ: true, qty: 1, priorityCats: _desiredExplorationShipCategories);
+                D.Assert(hasShips);
+                IShipExplorable uCenterShipExploreTgt = uCenterExploreTgt as IShipExplorable;
+                D.Assert(uCenterShipExploreTgt != null);
+                AssignShipToExploreItem(exploreShips[0], uCenterShipExploreTgt);    // HACK
             }
         }
 
-        while (!exploreTgt.IsFullyExploredBy(Owner)) {
-            // wait here until target is fully explored
-            // if exploration fails, an AssumeFormation order will be issued ending this state
+        while (!fleetExploreTgt.IsFullyExploredBy(Owner)) {
+            // wait here until target is fully explored. If exploration fails, an AssumeFormation order will be issued ending this state
             yield return null;
         }
-        closestLocalAssyStation = GameUtility.GetClosest(Position, exploreTgt.LocalAssemblyStations);
+        StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
         CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
     }
 
-    void ExecuteExploreOrder_UponShipExploreAttemptFinished(ShipItem ship, IShipExplorable exploreTgt, bool isSuccessful) {
+    void ExecuteExploreOrder_UponOrderOutcome(ShipDirective directive, ShipItem ship, bool isSuccess, IShipNavigable target,
+        UnitItemOrderFailureCause failCause) {
         LogEvent();
-        ISystemItem system;
-        if (TryGetSystem(exploreTgt, out system)) {
+        if (directive != ShipDirective.Explore) {
+            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", FullName, CurrentState.GetValueName(), typeof(ShipDirective).Name, directive.GetValueName());
+            return;
+        }
+
+        IShipExplorable shipExploreTgt = target as IShipExplorable;
+        D.Assert(shipExploreTgt != null);
+
+        bool issueFleetRecall = false;
+        if (IsShipExploreTargetPartOfSystem(shipExploreTgt)) {
             // exploreTgt is a planet or star
-            D.Assert(_shipSystemExploreTgtsAssignments.ContainsKey(exploreTgt));
-            if (isSuccessful) {
-                _shipSystemExploreTgtsAssignments.Remove(exploreTgt);
-                bool wasAssigned = AssignShipToExploreSystemTgt(ship);
-                if (!wasAssigned) {
-                    if (ship.IsHQ) {
-                        // no point in telling HQ to assume station, but with no more explore assignment, it should
-                        // return to the closest Assembly station so the other ships assume station there
-                        IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
-                        var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-                        var speed = Speed.Standard;
-                        float standoffDistance = Constants.ZeroF;   // AssyStation can't be owned by anyone
-                        bool isFleetwideMove = false;
-                        //ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, ShipMoveMode.ShipSpecific, standoffDistance);
-                        ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, isFleetwideMove, standoffDistance);
-                    }
-                    else {
-                        ShipOrder assumeStationOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
-                        ship.CurrentOrder = assumeStationOrder;
-                    }
-                }
+            D.Assert(_shipSystemExploreTgtAssignments.ContainsKey(shipExploreTgt));
+            if (isSuccess) {
+                HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
             }
             else {
-                // exploration failed so have all ships resume formation
-                IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
-                var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
-                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
+                bool isNewShipAssigned;
+                bool testForAdditionalExploringShips = false;
+                switch (failCause) {
+                    case UnitItemOrderFailureCause.TgtRelationship:
+                        // exploration failed so recall all ships
+                        issueFleetRecall = true;
+                        break;
+                    case UnitItemOrderFailureCause.TgtDeath:
+                        HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
+                        // This is effectively counted as a success and will show up during the _EnterState's
+                        // continuous test System.IsFullyExplored. As not really a failure, no reason to issue a fleet recall.
+                        break;
+                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                        isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
+                        if (!isNewShipAssigned) {
+                            if (Elements.Count > 1) {
+                                // This is not the last ship in the fleet, but the others aren't available. Since it usually takes 
+                                // more than one ship to explore a System, the other ships might currently be exploring
+                                testForAdditionalExploringShips = true;
+                            }
+                            else {
+                                D.Assert(Elements.Count == 1);
+                                // Damaged ship is only one left in fleet and it can't explore so exploration failed
+                                issueFleetRecall = true;
+                            }
+                        }
+                        break;
+                    case UnitItemOrderFailureCause.UnitItemDeath:
+                        isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
+                        if (!isNewShipAssigned) {
+                            if (Elements.Count > 1) {    // >1 as dead ship has not yet been removed from fleet
+                                                         // This is not the last ship in the fleet, but the others aren't available. Since it usually takes 
+                                                         // more than one ship to explore a System, the other ships might currently be exploring
+                                testForAdditionalExploringShips = true;
+                            }
+                            else {
+                                D.Assert(Elements.Count == 1);  // dead ship has not yet been removed from fleet
+                                                                // Do nothing as Unit is about to die
+                            }
+                        }
+                        break;
+                    case UnitItemOrderFailureCause.TgtUncatchable:
+                    case UnitItemOrderFailureCause.TgtUnreachable:
+                    case UnitItemOrderFailureCause.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+                }
+
+                if (testForAdditionalExploringShips) {
+                    var otherShipsCurrentlyExploring = Elements.Cast<ShipItem>().Except(ship).Where(s => s.IsCurrentOrderDirectiveAnyOf(ShipDirective.Explore));
+                    if (otherShipsCurrentlyExploring.Any()) {
+                        // Do nothing as there are other ships currently exploring so exploreTarget will eventually be assigned a ship
+                    }
+                    else {
+                        // There are no remaining ships out exploring -> the exploration attempt has failed so issue recall
+                        issueFleetRecall = true;
+                    }
+                }
             }
         }
         else {
             // exploreTgt is UCenter
-            D.Assert(exploreTgt is UniverseCenterItem);
-            D.Assert(isSuccessful); // must be successful as only way ship fails is if not allowed to orbit by owner
-            // if ship is HQ, then its a 1 ship fleet. This order will Idle it. If not HQ, it will rejoin fleet
-            ship.CurrentOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
-        }
-    }
-
-    private bool TryGetSystem(IShipExplorable exploreTgt, out ISystemItem system) {
-        system = null;
-        var planet = exploreTgt as PlanetItem;
-        if (planet != null) {
-            system = planet.ParentSystem;
-            return true;
-        }
-        else {
-            var star = exploreTgt as StarItem;
-            if (star != null) {
-                system = star.System;
-                return true;
+            D.Assert(shipExploreTgt is UniverseCenterItem);
+            if (isSuccess) {
+                // exploration of UCenter has successfully completed so issue fleet recall
+                issueFleetRecall = true;
+            }
+            else {
+                bool isNewShipAssigned;
+                switch (failCause) {
+                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                        isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
+                        if (!isNewShipAssigned) {
+                            // No more ships are available to finish UCenter explore. Since it only takes one ship
+                            // to explore UCenter, the other ships, if any, can't currently be exploring, so no reason to wait for them
+                            // to complete their exploration. -> the exploration attempt has failed so issue recall
+                            issueFleetRecall = true;
+                        }
+                        break;
+                    case UnitItemOrderFailureCause.UnitItemDeath:
+                        isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
+                        if (!isNewShipAssigned) {
+                            if (Elements.Count > 1) {    // >1 as dead ship has not yet been removed from fleet
+                                                         // This is not the last ship in the fleet, but the others aren't available. Since it only takes one ship
+                                                         // to explore UCenter, the other ships can't currently be exploring, so no reason to wait for them
+                                                         // to complete their exploration. -> the exploration attempt has failed so issue recall
+                                issueFleetRecall = true;
+                            }
+                            else {
+                                D.Assert(Elements.Count == 1);  // dead ship has not yet been removed from fleet
+                                                                // Do nothing as Unit is about to die
+                            }
+                        }
+                        break;
+                    case UnitItemOrderFailureCause.TgtDeath:
+                    case UnitItemOrderFailureCause.TgtRelationship:
+                    case UnitItemOrderFailureCause.TgtUncatchable:
+                    case UnitItemOrderFailureCause.TgtUnreachable:
+                    case UnitItemOrderFailureCause.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+                }
             }
         }
-        return false;
+        if (issueFleetRecall) {
+            IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
+            var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
+        }
     }
 
-    void ExecuteExploreOrder_UponShipAssumedStation(ShipItem ship) {
-        LogEvent();
+    private bool IsShipExploreTargetPartOfSystem(IShipExplorable shipExploreTgt) {
+        return (shipExploreTgt is IPlanet_Ltd || shipExploreTgt is IStar_Ltd);
     }
 
-    void ExecuteExploreOrder_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
-        LogEvent();
-        var deadShip = deadSubordinateElement as ShipItem;
-        if (_shipSystemExploreTgtsAssignments.Values.Contains(deadShip)) {
-            var deadShipTgt = _shipSystemExploreTgtsAssignments.Single(kvp => kvp.Value == deadShip).Key;
-            _shipSystemExploreTgtsAssignments[deadShipTgt] = null;
+    /// <summary>
+    /// Handles the condition where a ship is no longer available to explore. Returns <c>true</c>
+    /// if another ship was assigned to replace this one (not necessarily with the same explore target),
+    /// <c>false</c> if no more ships are currently available.
+    /// <remarks>Typically this occurs when a ship fails to complete its assigned exploration mission
+    /// either because it dies or is so wounded that it needs to repair.</remarks>
+    /// </summary>
+    /// <param name="unavailableShip">The unavailable ship.</param>
+    /// <param name="exploreTgt">The explore target.</param>
+    /// <returns></returns>
+    private bool HandleShipNoLongerAvailableToExplore(ShipItem unavailableShip, IShipExplorable exploreTgt) {
+        bool isExploringSystem = false;
+        if (_shipSystemExploreTgtAssignments.ContainsKey(exploreTgt)) {
+            isExploringSystem = true;
+            if (_shipSystemExploreTgtAssignments.Values.Contains(unavailableShip)) {
+                // ship had explore assignment in system so remove it
+                var deadShipTgt = _shipSystemExploreTgtAssignments.Single(kvp => kvp.Value == unavailableShip).Key;
+                _shipSystemExploreTgtAssignments[deadShipTgt] = null;
+            }
         }
 
+        bool isNewShipAssigned;
         IList<ShipItem> ships;
         if (TryGetShips(out ships, availableOnly: true, avoidHQ: true, qty: 1, priorityCats: _desiredExplorationShipCategories)) {
-            AssignShipToExploreSystemTgt(ships[0]);
+            ShipItem newExploreShip = ships.First();
+            if (isExploringSystem) {
+                AssignShipToExploreSystemTgt(newExploreShip);
+            }
+            else {
+                AssignShipToExploreItem(newExploreShip, exploreTgt);
+            }
+            isNewShipAssigned = true;
         }
+        else {
+            isNewShipAssigned = false;
+            D.Warn("{0} found no available ships to explore {1} after {2} became unavailable.", FullName, exploreTgt.FullName, unavailableShip.FullName);
+        }
+        return isNewShipAssigned;
     }
 
-    private void ExploreSystem(SystemItem system) {
+    private void ExploreSystem(ISystem_Ltd system) {
         var shipSystemTgtsToExplore = system.Planets.Cast<IShipExplorable>().Where(p => !p.IsFullyExploredBy(Owner)).ToList();
-        if (!system.Star.IsFullyExploredBy(Owner)) {
-            shipSystemTgtsToExplore.Add(system.Star);
+        IShipExplorable star = system.Star as IShipExplorable;
+        if (!star.IsFullyExploredBy(Owner)) {
+            shipSystemTgtsToExplore.Add(star);
         }
         D.Assert(shipSystemTgtsToExplore.Count != Constants.Zero);  // OPTIMIZE System has already been validated for exploration
         // Note: Knowledge of each explore target in system will be checked as soon as Ship gets explore order
-        _shipSystemExploreTgtsAssignments = shipSystemTgtsToExplore.ToDictionary<IShipExplorable, IShipExplorable, ShipItem>(exploreTgt => exploreTgt, exploreTgt => null);
+        _shipSystemExploreTgtAssignments = shipSystemTgtsToExplore.ToDictionary<IShipExplorable, IShipExplorable, ShipItem>(exploreTgt => exploreTgt, exploreTgt => null);
 
         int desiredExplorationShipQty = shipSystemTgtsToExplore.Count;
         IList<ShipItem> ships;
@@ -1002,13 +1342,53 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
     }
 
+    /// <summary>
+    /// Handles the situation where the provided ship has either successfully explored the
+    /// provided target in the system, or the exploration of the target failed because the
+    /// target is dead. Returns <c>true</c> if a new exploration target was assigned to the
+    /// ship, <c>false</c> otherwise. If the ship recieved no new assignment, it has been
+    /// instructed to gather at a nearby assembly station.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    /// <param name="exploreTgt">The explore TGT.</param>
+    /// <returns></returns>
+    private bool HandleSystemTargetExploredOrDead(ShipItem ship, IShipExplorable exploreTgt) {
+        _shipSystemExploreTgtAssignments.Remove(exploreTgt);
+        bool isNowAssigned = AssignShipToExploreSystemTgt(ship);
+        if (!isNowAssigned) {
+            if (ship.IsHQ) {
+                // no point in telling HQ to assume station, but with no more explore assignment, it should
+                // return to the closest Assembly station so the other ships assume station there
+                IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
+                var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
+                var speed = Speed.Standard;
+                float standoffDistance = Constants.ZeroF;   // AssyStation can't be owned by anyone
+                bool isFleetwideMove = false;
+                ship.CurrentOrder = new ShipMoveOrder(OrderSource.CmdStaff, closestLocalAssyStation, speed, isFleetwideMove, standoffDistance);
+            }
+            else {
+                ShipOrder assumeStationOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
+                ship.CurrentOrder = assumeStationOrder;
+            }
+        }
+        return isNowAssigned;
+    }
+
+    /// <summary>
+    /// Assigns the ship to explore any remaining unexplored targets in the System
+    /// that don't already have an assigned ship. Returns <c>true</c> if the ship
+    /// was assigned, <c>false</c> if not which means all unexplored remaining targets
+    /// in the system, if any, have assigned ships.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    /// <returns></returns>
     private bool AssignShipToExploreSystemTgt(ShipItem ship) {
-        D.Assert(!_shipSystemExploreTgtsAssignments.Values.Contains(ship));
-        var tgtsWithoutAssignedShip = _shipSystemExploreTgtsAssignments.Where(kvp => kvp.Value == null).Select(kvp => kvp.Key);
+        D.Assert(!_shipSystemExploreTgtAssignments.Values.Contains(ship));
+        var tgtsWithoutAssignedShip = _shipSystemExploreTgtAssignments.Where(kvp => kvp.Value == null).Select(kvp => kvp.Key);
         if (tgtsWithoutAssignedShip.Any()) {
             var closestExploreTgt = tgtsWithoutAssignedShip.MinBy(tgt => Vector3.SqrMagnitude(tgt.Position - ship.Position));
             AssignShipToExploreItem(ship, closestExploreTgt);
-            _shipSystemExploreTgtsAssignments[closestExploreTgt] = ship;
+            _shipSystemExploreTgtAssignments[closestExploreTgt] = ship;
             return true;
         }
         return false;
@@ -1017,37 +1397,47 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     private void AssignShipToExploreItem(ShipItem ship, IShipExplorable item) {
         D.Assert(item.IsExploringAllowedBy(Owner), "{0} attempting to assign {1} to illegally explore {2}.", FullName, ship.FullName, item.FullName);
         D.Assert(!item.IsFullyExploredBy(Owner), "{0} attempting to assign {1} to explore {2} which is already explored.", FullName, ship.FullName, item.FullName);
-        ShipOrder exploreOrder = new ShipOrder(ShipDirective.Explore, CurrentOrder.Source, item);
+        ShipOrder exploreOrder = new ShipOrder(ShipDirective.Explore, CurrentOrder.Source, toNotifyCmd: true, target: item);
         ship.CurrentOrder = exploreOrder;
     }
 
-    /// <summary>
-    /// Checks the continued validity of the current explore order of target and warns
-    /// if no longer valid. If no longer valid, returns false whereon the fleet should send out a Fleet AssumeFormation 
-    /// order to gather the fleet.
-    /// <remarks>Check is necessary every time there is another decision to make while executing the order as
-    /// 1) the diplomatic state between the owners can change, or 2) the target can become fully explored
-    /// by another Fleet/Ship.</remarks>
-    /// </summary>
-    /// <param name="exploreTgt">The explore TGT.</param>
-    private bool __ValidateExplore(IFleetExplorable exploreTgt) {
-        bool isValid = true;
-        if (!exploreTgt.IsExploringAllowedBy(Owner)) {
-            D.Warn("{0} Explore order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
-                FullName, exploreTgt.FullName, exploreTgt.Owner.LeaderName, Owner.GetRelations(exploreTgt.Owner).GetValueName());
-            isValid = false;
+    void ExecuteExploreOrder_UponEnemyDetected() {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteExploreOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
+        if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
+            D.LogBold(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
+                FullName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.FullName, fleetExploreTgt.Owner_Debug.LeaderName, Owner.GetRelations(fleetExploreTgt.Owner_Debug).GetValueName());
+            // TODO Communicate failure to boss?
+            var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
         }
-        if (exploreTgt.IsFullyExploredBy(Owner)) {
-            D.Warn("{0} Explore order of {1} is no longer valid as it is now fully explored.", FullName, exploreTgt.FullName);
-            isValid = false;
-        }
-        return isValid;
+    }
+
+    void ExecuteExploreOrder_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void ExecuteExploreOrder_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
+    }
+
+    // No need for _UponFsmTargetDeath() as IFleetExplorable targets cannot die
+
+    void ExecuteExploreOrder_UponDeath() {
+        LogEvent();
+        // TODO Communicate failure to boss?
     }
 
     void ExecuteExploreOrder_ExitState() {
         LogEvent();
-        _fsmApMoveTgt = null;
-        _shipSystemExploreTgtsAssignments = null;
+        _fsmTgt = null;
+        _shipSystemExploreTgtAssignments = null;
     }
 
     #endregion
@@ -1057,124 +1447,158 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     IEnumerator ExecutePatrolOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
 
-        var orderTgt = CurrentOrder.Target;
-        var patrollableTgt = orderTgt as IPatrollable;  // Fleet patrollable items are sectors, systems, bases and UCenter
+        var patrollableTgt = CurrentOrder.Target as IPatrollable;  // Patrollable targets are non-enemy owned sectors, systems, bases and UCenter
         D.Assert(patrollableTgt != null, "{0}: {1} is not {2}.", FullName, patrollableTgt.FullName, typeof(IPatrollable).Name);
+        D.Assert(patrollableTgt.IsPatrollingAllowedBy(Owner));
 
-        if (!__ValidatePatrol(patrollableTgt)) {
-            // no need for a assumeFormationTgt as we haven't moved to the patrollableTgt yet
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
-            yield return null;
-        }
+        _fsmTgt = patrollableTgt as IFleetNavigable;
+        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
 
-        _fsmApMoveTgt = orderTgt;
-        _fsmApMoveSpeed = Speed.Standard;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't patrol a target owned by an enemy
+        _apMoveSpeed = Speed.Standard;
+        _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't patrol a target owned by an enemy
         Call(FleetState.Moving);
         yield return null; // required so Return()s here
 
-        D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecutePatrolOrder target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                    // TODO Communicate failure to boss?
+                    // failure occurred while Moving so AssumeFormation where we are at
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+                    break;
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
 
-        if (!__ValidatePatrol(patrollableTgt)) {
-            StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
-            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
-            yield return null;
-        }
+        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
 
         Call(FleetState.Patrolling);
         yield return null;    // required so Return()s here
 
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                    // TODO Communicate failure to boss?
+                    StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+                    break;
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
 
-        // The only way Patrolling state should return here is through the issuance of another order which should change state 
-        // from ExecutePatrolOrder before this Warning is reached
-        D.Warn("{0} reached end of {1}_EnterState() without another order being issued.", FullName, FleetState.ExecutePatrolOrder.GetValueName());
+        // If there was a failure generated by Patrolling, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
     }
 
-    /// <summary>
-    /// Checks the continued validity of the current patrol order of target and warns
-    /// if no longer valid. If no longer valid, returns false whereon the fleet should take an action
-    /// reflecting that the order it was trying to execute is no longer valid.
-    /// <remarks>Check is necessary every time there is another decision to make while executing the order as
-    /// 1) the diplomatic state between the owners can change.</remarks>
-    /// </summary>
-    /// <param name="patrollableTgt">The target to patrol.</param>
-    private bool __ValidatePatrol(IPatrollable patrollableTgt) {
-        bool isValid = true;
+    void ExecutePatrolOrder_UponEnemyDetected() {
+        LogEventWarning();
+        // TODO go intercept or wait to be fired on?
+    }
+
+    void ExecutePatrolOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEventWarning();
+        IPatrollable patrollableTgt = _fsmTgt as IPatrollable;
         if (!patrollableTgt.IsPatrollingAllowedBy(Owner)) {
-            D.Warn("{0} Patrol order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
-                FullName, patrollableTgt.FullName, patrollableTgt.Owner.LeaderName, Owner.GetRelations(patrollableTgt.Owner).GetValueName());
-            isValid = false;
+            D.LogBold(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
+                FullName, CurrentOrder.Directive.GetValueName(), patrollableTgt.FullName, patrollableTgt.Owner_Debug.LeaderName, Owner.GetRelations(patrollableTgt.Owner_Debug).GetValueName());
+            // TODO Communicate failure to boss?
+            StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
         }
-        return isValid;
+    }
+
+    void ExecutePatrolOrder_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void ExecutePatrolOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEventWarning();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        // TODO Communicate failure to boss?
+        IPatrollable patrollableTgt = _fsmTgt as IPatrollable;
+        StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+    }
+
+    void ExecutePatrolOrder_UponDeath() {
+        LogEventWarning();
+        // TODO Communicate failure to boss?
     }
 
     void ExecutePatrolOrder_ExitState() {
         LogEvent();
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
+        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+        _fsmTgt = null;
+        _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
     #endregion
 
     #region Patrolling
 
-    private IPatrollable _patrolledTgt; // reqd to unsubscribe from death notification as _fsmApMoveTgt can be a StationaryLocation
+    // 7.2.16 Call()ed State
 
     // Note: This state exists to differentiate between the Moving Call() from ExecutePatrolOrder which gets the
-    // fleet to the patrol target, and the continuous Moving Call()s from Patrolling which moves the fleet between
+    // fleet to the patrol target, and the continuous movement while Patrolling which moves the fleet between
     // the patrol target's PatrolStations. This distinction is important while Moving when an enemy is detected as
     // the behaviour that results is likely to be different -> detecting an enemy when moving to the target is likely
     // to be ignored, whereas detecting an enemy while actually patrolling the target is likely to result in an intercept.
 
     IEnumerator Patrolling_EnterState() {
         LogEvent();
-        D.Assert(_patrolledTgt == null);
-        _patrolledTgt = _fsmApMoveTgt as IPatrollable;
-        D.Assert(_patrolledTgt != null);    // the _fsmApMoveTgt starts out as IPatrollable
+        IPatrollable patrolledTgt = _fsmTgt as IPatrollable;
+        D.Assert(patrolledTgt != null);    // the _fsmTgt starts out as IPatrollable
+        D.Assert(patrolledTgt.IsPatrollingAllowedBy(Owner));
 
-        // _fsmApMoveTgt will be a StationaryLocation while patrolling so we must wire the death here
-        var mortalPatrolledTgt = _patrolledTgt as AMortalItem;
-        if (mortalPatrolledTgt != null) {
-            mortalPatrolledTgt.deathOneShot += FsmTargetDeathEventHandler;
-        }
-
-        var patrolStations = _patrolledTgt.PatrolStations;  // IPatrollable.PatrolStations is a copied list
+        var patrolStations = patrolledTgt.PatrolStations;  // IPatrollable.PatrolStations is a copied list
         StationaryLocation nextPatrolStation = GameUtility.GetClosest(Position, patrolStations);
         bool isRemoved = patrolStations.Remove(nextPatrolStation);
         D.Assert(isRemoved);
         var shuffledPatrolStations = patrolStations.Shuffle();
         var patrolStationQueue = new Queue<StationaryLocation>(shuffledPatrolStations);
         patrolStationQueue.Enqueue(nextPatrolStation);   // shuffled queue with current patrol station at end
-        Speed patrolSpeed = _patrolledTgt.PatrolSpeed;
-        while (true) {
-            _fsmApMoveTgt = nextPatrolStation;
-            _fsmApMoveSpeed = patrolSpeed;    // _fsmMoveSpeed set to None when exiting FleetState.Moving
-            _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't patrol a target owned by an enemy
-            Call(FleetState.Moving);
-            yield return null;    // required so Return()s here
 
-            D.Assert(!_fsmApMoveTgtUnreachable, "{0} Patrolling target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-            if (CheckForDeathOf(_patrolledTgt as IFleetNavigable)) {
-                // target we are patrolling around has died so let ExecutePatrolOrder handle it
-                Return();
+        Speed patrolSpeed = patrolledTgt.PatrolSpeed;
+        IFleetNavigable apTgt;
+        while (true) {
+            apTgt = nextPatrolStation;
+            _navigator.PlotPilotCourse(apTgt, patrolSpeed, Constants.ZeroF);
+            // wait here until _UponApCoursePlotSuccess() engages the AutoPilot
+            while (!_navigator.IsPilotEngaged) {
                 yield return null;
             }
-
-            if (!__ValidatePatrol(_patrolledTgt)) {
-                StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, _patrolledTgt.LocalAssemblyStations);
-                CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
+            // wait here until _UponApTargetReached() disengages the AutoPilot
+            while (_navigator.IsPilotEngaged) {
                 yield return null;
             }
 
@@ -1183,99 +1607,296 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
     }
 
+    void Patrolling_UponApCoursePlotSuccess() {
+        LogEvent();
+        _navigator.EngagePilot();
+    }
+
+    void Patrolling_UponApCoursePlotFailure() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        Return();
+    }
+
+    void Patrolling_UponApTargetUnreachable() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        Return();
+    }
+
+    void Patrolling_UponApTargetReached() {
+        LogEvent();
+        _navigator.DisengagePilot();
+    }
+
     void Patrolling_UponNewOrderReceived() {
         LogEvent();
         Return();
     }
 
-    // no need for Patrolling_UponEnemyDetected as no time is spent in this state
+    void Patrolling_UponEnemyDetected() {
+        LogEvent();
+    }
 
-    // no need for Patrolling_UponTargetDeath as no time is spent in this state
+    void Patrolling_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        IPatrollable patrolledTgt = _fsmTgt as IPatrollable;
+        if (!patrolledTgt.IsPatrollingAllowedBy(Owner)) {
+            D.LogBold(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
+                FullName, CurrentOrder.Directive.GetValueName(), patrolledTgt.FullName, patrolledTgt.Owner_Debug.LeaderName, Owner.GetRelations(patrolledTgt.Owner_Debug).GetValueName());
+            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            Return();
+        }
+    }
+
+    void Patrolling_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void Patrolling_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        Return();
+    }
+
+    void Patrolling_UponDeath() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        Return();
+    }
 
     void Patrolling_ExitState() {
         LogEvent();
-        var mortalPatrolledTgt = _patrolledTgt as AMortalItem;
-        if (mortalPatrolledTgt != null) {
-            mortalPatrolledTgt.deathOneShot -= FsmTargetDeathEventHandler;
-        }
-        _fsmApMoveTgt = _patrolledTgt as IFleetNavigable;
-        _patrolledTgt = null;
+        _navigator.DisengagePilot();
     }
 
     #endregion
 
     #region ExecuteGuardOrder
 
-    private IGuardable _guardedTgt; // reqd to unsubscribe from death notification as _fsmApMoveTgt can be a StationaryLocation
-
     IEnumerator ExecuteGuardOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_guardedTgt == null);
+        IGuardable guardableTgt = CurrentOrder.Target as IGuardable;
+        D.Assert(guardableTgt != null); // Guardable targets are non-enemy owned Sectors, Systems, Planets, Bases and UCenter
+        D.Assert(guardableTgt.IsGuardingAllowedBy(Owner));
 
-        _guardedTgt = CurrentOrder.Target as IGuardable;
+        _fsmTgt = guardableTgt as IFleetNavigable;
+        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
 
-        // move to the guarded target first
-        _fsmApMoveTgt = _guardedTgt as IFleetNavigable;
-        _fsmApMoveSpeed = Speed.Standard;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't guard a target owned by an enemy
+        // move to the target to guard first
+        _apMoveSpeed = Speed.Standard;
+        _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't guard a target owned by an enemy
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        D.Assert(!_fsmApMoveTgtUnreachable, "{0} Guarded target {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                    // TODO Communicate failure to boss?
+                    // failure occurred while Moving so AssumeFormation where we are at
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+                    break;
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
 
-        // _fsmApMoveTgt will be a StationaryLocation while moving to the GuardStation so we must wire the _guardedTgt's death here
-        var mortalGuardedTgt = _guardedTgt as AMortalItem;
-        if (mortalGuardedTgt != null) {
-            mortalGuardedTgt.deathOneShot += FsmTargetDeathEventHandler;
-        }
+        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
 
-        // now move to the GuardStation
-        _fsmApMoveTgt = GameUtility.GetClosest(Position, _guardedTgt.GuardStations);
-        _fsmApMoveSpeed = Speed.Standard;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't guard a target owned by an enemy
-        Call(FleetState.Moving);
-        yield return null;  // required so Return()s here
+        Call(FleetState.Guarding);
+        yield return null;  // Reqd to Return() here
 
-        D.Assert(!_fsmApMoveTgtUnreachable, "{0} GuardStation {1} should always be reachable.", FullName, _fsmApMoveTgt.FullName);
-        if (CheckForDeathOf(_guardedTgt as IFleetNavigable)) {
-            HandleApMoveTgtDeath(_guardedTgt as IFleetNavigable);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtRelationship:
+                    // TODO Communicate failure to boss?
+                    StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+                    break;
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
 
-        Call(FleetState.AssumingFormation); // avoids permanently leaving Guard state
-        yield return null;
-
-        // Fleet stays in Guard state, waiting to respond to UponEnemyDetected(), Ship is simply Idling
+        // If there was a failure generated by Guarding, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
     }
 
     void ExecuteGuardOrder_UponEnemyDetected() {
-        LogEvent();
+        LogEventWarning();
         // TODO go intercept or wait to be fired on?
     }
 
-    void ExecuteGuardOrder_UponTargetDeath(IMortalItem deadGuardedTgt) {
+    void ExecuteGuardOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEventWarning();
+        IGuardable guardableTgt = _fsmTgt as IGuardable;
+        if (!guardableTgt.IsGuardingAllowedBy(Owner)) {
+            D.LogBold(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
+                FullName, CurrentOrder.Directive.GetValueName(), guardableTgt.FullName, guardableTgt.Owner_Debug.LeaderName, Owner.GetRelations(guardableTgt.Owner_Debug).GetValueName());
+
+            // TODO Communicate failure to boss?
+            StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+        }
+    }
+
+    void ExecuteGuardOrder_UponOwnerChanged() {
         LogEvent();
-        D.Assert(_guardedTgt == deadGuardedTgt, "{0}.target {1} is not dead target {2}.", FullName, _guardedTgt.FullName, deadGuardedTgt.FullName);
-        CurrentState = FleetState.Idling;
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void ExecuteGuardOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEventWarning();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        // TODO Communicate failure to boss?
+        IGuardable guardableTgt = _fsmTgt as IGuardable;
+        StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+    }
+
+    void ExecuteGuardOrder_UponDeath() {
+        LogEventWarning();
+        // TODO Communicate failure to boss?
     }
 
     void ExecuteGuardOrder_ExitState() {
         LogEvent();
-        var mortalGuardedTgt = _guardedTgt as AMortalItem;
-        if (mortalGuardedTgt != null) {
-            mortalGuardedTgt.deathOneShot -= FsmTargetDeathEventHandler;
+        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+        _fsmTgt = null;
+        _orderFailureCause = UnitItemOrderFailureCause.None;
+    }
+
+    #endregion
+
+    #region Guarding
+
+    // 7.2.16 Call()ed State
+
+    // Note: This state exists to differentiate between the Moving Call() from ExecuteGuardOrder which gets the
+    // fleet to the guard target, and the state of actually moving to a GuardStation and guarding.
+    // This distinction is important when an enemy is detected as
+    // the behaviour that results is likely to be different -> detecting an enemy when moving to the target is likely
+    // to be ignored, whereas detecting an enemy while actually guarding the target is likely to result in an intercept.
+
+    IEnumerator Guarding_EnterState() {
+        LogEvent();
+
+        IGuardable guardedTgt = _fsmTgt as IGuardable;
+        D.Assert(guardedTgt != null);    // the _fsmTgt starts out as IGuardable
+        D.Assert(guardedTgt.IsGuardingAllowedBy(Owner));
+
+        // now move to the GuardStation
+        IFleetNavigable apTgt = GameUtility.GetClosest(Position, guardedTgt.GuardStations);
+        _navigator.PlotPilotCourse(apTgt, Speed.Standard, apTgtStandoffDistance: Constants.ZeroF);
+
+        // wait here until the _UponApCoursePlotSuccess() engages the AutoPilot
+        while (!_navigator.IsPilotEngaged) {
+            yield return null;
         }
-        _guardedTgt = null;
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
+
+        // wait here until the _UponApTargetReached() disengages the AutoPilot
+        while (_navigator.IsPilotEngaged) {
+            yield return null;
+        }
+
+        Call(FleetState.AssumingFormation); // avoids permanently leaving Guarding state
+        yield return null; // required so Return()s here
+        // Fleet stays in Guarding state, waiting to respond to UponEnemyDetected(), Ship is simply Idling
+    }
+
+    void Guarding_UponApCoursePlotSuccess() {
+        LogEvent();
+        _navigator.EngagePilot();
+    }
+
+    void Guarding_UponApCoursePlotFailure() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        Return();
+    }
+
+    void Guarding_UponApTargetUnreachable() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        Return();
+    }
+
+    void Guarding_UponApTargetReached() {
+        LogEvent();
+        _navigator.DisengagePilot();
+    }
+
+    void Guarding_UponNewOrderReceived() {
+        LogEvent();
+        Return();
+    }
+
+    void Guarding_UponEnemyDetected() {
+        LogEvent();
+    }
+
+    void Guarding_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEvent();
+        IGuardable guardedTgt = _fsmTgt as IGuardable;
+        if (!guardedTgt.IsGuardingAllowedBy(Owner)) {
+            D.LogBold(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
+                FullName, CurrentOrder.Directive.GetValueName(), guardedTgt.FullName, guardedTgt.Owner_Debug.LeaderName, Owner.GetRelations(guardedTgt.Owner_Debug).GetValueName());
+
+            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            Return();
+        }
+    }
+
+    void Guarding_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void Guarding_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        Return();
+    }
+
+    void Guarding_UponDeath() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        Return();
+    }
+
+    void Guarding_ExitState() {
+        LogEvent();
+        _navigator.DisengagePilot();
     }
 
     #endregion
@@ -1285,50 +1906,101 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     IEnumerator ExecuteAttackOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
 
-        _fsmApMoveTgt = CurrentOrder.Target;
-        _fsmApMoveSpeed = Speed.Full;
-        _fsmApMoveTgtStandoffDistance = CalcApMoveTgtStandoffDistance(CurrentOrder.Target);
+        IUnitAttackable unitAttackableTgt = CurrentOrder.Target as IUnitAttackable;
+        D.Assert(unitAttackableTgt != null);
+        D.Assert(unitAttackableTgt.IsAttackingAllowedBy(Owner));
+
+        _fsmTgt = unitAttackableTgt;
+        bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+
+        _apMoveSpeed = Speed.Full;
+        _apMoveTgtStandoffDistance = CalcApMoveTgtStandoffDistance(CurrentOrder.Target);
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApMoveTgtUnreachable) {
-            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
-            yield return null;
-        }
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtRelationship:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                    // TODO Communicate failure to boss?
+                    // failure occurred while Moving so AssumeFormation where we are at and wait for new orders as now available
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+                    break;
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
 
-        var fsmAttackTgt = _fsmApMoveTgt as IUnitAttackableTarget;
-        fsmAttackTgt.deathOneShot += FsmTargetDeathEventHandler;
+        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
 
         // issue ship attack orders
-        var shipAttackOrder = new ShipOrder(ShipDirective.Attack, CurrentOrder.Source, fsmAttackTgt as IShipNavigable);
+        var shipAttackOrder = new ShipOrder(ShipDirective.Attack, CurrentOrder.Source, toNotifyCmd: true, target: unitAttackableTgt as IShipNavigable);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipAttackOrder);
-
-        // Note: 2 ways to leave the state: death of attackTgt and a new order causing a state change
     }
 
-    void ExecuteAttackOrder_UponTargetDeath(IMortalItem deadUnitAttackTgt) {
+    void ExecuteAttackOrder_UponOrderOutcome(ShipDirective directive, ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+        if (directive != ShipDirective.Attack) {
+            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", FullName, CurrentState.GetValueName(), typeof(ShipDirective).Name, directive.GetValueName());
+            return;
+        }
+        // TODO keep track of results to make better resulting decisions about what to do as battle rages
+        // IShipAttackable attackedTgt = target as IShipAttackable;    // target can be null if ship failed and didn't have a target: Disengaged...
+    }
+
+    void ExecuteAttackOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
         LogEvent();
-        D.Assert(_fsmApMoveTgt == deadUnitAttackTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmApMoveTgt.FullName, deadUnitAttackTgt.FullName);
-        CurrentState = FleetState.Idling;
+        D.Assert(priorRelationship == DiplomaticRelationship.War || priorRelationship == DiplomaticRelationship.ColdWar);
+        IUnitAttackable attackedTgt = _fsmTgt as IUnitAttackable;
+        if (!attackedTgt.IsAttackingAllowedBy(Owner)) {
+            D.LogBold(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
+                FullName, CurrentOrder.Directive.GetValueName(), attackedTgt.FullName, attackedTgt.Owner_Debug.LeaderName, Owner.GetRelations(attackedTgt.Owner_Debug).GetValueName());
+            // TODO Communicate failure to boss?
+            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+        }
+    }
+
+    void ExecuteAttackOrder_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
     }
 
     void ExecuteAttackOrder_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
     }
 
+    void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        // IUnitAttackable attackedTgt = _fsmTgt as IUnitAttackable;
+        // TODO Communicate success to boss?
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+    }
+
+    void ExecuteAttackOrder_UponDeath() {
+        LogEvent();
+    }
+
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
-        (_fsmApMoveTgt as IUnitAttackableTarget).deathOneShot -= FsmTargetDeathEventHandler;
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
+        bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
+        _fsmTgt = null;
+        _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
     #endregion
@@ -1338,36 +2010,89 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         LogEvent();
 
-        if (_fsmApMoveTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmApMoveTgt.FullName);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        IFleetCmd fleetTgt = CurrentOrder.Target as IFleetCmd;
+        D.Assert(fleetTgt != null);
+        _fsmTgt = fleetTgt as IFleetNavigable;
+        bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
 
-        _fsmApMoveTgt = CurrentOrder.Target;
-        _fsmApMoveSpeed = Speed.Standard;
-        _fsmApMoveTgtStandoffDistance = Constants.ZeroF;    // can't join an enemy fleet
+        _apMoveSpeed = Speed.Standard;
+        _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't join an enemy fleet
         Call(FleetState.Moving);
         yield return null;  // required so Return()s here
 
-        if (_fsmApMoveTgtUnreachable) {
-            HandleApMoveTgtUnreachable(_fsmApMoveTgt);
+        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+            switch (_orderFailureCause) {
+                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    // TODO Initiate Fleet Repair and communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.UnitItemDeath:
+                    // TODO Communicate failure to boss?
+                    break;
+                case UnitItemOrderFailureCause.TgtRelationship:
+                case UnitItemOrderFailureCause.TgtDeath:
+                case UnitItemOrderFailureCause.TgtUncatchable:
+                case UnitItemOrderFailureCause.TgtUnreachable:
+                    // TODO Communicate failure to boss?
+                    // failure occurred while Moving so AssumeFormation where we are at
+                    CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+                    break;
+                case UnitItemOrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
+            }
             yield return null;
         }
-        if (CheckForDeathOf(_fsmApMoveTgt)) {
-            HandleApMoveTgtDeath(_fsmApMoveTgt);
-            yield return null;
-        }
+
+        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
 
         // we've arrived so transfer the ship to the fleet we are joining
         var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
         var ship = Elements[0] as ShipItem;   // HACK, IMPROVE more than one ship?
         TransferShip(ship, fleetToJoin);
         // removing the only ship will immediately call FleetState.Dead
+        if (IsOperational) {
+            CurrentState = FleetState.Idling;
+        }
+    }
+
+    void ExecuteJoinFleetOrder_UponEnemyDetected() {
+        LogEventWarning();
+        // TODO
+    }
+
+    void ExecuteJoinFleetOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+        LogEventWarning();
+        // Do nothing as no effect
+    }
+
+    void ExecuteJoinFleetOrder_UponOwnerChanged() {
+        LogEvent();
+        IssueAssumeFormationOrderFromCmdStaff();
+    }
+
+    void ExecuteJoinFleetOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+        LogEventWarning();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        // This is the death of the fleet we are trying to join. Communicate failure to boss?
+        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+    }
+
+    void ExecuteJoinFleetOrder_UponDeath() {
+        LogEvent();
+        // TODO This is the death of our fleet. If only one ship, it will always die. Communicate result to boss?
     }
 
     void ExecuteJoinFleetOrder_ExitState() {
         LogEvent();
-        _fsmApMoveTgt = null;
-        _fsmApMoveTgtUnreachable = false;
+        bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
+        _fsmTgt = null;
+        _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
     #endregion
@@ -1417,7 +2142,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     void Dead_EnterState() {
         LogEvent();
-        HandleDeath();
+        HandleDeathFromDeadState();
         StartEffectSequence(EffectSequenceID.Dying);
     }
 
@@ -1429,7 +2154,286 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #endregion
 
-    #region StateMachine Support Methods
+    #region Archived States
+
+    #region Patrolling using Move state Archive
+
+    //// 7.2.16 Call()ed State
+
+    //private IPatrollable _patrolledTgt; // reqd to unsubscribe from death notification as _fsmTgt is a StationaryLocation
+
+    //// Note: This state exists to differentiate between the Moving Call() from ExecutePatrolOrder which gets the
+    //// fleet to the patrol target, and the continuous Moving Call()s from Patrolling which moves the fleet between
+    //// the patrol target's PatrolStations. This distinction is important while Moving when an enemy is detected as
+    //// the behaviour that results is likely to be different -> detecting an enemy when moving to the target is likely
+    //// to be ignored, whereas detecting an enemy while actually patrolling the target is likely to result in an intercept.
+
+    //IEnumerator Patrolling_EnterState() {
+    //    LogEvent();
+    //    D.Assert(_patrolledTgt == null);
+    //    _patrolledTgt = _apTgt as IPatrollable;
+    //    D.Assert(_patrolledTgt != null);    // the _fsmTgt starts out as IPatrollable
+
+    //    // _fsmTgt will be a StationaryLocation while patrolling so we must wire the death here
+    //    AttemptFsmTgtDeathSubscribeChange(_apTgt, toSubscribe: true);
+
+    //    var patrolStations = _patrolledTgt.PatrolStations;  // IPatrollable.PatrolStations is a copied list
+    //    StationaryLocation nextPatrolStation = GameUtility.GetClosest(Position, patrolStations);
+    //    bool isRemoved = patrolStations.Remove(nextPatrolStation);
+    //    D.Assert(isRemoved);
+    //    var shuffledPatrolStations = patrolStations.Shuffle();
+    //    var patrolStationQueue = new Queue<StationaryLocation>(shuffledPatrolStations);
+    //    patrolStationQueue.Enqueue(nextPatrolStation);   // shuffled queue with current patrol station at end
+    //    Speed patrolSpeed = _patrolledTgt.PatrolSpeed;
+    //    while (true) {
+    //        _apTgt = nextPatrolStation;
+    //        _apMoveSpeed = patrolSpeed;    // _fsmMoveSpeed set to None when exiting FleetState.Moving
+    //        _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't patrol a target owned by an enemy
+    //        Call(FleetState.Moving);
+    //        yield return null;    // required so Return()s here
+
+    //        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+    //            // there was a failure in Moving so pass it to the Call()ing state
+    //            Return();
+    //            yield return null;
+    //        }
+
+    //        if (!__ValidatePatrol(_patrolledTgt)) {
+    //            StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, _patrolledTgt.LocalAssemblyStations);
+    //            CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
+    //            yield return null;
+    //        }
+
+    //        nextPatrolStation = patrolStationQueue.Dequeue();
+    //        patrolStationQueue.Enqueue(nextPatrolStation);
+    //    }
+    //}
+
+    //void Patrolling_UponNewOrderReceived() {
+    //    LogEvent();
+    //    Return();
+    //}
+
+    //void Patrolling_UponEnemyDetected() {
+    //    LogEvent();
+    //}
+
+    //void Patrolling_UponFsmTargetDeath(IMortalItem deadFsmTarget) {
+    //    LogEvent();
+    //    D.Assert(_patrolledTgt == deadFsmTarget, "{0}.target {1} is not dead target {2}.", FullName, _patrolledTgt.FullName, deadFsmTarget.FullName);
+    //    _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+    //    Return();
+    //}
+
+    //void Patrolling_UponDeath() {
+    //    LogEvent();
+    //    _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+    //    Return();
+    //}
+
+    //void Patrolling_ExitState() {
+    //    LogEvent();
+    //    _apTgt = _patrolledTgt as IFleetNavigable;
+    //    _patrolledTgt = null;
+
+    //    AttemptFsmTgtDeathSubscribeChange(_apTgt, toSubscribe: false);
+    //}
+
+    #endregion
+
+    #region Guarding using Move state Archive
+
+    //// 7.2.16 Call()ed State
+
+    //private IGuardable _guardedTgt; // reqd to unsubscribe from death notification as _fsmTgt is a StationaryLocation
+
+    //// Note: This state exists to differentiate between the Moving Call() from ExecuteGuardOrder which gets the
+    //// fleet to the guard target, and the state of actually guarding at a guarded target's GuardStation.
+    //// This distinction is important when an enemy is detected as
+    //// the behaviour that results is likely to be different -> detecting an enemy when moving to the target is likely
+    //// to be ignored, whereas detecting an enemy while actually guarding the target is likely to result in an intercept.
+
+    //IEnumerator Guarding_EnterState() {
+    //    LogEvent();
+    //    D.Assert(_guardedTgt == null);
+    //    _guardedTgt = _apTgt as IGuardable;
+    //    D.Assert(_guardedTgt != null);    // the _fsmTgt starts out as IGuardable
+
+    //    // _fsmTgt will be a StationaryLocation while guarding so we must wire the death here
+    //    AttemptFsmTgtDeathSubscribeChange(_apTgt, toSubscribe: true);
+
+    //    // now move to the GuardStation
+    //    _apTgt = GameUtility.GetClosest(Position, _guardedTgt.GuardStations);
+    //    _apMoveSpeed = Speed.Standard;
+    //    _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't guard a target owned by an enemy
+    //    Call(FleetState.Moving);
+    //    yield return null;  // required so Return()s here
+
+    //    if (_orderFailureCause != UnitItemOrderFailureCause.None) {
+    //        // there was a failure in Moving so pass it to the Call()ing state
+    //        Return();
+    //        yield return null;
+    //    }
+
+    //    Call(FleetState.AssumingFormation); // avoids permanently leaving Guarding state
+    //    yield return null; // required so Return()s here
+
+    //    // Fleet stays in Guarding state, waiting to respond to UponEnemyDetected(), Ship is simply Idling
+    //}
+
+    //void Guarding_UponNewOrderReceived() {
+    //    LogEvent();
+    //    Return();
+    //}
+
+    //void Guarding_UponEnemyDetected() {
+    //    LogEvent();
+    //}
+
+    //void Guarding_UponFsmTargetDeath(IMortalItem deadFsmTarget) {
+    //    LogEvent();
+    //    D.Assert(_guardedTgt == deadFsmTarget, "{0}.target {1} is not dead target {2}.", FullName, _guardedTgt.FullName, deadFsmTarget.FullName);
+    //    _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+    //    Return();
+    //}
+
+    //void Guarding_UponDeath() {
+    //    LogEvent();
+    //    _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+    //    Return();
+    //}
+
+    //void Guarding_ExitState() {
+    //    LogEvent();
+    //    _apTgt = _guardedTgt as IFleetNavigable;
+    //    _guardedTgt = null;
+    //    AttemptFsmTgtDeathSubscribeChange(_apTgt, toSubscribe: false);
+    //}
+
+    #endregion
+
+    #region ExecuteCloseOrbitOrder Archive
+
+    //IEnumerator ExecuteCloseOrbitOrder_EnterState() {
+    //    LogEvent();
+
+    //    if (_fsmTgt != null) {
+    //        D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
+    //    }
+
+    //    var orbitTgt = CurrentOrder.Target as IShipCloseOrbitable;
+    //    D.Assert(orbitTgt != null);
+    //    if (!__ValidateOrbit(orbitTgt)) {
+    //        // no need for a assumeFormationTgt as we haven't moved to the orbitTgt yet
+    //        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff);
+    //        yield return null;
+    //    }
+
+    //    _apMoveSpeed = Speed.Standard;
+    //    _fsmTgt = orbitTgt as IFleetNavigable;
+    //    _apTgtStandoffDistance = Constants.ZeroF;    // can't go into close orbit around an enemy
+    //    Call(FleetState.Moving);
+    //    yield return null;  // reqd so Return()s here
+
+    //    D.Assert(!_fsmApMoveTgtUnreachable, "{0} ExecuteCloseOrbitOrder target {1} should always be reachable.", FullName, _fsmTgt.FullName);
+    //    if (CheckForDeathOf(_fsmTgt)) {
+    //        HandleApMoveTgtDeath(_fsmTgt);
+    //        yield return null;
+    //    }
+
+    //    if (!__ValidateOrbit(orbitTgt)) {
+    //        StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, orbitTgt.LocalAssemblyStations);
+    //        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, assumeFormationTgt);
+    //        yield return null;
+    //    }
+
+    //    Call(FleetState.AssumingCloseOrbit);
+    //    yield return null;  // reqd so Return()s here
+
+    //    CurrentState = FleetState.Idling;
+    //}
+
+    ///// <summary>
+    ///// Checks the continued validity of the current orbit order of target and warns
+    ///// if no longer valid. If no longer valid, returns false whereon the fleet should take an action
+    ///// reflecting that the order it was trying to execute is no longer valid.
+    ///// <remarks>Check is necessary every time there is another decision to make while executing the order as
+    ///// 1) the diplomatic state between the owners can change.</remarks>
+    ///// </summary>
+    ///// <param name="orbitTgt">The orbit TGT.</param>
+    //private bool __ValidateOrbit(IShipCloseOrbitable orbitTgt) {
+    //    bool isValid = true;
+    //    if (!orbitTgt.IsCloseOrbitAllowedBy(Owner)) {
+    //        D.Warn("{0} Orbit order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
+    //            FullName, orbitTgt.FullName, orbitTgt.Owner.LeaderName, Owner.GetRelations(orbitTgt.Owner).GetValueName());
+    //        isValid = false;
+    //    }
+    //    return isValid;
+    //}
+
+    //void ExecuteCloseOrbitOrder_ExitState() {
+    //    LogEvent();
+    //    _fsmTgt = null;
+    //    _fsmApMoveTgtUnreachable = false;
+    //}
+
+    #endregion
+
+    #region AssumingCloseOrbit Archive
+
+    //private int _fsmShipCountWaitingToOrbit;
+
+    //void AssumingCloseOrbit_EnterState() {
+    //    LogEvent();
+    //    D.Assert(_fsmShipCountWaitingToOrbit == Constants.Zero);
+    //    _fsmShipCountWaitingToOrbit = Elements.Count;
+    //    IShipCloseOrbitable orbitTgt = _fsmTgt as IShipCloseOrbitable;
+
+    //    var shipAssumeCloseOrbitOrder = new ShipOrder(ShipDirective.AssumeCloseOrbit, CurrentOrder.Source, orbitTgt);
+    //    Elements.ForAll(e => {
+    //        var ship = e as ShipItem;
+    //        D.Log(ShowDebugLog, "{0} issuing {1} order to {2}.", FullName, ShipDirective.AssumeCloseOrbit.GetValueName(), ship.FullName);
+    //        ship.CurrentOrder = shipAssumeCloseOrbitOrder;
+    //    });
+    //}
+
+    //void AssumingCloseOrbit_UponShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
+    //    if (isOrbitAttemptSuccessful) {
+    //        _fsmShipCountWaitingToOrbit--;
+    //        if (_fsmShipCountWaitingToOrbit == Constants.Zero) {
+    //            Return();
+    //        }
+    //    }
+    //    else {
+    //        // a ship's orbit attempt failed so ships are no longer allowed to orbit the orbitTgt
+    //        IShipCloseOrbitable orbitTgt = _fsmTgt as IShipCloseOrbitable;
+    //        StationaryLocation assumeFormationTgt = GameUtility.GetClosest(Position, orbitTgt.LocalAssemblyStations);
+    //        CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, CurrentOrder.Source, assumeFormationTgt);
+    //    }
+    //}
+
+    //void AssumingCloseOrbit_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+    //    _fsmShipCountWaitingToOrbit--;
+    //    if (_fsmShipCountWaitingToOrbit == Constants.Zero) {
+    //        Return();
+    //    }
+    //}
+
+    //void AssumingCloseOrbit_UponNewOrderReceived() {
+    //    LogEvent();
+    //    Return();
+    //}
+
+    //void AssumingCloseOrbit_ExitState() {
+    //    LogEvent();
+    //    _fsmShipCountWaitingToOrbit = Constants.Zero;
+    //}
+
+    #endregion
+
+    #endregion
+
+    #region StateMachine Support Members
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         base.HandleEffectSequenceFinished(effectID);
@@ -1439,60 +2443,34 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     }
 
     /// <summary>
-    /// Warns and sets CurrentState to Idling.
+    /// Handles the results of the ship's attempt to execute the provided directive.
     /// </summary>
-    /// <param name="apMoveTgt">The target.</param>
-    private void HandleApMoveTgtUnreachable(IFleetNavigable apMoveTgt) {
-        D.Warn("{0} state {1} reporting target {2} as unreachable. Call()ed from State {3}.",
-            FullName, LastState.GetValueName(), apMoveTgt.FullName, CurrentState.GetValueName());
-        CurrentState = FleetState.Idling;
+    /// <param name="directive">The directive.</param>
+    /// <param name="ship">The ship.</param>
+    /// <param name="isSuccess">if set to <c>true</c> the directive was successfully completed. May still be ongoing.</param>
+    /// <param name="target">The target. Can be null.</param>
+    /// <param name="failCause">The failure cause if not successful.</param>
+    internal void HandleOrderOutcome(ShipDirective directive, ShipItem ship, bool isSuccess, IShipNavigable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
+        UponOrderOutcome(directive, ship, isSuccess, target, failCause);
     }
 
-    private bool CheckForDeathOf(IFleetNavigable apMoveTgt) {
-        AMortalItem mortalMoveTgt = apMoveTgt as AMortalItem;
-        if (mortalMoveTgt != null && !mortalMoveTgt.IsOperational) {
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Sets CurrentState to Idling after verifying the moveTgt is dead.
-    /// <remarks>The deadMoveTgt is not always _fsmApMoveTgt as sometimes these are 
-    /// Patrol or Guard Stations.</remarks>
-    /// </summary>
-    /// <param name="deadApMoveTgt">The dead move TGT.</param>
-    private void HandleApMoveTgtDeath(IFleetNavigable deadApMoveTgt) {
-        D.Assert(!(deadApMoveTgt as AMortalItem).IsOperational);
-        D.Log("{0} state {1} reporting target {2} has died. Reporting state was Call()ed by {3}.",
-            FullName, LastState.GetValueName(), deadApMoveTgt.FullName, CurrentState.GetValueName());
-        CurrentState = FleetState.Idling;
-    }
-
-    private void UponApCoursePlotFailure() { RelayToCurrentState(); }
+    #region Relays
 
     private void UponApCoursePlotSuccess() { RelayToCurrentState(); }
 
+    private void UponApCoursePlotFailure() { RelayToCurrentState(); }
+
     private void UponApTargetReached() { RelayToCurrentState(); }
 
-    private void UponApTargetUnreachable() {
-        // the final waypoint is not close enough and we can't directly approach the Destination
-        RelayToCurrentState();
-    }
+    private void UponApTargetUnreachable() { RelayToCurrentState(); }
 
-    private void UponShipAssumedStation(ShipItem ship) {
-        RelayToCurrentState(ship);
-    }
-
-    private void UponShipOrbitAttemptFinished(ShipItem ship, bool isOrbitAttemptSuccessful) {
-        RelayToCurrentState(ship, isOrbitAttemptSuccessful);
-    }
-
-    private void UponShipExploreAttemptFinished(ShipItem ship, IShipExplorable exploreTgt, bool isExplorationSuccessful) {
-        RelayToCurrentState(ship, exploreTgt, isExplorationSuccessful);
+    private void UponOrderOutcome(ShipDirective directive, ShipItem ship, bool isSuccess, IShipNavigable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
+        RelayToCurrentState(directive, ship, isSuccess, target, failCause);
     }
 
     private void UponEnemyDetected() { RelayToCurrentState(); } // TODO not yet used
+
+    #endregion
 
     /// <summary>
     /// Tries to get ships from the fleet using the criteria provided. Returns <c>false</c> if no ships
@@ -1555,22 +2533,51 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         return true;
     }
 
-    #endregion
+    private bool _isFsmTgtDeathAlreadySubscribed;
 
-    #endregion
-
-    internal void HandleShipAssumedStation(ShipItem ship) {
-        UponShipAssumedStation(ship);
+    /// <summary>
+    /// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
+    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
+    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
+    /// <remarks>No need to specially handle Stationary or MobileLocations. In most cases they are simply Course Waypoints. 
+    /// If they are Patrol or Guard Stations???.
+    /// </remarks>
+    /// </summary>
+    /// <param name="fsmTgt">The target used by the State Machine.</param>
+    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
+    /// <returns></returns>
+    private bool AttemptFsmTgtDeathSubscribeChange(IFleetNavigable fsmTgt, bool toSubscribe) {
+        Utility.ValidateNotNull(fsmTgt);
+        var mortalFsmTgt = fsmTgt as IMortalItem;
+        if (mortalFsmTgt != null) {
+            if (!toSubscribe) {
+                mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
+            }
+            else if (!_isFsmTgtDeathAlreadySubscribed) {
+                mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
+            }
+            else {
+                D.Warn("{0}: Attempting to subcribe to {1}'s death when already subscribed.", FullName, fsmTgt.FullName);
+            }
+            _isFsmTgtDeathAlreadySubscribed = toSubscribe;
+            return true;
+        }
+        return false;
     }
+
+    #endregion
+
+    #endregion
 
     /// <summary>
     /// Waits for the ships in the fleet to align with the requested heading, then executes the provided callback.
     /// <remarks>
-    /// Called by each of the ships in the fleet when they are preparing for collective departure to a destination 
+    /// Called by each of the ships in the fleet when they are preparing for collective departure to a destination
     /// ordered by FleetCmd. This single coroutine replaces a similar coroutine previously run by each ship.
     /// </remarks>
     /// </summary>
     /// <param name="fleetIsAlignedCallback">The fleet is aligned callback.</param>
+    /// <param name="ship">The ship.</param>
     internal void WaitForFleetToAlign(Action fleetIsAlignedCallback, ShipItem ship) {
         D.Assert(fleetIsAlignedCallback != null);
         _navigator.WaitForFleetToAlign(fleetIsAlignedCallback, ship);
@@ -1581,8 +2588,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     /// delegate that registered the callback. Returns <c>true</c> if the callback was removed, <c>false</c> otherwise.
     /// </summary>
     /// <param name="shipCallbackDelegate">The callback delegate from the ship. Can be null.</param>
-    /// <param name="shipName">Name of the ship for debugging.</param>
-    /// <returns></returns>
+    /// <param name="ship">The ship.</param>
     internal void RemoveFleetIsAlignedCallback(Action shipCallbackDelegate, ShipItem ship) {
         D.Assert(shipCallbackDelegate != null);
         _navigator.RemoveFleetIsAlignedCallback(shipCallbackDelegate, ship);
@@ -1632,21 +2638,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             __coursePlot = null;
         }
     }
-    //private void EnableDebugShowCoursePlot(bool toEnable) {
-    //    if (toEnable) {
-    //        if (__coursePlot == null) {
-    //            string name = __coursePlotNameFormat.Inject(DisplayName);
-    //            Transform lineParent = DynamicObjectsFolder.Instance.Folder;
-    //            __coursePlot = new CoursePlotLine(name, _navigator.AutoPilotCourse, lineParent, Constants.One, GameColor.Yellow);
-    //        }
-    //        AssessDebugShowCoursePlot();
-    //    }
-    //    else {
-    //        D.Assert(__coursePlot != null);
-    //        __coursePlot.Dispose();
-    //        __coursePlot = null;
-    //    }
-    //}
 
     private void AssessDebugShowCoursePlot() {
         if (__coursePlot != null) {
@@ -1663,12 +2654,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             AssessDebugShowCoursePlot();
         }
     }
-    //private void UpdateDebugCoursePlot() {
-    //    if (__coursePlot != null) {
-    //        __coursePlot.UpdateCourse(_navigator.AutoPilotCourse);
-    //        AssessDebugShowCoursePlot();
-    //    }
-    //}
 
     private void ShowDebugFleetCoursePlotsChangedEventHandler(object sender, EventArgs e) {
         EnableDebugShowCoursePlot(DebugValues.Instance.ShowFleetCoursePlots);
@@ -1771,14 +2756,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <summary>
         /// State that executes the FleetOrder FullSpeedMove. 
         /// </summary>
-        ExecuteFullSpeedMoveOrder,
+        //[System.Obsolete]
+        //ExecuteFullSpeedMoveOrder,
 
-        ExecuteCloseOrbitOrder,
+        //[System.Obsolete]
+        //ExecuteCloseOrbitOrder,
 
-        AssumingCloseOrbit,
+        //[System.Obsolete]
+        //AssumingCloseOrbit,
 
         /// <summary>
-        /// Call-only state that exists while an entire fleet is moving from one position to another.
+        /// Call()ed state that exists while an entire fleet is moving from one position to another.
         /// This can occur as part of the execution process for a number of FleetOrders.
         /// </summary>
         Moving,
@@ -1789,7 +2777,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         ExecutePatrolOrder,
 
         /// <summary>
-        /// Call-only state that exists while an entire fleet is moving on patrol from one patrol station to another.
+        /// Call()ed state that exists while an entire fleet is patrolling around a target between multiple PatrolStations.
         /// </summary>
         Patrolling,
 
@@ -1797,7 +2785,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// State that executes the FleetOrder Guard which encompasses Moving and Guarding.
         /// </summary>
         ExecuteGuardOrder,
-        //Guarding,
+
+        /// <summary>
+        /// Call()ed state that exists while an entire fleet is guarding a target at a GuardStation.
+        /// </summary>
+        Guarding,
 
         /// <summary>
         /// State that executes the FleetOrder Attack which encompasses Moving and Attacking.
@@ -1837,13 +2829,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// </summary>
         private const float DetourTurnAngleThreshold = 15F;
 
-        private readonly static LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
+        private static readonly LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
-        private readonly static Speed[] InvalidApSpeeds = {
+        private static readonly Speed[] InvalidApSpeeds = {
                                                             Speed.None,
                                                             Speed.HardStop,
                                                             Speed.Stop
                                                         };
+
+        private static int[] _astarPathfindingTagPenalties;
+        private static int[] AStarPathfindingTagPenalties {
+            get {
+                if (_astarPathfindingTagPenalties == null) {
+                    _astarPathfindingTagPenalties = new int[32];
+                    _astarPathfindingTagPenalties[Topography.OpenSpace.AStarTagValue()] = Constants.Zero;
+                    _astarPathfindingTagPenalties[Topography.Nebula.AStarTagValue()] = 40000;
+                    _astarPathfindingTagPenalties[Topography.DeepNebula.AStarTagValue()] = 80000;
+                    _astarPathfindingTagPenalties[Topography.System.AStarTagValue()] = 500000;
+                }
+                return _astarPathfindingTagPenalties;
+            }
+        }
 
         public bool IsPilotEngaged { get; private set; }
 
@@ -1861,10 +2867,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <summary>
         /// Returns true if the fleet's target has moved far enough to require a new waypoint course to find it.
         /// </summary>
-        private bool IsApCourseReplotNeeded {
+        private bool IsPathReplotNeeded {
             get {
-                if (ApTarget.IsMobile) {
-                    var sqrDistanceTgtTraveled = Vector3.SqrMagnitude(ApTarget.Position - _apTgtPositionAtLastCoursePlot);
+                if (_isApCourseFromPath && ApTarget.IsMobile) {
+                    var sqrDistanceTgtTraveled = Vector3.SqrMagnitude(ApTarget.Position - _apTgtPositionAtLastPathPlot);
                     //D.Log(ShowDebugLog, "{0}.IsCourseReplotNeeded called. {1} > {2}?, Destination: {3}, PrevDest: {4}.", 
                     //Name, sqrDistanceTgtTraveled, _apTgtMovementReplotThresholdDistanceSqrd, ApTarget.Position, _apTgtPositionAtLastCoursePlot);
                     return sqrDistanceTgtTraveled > _apTgtMovementReplotThresholdDistanceSqrd;
@@ -1881,6 +2887,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         /// <summary>
         /// The current target this AutoPilot is engaged to reach.
+        /// <remarks>Can be a StationaryLocation if moving to guard, patrol or assume formation or if
+        /// a Move order to a System or Sector where the fleet is already located.</remarks>
         /// </summary>
         private IFleetNavigable ApTarget { get; set; }
 
@@ -1892,6 +2900,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private Action _fleetIsAlignedCallbacks;
         private Job _apNavJob;
         private Job _waitForFleetToAlignJob;
+        private bool _isApCourseFromPath;
 
         /// <summary>
         /// If <c>true </c> the flagship has reached its current destination. In most cases, this
@@ -1899,8 +2908,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// 'final' destination, aka ApTarget.
         /// </summary>
         private bool _hasFlagshipReachedDestination;
-        private bool _isApCourseReplotting;
-        private Vector3 _apTgtPositionAtLastCoursePlot;
+        private bool _isPathReplotting;
+        private Vector3 _apTgtPositionAtLastPathPlot;
         private float _apTgtMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
         private int _currentApCourseIndex;
         private Seeker _seeker;
@@ -1914,14 +2923,33 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _gameTime = GameTime.Instance;
             _gameMgr = GameManager.Instance;
             _fleet = fleet;
-            _seeker = seeker;
+            _seeker = InitializeSeeker(seeker);
             Subscribe();
+        }
+
+        private Seeker InitializeSeeker(Seeker seeker) {
+            var modifier = seeker.startEndModifier;
+            modifier.useRaycasting = false;
+
+            // The following combination replaces VectorPath[0] (holding the closest node to the start point) with the exact
+            // start point. Changing addPoints to true will insert the exact start point before the closest node. Depending on 
+            // the location of the closest node, this can have the effect of sending the fleet away from its destination 
+            // before it turns and heads for it.
+            modifier.addPoints = false;
+            modifier.exactStartPoint = StartEndModifier.Exactness.Original;
+            modifier.exactEndPoint = StartEndModifier.Exactness.Original;
+
+            // These penalties are applied dynamically to the cost when the tag is encountered in a node. This allows different
+            // seeker agents to have differing penalties associated with a tag. The penalty on the node itself is always 0.
+            seeker.tagPenalties = AStarPathfindingTagPenalties;
+            return seeker;
         }
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
             _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
-            _seeker.pathCallback += ApCoursePlotCompletedEventHandler;
+            _seeker.pathCallback += PathPlotCompletedEventHandler;
+            _seeker.postProcessPath += PathPostProcessingEventHandler;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
 
@@ -1933,12 +2961,62 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         /// <param name="apTgtStandoffDistance">The target standoff distance.</param>
         internal void PlotPilotCourse(IFleetNavigable apTgt, Speed apSpeed, float apTgtStandoffDistance) {
             Utility.ValidateNotNull(apTgt);
-            D.Assert(!InvalidApSpeeds.Contains(apSpeed), "{0} speed of {1} for pilot is invalid.".Inject(Name, apSpeed.GetValueName()));
+            D.Assert(!InvalidApSpeeds.Contains(apSpeed), "{0} speed of {1} for pilot is invalid.", Name, apSpeed.GetValueName());
             ApTarget = apTgt;
             _apSpeed = apSpeed;
             _apTgtStandoffDistance = apTgtStandoffDistance;
-            ResetApCourseReplotValues();
-            GenerateApCourse();
+
+            IList<Vector3> directCourse;
+            if (TryDirectCourse(out directCourse)) {
+                // use this direct course
+                D.Log(ShowDebugLog, "{0} will use a direct course to {1}.", Name, ApTarget.FullName);
+                _isApCourseFromPath = false;
+                ConstructApCourse(directCourse);
+                HandleApCoursePlotSuccess();
+            }
+            else {
+                _isApCourseFromPath = true;
+                ResetPathReplotValues();
+                PlotPath();
+            }
+        }
+
+        private bool TryDirectCourse(out IList<Vector3> directCourse) {
+            directCourse = null;
+            if (_fleet.Topography == ApTarget.Topography && ApTgtDistance < PathfindingManager.Instance.Graph.maxDistance) {
+                if (_fleet.Topography == Topography.System) {
+                    // same Topography is system and within maxDistance, so must be same system
+                    directCourse = new List<Vector3>() {
+                        _fleet.Position,
+                        ApTarget.Position
+                    };
+                    return true;
+                }
+                Index3D fleetSectorIndex = _fleet.SectorIndex;
+                var localSectorIndexes = SectorGrid.Instance.GetNeighboringIndices(fleetSectorIndex);
+                localSectorIndexes.Add(fleetSectorIndex);
+                IList<SystemItem> localSystems = new List<SystemItem>(9);
+                foreach (var sectorIndex in localSectorIndexes) {
+                    SystemItem system;
+                    if (SystemCreator.TryGetSystem(sectorIndex, out system)) {
+                        localSystems.Add(system);
+                    }
+                }
+                if (localSystems.Any()) {
+                    foreach (var system in localSystems) {
+                        if (MyMath.DoesLineSegmentIntersectSphere(_fleet.Position, ApTarget.Position, system.Position, system.Radius)) {
+                            // there is a system between the open space positions of the fleet and its target
+                            return false;
+                        }
+                    }
+                }
+                directCourse = new List<Vector3>() {
+                                _fleet.Position,
+                                ApTarget.Position
+                            };
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -1978,7 +3056,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             D.Assert(!_hasFlagshipReachedDestination);
             D.Log(ShowDebugLog, "{0} initiating course to target {1}. Distance: {2:0.#}, Speed: {3}({4:0.##}).",
                 Name, ApTarget.FullName, ApTgtDistance, _apSpeed.GetValueName(), _apSpeed.GetUnitsPerHour(_fleet.Data));
-            // D.Log(ShowDebugLog, "{0}'s course waypoints are: {1}.", Name, ApCourse.Select(wayPt => wayPt.Position).Concatenate());
+            D.Log(ShowDebugLog, "{0}'s course waypoints are: {1}.", Name, ApCourse.Select(wayPt => wayPt.Position).Concatenate());
 
             _currentApCourseIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
             IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];   // skip the course start position as the fleet is already there
@@ -2019,8 +3097,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             int apTgtCourseIndex = ApCourse.Count - 1;
             D.Assert(_currentApCourseIndex == 1);  // already set prior to the start of the Job
             IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];
-            //D.Log(ShowDebugLog, "{0}: first waypoint is {1} in course with {2} waypoints reqd before final approach to Target {3}.",
-            //Name, currentWaypoint.Position, apTgtCourseIndex - 1, ApTarget.FullName);
+            D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
+            Name, currentWaypoint.Position, Vector3.Distance(Position, currentWaypoint.Position), apTgtCourseIndex - 1, ApTarget.FullName);
 
             float waypointStandoffDistance = Constants.ZeroF;
             if (_currentApCourseIndex == apTgtCourseIndex) {
@@ -2051,11 +3129,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                     }
                     IssueMoveOrderToAllShips(currentWaypoint, waypointStandoffDistance);
                 }
-                else if (IsApCourseReplotNeeded) {
-                    RegenerateApCourse();
+                else if (IsPathReplotNeeded) {
+                    ReplotPath();
                 }
                 yield return null;  // OPTIMIZE use WaitForHours, checking not currently expensive here
-                // IMPROVE use ProgressCheckDistance to derive
+                                    // IMPROVE use ProgressCheckDistance to derive
             }
             // we've reached the target
         }
@@ -2115,7 +3193,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         }
 
         private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out IFleetNavigable detour) {
-            detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _fleet.Data.UnitMaxFormationRadius);
+            detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _fleet.UnitMaxFormationRadius);
             if (obstacle.IsMobile) {
                 Vector3 detourBearing = (detour.Position - Position).normalized;
                 float reqdTurnAngleToDetour = Vector3.Angle(_fleet.Data.CurrentHeading, detourBearing);
@@ -2255,19 +3333,29 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _hasFlagshipReachedDestination = true;
         }
 
-        private void ApCoursePlotCompletedEventHandler(Path path) {
+        /// <summary>
+        /// Called after the new course path has been completed but before 
+        /// the StartEndModifier has been called. Allows changes to the modifier's
+        /// settings based on the results of the path.
+        /// </summary>
+        /// IMPROVE will need to accomodate Nebula and DeepNebula
+        /// <param name="path">The path prior to StartEnd modification.</param>
+        private void PathPostProcessingEventHandler(Path path) {
+            //__ReportPathNodes(path);
+            HandleModifiersPriorToPathPostProcessing(path);
+        }
+
+        private void PathPlotCompletedEventHandler(Path path) {
             if (path.error) {
                 D.Warn("{0} generated an error plotting a course to {1}.", Name, ApTarget.FullName);
                 HandleApCoursePlotFailure();
                 return;
             }
             ConstructApCourse(path.vectorPath);
-            HandleApCourseChanged();
-            //D.Log(ShowDebugLog, "{0}'s waypoint course to {1} is: {2}.", Name, ApTarget.FullName, ApCourse.Concatenate());
-            //PrintNonOpenSpaceNodes(path);
+            path.Release(this);
 
-            if (_isApCourseReplotting) {
-                ResetApCourseReplotValues();
+            if (_isPathReplotting) {
+                ResetPathReplotValues();
                 EngagePilot_Internal();
             }
             else {
@@ -2290,11 +3378,47 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _fleet.UpdateDebugCoursePlot();
         }
 
-        private void HandleApCoursePlotFailure() {
-            if (_isApCourseReplotting) {
-                D.Warn("{0}'s course to {1} couldn't be replotted.", Name, ApTarget.FullName);
+        /// <summary>
+        /// Handles any modifier settings prior to post processing the path.
+        /// <remarks> When inside a system with target outside, if first node is also outside then use that
+        /// node in the course. If first node is inside system, then it should always be replaced by
+        /// the fleet's location. Default modifier behaviour is to replace the closest (first) node 
+        /// with the current position. If that closest node is outside, then replacement could result 
+        /// in traveling inside the system more than is necessary.
+        ///</remarks>
+        /// </summary>
+        /// <param name="path">The path.</param>
+        private void HandleModifiersPriorToPathPostProcessing(Path path) {
+            var modifier = _seeker.startEndModifier;
+            modifier.addPoints = false; // reset to my default setting which replaces first node with current position
+
+            GraphNode firstNode = path.path[0];
+            Vector3 firstNodeLocation = (Vector3)firstNode.position;
+            D.Log(ShowDebugLog, "{0}: TargetDistance = {1:0.#}, ClosestNodeDistance = {2:0.#}.", Name, ApTgtDistance, Vector3.Distance(Position, firstNodeLocation));
+
+            if (_fleet.Topography == Topography.System) {
+                // starting in system
+                SystemItem fleetSystem;
+                bool isFleetSystemFound = SystemCreator.TryGetSystem(_fleet.SectorIndex, out fleetSystem);
+                D.Assert(isFleetSystemFound);
+
+                if (ApTarget.Topography == Topography.System) {
+                    Index3D tgtSectorIndex = SectorGrid.Instance.GetSectorIndex(ApTarget.Position);
+                    SystemItem tgtSystem;
+                    bool isTgtSystemFound = SystemCreator.TryGetSystem(tgtSectorIndex, out tgtSystem);
+                    D.Assert(isTgtSystemFound);
+                    if (fleetSystem == tgtSystem) {
+                        // fleet and target are in same system so whichever first node is found should be replaced by fleet location
+                        return;
+                    }
+                }
+                Topography firstNodeTopography = SectorGrid.Instance.GetSpaceTopography(firstNodeLocation);
+                if (firstNodeTopography == Topography.OpenSpace) {
+                    // first node outside of system so keep node
+                    modifier.addPoints = true;
+                    D.LogBold(ShowDebugLog, "{0} has retained first AStarNode in path to quickly exit System.", Name);
+                }
             }
-            _fleet.UponApCoursePlotFailure();
         }
 
         private void HandleApCoursePlotSuccess() {
@@ -2313,13 +3437,20 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             _fleet.UponApTargetUnreachable();
         }
 
+        private void HandleApCoursePlotFailure() {
+            if (_isPathReplotting) {
+                D.Warn("{0}'s course to {1} couldn't be replotted.", Name, ApTarget.FullName);
+            }
+            _fleet.UponApCoursePlotFailure();
+        }
+
         private void IssueMoveOrderToAllShips(IFleetNavigable fleetTgt, float tgtStandoffDistance) {
             bool isFleetwideMove = true;
             var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, fleetTgt as IShipNavigable, _apSpeed, isFleetwideMove, tgtStandoffDistance);
             _fleet.Elements.ForAll(e => {
                 var ship = e as ShipItem;
                 //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target: {2}, Speed: {3}, StandoffDistance: {4:0.#}.", 
-                //Name, ship.FullName, fleetTgt.FullName, _apSpeed.GetValueName(), tgtStandoffDistance);
+                //Name, ship.FullName, fleetTgt.FullName, _apMoveSpeed.GetValueName(), tgtStandoffDistance);
                 ship.CurrentOrder = shipMoveToOrder;
             });
         }
@@ -2327,31 +3458,32 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         #region Course Generation
 
         /// <summary>
-        /// Constructs a new course for this fleet from the <c>astarFixedCourse</c> provided.
+        /// Constructs a new course for this fleet from the <c>vectorCourse</c> provided.
         /// </summary>
-        /// <param name="astarFixedCourse">The AStar fixed course.</param>
-        private void ConstructApCourse(IList<Vector3> astarFixedCourse) {
-            D.Assert(!astarFixedCourse.IsNullOrEmpty(), "{0}'s astarFixedCourse contains no path to {1}.".Inject(Name, ApTarget.FullName));
+        /// <param name="vectorCourse">The vector course.</param>
+        private void ConstructApCourse(IList<Vector3> vectorCourse) {
+            D.Assert(!vectorCourse.IsNullOrEmpty(), "{0}'s vectorCourse contains no course to {1}.", Name, ApTarget.FullName);
             ApCourse.Clear();
-            int destinationIndex = astarFixedCourse.Count - 1;  // no point adding StationaryLocation for Destination as it gets immediately replaced
+            int destinationIndex = vectorCourse.Count - 1;  // no point adding StationaryLocation for Destination as it gets immediately replaced
             for (int i = 0; i < destinationIndex; i++) {
-                ApCourse.Add(new StationaryLocation(astarFixedCourse[i]));
+                ApCourse.Add(new StationaryLocation(vectorCourse[i]));
             }
             ApCourse.Add(ApTarget); // places it at course[destinationIndex]
-            ImproveApCourseWithSystemAccessPoints();
+            HandleApCourseChanged();
         }
 
         /// <summary>
         /// Improves the existing course with System entry or exit points if applicable. If it is determined that a system entry or exit
         /// point is needed, the existing course will be modified to minimize the amount of InSystem travel time reqd to reach the target. 
         /// </summary>
+        [Obsolete]
         private void ImproveApCourseWithSystemAccessPoints() {
             SystemItem fleetSystem = null;
             if (_fleet.Topography == Topography.System) {
                 var fleetSectorIndex = SectorGrid.Instance.GetSectorIndex(Position);
                 var isSystemFound = SystemCreator.TryGetSystem(fleetSectorIndex, out fleetSystem);
                 D.Assert(isSystemFound);
-                ValidateItemWithinSystem(fleetSystem, _fleet);
+                __ValidateItemWithinSystem(fleetSystem, _fleet);
             }
 
             SystemItem targetSystem = null;
@@ -2359,7 +3491,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(ApTarget.Position);
                 var isSystemFound = SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem);
                 D.Assert(isSystemFound);
-                ValidateItemWithinSystem(targetSystem, ApTarget);
+                __ValidateItemWithinSystem(targetSystem, ApTarget);
             }
 
             if (fleetSystem != null) {
@@ -2401,7 +3533,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.Assert(waypoint == null);
-                    D.Error("{0}: Illegal {1}.{2}.", Name, typeof(CourseRefreshMode).Name, mode.GetValueName());    // A fleet course is constructed by ConstructCourse
+                    // A fleet course is constructed by ConstructCourse
+                    D.Error("{0}: Illegal {1}.{2}.", Name, typeof(CourseRefreshMode).Name, mode.GetValueName());
                     break;
                 case CourseRefreshMode.AddWaypoint:
                     D.Assert(waypoint is StationaryLocation);
@@ -2430,62 +3563,44 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             HandleApCourseChanged();
         }
 
-        private void GenerateApCourse() {
+        private void PlotPath() {
             Vector3 start = Position;
-            string replot = _isApCourseReplotting ? "RE-plotting" : "plotting";
-            D.Log(ShowDebugLog, "{0} is {1} course to {2}. Start = {3}, Destination = {4}.", Name, replot, ApTarget.FullName, start, ApTarget.Position);
+            string replot = _isPathReplotting ? "RE-plotting" : "plotting";
+            D.Log(ShowDebugLog, "{0} is {1} path to {2}. Start = {3}, Destination = {4}.", Name, replot, ApTarget.FullName, start, ApTarget.Position);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
             //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points
             Path path = ABPath.Construct(start, ApTarget.Position, null);
 
-            // Node qualifying constraint instance that checks that nodes are walkable, and within the seeker-specified
-            // max search distance. Tags and area testing are turned off, primarily because I don't yet understand them
+            // Node qualifying constraint that checks that nodes are walkable, and within the seeker-specified max search distance. 
             NNConstraint constraint = new NNConstraint();
-            constraint.constrainTags = true;
-            if (constraint.constrainTags) {
-                //D.Log(ShowDebugLog, "Pathfinding's Tag constraint activated.");
-            }
-            else {
-                //D.Log(ShowDebugLog, "Pathfinding's Tag constraint deactivated.");
-            }
-
-            constraint.constrainDistance = false;    // default is true // experimenting with no constraint
-            if (constraint.constrainDistance) {
-                //D.Log(ShowDebugLog, "Pathfinding's MaxNearestNodeDistance constraint activated. Value = {0}.", AstarPath.active.maxNearestNodeDistance);
-            }
-            else {
-                //D.Log(ShowDebugLog, "Pathfinding's MaxNearestNodeDistance constraint deactivated.");
-            }
+            constraint.constrainTags = true;            // default is true
+            constraint.constrainDistance = false;       // default is true // UNCLEAR true brings maxNearestNodeDistance into play
+            constraint.constrainArea = false;           // default = false
+            constraint.constrainWalkability = true;     // default = true
+            constraint.walkable = true;                 // default is true
             path.nnConstraint = constraint;
 
-            // these penalties are applied dynamically to the cost when the tag is encountered in a node. The penalty on the node itself is always 0
-            var tagPenalties = new int[32];
-            tagPenalties[Topography.OpenSpace.AStarTagValue()] = 0; //tagPenalties[(int)Topography.OpenSpace] = 0;
-            tagPenalties[Topography.Nebula.AStarTagValue()] = 400000;   //tagPenalties[(int)Topography.Nebula] = 400000;
-            tagPenalties[Topography.DeepNebula.AStarTagValue()] = 800000;   //tagPenalties[(int)Topography.DeepNebula] = 800000;
-            tagPenalties[Topography.System.AStarTagValue()] = 5000000;  //tagPenalties[(int)Topography.System] = 5000000;
-            _seeker.tagPenalties = tagPenalties;
-
+            path.Claim(this);
             _seeker.StartPath(path);
             // this simple default version uses a constraint that has tags enabled which made finding close nodes problematic
             //_seeker.StartPath(startPosition, targetPosition); 
         }
 
-        private void RegenerateApCourse() {
-            _isApCourseReplotting = true;
-            GenerateApCourse();
+        private void ReplotPath() {
+            _isPathReplotting = true;
+            PlotPath();
         }
 
         // Note: No longer RefreshingNavigationalValues as I've eliminated _courseProgressCheckPeriod
         // since there is very little cost to running EngageCourseToTarget every frame.
 
         /// <summary>
-        /// Resets the values used when re-plotting a course.
+        /// Resets the values used when re-plotting a path.
         /// </summary>
-        private void ResetApCourseReplotValues() {
-            _apTgtPositionAtLastCoursePlot = ApTarget.Position;
-            _isApCourseReplotting = false;
+        private void ResetPathReplotValues() {
+            _apTgtPositionAtLastPathPlot = ApTarget.Position;
+            _isPathReplotting = false;
         }
 
         #endregion
@@ -2523,7 +3638,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
         private void Unsubscribe() {
             _subscriptions.ForAll(s => s.Dispose());
             _subscriptions.Clear();
-            _seeker.pathCallback -= ApCoursePlotCompletedEventHandler;
+            _seeker.pathCallback -= PathPlotCompletedEventHandler;
+            _seeker.postProcessPath -= PathPostProcessingEventHandler;
         }
 
         public override string ToString() {
@@ -2532,8 +3648,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
         #region Debug
 
-        [System.Diagnostics.Conditional("DEBUG_WARN")]
-        private void ValidateItemWithinSystem(SystemItem system, INavigable item) {
+        private void __ValidateItemWithinSystem(SystemItem system, INavigable item) {
             float systemRadiusSqrd = system.Radius * system.Radius;
             float itemDistanceFromSystemCenterSqrd = Vector3.SqrMagnitude(item.Position - system.Position);
             if (itemDistanceFromSystemCenterSqrd > systemRadiusSqrd) {
@@ -2541,21 +3656,49 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
             }
         }
 
-        // UNCLEAR course.path contains nodes not contained in course.vectorPath?
-        [System.Diagnostics.Conditional("DEBUG_LOG")]
-        private void __PrintNonOpenSpaceNodes(Path course) {
-            var nonOpenSpaceNodes = course.path.Where(node => node.Tag != (uint)MyAStarPointGraph.openSpaceTagMask);
-            if (nonOpenSpaceNodes.Any()) {
-                nonOpenSpaceNodes.ForAll(node => {
-                    D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
+        /// <summary>
+        /// Prints info about the nodes of the AstarPath course.
+        /// <remarks>The course the fleet follows is actually derived from path.VectorPath rather than path.path's collection
+        /// of nodes that are printed here. The Seeker's StartEndModifier determines whether the closest node to the start 
+        /// position is included or simply replaced by the exact start position.</remarks>
+        /// </summary>
+        /// <param name="path">The course.</param>
+        private void __ReportPathNodes(Path path) {
+            if (path.path.Any()) {
+                float startToFirstNodeDistance = Vector3.Distance(Position, (Vector3)path.path[0].position);
+                D.Log(ShowDebugLog, "{0}'s Destination is {1} at {2}. Start is {3} with Topography {4}. Distance to first AStar Node: {5:0.#}.",
+                    Name, ApTarget.FullName, ApTarget.Position, Position, _fleet.Topography.GetValueName(), startToFirstNodeDistance);
+                float cumNodePenalties = 0F;
+                string distanceFromPrevNodeMsg = string.Empty;
+                GraphNode prevNode = null;
+                path.path.ForAll(node => {
+                    Vector3 nodePosition = (Vector3)node.position;
+                    if (prevNode != null) {
+                        distanceFromPrevNodeMsg = ", distanceFromPrevNode {0:0.#}".Inject(Vector3.Distance(nodePosition, (Vector3)prevNode.position));
+                    }
                     Topography topographyFromTag = __GetTopographyFromAStarTag(node.Tag);
-                    D.Warn("Node at {0} has Topography {1}, penalty = {2}.", (Vector3)node.position, topographyFromTag.GetValueName(), _seeker.tagPenalties[topographyFromTag.AStarTagValue()]);
+                    D.Log(ShowDebugLog, "{0}'s Node at {1} has Topography {2}, penalty {3}{4}.",
+                        Name, nodePosition, topographyFromTag.GetValueName(), (int)path.GetTraversalCost(node), distanceFromPrevNodeMsg);
+                    cumNodePenalties += path.GetTraversalCost(node);
+                    prevNode = node;
                 });
+                float lastNodeToDestDistance = Vector3.Distance((Vector3)prevNode.position, ApTarget.Position);
+                D.Log(ShowDebugLog, "{0}'s distance from last AStar Node to Destination: {1:0.#}.", Name, lastNodeToDestDistance);
+
+                // calc length of path in units scaled by same factor as used in the rest of the system
+                float unitLength = path.GetTotalLength();
+                float lengthCost = unitLength * Int3.Precision;
+                float totalCost = lengthCost + cumNodePenalties;
+                D.Log(ShowDebugLog, "{0}'s Path Costs: LengthInUnits = {1:0.#}, LengthCost = {2:0.}, CumNodePenalties = {3:0.}, TotalCost = {4:0.}.",
+                    Name, unitLength, lengthCost, cumNodePenalties, totalCost);
+            }
+            else {
+                D.Warn("{0}'s course from {1} to {2} at {3} has no AStar Nodes.", Name, Position, ApTarget.FullName, ApTarget.Position);
             }
         }
 
         private Topography __GetTopographyFromAStarTag(uint tag) {
-            int aStarTagValue = (int)Mathf.Log((int)tag, 2F);
+            uint aStarTagValue = tag;    // (int)Mathf.Log((int)tag, 2F);
             if (aStarTagValue == Topography.OpenSpace.AStarTagValue()) {
                 return Topography.OpenSpace;
             }
@@ -2569,7 +3712,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
                 return Topography.System;
             }
             else {
-                D.Error("No match for AStarTagValue {0}. Tag: {1}.", aStarTagValue, tag);
+                D.Error("No match for AStarTagValue {0}.", aStarTagValue);
                 return Topography.None;
             }
         }
@@ -3415,7 +4558,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
     #region IShipNavigable Members
 
     public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-        float innerShellRadius = Data.UnitMaxFormationRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of formation
+        float innerShellRadius = UnitMaxFormationRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of formation
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
@@ -3424,24 +4567,33 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmdItem, ICameraFollowable {
 
     #region IFormationMgrClient Members
 
-    public override void PositionElementInFormation(IUnitElementItem element, Vector3 stationOffset) {
+    /// <summary>
+    /// Positions the element in formation. This FleetCmd version assigns a FleetFormationStation to the element (ship) after
+    /// removing the existing station, if any. The ship will then assume its station by moving to its location when ordered.
+    /// If this Cmd client is not yet operational meaning the fleet is being deployed for the first time, the ship will
+    /// be placed at the station's location.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="stationSlotInfo">The station slot information.</param>
+    public override void PositionElementInFormation(IUnitElement element, FormationStationSlotInfo stationSlotInfo) {
         ShipItem ship = element as ShipItem;
 
         if (!IsOperational) {
             // If not operational, this positioning is occurring during construction so place the ship now where it belongs
-            base.PositionElementInFormation(element, stationOffset);
+            base.PositionElementInFormation(element, stationSlotInfo);
         }
 
         FleetFormationStation station = ship.FormationStation;
         if (station != null) {
             // the ship already has a formation station so get rid of it
-            //D.Log(ShowDebugLog, "{0} is removing and destroying old FormationStation.", ship.FullName);
+            D.Log(ShowDebugLog, "{0} is removing and despawning old {1}.", ship.FullName, typeof(FleetFormationStation).Name);
             ship.FormationStation = null;
-            Destroy(station);
+            station.AssignedShip = null;
+            // FormationMgr will have already removed stationInfo from occupied list if present //FormationMgr.ReturnSlotAsAvailable(ship, station.StationInfo);
+            MyPoolManager.Instance.DespawnFormationStation(station.transform);
         }
-        //D.Log(ShowDebugLog, "{0} is adding a new FormationStation.", ship.FullName);
-        Vector3 localOffset = transform.InverseTransformDirection(stationOffset);
-        station = UnitFactory.Instance.MakeFleetFormationStation(this, localOffset);
+        //D.Log(ShowDebugLog, "{0} is adding a new {1} with SlotID {2}.", FullName, typeof(FleetFormationStation).Name, stationSlotInfo.SlotID.GetValueName());
+        station = UnitFactory.Instance.MakeInstance(this, stationSlotInfo);
         station.AssignedShip = ship;
         ship.FormationStation = station;
     }

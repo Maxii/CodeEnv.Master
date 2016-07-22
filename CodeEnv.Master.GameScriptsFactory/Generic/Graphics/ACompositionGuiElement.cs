@@ -60,15 +60,19 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
     #endregion
 
     protected void PopulateElementWidgets() {
+        PopulateIcon();
+        _label.text = GetTextForCategory();
+    }
+
+    private void PopulateIcon() {
+        //D.Log("{0} populating Icon. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetValueName());
         _sprite.atlas = IconInfo.AtlasID.GetAtlas();
         _sprite.spriteName = IconInfo.Filename;
         _sprite.color = IconInfo.Color.ToUnityColor();
-        //D.Log("{0}.PopulateElementWidgets() called. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetValueName());
         //sprite size and placement are preset
-        _label.text = GetCategoryName();
     }
 
-    protected abstract string GetCategoryName();
+    protected abstract string GetTextForCategory();
 
     public override void Reset() {
         _iconInfo = default(IconInfo);

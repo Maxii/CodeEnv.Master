@@ -27,11 +27,11 @@ using CodeEnv.Master.GameContent;
 public class SettlementsTableWindow : ACommandsTableWindow {
 
     protected override AItemReport GetUserReportFor(AItem item) {
-        return (item as SettlementCmdItem).GetUserReport();
+        return (item as SettlementCmdItem).UserReport;
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return _gameMgr.UserPlayerKnowledge.Settlements.Cast<AItem>();
+        return _gameMgr.UserAIManager.Knowledge.Settlements.Cast<AItem>();
     }
 
     #region Sorting

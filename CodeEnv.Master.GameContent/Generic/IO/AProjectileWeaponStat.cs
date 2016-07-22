@@ -47,7 +47,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
-        /// <param name="baseRangeDistance">The base (no owner multiplier applied) range distance in units.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
@@ -55,8 +54,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, float baseRangeDistance, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, baseRangeDistance, deliveryVehicleStrength, reloadPeriod, damagePotential) {
+            float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
             D.Assert(ordnanceMaxSpeed > Constants.ZeroF);
             D.Assert(ordnanceMass > Constants.ZeroF);
             D.Assert(ordnanceDrag > Constants.ZeroF);

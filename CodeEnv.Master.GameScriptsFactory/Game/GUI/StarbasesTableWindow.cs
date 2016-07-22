@@ -27,11 +27,11 @@ using CodeEnv.Master.GameContent;
 public class StarbasesTableWindow : ACommandsTableWindow {
 
     protected override AItemReport GetUserReportFor(AItem item) {
-        return (item as StarbaseCmdItem).GetUserReport();
+        return (item as StarbaseCmdItem).UserReport;
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return _gameMgr.UserPlayerKnowledge.Starbases.Cast<AItem>();
+        return _gameMgr.UserAIManager.Knowledge.Starbases.Cast<AItem>();
     }
 
     #region Sorting

@@ -35,7 +35,6 @@ public class StarCtxControl : ACtxControl {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Patrol,
                                                                                         FleetDirective.Guard,
-                                                                                        FleetDirective.CloseOrbit,
                                                                                         FleetDirective.Explore };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -52,7 +51,7 @@ public class StarCtxControl : ACtxControl {
         _starMenuOperator = star;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_starMenuOperator.IsSelected) {
             D.Assert(_starMenuOperator == selected as StarItem);
             return true;
@@ -62,25 +61,23 @@ public class StarCtxControl : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
                 // A fleet may explore a star(system) if not at war and not already explored
-                var explorableSystem = _starMenuOperator.System as IFleetExplorable;
+                var explorableSystem = _starMenuOperator.ParentSystem as IFleetExplorable;
                 return explorableSystem.IsFullyExploredBy(_user) || !explorableSystem.IsExploringAllowedBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 // A fleet may move to any star without regard to Diplo state
                 return false;
             case FleetDirective.Patrol:
-                return !(_starMenuOperator.System as IPatrollable).IsPatrollingAllowedBy(_user);
+                return !(_starMenuOperator.ParentSystem as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_starMenuOperator.System as IGuardable).IsGuardingAllowedBy(_user);
-            case FleetDirective.CloseOrbit:
-                return !(_starMenuOperator as IShipCloseOrbitable).IsCloseOrbitAllowedBy(_user);
+                return !(_starMenuOperator.ParentSystem as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -92,14 +89,14 @@ public class StarCtxControl : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _starMenuOperator;
         if (directive == FleetDirective.Explore || directive == FleetDirective.Guard || directive == FleetDirective.Patrol) {
-            target = _starMenuOperator.System as IFleetNavigable;
+            target = _starMenuOperator.ParentSystem as IFleetNavigable;
         }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);

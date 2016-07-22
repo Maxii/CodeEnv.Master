@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
-        public IUnitAttackableTarget Target { get; private set; }
+        public IUnitAttackable Target { get; private set; }
 
         /// <summary>
         /// The source of this order.
@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public BaseOrder(BaseDirective directive, OrderSource source, IUnitAttackableTarget target = null) {
+        public BaseOrder(BaseDirective directive, OrderSource source, IUnitAttackable target = null) {
             D.Assert(source != OrderSource.Captain);
             Directive = directive;
             Source = source;

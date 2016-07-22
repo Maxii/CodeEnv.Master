@@ -32,7 +32,9 @@ public class SystemCtxControl_AI : ACtxControl {
                                                                                         FleetDirective.Move,
                                                                                         FleetDirective.Guard,
                                                                                         FleetDirective.Explore,
-                                                                                        FleetDirective.Patrol};
+                                                                                        FleetDirective.Patrol
+                                                                                      };
+
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
@@ -51,7 +53,7 @@ public class SystemCtxControl_AI : ACtxControl {
         D.Assert(_settlement != null);
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
             D.Assert(_systemMenuOperator == selected as SystemItem);
             return true;
@@ -61,13 +63,13 @@ public class SystemCtxControl_AI : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_settlement as IUnitAttackableTarget).IsAttackingAllowedBy(_user)
+                return !(_settlement as IUnitAttackable).IsAttackingAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Explore:
                 var explorableSystem = _systemMenuOperator as IFleetExplorable;
@@ -90,10 +92,10 @@ public class SystemCtxControl_AI : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = directive == FleetDirective.Attack ? _settlement as IFleetNavigable : _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

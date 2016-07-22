@@ -233,11 +233,11 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     /// <remarks>remote* = an item that is not the item that owns this menu.</remarks>
     /// <returns></returns>
-    public bool TryShowContextMenu() {
+    public bool AttemptShowContextMenu() {
         bool toShow = false;
         var selectedItem = SelectionManager.Instance.CurrentSelection;
         if (selectedItem != null) {
-            if (TryIsSelectedItemMenuOperator(selectedItem)) {
+            if (IsSelectedItemMenuOperator(selectedItem)) {
                 // the item that operates this context menu is selected
                 _menuOpenedMode = CtxMenuOpenedMode.MenuOperatorIsSelected;
                 _remoteUserOwnedSelectedItem = null;
@@ -289,7 +289,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     /// <param name="selected">The Item currently selected.</param>
     /// <returns></returns>
-    protected virtual bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected virtual bool IsSelectedItemMenuOperator(ISelectable selected) {
         return false;
     }
 

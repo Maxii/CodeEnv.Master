@@ -68,7 +68,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     /// <summary>
     /// Optimized SendMessage replacement.
-    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in classes that are a base class of a derived class! 
+    /// Do not interpret this to mean a base class of this instance. I mean a base class period. This is noted in GetMethods() 
     /// below, but NOT in the comparable GetMethod() documentation!
     /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
@@ -227,11 +228,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     private float _timeEnteredState;
 
     /// <summary>
-    /// Gets the amount of time spent in the current state
+    /// Gets the number of seconds spent in the current state.
     /// </summary>
-    /// <value>
-    /// The number of seconds in the current state
-    /// </value>
     public float timeInCurrentState {
         get {
             return Time.time - _timeEnteredState;
@@ -422,7 +420,6 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
-
         }
 
         ChangingState();    // my addition to keep lastState in sync
@@ -501,7 +498,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// FInds or creates a delegate for the current state and Method name (aka CurrentState_OnClick), or
     /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
     /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than IEnumerator.
-    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in classes that are a base class of a derived class! 
+    /// Do not interpret this to mean a base class of this instance. I mean a base class period. This is noted in GetMethods() 
     /// below, but NOT in the comparable GetMethod() documentation!
     /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>

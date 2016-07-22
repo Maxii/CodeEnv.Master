@@ -55,7 +55,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
         D.Warn(!callingMethodName.StartsWith("Upon"), "Calling method name: {0) should start with 'Upon'.", callingMethodName);
         var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
-        D.Log(ShowDebugLog, "{0} looking for method signature {1}.", Data.Name, message);
+        D.Log(ShowDebugLog, "{0} looking for method signature {1}.", Name, message);
         return SendMessageEx(message, param);
     }
 
@@ -66,7 +66,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     /// <summary>
     /// Optimized SendMessage replacement.
-    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in classes that are a base class of a derived class! 
+    /// Do not interpret this to mean a base class of this instance. I mean a base class period. This is noted in GetMethods() 
     /// below, but NOT in the comparable GetMethod() documentation!
     /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
@@ -264,9 +265,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     // is changed before item2's state, that DOES NOT mean item1's enterState will be called before item2's enterState.
     // ***********************************************************************************************************
 
-    public object CurrentState {
+    protected object CurrentState {
         get { return state.currentState; }
-        protected set {
+        set {
             D.Assert(!state.Equals(value)); // a state object and a state's currentState should never be equal
             __ValidateNoNewStateSetDuringEnterState(value);
             ChangingState();
@@ -455,7 +456,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
     /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
     /// IEnumerator.
-    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in classes that are a base class of a derived class! 
+    /// Do not interpret this to mean a base class of this instance. I mean a base class period. This is noted in GetMethods() 
     /// below, but NOT in the comparable GetMethod() documentation!
     /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>

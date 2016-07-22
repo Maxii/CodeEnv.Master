@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISensorDetectableItem.cs
-// Interface for Items that are detectable by sensors.
+// File: ISensorDetectable.cs
+// Interface for Items that are detectable by SensorRangeMonitors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,15 +20,20 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for Items that are detectable by sensors.
+    /// Interface for Items that are detectable by SensorRangeMonitors.
     /// </summary>
     public interface ISensorDetectable : IDetectable {
 
+        /// <summary>
+        /// Occurs when [owner changed].
+        /// <remarks>OK for client to have access to this, even if they don't have access
+        /// to Owner info as long as they use the event to properly check for Owner access.</remarks>
+        /// </summary>
         event EventHandler ownerChanged;
 
-        void HandleDetectionBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat);
 
-        void HandleDetectionLostBy(IUnitCmdItem cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat);
     }
 }
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ISelectable.cs
-// Interface that supports the ability to select a game object.
+// Interface for Items that can be selected by the User.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,10 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface that supports the ability to select a game object.
+    /// Interface for Items that can be selected by the User.
     /// </summary>
     public interface ISelectable {
 
-        /// <summary>
-        /// Gets or sets a value indicating whether this object [is selected].
-        /// </summary>
         bool IsSelected { get; set; }
 
         string DisplayName { get; }

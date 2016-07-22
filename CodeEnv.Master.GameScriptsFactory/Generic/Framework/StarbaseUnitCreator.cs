@@ -29,6 +29,8 @@ using UnityEngine;
 /// </summary>
 public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCategory, FacilityData, FacilityHullStat, StarbaseCmdItem> {
 
+    public DebugBaseFormation formation = DebugBaseFormation.Random;
+
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override FacilityHullStat CreateElementHullStat(FacilityHullCategory hullCat, string elementName) {
@@ -96,8 +98,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
     protected override bool DeployUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
-        //PathfindingManager.Instance.Graph.UpdateGraph(_command); 
-        //TODO Not yet implemented
+        PathfindingManager.Instance.Graph.UpdateGraph(_command);
         return true;
     }
 
@@ -130,11 +131,28 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCatego
         return hullCategory.__MaxMissileWeapons();
     }
 
+    private Formation __ConvertFormation(DebugBaseFormation debugFormation) {
+        switch (debugFormation) {
+            case DebugBaseFormation.Globe:
+                return Formation.Globe;
+            case DebugBaseFormation.Diamond:
+                return Formation.Diamond;
+            case DebugBaseFormation.Plane:
+                return Formation.Plane;
+            case DebugBaseFormation.Spread:
+                return Formation.Spread;
+            case DebugBaseFormation.Random:
+                return Enums<Formation>.GetRandomExcept(default(Formation), Formation.Wedge);
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugFormation));
+        }
+    }
+
     private UnitCmdStat __MakeCmdStat() {
         float maxHitPts = 10F;
-        int maxCmdEffect = 100;
-        Formation formation = Enums<Formation>.GetRandomExcept(default(Formation), Formation.Wedge);
-        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, formation);
+        float maxCmdEffect = 1.0F;
+        Formation chosenFormation = __ConvertFormation(formation);
+        return new UnitCmdStat(UnitName, maxHitPts, maxCmdEffect, chosenFormation);
     }
 
     private CameraUnitCmdStat __MakeCmdCameraStat(float maxElementRadius) {

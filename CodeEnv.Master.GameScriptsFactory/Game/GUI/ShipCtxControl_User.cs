@@ -30,7 +30,7 @@ using UnityEngine;
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[] {  ShipDirective.Join,
-                                                                                        ShipDirective.Withdraw,
+                                                                                        ShipDirective.Disengage,
                                                                                         ShipDirective.Disband,
                                                                                         ShipDirective.Scuttle };
     protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
@@ -41,6 +41,14 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
 
+    private bool IsShipDisengageOrderDisabled {
+        get {
+            return _shipMenuOperator.Data.CombatStance == ShipCombatStance.Disengage ||
+                _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disengage) ||
+            !_shipMenuOperator.Command.RequestPermissionToWithdraw(_shipMenuOperator, ShipItem.WithdrawPurpose.Disengage);
+        }
+    }
+
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_User(ShipItem ship)
@@ -48,7 +56,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         _shipMenuOperator = ship;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_shipMenuOperator.IsSelected) {
             D.Assert(_shipMenuOperator == selected as ShipItem);
             return true;
@@ -58,11 +66,13 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(ShipDirective directive) {
         switch (directive) {
+            case ShipDirective.Scuttle:
+                return _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+            case ShipDirective.Disengage:
+                return IsShipDisengageOrderDisabled;
             case ShipDirective.Join:
-            case ShipDirective.Withdraw:
             //TODO
             case ShipDirective.Disband:
-            case ShipDirective.Scuttle:
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -85,7 +95,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             case ShipDirective.Disband:
                 targets = _userKnowledge.MyBases.Cast<INavigable>();
                 return true;
-            case ShipDirective.Withdraw:
+            case ShipDirective.Disengage:
             case ShipDirective.Scuttle:
                 targets = Enumerable.Empty<INavigable>();
                 return false;
@@ -100,16 +110,19 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
-        IssueShipMenuOperatorOrder(itemID);
+        IssueUserShipMenuOperatorOrder(itemID);
     }
 
-    private void IssueShipMenuOperatorOrder(int itemID) {
+    private void IssueUserShipMenuOperatorOrder(int itemID) {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
+        D.Assert(directive == ShipDirective.Disband || directive == ShipDirective.Join || directive == ShipDirective.Disengage
+            || directive == ShipDirective.Scuttle); // HACK
         INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target as IShipNavigable);
+        bool toNotifyCmd = false;
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, toNotifyCmd, target as IShipNavigable);
     }
 
     public override string ToString() {

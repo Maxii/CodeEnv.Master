@@ -23,7 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipMoveOrder : ShipOrder {
 
-        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}, Speed: {3}, Fleetwide: {4}, StandingOrder: {5}, Standoff: {6:0.#}.";
+        private const string ToStringFormat = @"{0}: Directive = {1}, Source = {2}, Target = {3}, Speed = {4}, Fleetwide = {5}, 
+            FollowonOrder = {6}, StandingOrder = {7}, Standoff = {8:0.#}.";
 
         /// <summary>
         /// The speed of this move.
@@ -48,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
         /// from the target it should strive to achieve.</param>
         public ShipMoveOrder(OrderSource source, IShipNavigable target, Speed speed, bool isFleetwide, float targetStandoffDistance)
-            : base(ShipDirective.Move, source, target) {
+            : base(ShipDirective.Move, source, false, target) {
             Utility.ValidateNotNull(target);
             D.Assert(speed != Speed.None);
             Utility.ValidateNotNegative(targetStandoffDistance);
@@ -58,9 +59,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.FullName : "null";
-            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "null";
-            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(), IsFleetwide, standingOrderText, TargetStandoffDistance);
+            string targetText = Target != null ? Target.FullName : "none";
+            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
+            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(),
+                IsFleetwide, followonOrderText, standingOrderText, TargetStandoffDistance);
         }
 
     }

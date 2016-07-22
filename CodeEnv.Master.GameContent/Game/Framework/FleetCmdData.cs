@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with an FleetCmdItem.
     /// </summary>
-    public class FleetCmdData : AUnitCmdItemData {
+    public class FleetCmdData : AUnitCmdData {
 
         private INavigable _target;
         public INavigable Target {
@@ -88,6 +88,10 @@ namespace CodeEnv.Master.GameContent {
             set { base.HQElementData = value; }
         }
 
+        public new FleetInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FleetInfoAccessController; } }
+
+        public new IEnumerable<ShipData> ElementsData { get { return base.ElementsData.Cast<ShipData>(); } }
+
         public new CameraFleetCmdStat CameraStat { get { return base.CameraStat as CameraFleetCmdStat; } }
 
         /// <summary>
@@ -98,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmdItem fleetCmd, Player owner, CameraFleetCmdStat cameraStat, UnitCmdStat cmdStat)
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, CameraFleetCmdStat cameraStat, UnitCmdStat cmdStat)
             : this(fleetCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
@@ -110,16 +114,20 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmdItem fleetCmd, Player owner, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(fleetCmd, owner, cameraStat, passiveCMs, cmdStat) {
         }
 
-        public override void AddElement(AUnitElementItemData elementData) {
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new FleetInfoAccessController(this);
+        }
+
+        public override void AddElement(AUnitElementData elementData) {
             base.AddElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
         }
 
-        public override void RemoveElement(AUnitElementItemData elementData) {
+        public override void RemoveElement(AUnitElementData elementData) {
             base.RemoveElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
         }
@@ -148,7 +156,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override void Subscribe(AUnitElementItemData elementData) {
+        protected override void Subscribe(AUnitElementData elementData) {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             ShipData shipData = elementData as ShipData;
@@ -156,7 +164,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
-            int elementCount = UnitComposition.GetTotalElementsCount();
+            int elementCount = unitComposition.GetTotalElementsCount();
             D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 22) {
                 return FleetCategory.Armada;
@@ -185,6 +193,17 @@ namespace CodeEnv.Master.GameContent {
 
         private void ShipFullSpeedPropChangedHandler() {
             RefreshFullSpeed();
+        }
+
+        protected override void HQElementDataPropChangingHandler(AUnitElementData newHQElementData) {
+            base.HQElementDataPropChangingHandler(newHQElementData);
+            (newHQElementData as ShipData).CombatStance = ShipCombatStance.Defensive;
+        }
+
+        protected override void HQElementDataPropChangedHandler() {
+            base.HQElementDataPropChangedHandler();
+            D.Assert(HQElementData.CombatStance == ShipCombatStance.Defensive, "{0} as HQ must be {1}.{2}.",
+                HQElementData.FullName, typeof(ShipCombatStance).Name, ShipCombatStance.Defensive.GetValueName());
         }
 
         #endregion

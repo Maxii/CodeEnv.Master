@@ -26,33 +26,33 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipDisplayInfoFactory : AElementItemDisplayInfoFactory<ShipReport, ShipDisplayInfoFactory> {
 
-        private static ContentID[] _contentIDsToDisplay = new ContentID[] {
-            ContentID.Name,
-            ContentID.ParentName,
-            ContentID.Owner,
-            ContentID.Category,
-            ContentID.Health,
-            ContentID.Defense,
-            ContentID.Offense,
-            ContentID.WeaponsRange,
-            ContentID.SensorRange,
-            ContentID.Science,
-            ContentID.Culture,
-            ContentID.NetIncome,
-            ContentID.Mass,
+        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
+            AccessControlInfoID.Name,
+            AccessControlInfoID.ParentName,
+            AccessControlInfoID.Owner,
+            AccessControlInfoID.Category,
+            AccessControlInfoID.Health,
+            AccessControlInfoID.Defense,
+            AccessControlInfoID.Offense,
+            AccessControlInfoID.WeaponsRange,
+            //AccessControlInfoID.SensorRange,  // makes no sense
+            AccessControlInfoID.Science,
+            AccessControlInfoID.Culture,
+            AccessControlInfoID.NetIncome,
+            AccessControlInfoID.Mass,
 
-            ContentID.Target,
-            ContentID.TargetDistance,
-            ContentID.CombatStance,
-            ContentID.CurrentSpeed,
-            ContentID.FullSpeed,
-            ContentID.MaxTurnRate,
+            AccessControlInfoID.Target,
+            AccessControlInfoID.TargetDistance,
+            AccessControlInfoID.CombatStance,
+            AccessControlInfoID.CurrentSpeed,
+            AccessControlInfoID.FullSpeed,
+            AccessControlInfoID.MaxTurnRate,
 
-            ContentID.CameraDistance,
-            ContentID.IntelState
+            AccessControlInfoID.CameraDistance,
+            AccessControlInfoID.IntelState
         };
 
-        protected override ContentID[] ContentIDsToDisplay { get { return _contentIDsToDisplay; } }
+        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private ShipDisplayInfoFactory() {
             Initialize();
@@ -60,41 +60,41 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(ContentID contentID, ShipReport report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ShipReport report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.Category:
+                switch (infoID) {
+                    case AccessControlInfoID.Category:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.Category != ShipHullCategory.None ? report.Category.GetValueName() : _unknown);
                         break;
-                    case ContentID.Target:
+                    case AccessControlInfoID.Target:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.Target != null ? report.Target.DisplayName : _unknown);
                         break;
-                    case ContentID.TargetDistance:
+                    case AccessControlInfoID.TargetDistance:
                         isSuccess = true;
                         float? targetDistance = CalcTargetDistance(report.Target, report.Position);
-                        colorizedText = _phrase.Inject(targetDistance.HasValue ? GetFormat(contentID).Inject(targetDistance.Value) : _unknown);
+                        colorizedText = _phrase.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : _unknown);
                         break;
-                    case ContentID.CurrentSpeed:
+                    case AccessControlInfoID.CurrentSpeed:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CurrentSpeed.HasValue ? GetFormat(contentID).Inject(report.CurrentSpeed.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.CurrentSpeed.HasValue ? GetFormat(infoID).Inject(report.CurrentSpeed.Value) : _unknown);
                         break;
-                    case ContentID.FullSpeed:
+                    case AccessControlInfoID.FullSpeed:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.FullSpeed.HasValue ? GetFormat(contentID).Inject(report.FullSpeed.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.FullSpeed.HasValue ? GetFormat(infoID).Inject(report.FullSpeed.Value) : _unknown);
                         break;
-                    case ContentID.MaxTurnRate:
+                    case AccessControlInfoID.MaxTurnRate:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.MaxTurnRate.HasValue ? GetFormat(contentID).Inject(report.MaxTurnRate.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.MaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.MaxTurnRate.Value) : _unknown);
                         break;
-                    case ContentID.CombatStance:
+                    case AccessControlInfoID.CombatStance:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.CombatStance != ShipCombatStance.None ? report.CombatStance.GetValueName() : _unknown);
                         break;
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }
             }
             return isSuccess;

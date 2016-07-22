@@ -55,8 +55,11 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        private IList<PlanetoidData> _allPlanetoidData = new List<PlanetoidData>();
+        public new SystemInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SystemInfoAccessController; } }
 
+        public IEnumerable<PlanetoidData> AllPlanetoidData { get { return _allPlanetoidData; } }
+
+        private IList<PlanetoidData> _allPlanetoidData = new List<PlanetoidData>();
         private IDictionary<PlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
         private IList<IDisposable> _starSubscriptions;
         private IList<IDisposable> _settlementSubscriptions;
@@ -67,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="system">The system.</param>
         /// <param name="cameraStat">The camera stat.</param>
-        public SystemData(ISystemItem system, CameraFocusableStat cameraStat)
+        public SystemData(ISystem system, CameraFocusableStat cameraStat)
             : this(system, cameraStat, TempGameValues.NoPlayer) { }
 
         /// <summary>
@@ -76,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="system">The system.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public SystemData(ISystemItem system, CameraFocusableStat cameraStat, Player owner)
+        public SystemData(ISystem system, CameraFocusableStat cameraStat, Player owner)
             : base(system, owner, cameraStat) {
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
             Topography = Topography.System;
@@ -107,6 +110,10 @@ namespace CodeEnv.Master.GameContent {
                 _settlementSubscriptions = new List<IDisposable>();
             }
             _settlementSubscriptions.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, SettlementOwnerPropChangedHandler));
+        }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new SystemInfoAccessController(this);
         }
 
         public void AddPlanetoid(PlanetoidData data) {

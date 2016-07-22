@@ -44,6 +44,7 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
     #region Event and Property Change Handlers
 
     private void GameStateChangedEventHandler(object sender, EventArgs e) {
+        LogEvent();
         GameState gameState = _gameMgr.CurrentState;
         if (gameState == GameState.BuildAndDeploySystems) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: false);

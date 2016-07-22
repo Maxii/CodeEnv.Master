@@ -153,7 +153,6 @@ public class SystemCreator : AMonoBase {
         SubscribeStaticallyOnce();
     }
 
-
     /// <summary>
     /// Subscribes this class using static event handler(s) to instance events exactly one time.
     /// </summary>
@@ -195,6 +194,7 @@ public class SystemCreator : AMonoBase {
     #endregion
 
     private void BuildDeployAndBeginSystemOperationsDuringStartup(GameState gameState) {
+        LogEvent();
         if (gameState == GameState.BuildAndDeploySystems) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: false);
             CreateStats();
@@ -555,7 +555,7 @@ public class SystemCreator : AMonoBase {
                     float depthReqdForMoonOrbitSlot = 2F * moon.ObstacleZoneRadius;
                     float endDepthForMoonOrbitSlot = startDepthForMoonOrbitSlot + depthReqdForMoonOrbitSlot;
                     if (endDepthForMoonOrbitSlot <= depthAvailForMoonOrbitsAroundPlanet) {
-                        moon.Name = planet.Data.Name + _moonLetters[slotIndex];
+                        moon.Name = planet.Name + _moonLetters[slotIndex];
                         GameTimeDuration orbitPeriod = _minMoonOrbitPeriod + (slotIndex * _moonOrbitPeriodIncrement);
                         var moonOrbitSlot = new OrbitData(planet.gameObject, startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet.IsMobile, orbitPeriod);
                         _generalFactory.InstallCelestialItemInOrbit(moon.gameObject, moonOrbitSlot);

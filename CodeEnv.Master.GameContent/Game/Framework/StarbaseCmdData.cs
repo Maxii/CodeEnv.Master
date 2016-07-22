@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a StarbaseCmdItem.
     /// </summary>
-    public class StarbaseCmdData : AUnitBaseCmdItemData {
+    public class StarbaseCmdData : AUnitBaseCmdData {
 
         private StarbaseCategory _category;
         public StarbaseCategory Category {
@@ -44,6 +44,8 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
+        public new StarbaseInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarbaseInfoAccessController; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class
         /// with no passive countermeasures.
@@ -52,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmdItem starbaseCmd, Player owner, CameraUnitCmdStat cameraStat, UnitCmdStat cmdStat)
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, CameraUnitCmdStat cameraStat, UnitCmdStat cmdStat)
             : this(starbaseCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
@@ -64,23 +66,27 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmdItem starbaseCmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(starbaseCmd, owner, cameraStat, passiveCMs, cmdStat) {
             __PopulateResourcesFromSector();
         }
 
-        public override void AddElement(AUnitElementItemData elementData) {
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new StarbaseInfoAccessController(this);
+        }
+
+        public override void AddElement(AUnitElementData elementData) {
             base.AddElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
         }
 
-        public override void RemoveElement(AUnitElementItemData elementData) {
+        public override void RemoveElement(AUnitElementData elementData) {
             base.RemoveElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
         }
 
         public StarbaseCategory GenerateCmdCategory(BaseComposition unitComposition) {
-            int elementCount = UnitComposition.GetTotalElementsCount();
+            int elementCount = unitComposition.GetTotalElementsCount();
             D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 8) {
                 return StarbaseCategory.TerritorialBase;

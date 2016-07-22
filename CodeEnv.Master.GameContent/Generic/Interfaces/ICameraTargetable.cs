@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ICameraTargetable.cs
-//  Interface containing values needed by a gameobject that is a target supporting camera movement.
+// Interface for objects that can be used as a target supporting camera movement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,13 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface containing values needed by a gameobject that is a target supporting camera movement.
+    /// Interface for objects that can be used as a target supporting camera movement.
     /// </summary>
     public interface ICameraTargetable {
 
         /// <summary>
         /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.  
-        /// e.g. - the camera should not know the object exists when it is not discernible by the human player.
+        /// e.g. - the camera should not know the object exists when it is not discernible by the User.
         /// </summary>
         bool IsCameraTargetEligible { get; }
 

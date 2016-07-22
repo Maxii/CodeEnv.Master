@@ -27,11 +27,11 @@ using CodeEnv.Master.GameContent;
 public class SystemsTableWindow : ATableWindow {
 
     protected override AItemReport GetUserReportFor(AItem item) {
-        return (item as SystemItem).GetUserReport();
+        return (item as SystemItem).UserReport;
     }
 
     protected override IEnumerable<AItem> GetItemsUserIsAwareOf() {
-        return _gameMgr.UserPlayerKnowledge.Systems.Cast<AItem>();
+        return _gameMgr.UserAIManager.Knowledge.Systems.Cast<AItem>();
     }
 
     #region Sorting Elements

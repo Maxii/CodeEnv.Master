@@ -25,25 +25,25 @@ using CodeEnv.Master.GameContent;
 public abstract class ACommandTableRowForm : ATableRowForm {
 
     protected override void AssignValueToNameGuiElement() {
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _nameLabel.text = report.ParentName != null ? report.ParentName : _unknown;
     }
 
     protected sealed override void AssignValueToCultureGuiElement() {
         base.AssignValueToCultureGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _cultureLabel.text = report.UnitCulture.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitCulture) : _unknown;
     }
 
     protected sealed override void AssignValueToDefensiveStrengthGuiElement() {
         base.AssignValueToDefensiveStrengthGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _defensiveStrengthElement.Strength = report.UnitDefensiveStrength;
     }
 
     protected sealed override void AssignValueToHealthGuiElement() {
         base.AssignValueToHealthGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _healthElement.Health = report.UnitHealth;
         _healthElement.CurrentHitPts = report.UnitCurrentHitPoints;
         _healthElement.MaxHitPts = report.UnitMaxHitPoints;
@@ -61,27 +61,27 @@ public abstract class ACommandTableRowForm : ATableRowForm {
 
     protected sealed override void AssignValueToLocationGuiElement() {
         base.AssignValueToLocationGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _locationElement.SectorIndex = report.SectorIndex;
         _locationElement.Position = report.Position;
     }
 
     protected sealed override void AssignValueToNetIncomeGuiElement() {
         base.AssignValueToNetIncomeGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _netIncomeElement.Income = report.UnitIncome;
         _netIncomeElement.Expense = report.UnitExpense;
     }
 
     protected sealed override void AssignValueToOffensiveStrengthGuiElement() {
         base.AssignValueToOffensiveStrengthGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _offensiveStrengthElement.Strength = report.UnitOffensiveStrength;
     }
 
     protected sealed override void AssignValueToScienceGuiElement() {
         base.AssignValueToScienceGuiElement();
-        var report = Report as ACmdReport;
+        var report = Report as AUnitCmdReport;
         _scienceLabel.text = report.UnitScience.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitScience) : _unknown;
     }
 

@@ -14,14 +14,23 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+
+    using System;
 
     /// <summary>
     /// Base Interface for Items that can be explored by ships and fleets.
     /// </summary>
     public interface IExplorable : INavigable {
 
-        Player Owner { get; }
+        /// <summary>
+        /// Occurs when InfoAccess rights change for a player on an item.
+        /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
+        /// </summary>
+        event EventHandler<InfoAccessChangedEventArgs> infoAccessChanged;
+
+        Player Owner_Debug { get; }
 
         /// <summary>
         /// Indicates whether this item has been fully explored by player.
@@ -39,6 +48,9 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         bool IsExploringAllowedBy(Player player);
 
+        bool TryGetOwner(Player requestingPlayer, out Player owner);
+
+        bool IsOwnerAccessibleTo(Player player);
 
     }
 }

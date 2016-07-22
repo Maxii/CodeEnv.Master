@@ -23,11 +23,15 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
-        Circle,
-
         Globe,
 
-        Wedge
+        Wedge,
+
+        Plane,
+
+        Diamond,
+
+        Spread
 
     }
 }

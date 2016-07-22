@@ -167,7 +167,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <returns></returns>
     public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
-        D.Assert(enemyTarget.Owner.IsEnemyOf(Weapon.Owner));
+        D.Assert(enemyTarget.IsAttackingAllowedBy(Weapon.Owner));
 
         firingSolution = null;
         if (!ConfirmInRangeForLaunch(enemyTarget)) {
@@ -212,22 +212,22 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         Vector3 vectorToTarget = enemyTarget.Position - turretPosition;
         Vector3 targetDirection = vectorToTarget.normalized;
         float targetDistance = vectorToTarget.magnitude;
-        RaycastHit hitInfo;
-        if (Physics.Raycast(turretPosition, targetDirection, out hitInfo, targetDistance, _defaultOnlyLayerMask)) {
-            var targetHit = hitInfo.transform.gameObject.GetSafeInterface<IElementAttackable>();
-            if (targetHit != null) {
-                if (targetHit == enemyTarget) {
+        RaycastHit raycastHitInfo;
+        if (Physics.Raycast(turretPosition, targetDirection, out raycastHitInfo, targetDistance, _defaultOnlyLayerMask)) {
+            var attackableTgtEncountered = raycastHitInfo.transform.gameObject.GetSafeInterface<IElementAttackable>();
+            if (attackableTgtEncountered != null) {
+                if (attackableTgtEncountered == enemyTarget) {
                     //D.Log("{0}: CheckLineOfSight({1}) found its target.", Name, enemyTarget.FullName);
                     return true;
                 }
-                if (targetHit.Owner.IsEnemyOf(Weapon.Owner)) {
-                    D.Log("{0}: CheckLineOfSight({1}) found interfering enemy target {2} on {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
+                if (attackableTgtEncountered.IsAttackingAllowedBy(Weapon.Owner)) {
+                    D.Log("{0}: CheckLineOfSight({1}) found interfering attackable target {2} on {3}.", Name, enemyTarget.FullName, attackableTgtEncountered.FullName, _gameTime.CurrentDate);
                     return false;
                 }
-                D.Log("{0}: CheckLineOfSight({1}) found interfering non-enemy target {2} on {3}.", Name, enemyTarget.FullName, targetHit.FullName, _gameTime.CurrentDate);
+                D.Log("{0}: CheckLineOfSight({1}) found interfering non-attackable target {2} on {3}.", Name, enemyTarget.FullName, attackableTgtEncountered.FullName, _gameTime.CurrentDate);
                 return false;
             }
-            D.Log("{0}: CheckLineOfSight({1}) didn't find target but found {2} on {3}.", Name, enemyTarget.FullName, hitInfo.transform.name, _gameTime.CurrentDate);
+            D.Log("{0}: CheckLineOfSight({1}) didn't find target but found {2} on {3}.", Name, enemyTarget.FullName, raycastHitInfo.transform.name, _gameTime.CurrentDate);
             return false;
         }
         //D.Log("{0}: CheckLineOfSight({1}) didn't find anything. Date: {2}.", Name, enemyTarget.FullName, _gameTime.CurrentDate);

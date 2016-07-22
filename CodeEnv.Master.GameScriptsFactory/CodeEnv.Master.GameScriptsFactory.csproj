@@ -38,6 +38,9 @@
       <HintPath>..\packages\morelinq.1.4.0\lib\net35\MoreLinq.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Pathfinding.JsonFx">
+      <HintPath>..\..\..\Plugins\AStarPlugins\JsonFx\Pathfinding.JsonFx.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
@@ -56,6 +59,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\FormationGenerator.cs" />
+    <Compile Include="Game\_Debug\FormationGridOrganizer.cs" />
     <Compile Include="Generic\Framework\AOrdnance.cs" />
     <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />
@@ -74,7 +79,6 @@
     <Compile Include="Generic\Framework\FleetUnitCreator.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
     <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
-    <Compile Include="Generic\Graphics\AMount.cs" />
     <Compile Include="Game\Gameplay\FacilityHull.cs" />
     <Compile Include="Generic\Graphics\AImageGuiElement.cs" />
     <Compile Include="Generic\Graphics\AGuiElement.cs" />
@@ -187,7 +191,7 @@
     <Compile Include="Game\GUI\StarbaseCompositionGuiElement.cs" />
     <Compile Include="Game\GUI\StarbasesTableWindow.cs" />
     <Compile Include="Game\GUI\HealthGuiElement.cs" />
-    <Compile Include="Generic\_Debug\RowElementIndexer.cs" />
+    <Compile Include="Generic\_Debug\ElementIndexer.cs" />
     <Compile Include="Generic\_Debug\RowOrganizer.cs" />
     <Compile Include="Game\GUI\SettlementsTableWindow.cs" />
     <Compile Include="Game\GUI\NetIncomeGuiElement.cs" />
@@ -224,6 +228,7 @@
     <Compile Include="Game\GUI\ShipCtxControl_AI.cs" />
     <Compile Include="Game\GUI\PlanetCtxControl.cs" />
     <Compile Include="Game\Gameplay\Missile.cs" />
+    <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenu.cs" />
@@ -233,7 +238,6 @@
     <Compile Include="ThirdParty\ContextMenu\CtxPopup.cs" />
     <Compile Include="Generic\IO\MyEventListener.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
-    <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
@@ -261,9 +265,9 @@
       <Name>AStar</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Plugins\GridFramework\GridFramework.csproj">
-      <Project>{2f5a6d85-040f-4ee6-a77f-d3e3b107a524}</Project>
-      <Name>GridFramework</Name>
+    <ProjectReference Include="..\..\..\Plugins\GridFramework2\GridFramework2.csproj">
+      <Project>{a8831d30-df32-47b0-8070-bf23e8febe53}</Project>
+      <Name>GridFramework2</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\Ngui\Ngui.csproj">
       <Project>{ac0f8b23-dd41-4bab-a967-aa2c33bb1d0b}</Project>
@@ -296,7 +300,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Deferred\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>

@@ -29,16 +29,16 @@ public class CollisionDetectionMonitor : AColliderMonitor {
 
     private const string NameFormat = "{0}.{1}";
 
-    public override string Name {
+    public override string FullName {
         get {
-            if (ParentItem == null) { return base.Name; }
+            if (ParentItem == null) { return base.FullName; }
             return NameFormat.Inject(ParentItem.FullName, GetType().Name);
         }
     }
 
-    public new IShipItem ParentItem {
-        get { return base.ParentItem as IShipItem; }
-        set { base.ParentItem = value as IShipItem; }
+    public new IShip ParentItem {
+        get { return base.ParentItem as IShip; }
+        set { base.ParentItem = value as IShip; }
     }
 
     protected override bool IsTriggerCollider { get { return true; } }
@@ -66,12 +66,12 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     protected override void OnTriggerEnter(Collider obstacleZoneCollider) {
         base.OnTriggerEnter(obstacleZoneCollider);
         if (obstacleZoneCollider == _collider) {
-            D.Warn("{0} entering its own CollisionDetectionCollider?!", Name);
+            D.Warn("{0} entering its own CollisionDetectionCollider?!", FullName);
             return;
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", Name, obstacle.FullName);
+            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, obstacle.FullName);
             RecordObstacleEnteringWhilePaused(obstacle);
             return;
         }
@@ -86,12 +86,12 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     protected override void OnTriggerExit(Collider obstacleZoneCollider) {
         base.OnTriggerExit(obstacleZoneCollider);
         if (obstacleZoneCollider == _collider) {
-            D.Warn("{0} exiting its own CollisionDetectionCollider?!", Name);
+            D.Warn("{0} exiting its own CollisionDetectionCollider?!", FullName);
             return;
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", Name, obstacle.FullName);
+            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", FullName, obstacle.FullName);
             RecordObstacleExitingWhilePaused(obstacle);
             return;
         }
@@ -104,7 +104,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         base.ParentItemPropSetHandler();
         RangeDistance = ParentItem.Radius * 2F;
         D.Warn(RangeDistance > TempGameValues.LargestShipCollisionDetectionZoneRadius, "{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.",
-            Name, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
+            FullName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
     }
 
     protected override void IsPausedPropChangedHandler() {
@@ -127,7 +127,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
         if (CheckForPreviousPausedExitOf(obstacle)) {
             // while paused, previously exited and now entered so record to take action when unpaused
-            D.Warn("{0} removing entering obstacle {1} already recorded as exited while paused.", Name, obstacle.FullName);
+            D.Warn("{0} removing entering obstacle {1} already recorded as exited while paused.", FullName, obstacle.FullName);
             _exitingObstaclesEncounteredWhilePaused.Remove(obstacle);
         }
         _enteringObstaclesEncounteredWhilePaused.Add(obstacle);
@@ -139,7 +139,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
         if (CheckForPreviousPausedEntryOf(obstacle)) {
             // while paused, previously entered and now exited so eliminate record as no action should be taken when unpaused
-            D.Warn("{0} removing exiting obstacle {1} already recorded as entered while paused.", Name, obstacle.FullName);
+            D.Warn("{0} removing exiting obstacle {1} already recorded as entered while paused.", FullName, obstacle.FullName);
             _enteringObstaclesEncounteredWhilePaused.Remove(obstacle);
             return;
         }
@@ -195,9 +195,9 @@ public class CollisionDetectionMonitor : AColliderMonitor {
 
     #endregion
 
-    protected override void ResetForReuse() {
-        base.ResetForReuse();
-        D.Error("{0} does not support reuse.", Name);
+    protected override void CompleteResetForReuse() {
+        base.CompleteResetForReuse();
+        D.Error("{0} does not support reuse.", FullName);
     }
 
     protected override void Cleanup() {

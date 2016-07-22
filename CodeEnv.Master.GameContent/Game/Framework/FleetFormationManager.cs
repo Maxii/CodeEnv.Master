@@ -26,12 +26,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetFormationManager : AFormationManager {
 
-        protected override int MaxElementCountPerUnit { get { return TempGameValues.MaxShipsPerFleet; } }
-
         public FleetFormationManager(IFormationMgrClient fleetCmd) : base(fleetCmd) { }
 
-        protected override IList<Vector3> GenerateFormationStationOffsets(Formation formation, out float maxFormationRadius) {
-            return FormationFactory.Instance.GenerateMaxFleetFormation(formation, out maxFormationRadius);
+        protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
+            return References.FormationGenerator.GenerateFleetFormation(formation, cmdTransform, out formationRadius);
         }
 
         public override string ToString() {

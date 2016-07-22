@@ -33,9 +33,6 @@ namespace CodeEnv.Master.GameContent {
         /// due to a user renaming action or the addition or removal of the HQ addendum.
         /// </remarks>
         /// </summary>
-        /// <value>
-        /// The name of the target.
-        /// </value>
         public string TargetName { get; private set; }
 
         public int ShotsTaken { get; set; }

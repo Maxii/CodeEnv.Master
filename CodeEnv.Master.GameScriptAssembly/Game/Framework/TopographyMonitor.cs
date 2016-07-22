@@ -41,7 +41,7 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override void OnTriggerEnter(Collider other) {
         base.OnTriggerEnter(other);
-        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerEnter() tripped by {1} while paused.", Name, other.name);
+        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, other.name);
         if (other.isTrigger) {
             return;
         }
@@ -57,7 +57,7 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override void OnTriggerExit(Collider other) {
         base.OnTriggerExit(other);
-        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerExit() tripped by {1} while paused.", Name, other.name);
+        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerExit() tripped by {1} while paused.", FullName, other.name);
         if (other.isTrigger) {
             return;
         }
@@ -91,7 +91,7 @@ public class TopographyMonitor : AColliderMonitor {
     /// <returns></returns>
     private bool __ValidateTopographyChange(ITopographyChangeListener listener) {
         Vector3 listenerPosition = (listener as Component).transform.position;
-        ISystemItem parentSystem = ParentItem as ISystemItem;
+        ISystem parentSystem = ParentItem as ISystem;
         float distanceToListener = Vector3.Distance(parentSystem.Position, listenerPosition);
         return Mathfx.Approx(distanceToListener, parentSystem.Radius, 1F);
     }

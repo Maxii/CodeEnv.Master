@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="ReportType">The type of the Report.</typeparam>
     /// <typeparam name="FactoryType">The type of the derived factory.</typeparam>
     public abstract class ACmdIconInfoFactory<ReportType, FactoryType> : AGenericSingleton<FactoryType>
-        where ReportType : ACmdReport
+        where ReportType : AUnitCmdReport
         where FactoryType : ACmdIconInfoFactory<ReportType, FactoryType> {
 
         private static readonly Layers Layer = Layers.TransparentFX;
@@ -49,58 +49,21 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Makes an instance of IconInfo. Clients should only use this method to make IonInfo 
+        /// Makes an instance of IconInfo. Clients should only use this method to make IconInfo 
         /// as they are compared against each other to determine equality.
         /// </summary>
-        /// <param name="cmdReport">The Command's Report.</param>
+        /// <param name="userRqstdCmdReport">The Command Report that was requested by the user.</param>
         /// <returns></returns>
-        public IconInfo MakeInstance(ReportType cmdReport) {
+        public IconInfo MakeInstance(ReportType userRqstdCmdReport) {
+            D.Assert(userRqstdCmdReport.Player == References.GameManager.UserPlayer);
             IconSection section = GetIconSection();
-            IconSelectionCriteria[] criteria = GetSelectionCriteria(cmdReport);
-            GameColor color = cmdReport.Owner != null ? cmdReport.Owner.Color : GameColor.White;
+            IconSelectionCriteria[] criteria = GetSelectionCriteria(userRqstdCmdReport);
+            GameColor color = userRqstdCmdReport.Owner != null ? userRqstdCmdReport.Owner.Color : GameColor.White;
             var iconInfo = GetInstance(section, color, criteria);
             return iconInfo;
         }
 
-        private IconSelectionCriteria[] GetSelectionCriteria(ReportType cmdReport) {
-            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IntelCoverage cmdUserIntelCoverage = cmdReport.IntelCoverage;
-            //D.Log("{0} found UserIntelCoverage = {1}.", GetType().Name, cmdUserIntelCoverage.GetValueName());
-
-            /***************************************************************************************************************************************************************
-                            * Concept: Cmd's IntelCoverage is same as HQElement coverage. If Cmd/HQ not yet detected, then invisible icon - does this matter? Icon won't be shown anyhow?
-                            * If Cmd only detected LongRange (aka Basic), then unknown icon no matter how many other elements are known
-                            * If Cmd IntelCoverage Essential, then icon will depend on what is known about other elements - aka Category which is size of Cmd (# of elements known)
-                            * If Cmd IntelCoverage Broad or Comprehensive, then icon will also include whether there are special elements (aka Science, Colony or Troop)
-                            *****************************************************************************************************************************************************************/
-            switch (cmdUserIntelCoverage) {
-                case IntelCoverage.None:
-                    // always returns None
-                    criteria.Add(IconSelectionCriteria.None);
-                    break;
-                case IntelCoverage.Basic:
-                    // always returns Unknown
-                    criteria.Add(IconSelectionCriteria.Unknown);
-                    break;
-                case IntelCoverage.Essential:
-                    // always returns level 1-5
-                    criteria.Add(GetCriteriaFromCategory(cmdReport));
-                    break;
-                case IntelCoverage.Broad:
-                case IntelCoverage.Comprehensive:
-                    // always returns a comprehensive icon
-                    criteria.Add(GetCriteriaFromCategory(cmdReport));
-                    GetCriteriaFromComposition(cmdReport).ForAll(isc => criteria.Add(isc));
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cmdUserIntelCoverage));
-            }
-            return criteria.ToArray();
-        }
-
-        protected abstract IconSelectionCriteria GetCriteriaFromCategory(ReportType cmdReport);
-
-        protected abstract IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(ReportType cmdReport);
+        protected abstract IconSelectionCriteria[] GetSelectionCriteria(ReportType userRqstdCmdReport);
 
         protected virtual IconSection GetIconSection() { return IconSection.Base; }
 
@@ -199,6 +162,56 @@ namespace CodeEnv.Master.GameContent {
     }
 
     #endregion
+
+    #region Archive
+
+    //private IconSelectionCriteria[] GetSelectionCriteria(ReportType userRqstdCmdReport) {
+    //    IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
+    //    IntelCoverage intelCoverageUserHasWithCmd = userRqstdCmdReport.IntelCoverage;
+    //    //D.Log("{0} found UserIntelCoverage = {1}.", GetType().Name, intelCoverageUserHasWithCmd.GetValueName());
+
+    //    /**************************************************************************************************************
+    //    * Concept: Cmd's IntelCoverage is same as HQElement coverage. If Cmd/HQ not yet detected, then invisible icon 
+    //    *   - does this matter? Icon won't be shown anyhow?
+    //    * If Cmd only detected LongRange (aka Basic), then unknown icon no matter how many other elements are known
+    //    * If Cmd IntelCoverage Essential, then icon will depend on what is known about other elements 
+    //    *   - aka Category which is size of Cmd (# of elements known)
+    //    * If Cmd IntelCoverage Broad or Comprehensive, then icon will also include whether there are special elements 
+    //    *   - aka Science, Colony or Troop
+    //    ****************************************************************************************************************/
+    //    switch (intelCoverageUserHasWithCmd) {
+    //        case IntelCoverage.None:
+    //            // always returns None
+    //            criteria.Add(IconSelectionCriteria.None);
+    //            break;
+    //        case IntelCoverage.Basic:
+    //            // always returns Unknown
+    //            criteria.Add(IconSelectionCriteria.Unknown);
+    //            break;
+    //        case IntelCoverage.Essential:
+    //            // always returns level 1-5
+    //            criteria.Add(GetCriteriaFromCategory(userRqstdCmdReport));
+    //            break;
+    //        case IntelCoverage.Broad:
+    //        case IntelCoverage.Comprehensive:
+    //            // always returns a comprehensive icon
+    //            criteria.Add(GetCriteriaFromCategory(userRqstdCmdReport));
+    //            GetCriteriaFromComposition(userRqstdCmdReport).ForAll(isc => criteria.Add(isc));
+    //            break;
+    //        default:
+    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(intelCoverageUserHasWithCmd));
+    //    }
+    //    return criteria.ToArray();
+    //}
+
+    //protected abstract IconSelectionCriteria GetCriteriaFromCategory(ReportType cmdReport);
+
+    //protected abstract IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(ReportType cmdReport);
+
+    #endregion
+
 }
+
+
 
 

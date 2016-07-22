@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -34,47 +35,99 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public PlanetoidReport(PlanetoidData data, Player player, IPlanetoidItem item)
+        public PlanetoidReport(PlanetoidData data, Player player, IPlanetoid_Ltd item)
             : base(data, player, item) {
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            var planetoidData = data as PlanetoidData;
-            CurrentHitPoints = planetoidData.CurrentHitPoints;
-            Health = planetoidData.Health;
-        }
+        protected override void AssignValues(AItemData data) {
+            var pData = data as PlanetoidData;
+            var accessCntlr = pData.InfoAccessCntlr;
 
-        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageBroad(data);
-            var planetoidData = data as PlanetoidData;
-            MaxHitPoints = planetoidData.MaxHitPoints;
-            DefensiveStrength = planetoidData.DefensiveStrength;
-            Mass = planetoidData.Mass;
-            Capacity = planetoidData.Capacity;
-            Resources = planetoidData.Resources;
-        }
-
-        protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageEssential(data);
-            var planetoidData = data as PlanetoidData;
-            Owner = planetoidData.Owner;
-            Category = planetoidData.Category;
-            OrbitalSpeed = planetoidData.OrbitalSpeed;
-            Position = planetoidData.Position;
-        }
-
-        protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageBasic(data);
-            var planetoidData = data as PlanetoidData;
-            Name = planetoidData.Name;
-            ParentName = planetoidData.ParentName;
-            SectorIndex = planetoidData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.OrbitalSpeed)) {
+                OrbitalSpeed = pData.OrbitalSpeed;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Defense)) {
+                DefensiveStrength = pData.DefensiveStrength;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+                Capacity = pData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Health)) {
+                Health = pData.Health;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentHitPoints)) {
+                CurrentHitPoints = pData.CurrentHitPoints;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+                Resources = pData.Resources;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+                Name = pData.Name;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+                ParentName = pData.ParentName;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+                Position = pData.Position;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+                Owner = pData.Owner;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+                Category = pData.Category;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.MaxHitPoints)) {
+                MaxHitPoints = pData.MaxHitPoints;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Mass)) {
+                Mass = pData.Mass;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+                SectorIndex = pData.SectorIndex;
+            }
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Archive
+
+        //protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+        //    base.AssignIncrementalValues_IntelCoverageComprehensive(data);
+        //    var planetoidData = data as PlanetoidData;
+        //    CurrentHitPoints = planetoidData.CurrentHitPoints;
+        //    Health = planetoidData.Health;
+        //}
+
+        //protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+        //    base.AssignIncrementalValues_IntelCoverageBroad(data);
+        //    var planetoidData = data as PlanetoidData;
+        //    MaxHitPoints = planetoidData.MaxHitPoints;
+        //    DefensiveStrength = planetoidData.DefensiveStrength;
+        //    Mass = planetoidData.Mass;
+        //    Capacity = planetoidData.Capacity;
+        //    Resources = planetoidData.Resources;
+        //}
+
+        //protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
+        //    base.AssignIncrementalValues_IntelCoverageEssential(data);
+        //    var planetoidData = data as PlanetoidData;
+        //    Owner = planetoidData.Owner;
+        //    Category = planetoidData.Category;
+        //    OrbitalSpeed = planetoidData.OrbitalSpeed;
+        //    Position = planetoidData.Position;
+        //}
+
+        //protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
+        //    base.AssignIncrementalValues_IntelCoverageBasic(data);
+        //    var planetoidData = data as PlanetoidData;
+        //    Name = planetoidData.Name;
+        //    ParentName = planetoidData.ParentName;
+        //    SectorIndex = planetoidData.SectorIndex;
+        //}
+
+        #endregion
 
     }
 }

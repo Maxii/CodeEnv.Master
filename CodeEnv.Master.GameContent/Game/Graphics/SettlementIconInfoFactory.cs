@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Singleton. Factory that makes instances of IconInfo for Settlements.
     /// </summary>
-    public class SettlementIconInfoFactory : ACmdIconInfoFactory<SettlementReport, SettlementIconInfoFactory> {
+    public class SettlementIconInfoFactory : ACmdIconInfoFactory<SettlementCmdReport, SettlementIconInfoFactory> {
 
         protected override AtlasID AtlasID { get { return AtlasID.Fleet; } }
 
@@ -40,37 +40,53 @@ namespace CodeEnv.Master.GameContent {
             _xmlReader = SettlementIconInfoXmlReader.Instance;
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(SettlementReport settlementReport) {
-            switch (settlementReport.Category) {
+        protected override IconSelectionCriteria[] GetSelectionCriteria(SettlementCmdReport userRqstdCmdReport) {
+            if (userRqstdCmdReport.IntelCoverage == IntelCoverage.None) {
+                // Reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+                return new IconSelectionCriteria[] { IconSelectionCriteria.None };
+            }
+
+            if (userRqstdCmdReport.Category == SettlementCategory.None) {
+                D.Assert(userRqstdCmdReport.UnitComposition == null); // UnitComposition should not be known if Category isn't known
+                                                                      // User has no permission to know category so return unknown
+                return new IconSelectionCriteria[] { IconSelectionCriteria.Unknown };
+            }
+
+            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
+            switch (userRqstdCmdReport.Category) {
                 case SettlementCategory.Colony:
-                    return IconSelectionCriteria.Level1;
+                    criteria.Add(IconSelectionCriteria.Level1);
+                    break;
                 case SettlementCategory.City:
-                    return IconSelectionCriteria.Level2;
+                    criteria.Add(IconSelectionCriteria.Level2);
+                    break;
                 case SettlementCategory.CityState:
-                    return IconSelectionCriteria.Level3;
+                    criteria.Add(IconSelectionCriteria.Level3);
+                    break;
                 case SettlementCategory.Province:
-                    return IconSelectionCriteria.Level4;
+                    criteria.Add(IconSelectionCriteria.Level4);
+                    break;
                 case SettlementCategory.Territory:
-                    return IconSelectionCriteria.Level5;
+                    criteria.Add(IconSelectionCriteria.Level5);
+                    break;
                 case SettlementCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(settlementReport.Category));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(userRqstdCmdReport.Category));
             }
-        }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(SettlementReport settlementReport) {
-            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<FacilityHullCategory> elementCategories = settlementReport.UnitComposition.GetUniqueElementCategories();
-            if (elementCategories.Contains(FacilityHullCategory.Laboratory)) {
-                criteria.Add(IconSelectionCriteria.Science);
+            if (userRqstdCmdReport.UnitComposition != null) {    // check for access rights
+                IEnumerable<FacilityHullCategory> elementCategories = userRqstdCmdReport.UnitComposition.GetUniqueElementCategories();
+                if (elementCategories.Contains(FacilityHullCategory.Laboratory)) {
+                    criteria.Add(IconSelectionCriteria.Science);
+                }
+                if (elementCategories.Contains(FacilityHullCategory.Barracks)) {
+                    criteria.Add(IconSelectionCriteria.Troop);
+                }
+                if (elementCategories.Contains(FacilityHullCategory.ColonyHab)) {
+                    criteria.Add(IconSelectionCriteria.Colony);
+                }
             }
-            if (elementCategories.Contains(FacilityHullCategory.Barracks)) {
-                criteria.Add(IconSelectionCriteria.Troop);
-            }
-            if (elementCategories.Contains(FacilityHullCategory.ColonyHab)) {
-                criteria.Add(IconSelectionCriteria.Colony);
-            }
-            return criteria;
+            return criteria.ToArray();
         }
 
         protected override string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria) {

@@ -25,17 +25,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemDisplayInfoFactory : AItemDisplayInfoFactory<SystemReport, SystemDisplayInfoFactory> {
 
-        private static ContentID[] _contentIDsToDisplay = new ContentID[] { 
-            ContentID.Name,
-            ContentID.Owner,
-            ContentID.SectorIndex,
-            ContentID.Capacity,
-            ContentID.Resources,
+        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
+            AccessControlInfoID.Name,
+            AccessControlInfoID.Owner,
+            AccessControlInfoID.SectorIndex,
+            AccessControlInfoID.Capacity,
+            AccessControlInfoID.Resources,
 
-            ContentID.CameraDistance
+            AccessControlInfoID.CameraDistance
         };
 
-        protected override ContentID[] ContentIDsToDisplay { get { return _contentIDsToDisplay; } }
+        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private SystemDisplayInfoFactory() {
             Initialize();
@@ -43,24 +43,24 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(ContentID contentID, SystemReport report, out string colorizedText) {
-            bool isSuccess = base.TryMakeColorizedText(contentID, report, out colorizedText);
+        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, SystemReport report, out string colorizedText) {
+            bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
-                switch (contentID) {
-                    case ContentID.SectorIndex:
+                switch (infoID) {
+                    case AccessControlInfoID.SectorIndex:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.SectorIndex.ToString());
                         break;
-                    case ContentID.Capacity:
+                    case AccessControlInfoID.Capacity:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Capacity.HasValue ? GetFormat(contentID).Inject(report.Capacity.Value) : _unknown);
+                        colorizedText = _phrase.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : _unknown);
                         break;
-                    case ContentID.Resources:
+                    case AccessControlInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _phrase.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : _unknown);
                         break;
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }
             }
             return isSuccess;

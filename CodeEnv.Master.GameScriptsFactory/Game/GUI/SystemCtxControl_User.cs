@@ -30,8 +30,11 @@ using UnityEngine;
 public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private static BaseDirective[] _userMenuOperatorDirectives = new BaseDirective[] {  BaseDirective.Repair,
+                                                                                        BaseDirective.Disband,
+                                                                                        BaseDirective.Scuttle,
                                                                                         BaseDirective.Refit,
-                                                                                        BaseDirective.Attack };
+                                                                                        BaseDirective.Attack
+                                                                                     };
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Disband,
                                                                                         FleetDirective.Refit,
@@ -39,7 +42,8 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
                                                                                         FleetDirective.Move,
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Guard,
-                                                                                        FleetDirective.Patrol};
+                                                                                        FleetDirective.Patrol
+                                                                                      };
 
     private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Disband };
 
@@ -69,7 +73,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         D.Assert(_settlement != null);
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
             D.Assert(_systemMenuOperator == selected as SystemItem);
             return true;
@@ -79,16 +83,19 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool TryIsSelectedItemUserRemoteShip(ISelectable selected, out ShipItem selectedShip) {
         selectedShip = selected as ShipItem;
-        return selectedShip != null && selectedShip.Owner.IsUser;
+        return selectedShip != null && selectedShip.IsUserOwned;
     }
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
+            case BaseDirective.Disband:
+            case BaseDirective.Scuttle:
+                return _settlement.IsCurrentOrderDirectiveAnyOf(directive);
             case BaseDirective.Repair:
                 return _settlement.Data.Health == Constants.OneHundredPercent && _settlement.Data.UnitHealth == Constants.OneHundredPercent;
             case BaseDirective.Refit:
@@ -112,12 +119,14 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                // Note: Easy access to attack fleets of war opponents. Other attack targets should be explicitly chosen by user
+                // TODO: More selective picking fleets of war opponents. Other attack targets should be explicitly chosen by user
                 // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Where(f => f.Owner.IsAtWarWith(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(_user)).Cast<INavigable>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
+            case BaseDirective.Disband:
+            case BaseDirective.Scuttle:
                 targets = Enumerable.Empty<INavigable>();
                 return false;
             default:
@@ -159,40 +168,42 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
-        IssueSystemMenuOperatorOrder(itemID);
+        IssueUserSystemMenuOperatorOrder(itemID);
     }
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
     protected override void HandleMenuPick_UserRemoteShipIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteShipIsSelected(itemID);
-        IssueRemoteShipOrder(itemID);
+        IssueRemoteUserShipOrder(itemID);
     }
 
-    private void IssueSystemMenuOperatorOrder(int itemID) {
+    private void IssueUserSystemMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _systemMenuOperator.FullName, directive.GetValueName(), msg);
-        _settlement.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackableTarget);
+        _settlement.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = directive.EqualsAnyOf(FleetDirective.Disband, FleetDirective.Refit, FleetDirective.Repair) ? _settlement as IFleetNavigable : _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }
 
-    private void IssueRemoteShipOrder(int itemID) {
+    private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
+        D.Assert(directive == ShipDirective.Disband);   // HACK
         IShipNavigable target = _settlement;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target);
+        bool toNotifyCmd = false;
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, toNotifyCmd, target);
     }
 
     public override string ToString() {

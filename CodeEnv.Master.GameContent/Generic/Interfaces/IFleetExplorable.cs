@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Interface for Items that FleetCmds can be ordered to explore.
+    /// <remarks>Includes Systems, Sectors and the UniverseCenter.</remarks>
     /// </summary>
     public interface IFleetExplorable : IExplorable, IFleetNavigable {
 

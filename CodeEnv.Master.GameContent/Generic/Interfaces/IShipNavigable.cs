@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// INavigable destination that can be navigated to by Ships.
     /// <remarks>All INavigable destinations are also IShipNavigable.</remarks>
+    /// <remarks>Used only by Ship FSM to engage the Ship's AutoPilot.</remarks>
     /// </summary>
     public interface IShipNavigable : INavigable {
 

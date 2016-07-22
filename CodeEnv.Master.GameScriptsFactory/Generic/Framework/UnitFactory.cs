@@ -49,8 +49,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _weaponRangeMonitorPrefab;
     private GameObject _sensorRangeMonitorPrefab;
 
-    private GameObject _fleetFormationStationPrefab;
-
     private UnitFactory() {
         Initialize();
     }
@@ -74,8 +72,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         _missileTubePrefab = reqdPrefabs.missileTube;
         _losTurretPrefab = reqdPrefabs.losTurret;
-
-        _fleetFormationStationPrefab = reqdPrefabs.fleetFormationStation.gameObject;
     }
 
     /// <summary>
@@ -119,7 +115,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="element">The ship which is designated the HQ Element.</param>
     public FleetCmdItem MakeFleetInstance(string fleetName, ShipItem element) {
         UnitCmdStat cmdStat = new UnitCmdStat(fleetName, 10F, 100, Formation.Globe);
-        float minViewDistance = TempGameValues.ShipMaxRadius + 1F;
+        float minViewDistance = TempGameValues.ShipMaxRadius + 1F;  // HACK
         CameraFleetCmdStat cameraStat = new CameraFleetCmdStat(minViewDistance, optViewDistanceAdder: 1F, fov: 60F);
         var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
         return MakeFleetInstance(cmdStat, cameraStat, countermeasureStats, element);
@@ -638,16 +634,16 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Returns a fleet formation station as a child of fleetCmd whose localPosition is localOffset.
+    /// Returns a fleet formation station as a child of fleetCmd whose localPosition is assigned by stationSlotInfo.
+    /// <remarks>This version acquires the instance from a pool rather than instantiating it.</remarks>
     /// </summary>
     /// <param name="fleetCmd">The fleet command.</param>
     /// <param name="localOffset">The local offset.</param>
     /// <returns></returns>
-    public FleetFormationStation MakeFleetFormationStation(IFleetCmdItem fleetCmd, Vector3 localOffset) {
+    public FleetFormationStation MakeInstance(IFleetCmd fleetCmd, FormationStationSlotInfo stationSlotInfo) {
         var fleetCmdItem = fleetCmd as FleetCmdItem;
-        var stationGo = UnityUtility.AddChild(fleetCmdItem.gameObject, _fleetFormationStationPrefab);
-        FleetFormationStation station = stationGo.GetSafeComponent<FleetFormationStation>();
-        station.LocalOffset = localOffset;
+        FleetFormationStation station = MyPoolManager.Instance.Spawn(fleetCmdItem.Position, Quaternion.identity, fleetCmdItem.transform);
+        station.StationInfo = stationSlotInfo;
         return station;
     }
 

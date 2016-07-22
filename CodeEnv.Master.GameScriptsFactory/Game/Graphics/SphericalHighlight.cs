@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SystemHighlight.cs
-// Singleton spherical highlight control and label that tracks the designated IWidgetTrackable target.
+// File: SphericalHighlight.cs
+// Singleton spherical highlight MonoBehaviour (with a spherical mesh and label) that tracks the designated IHighlightable target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Singleton spherical highlight control and label that tracks the designated IWidgetTrackable target.
+/// Singleton spherical highlight MonoBehaviour (with a spherical mesh and label) that tracks the designated IHighlightable target.
 /// </summary>
 public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISphericalHighlight {
 
@@ -91,7 +91,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
             _trackingLabel.Placement = labelPlacement;
         }
         UpdatePosition();
-        SetRadius(target.HoverHighlightRadius);
+        SetRadius(target.SphericalHighlightEffectRadius);
     }
 
     private ITrackingWidget InitializeTrackingLabel() {

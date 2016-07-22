@@ -48,7 +48,8 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can go into close orbit around Bases, Stars, Planets and the UniverseCenter. 
         /// Diplomatic state with the owner, if any, cannot be at war, and with Bases cannot be an enemy.
         /// </summary>
-        CloseOrbit,
+        //[System.Obsolete]
+        //CloseOrbit,
 
         /// <summary>
         /// Fleets can patrol any IPatrollable target including Bases, Systems, Sectors and the UniverseCenter. 
@@ -129,6 +130,14 @@ namespace CodeEnv.Master.GameContent {
         /// issueable by the User???
         /// </summary>
         Scuttle
+
+        /************************************ Possible Directives *****************************************/
+        /***************************************************************************************************
+         * Entrench - would issue ShipDirective.Entrench to all ships in Fleet. 6.28.16 Not planned
+         * 
+         * 
+         * 
+         ***************************************************************************************************/
 
     }
 }

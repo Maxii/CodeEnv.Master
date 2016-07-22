@@ -25,9 +25,23 @@ using UnityEngine;
 /// <summary>
 /// Class for AItems that are Sectors.
 /// </summary>
-public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
+public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
 
-    private static string _toStringFormat = "{0}{1}";
+    // Note: infoAccessChanged event never fires in sectors as sectors don't change their info access rights (!:AIntelItem)
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding patrol stations from the item's position.
+    /// </summary>
+    private const float PatrolStationDistanceMultiplier = 0.4F;
+
+    /// <summary>
+    /// The multiplier to apply to the item radius value used when determining the
+    /// distance of the surrounding guard stations from the item's position.
+    /// </summary>
+    private const float GuardStationDistanceMultiplier = 0.2F;
+
+    private const string ToStringFormat = "{0}{1}";
 
     public new SectorData Data {
         get { return base.Data as SectorData; }
@@ -36,34 +50,40 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
+    public SectorReport UserReport { get { return Publisher.GetUserReport(); } }
+
+    /// <summary>
+    /// The radius of the sphere inscribed inside a sector cube = 600.
+    /// </summary>
+    public override float Radius { get { return TempGameValues.SectorSideLength / 2F; } }
+
     private SystemItem _system;
     /// <summary>
     /// The System present in this Sector, if any.
     /// </summary>
     public SystemItem System {
-        get { return _system; }
+        private get { return _system; }
         set {
             D.Assert(_system == null);    // one time only, if at all 
-            SetProperty<SystemItem>(ref _system, value, "System", SystemPropChangedHandler);
+            SetProperty<SystemItem>(ref _system, value, "System", SystemPropSetHandler);
         }
     }
 
     private SectorPublisher _publisher;
-    public SectorPublisher Publisher {
+    private SectorPublisher Publisher {
         get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
     }
-
-    public override float Radius { get { return TempGameValues.SectorSideLength / 2F; } }   // the radius of the sphere inscribed inside a sector box
 
     #region Initialization
 
     protected override void InitializeOnData() {
+        base.InitializeOnData();
         _hudManager = new ItemHudManager(Publisher);
         // Note: There is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
-        float radiusOfSphereContainingPatrolStations = Radius / 2F;
+        float radiusOfSphereContainingPatrolStations = Radius * PatrolStationDistanceMultiplier;
         var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
@@ -74,7 +94,7 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
 
     private IList<StationaryLocation> InitializeGuardStations() {
         var guardStations = new List<StationaryLocation>(2);
-        float distanceFromPosition = Radius / 5F;   // HACK
+        float distanceFromPosition = Radius * GuardStationDistanceMultiplier;
         var localPointAbovePosition = new Vector3(Constants.ZeroF, distanceFromPosition, Constants.ZeroF);
         var localPointBelowPosition = new Vector3(Constants.ZeroF, -distanceFromPosition, Constants.ZeroF);
         guardStations.Add(new StationaryLocation(Position + localPointAbovePosition));
@@ -82,16 +102,13 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
         return guardStations;
     }
 
-
     #endregion
-
-    public SectorReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     #region Event and Property Change Handlers
 
-    private void SystemPropChangedHandler() {
+    private void SystemPropSetHandler() {
         Data.SystemData = System.Data;
         // The owner of a sector and all it's celestial objects is determined by the ownership of the System, if any
     }
@@ -108,7 +125,7 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
     #endregion
 
     public override string ToString() {
-        return _toStringFormat.Inject(GetType().Name, SectorIndex);
+        return ToStringFormat.Inject(GetType().Name, SectorIndex);
     }
 
     #region IFleetNavigable Members
@@ -159,7 +176,10 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
     public Speed PatrolSpeed { get { return Speed.TwoThirds; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        return !player.IsEnemyOf(Owner);
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
+        return !Owner.IsEnemyOf(player);
     }
 
     #endregion
@@ -177,6 +197,9 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
     }
 
     public bool IsGuardingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !player.IsEnemyOf(Owner);
     }
 
@@ -188,13 +211,21 @@ public class SectorItem : AItem, ISectorItem, IFleetNavigable, IPatrollable, IFl
         return System != null ? System.IsFullyExploredBy(player) : true;
     }
 
-    // EmergencyGatherStations - see IPatrollable
+    // LocalAssemblyStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+            return true;
+        }
         return !Owner.IsAtWarWith(player);
     }
 
     #endregion
 
+    #region ISector_Ltd Members
+
+    ISystem_Ltd ISector_Ltd.System { get { return System; } }
+
+    #endregion
 }
 

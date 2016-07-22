@@ -53,7 +53,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AFormationStation.cs" />
+    <Compile Include="Generic\_Debug\EditModeController.cs" />
+    <Compile Include="Game\Gameplay\FormationStationPlaceholder.cs" />
     <Compile Include="Game\Framework\CollisionDetectionMonitor.cs" />
+    <Compile Include="Generic\Framework\AMount.cs" />
     <Compile Include="Generic\_Debug\DrawSphereGizmo.cs" />
     <Compile Include="Generic\_Debug\DebugValues.cs" />
     <Compile Include="Game\Framework\FleetFormationStation.cs" />
@@ -120,7 +124,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
     <Folder Include="Generic\Math\" />

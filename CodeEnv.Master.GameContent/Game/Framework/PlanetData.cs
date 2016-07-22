@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="planet">The planet.</param>
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="planetStat">The stat.</param>
-        public PlanetData(IPlanetItem planet, CameraFollowableStat cameraStat, PlanetStat planetStat)
+        public PlanetData(IPlanet planet, CameraFollowableStat cameraStat, PlanetStat planetStat)
             : this(planet, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), planetStat) { }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetStat">The stat.</param>
-        public PlanetData(IPlanetItem planet, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetStat planetStat)
+        public PlanetData(IPlanet planet, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetStat planetStat)
             : this(planet, TempGameValues.NoPlayer, cameraStat, passiveCMs, planetStat) { }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetStat">The stat.</param>
-        public PlanetData(IPlanetItem planet, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetStat planetStat)
+        public PlanetData(IPlanet planet, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetStat planetStat)
             : base(planet, owner, cameraStat, passiveCMs, planetStat) {
             CloseOrbitInnerRadius = planetStat.CloseOrbitInnerRadius;
         }

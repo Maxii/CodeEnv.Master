@@ -21,25 +21,21 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and HudContent Publisher for Fleets.
     /// </summary>
-    public class FleetPublisher : ACmdPublisher<FleetReport, FleetCmdData> {
+    public class FleetPublisher : ACmdPublisher<FleetCmdReport, FleetCmdData> {
 
         public override ColoredStringBuilder ItemHudText {
             get { return FleetDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IFleetCmdItem _item;
+        private IFleetCmd_Ltd _item;
 
-        public FleetPublisher(FleetCmdData data, IFleetCmdItem item)
+        public FleetPublisher(FleetCmdData data, IFleetCmd_Ltd item)
             : base(data) {
             _item = item;
         }
 
-        protected override FleetReport GenerateReport(Player player) {
-            return new FleetReport(_data, player, _item);
-        }
-
-        protected override bool IsCachedReportCurrent(Player player, out FleetReport cachedReport) {
-            return base.IsCachedReportCurrent(player, out cachedReport) && IsEqual(cachedReport.ElementReports, _item.GetElementReports(player));
+        protected override FleetCmdReport MakeReportInstance(Player player) {
+            return new FleetCmdReport(_data, player, _item);
         }
 
         public override string ToString() {

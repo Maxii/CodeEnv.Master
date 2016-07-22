@@ -29,6 +29,17 @@ public class SettlementCreatorEditor : AUnitCreatorEditor<SettlementUnitCreator>
 
     protected override int GetMaxElements() { return TempGameValues.MaxFacilitiesPerBase; }
 
+    public override void OnInspectorGUI() {
+        base.OnInspectorGUI();
+
+        var settlementCreator = target as SettlementUnitCreator;
+        settlementCreator.formation = (ACreator.DebugBaseFormation)EditorGUILayout.EnumPopup("Unit Formation", settlementCreator.formation);
+
+        if (GUI.changed) {
+            EditorUtility.SetDirty(target);
+        }
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

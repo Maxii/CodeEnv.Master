@@ -31,6 +31,8 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
 
     private const string EffectsPoolName = "Effects";
 
+    private const string FormationStationPoolName = "FormationStations";
+
     #region Initialization
 
     /// <summary>
@@ -102,6 +104,33 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
 
     public void DespawnEffect(Transform effectTransform, Transform parent) {
         PoolManager.Pools[EffectsPoolName].Despawn(effectTransform, parent);
+    }
+
+    #endregion
+
+    #region Formation Stations
+
+    public Transform FormationStationSpawnPool { get { return PoolManager.Pools[FormationStationPoolName].transform; } }
+
+    public FleetFormationStation Spawn(Vector3 location) {
+        return Spawn(location, Quaternion.identity);
+    }
+
+    public FleetFormationStation Spawn(Vector3 location, Quaternion rotation) {
+        return Spawn(location, rotation, FormationStationSpawnPool);
+    }
+
+    public FleetFormationStation Spawn(Vector3 location, Quaternion rotation, Transform parent) {
+        Transform stationTransform = PoolManager.Pools[FormationStationPoolName].Spawn("FormationStation", location, rotation, parent);
+        return stationTransform.GetComponent<FleetFormationStation>();
+    }
+
+    public void DespawnFormationStation(Transform stationTransform) {
+        DespawnFormationStation(stationTransform, FormationStationSpawnPool);
+    }
+
+    public void DespawnFormationStation(Transform stationTransform, Transform parent) {
+        PoolManager.Pools[FormationStationPoolName].Despawn(stationTransform, parent);
     }
 
     #endregion

@@ -42,7 +42,7 @@ public abstract class AColliderMonitor : AMonoBase {
         }
     }
 
-    public virtual string Name { get { return transform.name; } }
+    public virtual string FullName { get { return transform.name; } }
 
     private float _rangeDistance;
     /// <summary>
@@ -81,6 +81,7 @@ public abstract class AColliderMonitor : AMonoBase {
 
     protected bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
 
+    protected bool _isResetting;
     protected SphereCollider _collider;
     protected IGameManager _gameMgr;
 
@@ -102,7 +103,7 @@ public abstract class AColliderMonitor : AMonoBase {
         }
         else {
             var rigidbody = gameObject.GetComponent<Rigidbody>();
-            D.Warn(rigidbody != null, "{0} has a rigidbody it doesn't need.", Name);
+            D.Warn(rigidbody != null, "{0} has a rigidbody it doesn't need.", FullName);
         }
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = IsTriggerCollider;
@@ -115,7 +116,6 @@ public abstract class AColliderMonitor : AMonoBase {
         _subscriptons.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
-
     #region Event and Property Change Handlers
 
     protected abstract void IsOperationalPropChangedHandler();
@@ -123,7 +123,7 @@ public abstract class AColliderMonitor : AMonoBase {
     protected virtual void IsPausedPropChangedHandler() { }
 
     protected virtual void RangeDistancePropChangedHandler() {
-        D.Log(ShowDebugLog, "{0} had its RangeDistance changed to {1:0.}.", Name, RangeDistance);
+        D.Log(ShowDebugLog, "{0} had its RangeDistance changed to {1:0.}.", FullName, RangeDistance);
         _collider.radius = RangeDistance;
     }
 
@@ -141,12 +141,20 @@ public abstract class AColliderMonitor : AMonoBase {
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
     /// </summary>
-    protected virtual void ResetForReuse() {
-        D.Log(ShowDebugLog, "{0} is being reset for potential reuse.", Name);
+    protected void ResetForReuse() {
+        _isResetting = true;
+        D.Log(ShowDebugLog, "{0} is being reset for future reuse.", FullName);
         IsOperational = false;
         RangeDistance = Constants.ZeroF;
         D.Assert(ParentItem != null);
+        CompleteResetForReuse();
+        _isResetting = false;
     }
+
+    /// <summary>
+    /// Hook that allows derived classes to reset for reuse.
+    /// </summary>
+    protected virtual void CompleteResetForReuse() { }
 
     protected override void Cleanup() {
         Unsubscribe();

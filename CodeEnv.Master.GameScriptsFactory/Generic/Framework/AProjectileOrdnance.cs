@@ -79,6 +79,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _rigidbody.useGravity = false;
         // rigidbody drag and mass now set from Launch
         _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        _collider.enabled = false;  // 7.19.16 now spawning so start not enabled so OnSpawned Assert passes
         ValidateEffects();
         _displayMgr = InitializeDisplayMgr();
     }
@@ -255,6 +256,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         D.Assert(_displayMgr != null);
         D.Assert(_rigidbody != null);
         D.Assert(_collider != null);
+        D.Assert(!_collider.enabled, "{0} collider should be disabled when despawned.", FullName);
         D.Assert(_launchPosition == Vector3.zero);
         D.Assert(!_hasWeaponFired);
         D.Assert(_checkProgressCounter == Constants.Zero);
@@ -284,7 +286,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _hasWeaponFired = false;
         _checkProgressCounter = Constants.Zero;
         _rigidbody.velocity = Vector3.zero;
-        // Note: deactivating this gameObject when despawned removes Physics.IgnoreCollision
+        _collider.enabled = false;        // UNCLEAR deactivating (disabling?) the collider removes Physics.IgnoreCollision
     }
 
     #endregion

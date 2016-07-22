@@ -25,15 +25,17 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Starbases.
 /// </summary>
-public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
+public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd {
 
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
         set { base.Data = value; }
     }
 
+    public StarbaseCmdReport UserReport { get { return GetReport(_gameMgr.UserPlayer); } }
+
     private StarbasePublisher _publisher;
-    public StarbasePublisher Publisher {
+    private StarbasePublisher Publisher {
         get { return _publisher = _publisher ?? new StarbasePublisher(Data, this); }
     }
 
@@ -51,24 +53,23 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
 
     #endregion
 
-    public StarbaseReport GetUserReport() { return GetReport(_gameMgr.UserPlayer); }
-
-    public StarbaseReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
     protected override IconInfo MakeIconInfo() {
-        return StarbaseIconInfoFactory.Instance.MakeInstance(GetUserReport());
+        return StarbaseIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
     protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, GetUserReport());
+        SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, UserReport);
     }
 
-    protected override void HandleDeath() {
-        base.HandleDeath();
+    protected override void HandleDeathFromDeadState() {
+        base.HandleDeathFromDeadState();
+        PathfindingManager.Instance.Graph.UpdateGraph(this);
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 

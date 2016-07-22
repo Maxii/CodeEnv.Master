@@ -24,14 +24,14 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract generic class for Publishers that support CmdItems.
     /// </summary>
     public abstract class ACmdPublisher<ReportType, DataType> : AIntelItemPublisher<ReportType, DataType>
-        where ReportType : ACmdReport
-        where DataType : AUnitCmdItemData {
+        where ReportType : AUnitCmdReport
+        where DataType : AUnitCmdData {
 
         public ACmdPublisher(DataType data)
             : base(data) {
         }
 
-        protected bool IsEqual(IEnumerable<AElementItemReport> reportsA, IEnumerable<AElementItemReport> reportsB) {
+        protected bool IsEqual(IEnumerable<AUnitElementReport> reportsA, IEnumerable<AUnitElementReport> reportsB) {
             var isEqual = reportsA.OrderBy(r => r.Name).SequenceEqual(reportsB.OrderBy(r => r.Name));
             string equalsPhrase = isEqual ? "equal" : "not equal";
             D.Log("{0} ElementReports are {1}.", GetType().Name, equalsPhrase);

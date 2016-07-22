@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Singleton. Factory that makes instances of IconInfo for Starbases.
     /// </summary>
-    public class StarbaseIconInfoFactory : ACmdIconInfoFactory<StarbaseReport, StarbaseIconInfoFactory> {
+    public class StarbaseIconInfoFactory : ACmdIconInfoFactory<StarbaseCmdReport, StarbaseIconInfoFactory> {
 
         protected override AtlasID AtlasID { get { return AtlasID.Fleet; } }
 
@@ -40,37 +40,53 @@ namespace CodeEnv.Master.GameContent {
             base.Initialize();
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(StarbaseReport starbaseReport) {
-            switch (starbaseReport.Category) {
+        protected override IconSelectionCriteria[] GetSelectionCriteria(StarbaseCmdReport userRqstdCmdReport) {
+            if (userRqstdCmdReport.IntelCoverage == IntelCoverage.None) {
+                // Reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+                return new IconSelectionCriteria[] { IconSelectionCriteria.None };
+            }
+
+            if (userRqstdCmdReport.Category == StarbaseCategory.None) {
+                D.Assert(userRqstdCmdReport.UnitComposition == null); // UnitComposition should not be known if Category isn't known
+                // User has no permission to know category so return unknown
+                return new IconSelectionCriteria[] { IconSelectionCriteria.Unknown };
+            }
+
+            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
+            switch (userRqstdCmdReport.Category) {
                 case StarbaseCategory.Outpost:
-                    return IconSelectionCriteria.Level1;
+                    criteria.Add(IconSelectionCriteria.Level1);
+                    break;
                 case StarbaseCategory.LocalBase:
-                    return IconSelectionCriteria.Level2;
+                    criteria.Add(IconSelectionCriteria.Level2);
+                    break;
                 case StarbaseCategory.DistrictBase:
-                    return IconSelectionCriteria.Level3;
+                    criteria.Add(IconSelectionCriteria.Level3);
+                    break;
                 case StarbaseCategory.RegionalBase:
-                    return IconSelectionCriteria.Level4;
+                    criteria.Add(IconSelectionCriteria.Level4);
+                    break;
                 case StarbaseCategory.TerritorialBase:
-                    return IconSelectionCriteria.Level5;
+                    criteria.Add(IconSelectionCriteria.Level5);
+                    break;
                 case StarbaseCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(starbaseReport.Category));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(userRqstdCmdReport.Category));
             }
-        }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseReport starbaseReport) {
-            IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<FacilityHullCategory> elementCategories = starbaseReport.UnitComposition.GetUniqueElementCategories();
-            if (elementCategories.Contains(FacilityHullCategory.Laboratory)) {
-                criteria.Add(IconSelectionCriteria.Science);
+            if (userRqstdCmdReport.UnitComposition != null) {   // check for access rights
+                IEnumerable<FacilityHullCategory> elementCategories = userRqstdCmdReport.UnitComposition.GetUniqueElementCategories();
+                if (elementCategories.Contains(FacilityHullCategory.Laboratory)) {
+                    criteria.Add(IconSelectionCriteria.Science);
+                }
+                if (elementCategories.Contains(FacilityHullCategory.Barracks)) {
+                    criteria.Add(IconSelectionCriteria.Troop);
+                }
+                if (elementCategories.Contains(FacilityHullCategory.ColonyHab)) {
+                    criteria.Add(IconSelectionCriteria.Colony);
+                }
             }
-            if (elementCategories.Contains(FacilityHullCategory.Barracks)) {
-                criteria.Add(IconSelectionCriteria.Troop);
-            }
-            if (elementCategories.Contains(FacilityHullCategory.ColonyHab)) {
-                criteria.Add(IconSelectionCriteria.Colony);
-            }
-            return criteria;
+            return criteria.ToArray();
         }
 
         protected override string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria) {

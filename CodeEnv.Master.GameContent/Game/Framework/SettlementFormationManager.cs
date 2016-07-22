@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -25,12 +26,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementFormationManager : AFormationManager {
 
-        protected override int MaxElementCountPerUnit { get { return TempGameValues.MaxFacilitiesPerBase; } }
-
         public SettlementFormationManager(IFormationMgrClient settlementCmd) : base(settlementCmd) { }
 
-        protected override IList<Vector3> GenerateFormationStationOffsets(Formation formation, out float maxFormationRadius) {
-            return FormationFactory.Instance.GenerateMaxSettlementFormation(formation, out maxFormationRadius);
+        protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
+            return References.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
         }
 
         public override string ToString() {

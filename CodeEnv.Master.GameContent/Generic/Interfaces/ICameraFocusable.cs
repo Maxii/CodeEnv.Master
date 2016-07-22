@@ -6,10 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: ICameraFocusable.cs
-// Interface designating the game object it is attached too as an
-// object that can be selected as the camera's focus, thereby causing the 
-// camera to automatically approach and view the object. Game objects that
-// are selected as the camera's focus can also be orbited by the camera.
+// Interface for items that can become the focus of the camera, thereby allowing the 
+// camera to approach, view and orbit the object. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,10 +20,8 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    ///  Interface designating the game object it is attached too as an
-    /// object that can be selected as the camera's focus, thereby causing the 
-    /// camera to automatically approach and view the object. Game objects that
-    /// are selected as the camera's focus can also be orbited by the camera.
+    /// Interface for items that can become the focus of the camera, thereby allowing the 
+    /// camera to approach, view and orbit the object. 
     /// </summary>
     public interface ICameraFocusable : ICameraTargetable {
 

@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for Items that can change whether they are discernible by the UserPlayer.
 /// </summary>
-public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsClient, ISelectable {
+public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsMgrClient, ISelectable {
 
     public event EventHandler<EffectSeqEventArgs> effectSeqStarting;
     public event EventHandler<EffectSeqEventArgs> effectSeqFinished;
@@ -50,7 +50,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     }
 
     private ADisplayManager _displayMgr;
-    public ADisplayManager DisplayMgr {
+    protected ADisplayManager DisplayMgr {
         get { return _displayMgr; }
         private set { SetProperty<ADisplayManager>(ref _displayMgr, value, "DisplayMgr"); }
     }
@@ -58,14 +58,13 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     private EffectsManager _effectsMgr;
     protected EffectsManager EffectsMgr {
         get { return _effectsMgr; }
-        set { SetProperty<EffectsManager>(ref _effectsMgr, value, "EffectsMgr"); }
+        private set { SetProperty<EffectsManager>(ref _effectsMgr, value, "EffectsMgr"); }
     }
 
     /// <summary>
     /// Flag indicating whether InitializeOnFirstDiscernibleToUser() has run.
     /// </summary>
-    protected bool _hasInitOnFirstDiscernibleToUserRun;
-
+    private bool _hasInitOnFirstDiscernibleToUserRun;
     private IGameInputHelper _inputHelper;
     private IHighlighter _highlighter;
     private ICtxControl _ctxControl;
@@ -363,7 +362,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
                 D.Assert(_hasInitOnFirstDiscernibleToUserRun);
                 _ctxControl = InitializeContextMenu(Owner);
             }
-            _ctxControl.TryShowContextMenu();
+            _ctxControl.AttemptShowContextMenu();
         }
     }
 
@@ -507,9 +506,9 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
 
     #region IHighlightable Members
 
-    public virtual float HoverHighlightRadius { get { return Radius; } }
+    public virtual float SphericalHighlightEffectRadius { get { return Radius; } }
 
-    public virtual float HighlightRadius { get { return Radius * Screen.height * 3F; } }
+    public virtual float CircleHighlightEffectRadius { get { return Radius * Screen.height * 3F; } }
 
     #endregion
 

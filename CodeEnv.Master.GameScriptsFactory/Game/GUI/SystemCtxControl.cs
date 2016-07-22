@@ -31,7 +31,9 @@ public class SystemCtxControl : ACtxControl {
                                                                                         FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Guard,
                                                                                         FleetDirective.Explore,
-                                                                                        FleetDirective.Patrol };
+                                                                                        FleetDirective.Patrol
+                                                                                      };
+
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
@@ -47,7 +49,7 @@ public class SystemCtxControl : ACtxControl {
         _systemMenuOperator = system;
     }
 
-    protected override bool TryIsSelectedItemMenuOperator(ISelectable selected) {
+    protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
             D.Assert(_systemMenuOperator == selected as SystemItem);
             return true;
@@ -57,7 +59,7 @@ public class SystemCtxControl : ACtxControl {
 
     protected override bool TryIsSelectedItemUserRemoteFleet(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsUser;
+        return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
@@ -83,10 +85,10 @@ public class SystemCtxControl : ACtxControl {
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
-        IssueRemoteFleetOrder(itemID);
+        IssueRemoteUserFleetOrder(itemID);
     }
 
-    private void IssueRemoteFleetOrder(int itemID) {
+    private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;

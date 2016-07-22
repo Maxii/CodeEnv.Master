@@ -29,21 +29,14 @@ namespace CodeEnv.Master.GameContent {
             get { return SystemDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private ISystemItem _item;
+        private ISystem_Ltd _item;
 
-        public SystemPublisher(SystemData data, ISystemItem item)
+        public SystemPublisher(SystemData data, ISystem_Ltd item)
             : base(data) {
             _item = item;
         }
 
-        protected override bool IsCachedReportCurrent(Player player, out SystemReport cachedReport) {
-            return base.IsCachedReportCurrent(player, out cachedReport) &&
-                cachedReport.StarReport == _item.GetStarReport(player) &&
-                cachedReport.SettlementReport == _item.GetSettlementReport(player) &&
-                IsEqual(cachedReport.PlanetoidReports, _item.GetPlanetoidReports(player));
-        }
-
-        protected override SystemReport GenerateReport(Player player) {
+        protected override SystemReport MakeReportInstance(Player player) {
             return new SystemReport(_data, player, _item);
         }
 
