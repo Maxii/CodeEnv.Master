@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and HudContent Publisher for Systems.
     /// </summary>
-    public class SystemPublisher : AItemPublisher<SystemReport, SystemData> {
+    public class SystemPublisher : AIntelItemPublisher<SystemReport, SystemData> {
 
         public override ColoredStringBuilder ItemHudText {
             get { return SystemDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
@@ -40,10 +40,11 @@ namespace CodeEnv.Master.GameContent {
             return new SystemReport(_data, player, _item);
         }
 
+        [System.Obsolete]
         private bool IsEqual(IEnumerable<PlanetoidReport> reportsA, IEnumerable<PlanetoidReport> reportsB) {
             var isEqual = reportsA.OrderBy(r => r.Name).SequenceEqual(reportsB.OrderBy(r => r.Name));
             string equalsPhrase = isEqual ? "equal" : "not equal";
-            D.Log("{0} PlanetoidReports are {1}.", GetType().Name, equalsPhrase);
+            D.Log(ShowDebugLog, "{0} PlanetoidReports are {1}.", GetType().Name, equalsPhrase);
             return isEqual;
         }
 

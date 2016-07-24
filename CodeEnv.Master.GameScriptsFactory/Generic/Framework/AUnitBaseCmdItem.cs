@@ -560,7 +560,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return CloseOrbitOuterRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+            return CloseOrbitOuterRadius + CameraStat.OptimalViewingDistanceAdder;
         }
         set { base.OptimalCameraViewingDistance = value; }
     }

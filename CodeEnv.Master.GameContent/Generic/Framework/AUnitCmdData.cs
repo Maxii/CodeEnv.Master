@@ -187,8 +187,6 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
 
-        public new CameraUnitCmdStat CameraStat { get { return base.CameraStat as CameraUnitCmdStat; } }
-
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _subscriptions;
 
@@ -197,11 +195,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="cmd">The command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
         /// <param name="cmdStat">The command stat.</param>
-        public AUnitCmdData(IUnitCmd cmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(cmd, owner, cameraStat, cmdStat.MaxHitPoints, passiveCMs) {
+        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
             ParentName = cmdStat.UnitName;
             UnitFormation = cmdStat.UnitFormation;
             MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
@@ -255,7 +252,7 @@ namespace CodeEnv.Master.GameContent {
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
             var isIntelCoverageSet = SetIntelCoverage(player, playerIntelCoverageOfHQElement);
             D.Assert(isIntelCoverageSet);
-            //D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+            //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
         }
 
         private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPoints) {
@@ -282,7 +279,7 @@ namespace CodeEnv.Master.GameContent {
         /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
         /// </summary>
         private void UnitHealthPropChangedHandler() {
-            //D.Log("{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", FullName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
+            //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", FullName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             if (UnitHealth <= Constants.ZeroF) {
                 CurrentHitPoints -= MaxHitPoints;
             }
@@ -378,7 +375,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateElementParentName(AUnitElementData elementData) {
             //TODO something more than just assigning a parent name?
-            //D.Log("{0}.ParentName changing to {1}.", elementData.Name, ParentName);
+            //D.Log(ShowDebugLog, "{0}.ParentName changing to {1}.", elementData.Name, ParentName);
             elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }
 

@@ -66,7 +66,8 @@ public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
             float lowOrbitRadius = radius + 5F;
             CameraFocusableStat cameraStat = __MakeCameraStat(radius, lowOrbitRadius);
             UniverseCenter.Name = "UniverseCenter";
-            UniverseCenterData data = new UniverseCenterData(UniverseCenter, cameraStat, radius, lowOrbitRadius);
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter, radius, lowOrbitRadius);
+            UniverseCenter.CameraStat = cameraStat;
             UniverseCenter.Data = data;
             // UC will be enabled when CommenceOperations() called
         }

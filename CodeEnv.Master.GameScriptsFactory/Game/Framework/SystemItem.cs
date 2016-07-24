@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
+public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
@@ -206,23 +206,24 @@ public class SystemItem : ADiscernibleItem, ISystem, ISystem_Ltd, IZoomToFurthes
         else {
             _moons.Add(planetoid as MoonItem);
         }
-        Data.AddPlanetoid(planetoid.Data);
+        Data.AddPlanetoidData(planetoid.Data);
     }
 
     public void RemovePlanetoid(IPlanetoid planetoid) {
         D.Assert(!planetoid.IsOperational);
         bool isRemoved = _planetoids.Remove(planetoid as APlanetoidItem);
+        D.Assert(isRemoved);
         var planet = planetoid as PlanetItem;
         if (planet != null) {
-            isRemoved = isRemoved & _planets.Remove(planet);
+            isRemoved = _planets.Remove(planet);
+            D.Assert(isRemoved);
         }
         else {
-            isRemoved = isRemoved & _moons.Remove(planetoid as MoonItem);
+            isRemoved = _moons.Remove(planetoid as MoonItem);
+            D.Assert(isRemoved);
         }
-        isRemoved = isRemoved & Data.RemovePlanetoid((planetoid as APlanetoidItem).Data);
-        D.Assert(isRemoved);
+        Data.RemovePlanetoidData((planetoid as APlanetoidItem).Data);
     }
-
 
     public SystemReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -247,12 +248,6 @@ public class SystemItem : ADiscernibleItem, ISystem, ISystem_Ltd, IZoomToFurthes
             settlementCmd.CelestialOrbitSimulator.IsActivated = true;
         }
         //D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
-    }
-
-    protected override void AssessIsDiscernibleToUser() {
-        // all players including User are now aware of the existence of all systems just like stars
-        var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
-        IsDiscernibleToUser = isInMainCameraLOS;
     }
 
     protected override void ShowSelectedItemHud() {

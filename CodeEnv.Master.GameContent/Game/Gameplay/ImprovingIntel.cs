@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ImprovingIntel.cs
-// Intel with a CurrentCoverage value that can only improve once instantiated.
+// Metadata describing the degree of intelligence coverage a player has about a particular item. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Intel with a CurrentCoverage value that can only improve once instantiated. It never regresses to a lower value.
+    /// Metadata describing the degree of intelligence coverage a player has about a particular item. 
+    /// This version has a CurrentCoverage value that can only improve once instantiated. 
+    /// It never regresses to a lower value.
     /// </summary>
     public class ImprovingIntel : AIntel {
 
@@ -35,6 +37,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImprovingIntel"/> class.
+        /// </summary>
         public ImprovingIntel() : base() { }
 
         /// <summary>

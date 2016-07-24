@@ -75,11 +75,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="passiveCMs">The item's passive Countermeasures.</param>
-        public AMortalItemData(IMortalItem item, Player owner, ACameraItemStat cameraStat, float maxHitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
-            : base(item, owner, cameraStat) {
+        public AMortalItemData(IMortalItem item, Player owner, float maxHitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
+            : base(item, owner) {
             Initialize(passiveCMs);
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;
@@ -93,8 +92,8 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        public override void CommenceOperations() {
-            base.CommenceOperations();
+        protected override void FinalInitialize() {
+            base.FinalInitialize();
             PassiveCountermeasures.ForAll(cm => cm.IsActivated = true);
             RecalcDefensiveValues();
         }
@@ -110,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected void CountermeasureIsDamagedChangedEventHandler(object sender, EventArgs e) {
             var cm = sender as AEquipment;
-            D.Log("{0}'s {1}.IsDamaged is now {2}.", FullName, cm.Name, cm.IsDamaged);
+            D.Log(ShowDebugLog, "{0}'s {1}.IsDamaged is now {2}.", FullName, cm.Name, cm.IsDamaged);
             RecalcDefensiveValues();
         }
 
@@ -132,7 +131,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HealthPropChangedHandler() {
-            D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
+            D.Log(ShowDebugLog, "{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
         }
 
         protected sealed override void IsOperationalPropChangedHandler() {

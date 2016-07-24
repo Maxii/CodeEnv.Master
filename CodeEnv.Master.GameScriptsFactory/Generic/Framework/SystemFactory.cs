@@ -107,10 +107,12 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetValueName(), star.category.GetValueName()));
 
         star.Name = systemName + Constants.Space + CommonTerms.Star;
-        star.Data = new StarData(star, starStat, cameraStat) {
+        StarData starData = new StarData(star, starStat) {
             ParentName = systemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
+        star.CameraStat = cameraStat;
+        star.Data = starData;
     }
 
     /// <summary>
@@ -148,10 +150,11 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
         planet.Name = planetStat.Category.GetValueName();  // avoids Assert(Name != null), name gets updated when assigned to an orbit slot
         var passiveCMs = MakeCountermeasures(cmStats);
-        PlanetData data = new PlanetData(planet, cameraStat, passiveCMs, planetStat) {
+        PlanetData data = new PlanetData(planet, passiveCMs, planetStat) {
             ParentName = parentSystemName
         };
         planet.GetComponent<Rigidbody>().mass = data.Mass;
+        planet.CameraStat = cameraStat;
         planet.Data = data;
     }
 
@@ -190,10 +193,11 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
         moon.Name = moonStat.Category.GetValueName();  // avoids Assert(Name != null), name gets updated when assigned to an orbit slot
         var passiveCMs = MakeCountermeasures(cmStats);
-        PlanetoidData data = new PlanetoidData(moon, cameraStat, passiveCMs, moonStat) {
+        PlanetoidData data = new PlanetoidData(moon, passiveCMs, moonStat) {
             ParentName = parentPlanetName
         };
         moon.GetComponent<Rigidbody>().mass = data.Mass;
+        moon.CameraStat = cameraStat;
         moon.Data = data;
     }
 
@@ -226,9 +230,10 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(system.transform.parent != null, "{0} should already have a parent.", system.FullName);
 
         system.Name = systemName;
-        SystemData data = new SystemData(system, cameraStat) {
+        SystemData data = new SystemData(system) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
+        system.CameraStat = cameraStat;
         system.Data = data;
     }
 

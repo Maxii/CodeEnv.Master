@@ -42,8 +42,8 @@ namespace CodeEnv.Master.GameContent {
 
         public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
 
-        public AUnitBaseCmdData(IUnitCmd cmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(cmd, owner, cameraStat, passiveCMs, cmdStat) { }
+        public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(cmd, owner, passiveCMs, cmdStat) { }
 
         #region Event and Property Change Handlers
 

@@ -40,11 +40,10 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="UniverseCenterData" /> class.
         /// </summary>
         /// <param name="ucenter">The ucenter.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="radius">The radius.</param>
         /// <param name="closeOrbitInnerRadius">The close orbit inner radius.</param>
-        public UniverseCenterData(IUniverseCenter ucenter, CameraFocusableStat cameraStat, float radius, float closeOrbitInnerRadius)
-            : base(ucenter, TempGameValues.NoPlayer, cameraStat) {
+        public UniverseCenterData(IUniverseCenter ucenter, float radius, float closeOrbitInnerRadius)
+            : base(ucenter, TempGameValues.NoPlayer) {
             Radius = radius;
             CloseOrbitInnerRadius = closeOrbitInnerRadius;
             Topography = Topography.OpenSpace;

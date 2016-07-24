@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseInfoAccessController(StarbaseCmdData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.CurrentCmdEffectiveness:
                 case AccessControlInfoID.UnitScience:
@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.UnitWeaponsRange:
                 case AccessControlInfoID.UnitSensorRange:
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Owner:
                 case AccessControlInfoID.Category:
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Name:
                 case AccessControlInfoID.ParentName:

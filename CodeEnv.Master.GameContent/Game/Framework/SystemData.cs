@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a SystemItem.
     /// </summary>
-    public class SystemData : ADiscernibleItemData, IDisposable {
+    public class SystemData : AIntelItemData, IDisposable {
 
         public float Radius { get { return TempGameValues.SystemRadius; } }
 
@@ -50,7 +50,10 @@ namespace CodeEnv.Master.GameContent {
         private StarData _starData;
         public StarData StarData {
             get { return _starData; }
-            set { SetProperty<StarData>(ref _starData, value, "StarData", StarDataPropChangedHandler, StarDataPropChangingHandler); }
+            set {
+                D.Assert(_starData == null, "{0}'s StarData can only be set once.", FullName);
+                SetProperty<StarData>(ref _starData, value, "StarData", StarDataPropSetHandler);
+            }
         }
 
         public Index3D SectorIndex { get; private set; }
@@ -59,28 +62,30 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<PlanetoidData> AllPlanetoidData { get { return _allPlanetoidData; } }
 
+        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
+
         private IList<PlanetoidData> _allPlanetoidData = new List<PlanetoidData>();
         private IDictionary<PlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
         private IList<IDisposable> _starSubscriptions;
         private IList<IDisposable> _settlementSubscriptions;
+
+        #region Initialization
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class
         /// with the owner initialized to NoPlayer.
         /// </summary>
         /// <param name="system">The system.</param>
-        /// <param name="cameraStat">The camera stat.</param>
-        public SystemData(ISystem system, CameraFocusableStat cameraStat)
-            : this(system, cameraStat, TempGameValues.NoPlayer) { }
+        public SystemData(ISystem system)
+            : this(system, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class.
         /// </summary>
         /// <param name="system">The system.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public SystemData(ISystem system, CameraFocusableStat cameraStat, Player owner)
-            : base(system, owner, cameraStat) {
+        public SystemData(ISystem system, Player owner)
+            : base(system, owner) {
             SectorIndex = References.SectorGrid.GetSectorIndex(Position);
             Topography = Topography.System;
             Subscribe();
@@ -91,18 +96,20 @@ namespace CodeEnv.Master.GameContent {
             _starSubscriptions = new List<IDisposable>();
         }
 
-        private void SubscribeToPlanetoidDataValueChanges(PlanetoidData data) {
-            if (!_planetoidSubscriptions.ContainsKey(data)) {
-                _planetoidSubscriptions.Add(data, new List<IDisposable>());
+        private void SubscribeToPlanetoidDataValueChanges(PlanetoidData pData) {
+            if (!_planetoidSubscriptions.ContainsKey(pData)) {
+                _planetoidSubscriptions.Add(pData, new List<IDisposable>());
             }
-            var planetSubscriber = _planetoidSubscriptions[data];
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, PlanetoidCapacityPropChangedHandler));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, ResourceYield>(pd => pd.Resources, PlanetoidResourceYieldPropChangedHandler));
+            var planetSubscriber = _planetoidSubscriptions[pData];
+            planetSubscriber.Add(pData.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, PlanetoidCapacityPropChangedHandler));
+            planetSubscriber.Add(pData.SubscribeToPropertyChanged<PlanetoidData, ResourceYield>(pd => pd.Resources, PlanetoidResourceYieldPropChangedHandler));
+            pData.intelCoverageChanged += PlanetoidIntelCoverageChangedEventHandler;
         }
 
         private void SubscribeToStarDataValueChanges() {
             _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, StarCapacityPropChangedHandler));
             _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, ResourceYield>(sd => sd.Resources, StarResourceYieldPropChangedHandler));
+            StarData.intelCoverageChanged += StarIntelCoverageChangedEventHandler;
         }
 
         private void SubscribeToSettlementDataValueChanges() {
@@ -110,30 +117,134 @@ namespace CodeEnv.Master.GameContent {
                 _settlementSubscriptions = new List<IDisposable>();
             }
             _settlementSubscriptions.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, SettlementOwnerPropChangedHandler));
+            SettlementData.intelCoverageChanged += SettlementIntelCoverageChangedEventHandler;
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new SystemInfoAccessController(this);
         }
 
-        public void AddPlanetoid(PlanetoidData data) {
-            _allPlanetoidData.Add(data);
-            SubscribeToPlanetoidDataValueChanges(data);
+        protected override void FinalInitialize() {
+            base.FinalInitialize();
             RecalcAllProperties();
+            AssessIntelCoverage();
         }
 
-        public bool RemovePlanetoid(PlanetoidData data) {
-            bool isRemoved = _allPlanetoidData.Remove(data);
-            if (!isRemoved) {
-                D.Warn("Attempting to remove {0}.{1} that is not present.", data.FullName, typeof(PlanetoidData));
-                return false;
+        #endregion
+
+        public void AddPlanetoidData(PlanetoidData data) {
+            _allPlanetoidData.Add(data);
+            SubscribeToPlanetoidDataValueChanges(data);
+            if (IsOperational) {
+                RecalcAllProperties();
+                AssessIntelCoverage();
             }
+        }
+
+        public void RemovePlanetoidData(PlanetoidData data) {
+            D.Assert(IsOperational);
+            bool isRemoved = _allPlanetoidData.Remove(data);
+            D.Assert(isRemoved, "Attempted to remove {0}.{1} that is not present.", data.FullName, typeof(PlanetoidData));
+
             UnsubscribeToPlanetoidDataValueChanges(data);
             RecalcAllProperties();
-            return true;
+            AssessIntelCoverage();
+        }
+
+        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
+            var intel = new ImprovingIntel();
+            intel.InitializeCoverage(initialcoverage);
+            return intel;
+        }
+
+        private void AssessIntelCoverage() {
+            foreach (Player player in _gameMgr.AllPlayers) {
+                AssessIntelCoverageFor(player);
+            }
+        }
+
+        private void AssessIntelCoverageFor(Player player) {
+            var starCoverage = StarData.GetIntelCoverage(player);
+            var planetoidCoverages = _allPlanetoidData.Select(pd => pd.GetIntelCoverage(player));
+            List<IntelCoverage> allMemberCoverages = new List<IntelCoverage>();
+            allMemberCoverages.Add(starCoverage);
+            allMemberCoverages.AddRange(planetoidCoverages);
+
+            if (SettlementData != null) {
+                IntelCoverage settlementCoverage = SettlementData.GetIntelCoverage(player);
+                allMemberCoverages.Add(settlementCoverage);
+            }
+
+            IntelCoverage currentCoverage = GetIntelCoverage(player);
+
+            IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(allMemberCoverages);
+            var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
+            if (isCoverageSet) {
+                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
+                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+            }
+            else {
+                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
+                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+            }
+        }
+
+        private IntelCoverage GetLowestCommonCoverage(IEnumerable<IntelCoverage> intelCoverages) {
+            IntelCoverage lowestCommonCoverage = IntelCoverage.Comprehensive;
+            foreach (var coverage in intelCoverages) {
+                if (coverage < lowestCommonCoverage) {
+                    lowestCommonCoverage = coverage;
+                }
+            }
+            return lowestCommonCoverage;
         }
 
         #region Event and Property Change Handlers
+
+        private void StarDataPropSetHandler() {
+            D.Assert(!IsOperational);
+            SubscribeToStarDataValueChanges();
+        }
+
+        private void SettlementDataPropChangedHandler() {
+            // Existing settlements will always be destroyed (data = null) before changing to a new settlement
+            if (SettlementData != null) {
+                SubscribeToSettlementDataValueChanges();
+                Owner = SettlementData.Owner;
+            }
+            else {
+                Owner = TempGameValues.NoPlayer;
+                UnsubscribeToSettlementDataValueChanges();
+            }
+            if (IsOperational) {
+                RecalcAllProperties();
+                AssessIntelCoverage();
+            }
+        }
+
+        private void PlanetoidIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            if (!IsOperational) {
+                return;
+            }
+            var playerWhosCoverageChgd = e.Player;
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
+
+        private void SettlementIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            if (!IsOperational) {
+                return;
+            }
+            var playerWhosCoverageChgd = e.Player;
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
+
+        private void StarIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            if (!IsOperational) {
+                return;
+            }
+            var playerWhosCoverageChgd = e.Player;
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
 
         private void PlanetoidCapacityPropChangedHandler() {
             UpdateCapacity();
@@ -149,31 +260,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void StarResourceYieldPropChangedHandler() {
             UpdateResources();
-        }
-
-        private void SettlementDataPropChangedHandler() {
-            // Existing settlements will always be destroyed (data = null) before changing to a new settlement
-            if (SettlementData != null) {
-                SubscribeToSettlementDataValueChanges();
-                Owner = SettlementData.Owner;
-            }
-            else {
-                Owner = TempGameValues.NoPlayer;
-                UnsubscribeToSettlementDataValueChanges();
-            }
-            RecalcAllProperties();
-        }
-
-        private void StarDataPropChangingHandler(StarData newData) {
-            // Existing stars will simply be swapped for another if they change so unsubscribe from the previous first
-            if (StarData != null) {
-                UnsubscribeToStarDataValueChanges();
-            }
-        }
-
-        private void StarDataPropChangedHandler() {
-            SubscribeToStarDataValueChanges();
-            RecalcAllProperties();
         }
 
         private void SettlementOwnerPropChangedHandler() {
@@ -208,20 +294,26 @@ namespace CodeEnv.Master.GameContent {
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 
-        private void UnsubscribeToPlanetoidDataValueChanges(PlanetoidData data) {
-            _planetoidSubscriptions[data].ForAll<IDisposable>(d => d.Dispose());
-            _planetoidSubscriptions.Remove(data);
+        #region Cleanup
+
+        private void UnsubscribeToPlanetoidDataValueChanges(PlanetoidData pData) {
+            _planetoidSubscriptions[pData].ForAll<IDisposable>(d => d.Dispose());
+            _planetoidSubscriptions.Remove(pData);
+            pData.intelCoverageChanged -= PlanetoidIntelCoverageChangedEventHandler;
         }
 
         private void UnsubscribeToStarDataValueChanges() {
             _starSubscriptions.ForAll(d => d.Dispose());
             _starSubscriptions.Clear();
+            StarData.intelCoverageChanged -= StarIntelCoverageChangedEventHandler;
         }
 
         private void UnsubscribeToSettlementDataValueChanges() {
-            if (_settlementSubscriptions != null) {
+            if (SettlementData != null) {
+                D.Assert(_settlementSubscriptions != null);
                 _settlementSubscriptions.ForAll(d => d.Dispose());
                 _settlementSubscriptions.Clear();
+                SettlementData.intelCoverageChanged -= SettlementIntelCoverageChangedEventHandler;
             }
         }
 
@@ -237,11 +329,11 @@ namespace CodeEnv.Master.GameContent {
             }
             _planetoidSubscriptions.Clear();
 
-            _starSubscriptions.ForAll(ss => ss.Dispose());
-            _starSubscriptions.Clear();
-
+            UnsubscribeToStarDataValueChanges();
             UnsubscribeToSettlementDataValueChanges();
         }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -60,6 +60,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public AInfoAccessController InfoAccessCntlr { get; private set; }
 
+        public bool ShowDebugLog { get { return Item.ShowDebugLog; } }
+
         protected IItem Item { get; private set; }
 
         /// <summary>
@@ -77,10 +79,18 @@ namespace CodeEnv.Master.GameContent {
             InfoAccessCntlr = InitializeInfoAccessController();
         }
 
+        /// <summary>
+        /// The final Initialization opportunity. The first method called from CommenceOperations,
+        /// BEFORE IsOperational is set to true.
+        /// </summary>
+        protected virtual void FinalInitialize() { }
+
+
         protected abstract AInfoAccessController InitializeInfoAccessController();
 
         public virtual void CommenceOperations() {
             D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
+            FinalInitialize();
             IsOperational = true;
         }
 
@@ -91,7 +101,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void OwnerPropChangedHandler() {
-            //D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
+            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
         }
 
         protected virtual void TopographyPropChangedHandler() { }

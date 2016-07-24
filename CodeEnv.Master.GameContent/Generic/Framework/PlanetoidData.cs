@@ -65,38 +65,33 @@ namespace CodeEnv.Master.GameContent {
 
         public new PlanetoidInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as PlanetoidInfoAccessController; } }
 
-        public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class
         /// with no countermeasures and no owner.
         /// </summary>
         /// <param name="planetoid">The planetoid.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="planetoidStat">The stat.</param>
-        public PlanetoidData(IPlanetoid planetoid, CameraFollowableStat cameraStat, PlanetoidStat planetoidStat)
-            : this(planetoid, TempGameValues.NoPlayer, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), planetoidStat) { }
+        public PlanetoidData(IPlanetoid planetoid, PlanetoidStat planetoidStat)
+            : this(planetoid, TempGameValues.NoPlayer, Enumerable.Empty<PassiveCountermeasure>(), planetoidStat) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class with no owner.
         /// </summary>
         /// <param name="planetoid">The planetoid.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
-        public PlanetoidData(IPlanetoid planetoid, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
-            : this(planetoid, TempGameValues.NoPlayer, cameraStat, passiveCMs, planetoidStat) { }
+        public PlanetoidData(IPlanetoid planetoid, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
+            : this(planetoid, TempGameValues.NoPlayer, passiveCMs, planetoidStat) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class.
         /// </summary>
         /// <param name="planetoid">The planetoid.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
-        public PlanetoidData(IPlanetoid planetoid, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
-            : base(planetoid, owner, cameraStat, planetoidStat.MaxHitPoints, passiveCMs) {
+        public PlanetoidData(IPlanetoid planetoid, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
+            : base(planetoid, owner, planetoidStat.MaxHitPoints, passiveCMs) {
             Mass = planetoidStat.Mass;
             Category = planetoidStat.Category;
             Radius = planetoidStat.Radius;

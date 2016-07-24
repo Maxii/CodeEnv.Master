@@ -92,18 +92,15 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<ShipData> ElementsData { get { return base.ElementsData.Cast<ShipData>(); } }
 
-        public new CameraFleetCmdStat CameraStat { get { return base.CameraStat as CameraFleetCmdStat; } }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData" /> class
         /// with no passive countermeasures.
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, CameraFleetCmdStat cameraStat, UnitCmdStat cmdStat)
-            : this(fleetCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, UnitCmdStat cmdStat)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
@@ -111,12 +108,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, CameraFleetCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(fleetCmd, owner, cameraStat, passiveCMs, cmdStat) {
-        }
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(fleetCmd, owner, passiveCMs, cmdStat) { }
 
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new FleetInfoAccessController(this);
@@ -145,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void RefreshFullSpeed() {
             if (_elementsData.Any()) {
-                //D.Log("{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
+                //D.Log(ShowDebugLog, "{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
                 UnitFullSpeedValue = _elementsData.Min(eData => (eData as ShipData).FullSpeedValue);
             }
         }
@@ -165,7 +160,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
             int elementCount = unitComposition.GetTotalElementsCount();
-            D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
+            D.Log(ShowDebugLog, "{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 22) {
                 return FleetCategory.Armada;
             }

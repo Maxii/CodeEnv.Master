@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarInfoAccessController(StarData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Resources:
                 default:
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Capacity:
                     return true;
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Owner:
                 case AccessControlInfoID.Category:
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Name:
                 case AccessControlInfoID.ParentName:

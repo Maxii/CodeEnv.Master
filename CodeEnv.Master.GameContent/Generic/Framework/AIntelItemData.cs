@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract class for Data associated with an AIntelItem.
     /// </summary>
-    public abstract class AIntelItemData : ADiscernibleItemData {
+    public abstract class AIntelItemData : AItemData /*ADiscernibleItemData*/ {
 
         public event EventHandler<IntelCoverageChangedEventArgs> intelCoverageChanged;
 
@@ -39,9 +39,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
-        public AIntelItemData(IIntelItem item, Player owner, ACameraItemStat cameraStat)
-            : base(item, owner, cameraStat) {
+        public AIntelItemData(IIntelItem item, Player owner)
+            : base(item, owner) {
             _gameMgr = References.GameManager;
         }
 
@@ -52,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializePlayersIntel() {
             int playerCount = _gameMgr.AIPlayers.Count + 1;
-            //D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
+            //D.Log(ShowDebugLog, "{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
             var userPlayer = _gameMgr.UserPlayer;
             _playerIntelLookup.Add(userPlayer, InitializeIntelState(userPlayer));
@@ -68,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Derived classes should override this if they have a different type of AIntel  than <see cref="Intel" />.
+        /// Derived classes should override this if they have a different type of AIntel than <see cref="Intel" />.
         /// </summary>
         /// <param name="initialcoverage">The initial coverage.</param>
         /// <returns></returns>
@@ -93,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
                 OnIntelCoverageChanged(player);
                 return true;
             }
-            //D.Log("{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
+            //D.Log(ShowDebugLog, "{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
             //    FullName, player.LeaderName, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
             return false;
         }

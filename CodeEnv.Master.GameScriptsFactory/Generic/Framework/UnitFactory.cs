@@ -103,7 +103,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.Assert(fleetCmd.transform.parent != null, "{0} should already have a parent.", fleetCmd.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
         fleetCmd.Name = CommonTerms.Command;
-        fleetCmd.Data = new FleetCmdData(fleetCmd, owner, cameraStat, passiveCMs, cmdStat);
+        FleetCmdData data = new FleetCmdData(fleetCmd, owner, passiveCMs, cmdStat);
+        fleetCmd.CameraStat = cameraStat;
+        fleetCmd.Data = data;
     }
 
     /// <summary>
@@ -185,8 +187,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
         element.Name = hullCategory.GetValueName();
-        ShipData data = new ShipData(element, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design.EnginesStat, design.CombatStance);
+        ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design.EnginesStat, design.CombatStance);
         element.GetComponent<Rigidbody>().mass = data.Mass;
+        element.CameraStat = cameraStat;
         element.Data = data;
     }
 
@@ -219,7 +222,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
         cmd.Name = CommonTerms.Command;
-        cmd.Data = new StarbaseCmdData(cmd, owner, cameraStat, passiveCMs, cmdStat);
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, cmdStat);
+        cmd.CameraStat = cameraStat;
+        cmd.Data = data;
     }
 
     /// <summary>
@@ -251,9 +256,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
         var passiveCMs = MakeCountermeasures(passiveCmStats);
         cmd.Name = CommonTerms.Command;
-        cmd.Data = new SettlementCmdData(cmd, owner, cameraStat, passiveCMs, cmdStat) {
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, cmdStat) {
             Approval = UnityEngine.Random.Range(Constants.ZeroPercent, Constants.OneHundredPercent)
         };
+        cmd.CameraStat = cameraStat;
+        cmd.Data = data;
     }
 
     public FacilityItem MakeFacilityInstance(Player owner, Topography topography, CameraFollowableStat cameraStat, string designName) {
@@ -300,8 +307,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
 
         element.Name = hullCategory.GetValueName();
-        FacilityData data = new FacilityData(element, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, topography);
+        FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, topography);
         element.GetComponent<Rigidbody>().mass = data.Mass;
+        element.CameraStat = cameraStat;
         element.Data = data;
     }
 

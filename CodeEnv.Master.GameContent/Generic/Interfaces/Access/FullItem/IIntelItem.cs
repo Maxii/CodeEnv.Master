@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are AIntelItems.
     /// </summary>
-    public interface IIntelItem : IDiscernibleItem {
+    public interface IIntelItem : IItem {
 
         IntelCoverage UserIntelCoverage { get; }
 

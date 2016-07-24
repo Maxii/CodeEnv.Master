@@ -41,17 +41,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="facility">The facility.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="topography">The topography.</param>
-        public FacilityData(IFacility facility, Player owner, CameraFollowableStat cameraStat,
-            IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs,
-            IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Topography topography)
-            : base(facility, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
+        public FacilityData(IFacility facility, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            Topography topography)
+            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
             Topography = topography;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;

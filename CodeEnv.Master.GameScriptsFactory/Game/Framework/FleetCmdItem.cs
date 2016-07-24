@@ -59,6 +59,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     protected new FleetFormationManager FormationMgr { get { return base.FormationMgr as FleetFormationManager; } }
 
+    public new CameraFleetCmdStat CameraStat {
+        protected get { return base.CameraStat as CameraFleetCmdStat; }
+        set { base.CameraStat = value; }
+    }
+
     private FleetPublisher _publisher;
     private FleetPublisher Publisher {
         get { return _publisher = _publisher ?? new FleetPublisher(Data, this); }
@@ -4534,9 +4539,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region ICameraFollowable Members
 
-    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
+    public float FollowDistanceDampener { get { return CameraStat.FollowDistanceDampener; } }
 
-    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
+    public float FollowRotationDampener { get { return CameraStat.FollowRotationDampener; } }
 
     #endregion
 

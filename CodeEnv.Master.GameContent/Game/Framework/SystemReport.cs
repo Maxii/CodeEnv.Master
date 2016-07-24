@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable report for SystemItems.
     /// </summary>
-    public class SystemReport : AItemReport {
+    public class SystemReport : AIntelItemReport {
 
         public int? Capacity { get; private set; }
 

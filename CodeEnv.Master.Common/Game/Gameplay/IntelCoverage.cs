@@ -24,33 +24,33 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// There is zero knowledge of an item, not even its existance.
         /// </summary>
-        None,
+        None = 0,
 
         /// <summary>
         /// The  player is aware of the existance of an item and knows a couple of basic facts but that is all.
         /// Typically the location is 1) within range of long range sensors, and/or 2) can be observed empirically
         /// by all and/or 3) our info is based off of rumor and inuendo.
         /// </summary>
-        Basic,
+        Basic = 1,
 
         /// <summary>
         /// The player has modest knowledge of this item
         /// Typically the object is within range of medium range sensors. 
         /// </summary>
-        Essential,
+        Essential = 2,
 
         /// <summary>
         /// The player has collected quite a bit of information about this item.  
         /// Typically the object is within range of short range sensors. 
         /// </summary>
-        Broad,
+        Broad = 3,
 
         /// <summary>
         /// The item is under constant observation and is completely connected into the player's real-time knowledge
         /// systems. We know everything there is to know. Typically the item is owned by the player, is
         /// a trusted ally or the player has a source of realtime information.
         /// </summary>
-        Comprehensive
+        Comprehensive = 4
 
         // Aware, Primative, Nominal, Minimal, Minimum, Fundamental, Elementary, Essential, Basic
         // Nominal, Fundamental, Essential

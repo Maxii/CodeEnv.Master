@@ -67,19 +67,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="star">The star.</param>
         /// <param name="starStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
-        public StarData(IStar star, StarStat starStat, CameraFocusableStat cameraStat)
-            : this(star, starStat, cameraStat, TempGameValues.NoPlayer) { }
+        public StarData(IStar star, StarStat starStat)
+            : this(star, starStat, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData" /> class.
         /// </summary>
         /// <param name="star">The star.</param>
         /// <param name="starStat">The stat.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="owner">The owner.</param>
-        public StarData(IStar star, StarStat starStat, CameraFocusableStat cameraStat, Player owner)
-            : base(star, owner, cameraStat) {
+        public StarData(IStar star, StarStat starStat, Player owner)
+            : base(star, owner) {
             Category = starStat.Category;
             Radius = starStat.Radius;
             CloseOrbitInnerRadius = starStat.CloseOrbitInnerRadius;

@@ -73,6 +73,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         set { SetProperty<AUnitCmdItem>(ref _command, value, "Command"); }
     }
 
+    // OPTIMIZE all elements followable for now to support facilities rotating around bases or stars
+    public new CameraFollowableStat CameraStat {
+        protected get { return base.CameraStat as CameraFollowableStat; }
+        set { base.CameraStat = value; }
+    }
+
+
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
     protected PlayerKnowledge OwnerKnowledge { get; private set; }
     protected IList<IWeaponRangeMonitor> WeaponRangeMonitors { get; private set; }
@@ -760,9 +767,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region ICameraFollowable Members
 
-    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
+    public float FollowDistanceDampener { get { return CameraStat.FollowDistanceDampener; } }
 
-    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
+    public float FollowRotationDampener { get { return CameraStat.FollowRotationDampener; } }
 
     #endregion
 

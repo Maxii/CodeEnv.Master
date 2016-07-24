@@ -458,32 +458,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
             FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
     }
-    //private void __ValidateKnowledgeOfOrderTarget(IShipNavigable target, ShipDirective directive) {
-    //    if (directive == ShipDirective.Retreat || directive == ShipDirective.Disband || directive == ShipDirective.Refit
-    //        || directive == ShipDirective.StopAttack) {
-    //        // directives aren't yet implemented
-    //        return;
-    //    }
-    //    if (target is StarItem || target is SystemItem || target is UniverseCenterItem) {
-    //        // unnecessary check as all players have knowledge of these targets
-    //        return;
-    //    }
-    //    if (directive == ShipDirective.AssumeStation || directive == ShipDirective.Scuttle
-    //        || directive == ShipDirective.Repair || directive == ShipDirective.Entrench || directive == ShipDirective.Disengage) {
-    //        D.Assert(target == null);
-    //        return;
-    //    }
-    //    if (directive == ShipDirective.Move) {
-    //        if (target is StationaryLocation || target is MobileLocation) {
-    //            return;
-    //        }
-    //        if (target is SectorItem) {
-    //            return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
-    //        }
-    //    }
-    //    D.Assert(_ownerKnowledge.HasKnowledgeOf(target as IDiscernibleItem), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-    //        FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
-    //}
 
     #endregion
 

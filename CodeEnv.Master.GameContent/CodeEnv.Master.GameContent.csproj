@@ -71,7 +71,6 @@
     <Compile Include="Generic\Interfaces\Access\IShipCloseOrbitSimulator.cs" />
     <Compile Include="Generic\IO\CameraUnitCmdStat.cs" />
     <Compile Include="Generic\IO\ACameraItemStat.cs" />
-    <Compile Include="Generic\Framework\ADiscernibleItemData.cs" />
     <Compile Include="Generic\Framework\AUnitBaseCmdData.cs" />
     <Compile Include="Generic\IO\CameraFleetCmdStat.cs" />
     <Compile Include="Generic\IO\SettlementCmdStat.cs" />
@@ -248,7 +247,6 @@
     <Compile Include="Generic\Interfaces\Access\ISFXManager.cs" />
     <Compile Include="Generic\Interfaces\Access\IBillboard.cs" />
     <Compile Include="Generic\Interfaces\Client\IEffectsMgrClient.cs" />
-    <Compile Include="Generic\Interfaces\Access\FullItem\IDiscernibleItem.cs" />
     <Compile Include="Generic\Interfaces\Access\FullItem\IIntelItem.cs" />
     <Compile Include="Generic\Interfaces\Access\FullItem\IPlanetoid.cs" />
     <Compile Include="Generic\Interfaces\Access\FullItem\IStar.cs" />

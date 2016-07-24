@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes instances of text containing info about Systems.
     /// </summary>
-    public class SystemDisplayInfoFactory : AItemDisplayInfoFactory<SystemReport, SystemDisplayInfoFactory> {
+    public class SystemDisplayInfoFactory : AIntelItemDisplayInfoFactory<SystemReport, SystemDisplayInfoFactory> {
 
         private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
             AccessControlInfoID.Name,
@@ -32,6 +32,7 @@ namespace CodeEnv.Master.GameContent {
             AccessControlInfoID.Capacity,
             AccessControlInfoID.Resources,
 
+            AccessControlInfoID.IntelState,
             AccessControlInfoID.CameraDistance
         };
 

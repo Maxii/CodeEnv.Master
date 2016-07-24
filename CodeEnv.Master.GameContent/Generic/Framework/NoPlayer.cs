@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NoPlayer : Player {
 
-        public NoPlayer() : base(new SpeciesStat(), new LeaderStat(), IQ.None, GameColor.White) { }
+        public NoPlayer() : base(new SpeciesStat(), new LeaderStat(name: "None"), IQ.None, GameColor.White) { }
 
         public override void SetRelationsWith(Player player, DiplomaticRelationship relation) {
             throw new NotImplementedException("SetRelations() is not implemented in {0}.".Inject(GetType().Name));

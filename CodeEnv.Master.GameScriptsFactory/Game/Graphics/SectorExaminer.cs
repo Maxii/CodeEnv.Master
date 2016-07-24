@@ -27,8 +27,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
-/// relevant to the highlighted sector.
+/// Singleton that displays the highlighted wireframe of a sector, provides a context menu for fleet commands
+/// relevant to the highlighted sector and controls display of the Sector HUD.
 /// </summary>
 public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 

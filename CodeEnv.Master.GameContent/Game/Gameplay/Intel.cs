@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Intel.cs
-// Metadata describing the intelligence data known about a particular object.
+// Metadata describing the degree of intelligence coverage a player has about a particular item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Metadata describing the intelligence data known about a particular object.
+    /// Metadata describing the degree of intelligence coverage a player has about a particular item.
     /// This version keeps track of the previous high of knowledge obtained on the object (DatedCoverage)
     /// along with the date it was obtained (DateStamp), so that we remember how much was known at a
     /// particular point in history, even if our CurrentCoverage is no longer that high.

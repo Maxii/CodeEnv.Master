@@ -15,6 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -24,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a SettlementCmdItem.
     /// </summary>
-    public class SettlementCmdData : AUnitBaseCmdData { //: AUnitCmdData {
+    public class SettlementCmdData : AUnitBaseCmdData {
 
         private SettlementCategory _category;
         public SettlementCategory Category {
@@ -48,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
         }
 
-        public SystemData ParentSystemData { private get; set; }
+        public SystemData ParentSystemData { get; set; }
 
         public new SettlementInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SettlementInfoAccessController; } }
 
@@ -58,10 +59,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, CameraUnitCmdStat cameraStat, SettlementCmdStat cmdStat)
-            : this(settlementCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, SettlementCmdStat cmdStat)
+            : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
@@ -69,11 +69,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, SettlementCmdStat cmdStat)
-            : base(settlementCmd, owner, cameraStat, passiveCMs, cmdStat) {
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, SettlementCmdStat cmdStat)
+            : base(settlementCmd, owner, passiveCMs, cmdStat) {
             Population = cmdStat.Population;
         }
 
@@ -93,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementCategory GenerateCmdCategory(BaseComposition unitComposition) {
             int elementCount = unitComposition.GetTotalElementsCount();
-            //D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
+            //D.Log(ShowDebugLog, "{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 8) {
                 return SettlementCategory.Territory;
             }

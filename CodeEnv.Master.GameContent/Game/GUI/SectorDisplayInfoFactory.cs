@@ -23,13 +23,14 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes instances of text containing info about Sectors.
     /// </summary>
-    public class SectorDisplayInfoFactory : AItemDisplayInfoFactory<SectorReport, SectorDisplayInfoFactory> {
+    public class SectorDisplayInfoFactory : AIntelItemDisplayInfoFactory<SectorReport, SectorDisplayInfoFactory> {
 
         private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
             AccessControlInfoID.Name,
             AccessControlInfoID.Owner,
             AccessControlInfoID.SectorIndex,
 
+            AccessControlInfoID.IntelState,
             AccessControlInfoID.CameraDistance
         };
 

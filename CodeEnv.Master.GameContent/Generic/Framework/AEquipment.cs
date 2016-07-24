@@ -40,6 +40,10 @@ namespace CodeEnv.Master.GameContent {
         public float Expense { get { return Stat.Expense; } }
 
         private bool _isActivated;
+        /// <summary>
+        /// Indicates whether the equipment is activated. Equipment must be activated
+        /// to be operational.
+        /// </summary>
         public bool IsActivated {
             get { return _isActivated; }
             set { SetProperty<bool>(ref _isActivated, value, "IsActivated", IsActivatedPropChangedHandler); }
@@ -52,6 +56,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private bool _isOperational;
+        /// <summary>
+        /// Indicates whether the equipment is operational. For equipment to be operational
+        /// it must be both activated and undamged.
+        /// </summary>
         public bool IsOperational {
             get { return _isOperational; }
             private set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }

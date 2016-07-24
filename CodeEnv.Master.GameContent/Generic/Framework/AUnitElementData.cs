@@ -35,9 +35,6 @@ namespace CodeEnv.Master.GameContent {
 
         public Vector3 HullDimensions { get { return HullEquipment.HullDimensions; } }
 
-        // OPTIMIZE all elements followable for now to support facilities rotating around bases or stars
-        public new CameraFollowableStat CameraStat { get { return base.CameraStat as CameraFollowableStat; } }
-
         private string _parentName;
         public string ParentName {
             get { return _parentName; }
@@ -114,15 +111,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        public AUnitElementData(IUnitElement element, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
-            AHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators)
-            : base(element, owner, cameraStat, hullEquipment.MaxHitPoints, passiveCMs) {
+        public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators)
+            : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
@@ -131,7 +127,6 @@ namespace CodeEnv.Master.GameContent {
             Initialize(activeCMs);
             Initialize(shieldGenerators);
         }
-
         private void InitializeWeapons() {
             // weapons are already present in hullEquipment
             Weapons.ForAll(weap => {

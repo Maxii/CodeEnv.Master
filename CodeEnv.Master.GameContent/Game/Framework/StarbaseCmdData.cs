@@ -52,10 +52,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, CameraUnitCmdStat cameraStat, UnitCmdStat cmdStat)
-            : this(starbaseCmd, owner, cameraStat, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, UnitCmdStat cmdStat)
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
         }
 
         /// <summary>
@@ -63,11 +62,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, CameraUnitCmdStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(starbaseCmd, owner, cameraStat, passiveCMs, cmdStat) {
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+            : base(starbaseCmd, owner, passiveCMs, cmdStat) {
             __PopulateResourcesFromSector();
         }
 
@@ -87,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCategory GenerateCmdCategory(BaseComposition unitComposition) {
             int elementCount = unitComposition.GetTotalElementsCount();
-            D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
+            D.Log(ShowDebugLog, "{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 8) {
                 return StarbaseCategory.TerritorialBase;
             }

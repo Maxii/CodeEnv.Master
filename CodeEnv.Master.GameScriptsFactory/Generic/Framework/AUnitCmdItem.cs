@@ -103,6 +103,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<ISensorRangeMonitor> SensorRangeMonitors { get; private set; }
 
+    public new CameraUnitCmdStat CameraStat {
+        protected get { return base.CameraStat as CameraUnitCmdStat; }
+        set { base.CameraStat = value; }
+    }
+
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
     protected AFormationManager FormationMgr { get; private set; }
     protected PlayerKnowledge OwnerKnowledge { get; private set; }
@@ -597,7 +602,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return UnitMaxFormationRadius + Data.CameraStat.OptimalViewingDistanceAdder;
+            return UnitMaxFormationRadius + CameraStat.OptimalViewingDistanceAdder;
         }
         set { base.OptimalCameraViewingDistance = value; }
     }

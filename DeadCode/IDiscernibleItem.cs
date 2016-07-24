@@ -19,6 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are ADiscernibleItems.
     /// </summary>
+    [System.Obsolete]
     public interface IDiscernibleItem : IItem {
 
         bool IsDiscernibleToUser { get; }

@@ -122,6 +122,19 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     public Player Owner { get { return Data.Owner; } }
 
+    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
+        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, AccessControlInfoID.Owner)) {
+            owner = Data.Owner;
+            return true;
+        }
+        owner = null;
+        return false;
+    }
+
+    public bool IsOwnerAccessibleTo(Player player) {
+        return InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner);
+    }
+
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
     protected IList<IDisposable> _subscriptions;
@@ -319,18 +332,6 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     #endregion
 
-    #region IItem_Ltd Members
-
-    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
-        owner = Data.Owner;
-        return InfoAccessCntlr.HasAccessToInfo(requestingPlayer, AccessControlInfoID.Owner);
-    }
-
-    public bool IsOwnerAccessibleTo(Player player) {
-        return InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner);
-    }
-
-    #endregion
 
 }
 

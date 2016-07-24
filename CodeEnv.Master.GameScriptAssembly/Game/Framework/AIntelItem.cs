@@ -57,7 +57,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
 
     protected override void AssessIsDiscernibleToUser() {
         var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
-        IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage != IntelCoverage.None;
+        IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage > IntelCoverage.None;
     }
 
     #region Event and Property Change Handlers

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AIntel.cs
-// Abstract base class for the intelligence data known about a particular object.
+// Abstract base class for Metadata describing the degree of intelligence coverage a player has about a particular item. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract base class for the intelligence data known about a particular object.
+    /// Abstract base class for Metadata describing the degree of intelligence coverage a player has about a particular item. 
     /// </summary>
     public abstract class AIntel : APropertyChangeTracking {
 

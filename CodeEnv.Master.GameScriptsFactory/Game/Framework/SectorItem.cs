@@ -27,8 +27,6 @@ using UnityEngine;
 /// </summary>
 public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
 
-    // Note: infoAccessChanged event never fires in sectors as sectors don't change their info access rights (!:AIntelItem)
-
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
     /// distance of the surrounding patrol stations from the item's position.
@@ -47,6 +45,8 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
         get { return base.Data as SectorData; }
         set { base.Data = value; }
     }
+
+    public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
@@ -79,7 +79,8 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
     protected override void InitializeOnData() {
         base.InitializeOnData();
         _hudManager = new ItemHudManager(Publisher);
-        // Note: There is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
+        // Note: There is no collider associated with a SectorItem. 
+        // The collider used for HUD and context menu activation is part of the SectorExaminer
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {
@@ -102,9 +103,28 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
         return guardStations;
     }
 
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        Data.intelCoverageChanged += IntelCoverageChangedEventHandler;
+    }
+
     #endregion
 
     public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+    public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
+
+    /// <summary>
+    /// Sets the Intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
+    /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
+    /// the item to regress its IntelCoverage.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="newCoverage">The new coverage.</param>
+    /// <returns></returns>
+    public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+        return Data.SetIntelCoverage(player, newCoverage);
+    }
 
     #region Event and Property Change Handlers
 
@@ -113,13 +133,43 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
         // The owner of a sector and all it's celestial objects is determined by the ownership of the System, if any
     }
 
+    private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
+        if (!IsOperational) {
+            // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
+            return;
+        }
+        Player playerWhosCoverageChgd = e.Player;
+        D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
+        if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
+            HandleUserIntelCoverageChanged();
+        }
+
+        Player playerWhosInfoAccessChgd = playerWhosCoverageChgd;
+        OnInfoAccessChanged(playerWhosInfoAccessChgd);
+    }
+
     #endregion
+
+    /// <summary>
+    /// Handles a change in the User's IntelCoverage of this item.
+    /// </summary>
+    protected virtual void HandleUserIntelCoverageChanged() {
+        if (IsHudShowing) {
+            // refresh the HUD as IntelCoverage has changed
+            ShowHud(true);
+        }
+    }
 
     #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
         Data.Dispose();
+    }
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        Data.intelCoverageChanged -= IntelCoverageChangedEventHandler;
     }
 
     #endregion

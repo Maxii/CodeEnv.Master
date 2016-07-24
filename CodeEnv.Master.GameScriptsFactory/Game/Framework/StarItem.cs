@@ -135,7 +135,6 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         _obstacleZoneCollider.enabled = true;
     }
 
-
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     private void AssessIcon() {

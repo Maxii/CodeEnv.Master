@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Immutable report on a sector.
     /// </summary>
-    public class SectorReport : AItemReport {
+    public class SectorReport : AIntelItemReport {
 
         public Index3D SectorIndex { get; private set; }
 

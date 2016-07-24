@@ -18,13 +18,14 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// Class for Data associated with a SectorItem.
     /// </summary>
-    public class SectorData : AItemData, IDisposable {
+    public class SectorData : AIntelItemData, IDisposable {
 
         public Index3D SectorIndex { get; private set; }
 
@@ -33,13 +34,17 @@ namespace CodeEnv.Master.GameContent {
             get { return _systemData; }
             set {
                 D.Assert(_systemData == null);  // one time only if at all
-                SetProperty<SystemData>(ref _systemData, value, "SystemData", SystemDataPropChangedHandler);
+                SetProperty<SystemData>(ref _systemData, value, "SystemData", SystemDataPropSetHandler);
             }
         }
 
         public new SectorInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SectorInfoAccessController; } }
 
+        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
+
         private IList<IDisposable> _systemDataSubscribers;
+
+        #region Initialization
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SectorData" /> class
@@ -66,24 +71,113 @@ namespace CodeEnv.Master.GameContent {
             return new SectorInfoAccessController(this);
         }
 
+        private void SubscribeToSystemDataValueChanges() {
+            _systemDataSubscribers = new List<IDisposable>();
+            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
+            SystemData.intelCoverageChanged += SystemIntelCoverageChangedEventHandler;
+        }
+
+        protected override void FinalInitialize() {
+            base.FinalInitialize();
+            AssessIntelCoverage();
+        }
+
+        #endregion
+
+        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
+            var intel = new ImprovingIntel();
+            intel.InitializeCoverage(initialcoverage);
+            return intel;
+        }
+
+        private void AssessIntelCoverage() {
+            foreach (Player player in _gameMgr.AllPlayers) {
+                AssessIntelCoverageFor(player);
+            }
+        }
+
+        private void AssessIntelCoverageFor(Player player) {
+            List<IntelCoverage> allMemberCoverages = new List<IntelCoverage>();
+
+            if (SystemData != null) {
+                IntelCoverage systemCoverage = SystemData.GetIntelCoverage(player);
+                allMemberCoverages.Add(systemCoverage);
+            }
+            // TODO add other members when they are incorporated into Sectors
+
+            if (!allMemberCoverages.Any()) {
+                // TEMP there are no members so give player Comprehensive
+                var isSet = SetIntelCoverage(player, IntelCoverage.Comprehensive);
+                D.Assert(isSet);
+                return;
+            }
+
+            IntelCoverage currentCoverage = GetIntelCoverage(player);
+
+            IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(allMemberCoverages);
+            var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
+            if (isCoverageSet) {
+                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
+                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+            }
+            else {
+                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
+                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+            }
+        }
+
+        private IntelCoverage GetLowestCommonCoverage(IEnumerable<IntelCoverage> intelCoverages) {
+            IntelCoverage lowestCommonCoverage = IntelCoverage.Comprehensive;
+            foreach (var coverage in intelCoverages) {
+                if (coverage < lowestCommonCoverage) {
+                    lowestCommonCoverage = coverage;
+                }
+            }
+            return lowestCommonCoverage;
+        }
+
         #region Event and Property Change Handlers
 
-        private void SystemDataPropChangedHandler() {
+        private void SystemDataPropSetHandler() {
+            D.Assert(!IsOperational);
             SubscribeToSystemDataValueChanges();
             if (Owner != SystemData.Owner) { // avoids PropChange equal warning when System owner is NoPlayer
                 Owner = SystemData.Owner;
             }
         }
 
+        private void SystemIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            if (!IsOperational) {
+                return;
+            }
+            var playerWhosCoverageChgd = e.Player;
+            AssessIntelCoverageFor(playerWhosCoverageChgd);
+        }
+
         private void SystemOwnerPropChangedHandler() {
             Owner = SystemData.Owner;
         }
 
+        protected override void OwnerPropChangedHandler() {
+            base.OwnerPropChangedHandler();
+            PropogateOwnerChange();
+        }
+
         #endregion
 
-        private void SubscribeToSystemDataValueChanges() {
-            _systemDataSubscribers = new List<IDisposable>();
-            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
+        private void PropogateOwnerChange() {
+            // TODO nothing to propogate to yet as System.Owner is the source of the change
+        }
+
+        #region Cleanup
+
+        private void UnsubscribeFromSystemDataValueChanges() {
+            if (SystemData != null) {
+                D.Assert(_systemDataSubscribers != null);
+                _systemDataSubscribers.ForAll(sds => sds.Dispose());
+                _systemDataSubscribers.Clear();
+                SystemData.intelCoverageChanged -= SystemIntelCoverageChangedEventHandler;
+            }
         }
 
         private void Cleanup() {
@@ -91,11 +185,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            if (_systemDataSubscribers != null) {
-                _systemDataSubscribers.ForAll(sds => sds.Dispose());
-                _systemDataSubscribers.Clear();
-            }
+            UnsubscribeFromSystemDataValueChanges();
         }
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

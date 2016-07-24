@@ -187,7 +187,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="ship">The ship.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="cameraStat">The camera stat.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
@@ -195,10 +194,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="enginesStat">The engines stat.</param>
         /// <param name="combatStance">The combat stance.</param>
-        public ShipData(IShip ship, Player owner, CameraFollowableStat cameraStat, IEnumerable<PassiveCountermeasure> passiveCMs,
-            ShipHullEquipment hullEquipment, IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors,
-            IEnumerable<ShieldGenerator> shieldGenerators, EnginesStat enginesStat, ShipCombatStance combatStance)
-            : base(ship, owner, cameraStat, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
+        public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            EnginesStat enginesStat, ShipCombatStance combatStance)
+            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
@@ -217,10 +216,14 @@ namespace CodeEnv.Master.GameContent {
             return new ShipInfoAccessController(this);
         }
 
+        protected override void FinalInitialize() {
+            base.FinalInitialize();
+            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will set CurrentDrag
+        }
+
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will set CurrentDrag
-            //D.Log("{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
+            //D.Log(ShowDebugLog, "{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
             IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
         }
 
@@ -256,7 +259,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void IsFtlOperationalPropChangedHandler() {
             string msg = IsFtlOperational ? "now" : "no longer";
-            D.Log("{0} FTL is {1} operational.", FullName, msg);
+            D.Log(ShowDebugLog, "{0} FTL is {1} operational.", FullName, msg);
             RefreshFullSpeedValue();
         }
 

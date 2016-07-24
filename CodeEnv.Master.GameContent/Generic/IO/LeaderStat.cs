@@ -44,6 +44,8 @@ namespace CodeEnv.Master.GameContent {
 
         public string ImageFilename { get; private set; }
 
+        public LeaderStat(string name) : this(name, AtlasID.None, null) { }
+
         public LeaderStat(string name, AtlasID imageAtlasID, string imageFilename)
             : this() {
             Name = name;

@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for Items that can change whether they are discernible by the UserPlayer.
 /// </summary>
-public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsMgrClient, ISelectable {
+public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable, IEffectsMgrClient, ISelectable {
 
     public event EventHandler<EffectSeqEventArgs> effectSeqStarting;
     public event EventHandler<EffectSeqEventArgs> effectSeqFinished;
@@ -44,10 +44,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
         get { return DisplayMgr != null ? IsDiscernibleToUser && DisplayMgr.IsPrimaryMeshInMainCameraLOS : IsDiscernibleToUser; }
     }
 
-    public new ADiscernibleItemData Data {
-        get { return base.Data as ADiscernibleItemData; }
-        set { base.Data = value; }
-    }
+    public ACameraItemStat CameraStat { protected get; set; }
 
     private ADisplayManager _displayMgr;
     protected ADisplayManager DisplayMgr {
@@ -441,13 +438,13 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
     /// </summary>
     public virtual bool IsCameraTargetEligible { get { return IsDiscernibleToUser; } }
 
-    public float MinimumCameraViewingDistance { get { return Data.CameraStat.MinimumViewingDistance; } }
+    public float MinimumCameraViewingDistance { get { return CameraStat.MinimumViewingDistance; } }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public float FieldOfView { get { return Data.CameraStat.FieldOfView; } }
+    public float FieldOfView { get { return CameraStat.FieldOfView; } }
 
     //Note: protected and virtual so FleetCmdItems can override using UnitRadius
     protected float _optimalCameraViewingDistance;
@@ -457,7 +454,7 @@ public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusab
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return (Data.CameraStat as CameraFocusableStat).OptimalViewingDistance;
+            return (CameraStat as CameraFocusableStat).OptimalViewingDistance;
         }
         set { SetProperty<float>(ref _optimalCameraViewingDistance, value, "OptimalCameraViewingDistance"); }
     }

@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementInfoAccessController(SettlementCmdData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.CurrentCmdEffectiveness:
                 case AccessControlInfoID.UnitScience:
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.UnitWeaponsRange:
                 case AccessControlInfoID.UnitSensorRange:
@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Owner:
                 case AccessControlInfoID.Category:
@@ -68,13 +68,18 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Name:
                 case AccessControlInfoID.ParentName:
                 case AccessControlInfoID.Position:
                 case AccessControlInfoID.SectorIndex:
                     return true;
+                case AccessControlInfoID.Owner:
+                    // If gets here, Settlement IntelCoverage is Basic, but ParentSystem could be allowing access.
+                    // System uses ImprovingIntel where Coverage can't regress. Settlement uses Intel which allows regress
+                    SystemInfoAccessController parentSysAccessCntlr = (_data as SettlementCmdData).ParentSystemData.InfoAccessCntlr;
+                    return parentSysAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner);
                 default:
                     return false;
             }

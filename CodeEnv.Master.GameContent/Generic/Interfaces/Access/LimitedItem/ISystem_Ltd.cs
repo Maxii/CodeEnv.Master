@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// limited InfoAccess Interface for easy access to MonoBehaviours that are SystemItems.
     /// </summary>
-    public interface ISystem_Ltd : IItem_Ltd {
+    public interface ISystem_Ltd : IIntelItem_Ltd {
 
         Index3D SectorIndex { get; }
 

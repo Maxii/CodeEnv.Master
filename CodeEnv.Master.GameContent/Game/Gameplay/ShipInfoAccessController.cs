@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipInfoAccessController(ShipData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Target:
                 case AccessControlInfoID.CombatStance:
@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.CurrentHitPoints:
                 case AccessControlInfoID.MaxTurnRate:
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Category:
                 case AccessControlInfoID.Owner:
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID) {
+        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
             switch (infoID) {
                 case AccessControlInfoID.Name:
                 case AccessControlInfoID.ParentName:

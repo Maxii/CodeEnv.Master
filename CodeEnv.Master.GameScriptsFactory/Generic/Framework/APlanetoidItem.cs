@@ -63,6 +63,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     protected SystemItem ParentSystem { get; private set; }
     protected SphereCollider ObstacleZoneCollider { get; private set; }
 
+    public new CameraFollowableStat CameraStat {
+        protected get { return base.CameraStat as CameraFollowableStat; }
+        set { base.CameraStat = value; }
+    }
+
+
     private PlanetoidPublisher _publisher;
     private PlanetoidPublisher Publisher {
         get { return _publisher = _publisher ?? new PlanetoidPublisher(Data, this); }
@@ -343,9 +349,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region ICameraFollowable Members
 
-    public float FollowDistanceDampener { get { return Data.CameraStat.FollowDistanceDampener; } }
+    public float FollowDistanceDampener { get { return CameraStat.FollowDistanceDampener; } }
 
-    public float FollowRotationDampener { get { return Data.CameraStat.FollowRotationDampener; } }
+    public float FollowRotationDampener { get { return CameraStat.FollowRotationDampener; } }
 
     #endregion
 

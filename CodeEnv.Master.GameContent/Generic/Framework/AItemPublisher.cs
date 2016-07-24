@@ -26,7 +26,10 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AItemReport
         where DataType : AItemData {
 
+        protected bool ShowDebugLog { get { return _data.ShowDebugLog; } }
+
         protected DataType _data;
+
         private IDictionary<Player, ReportType> _reportCache = new Dictionary<Player, ReportType>();
 
         public AItemPublisher(DataType data)
@@ -41,11 +44,11 @@ namespace CodeEnv.Master.GameContent {
             if (!IsCachedReportCurrent(player, out cachedReport)) {
                 cachedReport = MakeReportInstance(player);
                 CacheReport(player, cachedReport);
-                D.Log("{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
+                D.Log(ShowDebugLog, "{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
                 _data.AcceptChanges();
             }
             else {
-                D.Log("{0} reusing cached {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
+                D.Log(ShowDebugLog, "{0} reusing cached {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
             }
             return cachedReport;
         }

@@ -19,6 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract class for Data associated with an ADiscernibleItem.
     /// </summary>
+    [System.Obsolete]
     public abstract class ADiscernibleItemData : AItemData {
 
         public ACameraItemStat CameraStat { get; private set; }
@@ -33,6 +34,7 @@ namespace CodeEnv.Master.GameContent {
             : base(item, owner) {
             CameraStat = cameraStat;
         }
+
 
     }
 }

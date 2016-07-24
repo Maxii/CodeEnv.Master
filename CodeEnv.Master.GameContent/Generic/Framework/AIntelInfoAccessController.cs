@@ -27,33 +27,33 @@ namespace CodeEnv.Master.GameContent {
 
         public AIntelInfoAccessController(AIntelItemData data) : base(data) { }
 
-        public override bool HasAccessToInfo(Player player, AccessControlInfoID infoID) {
+        public sealed override bool HasAccessToInfo(Player player, AccessControlInfoID infoID) {
             D.Assert(player != TempGameValues.NoPlayer, "{0}: NoPlayer used to attempt access to {1}.{2}.", _data.FullName, typeof(AccessControlInfoID).Name, infoID.GetValueName());
             D.Assert(infoID != AccessControlInfoID.None);
 
             var coverage = (_data as AIntelItemData).GetIntelCoverage(player);
-            return HasAccessToInfo(coverage, infoID);
+            return HasAccessToInfo(coverage, infoID, player);
         }
 
-        private bool HasAccessToInfo(IntelCoverage coverage, AccessControlInfoID infoID) {
+        private bool HasAccessToInfo(IntelCoverage coverage, AccessControlInfoID infoID, Player player) {
             switch (coverage) {
                 case IntelCoverage.Comprehensive:
-                    if (HasAccessToInfo_Comprehensive(infoID)) {
+                    if (HasAccessToInfo_Comprehensive(infoID, player)) {
                         return true;
                     }
                     goto case IntelCoverage.Broad;
                 case IntelCoverage.Broad:
-                    if (HasAccessToInfo_Broad(infoID)) {
+                    if (HasAccessToInfo_Broad(infoID, player)) {
                         return true;
                     }
                     goto case IntelCoverage.Essential;
                 case IntelCoverage.Essential:
-                    if (HasAccessToInfo_Essential(infoID)) {
+                    if (HasAccessToInfo_Essential(infoID, player)) {
                         return true;
                     }
                     goto case IntelCoverage.Basic;
                 case IntelCoverage.Basic:
-                    if (HasAccessToInfo_Basic(infoID)) {
+                    if (HasAccessToInfo_Basic(infoID, player)) {
                         return true;
                     }
                     goto case IntelCoverage.None;
@@ -65,36 +65,44 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Comprehensive should have access to the info identified by infoID, 
+        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Comprehensive should have access to the info identified by infoID,
         /// <c>false</c> otherwise. If false, the next lower IntelCoverage level will be tested until true is returned or Basic has been evaluated.
         /// </summary>
         /// <param name="infoID">The information identifier.</param>
+        /// <param name="player">The player requesting the access. 
+        /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID);
+        protected abstract bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player);
 
         /// <summary>
-        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Broad should have access to the info identified by infoID, 
+        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Broad should have access to the info identified by infoID,
         /// <c>false</c> otherwise. If false, the next lower IntelCoverage level will be tested until true is returned or Basic has been evaluated.
         /// </summary>
         /// <param name="infoID">The information identifier.</param>
+        /// <param name="player">The player requesting the access. 
+        /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Broad(AccessControlInfoID infoID);
+        protected abstract bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player);
 
         /// <summary>
-        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Essential should have access to the info identified by infoID, 
+        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Essential should have access to the info identified by infoID,
         /// <c>false</c> otherwise. If false, the next lower IntelCoverage level will be tested until true is returned or Basic has been evaluated.
         /// </summary>
         /// <param name="infoID">The information identifier.</param>
+        /// <param name="player">The player requesting the access. 
+        /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Essential(AccessControlInfoID infoID);
+        protected abstract bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player);
 
         /// <summary>
-        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Basic should have access to the info identified by infoID, 
+        /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Basic should have access to the info identified by infoID,
         /// <c>false</c> otherwise.
         /// </summary>
         /// <param name="infoID">The information identifier.</param>
+        /// <param name="player">The player requesting the access. 
+        /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Basic(AccessControlInfoID infoID);
+        protected abstract bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player);
 
 
     }
