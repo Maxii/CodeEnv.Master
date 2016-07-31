@@ -33,8 +33,6 @@ namespace CodeEnv.Master.GameContent {
 
         public CombatStrength? DefensiveStrength { get; protected set; }
 
-        public float? Mass { get; protected set; }
-
         public AMortalItemReport(AMortalItemData data, Player player, IMortalItem_Ltd item)
             : base(data, player, item) {
         }

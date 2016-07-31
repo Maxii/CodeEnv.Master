@@ -109,11 +109,19 @@ namespace CodeEnv.Master.GameContent {
 
         protected void CountermeasureIsDamagedChangedEventHandler(object sender, EventArgs e) {
             var cm = sender as AEquipment;
-            D.Log(ShowDebugLog, "{0}'s {1}.IsDamaged is now {2}.", FullName, cm.Name, cm.IsDamaged);
+            HandleCountermeasureIsDamagedChanged(cm);
+        }
+
+        private void HandleCountermeasureIsDamagedChanged(AEquipment countermeasure) {
+            D.Log(ShowDebugLog, "{0}'s {1}.IsDamaged is now {2}.", FullName, countermeasure.Name, countermeasure.IsDamaged);
             RecalcDefensiveValues();
         }
 
         private void MaxHitPtsPropChangingHandler(float newMaxHitPoints) {
+            HandleMaxHitPtsChanging(newMaxHitPoints);
+        }
+
+        private void HandleMaxHitPtsChanging(float newMaxHitPoints) {
             D.Assert(newMaxHitPoints >= Constants.ZeroF);
             if (newMaxHitPoints < MaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
@@ -130,11 +138,15 @@ namespace CodeEnv.Master.GameContent {
             Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
         }
 
-        protected virtual void HealthPropChangedHandler() {
+        private void HealthPropChangedHandler() {
+            HandleHealthChanged();
+        }
+
+        protected virtual void HandleHealthChanged() {
             D.Log(ShowDebugLog, "{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
         }
 
-        protected sealed override void IsOperationalPropChangedHandler() {
+        protected sealed override void HandleIsOperationalChanged() {
             // override the AItemData Assert as MortalItems set IsOperational to false when dieing
         }
 

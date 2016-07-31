@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         IList<ISensorRangeMonitor> SensorRangeMonitors { get; }
 
-        void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship);
+        void HandleRelationsChanged(Player otherPlayer);
 
     }
 }

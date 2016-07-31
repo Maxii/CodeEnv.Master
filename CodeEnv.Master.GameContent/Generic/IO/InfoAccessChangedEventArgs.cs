@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     public class InfoAccessChangedEventArgs : EventArgs {
 
         /// <summary>
-        /// The player whos Info access rights to this item changed.
+        /// The player whose Info access rights to this item changed.
         /// </summary>
         public Player Player { get; private set; }
 

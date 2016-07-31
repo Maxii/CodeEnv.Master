@@ -25,31 +25,31 @@ namespace CodeEnv.Master.GameContent {
 
         public UniverseCenterInfoAccessController(UniverseCenterData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.Position:
+                case ItemInfoID.Name:
+                case ItemInfoID.Position:
                     return true;
                 default:
                     return false;

@@ -53,8 +53,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Graphics\CircleHighlightManager.cs" />
     <Compile Include="Generic\Framework\AIntelInfoAccessController.cs" />
-    <Compile Include="Generic\Framework\AccessControlInfoID.cs" />
+    <Compile Include="Generic\Framework\ItemInfoID.cs" />
     <Compile Include="Game\Gameplay\FacilityInfoAccessController.cs" />
     <Compile Include="Game\Gameplay\FleetInfoAccessController.cs" />
     <Compile Include="Generic\Framework\FormationStationSlotID.cs" />
@@ -239,10 +240,7 @@
     <Compile Include="Game\GUI\ItemHudManager.cs" />
     <Compile Include="Game\Framework\PlanetoidPublisher.cs" />
     <Compile Include="Game\Framework\PlanetoidReport.cs" />
-    <Compile Include="Generic\Graphics\Highlighter.cs" />
-    <Compile Include="Generic\Graphics\HighlightID.cs" />
-    <Compile Include="Generic\Interfaces\IHighlightable.cs" />
-    <Compile Include="Generic\Interfaces\Access\IHighlighter.cs" />
+    <Compile Include="Generic\Graphics\CircleHighlightID.cs" />
     <Compile Include="Generic\Framework\MobileLocation.cs" />
     <Compile Include="Generic\Interfaces\Access\ISFXManager.cs" />
     <Compile Include="Generic\Interfaces\Access\IBillboard.cs" />
@@ -370,6 +368,10 @@
     <Compile Include="Generic\Interfaces\Access\LimitedItem\IUniverseCenter_Ltd.cs" />
     <Compile Include="Generic\Interfaces\Access\LimitedItem\IIntelItem_Ltd.cs" />
     <Compile Include="Generic\IO\InfoAccessChangedEventArgs.cs" />
+    <Compile Include="Game\Graphics\HoverHighlightManager.cs" />
+    <Compile Include="Generic\Interfaces\ISectorViewHighlightable.cs" />
+    <Compile Include="Generic\Graphics\AHighlightManager.cs" />
+    <Compile Include="Game\Graphics\SectorViewHighlightManager.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

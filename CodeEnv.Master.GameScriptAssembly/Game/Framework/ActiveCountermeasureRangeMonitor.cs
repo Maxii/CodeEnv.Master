@@ -99,6 +99,10 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
     private void ThreatDeathEventHandler(object sender, EventArgs e) {
         IOrdnance deadThreat = sender as IOrdnance;
+        HandleThreatDeath(deadThreat);
+    }
+
+    private void HandleThreatDeath(IOrdnance deadThreat) {
         //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", Name, deadThreat.Name);
         RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
     }

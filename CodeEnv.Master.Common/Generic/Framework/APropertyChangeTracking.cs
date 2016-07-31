@@ -136,6 +136,13 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        /// <summary>
+        /// My addition that sets _isChanged to true.
+        /// </summary>
+        public void MarkAsChanged() {
+            _isChanged = true;
+        }
+
         #region IChangeTracking Members
 
         public void AcceptChanges() {

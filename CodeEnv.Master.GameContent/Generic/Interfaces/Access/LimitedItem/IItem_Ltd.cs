@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         /// Occurs when InfoAccess rights change for a player on an item.
         /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
         /// </summary>
-        event EventHandler<InfoAccessChangedEventArgs> infoAccessChanged;
+        event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
         bool IsOperational { get; }
 

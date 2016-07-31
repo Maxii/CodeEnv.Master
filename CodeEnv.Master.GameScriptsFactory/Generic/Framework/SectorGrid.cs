@@ -318,14 +318,15 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
     /// Gets the half value (1.5, 2.5, 1.5) location (in the grid coordinate system)
     /// associated with this sector index. This will be the center of the sector box.
     /// </summary>
-    /// <param name="index">The sector index.</param>
+    /// <param name="sectorIndex">The sector index.</param>
     /// <returns></returns>
-    public Vector3 GetGridBoxLocation(Index3D index) {
+    public Vector3 GetGridBoxLocation(Index3D sectorIndex) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
         Vector3 gridBoxLocation;
-        if (!_sectorIndexToGridBoxLookup.TryGetValue(index, out gridBoxLocation)) {
-            gridBoxLocation = CalculateGridBoxLocationFromSectorIndex(index);
-            _sectorIndexToGridBoxLookup.Add(index, gridBoxLocation);
-            _gridBoxToSectorIndexLookup.Add(gridBoxLocation, index);
+        if (!_sectorIndexToGridBoxLookup.TryGetValue(sectorIndex, out gridBoxLocation)) {
+            gridBoxLocation = CalculateGridBoxLocationFromSectorIndex(sectorIndex);
+            _sectorIndexToGridBoxLookup.Add(sectorIndex, gridBoxLocation);
+            _gridBoxToSectorIndexLookup.Add(gridBoxLocation, sectorIndex);
         }
         return gridBoxLocation;
     }
@@ -344,15 +345,16 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
     /// associated with this sector index. This will be the left, lower, back corner of the 
     /// sector box.
     /// </summary>
-    /// <param name="index">The sector index.</param>
+    /// <param name="sectorIndex">The sector index.</param>
     /// <returns></returns>
-    public Vector3 GetGridVertexLocation(Index3D index) {
-        return GetGridBoxLocation(index) - _gridVertexToBoxOffset;
+    public Vector3 GetGridVertexLocation(Index3D sectorIndex) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        return GetGridBoxLocation(sectorIndex) - _gridVertexToBoxOffset;
     }
 
     public Index3D GetSectorIndex(Vector3 worldPoint) {
         Index3D index;
-        Vector3 gridClosestBoxLocation = _grid.NearestCell(worldPoint, RectGrid.CoordinateSystem.Grid);   //_grid.NearestBoxG(worldPoint);
+        Vector3 gridClosestBoxLocation = _grid.NearestCell(worldPoint, RectGrid.CoordinateSystem.Grid);
         if (!_gridBoxToSectorIndexLookup.TryGetValue(gridClosestBoxLocation, out index)) {
             //D.Log("No Index at Grid Box Location {0}.", gridClosestBoxLocation);
             index = Instance.CalculateSectorIndexFromGridLocation(gridClosestBoxLocation);
@@ -370,7 +372,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
     /// <param name="sectorIndex">Index of the sector.</param>
     /// <param name="worldPosition">The world position of the sector's center.</param>
     /// <returns></returns>
-    public bool TryGetSectorPosition(Index3D sectorIndex, out Vector3 worldPosition) {
+    public bool __TryGetSectorPosition(Index3D sectorIndex, out Vector3 worldPosition) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
         bool isSectorFound = _sectorIndexToWorldBoxLocationLookup.TryGetValue(sectorIndex, out worldPosition);
         D.Warn(!isSectorFound, "{0} could not find a sector at Index {1}.", GetType().Name, sectorIndex);
         return isSectorFound;
@@ -381,11 +384,23 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
     /// Warning: While debugging, only a limited number of sectors are 'built' to
     /// reduce the time needed to construct valid paths for pathfinding.
     /// </summary>
-    /// <param name="index">The index.</param>
+    /// <param name="sectorIndex">The index.</param>
     /// <param name="sector">The sector.</param>
     /// <returns></returns>
-    public bool TryGetSector(Index3D index, out SectorItem sector) {
-        return _sectorIndexToSectorLookup.TryGetValue(index, out sector);
+    public bool __TryGetSector(Index3D sectorIndex, out SectorItem sector) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        return _sectorIndexToSectorLookup.TryGetValue(sectorIndex, out sector);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if a sector is present at this index, <c>false</c> otherwise.
+    /// Warning: While debugging, only a limited number of sectors are 'built' to
+    /// reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <returns></returns>
+    public bool __IsSectorPresentAt(Index3D sectorIndex) {
+        return _sectorIndexToSectorLookup.ContainsKey(sectorIndex);
     }
 
     /// <summary>
@@ -393,12 +408,13 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
     /// Warning: Can be null while debugging as only a limited number of sectors are 'built'
     /// to reduce the time needed to construct valid paths for pathfinding.
     /// </summary>
-    /// <param name="index">The index.</param>
+    /// <param name="sectorIndex">The index.</param>
     /// <returns></returns>
-    public SectorItem GetSector(Index3D index) {
+    public SectorItem GetSector(Index3D sectorIndex) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
         SectorItem sector;
-        if (!TryGetSector(index, out sector)) {
-            D.Warn("{0}: No Sector at {1}, returning null.", GetType().Name, index);
+        if (!_sectorIndexToSectorLookup.TryGetValue(sectorIndex, out sector)) {
+            D.Warn("{0}: No Sector at {1}, returning null.", GetType().Name, sectorIndex);
         }
         return sector;
     }
@@ -447,9 +463,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
         foreach (var x in xValuePair) {
             foreach (var y in yValuePair) {
                 foreach (var z in zValuePair) {
-                    SectorItem unused;
                     Index3D index = new Index3D(x, y, z);
-                    if (TryGetSector(index, out unused)) {
+                    if (__IsSectorPresentAt(index)) {
                         neighbors.Add(index);
                     }
                 }
@@ -491,6 +506,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
     /// <param name="second">The second.</param>
     /// <returns></returns>
     public float GetDistanceInSectors(Index3D first, Index3D second) {
+        D.Assert(first != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, first);
+        D.Assert(second != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, second);
         Vector3 firstGridBoxLoc = GetGridBoxLocation(first);
         Vector3 secondGridBoxLoc = GetGridBoxLocation(second);
         return Vector3.Distance(firstGridBoxLoc, secondGridBoxLoc);
@@ -538,6 +555,97 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {   // has Cus
 
         float elapsedTime = (float)(System.DateTime.UtcNow - startTime).TotalSeconds;
         D.Log("{0} spent {1:0.####} secs validating {2} sector corners.", GetType().Name, elapsedTime, SectorCorners.Count);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector indicated by sectorIndex contains a System, <c>false</c> otherwise.
+    /// HACK pending creating a collection for each custom type in the universe, organized by sectorIndex.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="system">The system if present in the sector.</param>
+    /// <returns></returns>
+    public bool TryGetSystem(Index3D sectorIndex, out ISystem system) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        SystemItem sys = null;
+        if (SystemCreator.TryGetSystem(sectorIndex, out sys)) {
+            system = sys as ISystem;
+            return true;
+        }
+        system = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Starbases, <c>false</c> otherwise.
+    /// HACK pending creating a collection for each custom type in the universe, organized by sectorIndex.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="starbasesInSector">The resulting starbases in sector.</param>
+    /// <returns></returns>
+    public bool TryGetStarbases(Index3D sectorIndex, out IEnumerable<IStarbaseCmd> starbasesInSector) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        IEnumerable<StarbaseCmdItem> sBases;
+        if (StarbaseUnitCreator.TryGetStarbases(sectorIndex, out sBases)) {
+            starbasesInSector = sBases.Cast<IStarbaseCmd>();
+            return true;
+        }
+        starbasesInSector = Enumerable.Empty<IStarbaseCmd>();
+        return false;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Starbases, <c>false</c> otherwise.
+    /// HACK pending creating a collection for each custom type in the universe, organized by sectorIndex.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="starbasesInSector">The resulting starbases in sector.</param>
+    /// <returns></returns>
+    public bool TryGetFleets(Index3D sectorIndex, out IEnumerable<IFleetCmd> fleetsInSector) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        IEnumerable<FleetCmdItem> fleets;
+        if (FleetUnitCreator.TryGetFleets(sectorIndex, out fleets)) {
+            fleetsInSector = fleets.Cast<IFleetCmd>();
+            return true;
+        }
+        fleetsInSector = Enumerable.Empty<IFleetCmd>();
+        return false;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more ISectorViewHighlightables, <c>false</c> otherwise.
+    /// HACK pending creating a collection for each custom type in the universe, organized by sectorIndex.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="highlightablesInSector">The highlightables in sector.</param>
+    /// <returns></returns>
+    public bool TryGetSectorViewHighlightables(Index3D sectorIndex, out IEnumerable<ISectorViewHighlightable> highlightablesInSector) {
+        D.Assert(sectorIndex != default(Index3D), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        List<ISectorViewHighlightable> sectorHighlightables = new List<ISectorViewHighlightable>();
+        ISystem system;
+        if (TryGetSystem(sectorIndex, out system)) {
+            ISectorViewHighlightable sys = system as ISectorViewHighlightable;
+            D.Assert(sys != null);
+            sectorHighlightables.Add(sys);
+        }
+        IEnumerable<IStarbaseCmd> starbases;
+        if (TryGetStarbases(sectorIndex, out starbases)) {
+            IEnumerable<ISectorViewHighlightable> highlightableStarbases = starbases.Cast<ISectorViewHighlightable>();
+            D.Assert(!highlightableStarbases.IsNullOrEmpty());
+            sectorHighlightables.AddRange(highlightableStarbases);
+        }
+        IEnumerable<IFleetCmd> fleets;
+        if (TryGetFleets(sectorIndex, out fleets)) {
+            IEnumerable<ISectorViewHighlightable> highlightableFleets = fleets.Cast<ISectorViewHighlightable>();
+            D.Assert(!highlightableFleets.IsNullOrEmpty());
+            sectorHighlightables.AddRange(highlightableFleets);
+        }
+
+        if (sectorHighlightables.Any()) {
+            highlightablesInSector = sectorHighlightables;
+            return true;
+        }
+        highlightablesInSector = null;
+        return false;
     }
 
     protected override void Cleanup() {

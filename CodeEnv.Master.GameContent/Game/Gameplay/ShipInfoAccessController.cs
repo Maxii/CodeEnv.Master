@@ -25,54 +25,54 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipInfoAccessController(ShipData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Target:
-                case AccessControlInfoID.CombatStance:
-                case AccessControlInfoID.Culture:
-                case AccessControlInfoID.Science:
-                case AccessControlInfoID.NetIncome:
+                case ItemInfoID.Target:
+                case ItemInfoID.CombatStance:
+                case ItemInfoID.Culture:
+                case ItemInfoID.Science:
+                case ItemInfoID.NetIncome:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.CurrentHitPoints:
-                case AccessControlInfoID.MaxTurnRate:
-                case AccessControlInfoID.FullSpeed:
-                case AccessControlInfoID.Offense:
-                case AccessControlInfoID.Defense:
-                case AccessControlInfoID.Health:
+                case ItemInfoID.CurrentHitPoints:
+                case ItemInfoID.MaxTurnRate:
+                case ItemInfoID.FullSpeed:
+                case ItemInfoID.Offense:
+                case ItemInfoID.Defense:
+                case ItemInfoID.Health:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Category:
-                case AccessControlInfoID.Owner:
-                case AccessControlInfoID.CurrentSpeed:
-                case AccessControlInfoID.WeaponsRange:
-                case AccessControlInfoID.MaxHitPoints:
-                case AccessControlInfoID.SensorRange:
-                case AccessControlInfoID.Mass:
+                case ItemInfoID.Category:
+                case ItemInfoID.Owner:
+                case ItemInfoID.CurrentSpeedSetting:                //case ItemInfoID.ActualSpeed:
+                case ItemInfoID.WeaponsRange:
+                case ItemInfoID.MaxHitPoints:
+                case ItemInfoID.SensorRange:
+                case ItemInfoID.Mass:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.ParentName:
-                case AccessControlInfoID.Position:
-                case AccessControlInfoID.SectorIndex:
+                case ItemInfoID.Name:
+                case ItemInfoID.ParentName:
+                case ItemInfoID.Position:
+                case ItemInfoID.SectorIndex:
                     return true;
                 default:
                     return false;

@@ -27,15 +27,15 @@ namespace CodeEnv.Master.GameContent {
 
         public AIntelInfoAccessController(AIntelItemData data) : base(data) { }
 
-        public sealed override bool HasAccessToInfo(Player player, AccessControlInfoID infoID) {
-            D.Assert(player != TempGameValues.NoPlayer, "{0}: NoPlayer used to attempt access to {1}.{2}.", _data.FullName, typeof(AccessControlInfoID).Name, infoID.GetValueName());
-            D.Assert(infoID != AccessControlInfoID.None);
+        public sealed override bool HasAccessToInfo(Player player, ItemInfoID infoID) {
+            D.Assert(player != TempGameValues.NoPlayer, "{0}: NoPlayer used to attempt access to {1}.{2}.", _data.FullName, typeof(ItemInfoID).Name, infoID.GetValueName());
+            D.Assert(infoID != ItemInfoID.None);
 
             var coverage = (_data as AIntelItemData).GetIntelCoverage(player);
             return HasAccessToInfo(coverage, infoID, player);
         }
 
-        private bool HasAccessToInfo(IntelCoverage coverage, AccessControlInfoID infoID, Player player) {
+        private bool HasAccessToInfo(IntelCoverage coverage, ItemInfoID infoID, Player player) {
             switch (coverage) {
                 case IntelCoverage.Comprehensive:
                     if (HasAccessToInfo_Comprehensive(infoID, player)) {
@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player requesting the access. 
         /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player);
+        protected abstract bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player);
 
         /// <summary>
         /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Broad should have access to the info identified by infoID,
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player requesting the access. 
         /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player);
+        protected abstract bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player);
 
         /// <summary>
         /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Essential should have access to the info identified by infoID,
@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player requesting the access. 
         /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player);
+        protected abstract bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player);
 
         /// <summary>
         /// Returns <c>true</c> if <c>Player</c> with IntelCoverage.Basic should have access to the info identified by infoID,
@@ -102,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player requesting the access. 
         /// Only used when this InfoAccessCntlr needs to consult with another to make a decision.</param>
         /// <returns></returns>
-        protected abstract bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player);
+        protected abstract bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player);
 
 
     }

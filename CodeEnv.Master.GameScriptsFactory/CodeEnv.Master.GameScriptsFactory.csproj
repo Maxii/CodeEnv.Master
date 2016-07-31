@@ -161,7 +161,6 @@
     <Compile Include="Generic\Framework\SettlementUnitCreator.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
     <Compile Include="Generic\Framework\SystemCreator.cs" />
-    <Compile Include="Game\Graphics\SphericalHighlight.cs" />
     <Compile Include="Game\Framework\StarItem.cs" />
     <Compile Include="Game\Framework\PlanetItem.cs" />
     <Compile Include="Game\Framework\MoonItem.cs" />
@@ -228,6 +227,8 @@
     <Compile Include="Game\GUI\ShipCtxControl_AI.cs" />
     <Compile Include="Game\GUI\PlanetCtxControl.cs" />
     <Compile Include="Game\Gameplay\Missile.cs" />
+    <Compile Include="Generic\Graphics\PooledSphericalHighlight.cs" />
+    <Compile Include="Generic\Graphics\SphericalHighlight.cs" />
     <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />

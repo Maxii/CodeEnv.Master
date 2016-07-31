@@ -25,23 +25,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidDisplayInfoFactory : AMortalItemDisplayInfoFactory<PlanetoidReport, PlanetoidDisplayInfoFactory> {
 
-        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
-            AccessControlInfoID.Name,
-            AccessControlInfoID.ParentName,
-            AccessControlInfoID.Category,
-            AccessControlInfoID.Owner,
-            AccessControlInfoID.Capacity,
-            AccessControlInfoID.Resources,
-            AccessControlInfoID.Health,
-            AccessControlInfoID.Defense,
-            AccessControlInfoID.Mass,
-            AccessControlInfoID.OrbitalSpeed,
+        private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
+            ItemInfoID.Name,
+            ItemInfoID.ParentName,
+            ItemInfoID.Category,
+            ItemInfoID.Owner,
+            ItemInfoID.Capacity,
+            ItemInfoID.Resources,
+            ItemInfoID.Health,
+            ItemInfoID.Defense,
+            ItemInfoID.Mass,
 
-            AccessControlInfoID.IntelState,
-            AccessControlInfoID.CameraDistance
+            ItemInfoID.Separator,
+
+            ItemInfoID.IntelState,
+
+            ItemInfoID.Separator,
+
+            ItemInfoID.OrbitalSpeed,
+            ItemInfoID.CameraDistance
         };
 
-        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
+        protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private PlanetoidDisplayInfoFactory() {
             Initialize();
@@ -49,29 +54,33 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, PlanetoidReport report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, PlanetoidReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.ParentName:
+                    case ItemInfoID.ParentName:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.ParentName != null ? report.ParentName : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.ParentName != null ? report.ParentName : Unknown);
                         break;
-                    case AccessControlInfoID.Category:
+                    case ItemInfoID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != PlanetoidCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Category != PlanetoidCategory.None ? report.Category.GetValueName() : Unknown);
                         break;
-                    case AccessControlInfoID.Capacity:
+                    case ItemInfoID.Capacity:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.Resources:
+                    case ItemInfoID.Resources:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
                         break;
-                    case AccessControlInfoID.OrbitalSpeed:
+                    case ItemInfoID.OrbitalSpeed:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.OrbitalSpeed.HasValue ? GetFormat(infoID).Inject(report.OrbitalSpeed.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.OrbitalSpeed.HasValue ? GetFormat(infoID).Inject(report.OrbitalSpeed.Value) : Unknown);
+                        break;
+                    case ItemInfoID.Mass:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.Mass.HasValue ? GetFormat(infoID).Inject(report.Mass.Value) : Unknown);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

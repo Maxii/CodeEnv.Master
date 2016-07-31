@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IHighlightable.cs
-// Interface for Items that can be highlighted.
+// File: CircleHighlightID.cs
+// Enum identifying the different highlights implemented by Vectrosity Circles.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,19 +17,20 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items that can be highlighted.
+    /// Enum identifying the different highlights implemented by Vectrosity Circles.
     /// </summary>
-    public interface IHighlightable : IWidgetTrackable {
+    public enum CircleHighlightID {
+
+        None,
+
+        Focused,
+
+        Selected,
 
         /// <summary>
-        /// The radius around the Item to use for a SphericalHighlight effect.
+        /// Highlight to show on element when Cmd selected.
         /// </summary>
-        float SphericalHighlightEffectRadius { get; }
-
-        /// <summary>
-        /// The radius around the Item to use for a CircleHighlight effect.
-        /// </summary>
-        float CircleHighlightEffectRadius { get; }
+        UnitElement
 
     }
 }

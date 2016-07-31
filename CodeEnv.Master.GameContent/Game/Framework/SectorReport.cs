@@ -24,6 +24,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SectorReport : AIntelItemReport {
 
+        public int? Capacity { get; private set; }
+
+        public ResourceYield? Resources { get; private set; }
+
         public Index3D SectorIndex { get; private set; }
 
         public SectorReport(SectorData data, Player player, ISector_Ltd item)
@@ -34,17 +38,23 @@ namespace CodeEnv.Master.GameContent {
             var sData = data as SectorData;
             var accessCntlr = sData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = sData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = sData.SectorIndex;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {    // true if all members have access
+                Capacity = sData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {   // true if all members have access
+                Resources = sData.Resources;
             }
         }
 

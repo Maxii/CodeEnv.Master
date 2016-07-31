@@ -32,6 +32,26 @@ using MoreLinq;
 /// </summary>  // Has Editor
 public class FleetUnitCreator : AUnitCreator<ShipItem, ShipHullCategory, ShipData, ShipHullStat, FleetCmdItem> {
 
+    public static IEnumerable<FleetCmdItem> ExistingFleets {
+        // Note: contents will not reflect Fleets that have not yet been built/deployed
+        get { return AllUnitCommands.Where(cmd => cmd is FleetCmdItem).Cast<FleetCmdItem>(); }
+    }
+
+    /// <summary>
+    /// Returns true if the sector indicated by sectorIndex contains one or more Fleets.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="fleetsInSector">The resulting fleets in sector.</param>
+    /// <returns></returns>
+    public static bool TryGetFleets(Index3D sectorIndex, out IEnumerable<FleetCmdItem> fleetsInSector) {
+        fleetsInSector = ExistingFleets.Where(sb => sb.SectorIndex == sectorIndex);
+        bool isFleetsFound = fleetsInSector.Any();
+        if (isFleetsFound) {
+            //D.Log("{0} found Fleets {1} in Sector {2}.", typeof(FleetUnitCreator).Name, fleetsInSector.Select(sb => sb.FullName).Concatenate(), sectorIndex);
+        }
+        return isFleetsFound;
+    }
+
     public DebugFleetFormation formation = DebugFleetFormation.Random;
 
     /// <summary>

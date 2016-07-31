@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
             : base(data) {
         }
 
+        [System.Obsolete]
         protected bool IsEqual(IEnumerable<AUnitElementReport> reportsA, IEnumerable<AUnitElementReport> reportsB) {
             var isEqual = reportsA.OrderBy(r => r.Name).SequenceEqual(reportsB.OrderBy(r => r.Name));
             string equalsPhrase = isEqual ? "equal" : "not equal";

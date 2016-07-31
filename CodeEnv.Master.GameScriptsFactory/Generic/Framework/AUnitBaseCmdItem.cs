@@ -43,8 +43,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// </summary>
     private const float GuardStationDistanceMultiplier = 2F;
 
-    public override bool IsAvailable { get { return CurrentState == BaseState.Idling; } }
-
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
         private get { return _currentOrder; }
@@ -179,6 +177,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
     }
 
+    protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
+
     #region Event and Property Change Handlers
 
     protected void CurrentOrderPropChangedHandler() {
@@ -194,8 +194,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     private void HandleNewOrder() {
+        // TODO no Call()ed states currently
         // Pattern that handles Call()ed states that goes more than one layer deep
-        //while (CurrentState == BaseState.Attacking) { // TODO no Call()ed states currently
+        //while (CurrentState == BaseState.Attacking) { 
         //    UponNewOrderReceived();
         //}
         //D.Assert(CurrentState != BaseState.Attacking);
@@ -258,12 +259,20 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Idling_EnterState() {
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        IsAvailable = true;
     }
 
-    protected void Idling_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+    protected void Idling_UponOwnerChanged() {
         LogEvent();
         // TODO
     }
+
+    protected void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
 
     protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
@@ -275,24 +284,27 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_ExitState() {
         LogEvent();
+        IsAvailable = false;
     }
 
     #endregion
 
     #region ExecuteAttackOrder
 
-    private IUnitAttackable _fsmAttackTarget; // UNCLEAR is there an _fsmTgt for other states?
+    private IUnitAttackable _fsmTgt; // UNCLEAR is there an _fsmTgt for other states?
 
     protected void ExecuteAttackOrder_EnterState() {
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
-        _fsmAttackTarget = CurrentOrder.Target as IUnitAttackable;
+        _fsmTgt = CurrentOrder.Target;
 
-        bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmAttackTarget, toSubscribe: true);
+        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed);
 
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, toNotifyCmd: true, target: _fsmAttackTarget);
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, toNotifyCmd: true, target: _fsmTgt);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
@@ -305,14 +317,24 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO What? It will be common for an attack by a facility to fail for cause unreachable as its target moves out of range...
     }
 
-    protected void ExecuteAttackOrder_UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
+    protected void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // TODO
     }
 
-    protected void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+    protected void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
         LogEvent();
-        D.Assert(_fsmAttackTarget == deadFsmTgt, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmAttackTarget.FullName, deadFsmTgt.FullName));
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponOwnerChanged() {
+        LogEvent();
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmTgt.FullName, deadFsmTgt.FullName));
         // TODO Notify Superiors of success - unit target death
     }
 
@@ -323,8 +345,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_ExitState() {
         LogEvent();
-        bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmAttackTarget, toSubscribe: false);
+
+        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
         D.Assert(isUnsubscribed);
+        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
+
         _orderFailureCause = UnitItemOrderFailureCause.None;
     }
 
@@ -332,19 +358,43 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Repairing
 
-    protected void Repairing_EnterState() { }
+    protected void Repairing_EnterState() {
+        LogEvent();
+        // TODO
+    }
+
+    protected void Repairing_UponOwnerChanged() {
+        LogEvent();
+        // TODO
+    }
 
     #endregion
 
     #region Refitting
 
-    protected void Refitting_EnterState() { }
+    protected void Refitting_EnterState() {
+        LogEvent();
+        // TODO
+    }
+
+    protected void Refitting_UponOwnerChanged() {
+        LogEvent();
+        // TODO
+    }
 
     #endregion
 
     #region Disbanding
 
-    protected void Disbanding_EnterState() { }
+    protected void Disbanding_EnterState() {
+        LogEvent();
+        // TODO
+    }
+
+    protected void Disbanding_UponOwnerChanged() {
+        LogEvent();
+        // TODO
+    }
 
     #endregion
 
@@ -400,36 +450,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #endregion
 
-    private bool _isFsmTgtDeathAlreadySubscribed;
-
-    /// <summary>
-    /// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
-    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
-    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
-    /// </summary>
-    /// <param name="fsmTgt">The target used by the State Machine. TODO Less specific Type?</param>
-    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
-    /// <returns></returns>
-    private bool AttemptFsmTgtDeathSubscribeChange(IUnitAttackable fsmTgt, bool toSubscribe) {
-        Utility.ValidateNotNull(fsmTgt);
-        var mortalFsmTgt = fsmTgt as IMortalItem;
-        if (mortalFsmTgt != null) {
-            if (!toSubscribe) {
-                mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
-            }
-            else if (!_isFsmTgtDeathAlreadySubscribed) {
-                mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
-            }
-            else {
-                D.Warn("{0}: Attempting to subcribe to {1}'s death when already subscribed.", FullName, fsmTgt.FullName);
-            }
-            _isFsmTgtDeathAlreadySubscribed = toSubscribe;
-            return true;
-        }
-        return false;
-    }
-
-
     #region Combat Support
 
 
@@ -438,8 +458,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #endregion
-
-    protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
 
     #region Cleanup
 
@@ -495,7 +513,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsEnemyOf(player);
@@ -602,7 +620,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -623,7 +641,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);

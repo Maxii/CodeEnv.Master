@@ -91,8 +91,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     private string ConstructCameraSectorText() {
         Index3D index = MainCameraControl.Instance.SectorIndex;
-        SectorItem unused;
-        string sectorText = SectorGrid.Instance.TryGetSector(index, out unused) ? index.ToString() : "None";
+        string sectorText = SectorGrid.Instance.__IsSectorPresentAt(index) ? index.ToString() : "None";
         return "Camera Sector: " + sectorText;
     }
 

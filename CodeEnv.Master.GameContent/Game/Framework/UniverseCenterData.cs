@@ -34,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
+        // No Mass as no Rigidbody
+
         // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
 
         /// <summary>
@@ -61,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        protected override void OwnerPropChangedHandler() {
+        protected override void HandleOwnerChanged() {
             throw new System.InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(FullName, Owner.LeaderName));
         }
 

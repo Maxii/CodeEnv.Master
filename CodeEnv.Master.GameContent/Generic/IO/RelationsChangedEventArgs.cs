@@ -25,16 +25,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class RelationsChangedEventArgs : EventArgs {
 
-        public Player EffectedPlayer { get; private set; }
+        public Player ChgdRelationsPlayer { get; private set; }
 
-        public DiplomaticRelationship NewRelationship { get; private set; }
-
-        public DiplomaticRelationship PriorRelationship { get; private set; }
-
-        public RelationsChangedEventArgs(Player effectedPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
-            EffectedPlayer = effectedPlayer;
-            PriorRelationship = priorRelationship;
-            NewRelationship = newRelationship;
+        public RelationsChangedEventArgs(Player otherPlayer) {
+            ChgdRelationsPlayer = otherPlayer;
         }
 
         public override string ToString() {

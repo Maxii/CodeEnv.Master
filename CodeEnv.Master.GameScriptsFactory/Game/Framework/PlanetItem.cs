@@ -78,6 +78,11 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         return new PlanetCtxControl(this);
     }
 
+    protected override HoverHighlightManager InitializeHoverHighlightMgr() {
+        float highlightRadius = Radius * 2F;
+        return new HoverHighlightManager(this, highlightRadius);
+    }
+
     protected override void FinalInitialize() {
         base.FinalInitialize();
         RecordAnyChildMoons();
@@ -140,24 +145,24 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         }
     }
 
-    private void HandleMoonDeathEffectFinished() {
-        D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, _childMoons.Count());
-        if (_childMoons.Count() == Constants.Zero) {
-            // The last moon has shown its death effect as a result of the planet's death
-            DestroyMe();
-        }
-    }
-
     #region Event and Property Change Handlers
 
-    protected override void OwnerPropChangedHandler() {
-        base.OwnerPropChangedHandler();
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
         AssessIcon();
     }
 
     private void MoonDeathEffectFinishedEventHandler(object sender, EffectSeqEventArgs e) {
         D.Assert(e.EffectSeqID == EffectSequenceID.Dying);
         HandleMoonDeathEffectFinished();
+    }
+
+    private void HandleMoonDeathEffectFinished() {
+        D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, _childMoons.Count());
+        if (_childMoons.Count() == Constants.Zero) {
+            // The last moon has shown its death effect as a result of the planet's death
+            DestroyMe();
+        }
     }
 
     #endregion
@@ -242,7 +247,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     }
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -311,12 +316,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     #endregion
 
-    #region IHighlightable Members
-
-    public override float SphericalHighlightEffectRadius { get { return Radius * 2F; } }
-
-    #endregion
-
     #region IAvoidableObstacle Members
 
     public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
@@ -332,7 +331,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     }
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
+        public float? Mass { get; private set; }
+
         public PlanetoidReport(PlanetoidData data, Player player, IPlanetoid_Ltd item)
             : base(data, player, item) {
         }
@@ -43,46 +45,46 @@ namespace CodeEnv.Master.GameContent {
             var pData = data as PlanetoidData;
             var accessCntlr = pData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.OrbitalSpeed)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.OrbitalSpeed)) {
                 OrbitalSpeed = pData.OrbitalSpeed;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Defense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Defense)) {
                 DefensiveStrength = pData.DefensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = pData.Capacity;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Health)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Health)) {
                 Health = pData.Health;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentHitPoints)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
                 CurrentHitPoints = pData.CurrentHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 Resources = pData.Resources;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = pData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
                 ParentName = pData.ParentName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = pData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = pData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = pData.Category;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.MaxHitPoints)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
                 MaxHitPoints = pData.MaxHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Mass)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Mass)) {
                 Mass = pData.Mass;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = pData.SectorIndex;
             }
         }

@@ -237,6 +237,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             References.TrackingWidgetFactory = TrackingWidgetFactory.Instance;
             References.FormationGenerator = FormationGenerator.Instance;
         }
+
+        // Non-persistent (by definition) non-Singleton MonoBehaviours need to be newly instantiated to refresh their References field
+        if (CurrentScene == GameScene) {
+            // not used in LobbyScene
+            References.HoverHighlight = EffectsFolder.Instance.Folder.gameObject.GetSingleComponentInChildren<SphericalHighlight>();
+        }
     }
 
     private void InitializeValuesAndReferences() {

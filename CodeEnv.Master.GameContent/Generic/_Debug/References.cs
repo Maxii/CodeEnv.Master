@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         public static ICameraControl MainCameraControl { get; set; }
         public static IGuiCameraControl GuiCameraControl { get; set; }
         public static ISectorGrid SectorGrid { get; set; }
-        public static ISphericalHighlight SphericalHighlight { get; set; }
+        public static ISphericalHighlight HoverHighlight { get; set; }
         public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }
         public static ITooltipHudWindow TooltipHudWindow { get; set; }
         public static ISelectedItemHudWindow SelectedItemHudWindow { get; set; }

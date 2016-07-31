@@ -120,6 +120,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         return new PlanetoidCtxControl(this);
     }
 
+    protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
+        float circleRadius = Radius * Screen.height * 3F;
+        return new CircleHighlightManager(transform, circleRadius);
+    }
+
     protected override void FinalInitialize() {
         base.FinalInitialize();
         // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
@@ -134,9 +139,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         _primaryCollider.enabled = true;
         ObstacleZoneCollider.enabled = true;
         ActivateParentOrbitSimulator(true);
-        //CurrentState = PlanetoidState.Idling;
     }
-
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 

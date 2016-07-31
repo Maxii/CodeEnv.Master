@@ -41,6 +41,11 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         return new MoonDisplayManager(gameObject, Layers.Cull_200);
     }
 
+    protected override HoverHighlightManager InitializeHoverHighlightMgr() {
+        float highlightRadius = Radius * 3F;
+        return new HoverHighlightManager(this, highlightRadius);
+    }
+
     protected override void FinalInitialize() {
         base.FinalInitialize();
         RecordParentPlanet();
@@ -95,6 +100,10 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         }
     }
 
+    #region Event and Property Change Handlers
+
+    #endregion
+
     #region State Machine Support Methods
 
     #endregion
@@ -118,12 +127,6 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         return Vector3.Distance(fleetPosition, Position) - ObstacleZoneRadius - TempGameValues.ObstacleCheckRayLengthBuffer;
     }
-
-    #endregion
-
-    #region IHighlightable Members
-
-    public override float SphericalHighlightEffectRadius { get { return Radius * 3F; } }
 
     #endregion
 

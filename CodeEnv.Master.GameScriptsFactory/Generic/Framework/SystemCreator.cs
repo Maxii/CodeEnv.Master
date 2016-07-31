@@ -51,7 +51,11 @@ public class SystemCreator : AMonoBase {
     /// <param name="system">The system if present in the sector.</param>
     /// <returns></returns>
     public static bool TryGetSystem(Index3D sectorIndex, out SystemItem system) {
-        return _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
+        bool isSystemFound = _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
+        if (isSystemFound) {
+            //D.Log("{0} found System {1} in Sector {2}.", typeof(SystemCreator).Name, system.FullName, sectorIndex);
+        }
+        return isSystemFound;
     }
 
     public static IList<APlanetoidItem> AllPlanetoids { get { return _allPlanetoids; } }

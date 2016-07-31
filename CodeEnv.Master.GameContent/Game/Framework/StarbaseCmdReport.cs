@@ -55,33 +55,33 @@ namespace CodeEnv.Master.GameContent {
             var sbData = data as StarbaseCmdData;
             var accessCntlr = sbData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitDefense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitDefense)) {
                 UnitDefensiveStrength = sbData.UnitDefensiveStrength;
             }
             else {
                 UnitDefensiveStrength = CalcPartialUnitDefensiveStrength(GetElementsData(sbData));
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitOffense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitOffense)) {
                 UnitOffensiveStrength = sbData.UnitOffensiveStrength;
             }
             else {
                 UnitOffensiveStrength = CalcPartialUnitOffensiveStrength(GetElementsData(sbData));
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitMaxHitPts)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitMaxHitPts)) {
                 UnitMaxHitPoints = sbData.UnitMaxHitPoints;
             }
             else {
                 UnitMaxHitPoints = CalcPartialUnitMaxHitPoints(GetElementsData(sbData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitCurrentHitPts)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitCurrentHitPts)) {
                 UnitCurrentHitPoints = sbData.UnitCurrentHitPoints;
             }
             else {
                 UnitCurrentHitPoints = CalcPartialUnitCurrentHitPoints(GetElementsData(sbData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitHealth)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitHealth)) {
                 UnitHealth = sbData.UnitHealth;
             }
             else {
@@ -89,62 +89,62 @@ namespace CodeEnv.Master.GameContent {
                 UnitHealth = CalcPartialUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitScience)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitScience)) {
                 UnitScience = sbData.UnitScience;
             }
             else {
                 UnitScience = CalcPartialUnitScience(GetElementsData(sbData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitCulture)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitCulture)) {
                 UnitCulture = sbData.UnitCulture;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitNetIncome)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitNetIncome)) {
                 UnitIncome = sbData.UnitIncome;
                 UnitExpense = sbData.UnitExpense;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = sbData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
                 ParentName = sbData.ParentName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sbData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = sbData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentCmdEffectiveness)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentCmdEffectiveness)) {
                 CurrentCmdEffectiveness = sbData.CurrentCmdEffectiveness;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitSensorRange)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitSensorRange)) {
                 UnitSensorRange = sbData.UnitSensorRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitWeaponsRange)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitWeaponsRange)) {
                 UnitWeaponsRange = sbData.UnitWeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = sbData.SectorIndex;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Formation)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Formation)) {
                 UnitFormation = sbData.UnitFormation;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = sbData.Capacity;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 Resources = sbData.Resources;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Composition)) { // must preceed Category
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Composition)) { // must preceed Category
                 UnitComposition = sbData.UnitComposition;
             }
             else {
                 UnitComposition = CalcPartialUnitComposition(sbData);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = sbData.Category;
             }
             else {
@@ -157,7 +157,7 @@ namespace CodeEnv.Master.GameContent {
             IList<FacilityHullCategory> knownElementCategories = new List<FacilityHullCategory>();
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                     knownElementCategories.Add(eData.HullCategory);
                 }
             }

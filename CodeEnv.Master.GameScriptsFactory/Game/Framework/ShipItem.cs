@@ -35,13 +35,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public event EventHandler apTgtReached;
 
-    public override bool IsAvailable {
-        get {
-            return CurrentState == ShipState.Idling ||
-                   CurrentState == ShipState.ExecuteAssumeStationOrder && CurrentOrder.Source == OrderSource.Captain;
-        }
-    }
-
     /// <summary>
     /// Indicates whether this ship is capable of pursuing and engaging a target in an attack.
     /// <remarks>A ship that is not capable of attacking is usually a ship that is under orders not to attack 
@@ -86,7 +79,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <summary>
     /// The Speed the ship has been ordered to execute.
     /// </summary>
-    public Speed CurrentSpeed { get { return _helm.CurrentSpeed; } }
+    public Speed CurrentSpeedSetting { get { return Data.CurrentSpeedSetting; } }
 
     public Vector3 CurrentHeading { get { return transform.forward; } }
 
@@ -178,9 +171,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collisionDetectionMonitor.IsOperational = true;
-        //CurrentState = ShipState.Idling;
     }
-
 
     public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -219,24 +210,23 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private void OrbitedObjectDeathEventHandler(object sender, EventArgs e) {
         // no need to disconnect event that called this as the event is a oneShot
         IShipOrbitable deadOrbitedItem = sender as IShipOrbitable;
+        HandleOrbitedObjectDeath(deadOrbitedItem);
+    }
+
+    private void HandleOrbitedObjectDeath(IShipOrbitable deadOrbitedItem) {
         D.Assert(!(deadOrbitedItem as AMortalItem).IsOperational);
         UponOrbitedObjectDeath(deadOrbitedItem);
     }
 
-    protected override void IsDiscernibleToUserPropChangedHandler() {
-        base.IsDiscernibleToUserPropChangedHandler();
+    protected override void HandleIsDiscernibleToUserChanged() {
+        base.HandleIsDiscernibleToUserChanged();
         AssessDebugShowVelocityRay();
         AssessDebugShowCoursePlot();
     }
 
-    protected override void IsHQPropChangedHandler() {
-        base.IsHQPropChangedHandler();
+    protected override void HandleIsHQChanged() {
+        base.HandleIsHQChanged();
         AssessDebugShowVelocityRay();
-    }
-
-    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem deadFsmTgt = sender as IMortalItem;
-        UponFsmTargetDeath(deadFsmTgt);
     }
 
     private void CurrentOrderPropChangedHandler() {
@@ -322,6 +312,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Orders
 
+    private static ShipOrder _assumeStationOrderFromCaptain = new ShipOrder(ShipDirective.AssumeStation, OrderSource.Captain);
+
     public bool IsCurrentOrderDirectiveAnyOf(params ShipDirective[] directives) {
         return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
     }
@@ -331,7 +323,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     private void IssueAssumeStationOrderFromCaptain(bool retainSuperiorsOrder = false) {
-        OverrideCurrentOrder(new ShipOrder(ShipDirective.AssumeStation, OrderSource.Captain), retainSuperiorsOrder);
+        OverrideCurrentOrder(_assumeStationOrderFromCaptain, retainSuperiorsOrder);
     }
 
     /// <summary>
@@ -516,7 +508,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (CurrentOrder != null) {
             // FollowonOrders should always be executed before any StandingOrder is considered
             if (CurrentOrder.FollowonOrder != null) {
-                D.Log(ShowDebugLog, "{0} is executing followon order {1}.", FullName, CurrentOrder.FollowonOrder);
+                D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", FullName, CurrentOrder.FollowonOrder);
 
                 OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
                 D.Assert(followonOrderSource == OrderSource.Captain, "{0} FollowonOrder {1} source can't be {2}.",
@@ -538,7 +530,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 yield return null;
                 D.Error("{0} should never get here as CurrentOrder was changed to {1}.", FullName, CurrentOrder);
             }
-            D.Log(ShowDebugLog, "{0} has completed {1} with no followon or standing order queued.", FullName, CurrentOrder);
+            D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", FullName, CurrentOrder);
             CurrentOrder = null;
         }
         _helm.ChangeSpeed(Speed.Stop);
@@ -546,6 +538,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+        IsAvailable = true;
     }
 
     void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -558,16 +551,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         __ReportCollision(collision);
     }
 
-    void Idling_UponOrbitedObjectDeath(IShipOrbitable deadOrbitedObject) {
-        LogEvent();
-        BreakOrbit();
-    }
-
     void Idling_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+    }
+
+    void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+
+    void Idling_UponOrbitedObjectDeath(IShipOrbitable deadOrbitedObject) {
+        LogEvent();
+        BreakOrbit();
     }
 
     void Idling_UponDeath() {
@@ -576,6 +575,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Idling_ExitState() {
         LogEvent();
+        IsAvailable = false;
     }
 
     #endregion
@@ -594,33 +594,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // other reason, the ship initiates a Stop but retains its last heading.  As a result, the
     // Call()ing state is responsible for any subsequent speed or heading changes that may be desired.
 
+    #region Moving Support Members
+
     /// <summary>
     /// The initial speed at which the AutoPilot should move. Valid only during the Moving state.
     /// </summary>
     private Speed _apMoveSpeed;
-
-    void Moving_EnterState() {
-        LogEvent();
-        D.Assert(_fsmTgt != null);
-        D.Assert(_apMoveSpeed != default(Speed));
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
-        D.Assert(!(_fsmTgt is IShipCloseOrbitSimulator));
-
-        bool isFleetwideMove = false;
-        Vector3 apTgtOffset = Vector3.zero;
-        float apTgtStandoffDistance = CollisionDetectionZoneRadius;
-        ShipMoveOrder moveOrder = CurrentOrder as ShipMoveOrder;
-        if (moveOrder != null) {
-            if (moveOrder.IsFleetwide) {
-                isFleetwideMove = true;
-                apTgtOffset = CalcFleetwideMoveTargetOffset(_fsmTgt);
-            }
-            apTgtStandoffDistance = Mathf.Max(moveOrder.TargetStandoffDistance, CollisionDetectionZoneRadius);
-        }
-        IShipNavigable apTgt = _fsmTgt;
-        AutoPilotDestinationProxy apMoveTgtProxy = apTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
-        _helm.EngagePilotToMoveTo(apMoveTgtProxy, _apMoveSpeed, isFleetwideMove);
-    }
 
     /// <summary>
     /// Calculates and returns the world space offset reqd by the AutoPilotDestinationProxy wrapping _fsmTgt. 
@@ -655,16 +634,34 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return shipTargetOffset;
     }
 
+    #endregion
+
+    void Moving_EnterState() {
+        LogEvent();
+        D.Assert(_fsmTgt != null);
+        D.Assert(_apMoveSpeed != default(Speed));
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.Assert(!(_fsmTgt is IShipCloseOrbitSimulator));
+
+        bool isFleetwideMove = false;
+        Vector3 apTgtOffset = Vector3.zero;
+        float apTgtStandoffDistance = CollisionDetectionZoneRadius;
+        ShipMoveOrder moveOrder = CurrentOrder as ShipMoveOrder;
+        if (moveOrder != null) {
+            if (moveOrder.IsFleetwide) {
+                isFleetwideMove = true;
+                apTgtOffset = CalcFleetwideMoveTargetOffset(_fsmTgt);
+            }
+            apTgtStandoffDistance = Mathf.Max(moveOrder.TargetStandoffDistance, CollisionDetectionZoneRadius);
+        }
+        IShipNavigable apTgt = _fsmTgt;
+        AutoPilotDestinationProxy apMoveTgtProxy = apTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
+        _helm.EngagePilotToMoveTo(apMoveTgtProxy, _apMoveSpeed, isFleetwideMove);
+    }
+
     void Moving_UponApTargetReached() {
         LogEvent();
         D.Log(ShowDebugLog, "{0} has reached Moving State target {1}.", FullName, _fsmTgt.FullName);
-        Return();
-    }
-
-    void Moving_UponFsmTargetDeath(IMortalItem deadTarget) {
-        LogEvent();
-        D.Assert(_fsmTgt == deadTarget, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadTarget.FullName);
-        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
         Return();
     }
 
@@ -683,6 +680,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Return();
     }
 
+    void Moving_UponApTargetUncatchable() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUncatchable;
+        Return();
+    }
+
     void Moving_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
@@ -691,9 +694,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void Moving_UponApTargetUncatchable() {
+    void Moving_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUncatchable;
+        // TODO
+    }
+
+    void Moving_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void Moving_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
         Return();
     }
 
@@ -713,6 +727,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region ExecuteMoveOrder
 
+    #region ExecuteMoveOrder Support Members
+
+    private bool __TryValidateRightToAssumeHighOrbit(IShipNavigable moveTgt, out IShipOrbitable highOrbitTgt) {
+        highOrbitTgt = moveTgt as IShipOrbitable;
+        if (highOrbitTgt != null && highOrbitTgt.IsHighOrbitAllowedBy(Owner)) {
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
+
     IEnumerator ExecuteMoveOrder_EnterState() {
         LogEvent();
 
@@ -728,9 +754,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         TryBreakOrbit();
 
         _fsmTgt = currentShipMoveOrder.Target;
-        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
-
         _apMoveSpeed = currentShipMoveOrder.Speed;
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
 
         //D.Log(ShowDebugLog, "{0} calling {1}.{2}. Target: {3}, Speed: {4}, Fleetwide: {5}.", FullName, typeof(ShipState).Name,
         //ShipState.Moving.GetValueName(), _fsmTgt.FullName, _apMoveSpeed.GetValueName(), currentShipMoveOrder.IsFleetwide);
@@ -783,12 +809,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         InitiateFiringSequence(selectedFiringSolution);
     }
 
-    private bool __TryValidateRightToAssumeHighOrbit(IShipNavigable moveTgt, out IShipOrbitable highOrbitTgt) {
-        highOrbitTgt = moveTgt as IShipOrbitable;
-        if (highOrbitTgt != null && highOrbitTgt.IsHighOrbitAllowedBy(Owner)) {
-            return true;
-        }
-        return false;
+    void ExecuteMoveOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteMoveOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteMoveOrder_UponDamageIncurred() {
@@ -798,9 +826,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void ExecuteMoveOrder_UponFsmTargetDeath(IMortalItem deadTarget) {
+    void ExecuteMoveOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadTarget, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadTarget.FullName);
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         IssueAssumeStationOrderFromCaptain();
     }
 
@@ -810,7 +838,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteMoveOrder_ExitState() {
         LogEvent();
-        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
     }
@@ -883,8 +912,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // No need to wait for HQ to stop turning as we are aligning with its intended facing
         Vector3 hqIntendedHeading = Command.HQElement.Data.IntendedHeading;
         _helm.ChangeHeading(hqIntendedHeading, headingConfirmed: () => {
-            Speed hqSpeed = Command.HQElement.CurrentSpeed;
-            _helm.ChangeSpeed(hqSpeed);  // UNCLEAR allways align speed with HQ?
+            Speed hqSpeed = Command.HQElement.CurrentSpeedSetting;
+            _helm.ChangeSpeed(hqSpeed);  // UNCLEAR always align speed with HQ?
             D.Log(ShowDebugLog, "{0} has aligned heading and speed {1} with HQ {2}.", FullName, hqSpeed.GetValueName(), Command.HQElement.FullName);
             if (CurrentOrder.ToNotifyCmd) {
                 Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: true);
@@ -910,9 +939,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void ExecuteAssumeStationOrder_UponFsmTargetDeath(IMortalItem deadTarget) {
-        LogEventWarning();
+    void ExecuteAssumeStationOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
     }
+
+    // No need for _fsmTgt infoAccessChgd event handler as FormationStations aren't Items
+
+    // No need for _fsmTgt death event handler as FormationStations don't die
 
     void ExecuteAssumeStationOrder_UponDeath() {
         LogEvent();
@@ -949,7 +983,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         TryBreakOrbit();
 
         _fsmTgt = exploreTgt;
-        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
+        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed); // all IShipExplorable are Items
 
         _apMoveSpeed = Speed.Standard;
         Call(ShipState.Moving);
@@ -1022,18 +1058,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     void ExecuteExploreOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        LogEventWarning();
+        LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteExploreOrder_OnCollisionEnter(Collision collision) {
-        LogEventWarning();
+        LogEvent();
         __ReportCollision(collision);
     }
 
     void ExecuteExploreOrder_UponDamageIncurred() {
-        LogEventWarning();
+        LogEvent();
         if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.HealthThreshold_Damaged)) {
             D.LogBold(ShowDebugLog, "{0} is abandoning exploration of {1} as it has incurred damage that needs repair.", FullName, _fsmTgt.FullName);
             Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
@@ -1041,19 +1077,34 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void ExecuteExploreOrder_UponFsmTargetDeath() {
-        LogEventWarning();
+    void ExecuteExploreOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteExploreOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteExploreOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.TgtDeath);
     }
 
     void ExecuteExploreOrder_UponDeath() {
-        LogEventWarning();
+        LogEvent();
         Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.UnitItemDeath);
     }
 
     void ExecuteExploreOrder_ExitState() {
         LogEvent();
-        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
+        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);   // all IShipExplorable are Items
+
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
     }
@@ -1078,9 +1129,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         var orbitTgt = CurrentOrder.Target as IShipCloseOrbitable;
         _fsmTgt = orbitTgt;
-        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
-
         _apMoveSpeed = Speed.Standard;
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
+        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed); // all IShipCloseOrbitable are Items
+
         Call(ShipState.Moving);
         yield return null;  // required so Return()s here
         //D.Log(ShowDebugLog, "{0} has just Return()ed from ShipState.Moving in ExecuteAssumeCloseOrbitOrder_EnterState.", FullName);
@@ -1138,36 +1191,50 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     void ExecuteAssumeCloseOrbitOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        LogEventWarning();
+        LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteAssumeCloseOrbitOrder_OnCollisionEnter(Collision collision) {
-        LogEventWarning();
+        LogEvent();
         __ReportCollision(collision);
     }
 
     void ExecuteAssumeCloseOrbitOrder_UponDamageIncurred() {
-        LogEventWarning();
+        LogEvent();
         if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
     }
 
-    void ExecuteAssumeCloseOrbitOrder_UponFsmTargetDeath(IMortalItem deadTarget) {
-        LogEventWarning();
-        D.Assert(_fsmTgt == deadTarget, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadTarget.FullName);
+    void ExecuteAssumeCloseOrbitOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAssumeCloseOrbitOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         IssueAssumeStationOrderFromCaptain();
     }
 
     void ExecuteAssumeCloseOrbitOrder_UponDeath() {
-        LogEventWarning();
+        LogEvent();
     }
 
     void ExecuteAssumeCloseOrbitOrder_ExitState() {
         LogEvent();
-        AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
+
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
+        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);   // all IShipCloseOrbitable are Items
+
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
     }
@@ -1255,9 +1322,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void AssumingCloseOrbit_UponFsmTargetDeath(IMortalItem deadTarget) {
+    void AssumingCloseOrbit_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
-        D.Assert(_fsmTgt == deadTarget, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadTarget.FullName);
+        // TODO
+    }
+
+    void AssumingCloseOrbit_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void AssumingCloseOrbit_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
         Return();
     }
@@ -1282,6 +1359,67 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // individual ships can still be a long way off trying to get there. In addition, the element a ship picks as its
     // primary target could also be a long way off so we need to rely on the AutoPilot to manage speed.
 
+    #region ExecuteAttackOrder Support Members
+
+    /// <summary>
+    /// Tries to pick a primary target for the ship derived from the provided UnitTarget. Returns <c>true</c> if an acceptable
+    /// target belonging to unitAttackTgt is found within SensorRange and the ship decides to attack, <c>false</c> otherwise.
+    /// A ship can decide not to attack even if it finds an acceptable target - e.g. it has no currently operational weapons.
+    /// </summary>
+    /// <param name="unitAttackTgt">The unit target to Attack.</param>
+    /// <param name="allowLogging">if set to <c>true</c> [allow logging].</param>
+    /// <param name="shipPrimaryAttackTgt">The ship's primary attack target. Will be null when returning false.</param>
+    /// <returns></returns>
+    private bool TryPickPrimaryAttackTgt(IUnitAttackable unitAttackTgt, bool allowLogging, out IShipAttackable shipPrimaryAttackTgt) {
+        D.Assert(unitAttackTgt != null && unitAttackTgt.IsOperational, "{0}'s unit attack target is null or dead.", FullName);
+        D.Assert(Data.CombatStance != ShipCombatStance.Defensive && Data.CombatStance != ShipCombatStance.Disengage);
+
+        if (Data.WeaponsRange.Max == Constants.ZeroF) {
+            D.Log(ShowDebugLog && allowLogging, "{0} is declining to engage with target {1} as it has no operational weapons.", FullName, unitAttackTgt.FullName);
+            shipPrimaryAttackTgt = null;
+            return false;
+        }
+
+        var uniqueEnemyTargetsInSensorRange = Enumerable.Empty<IShipAttackable>();
+        Command.SensorRangeMonitors.ForAll(srm => {
+            var attackableEnemyTgtsDetected = srm.AttackableEnemyTargetsDetected.Cast<IShipAttackable>();
+            uniqueEnemyTargetsInSensorRange = uniqueEnemyTargetsInSensorRange.Union(attackableEnemyTgtsDetected);
+        });
+
+        IShipAttackable primaryTgt = null;
+        var cmdTarget = unitAttackTgt as AUnitCmdItem;
+        if (cmdTarget != null) {
+            var primaryTargets = cmdTarget.Elements.Cast<IShipAttackable>();
+            var primaryTargetsInSensorRange = primaryTargets.Intersect(uniqueEnemyTargetsInSensorRange);
+            if (primaryTargetsInSensorRange.Any()) {
+                primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSensorRange);
+            }
+        }
+        else {
+            // Planetoid
+            var planetoidTarget = unitAttackTgt as APlanetoidItem;
+            D.Assert(planetoidTarget != null);
+
+            if (uniqueEnemyTargetsInSensorRange.Contains(planetoidTarget)) {
+                primaryTgt = planetoidTarget;
+            }
+        }
+        if (primaryTgt == null) {
+            D.Warn(allowLogging, "{0} found no target within sensor range to attack!", FullName); // UNCLEAR how this could happen. Sensors damaged?
+            shipPrimaryAttackTgt = null;
+            return false;
+        }
+
+        shipPrimaryAttackTgt = primaryTgt;
+        return true;
+    }
+
+    private IShipAttackable __SelectHighestPriorityAttackTgt(IEnumerable<IShipAttackable> availableAttackTgts) {
+        return availableAttackTgts.MinBy(target => Vector3.SqrMagnitude(target.Position - Position));
+    }
+
+    #endregion
+
     IEnumerator ExecuteAttackOrder_EnterState() {
         LogEvent();
 
@@ -1297,7 +1435,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         string attackTgtFromOrderName = unitAttackTgt.FullName;
         if (!unitAttackTgt.IsOperational) {
-            D.LogBold(ShowDebugLog, "{0} was killed before {1} could begin attack. Canceling Attack Order.", attackTgtFromOrderName, FullName);
+            // if this occurs, it happened in the yield return null delay before EnterState execution
+            D.Warn("{0} was killed before {1} could begin attack. Canceling Attack Order.", attackTgtFromOrderName, FullName);
             CurrentState = ShipState.Idling;
             yield return null;
         }
@@ -1414,9 +1553,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(fsmTgt) as only subscribed to individual targets during Attacking state
+
     // No need to subscribe to death of the unit target as it is checked constantly during EnterState()
 
-    // No need for ExecuteAttackOrder_UponFsmTargetDeath(deadTgt) as only subscribed to individual targets during Attacking state
+    // No need for ExecuteAttackOrder_UponFsmTargetDeath(deadFsmTgt) as only subscribed to individual targets during Attacking state
 
     void ExecuteAttackOrder_UponDeath() {
         LogEvent();
@@ -1435,13 +1581,89 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     // Call()ed State
 
+    #region Attacking Support Members
+
+    private AutoPilotDestinationProxy MakePilotAttackTgtProxy(IShipAttackable attackTgt) {
+        RangeDistance weapRange = Data.WeaponsRange;
+        D.Assert(weapRange.Max > Constants.ZeroF);
+        ShipCombatStance combatStance = Data.CombatStance;
+        D.Assert(combatStance != ShipCombatStance.Disengage && combatStance != ShipCombatStance.Defensive);
+
+        float maxRangeToTgtSurface = Constants.ZeroF;
+        float minRangeToTgtSurface = Constants.ZeroF;
+        bool hasOperatingLRWeapons = weapRange.Long > Constants.ZeroF;
+        bool hasOperatingMRWeapons = weapRange.Medium > Constants.ZeroF;
+        bool hasOperatingSRWeapons = weapRange.Short > Constants.ZeroF;
+        float weapRangeMultiplier = Owner.WeaponRangeMultiplier;
+        switch (combatStance) {
+            case ShipCombatStance.Standoff:
+                if (hasOperatingLRWeapons) {
+                    maxRangeToTgtSurface = weapRange.Long;
+                    minRangeToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else if (hasOperatingMRWeapons) {
+                    maxRangeToTgtSurface = weapRange.Medium;
+                    minRangeToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else {
+                    D.Assert(hasOperatingSRWeapons);
+                    maxRangeToTgtSurface = weapRange.Short;
+                    minRangeToTgtSurface = Constants.ZeroF;
+                }
+                break;
+            case ShipCombatStance.Balanced:
+                if (hasOperatingMRWeapons) {
+                    maxRangeToTgtSurface = weapRange.Medium;
+                    minRangeToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else if (hasOperatingLRWeapons) {
+                    maxRangeToTgtSurface = weapRange.Long;
+                    minRangeToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else {
+                    D.Assert(hasOperatingSRWeapons);
+                    maxRangeToTgtSurface = weapRange.Short;
+                    minRangeToTgtSurface = Constants.ZeroF;
+                }
+                break;
+            case ShipCombatStance.PointBlank:
+                if (hasOperatingSRWeapons) {
+                    maxRangeToTgtSurface = weapRange.Short;
+                    minRangeToTgtSurface = Constants.ZeroF;
+                }
+                else if (hasOperatingMRWeapons) {
+                    maxRangeToTgtSurface = weapRange.Medium;
+                    minRangeToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else {
+                    D.Assert(hasOperatingLRWeapons);
+                    maxRangeToTgtSurface = weapRange.Long;
+                    minRangeToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                break;
+            case ShipCombatStance.Defensive:
+            case ShipCombatStance.Disengage:
+            case ShipCombatStance.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(combatStance));
+        }
+
+        minRangeToTgtSurface = Mathf.Max(minRangeToTgtSurface, CollisionDetectionZoneRadius);
+        D.Assert(maxRangeToTgtSurface > minRangeToTgtSurface);
+        return attackTgt.GetApAttackTgtProxy(minRangeToTgtSurface, maxRangeToTgtSurface);
+    }
+
+    #endregion
+
     void Attacking_EnterState() {
         LogEvent();
-        D.Assert(_fsmTgt != null);
+        D.Assert(_fsmTgt != null && _fsmTgt is IShipAttackable);
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
-        bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: true);
+        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed); // _fsmTgt as attack target is by definition mortal 
+        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed); // all IShipAttackable are Items
 
         IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
         AutoPilotDestinationProxy apAttackTgtProxy = MakePilotAttackTgtProxy(primaryAttackTgt);
@@ -1480,9 +1702,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void Attacking_UponFsmTargetDeath(IMortalItem deadAttackTgt) {
+    void Attacking_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
-        D.Assert(_fsmTgt == deadAttackTgt);
+        // TODO
+    }
+
+    void Attacking_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void Attacking_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == deadFsmTgt);
         // never set _orderFailureCause = TgtDeath as it is not an error when attacking
         Return();
     }
@@ -1495,8 +1727,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Attacking_ExitState() {
         LogEvent();
-        bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmTgt, toSubscribe: false);
-        D.Assert(isUnsubscribed); // _fsmTgt as attack target is by definition mortal 
+
+        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed); // all IShipAttackable can die
+        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);   // all IShipAttackable are Items
+
         _helm.DisengagePilot();  // maintains speed unless already Stopped
     }
 
@@ -1577,6 +1813,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    void ExecuteEntrenchOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+
     void ExecuteEntrenchOrder_UponDeath() {
         LogEvent();
     }
@@ -1631,23 +1874,30 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        LogEventWarning();
+        LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteRepairOrder_OnCollisionEnter(Collision collision) {
-        LogEventWarning();
+        LogEvent();
         __ReportCollision(collision);
     }
 
     void ExecuteRepairOrder_UponDamageIncurred() {
-        LogEventWarning();
+        LogEvent();
         // No need to AssessNeedForRepair() as already Repairing
     }
 
+    void ExecuteRepairOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+
     void ExecuteRepairOrder_UponDeath() {
-        LogEventWarning();
+        LogEvent();
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -1707,15 +1957,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         __ReportCollision(collision);
     }
 
+    void Repairing_UponDamageIncurred() {
+        LogEvent();
+        // No need to AssessNeedForRepair() as already Repairing
+    }
+
+    void Repairing_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+
     void Repairing_UponOrbitedObjectDeath(IShipOrbitable deadOrbitedObject) {
         LogEvent();
         BreakOrbit();   // TODO orderFailureCause?
         Return();
-    }
-
-    void Repairing_UponDamageIncurred() {
-        LogEvent();
-        // No need to AssessNeedForRepair() as already Repairing
     }
 
     void Repairing_UponDeath() {
@@ -1783,6 +2040,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: true);
         }
     }
+
+    void ExecuteDisengageOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEventWarning();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
 
     void ExecuteDisengageOrder_UponDeath() {
         LogEventWarning();
@@ -2094,133 +2358,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Combat Support
 
-    /// <summary>
-    /// Tries to pick a primary target for the ship derived from the provided UnitTarget. Returns <c>true</c> if an acceptable
-    /// target belonging to unitAttackTgt is found within SensorRange and the ship decides to attack, <c>false</c> otherwise.
-    /// A ship can decide not to attack even if it finds an acceptable target - e.g. it has no currently operational weapons.
-    /// </summary>
-    /// <param name="unitAttackTgt">The unit target to Attack.</param>
-    /// <param name="allowLogging">if set to <c>true</c> [allow logging].</param>
-    /// <param name="shipPrimaryAttackTgt">The ship's primary attack target. Will be null when returning false.</param>
-    /// <returns></returns>
-    private bool TryPickPrimaryAttackTgt(IUnitAttackable unitAttackTgt, bool allowLogging, out IShipAttackable shipPrimaryAttackTgt) {
-        D.Assert(unitAttackTgt != null && unitAttackTgt.IsOperational, "{0}'s unit attack target is null or dead.", FullName);
-        D.Assert(Data.CombatStance != ShipCombatStance.Defensive && Data.CombatStance != ShipCombatStance.Disengage);
-
-        if (Data.WeaponsRange.Max == Constants.ZeroF) {
-            D.Log(ShowDebugLog && allowLogging, "{0} is declining to engage with target {1} as it has no operational weapons.", FullName, unitAttackTgt.FullName);
-            shipPrimaryAttackTgt = null;
-            return false;
-        }
-
-        var uniqueEnemyTargetsInSensorRange = Enumerable.Empty<IShipAttackable>();
-        Command.SensorRangeMonitors.ForAll(srm => {
-            var attackableEnemyTgtsDetected = srm.AttackableEnemyTargetsDetected.Cast<IShipAttackable>();
-            uniqueEnemyTargetsInSensorRange = uniqueEnemyTargetsInSensorRange.Union(attackableEnemyTgtsDetected);
-        });
-
-        IShipAttackable primaryTgt = null;
-        var cmdTarget = unitAttackTgt as AUnitCmdItem;
-        if (cmdTarget != null) {
-            var primaryTargets = cmdTarget.Elements.Cast<IShipAttackable>();
-            var primaryTargetsInSensorRange = primaryTargets.Intersect(uniqueEnemyTargetsInSensorRange);
-            if (primaryTargetsInSensorRange.Any()) {
-                primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSensorRange);
-            }
-        }
-        else {
-            // Planetoid
-            var planetoidTarget = unitAttackTgt as APlanetoidItem;
-            D.Assert(planetoidTarget != null);
-
-            if (uniqueEnemyTargetsInSensorRange.Contains(planetoidTarget)) {
-                primaryTgt = planetoidTarget;
-            }
-        }
-        if (primaryTgt == null) {
-            D.Warn(allowLogging, "{0} found no target within sensor range to attack!", FullName); // UNCLEAR how this could happen. Sensors damaged?
-            shipPrimaryAttackTgt = null;
-            return false;
-        }
-
-        shipPrimaryAttackTgt = primaryTgt;
-        return true;
-    }
-
-    private IShipAttackable __SelectHighestPriorityAttackTgt(IEnumerable<IShipAttackable> availableAttackTgts) {
-        return availableAttackTgts.MinBy(target => Vector3.SqrMagnitude(target.Position - Position));
-    }
-
-    private AutoPilotDestinationProxy MakePilotAttackTgtProxy(IShipAttackable attackTgt) {
-        RangeDistance weapRange = Data.WeaponsRange;
-        D.Assert(weapRange.Max > Constants.ZeroF);
-        ShipCombatStance combatStance = Data.CombatStance;
-        D.Assert(combatStance != ShipCombatStance.Disengage && combatStance != ShipCombatStance.Defensive);
-
-        float maxRangeToTgtSurface = Constants.ZeroF;
-        float minRangeToTgtSurface = Constants.ZeroF;
-        bool hasOperatingLRWeapons = weapRange.Long > Constants.ZeroF;
-        bool hasOperatingMRWeapons = weapRange.Medium > Constants.ZeroF;
-        bool hasOperatingSRWeapons = weapRange.Short > Constants.ZeroF;
-        float weapRangeMultiplier = Owner.WeaponRangeMultiplier;
-        switch (combatStance) {
-            case ShipCombatStance.Standoff:
-                if (hasOperatingLRWeapons) {
-                    maxRangeToTgtSurface = weapRange.Long;
-                    minRangeToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
-                }
-                else if (hasOperatingMRWeapons) {
-                    maxRangeToTgtSurface = weapRange.Medium;
-                    minRangeToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
-                }
-                else {
-                    D.Assert(hasOperatingSRWeapons);
-                    maxRangeToTgtSurface = weapRange.Short;
-                    minRangeToTgtSurface = Constants.ZeroF;
-                }
-                break;
-            case ShipCombatStance.Balanced:
-                if (hasOperatingMRWeapons) {
-                    maxRangeToTgtSurface = weapRange.Medium;
-                    minRangeToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
-                }
-                else if (hasOperatingLRWeapons) {
-                    maxRangeToTgtSurface = weapRange.Long;
-                    minRangeToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
-                }
-                else {
-                    D.Assert(hasOperatingSRWeapons);
-                    maxRangeToTgtSurface = weapRange.Short;
-                    minRangeToTgtSurface = Constants.ZeroF;
-                }
-                break;
-            case ShipCombatStance.PointBlank:
-                if (hasOperatingSRWeapons) {
-                    maxRangeToTgtSurface = weapRange.Short;
-                    minRangeToTgtSurface = Constants.ZeroF;
-                }
-                else if (hasOperatingMRWeapons) {
-                    maxRangeToTgtSurface = weapRange.Medium;
-                    minRangeToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
-                }
-                else {
-                    D.Assert(hasOperatingLRWeapons);
-                    maxRangeToTgtSurface = weapRange.Long;
-                    minRangeToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
-                }
-                break;
-            case ShipCombatStance.Defensive:
-            case ShipCombatStance.Disengage:
-            case ShipCombatStance.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(combatStance));
-        }
-
-        minRangeToTgtSurface = Mathf.Max(minRangeToTgtSurface, CollisionDetectionZoneRadius);
-        D.Assert(maxRangeToTgtSurface > minRangeToTgtSurface);
-        return attackTgt.GetApAttackTgtProxy(minRangeToTgtSurface, maxRangeToTgtSurface);
-    }
-
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
         if (!Data.IsFtlDamaged) {
@@ -2296,42 +2433,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private void HandleApTargetReached() {
         UponApTargetReached();
         OnApTgtReached();
-    }
-
-    private bool _isFsmTgtDeathAlreadySubscribed;
-
-    /// <summary>
-    /// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
-    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
-    /// <remarks>Throws an error if fsmTgt is a ShipCloseOrbitSimulator as AssumingCloseOrbit state no longer assigns it. 
-    /// Issues a warning if it is a FleetFormationStation as it is obviously not mortal and shouldn't have been attempted. 
-    /// Also issues a warning if attempting to create a duplicate subscription.</remarks>
-    /// <remarks>No need to specially handle Stationary or MobileLocations. In most cases they are simply Course Waypoints. 
-    /// If they are Patrol or Guard Stations, the fleet handles the death of any mortal item being patrolled or guarded.
-    /// </remarks>
-    /// </summary>
-    /// <param name="fsmTgt">The target used by the State Machine.</param>
-    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
-    /// <returns></returns>
-    private bool AttemptFsmTgtDeathSubscribeChange(IShipNavigable fsmTgt, bool toSubscribe) {
-        Utility.ValidateNotNull(fsmTgt);
-        D.Assert(!(fsmTgt is ShipCloseOrbitSimulator), "{0}: fsmTgt {1} should not be a {2}.", FullName, fsmTgt.FullName, typeof(ShipCloseOrbitSimulator).Name);
-        D.Warn((fsmTgt is FleetFormationStation), "{0}: fsmTgt {1} should not be a {2}.", FullName, fsmTgt.FullName, typeof(FleetFormationStation).Name);
-        var mortalFsmTgt = fsmTgt as IMortalItem;
-        if (mortalFsmTgt != null) {
-            if (!toSubscribe) {
-                mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
-            }
-            else if (!_isFsmTgtDeathAlreadySubscribed) {
-                mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
-            }
-            else {
-                D.Warn("{0}: Attempting to subcribe to {1}'s death when already subscribed.", FullName, fsmTgt.FullName);
-            }
-            _isFsmTgtDeathAlreadySubscribed = toSubscribe;
-            return true;
-        }
-        return false;
     }
 
     #endregion
@@ -2436,7 +2537,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     //    Return();
     //}
 
-    //void AssumingCloseOrbit_OnCollisionEnter(Collision collision) {
+    //void AssumingCloseOrbit_OnCollisionEnter(Collision c) {
     //    __ReportCollision(collision);
     //}
 
@@ -2545,7 +2646,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     //    Return();
     //}
 
-    //void AssumingCloseOrbit_OnCollisionEnter(Collision collision) {
+    //void AssumingCloseOrbit_OnCollisionEnter(Collision c) {
     //    __ReportCollision(collision);
     //}
 
@@ -2884,7 +2985,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// <summary>
         /// The Speed the ship is currently generating propulsion for.
         /// </summary>
-        internal Speed CurrentSpeed { get { return _engineRoom.CurrentSpeed; } }
+        private Speed CurrentSpeedSetting { get { return _shipData.CurrentSpeedSetting; } }
 
         /// <summary>
         /// The current target (proxy) this Pilot is engaged to reach.
@@ -2959,6 +3060,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         private GameTime _gameTime;
         private GameManager _gameMgr;
         private ShipItem _ship;
+        private ShipData _shipData;
         private EngineRoom _engineRoom;
 
         #region Initialization
@@ -2974,6 +3076,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             _gameMgr = GameManager.Instance;
 
             _ship = ship;
+            _shipData = ship.Data;
             _engineRoom = new EngineRoom(ship, shipRigidbody);
             Subscribe();
         }
@@ -3286,7 +3389,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             float hoursPerCheckPeriod = checkPeriodHoursForMinNumberOfChecks;
             if (hoursPerCheckPeriod < MinHoursPerProgressCheckPeriodAllowed) {
                 // speed is too fast to get min number of checks so reduce it until its not
-                speed = CurrentSpeed;
+                speed = CurrentSpeedSetting;
                 while (hoursPerCheckPeriod < MinHoursPerProgressCheckPeriodAllowed) {
                     Speed slowerSpeed;
                     if (speed.TryDecreaseSpeed(out slowerSpeed)) {
@@ -3374,7 +3477,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     // at this speed I could miss the arrival window
                     //D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss front half depth {2:0.00} of arrival window.",
                     //Name, checksRemainingBeforeArrival, halfArrivalCaptureDepth);
-                    if (CurrentSpeed.TryDecreaseSpeed(out correctedSpeed)) {
+                    if (CurrentSpeedSetting.TryDecreaseSpeed(out correctedSpeed)) {
                         //D.Log(ShowDebugLog, "{0} is reducing speed to {1}.", Name, correctedSpeed.GetValueName());
                         return true;
                     }
@@ -3391,8 +3494,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             else {
                 //D.Log(ShowDebugLog, "{0} ChecksRemainingBeforeArrival {1:0.0} > Threshold {2:0.0}.", Name, checksRemainingBeforeArrival, checksRemainingThreshold);
                 if (checksRemainingBeforeArrival > MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin) {
-                    if (isIncreaseAboveApSpeedAllowed || CurrentSpeed < ApSpeed) {
-                        if (CurrentSpeed.TryIncreaseSpeed(out correctedSpeed)) {
+                    if (isIncreaseAboveApSpeedAllowed || CurrentSpeedSetting < ApSpeed) {
+                        if (CurrentSpeedSetting.TryIncreaseSpeed(out correctedSpeed)) {
                             D.Log(ShowDebugLog, "{0} is increasing speed to {1}.", Name, correctedSpeed.GetValueName());
                             return true;
                         }
@@ -3614,7 +3717,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// </summary>
         private void RefreshEngineRoomSpeedValues(bool isFleetSpeed) {
             //D.Log(ShowDebugLog, "{0} is refreshing engineRoom speed values.", _ship.FullName);
-            ChangeSpeed_Internal(CurrentSpeed, isFleetSpeed);
+            ChangeSpeed_Internal(CurrentSpeedSetting, isFleetSpeed);
         }
 
         #endregion
@@ -4260,7 +4363,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             /// <summary>
             /// The Speed the ship has been ordered to execute.
             /// </summary>
-            internal Speed CurrentSpeed { get; private set; }
+            private Speed CurrentSpeedSetting {
+                get { return _shipData.CurrentSpeedSetting; }
+                set { _shipData.CurrentSpeedSetting = value; }
+            }
 
             private string Name { get { return NameFormat.Inject(_ship.FullName, typeof(EngineRoom).Name); } }
 
@@ -4347,7 +4453,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 //Name, ActualSpeedValue, newSpeed.GetValueName(), intendedNewSpeedValue);
 
                 __PreviousIntendedCurrentSpeedValue = IntendedCurrentSpeedValue;
-                CurrentSpeed = newSpeed;
+                CurrentSpeedSetting = newSpeed;
                 IntendedCurrentSpeedValue = intendedNewSpeedValue;
 
                 if (newSpeed == Speed.HardStop) {
@@ -4418,7 +4524,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             /// </summary>
             private void ResumePropulsionAtIntendedSpeed() {
                 D.Assert(!IsPropulsionEngaged);
-                //D.Log(ShowDebugLog, "{0} is resuming propulsion at Speed {1}.", Name, CurrentSpeed.GetValueName());
+                //D.Log(ShowDebugLog, "{0} is resuming propulsion at Speed {1}.", Name, CurrentSpeedSetting.GetValueName());
                 EngageOrContinuePropulsion(IntendedCurrentSpeedValue);
             }
 
@@ -4704,9 +4810,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     _velocityToRestoreAfterPause = _shipRigidbody.velocity;
                     _isVelocityToRestoreAfterPauseRecorded = true;
                     //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} before setting IsKinematic to true. IsKinematic = {2}.", Name, _shipRigidbody.velocity.ToPreciseString(), _shipRigidbody.isKinematic);
-                    _shipRigidbody.isKinematic = true;  // immediately stops rigidbody (rigidbody.velocity = 0) and puts it to sleep. Data.CurrentSpeed reports speed correctly when paused
-                                                        //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", Name, _shipRigidbody.velocity.ToPreciseString());
-                                                        //D.Log(ShowDebugLog, "{0}.Rigidbody.isSleeping = {1}.", Name, _shipRigidbody.IsSleeping());
+                    _shipRigidbody.isKinematic = true;
+                    //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", Name, _shipRigidbody.velocity.ToPreciseString());
+                    //D.Log(ShowDebugLog, "{0}.Rigidbody.isSleeping = {1}.", Name, _shipRigidbody.IsSleeping());
                 }
                 else {
                     D.Assert(_isVelocityToRestoreAfterPauseRecorded);
@@ -5211,6 +5317,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     #endregion
 
     #region IShip_Ltd Members
+
+    public Reference<float> ActualSpeedValue_Debug { get { return new Reference<float>(() => ActualSpeedValue); } }
 
     public float CollisionDetectionZoneRadius_Debug { get { return CollisionDetectionZoneRadius; } }
 

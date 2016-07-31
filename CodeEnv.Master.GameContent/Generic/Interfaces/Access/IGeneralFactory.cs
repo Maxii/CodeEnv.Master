@@ -48,7 +48,6 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         GameObject MakeAutoDestruct3DAudioSFXInstance(string name, Vector3 position);
 
-
     }
 }
 

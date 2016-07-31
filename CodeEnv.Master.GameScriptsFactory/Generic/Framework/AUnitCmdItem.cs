@@ -29,10 +29,12 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigable, IUnitAttackable, IFormationMgrClient {
 
+    public event EventHandler isAvailableChanged;
+
     public Formation UnitFormation { get { return Data.UnitFormation; } }
 
     /// <summary>
-    /// The maximum radius of this Unit's current formation, independant of the number of elements currently assigned a
+    /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
     /// station in the formation or whether the Unit's elements are located on their formation station. 
     /// Value encompasses each element's "KeepoutZone" (Facility: AvoidableObstacleZone, Ship: CollisionDetectionZone) 
     /// when the element is OnStation. 
@@ -51,7 +53,15 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         private set { SetProperty<Transform>(ref _unitContainer, value, "UnitContainer"); }
     }
 
-    public abstract bool IsAvailable { get; }
+    /// <summary>
+    /// Indicates whether this element is available for a new assignment.
+    /// <remarks>Typically, an element that is available is Idling.</remarks>
+    /// </summary>
+    private bool _isAvailable;
+    public bool IsAvailable {
+        get { return _isAvailable; }
+        protected set { SetProperty<bool>(ref _isAvailable, value, "IsAvailable", IsAvailablePropChangedHandler); }
+    }
 
     public bool IsAttackCapable { get { return Elements.Where(e => e.IsAttackCapable).Any(); } }
 
@@ -148,11 +158,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return trackingLabel;
     }
 
-    protected override IHighlighter InitializeHighlighter() {
-        var iconTransform = DisplayMgr.Icon.WidgetTransform;
-        return new Highlighter(this, iconTransform, false); // icon is constant size on the screen so no need for the highlight to dynamically adjust its size
-    }
-
     protected sealed override ADisplayManager MakeDisplayManagerInstance() {
         return new UnitCmdDisplayManager(this, Layers.Cull_200);
     }
@@ -175,6 +180,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         iconEventListener.onClick += ClickEventHandler;
         iconEventListener.onDoubleClick += DoubleClickEventHandler;
         iconEventListener.onPress += PressEventHandler;
+    }
+
+    protected sealed override HoverHighlightManager InitializeHoverHighlightMgr() {
+        return new HoverHighlightManager(this, UnitMaxFormationRadius);
+    }
+
+    protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
+        var iconTransform = DisplayMgr.Icon.WidgetTransform;
+        float radius = Screen.height * 0.03F;
+        return new CircleHighlightManager(iconTransform, radius, isCircleSizeDynamic: false);
     }
 
     protected override void FinalInitialize() {
@@ -343,6 +358,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.HandleDeathFromDeadState();
     }
 
+    #region Event and Property Change Handlers
+
     /// <summary>
     /// Handles a change in relations between players.
     /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
@@ -354,18 +371,28 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// Upshot: Elements FSMs can ignore Relations changes.
     /// </remarks>
     /// </summary>
-    /// <param name="otherPlayer">The other player.</param>
-    /// <param name="priorRelationship">The prior relationship.</param>
-    /// <param name="newRelationship">The new relationship.</param>
-    public void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
-        SensorRangeMonitors.ForAll(srm => srm.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
-        Elements.ForAll(e => e.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
-        UponRelationsChanged(otherPlayer, priorRelationship, newRelationship);
+    /// <param name="chgdRelationsPlayer">The other player.</param>
+    public void HandleRelationsChanged(Player chgdRelationsPlayer) {
+        SensorRangeMonitors.ForAll(srm => srm.HandleRelationsChanged(chgdRelationsPlayer));
+        Elements.ForAll(e => e.HandleRelationsChanged(chgdRelationsPlayer));
+        UponRelationsChanged(chgdRelationsPlayer);
     }
 
-    #region Event and Property Change Handlers
+    private void IsAvailablePropChangedHandler() {
+        OnIsAvailable();
+    }
 
-    protected virtual void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
+    private void OnIsAvailable() {
+        if (isAvailableChanged != null) {
+            isAvailableChanged(this, new EventArgs());
+        }
+    }
+
+    private void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
+        HandleHQElementChanging(newHQElement);
+    }
+
+    protected virtual void HandleHQElementChanging(AUnitElementItem newHQElement) {
         Utility.ValidateNotNull(newHQElement);
         var previousHQElement = HQElement;
         if (previousHQElement != null) {
@@ -386,6 +413,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void HQElementPropChangedHandler() {
+        HandleHQElementChanged();
+    }
+
+    private void HandleHQElementChanged() {
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
         if (__ShowHQDebugLog) {
@@ -399,13 +430,24 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    protected void FsmTargetDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem deadFsmTgt = sender as IMortalItem;
+    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
+        IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
         UponFsmTargetDeath(deadFsmTgt);
     }
 
-    protected override void OwnerPropChangedHandler() {
-        base.OwnerPropChangedHandler();
+    private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
+        IItem_Ltd fsmTgt = sender as IItem_Ltd;
+        HandleFsmTgtInfoAccessChgd(e.Player, fsmTgt);
+    }
+
+    private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IItem_Ltd fsmTgt) {
+        if (playerWhoseInfoAccessChgd == Owner) {
+            UponFsmTgtInfoAccessChgd(fsmTgt);
+        }
+    }
+
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
         }
@@ -421,14 +463,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
     }
 
-    protected override void IsDiscernibleToUserPropChangedHandler() {
-        base.IsDiscernibleToUserPropChangedHandler();
+    protected override void HandleIsDiscernibleToUserChanged() {
+        base.HandleIsDiscernibleToUserChanged();
         ShowTrackingLabel(IsDiscernibleToUser);
     }
 
-    protected override void IsSelectedPropChangedHandler() {
-        base.IsSelectedPropChangedHandler();
-        Elements.ForAll(e => e.AssessHighlighting());
+    protected override void HandleIsSelectedChanged() {
+        base.HandleIsSelectedChanged();
+        Elements.ForAll(e => e.AssessCircleHighlighting());
     }
 
     private void __ShowHQDebugLogPropChangedHandler() {
@@ -450,9 +492,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Relays
 
-    private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
-        RelayToCurrentState(deadSubordinateElement);
-    }
+    private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
 
     /// <summary>
     /// Called prior to entering the Dead state, this method notifies the current
@@ -461,19 +501,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     protected void UponDeath() { RelayToCurrentState(); }
 
-    private void UponFsmTargetDeath(IMortalItem deadFsmTarget) { RelayToCurrentState(deadFsmTarget); }
+    private void UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
 
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
-    protected void UponRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
-        RelayToCurrentState(otherPlayer, priorRelationship, newRelationship);
-    }
+    protected void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
 
-    protected void UponOwnerChanged() {
-        RelayToCurrentState();
-    }
+    protected void UponOwnerChanged() { RelayToCurrentState(); }
+
+    protected void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
     #endregion
 
@@ -582,6 +620,75 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #endregion
 
+    #region Debug
+
+    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
+        {FsmTgtEventSubscriptionMode.TargetDeath, false },
+        {FsmTgtEventSubscriptionMode.InfoAccessChg, false }
+    };
+
+    /// <summary>
+    /// Attempts subscribing or unsubscribing to <c>fsmTgt</c> in the mode provided.
+    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not.
+    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
+    /// </summary>
+    /// <param name="subscriptionMode">The subscription mode.</param>
+    /// <param name="fsmTgt">The target used by the State Machine.</param>
+    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    protected bool __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode subscriptionMode, IFleetNavigable fsmTgt, bool toSubscribe) {
+        Utility.ValidateNotNull(fsmTgt);
+        bool isSubscribeActionTaken = false;
+        bool isDuplicateSubscriptionAttempted = false;
+        bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
+        switch (subscriptionMode) {
+            case FsmTgtEventSubscriptionMode.TargetDeath:
+                var mortalFsmTgt = fsmTgt as IMortalItem_Ltd;
+                if (mortalFsmTgt != null) {
+                    if (!toSubscribe) {
+                        mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else if (!isSubscribed) {
+                        mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else {
+                        isDuplicateSubscriptionAttempted = true;
+                    }
+                }
+                break;
+            case FsmTgtEventSubscriptionMode.InfoAccessChg:
+                var itemFsmTgt = fsmTgt as IItem_Ltd;
+                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
+                    if (!toSubscribe) {
+                        itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else if (!isSubscribed) {
+                        itemFsmTgt.infoAccessChgd += FsmTgtInfoAccessChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else {
+                        isDuplicateSubscriptionAttempted = true;
+                    }
+                }
+                break;
+            case FsmTgtEventSubscriptionMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
+        }
+        D.Warn(isDuplicateSubscriptionAttempted, "{0}: Attempting to subscribe to {1}'s {2} when already subscribed.",
+            FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+        if (isSubscribeActionTaken) {
+            __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
+        }
+        return isSubscribeActionTaken;
+    }
+
+    #endregion
+
     #region INavigable Members
 
     public override string DisplayName { get { return Data.ParentName; } }
@@ -608,14 +715,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     public override bool IsRetainedFocusEligible { get { return UserIntelCoverage != IntelCoverage.None; } }
-
-    #endregion
-
-    #region IHighlightable Members
-
-    public override float SphericalHighlightEffectRadius { get { return UnitMaxFormationRadius; } }
-
-    public override float CircleHighlightEffectRadius { get { return Screen.height * 0.03F; } }
 
     #endregion
 

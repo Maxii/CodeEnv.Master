@@ -21,11 +21,14 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     ///Immutable report for FleetCmdItems.
     /// </summary>
     public class FleetCmdReport : AUnitCmdReport {
+
+        public Reference<float> __ActualSpeedValue { get; private set; }
 
         public FleetCategory Category { get; private set; }
 
@@ -42,7 +45,9 @@ namespace CodeEnv.Master.GameContent {
 
         public INavigable Target { get; private set; }
 
-        public float? CurrentSpeed { get; private set; }
+        public Vector3? CurrentHeading { get; private set; }
+
+        public Speed CurrentSpeedSetting { get; private set; }
 
         public float? UnitFullSpeed { get; private set; }
 
@@ -60,108 +65,113 @@ namespace CodeEnv.Master.GameContent {
             var fData = data as FleetCmdData;
             var accessCntlr = fData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitDefense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitDefense)) {
                 UnitDefensiveStrength = fData.UnitDefensiveStrength;
             }
             else {
                 UnitDefensiveStrength = CalcPartialUnitDefensiveStrength(GetElementsData(fData));
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitOffense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitOffense)) {
                 UnitOffensiveStrength = fData.UnitOffensiveStrength;
             }
             else {
                 UnitOffensiveStrength = CalcPartialUnitOffensiveStrength(GetElementsData(fData));
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitMaxHitPts)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitMaxHitPts)) {
                 UnitMaxHitPoints = fData.UnitMaxHitPoints;
             }
             else {
                 UnitMaxHitPoints = CalcPartialUnitMaxHitPoints(GetElementsData(fData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitCurrentHitPts)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitCurrentHitPts)) {
                 UnitCurrentHitPoints = fData.UnitCurrentHitPoints;
             }
             else {
                 UnitCurrentHitPoints = CalcPartialUnitCurrentHitPoints(GetElementsData(fData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitHealth)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitHealth)) {
                 UnitHealth = fData.UnitHealth;
             }
             else {
-                // Calculate HitPts before attempting calc of partial unit health
+                // Calculate HitPts before attempting calculation of partial unit health
                 UnitHealth = CalcPartialUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitScience)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitScience)) {
                 UnitScience = fData.UnitScience;
             }
             else {
                 UnitScience = CalcPartialUnitScience(GetElementsData(fData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitNetIncome)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitNetIncome)) {
                 UnitIncome = fData.UnitIncome;
                 UnitExpense = fData.UnitExpense;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitCulture)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitCulture)) {
                 UnitCulture = fData.UnitCulture;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = fData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
                 ParentName = fData.ParentName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = fData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = fData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentCmdEffectiveness)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentCmdEffectiveness)) {
                 CurrentCmdEffectiveness = fData.CurrentCmdEffectiveness;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitSensorRange)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitSensorRange)) {
                 UnitSensorRange = fData.UnitSensorRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitWeaponsRange)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitWeaponsRange)) {
                 UnitWeaponsRange = fData.UnitWeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = fData.SectorIndex;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Formation)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Formation)) {
                 UnitFormation = fData.UnitFormation;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Target)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Target)) {
                 Target = fData.Target;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentSpeed)) {
-                CurrentSpeed = fData.ActualSpeedValue;
-            }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Composition)) { // must preceed Category
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Composition)) { // must precede Category
                 UnitComposition = fData.UnitComposition;
             }
             else {
                 UnitComposition = CalcPartialUnitComposition(fData);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = fData.Category;
             }
             else {
                 Category = CalcPartialCmdCategory(fData);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitFullSpeed)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHeading)) {
+                CurrentHeading = fData.CurrentHeading;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentSpeedSetting)) {
+                CurrentSpeedSetting = fData.CurrentSpeedSetting;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitFullSpeed)) {
                 UnitFullSpeed = fData.UnitFullSpeedValue;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.UnitMaxTurnRate)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitMaxTurnRate)) {
                 UnitMaxTurnRate = fData.UnitMaxTurnRate;
             }
+
+            __ActualSpeedValue = (Item as IFleetCmd_Ltd).ActualSpeedValue_Debug;
         }
 
         private FleetComposition CalcPartialUnitComposition(FleetCmdData cmdData) {
@@ -169,7 +179,7 @@ namespace CodeEnv.Master.GameContent {
             IList<ShipHullCategory> knownElementCategories = new List<ShipHullCategory>();
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                     knownElementCategories.Add(eData.HullCategory);
                 }
             }

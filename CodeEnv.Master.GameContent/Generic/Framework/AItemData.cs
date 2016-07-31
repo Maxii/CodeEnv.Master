@@ -96,15 +96,27 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        protected virtual void IsOperationalPropChangedHandler() {
+        private void IsOperationalPropChangedHandler() {
+            HandleIsOperationalChanged();
+        }
+
+        protected virtual void HandleIsOperationalChanged() {
             D.Assert(IsOperational);    // only MortalItems should ever see a change to false
         }
 
-        protected virtual void OwnerPropChangedHandler() {
+        private void OwnerPropChangedHandler() {
+            HandleOwnerChanged();
+        }
+
+        protected virtual void HandleOwnerChanged() {
             //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
         }
 
-        protected virtual void TopographyPropChangedHandler() { }
+        private void TopographyPropChangedHandler() {
+            HandleTopographyChanged();
+        }
+
+        protected virtual void HandleTopographyChanged() { }
 
         #endregion
 

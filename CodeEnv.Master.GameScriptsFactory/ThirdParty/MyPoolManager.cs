@@ -33,6 +33,8 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
 
     private const string FormationStationPoolName = "FormationStations";
 
+    private const string HighlightsPoolName = "Highlights";
+
     #region Initialization
 
     /// <summary>
@@ -112,15 +114,15 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
 
     public Transform FormationStationSpawnPool { get { return PoolManager.Pools[FormationStationPoolName].transform; } }
 
-    public FleetFormationStation Spawn(Vector3 location) {
-        return Spawn(location, Quaternion.identity);
+    public FleetFormationStation SpawnFormationStation(Vector3 location) {
+        return SpawnFormationStation(location, Quaternion.identity);
     }
 
-    public FleetFormationStation Spawn(Vector3 location, Quaternion rotation) {
-        return Spawn(location, rotation, FormationStationSpawnPool);
+    public FleetFormationStation SpawnFormationStation(Vector3 location, Quaternion rotation) {
+        return SpawnFormationStation(location, rotation, FormationStationSpawnPool);
     }
 
-    public FleetFormationStation Spawn(Vector3 location, Quaternion rotation, Transform parent) {
+    public FleetFormationStation SpawnFormationStation(Vector3 location, Quaternion rotation, Transform parent) {
         Transform stationTransform = PoolManager.Pools[FormationStationPoolName].Spawn("FormationStation", location, rotation, parent);
         return stationTransform.GetComponent<FleetFormationStation>();
     }
@@ -131,6 +133,33 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
 
     public void DespawnFormationStation(Transform stationTransform, Transform parent) {
         PoolManager.Pools[FormationStationPoolName].Despawn(stationTransform, parent);
+    }
+
+    #endregion
+
+    #region Highlights
+
+    public Transform HighlightsSpawnPool { get { return PoolManager.Pools[HighlightsPoolName].transform; } }
+
+    public ISphericalHighlight SpawnHighlight(Vector3 location) {
+        return SpawnHighlight(location, Quaternion.identity);
+    }
+
+    public ISphericalHighlight SpawnHighlight(Vector3 location, Quaternion rotation) {
+        return SpawnHighlight(location, rotation, HighlightsSpawnPool);
+    }
+
+    public ISphericalHighlight SpawnHighlight(Vector3 location, Quaternion rotation, Transform parent) {
+        Transform highlightTransform = PoolManager.Pools[HighlightsPoolName].Spawn("PooledSphericalHighlight", location, rotation, parent);
+        return highlightTransform.GetComponent<PooledSphericalHighlight>();
+    }
+
+    public void DespawnHighlight(Transform highlightTransform) {
+        DespawnHighlight(highlightTransform, HighlightsSpawnPool);
+    }
+
+    public void DespawnHighlight(Transform highlightTransform, Transform parent) {
+        PoolManager.Pools[HighlightsPoolName].Despawn(highlightTransform, parent);
     }
 
     #endregion

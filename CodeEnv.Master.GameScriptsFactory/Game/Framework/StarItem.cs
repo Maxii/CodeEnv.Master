@@ -127,6 +127,16 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         iconEventListener.onPress += PressEventHandler;
     }
 
+    protected override CircleHighlightManager InitializeCircleHighlightMgr() {
+        float circleRadius = Radius * Screen.height * 1.5F;
+        return new CircleHighlightManager(transform, circleRadius);
+    }
+
+    protected override HoverHighlightManager InitializeHoverHighlightMgr() {
+        float highlightRadius = Radius + 5F;
+        return new HoverHighlightManager(this, highlightRadius);
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -165,8 +175,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #region Event and Property Change Handlers
 
-    protected override void OwnerPropChangedHandler() {
-        base.OwnerPropChangedHandler();
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
         if (DisplayMgr != null && DisplayMgr.Icon != null) {
             DisplayMgr.Icon.Color = Owner.Color;
         }
@@ -246,7 +256,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     #region IShipCloseOrbitable Members
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -361,14 +371,6 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #endregion
 
-    #region IHighlightable Members
-
-    public override float CircleHighlightEffectRadius { get { return Radius * Screen.height * 1.5F; } }
-
-    public override float SphericalHighlightEffectRadius { get { return Radius + 5F; } }
-
-    #endregion
-
     #region IFleetNavigable Members
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
@@ -402,7 +404,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

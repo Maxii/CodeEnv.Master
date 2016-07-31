@@ -258,7 +258,7 @@ namespace CodeEnv.Master.GameContent {
         #region Element Category
 
         //TODO MaxMountPoints and Dimensions are temporary until I determine whether I want either value
-        // to be independant of the element category. If independant, the values would then be placed
+        // to be independent of the element category. If independent, the values would then be placed
         // in the HullStat.
 
         public static int __MaxLOSWeapons(this ShipHullCategory cat) {
@@ -577,7 +577,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Ship Speed 
+        #region Ship and Fleet Speed 
 
         /// <summary>
         /// Gets the speed in units per hour for this ship moving as part of a fleet.
@@ -590,7 +590,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the speed in units per hour for this ship moving independantly of its fleet.
+        /// Gets the speed in units per hour for this ship moving independently of its fleet.
         /// </summary>
         /// <param name="speed">The speed enum value.</param>
         /// <param name="shipData">The ship data.</param>
@@ -600,6 +600,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private static float GetUnitsPerHour(Speed speed, ShipData shipData, FleetCmdData fleetData) {
+            float fullSpeedValue = Constants.ZeroF;
+            if (shipData != null) {
+                fullSpeedValue = shipData.FullSpeedValue; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
+                //D.Log("{0}.FullSpeed = {1} units/hour. IsFtlOperational = {2}.", shipData.FullName, fullSpeedValue, shipData.IsFtlOperational);
+            }
+            else {
+                fullSpeedValue = fleetData.UnitFullSpeedValue;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
+                //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fullSpeedValue);
+            }
+            return speed.GetUnitsPerHour(fullSpeedValue);
+        }
+
+        public static float GetUnitsPerHour(this Speed speed, float fullSpeedValue) {
             // Note: see Flight.txt in GameDev Notes for analysis of speed values
             float fullSpeedFactor = Constants.ZeroF;
             switch (speed) {
@@ -644,24 +657,13 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(speed));
             }
 
-            float fullSpeed = Constants.ZeroF;
-            if (shipData != null) {
-                fullSpeed = shipData.FullSpeedValue; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
-                //D.Log("{0}.FullSpeed = {1} units/hour. IsFtlOperational = {2}.", shipData.FullName, fullSpeed, shipData.IsFtlOperational);
-            }
-            else {
-                fullSpeed = fleetData.UnitFullSpeedValue;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
-                //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fullSpeed);
-            }
-
-            float speedValueResult = fullSpeedFactor * fullSpeed;
+            float speedValueResult = fullSpeedFactor * fullSpeedValue;
             if (speedValueResult < TempGameValues.ShipMinimumSpeedValue) {
                 speedValueResult = TempGameValues.ShipMinimumSpeedValue;
                 D.Log("Speed {0} value has been clamped to {1:0.00}.", speed.GetValueName(), speedValueResult);
             }
             return speedValueResult;
         }
-
 
         /// <summary>
         /// Tries to decrease the speed by one step below the source speed. Returns
@@ -1265,8 +1267,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
         }
-
-
 
 
         /// <summary>

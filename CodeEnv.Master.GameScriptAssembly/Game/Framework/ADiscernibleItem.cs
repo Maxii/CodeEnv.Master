@@ -17,6 +17,8 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -25,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for Items that can change whether they are discernible by the UserPlayer.
 /// </summary>
-public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable, IEffectsMgrClient, ISelectable {
+public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackable, IEffectsMgrClient, ISelectable {
 
     public event EventHandler<EffectSeqEventArgs> effectSeqStarting;
     public event EventHandler<EffectSeqEventArgs> effectSeqFinished;
@@ -63,8 +65,8 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     /// </summary>
     private bool _hasInitOnFirstDiscernibleToUserRun;
     private IGameInputHelper _inputHelper;
-    private IHighlighter _highlighter;
     private ICtxControl _ctxControl;
+    private IDictionary<HighlightMgrID, AHighlightManager> _highlightMgrLookup;
 
     #region Initialization
 
@@ -86,10 +88,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         InitializeDisplayManager();
         // always start enabled as UserPlayerIntelCoverage must be > None for this method to be called,
         // or, in the case of SystemItem, its members coverage must be > their starting coverage
-        DisplayMgr.IsDisplayEnabled = true; //DisplayMgr.EnableDisplay(true);
+        DisplayMgr.IsDisplayEnabled = true;
 
         EffectsMgr = InitializeEffectsManager();
-        _highlighter = InitializeHighlighter();
         _hasInitOnFirstDiscernibleToUserRun = true;
     }
 
@@ -107,10 +108,6 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         return new EffectsManager(this);
     }
 
-    protected virtual IHighlighter InitializeHighlighter() {
-        return new Highlighter(this);
-    }
-
     /// <summary>
     /// Initializes the context menu. Called when the ContextMenu for this
     /// item is first used and/or when the owner changes.
@@ -118,6 +115,14 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
     protected abstract ICtxControl InitializeContextMenu(Player owner);
+
+    protected abstract CircleHighlightManager InitializeCircleHighlightMgr();
+
+    protected abstract HoverHighlightManager InitializeHoverHighlightMgr();
+
+    protected virtual SectorViewHighlightManager InitializeSectorViewHighlightMgr() {
+        throw new NotSupportedException();
+    }
 
     #endregion
 
@@ -131,34 +136,71 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     /// </summary>
     protected abstract void AssessIsDiscernibleToUser();
 
-    public virtual void AssessHighlighting() {
+    protected bool DoesHighlightMgrExist(HighlightMgrID mgrID) {
+        return _highlightMgrLookup != null && _highlightMgrLookup.ContainsKey(mgrID);
+    }
+
+    protected AHighlightManager GetHighlightMgr(HighlightMgrID mgrID) {
+        if (_highlightMgrLookup == null) {
+            _highlightMgrLookup = new Dictionary<HighlightMgrID, AHighlightManager>(3);
+        }
+        AHighlightManager highlightMgr;
+        if (!_highlightMgrLookup.TryGetValue(mgrID, out highlightMgr)) {
+            switch (mgrID) {
+                case HighlightMgrID.Circles:
+                    highlightMgr = InitializeCircleHighlightMgr();
+                    break;
+                case HighlightMgrID.Hover:
+                    highlightMgr = InitializeHoverHighlightMgr();
+                    break;
+                case HighlightMgrID.SectorView:
+                    highlightMgr = InitializeSectorViewHighlightMgr();
+                    break;
+                case HighlightMgrID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mgrID));
+            }
+            _highlightMgrLookup.Add(mgrID, highlightMgr);
+        }
+        return highlightMgr;
+    }
+
+    public virtual void AssessCircleHighlighting() {
         if (IsDiscernibleToUser) {
             if (IsFocus) {
                 if (IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
+                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.Selected);
                     return;
                 }
-                ShowHighlights(HighlightID.Focused);
+                ShowCircleHighlights(CircleHighlightID.Focused);
                 return;
             }
             if (IsSelected) {
-                ShowHighlights(HighlightID.Selected);
+                ShowCircleHighlights(CircleHighlightID.Selected);
                 return;
             }
         }
-        ShowHighlights(HighlightID.None);
+        ShowCircleHighlights(CircleHighlightID.None);
     }
 
-    protected void ShowHighlights(params HighlightID[] highlightIDs) {
-        if (_highlighter != null) {
-            _highlighter.Show(highlightIDs);
+    protected void ShowCircleHighlights(params CircleHighlightID[] circleHighlightIDs) {
+        var circleHighlightMgr = GetHighlightMgr(HighlightMgrID.Circles) as CircleHighlightManager;
+        if (circleHighlightIDs.Contains(CircleHighlightID.None)) {
+            circleHighlightMgr.Show(false);
+            return;
         }
+        circleHighlightMgr.SetCirclesToShow(circleHighlightIDs);
+        circleHighlightMgr.Show(true);
     }
 
     protected void ShowHoverHighlight(bool toShow) {
-        if (_highlighter != null) {
-            _highlighter.ShowHovered(toShow);
+        D.Assert(IsDiscernibleToUser);
+        var hoverHighlightMgr = GetHighlightMgr(HighlightMgrID.Hover);
+        if (hoverHighlightMgr.IsHighlightShowing == toShow) {
+            // Ngui sometimes sends two OnHover(false?) in a row
+            return;
         }
+        hoverHighlightMgr.Show(toShow);
     }
 
     /// <summary>
@@ -201,23 +243,31 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
 
     #region Event and Property Change Handlers
 
-    protected virtual void IsFocusPropChangedHandler() {
+    private void IsFocusPropChangedHandler() {
+        HandleIsFocusChanged();
+    }
+
+    protected virtual void HandleIsFocusChanged() {
         if (IsFocus) {
             References.MainCameraControl.CurrentFocus = this;
         }
-        AssessHighlighting();
+        AssessCircleHighlighting();
     }
 
-    protected virtual void IsSelectedPropChangedHandler() {
+    private void IsSelectedPropChangedHandler() {
+        HandleIsSelectedChanged();
+    }
+
+    protected virtual void HandleIsSelectedChanged() {
         if (IsSelected) {
             ShowSelectedItemHud();
             SelectionManager.Instance.CurrentSelection = this;
         }
-        AssessHighlighting();
+        AssessCircleHighlighting();
     }
 
-    protected override void OwnerPropChangingHandler(Player newOwner) {
-        base.OwnerPropChangingHandler(newOwner);
+    protected override void HandleOwnerChanging(Player newOwner) {
+        base.HandleOwnerChanging(newOwner);
         if (_ctxControl != null) {
             D.Assert(_hasInitOnFirstDiscernibleToUserRun);
             if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
@@ -229,11 +279,19 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         }
     }
 
-    protected virtual void IsInMainCameraLosPropChangedHandler() {
+    private void IsInMainCameraLosPropChangedHandler() {
+        HandleIsInMainCameraLosChanged();
+    }
+
+    protected virtual void HandleIsInMainCameraLosChanged() {
         AssessIsDiscernibleToUser();
     }
 
-    protected virtual void IsDiscernibleToUserPropChangedHandler() {
+    private void IsDiscernibleToUserPropChangedHandler() {
+        HandleIsDiscernibleToUserChanged();
+    }
+
+    protected virtual void HandleIsDiscernibleToUserChanged() {
         if (!IsDiscernibleToUser && IsHudShowing) {
             // lost ability to discern this object while showing the HUD so stop showing
             ShowHud(false);
@@ -242,46 +300,42 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
             D.Assert(IsDiscernibleToUser);    // first time change should always be true
             InitializeOnFirstDiscernibleToUser();
         }
-        AssessHighlighting();
+        AssessCircleHighlighting();
         //D.Log(ShowDebugLog, "{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
     }
-
     // IMPROVE deal with losing IsDiscernible while hovered or pressed
 
-    protected virtual void IsVisualDetailDiscernibleToUserPropChangedHandler() { }
-
-    private void HandleHoverOver() {
-        ShowHud(true);
-        ShowHoverHighlight(true);
+    private void IsVisualDetailDiscernibleToUserPropChangedHandler() {
+        HandleIsVisualDetailDiscernibleToUserChanged();
     }
 
-    private void HandleHoverOff() {
-        ShowHud(false);
-        ShowHoverHighlight(false);
-    }
-
-    protected void HoverEventHandler(GameObject go, bool isOver) {
-        //D.Log(ShowDebugLog, "{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
-        if (IsOperational && IsDiscernibleToUser) {
-            if (isOver) {
-                HandleHoverOver();
-            }
-            else {
-                HandleHoverOff();
-            }
-        }
-    }
+    protected virtual void HandleIsVisualDetailDiscernibleToUserChanged() { }
 
     void OnHover(bool isOver) {
         HoverEventHandler(gameObject, isOver);
     }
 
-    protected virtual void HandleLeftClick() { IsSelected = true; }
-    protected virtual void HandleAltLeftClick() { }
-    protected virtual void HandleMiddleClick() { IsFocus = true; }
-    protected virtual void HandleRightClick() { }
+    protected void HoverEventHandler(GameObject go, bool isOver) {
+        //D.Log(ShowDebugLog, "{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
+        if (IsOperational && IsDiscernibleToUser) {
+            HandleHoveredChanged(isOver);
+        }
+    }
+
+    private void HandleHoveredChanged(bool isHovered) {
+        ShowHud(isHovered);
+        ShowHoverHighlight(isHovered);
+    }
+
+    void OnClick() {
+        ClickEventHandler(gameObject);
+    }
 
     protected void ClickEventHandler(GameObject go) {
+        HandleClick();
+    }
+
+    private void HandleClick() {
         //D.Log(ShowDebugLog, "{0} is handling an OnClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
@@ -305,19 +359,31 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         }
     }
 
-    void OnClick() {
-        ClickEventHandler(gameObject);
+    protected virtual void HandleLeftClick() {
+        IsSelected = true;
     }
 
-    protected virtual void HandleLeftPress() { }
-    protected virtual void HandleMiddlePress() { }
-    protected virtual void HandleRightPress() { }
+    protected virtual void HandleAltLeftClick() { }
+
+    protected virtual void HandleMiddleClick() {
+        IsFocus = true;
+    }
+
+    protected virtual void HandleRightClick() { }
+
+    void OnPress(bool isDown) {
+        PressEventHandler(gameObject, isDown);
+    }
 
     protected void PressEventHandler(GameObject go, bool isDown) {
-        //D.Log(ShowDebugLog, "{0} is handling an OnPress event. IsDown = {1}.", FullName, isDown);
+        HandlePressedChanged(isDown);
+    }
+
+    private void HandlePressedChanged(bool isPressed) {
+        //D.Log(ShowDebugLog, "{0} is handling an OnPress event. IsDown = {1}.", FullName, isPressed);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
-                if (isDown) {
+                if (isPressed) {
                     HandleLeftPress();
                 }
                 else {
@@ -325,7 +391,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
                 }
             }
             else if (_inputHelper.IsMiddleMouseButton) {
-                if (isDown) {
+                if (isPressed) {
                     HandleMiddlePress();
                 }
                 else {
@@ -333,7 +399,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
                 }
             }
             else if (_inputHelper.IsRightMouseButton) {
-                if (isDown) {
+                if (isPressed) {
                     HandleRightPress();
                 }
                 else {
@@ -346,10 +412,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         }
     }
 
-    void OnPress(bool isDown) {
-        PressEventHandler(gameObject, isDown);
-    }
-
+    protected virtual void HandleLeftPress() { }
+    protected virtual void HandleMiddlePress() { }
+    protected virtual void HandleRightPress() { }
     protected virtual void HandleLeftPressRelease() { }
     protected virtual void HandleMiddlePressRelease() { }
     protected virtual void HandleRightPressRelease() {
@@ -363,11 +428,15 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         }
     }
 
-    protected virtual void HandleLeftDoubleClick() { }
-    protected virtual void HandleMiddleDoubleClick() { }
-    protected virtual void HandleRightDoubleClick() { }
+    void OnDoubleClick() {
+        DoubleClickEventHandler(gameObject);
+    }
 
     protected void DoubleClickEventHandler(GameObject go) {
+        HandleDoubleClick();
+    }
+
+    private void HandleDoubleClick() {
         //D.Log(ShowDebugLog, "{0} is handling an OnDoubleClick event.", FullName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
@@ -385,9 +454,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         }
     }
 
-    void OnDoubleClick() {
-        DoubleClickEventHandler(gameObject);
-    }
+    protected virtual void HandleLeftDoubleClick() { }
+    protected virtual void HandleMiddleDoubleClick() { }
+    protected virtual void HandleRightDoubleClick() { }
 
     private void OnEffectSeqStarting(EffectSequenceID effectSeqID) {
         if (effectSeqStarting != null) {
@@ -413,6 +482,17 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         if (EffectsMgr != null) {
             EffectsMgr.Dispose();
         }
+        CleanupHighlights();
+    }
+
+    private void CleanupHighlights() {
+        var highlightMgrIDs = Enums<HighlightMgrID>.GetValues(excludeDefault: true);
+        foreach (var mgrID in highlightMgrIDs) {
+            if (DoesHighlightMgrExist(mgrID)) {
+                var highlightMgr = GetHighlightMgr(mgrID);
+                highlightMgr.Dispose();
+            }
+        }
     }
 
     #endregion
@@ -427,6 +507,17 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
             EffectSeqID = effectSeqID;
         }
     }
+
+    public enum HighlightMgrID {
+        None,
+        Circles,
+        Hover,
+        SectorView
+    }
+
+    #endregion
+
+    #region Debug
 
     #endregion
 
@@ -498,14 +589,6 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
         }
     }
-
-    #endregion
-
-    #region IHighlightable Members
-
-    public virtual float SphericalHighlightEffectRadius { get { return Radius; } }
-
-    public virtual float CircleHighlightEffectRadius { get { return Radius * Screen.height * 3F; } }
 
     #endregion
 

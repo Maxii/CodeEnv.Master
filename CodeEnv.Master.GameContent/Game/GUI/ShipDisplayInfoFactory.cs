@@ -26,33 +26,39 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipDisplayInfoFactory : AElementItemDisplayInfoFactory<ShipReport, ShipDisplayInfoFactory> {
 
-        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
-            AccessControlInfoID.Name,
-            AccessControlInfoID.ParentName,
-            AccessControlInfoID.Owner,
-            AccessControlInfoID.Category,
-            AccessControlInfoID.Health,
-            AccessControlInfoID.Defense,
-            AccessControlInfoID.Offense,
-            AccessControlInfoID.WeaponsRange,
-            //AccessControlInfoID.SensorRange,  // makes no sense
-            AccessControlInfoID.Science,
-            AccessControlInfoID.Culture,
-            AccessControlInfoID.NetIncome,
-            AccessControlInfoID.Mass,
+        private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
+            ItemInfoID.Name,
+            ItemInfoID.ParentName,
+            ItemInfoID.Owner,
+            ItemInfoID.Category,
+            ItemInfoID.Health,
+            ItemInfoID.Defense,
+            ItemInfoID.Offense,
+            ItemInfoID.WeaponsRange,
+            //ItemInfoID.SensorRange,  // makes no sense
+            ItemInfoID.Science,
+            ItemInfoID.Culture,
+            ItemInfoID.NetIncome,
+            ItemInfoID.Mass,
 
-            AccessControlInfoID.Target,
-            AccessControlInfoID.TargetDistance,
-            AccessControlInfoID.CombatStance,
-            AccessControlInfoID.CurrentSpeed,
-            AccessControlInfoID.FullSpeed,
-            AccessControlInfoID.MaxTurnRate,
+            ItemInfoID.Target,
+            ItemInfoID.TargetDistance,
+            ItemInfoID.CombatStance,
+            ItemInfoID.CurrentSpeedSetting,
+            ItemInfoID.FullSpeed,
+            ItemInfoID.MaxTurnRate,
 
-            AccessControlInfoID.CameraDistance,
-            AccessControlInfoID.IntelState
+            ItemInfoID.Separator,
+
+            ItemInfoID.IntelState,
+
+            ItemInfoID.Separator,
+
+            ItemInfoID.ActualSpeed,
+            ItemInfoID.CameraDistance
         };
 
-        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
+        protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private ShipDisplayInfoFactory() {
             Initialize();
@@ -60,38 +66,44 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ShipReport report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, ShipReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.Category:
+                    case ItemInfoID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != ShipHullCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Category != ShipHullCategory.None ? report.Category.GetValueName() : Unknown);
                         break;
-                    case AccessControlInfoID.Target:
+                    case ItemInfoID.Target:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Target != null ? report.Target.DisplayName : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Target != null ? report.Target.DisplayName : Unknown);
                         break;
-                    case AccessControlInfoID.TargetDistance:
+                    case ItemInfoID.TargetDistance:
                         isSuccess = true;
                         float? targetDistance = CalcTargetDistance(report.Target, report.Position);
-                        colorizedText = _phrase.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.CurrentSpeed:
+                    case ItemInfoID.CurrentSpeedSetting:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CurrentSpeed.HasValue ? GetFormat(infoID).Inject(report.CurrentSpeed.Value) : _unknown);
+                        float? speedSettingValue = CalcSpeedSettingValue(report.CurrentSpeedSetting, report.FullSpeed);
+                        string speedSettingText = report.CurrentSpeedSetting != Speed.None ? report.CurrentSpeedSetting.GetValueName() : Unknown;
+                        colorizedText = _lineTemplate.Inject(speedSettingText, speedSettingValue.HasValue ? GetFormat(infoID).Inject(speedSettingValue.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.FullSpeed:
+                    case ItemInfoID.FullSpeed:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.FullSpeed.HasValue ? GetFormat(infoID).Inject(report.FullSpeed.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.FullSpeed.HasValue ? GetFormat(infoID).Inject(report.FullSpeed.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.MaxTurnRate:
+                    case ItemInfoID.MaxTurnRate:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.MaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.MaxTurnRate.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.MaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.MaxTurnRate.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.CombatStance:
+                    case ItemInfoID.CombatStance:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CombatStance != ShipCombatStance.None ? report.CombatStance.GetValueName() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.CombatStance != ShipCombatStance.None ? report.CombatStance.GetValueName() : Unknown);
+                        break;
+                    case ItemInfoID.ActualSpeed:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(GetFormat(infoID).Inject(report.__ActualSpeedValue.Value));
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
@@ -100,9 +112,18 @@ namespace CodeEnv.Master.GameContent {
             return isSuccess;
         }
 
+        private float? CalcSpeedSettingValue(Speed speedSetting, float? fullSpeedValue) {
+            if (speedSetting != Speed.None) {
+                if (fullSpeedValue.HasValue) {
+                    return speedSetting.GetUnitsPerHour(fullSpeedValue.Value);
+                }
+            }
+            return null;
+        }
+
         private float? CalcTargetDistance(INavigable target, Vector3? shipPosition) {
             if (target != null) {
-                IMortalItem mortalTgt = target as IMortalItem;
+                IMortalItem_Ltd mortalTgt = target as IMortalItem_Ltd;
                 if (mortalTgt != null && !mortalTgt.IsOperational) {
                     // target has died so don't try to access its position
                     return null;

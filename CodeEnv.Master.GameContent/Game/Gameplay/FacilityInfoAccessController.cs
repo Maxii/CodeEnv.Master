@@ -25,49 +25,49 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityInfoAccessController(FacilityData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Culture:
-                case AccessControlInfoID.Science:
-                case AccessControlInfoID.NetIncome:
+                case ItemInfoID.Culture:
+                case ItemInfoID.Science:
+                case ItemInfoID.NetIncome:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.CurrentHitPoints:
-                case AccessControlInfoID.Health:
-                case AccessControlInfoID.Defense:
-                case AccessControlInfoID.Offense:
+                case ItemInfoID.CurrentHitPoints:
+                case ItemInfoID.Health:
+                case ItemInfoID.Defense:
+                case ItemInfoID.Offense:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Category:
-                case AccessControlInfoID.MaxHitPoints:
-                case AccessControlInfoID.Mass:
-                case AccessControlInfoID.WeaponsRange:
-                case AccessControlInfoID.SensorRange:
-                case AccessControlInfoID.Owner:
+                case ItemInfoID.Category:
+                case ItemInfoID.MaxHitPoints:
+                case ItemInfoID.Mass:
+                case ItemInfoID.WeaponsRange:
+                case ItemInfoID.SensorRange:
+                case ItemInfoID.Owner:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.ParentName:
-                case AccessControlInfoID.Position:
-                case AccessControlInfoID.SectorIndex:
+                case ItemInfoID.Name:
+                case ItemInfoID.ParentName:
+                case ItemInfoID.Position:
+                case ItemInfoID.SectorIndex:
                     return true;
                 default:
                     return false;

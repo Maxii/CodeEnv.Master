@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using Common;
     using UnityEngine;
 
     /// <summary>
@@ -26,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Debug. The position of the Item for reporting the camera distance.
         /// </summary>
-        public Vector3 __PositionForCameraDistance { get; private set; }
+        public Reference<Vector3> __PositionForCameraDistance { get; private set; }
 
         public string Name { get; protected set; }
 
@@ -57,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         public AItemReport(AItemData data, Player player, IItem_Ltd item) {
             Player = player;
             Item = item;
-            __PositionForCameraDistance = item.Position;
+            __PositionForCameraDistance = new Reference<Vector3>(() => item.Position);
             AssignValues(data);
         }
 

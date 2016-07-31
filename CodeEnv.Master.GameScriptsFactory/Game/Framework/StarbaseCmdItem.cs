@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Starbases.
 /// </summary>
-public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd {
+public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd, ISectorViewHighlightable {
 
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
@@ -49,6 +49,10 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd 
 
     protected override ItemHudManager InitializeHudManager() {
         return new ItemHudManager(Publisher);
+    }
+
+    protected override SectorViewHighlightManager InitializeSectorViewHighlightMgr() {
+        return new SectorViewHighlightManager(this, UnitMaxFormationRadius * 10F);
     }
 
     #endregion
@@ -82,6 +86,11 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd 
         shipOrbitJoint.connectedBody = _highOrbitRigidbody;
     }
 
+    #region Event and Property Change Handlers
+
+
+    #endregion
+
     #region Cleanup
 
     #endregion
@@ -89,6 +98,26 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ISectorViewHighlightable Members
+
+    public bool IsSectorViewHighlightShowing {
+        get { return GetHighlightMgr(HighlightMgrID.SectorView).IsHighlightShowing; }
+    }
+
+    public void ShowSectorViewHighlight(bool toShow) {
+        var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
+        if (!IsDiscernibleToUser) {
+            if (sectorViewHighlightMgr.IsHighlightShowing) {
+                D.Log(ShowDebugLog, "{0} recieved ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
+                sectorViewHighlightMgr.Show(false);
+            }
+            return;
+        }
+        sectorViewHighlightMgr.Show(toShow);
+    }
+
+    #endregion
 
 }
 

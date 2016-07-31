@@ -26,36 +26,39 @@ namespace CodeEnv.Master.GameContent {
 
         public SectorInfoAccessController(SectorData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                default:
-                    return false;
-            }
-        }
-
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
-            switch (infoID) {
-                case AccessControlInfoID.Owner:
+                case ItemInfoID.Capacity:
+                case ItemInfoID.Resources:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.Position:
-                case AccessControlInfoID.SectorIndex:
+                case ItemInfoID.Owner:
                     return true;
-                case AccessControlInfoID.Owner:
+                default:
+                    return false;
+            }
+        }
+
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
+            switch (infoID) {
+                case ItemInfoID.Name:
+                case ItemInfoID.Position:
+                case ItemInfoID.SectorIndex:
+                    return true;
+                case ItemInfoID.Owner:
                     // If gets here, Sector IntelCoverage is Basic, but a member could be allowing access.
                     SectorData sectorData = _data as SectorData;
                     bool systemHasAccess = sectorData.SystemData != null ? sectorData.SystemData.InfoAccessCntlr.HasAccessToInfo(player, infoID) : false;
@@ -74,12 +77,12 @@ namespace CodeEnv.Master.GameContent {
 
         #region Archive
 
-        //public override bool HasAccessToInfo(Player player, AccessControlInfoID infoID) {
+        //public override bool HasAccessToInfo(Player player, ItemInfoID infoID) {
         //    switch (infoID) {
-        //        case AccessControlInfoID.Name:
-        //        case AccessControlInfoID.Position:
-        //        case AccessControlInfoID.SectorIndex:
-        //        case AccessControlInfoID.Owner:
+        //        case ItemInfoID.Name:
+        //        case ItemInfoID.Position:
+        //        case ItemInfoID.SectorIndex:
+        //        case ItemInfoID.Owner:
         //            return true;
         //        default:
         //            return false;

@@ -25,53 +25,53 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseInfoAccessController(StarbaseCmdData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.CurrentCmdEffectiveness:
-                case AccessControlInfoID.UnitScience:
-                case AccessControlInfoID.UnitNetIncome:
-                case AccessControlInfoID.Resources:
-                case AccessControlInfoID.UnitCulture:
-                case AccessControlInfoID.Capacity:
-                case AccessControlInfoID.UnitCurrentHitPts:
+                case ItemInfoID.CurrentCmdEffectiveness:
+                case ItemInfoID.UnitScience:
+                case ItemInfoID.UnitNetIncome:
+                case ItemInfoID.Resources:
+                case ItemInfoID.UnitCulture:
+                case ItemInfoID.Capacity:
+                case ItemInfoID.UnitCurrentHitPts:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.UnitWeaponsRange:
-                case AccessControlInfoID.UnitSensorRange:
-                case AccessControlInfoID.UnitHealth:
-                case AccessControlInfoID.UnitMaxHitPts:
-                case AccessControlInfoID.Formation:
-                case AccessControlInfoID.Composition:
-                case AccessControlInfoID.UnitOffense:
-                case AccessControlInfoID.UnitDefense:
+                case ItemInfoID.UnitWeaponsRange:
+                case ItemInfoID.UnitSensorRange:
+                case ItemInfoID.UnitHealth:
+                case ItemInfoID.UnitMaxHitPts:
+                case ItemInfoID.Formation:
+                case ItemInfoID.Composition:
+                case ItemInfoID.UnitOffense:
+                case ItemInfoID.UnitDefense:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Owner:
-                case AccessControlInfoID.Category:
+                case ItemInfoID.Owner:
+                case ItemInfoID.Category:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.ParentName:
-                case AccessControlInfoID.Position:
-                case AccessControlInfoID.SectorIndex:
+                case ItemInfoID.Name:
+                case ItemInfoID.ParentName:
+                case ItemInfoID.Position:
+                case ItemInfoID.SectorIndex:
                     return true;
                 default:
                     return false;

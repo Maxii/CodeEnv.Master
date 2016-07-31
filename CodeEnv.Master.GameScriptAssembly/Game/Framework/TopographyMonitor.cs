@@ -71,13 +71,13 @@ public class TopographyMonitor : AColliderMonitor {
         }
     }
 
-    protected override void ParentItemPropSetHandler() {
-        base.ParentItemPropSetHandler();
+    protected override void HandleParentItemSet() {
+        base.HandleParentItemSet();
         RangeDistance = ParentItem.Radius;
         IsOperational = true;
     }
 
-    protected override void IsOperationalPropChangedHandler() { }
+    protected override void HandleIsOperationalChanged() { }
 
     #endregion
 

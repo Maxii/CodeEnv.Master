@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract class for Data associated with an AIntelItem.
     /// </summary>
-    public abstract class AIntelItemData : AItemData /*ADiscernibleItemData*/ {
+    public abstract class AIntelItemData : AItemData {
 
         public event EventHandler<IntelCoverageChangedEventArgs> intelCoverageChanged;
 
@@ -89,6 +89,7 @@ namespace CodeEnv.Master.GameContent {
             var playerIntel = GetIntel(player);
             if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
                 playerIntel.CurrentCoverage = newCoverage;
+                HandleIntelCoverageChanged();
                 OnIntelCoverageChanged(player);
                 return true;
             }
@@ -122,6 +123,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
+
+        /// <summary>
+        /// Hook for derived Data classes that allows them to handle a change in this item's intel coverage.
+        /// <remarks>Typically this item's data would not have anything to do when the item's IntelCoverage 
+        /// changes since data, by definition, is where full knowledge about the item is kept, independant 
+        /// of info access restrictions. Reports and interfaces play the role of 'filtering' a player's 
+        /// access to this knowledge stored in data by using the item's InfoAccessController.</remarks>
+        /// </summary>
+        protected virtual void HandleIntelCoverageChanged() { }
 
         private void OnIntelCoverageChanged(Player player) {
             if (intelCoverageChanged != null) {

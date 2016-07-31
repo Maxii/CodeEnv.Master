@@ -32,8 +32,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private static readonly Vector2 IconSize = new Vector2(16F, 16F);
 
-    public override bool IsAvailable { get { return CurrentState == FacilityState.Idling; } }
-
     /// <summary>
     /// Indicates whether this facility is capable of firing on a target in an attack.
     /// <remarks>A facility that is not capable of attacking is usually a facility that is under orders not to attack 
@@ -54,7 +52,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private FacilityOrder _currentOrder;
     /// <summary>
     /// The last order this facility was instructed to execute.
-    /// Note: Orders from UnitCommands and the Player can become standing orders until superceded by another order
+    /// Note: Orders from UnitCommands and the Player can become standing orders until superseded by another order
     /// from either the UnitCmd or the Player. They may not be lost when the Captain overrides one of these orders. 
     /// Instead, the Captain can direct that his superior's order be recorded in the 'StandingOrder' property of his override order so 
     /// the element may return to it after the Captain's order has been executed. 
@@ -132,9 +130,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     public override void CommenceOperations() {
         base.CommenceOperations();
         _obstacleZoneCollider.enabled = true;
-        //CurrentState = FacilityState.Idling;
     }
-
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -146,11 +142,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private void CurrentOrderPropChangedHandler() {
         HandleNewOrder();
-    }
-
-    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem deadFsmTgt = sender as IMortalItem;
-        UponFsmTargetDeath(deadFsmTgt);
     }
 
     #endregion
@@ -337,6 +328,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", FullName, CurrentOrder);
             CurrentOrder = null;
         }
+        IsAvailable = true;
     }
 
     void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -356,12 +348,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
     }
 
+    void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+
     void Idling_UponDeath() {
         LogEvent();
     }
 
     void Idling_ExitState() {
         LogEvent();
+        IsAvailable = false;
     }
 
     #endregion
@@ -383,8 +382,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so UponWeaponReadyToFire will attack other targets of opportunity, if any
 
-            //bool isSubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmPrimaryAttackTgt, toSubscribe: true);
-            //D.Assert(isSubscribed);
+            //bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmPrimaryAttackTgt, toSubscribe: true);
+            //D.Assert(isSubscribed);   // all IElementAttackable can die
+            //isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmPrimaryAttackTgt, toSubscribe: true);
+            //D.Assert(isSubscribed);   // all IElementAttackable are Items
 
             //TODO Implement communication of results to BaseCmd ala Ship -> FleetCmd
             // Command.HandleFacilityAttackAttemptFinished(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
@@ -410,7 +411,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
     }
 
-    void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem deadFsmTgt) {
+    void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         // TODO
     }
@@ -422,7 +433,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
-        //bool isUnsubscribed = AttemptFsmTgtDeathSubscribeChange(_fsmPrimaryAttackTgt, toSubscribe: false);
+        //bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmPrimaryAttackTgt, toSubscribe: false);
+        //D.Assert(isUnsubscribed);
+        //isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmPrimaryAttackTgt, toSubscribe: false);
         //D.Assert(isUnsubscribed);
         _fsmPrimaryAttackTgt = null;
     }
@@ -476,6 +489,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // No need to AssessNeedForRepair() as already Repairing
     }
+
+    void ExecuteRepairOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
 
     void ExecuteRepairOrder_UponDeath() {
         LogEvent();
@@ -540,6 +560,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // No need to AssessNeedForRepair() as already Repairing
     }
+
+    void Repairing_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // TODO
+    }
+
+    // No need for FsmTgt-related event handlers as there is no _fsmTgt
 
     void Repairing_UponDeath() {
         LogEvent();
@@ -619,35 +646,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (CurrentState == FacilityState.Dead) {   // OPTIMIZE avoids 'method not found' warning spam
             UponEffectSequenceFinished(effectSeqID);
         }
-    }
-
-    private bool _isFsmTgtDeathAlreadySubscribed;
-
-    /// <summary>
-    /// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
-    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
-    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
-    /// </summary>
-    /// <param name="fsmAttackTgt">The target used by the State Machine. TODO Less specific type?</param>
-    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
-    /// <returns></returns>
-    private bool AttemptFsmTgtDeathSubscribeChange(IElementAttackable fsmAttackTgt, bool toSubscribe) {
-        Utility.ValidateNotNull(fsmAttackTgt);
-        var mortalFsmTgt = fsmAttackTgt as IMortalItem;
-        if (mortalFsmTgt != null) {
-            if (!toSubscribe) {
-                mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
-            }
-            else if (!_isFsmTgtDeathAlreadySubscribed) {
-                mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
-            }
-            else {
-                D.Warn("{0}: Attempting to subcribe to {1}'s death when already subscribed.", FullName, fsmAttackTgt.FullName);
-            }
-            _isFsmTgtDeathAlreadySubscribed = toSubscribe;
-            return true;
-        }
-        return false;
     }
 
     #region Relays

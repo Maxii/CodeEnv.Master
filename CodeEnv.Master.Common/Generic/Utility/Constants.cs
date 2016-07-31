@@ -45,6 +45,10 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public const string FormatFloat_0Dp = "{0:0.}";
         /// <summary>
+        /// One decimal place, rounded.
+        /// </summary>
+        public const string FormatFloat_1Dp = "{0:0.0}";
+        /// <summary>
         /// Up to one decimal place, rounded.
         /// </summary>
         public const string FormatFloat_1DpMax = "{0:0.#}";

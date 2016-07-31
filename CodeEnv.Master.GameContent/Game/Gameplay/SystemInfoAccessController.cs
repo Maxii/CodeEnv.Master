@@ -26,39 +26,39 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemInfoAccessController(SystemData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Capacity:
-                case AccessControlInfoID.Resources:
+                case ItemInfoID.Capacity:
+                case ItemInfoID.Resources:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Owner:
+                case ItemInfoID.Owner:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.Position:
-                case AccessControlInfoID.SectorIndex:
+                case ItemInfoID.Name:
+                case ItemInfoID.Position:
+                case ItemInfoID.SectorIndex:
                     return true;
-                case AccessControlInfoID.Owner:
+                case ItemInfoID.Owner:
                     // If gets here, System IntelCoverage is Basic, but a member could be allowing access
                     SystemData sysData = _data as SystemData;
                     bool starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
@@ -87,15 +87,15 @@ namespace CodeEnv.Master.GameContent {
 
         // 7.22.16 version : AInfoAccessController
 
-        //public override bool HasAccessToInfo(Player player, AccessControlInfoID infoID) {
+        //public override bool HasAccessToInfo(Player player, ItemInfoID infoID) {
         //    SystemData sysData = _data as SystemData;
         //    bool starHasAccess;
         //    switch (infoID) {
-        //        case AccessControlInfoID.Name:
-        //        case AccessControlInfoID.Position:
-        //        case AccessControlInfoID.SectorIndex:
+        //        case ItemInfoID.Name:
+        //        case ItemInfoID.Position:
+        //        case ItemInfoID.SectorIndex:
         //            return true;
-        //        case AccessControlInfoID.Owner:
+        //        case ItemInfoID.Owner:
         //            // if know any member's owner, you know the system's owner
         //            starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
         //            if (starHasAccess) {
@@ -111,8 +111,8 @@ namespace CodeEnv.Master.GameContent {
         //                }
         //            }
         //            return false;
-        //        case AccessControlInfoID.Capacity:
-        //        case AccessControlInfoID.Resources:
+        //        case ItemInfoID.Capacity:
+        //        case ItemInfoID.Resources:
         //            // if you know all member's values, you know the system's value
         //            starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
         //            if (starHasAccess) {

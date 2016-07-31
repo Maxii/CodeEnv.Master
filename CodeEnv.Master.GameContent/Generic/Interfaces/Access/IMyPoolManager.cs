@@ -48,6 +48,20 @@ namespace CodeEnv.Master.GameContent {
 
         void DespawnEffect(Transform effectTransform, Transform parent);
 
+
+        Transform HighlightsSpawnPool { get; }
+
+        ISphericalHighlight SpawnHighlight(Vector3 location);
+
+        ISphericalHighlight SpawnHighlight(Vector3 location, Quaternion rotation);
+
+        ISphericalHighlight SpawnHighlight(Vector3 location, Quaternion rotation, Transform parent);
+
+        void DespawnHighlight(Transform highlightTransform);
+
+        void DespawnHighlight(Transform highlightTransform, Transform parent);
+
+
     }
 }
 

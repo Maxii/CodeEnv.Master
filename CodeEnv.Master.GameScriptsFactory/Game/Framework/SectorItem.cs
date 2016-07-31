@@ -134,11 +134,14 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
     }
 
     private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
+        HandleIntelCoverageChanged(e.Player);
+    }
+
+    private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
         if (!IsOperational) {
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        Player playerWhosCoverageChgd = e.Player;
         D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
         if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
             HandleUserIntelCoverageChanged();
@@ -148,17 +151,17 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
         OnInfoAccessChanged(playerWhosInfoAccessChgd);
     }
 
-    #endregion
-
     /// <summary>
     /// Handles a change in the User's IntelCoverage of this item.
     /// </summary>
-    protected virtual void HandleUserIntelCoverageChanged() {
+    private void HandleUserIntelCoverageChanged() {
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
     }
+
+    #endregion
 
     #region Cleanup
 
@@ -226,7 +229,7 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
     public Speed PatrolSpeed { get { return Speed.TwoThirds; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsEnemyOf(player);
@@ -247,7 +250,7 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -264,7 +267,7 @@ public class SectorItem : AItem, ISector, ISector_Ltd, IFleetNavigable, IPatroll
     // LocalAssemblyStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

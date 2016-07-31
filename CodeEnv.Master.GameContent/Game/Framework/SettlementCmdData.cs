@@ -39,9 +39,17 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _population, value, "Population"); }
         }
 
-        public int Capacity { get { return ParentSystemData.Capacity; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
+        private int _capacity;
+        public int Capacity {
+            get { return ParentSystemData.Capacity; }
+            private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
+        }
 
-        public ResourceYield Resources { get { return ParentSystemData.Resources; } } // UNCLEAR need SetProperty to properly keep isChanged updated?
+        private ResourceYield _resources;
+        public ResourceYield Resources {
+            get { return _resources; }
+            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+        }
 
         private float _approval;
         public float Approval {
@@ -49,9 +57,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
         }
 
-        public SystemData ParentSystemData { get; set; }
+        private SystemData _parentSystemData;
+        public SystemData ParentSystemData {
+            get { return _parentSystemData; }
+            set { SetProperty<SystemData>(ref _parentSystemData, value, "ParentSystemData", ParentSystemDataPropSetHandler); }
+        }
 
         public new SettlementInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SettlementInfoAccessController; } }
+
+        private IList<IDisposable> _systemDataSubscriptions = new List<IDisposable>(2);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class
@@ -78,6 +92,11 @@ namespace CodeEnv.Master.GameContent {
 
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new SettlementInfoAccessController(this);
+        }
+
+        private void SubscribeToSystemDataProperties() {
+            _systemDataSubscriptions.Add(ParentSystemData.SubscribeToPropertyChanged<SystemData, int>(sd => sd.Capacity, SystemCapacityPropChangedHandler));
+            _systemDataSubscriptions.Add(ParentSystemData.SubscribeToPropertyChanged<SystemData, ResourceYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
         }
 
         public override void AddElement(AUnitElementData elementData) {
@@ -113,11 +132,37 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void ParentSystemDataPropSetHandler() {
+            SubscribeToSystemDataProperties();
+        }
+
         private void ApprovalPropChangedHandler() {
             Utility.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
+        private void SystemCapacityPropChangedHandler() {
+            UpdateCapacity();
+        }
+
+        private void SystemResourceYieldPropChangedHandler() {
+            UpdateResources();
+        }
+
         #endregion
+
+        private void UpdateCapacity() {
+            Capacity = ParentSystemData.Capacity;
+        }
+
+        private void UpdateResources() {
+            Resources = ParentSystemData.Resources;
+        }
+
+        protected override void Unsubscribe() {
+            base.Unsubscribe();
+            _systemDataSubscriptions.ForAll(s => s.Dispose());
+            _systemDataSubscriptions.Clear();
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

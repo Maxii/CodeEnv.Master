@@ -96,7 +96,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected virtual void HandleDeathFromDeadState() {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         if (IsFocus) {
-            HandleDeathWhileIsFocus();
+            References.MainCameraControl.CurrentFocus = null;
+            AssignAlternativeFocusOnDeath();
         }
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
@@ -105,15 +106,18 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
             ShowHud(false);
         }
         (DisplayMgr as IMortalDisplayManager).HandleDeath();
+
+        HandleDeathForHighlights();
     }
 
-    /// <summary>
-    /// Handles the death of this item when it is the focus. 
-    /// </summary>
-    private void HandleDeathWhileIsFocus() {
-        D.Assert(IsFocus);
-        References.MainCameraControl.CurrentFocus = null;
-        AssignAlternativeFocusOnDeath();
+    private void HandleDeathForHighlights() {
+        var highlightMgrIDs = Enums<HighlightMgrID>.GetValues(excludeDefault: true);
+        foreach (var mgrID in highlightMgrIDs) {
+            if (DoesHighlightMgrExist(mgrID)) {
+                var highlightMgr = GetHighlightMgr(mgrID);
+                highlightMgr.HandleClientDeath();
+            }
+        }
     }
 
     /// <summary>
@@ -124,16 +128,20 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #region Event and Property Change Handlers
 
+    private void HealthPropChangedHandler() {
+        HandleHealthChanged();
+    }
+
     /// <summary>
     /// Called when the item's health has changed. 
-    /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItems as damage is taken which
+    /// NOTE: Do not use this to initiate the death of an item. That is handled in MortalItems as damage is taken which
     /// makes the logic behind dieing more visible and understandable. In the case of a UnitCommand, death occurs
     /// when the last Element has been removed from the Unit.
     /// </summary>
-    protected virtual void HealthPropChangedHandler() { }
+    protected virtual void HandleHealthChanged() { }
 
-    protected sealed override void IsOperationalPropChangedHandler() {
-        base.IsOperationalPropChangedHandler();
+    protected sealed override void HandleIsOperationalChanged() {
+        base.HandleIsOperationalChanged();
         if (!IsOperational) {
             D.Log(ShowDebugLog, "{0} is initiating death sequence.", FullName);
             InitiateDeadState();
@@ -234,10 +242,20 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #endregion
 
+    #region Nested Classes
+
+    public enum FsmTgtEventSubscriptionMode {
+        None,
+        TargetDeath,
+        InfoAccessChg
+    }
+
+    #endregion
+
     #region IAttackable Members
 
     public bool IsAttackingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return false;
         }
         return Owner.IsEnemyOf(player);

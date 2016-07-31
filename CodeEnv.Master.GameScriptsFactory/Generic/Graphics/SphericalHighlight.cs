@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: SphericalHighlight.cs
-// Singleton spherical highlight MonoBehaviour (with a spherical mesh and label) that tracks the designated IHighlightable target.
+// Spherical highlight MonoBehaviour (with a spherical mesh and label) that tracks the designated target. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,23 +18,39 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Singleton spherical highlight MonoBehaviour (with a spherical mesh and label) that tracks the designated IHighlightable target.
+/// Spherical highlight MonoBehaviour (with a spherical mesh and label) that tracks the designated target. 
 /// </summary>
-public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISphericalHighlight {
+public class SphericalHighlight : AMonoBase, ISphericalHighlight {
 
-    [SerializeField]
-    private bool _enableTrackingLabel = false;
+    public bool enableTrackingLabel = false;
 
-    [Range(0.1F, 1.0F)]
-    [SerializeField]
-    private float _alphaValueWhenShowing = 0.20F;
+    public bool enableEditorAlphaControl = false;
 
-    private IHighlightable _target;
+    public bool IsShowing { get { return enabled; } }
+
+    public float alpha = Constants.ZeroF;
+    public float Alpha {
+        get { return alpha; }
+        set {
+            if (enableEditorAlphaControl) {
+                return;
+            }
+            value = Mathf.Clamp01(value);
+            SetProperty<float>(ref alpha, value, "Alpha", AlphaPropChangedEventHandler);
+        }
+    }
+
+    private GameColor _color;
+    public GameColor Color {
+        get { return _color; }
+        set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedEventHandler); }
+    }
+
+    private IWidgetTrackable _target;
     private Renderer _renderer;
     private Transform _meshTransform;
     private float _radius;
@@ -42,13 +58,8 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     private ITrackingWidget _trackingLabel;
     private string _radiusLabelText = "Highlight\nRadius: {0:0.#}";
 
-    protected override void InitializeOnInstance() {
-        base.InitializeOnInstance();
-        References.SphericalHighlight = Instance;
-    }
-
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         InitializeValuesAndReferences();
         InitializeMeshRendererMaterial();
         Show(false);
@@ -66,21 +77,12 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         if (!material.IsKeywordEnabled(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency)) {
             material.EnableKeyword(UnityConstants.StdShader_RenderModeKeyword_FadeTransparency);
         }
-        material.SetAlpha(_alphaValueWhenShowing);
     }
 
-    public void SetTarget(IHighlightable target, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
-        var previousMortalTarget = _target as AMortalItem;
-        if (previousMortalTarget != null) {
-            previousMortalTarget.deathOneShot -= TargetDeathEventHandler;
-        }
+    public void SetTarget(IWidgetTrackable target, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
         _target = target;
-        var mortalTarget = target as AMortalItem;
-        if (mortalTarget != null) {
-            mortalTarget.deathOneShot += TargetDeathEventHandler;
-        }
 
-        if (_enableTrackingLabel && _trackingLabel == null) {
+        if (enableTrackingLabel && _trackingLabel == null) {
             _trackingLabel = InitializeTrackingLabel();
         }
 
@@ -91,7 +93,6 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
             _trackingLabel.Placement = labelPlacement;
         }
         UpdatePosition();
-        SetRadius(target.SphericalHighlightEffectRadius);
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
@@ -125,7 +126,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
         }
     }
 
-    protected override void Update() {
+    protected sealed override void Update() {
         base.Update();
         UpdatePosition();
     }
@@ -137,18 +138,37 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
 
     #region Event and Property Change Handlers
 
-    private void TargetDeathEventHandler(object sender, EventArgs e) {
-        var deadTarget = sender as AMortalItem;
-        //D.Log("{0}.TargetDeathEventHandler called. DeadTarget: {1}.", GetType().Name, deadTarget.FullName);
-        D.Assert((_target as AMortalItem) == deadTarget);
-        _target = null;
-        Show(false);
+    private void AlphaPropChangedEventHandler() {
+        _renderer.material.SetAlpha(Alpha);
+    }
+
+    private void ColorPropChangedEventHandler() {
+        _renderer.material.color = Color.ToUnityColor();
     }
 
     #endregion
 
+    protected void ValidateReuseable() {
+        D.Assert(_target == null);
+        D.Assert(Color == GameColor.None);
+        D.Assert(!enableEditorAlphaControl, "{0} spawned with EditorAlphaControl enabled.", gameObject.name);
+        D.Assert(Alpha == Constants.ZeroF, "{0}.Alpha {1} should be Zero.", GetType().Name, Alpha);
+        //D.Log("{0}.ValidateReuseable() called.", GetType().Name);
+    }
+
+    protected void ResetForReuse() {
+        //D.Log("{0}.ResetForReuse called.", GetType().Name);
+        _target = null;
+        _color = GameColor.None;
+        alpha = Constants.ZeroF;
+    }
+
     protected override void Cleanup() {
-        References.SphericalHighlight = null;
+        References.HoverHighlight = null;
+        DestroyTrackingLabel();
+    }
+
+    protected void DestroyTrackingLabel() {
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 

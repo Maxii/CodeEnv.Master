@@ -58,9 +58,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        private Index3D _sectorIndex;
         public override Index3D SectorIndex { get { return _sectorIndex; } }
+        private Index3D _sectorIndex;
 
+        /// <summary>
+        /// The mass of this Planetoid.
+        /// <remarks>7.26.16 Primarily here for user HUDs as planetoids have kinematic
+        /// rigidbodies which don't interact with the physics engine.</remarks>
+        /// </summary>
         public float Mass { get; private set; }
 
         public new PlanetoidInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as PlanetoidInfoAccessController; } }
@@ -98,7 +103,14 @@ namespace CodeEnv.Master.GameContent {
             Capacity = planetoidStat.Capacity;
             Resources = planetoidStat.Resources;
             Topography = Topography.System;
-            _sectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            _sectorIndex = InitializeSectorIndex();
+        }
+
+        private Index3D InitializeSectorIndex() {
+            Index3D sectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            D.Assert(sectorIndex != default(Index3D));
+            MarkAsChanged();
+            return sectorIndex;
         }
 
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
@@ -110,6 +122,10 @@ namespace CodeEnv.Master.GameContent {
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new PlanetoidInfoAccessController(this);
         }
+
+        #region Event and Property Change Handlers
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

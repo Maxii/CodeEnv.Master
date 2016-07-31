@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         #region FTL
 
         // Assume for now that all ships are FTL capable. In the future, I will want some defensive ships to be limited to System space.
-        // IMPROVE will need to replace this with FtlShipData-derived class as non-Ftl ships won't be part of fleets, aka FormationStation, etc
+        // IMPROVE will need to replace this with FtlShipData-derived class as non-FTL ships won't be part of fleets, aka FormationStation, etc
         // public bool IsShipFtlCapable { get { return true; } }
 
         private bool _isFtlOperational;
@@ -82,25 +82,29 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
-        private ShipCombatStance _combatStance; //TODO not currently used
+        private ShipCombatStance _combatStance;
         public ShipCombatStance CombatStance {
             get { return _combatStance; }
             set { SetProperty<ShipCombatStance>(ref _combatStance, value, "CombatStance"); }
         }
 
         /// <summary>
-        /// Readonly. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
+        /// Read-only. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
         /// other than Normal (x1), this property always returns the proper reportable value.
         /// </summary>
         public float ActualSpeedValue { get { return Item.ActualSpeedValue; } }
 
         /// <summary>
-        /// The Speed the ship has been ordered to execute.
+        /// The current speed setting of this ship.
         /// </summary>
-        public Speed CurrentSpeed { get { return Item.CurrentSpeed; } }
+        private Speed _currentSpeedSetting;
+        public Speed CurrentSpeedSetting {
+            get { return _currentSpeedSetting; }
+            set { SetProperty<Speed>(ref _currentSpeedSetting, value, "CurrentSpeedSetting"); }
+        }
 
         /// <summary>
-        /// Readonly. The real-time, normalized heading of the ship in worldspace coordinates. Equivalent to transform.forward.
+        /// Read-only. The real-time, normalized heading of the ship in worldspace coordinates. Equivalent to transform.forward.
         /// </summary>
         public Vector3 CurrentHeading { get { return Item.CurrentHeading; } }
 
@@ -258,6 +262,10 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void IsFtlOperationalPropChangedHandler() {
+            HandleIsFtlOperationalChanged();
+        }
+
+        private void HandleIsFtlOperationalChanged() {
             string msg = IsFtlOperational ? "now" : "no longer";
             D.Log(ShowDebugLog, "{0} FTL is {1} operational.", FullName, msg);
             RefreshFullSpeedValue();
@@ -279,8 +287,8 @@ namespace CodeEnv.Master.GameContent {
             RefreshFullSpeedValue();
         }
 
-        protected override void TopographyPropChangedHandler() {
-            base.TopographyPropChangedHandler();
+        protected override void HandleTopographyChanged() {
+            base.HandleTopographyChanged();
             CurrentDrag = OpenSpaceDrag * Topography.GetRelativeDensity();
         }
 

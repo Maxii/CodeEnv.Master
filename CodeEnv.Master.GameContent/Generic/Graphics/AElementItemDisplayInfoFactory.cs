@@ -25,33 +25,37 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AUnitElementReport
         where FactoryType : AElementItemDisplayInfoFactory<ReportType, FactoryType> {
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, ReportType report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.ParentName:
+                    case ItemInfoID.ParentName:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.ParentName != null ? report.ParentName : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.ParentName != null ? report.ParentName : Unknown);
                         break;
-                    case AccessControlInfoID.Offense:
+                    case ItemInfoID.Offense:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.OffensiveStrength.HasValue ? report.OffensiveStrength.Value.ToTextHud() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.OffensiveStrength.HasValue ? report.OffensiveStrength.Value.ToTextHud() : Unknown);
                         break;
-                    case AccessControlInfoID.WeaponsRange:
+                    case ItemInfoID.WeaponsRange:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.WeaponsRange.HasValue ? report.WeaponsRange.Value.ToString() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.WeaponsRange.HasValue ? report.WeaponsRange.Value.ToString() : Unknown);
                         break;
-                    case AccessControlInfoID.Science:
+                    case ItemInfoID.Science:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Science.HasValue ? GetFormat(infoID).Inject(report.Science.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Science.HasValue ? GetFormat(infoID).Inject(report.Science.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.Culture:
+                    case ItemInfoID.Culture:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Culture.HasValue ? GetFormat(infoID).Inject(report.Culture.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Culture.HasValue ? GetFormat(infoID).Inject(report.Culture.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.NetIncome:
+                    case ItemInfoID.NetIncome:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Income.HasValue && report.Expense.HasValue ? GetFormat(infoID).Inject(report.Income.Value - report.Expense.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Income.HasValue && report.Expense.HasValue ? GetFormat(infoID).Inject(report.Income.Value - report.Expense.Value) : Unknown);
+                        break;
+                    case ItemInfoID.Mass:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.Mass.HasValue ? GetFormat(infoID).Inject(report.Mass.Value) : Unknown);
                         break;
                 }
             }

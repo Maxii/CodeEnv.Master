@@ -43,7 +43,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// Occurs when InfoAccess rights change for a player on an item.
     /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
     /// </summary>
-    public event EventHandler<InfoAccessChangedEventArgs> infoAccessChanged;
+    public event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
     /// <summary>
     /// Debug flag in editor indicating whether to show the D.Log for this item.
@@ -123,7 +123,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     public Player Owner { get { return Data.Owner; } }
 
     public bool TryGetOwner(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, AccessControlInfoID.Owner)) {
+        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             return true;
         }
@@ -132,7 +132,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     public bool IsOwnerAccessibleTo(Player player) {
-        return InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner);
+        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
     }
 
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
@@ -210,7 +210,46 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         }
     }
 
-    protected virtual void HandleInputModeChanged(GameInputMode inputMode) {
+    #region Event and Property Change Handlers
+
+    private void DataPropSetHandler() {
+        InitializeOnData();
+        SubscribeToDataValueChanges();
+    }
+
+    private void NamePropChangedHandler() {
+        transform.name = Name;
+    }
+
+    private void IsOperationalPropChangedHandler() {
+        HandleIsOperationalChanged();
+    }
+
+    protected virtual void HandleIsOperationalChanged() {
+        enabled = IsOperational;
+    }
+
+    private void OwnerPropChangingHandler(Player newOwner) {
+        HandleOwnerChanging(newOwner);
+    }
+
+    protected virtual void HandleOwnerChanging(Player newOwner) {
+        OnOwnerChanging(newOwner);
+    }
+
+    private void OwnerPropChangedHandler() {
+        HandleOwnerChanged();
+    }
+
+    protected virtual void HandleOwnerChanged() {
+        OnOwnerChanged();
+    }
+
+    private void InputModePropChangedHandler() {
+        HandleInputModeChanged(_inputMgr.InputMode);
+    }
+
+    private void HandleInputModeChanged(GameInputMode inputMode) {
         if (IsHudShowing) {
             switch (inputMode) {
                 case GameInputMode.NoInput:
@@ -229,33 +268,6 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         }
     }
 
-    #region Event and Property Change Handlers
-
-    private void DataPropSetHandler() {
-        InitializeOnData();
-        SubscribeToDataValueChanges();
-    }
-
-    private void NamePropChangedHandler() {
-        transform.name = Name;
-    }
-
-    protected virtual void IsOperationalPropChangedHandler() {
-        enabled = IsOperational;
-    }
-
-    protected virtual void OwnerPropChangingHandler(Player newOwner) {
-        OnOwnerChanging(newOwner);
-    }
-
-    protected virtual void OwnerPropChangedHandler() {
-        OnOwnerChanged();
-    }
-
-    private void InputModePropChangedHandler() {
-        HandleInputModeChanged(_inputMgr.InputMode);
-    }
-
     private void OnOwnerChanging(Player newOwner) {
         if (ownerChanging != null) {
             ownerChanging(this, new OwnerChangingEventArgs(newOwner));
@@ -269,8 +281,8 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     protected void OnInfoAccessChanged(Player player) {
-        if (infoAccessChanged != null) {
-            infoAccessChanged(this, new InfoAccessChangedEventArgs(player));
+        if (infoAccessChgd != null) {
+            infoAccessChgd(this, new InfoAccessChangedEventArgs(player));
         }
     }
 

@@ -60,6 +60,10 @@ namespace CodeEnv.Master.GameContent {
             CloseOrbitInnerRadius = planetStat.CloseOrbitInnerRadius;
         }
 
+        #region Event and Property Change Handlers
+
+        #endregion
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

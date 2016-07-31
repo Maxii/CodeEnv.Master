@@ -26,7 +26,8 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable, IGuardable {
+public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable,
+    IGuardable, ISectorViewHighlightable {
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
@@ -187,6 +188,19 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return guardStations;
     }
 
+    protected override SectorViewHighlightManager InitializeSectorViewHighlightMgr() {
+        return new SectorViewHighlightManager(this, Radius);
+    }
+
+    protected override CircleHighlightManager InitializeCircleHighlightMgr() {
+        float circleRadius = Radius * Screen.height * 1F;
+        return new CircleHighlightManager(transform, circleRadius);
+    }
+
+    protected override HoverHighlightManager InitializeHoverHighlightMgr() {
+        return new HoverHighlightManager(this, Radius);
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -268,6 +282,10 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     private void SettlementPropChangedHandler() {
+        HandleSettlementChanged();
+    }
+
+    private void HandleSettlementChanged() {
         if (Settlement != null) {
             Settlement.ParentSystem = this;
             Data.SettlementData = Settlement.Data;
@@ -281,15 +299,15 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
 
-    protected override void OwnerPropChangedHandler() {
-        base.OwnerPropChangedHandler();
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
         }
     }
 
-    protected override void IsDiscernibleToUserPropChangedHandler() {
-        base.IsDiscernibleToUserPropChangedHandler();
+    protected override void HandleIsDiscernibleToUserChanged() {
+        base.HandleIsDiscernibleToUserChanged();
         ShowTrackingLabel(IsDiscernibleToUser);
         _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
     }
@@ -316,9 +334,23 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
-    #region IHighlightable Members
+    #region ISectorViewHighlightable Members
 
-    public override float CircleHighlightEffectRadius { get { return Radius * Screen.height * 1F; } }
+    public bool IsSectorViewHighlightShowing {
+        get { return GetHighlightMgr(HighlightMgrID.SectorView).IsHighlightShowing; }
+    }
+
+    public void ShowSectorViewHighlight(bool toShow) {
+        var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
+        if (!IsDiscernibleToUser) {
+            if (sectorViewHighlightMgr.IsHighlightShowing) {
+                D.Log(ShowDebugLog, "{0} recieved ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
+                sectorViewHighlightMgr.Show(false);
+            }
+            return;
+        }
+        sectorViewHighlightMgr.Show(toShow);
+    }
 
     #endregion
 
@@ -372,7 +404,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -393,7 +425,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -412,7 +444,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     // LocalAssemblyStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, AccessControlInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

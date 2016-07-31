@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AccessControlInfoID.cs
-// Unique identifier for each piece of info that is under access control.
+// File: ItemInfoID.cs
+// Unique identifier for each piece of info held by Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,10 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Unique identifier for each piece of info that is under access control.
+    /// Unique identifier for each piece of info held by Items. Used for
+    /// Player Access Control and the ID of info that should be displayed.
     /// </summary>
-    public enum AccessControlInfoID {
+    public enum ItemInfoID {
 
         None,
 
@@ -55,7 +56,8 @@ namespace CodeEnv.Master.GameContent {
         Target,
         TargetDistance,
 
-        CurrentSpeed,
+        CurrentHeading,
+        CurrentSpeedSetting,
         FullSpeed,
         MaxTurnRate,
 
@@ -83,9 +85,13 @@ namespace CodeEnv.Master.GameContent {
         Approval,
         OrbitalSpeed,
 
-        // Debug Special
+        // Always available if relevant
         IntelState,
+        ActualSpeed,
         CameraDistance,
+
+        // Formatting
+        Separator
 
     }
 }

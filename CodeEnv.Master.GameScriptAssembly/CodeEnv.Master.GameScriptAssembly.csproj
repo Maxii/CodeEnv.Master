@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\_Debug\EffectsFolder.cs" />
     <Compile Include="Generic\Framework\AFormationStation.cs" />
     <Compile Include="Generic\_Debug\EditModeController.cs" />
     <Compile Include="Game\Gameplay\FormationStationPlaceholder.cs" />

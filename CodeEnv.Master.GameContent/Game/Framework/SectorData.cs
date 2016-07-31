@@ -29,6 +29,18 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
+        private int _capacity;
+        public int Capacity {
+            get { return _capacity; }
+            private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
+        }
+
+        private ResourceYield _resources;
+        public ResourceYield Resources {
+            get { return _resources; }
+            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+        }
+
         private SystemData _systemData;
         public SystemData SystemData {
             get { return _systemData; }
@@ -74,11 +86,14 @@ namespace CodeEnv.Master.GameContent {
         private void SubscribeToSystemDataValueChanges() {
             _systemDataSubscribers = new List<IDisposable>();
             _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
+            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, int>(sd => sd.Capacity, SystemCapacityPropChangedHandler));
+            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, ResourceYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
             SystemData.intelCoverageChanged += SystemIntelCoverageChangedEventHandler;
         }
 
         protected override void FinalInitialize() {
             base.FinalInitialize();
+            RecalcAllProperties();
             AssessIntelCoverage();
         }
 
@@ -105,7 +120,7 @@ namespace CodeEnv.Master.GameContent {
             }
             // TODO add other members when they are incorporated into Sectors
 
-            if (!allMemberCoverages.Any()) {
+            if (allMemberCoverages.IsNullOrEmpty()) {
                 // TEMP there are no members so give player Comprehensive
                 var isSet = SetIntelCoverage(player, IntelCoverage.Comprehensive);
                 D.Assert(isSet);
@@ -139,6 +154,10 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void SystemDataPropSetHandler() {
+            HandleSystemDataSet();
+        }
+
+        private void HandleSystemDataSet() {
             D.Assert(!IsOperational);
             SubscribeToSystemDataValueChanges();
             if (Owner != SystemData.Owner) { // avoids PropChange equal warning when System owner is NoPlayer
@@ -146,11 +165,19 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        protected override void HandleOwnerChanged() {
+            base.HandleOwnerChanged();
+            PropagateOwnerChange();
+        }
+
         private void SystemIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            HandleSystemIntelCoverageChanged(e.Player);
+        }
+
+        private void HandleSystemIntelCoverageChanged(Player playerWhosCoverageChgd) {
             if (!IsOperational) {
                 return;
             }
-            var playerWhosCoverageChgd = e.Player;
             AssessIntelCoverageFor(playerWhosCoverageChgd);
         }
 
@@ -158,15 +185,35 @@ namespace CodeEnv.Master.GameContent {
             Owner = SystemData.Owner;
         }
 
-        protected override void OwnerPropChangedHandler() {
-            base.OwnerPropChangedHandler();
-            PropogateOwnerChange();
+        private void SystemCapacityPropChangedHandler() {
+            UpdateCapacity();
+        }
+
+        private void SystemResourceYieldPropChangedHandler() {
+            UpdateResources();
         }
 
         #endregion
 
-        private void PropogateOwnerChange() {
-            // TODO nothing to propogate to yet as System.Owner is the source of the change
+        private void PropagateOwnerChange() {
+            // TODO nothing to propagate to yet as System.Owner is the source of the change
+        }
+
+        private void RecalcAllProperties() {
+            UpdateCapacity();
+            UpdateResources();
+        }
+
+        private void UpdateCapacity() {
+            if (SystemData != null) {
+                Capacity = SystemData.Capacity;
+            }
+        }
+
+        private void UpdateResources() {
+            if (SystemData != null) {
+                Resources = SystemData.Resources;
+            }
         }
 
         #region Cleanup

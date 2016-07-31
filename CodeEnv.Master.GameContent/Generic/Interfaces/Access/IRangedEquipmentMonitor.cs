@@ -39,13 +39,11 @@ namespace CodeEnv.Master.GameContent {
         bool IsOperational { get; }
 
         /// <summary>
-        /// Handles a change in relations between players. Called by the monitor's ParentItem when the 
+        /// Handles a change in relations between players. Called by the monitor's ParentItem when the
         /// DiplomaticRelationship between ParentItem.Owner and <c>otherPlayer</c> changes.
         /// </summary>
         /// <param name="otherPlayer">The other player.</param>
-        /// <param name="priorRelationship">The prior relationship.</param>
-        /// <param name="newRelationship">The new relationship.</param>
-        void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship);
+        void HandleRelationsChanged(Player otherPlayer);
 
 
     }

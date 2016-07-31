@@ -25,33 +25,29 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AMortalItemReport
         where FactoryType : AMortalItemDisplayInfoFactory<ReportType, FactoryType> {
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, ReportType report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, ReportType report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.SectorIndex:
+                    case ItemInfoID.SectorIndex:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.SectorIndex.ToString());
+                        colorizedText = _lineTemplate.Inject(report.SectorIndex.ToString());
                         break;
-                    case AccessControlInfoID.MaxHitPoints:
+                    case ItemInfoID.MaxHitPoints:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.MaxHitPoints.HasValue ? GetFormat(infoID).Inject(report.MaxHitPoints.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.MaxHitPoints.HasValue ? GetFormat(infoID).Inject(report.MaxHitPoints.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.CurrentHitPoints:
+                    case ItemInfoID.CurrentHitPoints:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CurrentHitPoints.HasValue ? GetFormat(infoID).Inject(report.CurrentHitPoints.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.CurrentHitPoints.HasValue ? GetFormat(infoID).Inject(report.CurrentHitPoints.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.Health:
+                    case ItemInfoID.Health:
                         isSuccess = true;
                         colorizedText = GetColorizedHealthText(report.Health, report.MaxHitPoints);
                         break;
-                    case AccessControlInfoID.Defense:
+                    case ItemInfoID.Defense:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.DefensiveStrength.HasValue ? report.DefensiveStrength.Value.ToTextHud() : _unknown);
-                        break;
-                    case AccessControlInfoID.Mass:
-                        isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Mass.HasValue ? GetFormat(infoID).Inject(report.Mass.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.DefensiveStrength.HasValue ? report.DefensiveStrength.Value.ToTextHud() : Unknown);
                         break;
                 }
             }
@@ -74,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
                 maxHpColor = GameColor.Green;
                 colorizedMaxHpText = Constants.FormatFloat_1DpMax.Inject(maxHp.Value).SurroundWith(maxHpColor);
             }
-            return _phrase.Inject(colorizedHealthText, colorizedMaxHpText);
+            return _lineTemplate.Inject(colorizedHealthText, colorizedMaxHpText);
         }
 
     }

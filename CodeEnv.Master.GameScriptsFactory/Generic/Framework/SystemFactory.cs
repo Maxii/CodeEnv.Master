@@ -153,7 +153,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         PlanetData data = new PlanetData(planet, passiveCMs, planetStat) {
             ParentName = parentSystemName
         };
-        planet.GetComponent<Rigidbody>().mass = data.Mass;
+        planet.GetComponent<Rigidbody>().mass = data.Mass;  // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         planet.CameraStat = cameraStat;
         planet.Data = data;
     }
@@ -196,7 +196,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         PlanetoidData data = new PlanetoidData(moon, passiveCMs, moonStat) {
             ParentName = parentPlanetName
         };
-        moon.GetComponent<Rigidbody>().mass = data.Mass;
+        moon.GetComponent<Rigidbody>().mass = data.Mass;    // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         moon.CameraStat = cameraStat;
         moon.Data = data;
     }

@@ -102,6 +102,11 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _expense, value, "Expense"); }
         }
 
+        /// <summary>
+        /// The mass of this Element.
+        /// <remarks>7.26.16 Primarily here for user HUDs as an element's interaction with the physics
+        /// engine uses the mass from the Rigidbody which is set one time in the UnitFactory.</remarks>
+        /// </summary>
         public float Mass { get; private set; }
 
         protected AHullEquipment HullEquipment { get; private set; }

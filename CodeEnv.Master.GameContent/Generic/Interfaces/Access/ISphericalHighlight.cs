@@ -25,12 +25,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISphericalHighlight {
 
-        /// <summary>
-        /// Sets the target to highlight.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        /// <param name="labelPlacement">The label placement.</param>
-        void SetTarget(IHighlightable target, WidgetPlacement labelPlacement = WidgetPlacement.Below);
+        bool IsShowing { get; }
+
+        float Alpha { get; set; }
+
+        GameColor Color { get; set; }
+
+        ///// <summary>
+        ///// Sets the target to highlight.
+        ///// </summary>
+        ///// <param name="target">The target.</param>
+        ///// <param name="labelPlacement">The label placement.</param>
+        void SetTarget(IWidgetTrackable target, WidgetPlacement labelPlacement = WidgetPlacement.Below);
 
         /// <summary>
         /// Sets the radius of the highlighting sphere.
@@ -43,6 +49,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> [to show].</param>
         void Show(bool toShow);
+
+        Transform transform { get; }
 
     }
 }

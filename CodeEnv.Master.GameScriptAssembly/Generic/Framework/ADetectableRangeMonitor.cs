@@ -98,8 +98,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
     }
 
-    protected override void IsOperationalPropChangedHandler() {
-        //D.Log(ShowDebugLog, "{0}.IsOperationPropChangedHandler() called. IsOperational: {1}.", Name, IsOperational);
+    protected override void HandleIsOperationalChanged() {
+        //D.Log(ShowDebugLog, "{0}.IsOperational changed to {1}.", Name, IsOperational);
         if (IsOperational) {
             AcquireAllDetectableObjectsInRange();
         }
@@ -108,8 +108,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
     }
 
-    protected sealed override void RangeDistancePropChangedHandler() {
-        base.RangeDistancePropChangedHandler();
+    protected sealed override void HandleRangeDistanceChanged() {
+        base.HandleRangeDistanceChanged();
         if (IsOperational) {    // avoids attempting to re-detect objects with the collider off
             ReacquireAllDetectableObjectsInRange();
         }
@@ -124,29 +124,26 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// while the parentItem still has the old owner. In the case of Sensors, using the parentItem with the old owner
     /// is important when notifying the detectedItems of their loss of detection.</remarks>
     /// </summary>
-    /// <param name="sender">The sender.</param>
-    /// <param name="e">The <see cref="OwnerChangingEventArgs"/> instance containing the event data.</param>
-    protected sealed override void ParentOwnerChangingEventHandler(object sender, OwnerChangingEventArgs e) {
-        base.ParentOwnerChangingEventHandler(sender, e);
+    /// <param name="incomingOwner">The incoming owner.</param>
+    protected sealed override void HandleParentItemOwnerChanging(Player incomingOwner) {
+        base.HandleParentItemOwnerChanging(incomingOwner);
         IsOperational = false;
     }
 
     /// <summary>
     /// Called when [parent owner changed].
-    /// <remarks>Combined with OnParentOwnerChanging(), this IsOperational change results in reacquisition of detectable items
+    /// <remarks>Combined with HandleParentItemOwnerChanging(), this IsOperational change results in reacquisition of detectable items
     /// using the new owner if any equipment is operational. If no equipment is operational,then the reacquisition will be deferred
     /// until a pieceOfEquipment becomes operational again.</remarks>
     /// </summary>
-    /// <param name="sender">The sender.</param>
-    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-    protected override void ParentOwnerChangedEventHandler(object sender, EventArgs e) {
-        base.ParentOwnerChangedEventHandler(sender, e);
+    protected override void HandleParentItemOwnerChanged() {
+        base.HandleParentItemOwnerChanged();
         RangeDistance = RefreshRangeDistance();
         AssessIsOperational();
     }
 
-    protected override void IsPausedPropChangedHandler() {
-        base.IsPausedPropChangedHandler();
+    protected override void HandleIsPausedChanged() {
+        base.HandleIsPausedChanged();
         if (!_gameMgr.IsPaused) {
             HandleObjectsDetectedWhilePaused();
         }
@@ -218,15 +215,13 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected abstract void HandleDetectedObjectRemoved(IDetectableType lostDetectionObject);
 
     /// <summary>
-    /// Handles a change in relations between players. Called by the monitor's ParentItem when the 
+    /// Handles a change in relations between players. Called by the monitor's ParentItem when the
     /// DiplomaticRelationship between ParentItem.Owner and <c>otherPlayer</c> changes.
     /// </summary>
     /// <param name="otherPlayer">The other player.</param>
-    /// <param name="priorRelationship">The prior relationship.</param>
-    /// <param name="newRelationship">The new relationship.</param>
-    public void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
-        D.Log(ShowDebugLog, @"{0} received a relationship change event. Initiating review of relationship with all detected objects. 
-            {1} & {2}'s NewRelationship = {3}.", FullName, Owner.Name, otherPlayer.Name, newRelationship.GetValueName());
+    public void HandleRelationsChanged(Player otherPlayer) {
+        //D.Log(ShowDebugLog, @"{0} received a relationship change event. Initiating review of relationship with all detected objects. 
+        //{1} & {2}'s NewRelationship = {3}.", FullName, Owner.Name, otherPlayer.Name, Owner.GetCurrentRelations(otherPlayer).GetValueName());
         ReviewRelationsWithAllDetectedObjects();
     }
 
@@ -237,7 +232,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// Deferred for now until it is clear what info will be provided in the end.</remarks>
     /// </summary>
     protected abstract void ReviewRelationsWithAllDetectedObjects();
-
 
     /// <summary>
     /// All items currently detected are removed.
@@ -288,7 +282,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 continue;
             }
             //D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", FullName, detectableObject.FullName);
-            AddDetectedObject(detectableObject);    // must preceed next line as __ValidateObjectWasBulkDetected() depends on it
+            AddDetectedObject(detectableObject);    // must precede next line as __ValidateObjectWasBulkDetected() depends on it
             __objectsDetectedViaWorkaround.Add(detectableObject);
         }
     }
@@ -372,6 +366,12 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     #endregion
 
+    protected override void CompleteResetForReuse() {
+        base.CompleteResetForReuse();
+        D.Assert(_objectsDetected.Count == Constants.Zero);
+        __objectsDetectedViaWorkaround.Clear();
+    }
+
     #region Acquire Colliders Workaround Archive
 
     /// <summary>
@@ -441,12 +441,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     //}
 
     #endregion
-
-    protected override void CompleteResetForReuse() {
-        base.CompleteResetForReuse();
-        D.Assert(_objectsDetected.Count == Constants.Zero);
-        __objectsDetectedViaWorkaround.Clear();
-    }
 
     #region Debug
 

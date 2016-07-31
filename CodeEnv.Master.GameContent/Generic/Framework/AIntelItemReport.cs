@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         public AIntelItemReport(AIntelItemData data, Player player, IIntelItem_Ltd item)
             : base(data, player, item) {
             Intel = data.GetIntelCopy(player);
-            // IntelCoverage.None an occur as reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+            // IntelCoverage.None can occur as reports are requested when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
         }
 
         #region Archive

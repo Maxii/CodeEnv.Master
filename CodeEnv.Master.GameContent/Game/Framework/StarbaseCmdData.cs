@@ -104,6 +104,10 @@ namespace CodeEnv.Master.GameContent {
             return StarbaseCategory.None;
         }
 
+        #region Event and Property Change Handlers
+
+        #endregion
+
         //TODO Acquire resource values this starbase has access too, ala SettlementCmdData approach
         private void __PopulateResourcesFromSector() {
             Capacity = 10;

@@ -188,7 +188,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         element.Name = hullCategory.GetValueName();
         ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design.EnginesStat, design.CombatStance);
-        element.GetComponent<Rigidbody>().mass = data.Mass;
+        element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
         element.Data = data;
     }
@@ -308,7 +308,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         element.Name = hullCategory.GetValueName();
         FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, topography);
-        element.GetComponent<Rigidbody>().mass = data.Mass;
+        element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
         element.Data = data;
     }
@@ -639,20 +639,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         monitor.Add(sensor);
         return monitor;
-    }
-
-    /// <summary>
-    /// Returns a fleet formation station as a child of fleetCmd whose localPosition is assigned by stationSlotInfo.
-    /// <remarks>This version acquires the instance from a pool rather than instantiating it.</remarks>
-    /// </summary>
-    /// <param name="fleetCmd">The fleet command.</param>
-    /// <param name="localOffset">The local offset.</param>
-    /// <returns></returns>
-    public FleetFormationStation MakeInstance(IFleetCmd fleetCmd, FormationStationSlotInfo stationSlotInfo) {
-        var fleetCmdItem = fleetCmd as FleetCmdItem;
-        FleetFormationStation station = MyPoolManager.Instance.Spawn(fleetCmdItem.Position, Quaternion.identity, fleetCmdItem.transform);
-        station.StationInfo = stationSlotInfo;
-        return station;
     }
 
     public override string ToString() {

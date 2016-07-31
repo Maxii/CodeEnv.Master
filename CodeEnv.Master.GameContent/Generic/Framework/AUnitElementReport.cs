@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         //public RangeDistance? SensorRange { get; protected set; } // makes no sense
 
+        public float? Mass { get; protected set; }
+
         public float? Science { get; protected set; }
         public float? Culture { get; protected set; }
         public float? Income { get; protected set; }

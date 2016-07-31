@@ -14,13 +14,17 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// limited InfoAccess Interface for easy access to MonoBehaviours that are FleetCmdItems.
     /// </summary>
     public interface IFleetCmd_Ltd : IUnitCmd_Ltd {
 
+        Reference<float> ActualSpeedValue_Debug { get; }
 
     }
 }

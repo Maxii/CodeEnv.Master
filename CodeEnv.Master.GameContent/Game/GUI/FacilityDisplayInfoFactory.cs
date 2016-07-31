@@ -25,26 +25,31 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityDisplayInfoFactory : AElementItemDisplayInfoFactory<FacilityReport, FacilityDisplayInfoFactory> {
 
-        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
-            AccessControlInfoID.Name,
-            AccessControlInfoID.ParentName,
-            AccessControlInfoID.Owner,
-            AccessControlInfoID.Category,
-            AccessControlInfoID.Health,
-            AccessControlInfoID.Defense,
-            AccessControlInfoID.Offense,
-            AccessControlInfoID.WeaponsRange,
-            //AccessControlInfoID.SensorRange,  // makes no sense
-            AccessControlInfoID.Science,
-            AccessControlInfoID.Culture,
-            AccessControlInfoID.NetIncome,
-            AccessControlInfoID.Mass,
+        private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
+            ItemInfoID.Name,
+            ItemInfoID.ParentName,
+            ItemInfoID.Owner,
+            ItemInfoID.Category,
+            ItemInfoID.Health,
+            ItemInfoID.Defense,
+            ItemInfoID.Offense,
+            ItemInfoID.WeaponsRange,
+            //ItemInfoID.SensorRange,  // makes no sense
+            ItemInfoID.Science,
+            ItemInfoID.Culture,
+            ItemInfoID.NetIncome,
+            ItemInfoID.Mass,
 
-            AccessControlInfoID.CameraDistance,
-            AccessControlInfoID.IntelState
+            ItemInfoID.Separator,
+
+            ItemInfoID.IntelState,
+
+            ItemInfoID.Separator,
+
+            ItemInfoID.CameraDistance
         };
 
-        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
+        protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private FacilityDisplayInfoFactory() {
             Initialize();
@@ -52,13 +57,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, FacilityReport report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, FacilityReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.Category:
+                    case ItemInfoID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != FacilityHullCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Category != FacilityHullCategory.None ? report.Category.GetValueName() : Unknown);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

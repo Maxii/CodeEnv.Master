@@ -43,27 +43,27 @@ namespace CodeEnv.Master.GameContent {
             var sData = data as SystemData;
             var accessCntlr = sData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = sData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = sData.SectorIndex;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {    // true if any member has access
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {    // true if any member has access
                 Owner = sData.Owner;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {    // true if all members have access
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {    // true if all members have access
                 Capacity = sData.Capacity;
             }
             else {
                 Capacity = CalcPartialCapacity(sData.StarData, sData.AllPlanetoidData, sData.SettlementData);
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {   // true if all members have access
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {   // true if all members have access
                 Resources = sData.Resources;
             }
             else {
@@ -75,16 +75,16 @@ namespace CodeEnv.Master.GameContent {
             int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
             IList<int> sysMembersCapacity = new List<int>(count);
 
-            if (starData.InfoAccessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+            if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 sysMembersCapacity.Add(starData.Capacity);
             }
             foreach (var pData in planetoidsData) {
                 var accessCntlr = pData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                     sysMembersCapacity.Add(pData.Capacity);
                 }
             }
-            if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+            if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 sysMembersCapacity.Add(settlementData.Capacity);
             }
 
@@ -98,16 +98,16 @@ namespace CodeEnv.Master.GameContent {
             int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
             IList<ResourceYield> sysMembersResources = new List<ResourceYield>(count);
 
-            if (starData.InfoAccessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+            if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 sysMembersResources.Add(starData.Resources);
             }
             foreach (var pData in planetoidsData) {
                 var accessCntlr = pData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                     sysMembersResources.Add(pData.Resources);
                 }
             }
-            if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+            if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 sysMembersResources.Add(settlementData.Resources);
             }
 

@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
             _data = data;
         }
 
-        public abstract bool HasAccessToInfo(Player player, AccessControlInfoID infoID);
+        public abstract bool HasAccessToInfo(Player player, ItemInfoID infoID);
 
     }
 }

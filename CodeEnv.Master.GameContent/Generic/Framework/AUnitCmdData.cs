@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitMaxFormationRadius;
         /// <summary>
-        /// The maximum radius of this Unit's current formation, independant of the number of elements currently assigned a
+        /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
         /// station in the formation or whether the Unit's elements are located on their formation station. 
         /// Value encompasses each element's "KeepoutZone" (Facility: AvoidableObstacleZone, Ship: CollisionDetectionZone) 
         /// when the element is OnStation. 
@@ -109,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
 
         private CombatStrength _unitOffensiveStrength;
         /// <summary>
-        /// Readonly. The offensive combat strength of the entire Unit, aka the sum of all
+        /// Read-only. The offensive combat strength of the entire Unit, aka the sum of all
         /// of this Unit's Elements offensive combat strength.
         /// </summary>
         public CombatStrength UnitOffensiveStrength {
@@ -119,7 +119,7 @@ namespace CodeEnv.Master.GameContent {
 
         private CombatStrength _unitDefensiveStrength;
         /// <summary>
-        /// Readonly. The defensive combat strength of the entire Unit, aka the sum of all
+        /// Read-only. The defensive combat strength of the entire Unit, aka the sum of all
         /// of this Unit's Elements defensive combat strength.
         /// </summary>
         public CombatStrength UnitDefensiveStrength {
@@ -129,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitMaxHitPoints;
         /// <summary>
-        /// Readonly. The max hit points of the entire Unit, aka the sum of all
+        /// Read-only. The max hit points of the entire Unit, aka the sum of all
         /// of this Unit's Elements max hit points.
         /// </summary>
         public float UnitMaxHitPoints {
@@ -139,7 +139,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitCurrentHitPoints;
         /// <summary>
-        /// Readonly. The current hit points of the entire Unit, aka the sum of all
+        /// Read-only. The current hit points of the entire Unit, aka the sum of all
         /// of this Unit's Elements current hit points.
         /// </summary>
         public float UnitCurrentHitPoints {
@@ -149,7 +149,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitHealth;
         /// <summary>
-        /// Readonly. Indicates the health of the entire Unit, a value between 0 and 1.
+        /// Read-only. Indicates the health of the entire Unit, a value between 0 and 1.
         /// </summary>
         public float UnitHealth {
             get {
@@ -228,37 +228,53 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        protected override void OwnerPropChangedHandler() {
-            base.OwnerPropChangedHandler();
+        protected override void HandleOwnerChanged() {
+            base.HandleOwnerChanged();
             // Only Cmds can be 'taken over'
             _elementsData.ForAll(eData => eData.Owner = Owner);
         }
 
-        protected virtual void HQElementDataPropChangingHandler(AUnitElementData newHQElementData) {
+        private void HQElementDataPropChangingHandler(AUnitElementData newHQElementData) {
+            HandleHQElementDataChanging(newHQElementData);
+        }
+
+        protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
             var previousHQElementData = HQElementData;
             if (previousHQElementData != null) {
                 previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
             }
         }
 
-        protected virtual void HQElementDataPropChangedHandler() {
+        private void HQElementDataPropChangedHandler() {
+            HandleHQElementDataChanged();
+        }
+
+        protected virtual void HandleHQElementDataChanged() {
             D.Assert(_elementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
             Topography = GetTopography();
         }
 
         private void HQElementIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
-            var player = e.Player;
-            var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
-            var isIntelCoverageSet = SetIntelCoverage(player, playerIntelCoverageOfHQElement);
-            D.Assert(isIntelCoverageSet);
-            //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+            HandleHQElementIntelCoverageChanged(e.Player);
         }
 
-        private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPoints) {
-            if (newMaxHitPoints < UnitMaxHitPoints) {
+        private void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(playerWhosCoverageChgd);
+            var isIntelCoverageSet = SetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement);
+            D.Assert(isIntelCoverageSet);
+            //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", 
+            //    FullName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+        }
+
+        private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPts) {
+            HandleUnitMaxHitPtsChanging(newMaxHitPts);
+        }
+
+        private void HandleUnitMaxHitPtsChanging(float newMaxHitPts) {
+            if (newMaxHitPts < UnitMaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
-                UnitCurrentHitPoints = Mathf.Clamp(UnitCurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
+                UnitCurrentHitPoints = Mathf.Clamp(UnitCurrentHitPoints, Constants.ZeroF, newMaxHitPts);
                 // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
             }
         }
@@ -268,8 +284,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UnitCurrentHitPtsPropChangedHandler() {
-            var unitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
-            UnitHealth = unitHealth;
+            UnitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
+        }
+
+        private void UnitHealthPropChangedHandler() {
+            HandleUnitHealthChanged();
         }
 
         /// <summary>
@@ -278,25 +297,33 @@ namespace CodeEnv.Master.GameContent {
         /// This is not done to initiate the UnitCommand's death, but to keep the values of a UnitCommand's CurrentHitPoints 
         /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
         /// </summary>
-        private void UnitHealthPropChangedHandler() {
+        private void HandleUnitHealthChanged() {
             //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", FullName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             if (UnitHealth <= Constants.ZeroF) {
                 CurrentHitPoints -= MaxHitPoints;
             }
         }
 
-        protected override void HealthPropChangedHandler() {
-            base.HealthPropChangedHandler();
+        protected override void HandleHealthChanged() {
+            base.HandleHealthChanged();
             RefreshCurrentCmdEffectiveness();
         }
 
-        protected abstract void UnitWeaponsRangePropChangedHandler();
+        private void UnitWeaponsRangePropChangedHandler() {
+            HandleUnitWeaponsRangeChanged();
+        }
+
+        protected abstract void HandleUnitWeaponsRangeChanged();
 
         private void MaxCmdEffectivenessPropChangedHandler() {
             RefreshCurrentCmdEffectiveness();
         }
 
         private void ParentNamePropChangedHandler() {
+            HandleParentNameChanged();
+        }
+
+        private void HandleParentNameChanged() {
             // the parent name of a command is the unit name
             if (!_elementsData.IsNullOrEmpty()) {
                 _elementsData.ForAll(eData => eData.ParentName = ParentName);
@@ -401,12 +428,12 @@ namespace CodeEnv.Master.GameContent {
         protected abstract void RefreshComposition();
 
         /// <summary>
-        /// Recalculates any Command properties that are dependant upon the total element population.
+        /// Recalculates any Command properties that are dependent upon the total element population.
         /// </summary>
         protected virtual void RecalcPropertiesDerivedFromCombinedElements() {
             RecalcUnitDefensiveStrength();
             RecalcUnitOffensiveStrength();
-            RecalcUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
+            RecalcUnitMaxHitPoints();   // must precede current as current uses max as a clamp
             RecalcUnitCurrentHitPoints();
             RecalcUnitWeaponsRange();
             RecalcUnitSensorRange();

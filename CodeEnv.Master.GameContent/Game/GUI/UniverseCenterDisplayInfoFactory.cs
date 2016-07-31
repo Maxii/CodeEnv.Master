@@ -23,14 +23,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterDisplayInfoFactory : AIntelItemDisplayInfoFactory<UniverseCenterReport, UniverseCenterDisplayInfoFactory> {
 
-        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
-            AccessControlInfoID.Name,
+        private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
+            ItemInfoID.Name,
 
-            AccessControlInfoID.IntelState,
-            AccessControlInfoID.CameraDistance
+            ItemInfoID.Separator,
+
+            ItemInfoID.IntelState,
+
+            ItemInfoID.Separator,
+
+            ItemInfoID.CameraDistance
         };
 
-        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
+        protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private UniverseCenterDisplayInfoFactory() {
             Initialize();

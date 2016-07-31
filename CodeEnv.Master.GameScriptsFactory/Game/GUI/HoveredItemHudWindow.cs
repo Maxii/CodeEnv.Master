@@ -54,18 +54,18 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
         _subscriptions.Add(SelectionManager.Instance.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, CurrentSelectionPropChangedHandler));
     }
 
-    public void Show(string text) {
-        var form = PrepareForm(FormID.TextHud);
-        (form as TextForm).Text = text;
-        ShowForm(form);
-    }
-
     public void Show(StringBuilder sb) {
         Show(sb.ToString());
     }
 
     public void Show(ColoredStringBuilder csb) {
         Show(csb.ToString());
+    }
+
+    public void Show(string text) {
+        var form = PrepareForm(FormID.TextHud);
+        (form as TextForm).Text = text;
+        ShowForm(form);
     }
 
     protected override void PositionWindow() {

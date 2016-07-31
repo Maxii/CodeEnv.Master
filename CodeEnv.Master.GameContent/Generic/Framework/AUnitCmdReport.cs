@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
             IList<CombatStrength> elementsStrength = new List<CombatStrength>(elementsData.Count());
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Offense)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Offense)) {
                     elementsStrength.Add(eData.OffensiveStrength);
                 }
             }
@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
             IList<CombatStrength> elementsStrength = new List<CombatStrength>(elementsData.Count());
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Defense)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Defense)) {
                     elementsStrength.Add(eData.DefensiveStrength);
                 }
             }
@@ -99,7 +99,7 @@ namespace CodeEnv.Master.GameContent {
             float elementsHitPts = Constants.ZeroF;
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.MaxHitPoints)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
                     elementsHitPts += eData.MaxHitPoints;
                 }
             }
@@ -113,7 +113,7 @@ namespace CodeEnv.Master.GameContent {
             float elementsHitPts = Constants.ZeroF;
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentHitPoints)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
                     elementsHitPts += eData.CurrentHitPoints;
                 }
             }
@@ -139,7 +139,7 @@ namespace CodeEnv.Master.GameContent {
             IList<float> elementsScience = new List<float>(elementsData.Count());
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Science)) {
+                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Science)) {
                     elementsScience.Add(eData.Science);
                 }
             }

@@ -25,20 +25,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarDisplayInfoFactory : AIntelItemDisplayInfoFactory<StarReport, StarDisplayInfoFactory> {
 
-        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
-            AccessControlInfoID.Name,
-            AccessControlInfoID.ParentName,
-            AccessControlInfoID.Category,
-            AccessControlInfoID.Owner,
-            AccessControlInfoID.Capacity,
-            AccessControlInfoID.Resources,
-            AccessControlInfoID.SectorIndex,
+        private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
+            ItemInfoID.Name,
+            ItemInfoID.ParentName,
+            ItemInfoID.Category,
+            ItemInfoID.Owner,
+            ItemInfoID.Capacity,
+            ItemInfoID.Resources,
+            ItemInfoID.SectorIndex,
 
-            AccessControlInfoID.IntelState,
-            AccessControlInfoID.CameraDistance
+            ItemInfoID.Separator,
+
+            ItemInfoID.IntelState,
+
+            ItemInfoID.Separator,
+
+            ItemInfoID.CameraDistance
         };
 
-        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
+        protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private StarDisplayInfoFactory() {
             Initialize();
@@ -46,29 +51,29 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, StarReport report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, StarReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.ParentName:
+                    case ItemInfoID.ParentName:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.ParentName != null ? report.ParentName : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.ParentName != null ? report.ParentName : Unknown);
                         break;
-                    case AccessControlInfoID.Category:
+                    case ItemInfoID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != StarCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Category != StarCategory.None ? report.Category.GetValueName() : Unknown);
                         break;
-                    case AccessControlInfoID.SectorIndex:
+                    case ItemInfoID.SectorIndex:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.SectorIndex.ToString());
+                        colorizedText = _lineTemplate.Inject(report.SectorIndex.ToString());
                         break;
-                    case AccessControlInfoID.Capacity:
+                    case ItemInfoID.Capacity:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.Resources:
+                    case ItemInfoID.Resources:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

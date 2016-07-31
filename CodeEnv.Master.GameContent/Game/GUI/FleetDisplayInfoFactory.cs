@@ -26,35 +26,42 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetDisplayInfoFactory : AUnitCmdDisplayInfoFactory<FleetCmdReport, FleetDisplayInfoFactory> {
 
-        private static AccessControlInfoID[] _infoIDsToDisplay = new AccessControlInfoID[] {
-            AccessControlInfoID.Name,
-            AccessControlInfoID.ParentName,
-            AccessControlInfoID.Category,
-            AccessControlInfoID.Composition,
-            AccessControlInfoID.Owner,
+        private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
+            ItemInfoID.Name,
+            ItemInfoID.ParentName,
+            ItemInfoID.Category,
+            ItemInfoID.Composition,
+            ItemInfoID.Owner,
+            ItemInfoID.SectorIndex,
 
-            AccessControlInfoID.CurrentCmdEffectiveness,
-            AccessControlInfoID.Formation,
-            AccessControlInfoID.UnitOffense,
-            AccessControlInfoID.UnitDefense,
-            AccessControlInfoID.UnitHealth,
-            AccessControlInfoID.UnitWeaponsRange,
-            AccessControlInfoID.UnitSensorRange,
-            AccessControlInfoID.UnitScience,
-            AccessControlInfoID.UnitCulture,
-            AccessControlInfoID.UnitNetIncome,
+            ItemInfoID.CurrentCmdEffectiveness,
+            ItemInfoID.Formation,
+            ItemInfoID.UnitOffense,
+            ItemInfoID.UnitDefense,
+            ItemInfoID.UnitHealth,
+            ItemInfoID.UnitWeaponsRange,
+            ItemInfoID.UnitSensorRange,
+            ItemInfoID.UnitScience,
+            ItemInfoID.UnitCulture,
+            ItemInfoID.UnitNetIncome,
 
-            AccessControlInfoID.Target,
-            AccessControlInfoID.TargetDistance,
-            AccessControlInfoID.CurrentSpeed,
-            AccessControlInfoID.UnitFullSpeed,
-            AccessControlInfoID.UnitMaxTurnRate,
+            ItemInfoID.Target,
+            ItemInfoID.TargetDistance,
+            ItemInfoID.CurrentSpeedSetting,
+            ItemInfoID.UnitFullSpeed,
+            ItemInfoID.UnitMaxTurnRate,
 
-            AccessControlInfoID.CameraDistance,
-            AccessControlInfoID.IntelState
+            ItemInfoID.Separator,
+
+            ItemInfoID.IntelState,
+
+            ItemInfoID.Separator,
+
+            ItemInfoID.ActualSpeed,
+            ItemInfoID.CameraDistance
         };
 
-        protected override AccessControlInfoID[] InfoIDsToDisplay { get { return _infoIDsToDisplay; } }
+        protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
         private FleetDisplayInfoFactory() {
             Initialize();
@@ -62,44 +69,60 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() { }
 
-        protected override bool TryMakeColorizedText(AccessControlInfoID infoID, FleetCmdReport report, out string colorizedText) {
+        protected override bool TryMakeColorizedText(ItemInfoID infoID, FleetCmdReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case AccessControlInfoID.Category:
+                    case ItemInfoID.Category:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Category != FleetCategory.None ? report.Category.GetValueName() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Category != FleetCategory.None ? report.Category.GetValueName() : Unknown);
                         break;
-                    case AccessControlInfoID.Composition:
+                    case ItemInfoID.Composition:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitComposition != null ? report.UnitComposition.ToString() : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.UnitComposition != null ? report.UnitComposition.ToString() : Unknown);
                         break;
-                    case AccessControlInfoID.Target:
+                    case ItemInfoID.Target:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.Target != null ? report.Target.DisplayName : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.Target != null ? report.Target.DisplayName : Unknown);
                         break;
-                    case AccessControlInfoID.TargetDistance:
+                    case ItemInfoID.TargetDistance:
                         isSuccess = true;
                         float? targetDistance = CalcTargetDistance(report.Target, report.Position);
-                        colorizedText = _phrase.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.CurrentSpeed:
+                    case ItemInfoID.CurrentSpeedSetting:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.CurrentSpeed.HasValue ? GetFormat(infoID).Inject(report.CurrentSpeed.Value) : _unknown);
+                        float? speedSettingValue = CalcSpeedSettingValue(report.CurrentSpeedSetting, report.UnitFullSpeed);
+                        string speedSettingText = report.CurrentSpeedSetting != Speed.None ? report.CurrentSpeedSetting.GetValueName() : Unknown;
+                        colorizedText = _lineTemplate.Inject(speedSettingText, speedSettingValue.HasValue ? GetFormat(infoID).Inject(speedSettingValue.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.UnitFullSpeed:
+                    case ItemInfoID.UnitFullSpeed:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitFullSpeed.HasValue ? GetFormat(infoID).Inject(report.UnitFullSpeed.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.UnitFullSpeed.HasValue ? GetFormat(infoID).Inject(report.UnitFullSpeed.Value) : Unknown);
                         break;
-                    case AccessControlInfoID.UnitMaxTurnRate:
+                    case ItemInfoID.UnitMaxTurnRate:
                         isSuccess = true;
-                        colorizedText = _phrase.Inject(report.UnitMaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.UnitMaxTurnRate.Value) : _unknown);
+                        colorizedText = _lineTemplate.Inject(report.UnitMaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.UnitMaxTurnRate.Value) : Unknown);
+                        break;
+
+                    case ItemInfoID.ActualSpeed:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(GetFormat(infoID).Inject(report.__ActualSpeedValue.Value));
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }
             }
             return isSuccess;
+        }
+
+        private float? CalcSpeedSettingValue(Speed speedSetting, float? fullSpeedValue) {
+            if (speedSetting != Speed.None) {
+                if (fullSpeedValue.HasValue) {
+                    return speedSetting.GetUnitsPerHour(fullSpeedValue.Value);
+                }
+            }
+            return null;
         }
 
         private float? CalcTargetDistance(INavigable target, Vector3? fleetPosition) {

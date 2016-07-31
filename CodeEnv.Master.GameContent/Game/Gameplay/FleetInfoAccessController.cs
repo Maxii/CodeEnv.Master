@@ -25,57 +25,58 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetInfoAccessController(FleetCmdData data) : base(data) { }
 
-        protected override bool HasAccessToInfo_Comprehensive(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.CurrentCmdEffectiveness:
-                case AccessControlInfoID.Formation:
-                case AccessControlInfoID.UnitScience:
-                case AccessControlInfoID.UnitCulture:
-                case AccessControlInfoID.Resources:
-                case AccessControlInfoID.UnitNetIncome:
-                case AccessControlInfoID.Capacity:
-                case AccessControlInfoID.UnitCurrentHitPts:
-                case AccessControlInfoID.UnitFullSpeed:
-                case AccessControlInfoID.UnitMaxTurnRate:
+                case ItemInfoID.CurrentCmdEffectiveness:
+                case ItemInfoID.Formation:
+                case ItemInfoID.UnitScience:
+                case ItemInfoID.UnitCulture:
+                case ItemInfoID.Resources:
+                case ItemInfoID.UnitNetIncome:
+                case ItemInfoID.Capacity:
+                case ItemInfoID.UnitCurrentHitPts:
+                case ItemInfoID.UnitMaxTurnRate:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Broad(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.UnitWeaponsRange:
-                case AccessControlInfoID.UnitSensorRange:
-                case AccessControlInfoID.Composition:
-                case AccessControlInfoID.UnitHealth:
-                case AccessControlInfoID.UnitMaxHitPts:
-                case AccessControlInfoID.UnitOffense:
-                case AccessControlInfoID.UnitDefense:
-                case AccessControlInfoID.Target:
+                case ItemInfoID.UnitWeaponsRange:
+                case ItemInfoID.UnitSensorRange:
+                case ItemInfoID.Composition:
+                case ItemInfoID.UnitHealth:
+                case ItemInfoID.UnitMaxHitPts:
+                case ItemInfoID.UnitOffense:
+                case ItemInfoID.UnitDefense:
+                case ItemInfoID.UnitFullSpeed:
+                case ItemInfoID.CurrentHeading:
+                case ItemInfoID.Target:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Essential(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Essential(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Owner:
-                case AccessControlInfoID.Category:
-                case AccessControlInfoID.CurrentSpeed:
+                case ItemInfoID.Owner:
+                case ItemInfoID.Category:
+                case ItemInfoID.CurrentSpeedSetting:    //case ItemInfoID.ActualSpeed:
                     return true;
                 default:
                     return false;
             }
         }
 
-        protected override bool HasAccessToInfo_Basic(AccessControlInfoID infoID, Player player) {
+        protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case AccessControlInfoID.Name:
-                case AccessControlInfoID.ParentName:
-                case AccessControlInfoID.Position:
-                case AccessControlInfoID.SectorIndex:
+                case ItemInfoID.Name:
+                case ItemInfoID.ParentName:
+                case ItemInfoID.Position:
+                case ItemInfoID.SectorIndex:
                     return true;
                 default:
                     return false;

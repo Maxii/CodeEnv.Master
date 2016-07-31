@@ -32,57 +32,57 @@ namespace CodeEnv.Master.GameContent {
             var fData = data as FacilityData;
             var accessCntlr = fData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Culture)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Culture)) {
                 Culture = fData.Culture;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Defense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Defense)) {
                 DefensiveStrength = fData.DefensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Offense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Offense)) {
                 OffensiveStrength = fData.OffensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Health)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Health)) {
                 Health = fData.Health;  // Element Health only matters on Element displays
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentHitPoints)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
                 CurrentHitPoints = fData.CurrentHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Science)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Science)) {
                 Science = fData.Science;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.NetIncome)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.NetIncome)) {
                 Income = fData.Income;
                 Expense = fData.Expense;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = fData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
                 ParentName = fData.ParentName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = fData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = fData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = fData.HullCategory;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.MaxHitPoints)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
                 MaxHitPoints = fData.MaxHitPoints;  // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Mass)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Mass)) {
                 Mass = fData.Mass;
             }
             // SensorRange on an element makes little sense
-            //if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SensorRange)) {
+            //if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SensorRange)) {
             //    SensorRange = fData.SensorRange;
             //}
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.WeaponsRange)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.WeaponsRange)) {
                 WeaponsRange = fData.WeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = fData.SectorIndex;
             }
         }

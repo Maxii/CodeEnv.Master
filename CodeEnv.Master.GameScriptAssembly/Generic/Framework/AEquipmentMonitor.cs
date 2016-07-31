@@ -58,13 +58,17 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     #region Event and Property Change Handlers
 
-    protected virtual void EquipmentIsOperationalChangedEventHandler(object sender, EventArgs e) {
+    protected void EquipmentIsOperationalChangedEventHandler(object sender, EventArgs e) {
+        HandleEquipmentIsOperationalChanged();
+    }
+
+    protected virtual void HandleEquipmentIsOperationalChanged() {
         RangeDistance = RefreshRangeDistance();
         AssessIsOperational();
     }
 
-    protected override void RangeDistancePropChangedHandler() {
-        base.RangeDistancePropChangedHandler();
+    protected override void HandleRangeDistanceChanged() {
+        base.HandleRangeDistanceChanged();
         RefreshEquipmentRangeDistance();
     }
 

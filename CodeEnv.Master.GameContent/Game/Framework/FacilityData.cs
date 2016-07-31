@@ -28,13 +28,13 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityHullCategory HullCategory { get { return HullEquipment.HullCategory; } }
 
-        public override Index3D SectorIndex {
-            get { return References.SectorGrid.GetSectorIndex(Position); } // Settlement Facilities get relocated
-        }
-
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
+        public override Index3D SectorIndex { get { return _sectorIndex; } }
+
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
+
+        private Index3D _sectorIndex;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
@@ -60,6 +60,23 @@ namespace CodeEnv.Master.GameContent {
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new FacilityInfoAccessController(this);
         }
+
+        protected override void FinalInitialize() {
+            base.FinalInitialize();
+            // Deployment has already occurred
+            _sectorIndex = InitializeSectorIndex();
+        }
+
+        private Index3D InitializeSectorIndex() {
+            Index3D sectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            D.Assert(sectorIndex != default(Index3D));
+            MarkAsChanged();
+            return sectorIndex;
+        }
+
+        #region Event and Property Change Handlers
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

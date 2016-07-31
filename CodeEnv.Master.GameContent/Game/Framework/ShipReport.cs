@@ -24,11 +24,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipReport : AUnitElementReport {
 
+        public Reference<float> __ActualSpeedValue { get; private set; }
+
         public INavigable Target { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 
-        public float? CurrentSpeed { get; private set; }
+        public Speed CurrentSpeedSetting { get; private set; }
 
         public float? FullSpeed { get; private set; }
 
@@ -42,74 +44,76 @@ namespace CodeEnv.Master.GameContent {
             var sData = data as ShipData;
             var accessCntlr = sData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Culture)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Culture)) {
                 Culture = sData.Culture;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Defense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Defense)) {
                 DefensiveStrength = sData.DefensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Offense)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Offense)) {
                 OffensiveStrength = sData.OffensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Health)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Health)) {
                 Health = sData.Health;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentHitPoints)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
                 CurrentHitPoints = sData.CurrentHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Science)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Science)) {
                 Science = sData.Science;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.NetIncome)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.NetIncome)) {
                 Income = sData.Income;
                 Expense = sData.Expense;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = sData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
                 ParentName = sData.ParentName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = sData.HullCategory;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.MaxHitPoints)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
                 MaxHitPoints = sData.MaxHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Mass)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Mass)) {
                 Mass = sData.Mass;
             }
             // SensorRange on an element makes little sense
-            //if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SensorRange)) {
+            //if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SensorRange)) {
             //    SensorRange = sData.SensorRange;
             //}
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.WeaponsRange)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.WeaponsRange)) {
                 WeaponsRange = sData.WeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = sData.SectorIndex;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Target)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Target)) {
                 Target = sData.Target;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CombatStance)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CombatStance)) {
                 CombatStance = sData.CombatStance;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.CurrentSpeed)) {
-                CurrentSpeed = sData.ActualSpeedValue;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentSpeedSetting)) {
+                CurrentSpeedSetting = sData.CurrentSpeedSetting;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.FullSpeed)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.FullSpeed)) {
                 FullSpeed = sData.FullSpeedValue;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.MaxTurnRate)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxTurnRate)) {
                 MaxTurnRate = sData.MaxTurnRate;
             }
+
+            __ActualSpeedValue = (Item as IShip_Ltd).ActualSpeedValue_Debug;
         }
 
         public override string ToString() {
@@ -131,7 +135,7 @@ namespace CodeEnv.Master.GameContent {
         //    var sData = data as ShipData;
         //    DefensiveStrength = sData.DefensiveStrength;
         //    OffensiveStrength = sData.OffensiveStrength;
-        //    Health = sData.Health;  // Element Health only matters on Element displays. UnitHealth calc'd using Element HitPts
+        //    Health = sData.Health;  // Element Health only matters on Element displays. UnitHealth calculated using Element HitPts
         //    CurrentHitPoints = sData.CurrentHitPoints;
         //    Science = sData.Science;
         //    Income = sData.Income;
@@ -146,7 +150,7 @@ namespace CodeEnv.Master.GameContent {
         //    Category = sData.HullCategory;
         //    WeaponsRange = sData.WeaponsRange;
         //    SensorRange = sData.SensorRange;
-        //    MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
+        //    MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calculate CmdReport's UnitHealth
         //    Mass = sData.Mass;
         //    MaxTurnRate = sData.MaxTurnRate;
         //    FullSpeed = sData.FullSpeedValue;

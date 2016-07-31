@@ -271,6 +271,8 @@ namespace CodeEnv.Master.GameContent {
 
         public static GameColor SectorHighlightColor { get { return GameColor.Yellow; } }
 
+        public static GameColor HoveredHighlightColor { get { return GameColor.Green; } }
+
         public static GameColor DisabledColor { get { return GameColor.Gray; } }
 
         /// <summary>

@@ -207,6 +207,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void SettlementDataPropChangedHandler() {
+            HandleSettlementDataChanged();
+        }
+
+        private void HandleSettlementDataChanged() {
             // Existing settlements will always be destroyed (data = null) before changing to a new settlement
             if (SettlementData != null) {
                 SubscribeToSettlementDataValueChanges();
@@ -222,27 +226,41 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        protected override void HandleOwnerChanged() {
+            base.HandleOwnerChanged();
+            PropagateOwnerChange();
+        }
+
         private void PlanetoidIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            HandlePlanetoidIntelCoverageChanged(e.Player);
+        }
+
+        private void HandlePlanetoidIntelCoverageChanged(Player playerWhosCoverageChgd) {
             if (!IsOperational) {
                 return;
             }
-            var playerWhosCoverageChgd = e.Player;
             AssessIntelCoverageFor(playerWhosCoverageChgd);
         }
 
         private void SettlementIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            HandleSettlementIntelCoverageChanged(e.Player);
+        }
+
+        private void HandleSettlementIntelCoverageChanged(Player playerWhosCoverageChgd) {
             if (!IsOperational) {
                 return;
             }
-            var playerWhosCoverageChgd = e.Player;
             AssessIntelCoverageFor(playerWhosCoverageChgd);
         }
 
         private void StarIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
+            HandleStarIntelCoverageChanged(e.Player);
+        }
+
+        private void HandleStarIntelCoverageChanged(Player playerWhosCoverageChgd) {
             if (!IsOperational) {
                 return;
             }
-            var playerWhosCoverageChgd = e.Player;
             AssessIntelCoverageFor(playerWhosCoverageChgd);
         }
 
@@ -266,14 +284,9 @@ namespace CodeEnv.Master.GameContent {
             Owner = SettlementData.Owner;
         }
 
-        protected override void OwnerPropChangedHandler() {
-            base.OwnerPropChangedHandler();
-            PropogateOwnerChange();
-        }
-
         #endregion
 
-        private void PropogateOwnerChange() {
+        private void PropagateOwnerChange() {
             _allPlanetoidData.ForAll(pd => pd.Owner = Owner);
             StarData.Owner = Owner;
         }

@@ -40,14 +40,29 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
-        public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
+        public override Index3D SectorIndex { get { return _sectorIndex; } }
+
+        private Index3D _sectorIndex;
 
         public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(cmd, owner, passiveCMs, cmdStat) { }
 
+        protected override void FinalInitialize() {
+            base.FinalInitialize();
+            // Deployment has already occurred
+            _sectorIndex = InitializeSectorIndex();
+        }
+
+        private Index3D InitializeSectorIndex() {
+            Index3D sectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            D.Assert(sectorIndex != default(Index3D));
+            MarkAsChanged();
+            return sectorIndex;
+        }
+
         #region Event and Property Change Handlers
 
-        protected override void UnitWeaponsRangePropChangedHandler() {
+        protected override void HandleUnitWeaponsRangeChanged() {
             D.Warn(UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance, "{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.",
                 FullName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
         }

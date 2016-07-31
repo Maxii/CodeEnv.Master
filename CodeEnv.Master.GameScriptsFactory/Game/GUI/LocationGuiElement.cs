@@ -89,7 +89,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
             position = Position.Value;
             isPositionValid = true;
         }
-        else if (SectorGrid.Instance.TryGetSectorPosition(SectorIndex, out position)) {
+        else if (SectorGrid.Instance.__TryGetSectorPosition(SectorIndex, out position)) {
             isPositionValid = true;
         }
 

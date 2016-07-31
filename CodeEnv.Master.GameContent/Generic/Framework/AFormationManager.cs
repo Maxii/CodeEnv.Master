@@ -129,7 +129,8 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private FormationStationSlotInfo SelectSlotInfoFor(IUnitElement element, FormationStationSelectionCriteria selectionConstraints) {
             if (element.IsHQ) {
-                return _availableStationSlots.Single(sInfo => sInfo.IsHQSlot);  // Single violation
+                __ValidateSingleHqSlotAvailable();
+                return _availableStationSlots.Single(sInfo => sInfo.IsHQSlot);  // 7.15.16 Single violation recorded
             }
 
             FormationStationSlotInfo result = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot && sInfo.IsReserve == selectionConstraints.isReserveReqd).FirstOrDefault();
@@ -138,6 +139,11 @@ namespace CodeEnv.Master.GameContent {
             }
             D.Assert(result != default(FormationStationSlotInfo), "{0}: No {1} fits constraint criteria {2}.", Name, typeof(FormationStationSlotInfo).Name, selectionConstraints);
             return result;
+        }
+
+        private void __ValidateSingleHqSlotAvailable() {
+            int count = _availableStationSlots.Where(sInfo => sInfo.IsHQSlot).Count();
+            D.Assert(count == 1, "{0}: Expecting 1 HQ formation slot but found {1}.", Name, count);
         }
 
         /// <summary>

@@ -29,6 +29,26 @@ using UnityEngine;
 /// </summary>
 public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityHullCategory, FacilityData, FacilityHullStat, StarbaseCmdItem> {
 
+    public static IEnumerable<StarbaseCmdItem> ExistingStarbases {
+        // Note: contents will not reflect Starbases that have not yet been built/deployed
+        get { return AllUnitCommands.Where(cmd => cmd is StarbaseCmdItem).Cast<StarbaseCmdItem>(); }
+    }
+
+    /// <summary>
+    /// Returns true if the sector indicated by sectorIndex contains one or more Starbase.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="starbasesInSector">The resulting starbases in sector.</param>
+    /// <returns></returns>
+    public static bool TryGetStarbases(Index3D sectorIndex, out IEnumerable<StarbaseCmdItem> starbasesInSector) {
+        starbasesInSector = ExistingStarbases.Where(sb => sb.SectorIndex == sectorIndex);
+        bool isStarbasesFound = starbasesInSector.Any();
+        if (isStarbasesFound) {
+            //D.Log("{0} found Starbases {1} in Sector {2}.", typeof(StarbaseUnitCreator).Name, starbasesInSector.Select(sb => sb.FullName).Concatenate(), sectorIndex);
+        }
+        return isStarbasesFound;
+    }
+
     public DebugBaseFormation formation = DebugBaseFormation.Random;
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations

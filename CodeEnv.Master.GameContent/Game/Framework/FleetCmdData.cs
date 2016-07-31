@@ -43,19 +43,36 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. The actual speed of the Flagship in Units per hour, normalized for game speed.
+        /// Read-only. The actual speed of the Flagship in Units per hour, normalized for game speed.
         /// </summary>
         public float ActualSpeedValue { get { return HQElementData.ActualSpeedValue; } }
 
         /// <summary>
-        /// The Speed the Flagship has been ordered to execute.
+        /// The current speed setting of the Fleet.
         /// </summary>
-        public Speed CurrentSpeed { get { return HQElementData.CurrentSpeed; } }
+        private Speed _currentSpeedSetting;
+        public Speed CurrentSpeedSetting {
+            get { return _currentSpeedSetting; }
+            set { SetProperty<Speed>(ref _currentSpeedSetting, value, "CurrentSpeedSetting"); }
+        }
+
+        private Vector3 _currentHeading;
+        /// <summary>
+        /// The current heading the entire fleet is pursuing. 
+        /// <remarks>Can be different from CurrentFlagshipFacing when
+        /// the flagship needs to go around a detour. Will be default(Vector3) when the fleet navigator is disengaged.
+        /// </remarks>
+        /// </summary>
+        public Vector3 CurrentHeading {
+            get { return _currentHeading; }
+            set { SetProperty<Vector3>(ref _currentHeading, value, "CurrentHeading"); }
+        }
 
         /// <summary>
-        /// Readonly. The real-time heading of the Flagship in worldspace coordinates. Equivalent to transform.forward.
+        /// Read-only. The real-time facing of the Flagship in worldspace coordinates. Equivalent to transform.forward.
+        /// <remarks>This is not always the same as CurrentHeading which is only valid when FleetNavigator is engaged.</remarks>
         /// </summary>
-        public Vector3 CurrentHeading { get { return HQElementData.CurrentHeading; } }
+        public Vector3 CurrentFlagshipFacing { get { return HQElementData.CurrentHeading; } }
 
         private float _unitFullSpeedValue;
         /// <summary>
@@ -181,7 +198,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        protected override void UnitWeaponsRangePropChangedHandler() {
+        protected override void HandleUnitWeaponsRangeChanged() {
             D.Warn(UnitWeaponsRange.Max > TempGameValues.__MaxFleetWeaponsRangeDistance, "{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.",
                 FullName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
         }
@@ -190,13 +207,13 @@ namespace CodeEnv.Master.GameContent {
             RefreshFullSpeed();
         }
 
-        protected override void HQElementDataPropChangingHandler(AUnitElementData newHQElementData) {
-            base.HQElementDataPropChangingHandler(newHQElementData);
+        protected override void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
+            base.HandleHQElementDataChanging(newHQElementData);
             (newHQElementData as ShipData).CombatStance = ShipCombatStance.Defensive;
         }
 
-        protected override void HQElementDataPropChangedHandler() {
-            base.HQElementDataPropChangedHandler();
+        protected override void HandleHQElementDataChanged() {
+            base.HandleHQElementDataChanged();
             D.Assert(HQElementData.CombatStance == ShipCombatStance.Defensive, "{0} as HQ must be {1}.{2}.",
                 HQElementData.FullName, typeof(ShipCombatStance).Name, ShipCombatStance.Defensive.GetValueName());
         }

@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using PathologicalGames;
 using UnityEngine;
@@ -33,11 +34,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public event EventHandler isHQChanged;
 
+    public event EventHandler isAvailableChanged;
+
     /// <summary>
     /// Indicates whether this element is available for a new assignment.
     /// <remarks>Typically, an element that is available is Idling.</remarks>
     /// </summary>
-    public abstract bool IsAvailable { get; }
+    private bool _isAvailable;
+    public bool IsAvailable {
+        get { return _isAvailable; }
+        protected set { SetProperty<bool>(ref _isAvailable, value, "IsAvailable", IsAvailablePropChangedHandler); }
+    }
 
     /// <summary>
     /// Indicates whether this element is capable of attacking an enemy target.
@@ -155,6 +162,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         iconEventListener.onClick += ClickEventHandler;
         iconEventListener.onDoubleClick += DoubleClickEventHandler;
         iconEventListener.onPress += PressEventHandler;
+    }
+
+    protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
+        float circleRadius = Radius * Screen.height * 1F;
+        return new CircleHighlightManager(transform, circleRadius);
+    }
+
+    protected sealed override HoverHighlightManager InitializeHoverHighlightMgr() {
+        return new HoverHighlightManager(this, Radius);
     }
 
     protected override void FinalInitialize() {
@@ -504,37 +520,69 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected abstract IconInfo MakeIconInfo();
 
-    public override void AssessHighlighting() {
+    public override void AssessCircleHighlighting() {
         if (IsDiscernibleToUser) {
             if (IsFocus) {
                 if (IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
+                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.Selected);
                     return;
                 }
                 if (Command.IsSelected) {
-                    ShowHighlights(HighlightID.Focused, HighlightID.UnitElement);
+                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.UnitElement);
                     return;
                 }
-                ShowHighlights(HighlightID.Focused);
+                ShowCircleHighlights(CircleHighlightID.Focused);
                 return;
             }
             if (IsSelected) {
-                ShowHighlights(HighlightID.Selected);
+                ShowCircleHighlights(CircleHighlightID.Selected);
                 return;
             }
             if (Command.IsSelected) {
-                ShowHighlights(HighlightID.UnitElement);
+                ShowCircleHighlights(CircleHighlightID.UnitElement);
                 return;
             }
         }
-        ShowHighlights(HighlightID.None);
+        ShowCircleHighlights(CircleHighlightID.None);
     }
 
     #endregion
 
     #region Event and Property Change Handlers
 
-    protected virtual void IsHQPropChangedHandler() {
+    /// <summary>
+    /// Handles a change in relations between players.
+    /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
+    /// and Element state machines rest with the Cmd. They implement HandleRelationsChanged and UponRelationsChanged.
+    /// In all cases where the order is issued by either Cmd or User, the element FSM does not need to pay attention to Relations
+    /// changes as their orders will be changed if a Relations change requires it, determined by Cmd. When the Captain
+    /// overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
+    /// in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
+    /// Upshot: Elements FSMs can ignore Relations changes.
+    /// </remarks>
+    /// </summary>
+    /// <param name="chgdRelationsPlayer">The other player.</param>
+    public void HandleRelationsChanged(Player chgdRelationsPlayer) {
+        WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChanged(chgdRelationsPlayer));
+        CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChanged(chgdRelationsPlayer));
+        UponRelationsChanged(chgdRelationsPlayer);
+    }
+
+    private void IsAvailablePropChangedHandler() {
+        OnIsAvailable();
+    }
+
+    private void OnIsAvailable() {
+        if (isAvailableChanged != null) {
+            isAvailableChanged(this, new EventArgs());
+        }
+    }
+
+    private void IsHQPropChangedHandler() {
+        HandleIsHQChanged();
+    }
+
+    protected virtual void HandleIsHQChanged() {
         Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
         OnIsHQChanged();
     }
@@ -545,8 +593,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
-    protected override void OwnerPropChangedHandler() {
-        base.OwnerPropChangedHandler();
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
         if (DisplayMgr != null) {
             DisplayMgr.MeshColor = Owner.Color;
             AssessIcon();
@@ -563,8 +611,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         HandleLosWeaponAimed(e.FiringSolution);
     }
 
-    protected override void IsVisualDetailDiscernibleToUserPropChangedHandler() {
-        base.IsVisualDetailDiscernibleToUserPropChangedHandler();
+    protected override void HandleIsVisualDetailDiscernibleToUserChanged() {
+        base.HandleIsVisualDetailDiscernibleToUserChanged();
         Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
     }
 
@@ -573,8 +621,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             AssessIcon();
         }
     }
-
-    #endregion
 
     protected override void HandleUserIntelCoverageChanged() {
         base.HandleUserIntelCoverageChanged();
@@ -586,28 +632,25 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Command.IsSelected = true;
     }
 
-    protected abstract void __ValidateRadius(float radius);
-
-    /// <summary>
-    /// Handles a change in relations between players.
-    /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
-    /// and Element state machines rest with the Cmd. They implement HandleRelationsChanged and UponRelationsChanged.
-    /// In all cases where the order is issued by either Cmd or User, the element FSM does not need to pay attention to Relations
-    /// changes as their orders will be changed if a Relations change requires it, determined by Cmd. When the Captain
-    /// overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
-    /// in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
-    /// Upshot: Elements FSMs can ignore Relations changes.
-    /// </remarks>
-    /// </summary>
-    /// <param name="otherPlayer">The other player.</param>
-    /// <param name="priorRelationship">The prior relationship.</param>
-    /// <param name="newRelationship">The new relationship.</param>
-    public void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
-        WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
-        CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
-        // 7.14.16 UNDONE   //UponRelationsChanged(otherPlayer, priorRelationship, newRelationship);    
+    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
+        IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
+        UponFsmTargetDeath(deadFsmTgt);
     }
 
+    private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
+        IItem_Ltd fsmTgt = sender as IItem_Ltd;
+        HandleFsmTgtInfoAccessChgd(e.Player, fsmTgt);
+    }
+
+    private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IItem_Ltd fsmTgt) {
+        if (playerWhoseInfoAccessChgd == Owner) {
+            UponFsmTgtInfoAccessChgd(fsmTgt);
+        }
+    }
+
+    #endregion
+
+    protected abstract void __ValidateRadius(float radius);
 
     #region StateMachine Support Members
 
@@ -631,15 +674,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected void UponDeath() { RelayToCurrentState(); }
 
+    protected void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
+
     /// <summary>
     /// Called when the current target being used by the State Machine dies.
     /// </summary>
     /// <param name="deadFsmTgt">The dead target.</param>
-    protected void UponFsmTargetDeath(IMortalItem deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
+    protected void UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
 
-    private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        return RelayToCurrentState(firingSolutions);
-    }
+    protected void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
+
+    protected bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) { return RelayToCurrentState(firingSolutions); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
@@ -711,7 +756,72 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    #region Debug Collision Reporting
+    #region Debug
+
+    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
+        {FsmTgtEventSubscriptionMode.TargetDeath, false },
+        {FsmTgtEventSubscriptionMode.InfoAccessChg, false }
+    };
+
+    /// <summary>
+    /// Attempts subscribing or unsubscribing to <c>fsmTgt</c> in the mode provided.
+    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not.
+    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
+    /// </summary>
+    /// <param name="subscriptionMode">The subscription mode.</param>
+    /// <param name="fsmTgt">The target used by the State Machine.</param>
+    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    protected bool __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode subscriptionMode, IShipNavigable fsmTgt, bool toSubscribe) {
+        Utility.ValidateNotNull(fsmTgt);
+        bool isSubscribeActionTaken = false;
+        bool isDuplicateSubscriptionAttempted = false;
+        bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
+        switch (subscriptionMode) {
+            case FsmTgtEventSubscriptionMode.TargetDeath:
+                var mortalFsmTgt = fsmTgt as IMortalItem_Ltd;
+                if (mortalFsmTgt != null) {
+                    if (!toSubscribe) {
+                        mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else if (!isSubscribed) {
+                        mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else {
+                        isDuplicateSubscriptionAttempted = true;
+                    }
+                }
+                break;
+            case FsmTgtEventSubscriptionMode.InfoAccessChg:
+                var itemFsmTgt = fsmTgt as IItem_Ltd;
+                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
+                    if (!toSubscribe) {
+                        itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else if (!isSubscribed) {
+                        itemFsmTgt.infoAccessChgd += FsmTgtInfoAccessChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else {
+                        isDuplicateSubscriptionAttempted = true;
+                    }
+                }
+                break;
+            case FsmTgtEventSubscriptionMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
+        }
+        D.Warn(isDuplicateSubscriptionAttempted, "{0}: Attempting to subscribe to {1}'s {2} when already subscribed.",
+            FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+        if (isSubscribeActionTaken) {
+            __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
+        }
+        return isSubscribeActionTaken;
+    }
 
     protected void __ReportCollision(Collision collision) {
         SphereCollider sphereCollider = collision.collider as SphereCollider;
@@ -782,12 +892,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
-
-    #endregion
-
-    #region IHighlightable Members
-
-    public override float CircleHighlightEffectRadius { get { return Radius * Screen.height * 1F; } }
 
     #endregion
 

@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         float ActualSpeedValue { get; }
 
-        Speed CurrentSpeed { get; }
-
         float CollisionDetectionZoneRadius { get; }
 
         void HandlePendingCollisionWith(IObstacle obstacle);

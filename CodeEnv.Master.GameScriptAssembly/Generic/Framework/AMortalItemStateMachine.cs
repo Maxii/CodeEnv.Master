@@ -269,7 +269,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         get { return state.currentState; }
         set {
             D.Assert(!state.Equals(value)); // a state object and a state's currentState should never be equal
-            __ValidateNoNewStateSetDuringEnterState(value);
+            __ValidateNoNewStateSetDuringVoidEnterState(value);
             ChangingState();
             string lastStateMsg = LastState != null ? LastState.ToString() : "null";
             D.Log(ShowDebugLog, "{0} changing CurrentState from {1} to {2}.", FullName, lastStateMsg, value.ToString());
@@ -615,8 +615,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// Note: State_EnterState() methods that return IEnumerator that set a new state value should not fail this test as 
     /// the coroutine that executes the EnterState() is only run after CurrentState_set completes.
     /// </summary>
-    private void __ValidateNoNewStateSetDuringEnterState(object incomingState) {
-        //D.Log(ShowDebugLog, "{0}.__ValidateNoNewStateSetDuringEnterState() called. CurrentState = {1}, IncomingState = {2}.", FullName, CurrentState, incomingState);
+    private void __ValidateNoNewStateSetDuringVoidEnterState(object incomingState) {
+        //D.Log(ShowDebugLog, "{0}.__ValidateNoNewStateSetDuringVoidEnterState() called. CurrentState = {1}, IncomingState = {2}.", FullName, CurrentState, incomingState);
         if (!__hasCurrentState_setFinishedWithoutInterveningSet) {
             D.Error("{0} cannot change state to {1} while executing {2}_EnterState().", FullName, incomingState, CurrentState);
             return;

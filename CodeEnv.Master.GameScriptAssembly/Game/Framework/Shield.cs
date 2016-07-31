@@ -64,7 +64,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
 
     #region Event and Property Change Handlers
 
-    protected override void IsOperationalPropChangedHandler() {
+    protected override void HandleIsOperationalChanged() {
         string shieldStateMsg = IsOperational ? "is being raised" : "has failed";
         D.Log(ShowDebugLog, "{0} {1}.", FullName, shieldStateMsg);
         HandleDebugShieldIsOperationalChanged();

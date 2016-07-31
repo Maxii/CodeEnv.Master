@@ -59,6 +59,8 @@ namespace CodeEnv.Master.GameContent {
 
         public new StarInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarInfoAccessController; } }
 
+        // No Mass as no Rigidbody
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         /// <summary>
@@ -96,6 +98,10 @@ namespace CodeEnv.Master.GameContent {
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new StarInfoAccessController(this);
         }
+
+        #region Event and Property Change Handlers
+
+        #endregion
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

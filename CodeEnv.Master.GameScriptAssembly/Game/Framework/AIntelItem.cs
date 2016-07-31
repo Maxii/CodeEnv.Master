@@ -63,11 +63,14 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
     #region Event and Property Change Handlers
 
     private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
+        HandleIntelCoverageChanged(e.Player);
+    }
+
+    private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
         if (!IsOperational) {
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        Player playerWhosCoverageChgd = e.Player;
         D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
         if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
             HandleUserIntelCoverageChanged();
@@ -76,8 +79,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         Player playerWhosInfoAccessChgd = playerWhosCoverageChgd;
         OnInfoAccessChanged(playerWhosInfoAccessChgd);
     }
-
-    #endregion
 
     /// <summary>
     /// Handles a change in the User's IntelCoverage of this item.
@@ -90,6 +91,8 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         }
         DisplayMgr.IsDisplayEnabled = UserIntelCoverage != IntelCoverage.None;
     }
+
+    #endregion
 
     #region Cleanup
 

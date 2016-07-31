@@ -98,17 +98,17 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         ParentItem.HandlePendingCollisionAverted(obstacle);
     }
 
-    protected override void IsOperationalPropChangedHandler() { }
+    protected override void HandleIsOperationalChanged() { }
 
-    protected override void ParentItemPropSetHandler() {
-        base.ParentItemPropSetHandler();
+    protected override void HandleParentItemSet() {
+        base.HandleParentItemSet();
         RangeDistance = ParentItem.Radius * 2F;
         D.Warn(RangeDistance > TempGameValues.LargestShipCollisionDetectionZoneRadius, "{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.",
             FullName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
     }
 
-    protected override void IsPausedPropChangedHandler() {
-        base.IsPausedPropChangedHandler();
+    protected override void HandleIsPausedChanged() {
+        base.HandleIsPausedChanged();
         if (!_gameMgr.IsPaused) {
             HandleObstaclesEncounteredWhilePaused();
         }

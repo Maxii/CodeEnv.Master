@@ -41,28 +41,28 @@ namespace CodeEnv.Master.GameContent {
             var sData = data as StarData;
             var accessCntlr = sData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Name)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = sData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Position)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Owner)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.ParentName)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
                 ParentName = sData.ParentName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Category)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = sData.Category;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Capacity)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = sData.Capacity;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.Resources)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 Resources = sData.Resources;
             }
-            if (accessCntlr.HasAccessToInfo(Player, AccessControlInfoID.SectorIndex)) {
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
                 SectorIndex = sData.SectorIndex;
             }
         }

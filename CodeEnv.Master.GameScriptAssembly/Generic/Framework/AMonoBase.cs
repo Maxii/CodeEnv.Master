@@ -435,6 +435,13 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         }
     }
 
+    /// <summary>
+    /// My addition that sets _isChanged to true.
+    /// </summary>
+    public void MarkAsChanged() {
+        _isChanged = true;
+    }
+
     #region IChangeTracking Members
 
     public void AcceptChanges() {

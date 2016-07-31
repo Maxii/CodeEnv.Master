@@ -30,25 +30,25 @@ namespace CodeEnv.Master.GameContent {
 
         private const string NameFormat = "{0}'s {1}";
 
-        private string Name { get { return NameFormat.Inject(Player.LeaderName, GetType().Name); } }
+        private string Name { get { return NameFormat.Inject(Owner.LeaderName, GetType().Name); } }
 
         public PlayerKnowledge Knowledge { get; private set; }
 
-        public Player Player { get; private set; }
+        public Player Owner { get; private set; }
 
-        public IEnumerable<Player> OtherKnownPlayers { get { return Player.OtherKnownPlayers; } }
+        public IEnumerable<Player> OtherKnownPlayers { get { return Owner.OtherKnownPlayers; } }
 
         private DebugSettings _debugSettings;
 
-        public PlayerAIManager(Player player, PlayerKnowledge knowledge) {
-            Player = player;
+        public PlayerAIManager(Player owner, PlayerKnowledge knowledge) {
+            Owner = owner;
             Knowledge = knowledge;
             _debugSettings = DebugSettings.Instance;
             Subscribe();
         }
 
         private void Subscribe() {
-            SubscribeToPlayerRelationsChange(Player);
+            SubscribeToPlayerRelationsChange(Owner);
         }
 
         private void SubscribeToPlayerRelationsChange(Player player) {
@@ -221,19 +221,19 @@ namespace CodeEnv.Master.GameContent {
 
         private void CheckForDiscoveryOfNewPlayer(IUnitElement_Ltd element) {
             Player newlyDiscoveredPlayerCandidate;
-            if (element.TryGetOwner(Player, out newlyDiscoveredPlayerCandidate)) {
-                if (newlyDiscoveredPlayerCandidate == Player) {
+            if (element.TryGetOwner(Owner, out newlyDiscoveredPlayerCandidate)) {
+                if (newlyDiscoveredPlayerCandidate == Owner) {
                     // Note: The new HQ element just detected that generated this check is one of our own. 
                     // This typically occurs during the initial process of detecting what is in range of sensors when the game first starts.
                     return;
                 }
-                bool isAlreadyKnown = Player.IsKnown(newlyDiscoveredPlayerCandidate);
+                bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
                 if (!isAlreadyKnown) {
                     Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
                     D.LogBold("{0} discovered new player {1}.", Name, newlyDiscoveredPlayer.LeaderName);
                     SubscribeToPlayerRelationsChange(newlyDiscoveredPlayer);
 
-                    Player.AddNewlyDiscovered(newlyDiscoveredPlayer, __GetInitialRelationship(newlyDiscoveredPlayer));
+                    Owner.AddNewlyDiscovered(newlyDiscoveredPlayer, __GetInitialRelationship(newlyDiscoveredPlayer));
                 }
             }
         }
@@ -243,17 +243,19 @@ namespace CodeEnv.Master.GameContent {
         private void RelationsChangedEventHandler(object sender, RelationsChangedEventArgs e) {
             Player sendingPlayer = sender as Player;
             // Only send one of the (always) two events to our Cmds
-            if (sendingPlayer == Player) {
-                HandleRelationsChanged(e.EffectedPlayer, e.PriorRelationship, e.NewRelationship);
+            if (sendingPlayer == Owner) {
+                HandleRelationsChanged(e.ChgdRelationsPlayer);
             }
         }
 
         #endregion
 
-        private void HandleRelationsChanged(Player otherPlayer, DiplomaticRelationship priorRelationship, DiplomaticRelationship newRelationship) {
-            D.Assert(otherPlayer != Player);
-            D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Player.LeaderName, otherPlayer.LeaderName);
-            Knowledge.MyCommands.ForAll(myCmd => myCmd.HandleRelationsChanged(otherPlayer, priorRelationship, newRelationship));
+        private void HandleRelationsChanged(Player otherPlayer) {
+            D.Assert(otherPlayer != Owner);
+            var priorRelationship = Owner.GetPriorRelations(otherPlayer);
+            var newRelationship = Owner.GetCurrentRelations(otherPlayer);
+            D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner.LeaderName, otherPlayer.LeaderName);
+            Knowledge.MyCommands.ForAll(myCmd => myCmd.HandleRelationsChanged(otherPlayer));
         }
 
         private void Cleanup() {
@@ -262,7 +264,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            Player.relationsChanged -= RelationsChangedEventHandler;
+            Owner.relationsChanged -= RelationsChangedEventHandler;
             OtherKnownPlayers.ForAll(player => player.relationsChanged -= RelationsChangedEventHandler);
         }
 
@@ -300,11 +302,11 @@ namespace CodeEnv.Master.GameContent {
         /// with a player not yet met, and Player.AddNewlyDiscovered(player) results in the players
         /// meeting before the game starts.</remarks>
         /// </summary>
-        /// <param name="player">The player.</param>
+        /// <param name="otherPlayer">The player.</param>
         /// <param name="relationship">The relationship.</param>
-        public void __AssignInitialDiploRelation(Player player, DiplomaticRelationship relationship) {
-            D.Assert(!__initialDiploRelationLookup.ContainsKey(player));
-            __initialDiploRelationLookup[player] = relationship;
+        public void __AssignInitialDiploRelation(Player otherPlayer, DiplomaticRelationship relationship) {
+            D.Assert(!__initialDiploRelationLookup.ContainsKey(otherPlayer));
+            __initialDiploRelationLookup[otherPlayer] = relationship;
         }
 
         private DiplomaticRelationship __GetInitialRelationship(Player newlyDiscoveredPlayer) {
