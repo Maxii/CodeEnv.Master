@@ -55,9 +55,6 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public UIAtlas contextualAtlas;
     public UIAtlas myGuiAtlas;
 
-    [Header("Misc")]
-    public SectorItem sector;
-
     [Header("Formations")]
     public GameObject globeFormation;
     public GameObject wedgeFormation;

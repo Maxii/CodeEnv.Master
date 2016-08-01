@@ -18,13 +18,14 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="ShipItem"/>s owned by the AI.
 /// </summary>
 public class ShipCtxControl_AI : ACtxControl {
 
-    protected override AItem ItemForDistanceMeasurements { get { return _shipMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
 

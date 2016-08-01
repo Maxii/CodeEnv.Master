@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="APlanetoidItem"/>s. 
@@ -37,7 +38,7 @@ public class PlanetoidCtxControl : ACtxControl {
         get { return _userRemoteFleetDirectives; }
     }
 
-    protected sealed override AItem ItemForDistanceMeasurements { get { return _planetoidMenuOperator; } }
+    protected sealed override Vector3 PositionForDistanceMeasurements { get { return _planetoidMenuOperator.Position; } }
 
     protected sealed override string OperatorName { get { return _planetoidMenuOperator.FullName; } }
 

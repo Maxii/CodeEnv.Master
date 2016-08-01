@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDebugable.cs
-// Interface for objects that support debug logging on the Editor Console.
+// File: IShowDebugLog.cs
+// Interface for objects that support the ShowDebugLog control.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for objects that support debug logging on the Editor Console.
+    /// Interface for objects that support the ShowDebugLog control.
     /// </summary>
-    public interface IDebugable {
+    public interface IShowDebugLog {
 
-        /// <summary>
-        /// The full name of the object for debugging use on the editor console.
-        /// </summary>
-        string FullName { get; }
-
+        bool ShowDebugLog { get; set; }
 
     }
 }

@@ -32,10 +32,10 @@ namespace Pathfinding {
     public class MyPathfindingGraph : NavGraph, IUpdatableGraph {
 
         // 6.13.16 AStarPro 3.8.2 no longer requires a tag mask
-        //public static readonly int OpenSpaceTagMask = 1 << Topography.OpenSpace.AStarTagValue();   // x0001 
-        //public static readonly int NebulaTagMask = 1 << Topography.Nebula.AStarTagValue();         // x0010 
-        //public static readonly int DeepNebulaTagMask = 1 << Topography.DeepNebula.AStarTagValue(); // x0100 
-        //public static readonly int SystemTagMask = 1 << Topography.System.AStarTagValue();         // x1000 
+        //public static read-only int OpenSpaceTagMask = 1 << Topography.OpenSpace.AStarTagValue();   // x0001 
+        //public static read-only int NebulaTagMask = 1 << Topography.Nebula.AStarTagValue();         // x0010 
+        //public static read-only int DeepNebulaTagMask = 1 << Topography.DeepNebula.AStarTagValue(); // x0100 
+        //public static read-only int SystemTagMask = 1 << Topography.System.AStarTagValue();         // x1000 
 
         /// <summary>
         /// The size of the grid of Sectors this Pathfinding system will scan for waypoint interconnection.
@@ -86,7 +86,7 @@ namespace Pathfinding {
          * The value 0 (zero) will be read as infinity and thus all nodes not restricted by
          * other constraints will be added as connections.
          *
-         * A negative value will disable any neighbours to be added.
+         * A negative value will disable any neighbors to be added.
          * It will completely stop the connection processing to be done, so it can save you processing
          * power if you don't these connections.
          */
@@ -504,7 +504,7 @@ namespace Pathfinding {
         }
 
         private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
-            D.Assert(_nodeSeparationDistance != Constants.ZeroF);   // method should fullow GenerateWalkableOpenSpaceWaypoints
+            D.Assert(_nodeSeparationDistance != Constants.ZeroF);   // method should follow GenerateWalkableOpenSpaceWaypoints
             List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
             var systems = SystemCreator.AllSystems;
             if (systems.Any()) {
@@ -529,7 +529,7 @@ namespace Pathfinding {
             var allSystems = SystemCreator.AllSystems;
             bool hasSystems = allSystems.Any();
             if (hasSystems) {
-                foreach (SystemItem system in allSystems) { // 6.15.16 replaced box with icosahedron whos edges are all the same length
+                foreach (SystemItem system in allSystems) { // 6.15.16 replaced box with icosahedron whose edges are all the same length
                     float previousDistanceBetweenWaypoints = distanceBetweenSystemApproachWaypoints;
                     float previousMaxNodeDistance = maxNodeDistance;
                     float systemApproachWaypointsInscribedSphereRadius = system.Radius * SystemItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
@@ -558,7 +558,7 @@ namespace Pathfinding {
 
             //D.Log("{0} took {1:0.####} secs generating {2} SystemApproachWaypoints for {3} Systems.",
             //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count);
-            startTime = System.DateTime.UtcNow;
+            //startTime = System.DateTime.UtcNow;
 
             // populate all space with sector navigation waypoints separated by nodeSeparationDistance
             var allSectors = __GetAllowedSectorsToScan();
@@ -569,7 +569,7 @@ namespace Pathfinding {
                 List<Vector3> aSectorWaypoints = new List<Vector3>(17);
                 aSectorWaypoints.Add(sector.Position);
                 float distanceFromCenter = _nodeSeparationDistance;
-                // propogate sector nav waypoints outward, inside corners
+                // propagate sector nav waypoints outward, inside corners
                 while (distanceFromCenter < distanceToCorners) {    // 275, 550, 825
                     aSectorWaypoints.AddRange(MyMath.CalcVerticesOfInscribedBoxInsideSphere(sector.Position, distanceFromCenter));
                     distanceFromCenter += _nodeSeparationDistance;
@@ -582,7 +582,7 @@ namespace Pathfinding {
 #pragma warning restore 0219
             //D.Log("{0} took {1:0.####} secs generating {2} SectorNavWaypoints for {3} sectors.",
             //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
-            startTime = System.DateTime.UtcNow;
+            //startTime = System.DateTime.UtcNow;
 
 
             //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
@@ -606,7 +606,7 @@ namespace Pathfinding {
             }
             //D.Log("{0} took {1:0.####} secs removing {2} SectorNavWaypoints from {3} Systems.",
             //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count);
-            startTime = System.DateTime.UtcNow;
+            //startTime = System.DateTime.UtcNow;
             sectorNavWaypointCount = sectorNavWaypoints.Count;
 
             float uCenterWaypointsInscribedSphereRadius = Constants.ZeroF;
@@ -639,6 +639,9 @@ namespace Pathfinding {
             walkableOpenSpaceWaypoints.AddRange(universeCenterWaypoints);
             walkableOpenSpaceWaypoints.AddRange(systemApproachWaypoints);
 
+            D.Log("{0} took {1:0.####} secs generating {2} WalkableOpenSpaceWaypoints for {3} Sectors.",
+                GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allSectors.Count);
+
             return walkableOpenSpaceWaypoints;
         }
 
@@ -662,8 +665,8 @@ namespace Pathfinding {
         /// Pathfinding system to make interconnections between all the waypoints in all sectors.
         /// </summary>
         /// <returns></returns>
-        private IList<SectorItem> __GetAllowedSectorsToScan() {
-            IList<SectorItem> sectorsToScan = new List<SectorItem>();
+        private IList<Sector> __GetAllowedSectorsToScan() {
+            IList<Sector> sectorsToScan = new List<Sector>();
 
             int maxIndexX = __MaxAllowedSectorGridSizeToScan.x / 2;
             int maxIndexY = __MaxAllowedSectorGridSizeToScan.y / 2;
@@ -910,7 +913,7 @@ namespace Pathfinding {
         public void UpdateAreaInit(GraphUpdateObject o) { }
 
         /** Updates an area in the list graph.
-         * Recalculates possibly affected connections, i.e all connectionlines passing trough the bounds of the \a guo will be recalculated
+         * Recalculates possibly affected connections, i.e all connection lines passing trough the bounds of the \a GUO will be recalculated
          * \astarpro */
         public void UpdateArea(GraphUpdateObject guo) {
             if (nodes == null) {

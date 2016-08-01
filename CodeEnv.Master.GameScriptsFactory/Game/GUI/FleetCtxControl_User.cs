@@ -60,7 +60,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         get { return _userRemoteShipDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _fleetMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
 
@@ -151,7 +151,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = _userKnowledge.MyBases.Cast<INavigable>();
                 return true;
             case FleetDirective.Scuttle:
-            case FleetDirective.AssumeFormation:    // Note: Inplace only, not going to offer LocalAssyStations as targets
+            case FleetDirective.AssumeFormation:    // Note: In-place only, not going to offer LocalAssyStations as targets
                 targets = Enumerable.Empty<INavigable>();
                 return false;
             default:

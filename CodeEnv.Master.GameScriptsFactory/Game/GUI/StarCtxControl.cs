@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="StarItem"/>s. 
@@ -40,7 +41,7 @@ public class StarCtxControl : ACtxControl {
         get { return _userRemoteFleetDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _starMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _starMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _starMenuOperator.FullName; } }
 

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="UniverseCenterItem"/>.
@@ -37,7 +38,7 @@ public class UniverseCenterCtxControl : ACtxControl {
         get { return _userRemoteFleetDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _universeCenterMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _universeCenterMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _universeCenterMenuOperator.FullName; } }
 

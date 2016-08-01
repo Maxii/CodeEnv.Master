@@ -354,7 +354,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Assert(target == null);
             return;
         }
-        if (target is SectorItem) {
+        if (target is ISector) {
             return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
         }
         D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
@@ -461,32 +461,45 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// There is no point in doing the evaluation if the owner is not known as it is
     /// ALWAYS OK to move to a target if the owner is unknown.</remarks>
     /// </summary>
+    /// <param name="failCause">The resulting fail cause.</param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    private bool ShouldMovingBeReassessed() {
+    private bool ShouldMovingBeReassessed(out UnitItemOrderFailureCause failCause) {
         bool toReassessMoving = false;
+        UnitItemOrderFailureCause failureCause = UnitItemOrderFailureCause.None;
         switch (LastState) {
             case FleetState.ExecuteExploreOrder:
                 IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
                 if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
+                    // Owner exposure or relations change caused a loss of explore rights
+                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    toReassessMoving = true;
+                }
+                if (fleetExploreTgt.IsFullyExploredBy(Owner)) {
+                    // last remaining ship explore tgt was explored by another fleet's ship owned by us
+                    // OR a relations change to Ally instantly made target fully explored
+                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
             case FleetState.ExecutePatrolOrder:
                 IPatrollable patrolTgt = _fsmTgt as IPatrollable;
                 if (!patrolTgt.IsPatrollingAllowedBy(Owner)) {
+                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
             case FleetState.ExecuteGuardOrder:
                 IGuardable guardTgt = _fsmTgt as IGuardable;
                 if (!guardTgt.IsGuardingAllowedBy(Owner)) {
+                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
             case FleetState.ExecuteAttackOrder:
                 IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
                 if (!unitAttackTgt.IsAttackingAllowedBy(Owner)) {
+                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
@@ -501,6 +514,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         // now known as an enemy
                         if (!Owner.IsPreviouslyEnemyOf(unitCmdMoveTgtOwner)) {
                             // definitely reassess as changed from non-enemy to enemy
+                            failureCause = UnitItemOrderFailureCause.TgtRelationship;
                             toReassessMoving = true;
                         }
                         // else no need to reassess as no change in being an enemy
@@ -509,6 +523,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         // now known as not an enemy
                         if (Owner.IsPreviouslyEnemyOf(unitCmdMoveTgtOwner)) {
                             // changed from enemy to non-enemy so reassess as StandoffDistance can be shortened
+                            failureCause = UnitItemOrderFailureCause.TgtRelationship;
                             toReassessMoving = true;
                         }
                     }
@@ -530,6 +545,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     }
                 }
                 // owner is no longer us
+                failureCause = UnitItemOrderFailureCause.TgtRelationship;
                 toReassessMoving = true;
                 break;
             case FleetState.ExecuteAssumeFormationOrder:
@@ -554,7 +570,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(LastState));
         }
-        D.Log(ShowDebugLog, "{0}.ShouldMovingBeReassessed() called. LastState = {1}, Result = {2}.", FullName, LastState.GetValueName(), toReassessMoving);
+        string resultMsg = toReassessMoving ? "true, FailCause = {0}".Inject(failureCause.GetValueName()) : "false";
+        D.Log(ShowDebugLog, "{0}.ShouldMovingBeReassessed() called. LastState = {1}, Result = {2}.", FullName, LastState.GetValueName(), resultMsg);
+        failCause = failureCause;
         return toReassessMoving;
     }
 
@@ -607,8 +625,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(_fsmTgt == fsmTgt);
         if (fsmTgt.IsOwnerAccessibleTo(Owner)) {
             // evaluate reassessing move as tgt's owner is accessible to us
-            if (ShouldMovingBeReassessed()) {
-                _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            UnitItemOrderFailureCause failCause;
+            if (ShouldMovingBeReassessed(out failCause)) {
+                _orderFailureCause = failCause;
                 Return();
             }
         }
@@ -624,8 +643,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 // we have access to the owner
                 if (fsmItemTgtOwner == chgdRelationsPlayer) {
                     // evaluate reassessing move as tgt's owner has a relations change with us
-                    if (ShouldMovingBeReassessed()) {
-                        _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    UnitItemOrderFailureCause failCause;
+                    if (ShouldMovingBeReassessed(out failCause)) {
+                        _orderFailureCause = failCause;
                         Return();
                     }
                 }
@@ -887,7 +907,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// </summary>
     /// <returns></returns>
     private bool AssessWhetherToAssumeFormationAfterMove() {
-        if (_fsmTgt is SystemItem || _fsmTgt is SectorItem || _fsmTgt is StationaryLocation || _fsmTgt is FleetCmdItem) {
+        if (_fsmTgt is ISystem || _fsmTgt is ISector || _fsmTgt is StationaryLocation || _fsmTgt is IFleetCmd) {
             return true;
         }
         return false;
@@ -1123,7 +1143,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!star.IsFullyExploredBy(Owner)) {
             shipSystemTgtsToExplore.Add(star);
         }
-        D.Assert(shipSystemTgtsToExplore.Count != Constants.Zero);  // OPTIMIZE System has already been validated for exploration
+        D.Assert(shipSystemTgtsToExplore.Count > Constants.Zero);  // OPTIMIZE System has already been validated for exploration
         // Note: Knowledge of each explore target in system will be checked as soon as Ship gets explore order
         _shipSystemExploreTgtAssignments = shipSystemTgtsToExplore.ToDictionary<IShipExplorable, IShipExplorable, ShipItem>(exploreTgt => exploreTgt, exploreTgt => null);
 
@@ -1186,6 +1206,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         var tgtsWithoutAssignedShip = _shipSystemExploreTgtAssignments.Where(kvp => kvp.Value == null).Select(kvp => kvp.Key);
         if (tgtsWithoutAssignedShip.Any()) {
             var closestExploreTgt = tgtsWithoutAssignedShip.MinBy(tgt => Vector3.SqrMagnitude(tgt.Position - ship.Position));
+            if (closestExploreTgt.IsFullyExploredBy(Owner)) {
+                // in interim, target could have been fully explored by another fleet's ship of ours
+                return HandleSystemTargetExploredOrDead(ship, closestExploreTgt);
+            }
             AssignShipToExploreItem(ship, closestExploreTgt);
             _shipSystemExploreTgtAssignments[closestExploreTgt] = ship;
             return true;
@@ -1236,7 +1260,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     break;
                 case UnitItemOrderFailureCause.TgtRelationship:
                     // TODO Communicate failure to boss?
-                    // No longer allowed to explore _fsmTgt
+                    // No longer allowed to explore _fsmTgt, OR _fsmTgt is now fully explored
                     IssueAssumeFormationOrderFromCmdStaff();
                     break;
                 case UnitItemOrderFailureCause.TgtDeath:
@@ -1259,8 +1283,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         else {
             ISector_Ltd sectorExploreTgt = fleetExploreTgt as ISector_Ltd;
             if (sectorExploreTgt != null) {
-                // Sector without a System is by definition fully explored so can't get here
-                D.Assert(sectorExploreTgt.System != null);
+                D.Assert(sectorExploreTgt.System != null);  // Sector without a System is by definition fully explored so can't get here
                 ExploreSystem(sectorExploreTgt.System);
             }
             else {
@@ -1280,6 +1303,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             yield return null;
         }
         StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
+        D.LogBold(ShowDebugLog, "{0} has successfully completed exploration of {1}. Assuming Formation.", FullName, fleetExploreTgt.FullName);
         CurrentOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
     }
 

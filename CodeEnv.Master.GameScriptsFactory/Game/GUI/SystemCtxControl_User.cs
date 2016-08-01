@@ -59,7 +59,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         get { return _userRemoteShipDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _settlement; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _settlement.Position; } }
 
     protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
 

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="FacilityItem"/>s owned by the User.
@@ -31,7 +32,7 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
         get { return _userMenuOperatorDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _facilityMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _facilityMenuOperator.FullName; } }
 

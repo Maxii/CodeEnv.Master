@@ -318,7 +318,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     private void HandleObjectsDetectedWhilePaused() {
-        D.Log(ShowDebugLog, "{0} handling objects detected while paused, if any.", FullName);
+        //D.Log(ShowDebugLog, "{0} handling objects detected while paused, if any.", FullName);
         __ValidateObjectsDetectedWhilePaused();
         if (!_enteringObjectsDetectedWhilePaused.IsNullOrEmpty()) {
             _enteringObjectsDetectedWhilePaused.ForAll(obj => AddDetectedObject(obj));

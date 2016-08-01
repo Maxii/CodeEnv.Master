@@ -96,9 +96,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     /// <summary>
-    /// The Item to measure from when determining the distance to a provided target.
+    /// The position to measure from when determining the distance to a target.
     /// </summary>
-    protected abstract AItem ItemForDistanceMeasurements { get; }
+    protected abstract Vector3 PositionForDistanceMeasurements { get; }
 
     /// <summary>
     /// The lowest unused item ID available for assignment to menu items.
@@ -132,7 +132,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// Initializes a new instance of the <see cref="ACtxControl" /> class.
     /// </summary>
     /// <param name="ctxObjectGO">The gameObject where the desired CtxObject is located.</param>
-    /// <param name="uniqueSubmenusReqd">The number of unique submenus reqd by this CtxControl.</param>
+    /// <param name="uniqueSubmenusReqd">The number of unique sub-menus reqd by this CtxControl.</param>
     /// <param name="menuPosition">The position to place the menu.</param>
     public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition) {
         //D.Log("Creating {0} for {1}.", GetType().Name, ctxObjectGO.name);
@@ -521,7 +521,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected abstract void HandleMenuPick_OptimalFocusDistance();
 
     protected float GetDistanceTo(INavigable target) {
-        return Vector3.Distance(ItemForDistanceMeasurements.Position, target.Position);
+        return Vector3.Distance(PositionForDistanceMeasurements, target.Position);
     }
 
     private CtxMenu.Item CreateRemoteSelectedItemDistanceLabel() {
@@ -635,7 +635,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
         /// <summary>
         /// This menu has been opened while the Item that operates the menu is Selected. Can be User
-        /// or AI owned as some choices on the SelectedItem's menu are independant of owner. Best current
+        /// or AI owned as some choices on the SelectedItem's menu are independent of owner. Best current
         /// example is the menu choice that allows the camera's OptimalFocusDistance to be set.
         /// </summary>
         MenuOperatorIsSelected,

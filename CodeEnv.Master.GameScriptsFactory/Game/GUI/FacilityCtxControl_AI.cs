@@ -18,6 +18,7 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="FacilityItem"/> for AI owned Facilities.
@@ -26,7 +27,7 @@ public class FacilityCtxControl_AI : ACtxControl {
 
     protected override string OperatorName { get { return _facilityMenuOperator.FullName; } }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _facilityMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 
     private FacilityItem _facilityMenuOperator;
 

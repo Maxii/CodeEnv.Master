@@ -79,7 +79,6 @@
     <Compile Include="Game\_Debug\DynamicWidgetsFolder.cs" />
     <Compile Include="Game\_Debug\FleetsFolder.cs" />
     <Compile Include="Game\_Debug\ManagementFolder.cs" />
-    <Compile Include="Game\_Debug\SectorsFolder.cs" />
     <Compile Include="Game\_Debug\SettlementsFolder.cs" />
     <Compile Include="Game\_Debug\StarbasesFolder.cs" />
     <Compile Include="Game\_Debug\UniverseFolder.cs" />

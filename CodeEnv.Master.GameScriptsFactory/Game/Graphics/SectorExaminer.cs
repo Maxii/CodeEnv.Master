@@ -34,6 +34,10 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private const string SectorIDLabelText = "Sector {0}.";
 
+    [Tooltip("Controls showing the debug log for SectorExaminer and the highlighted sector.")]
+    [SerializeField]
+    private bool _showDebugLog = false;
+
     /// <summary>
     /// The distance from the front of the camera (in sectors) this examiner uses to determine which sector to highlight.
     /// </summary>
@@ -133,6 +137,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void CurrentSectorIndexPropChangingHandler(Index3D newSectorIndex) {
         // Current Sector Index is about to change so turn off any Sector Highlights showing
         HighlightSectorContents(false);
+        ShowSectorDebugLog(false);
     }
 
     private void CurrentSectorIndexPropChangedHandler() {
@@ -147,6 +152,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         ShowSectorWireframe(true);
         UpdateSectorIDLabel();
         HighlightSectorContents(true);
+        ShowSectorDebugLog(true);
     }
 
     private void CameraSectorIndexPropChangedHandler() {
@@ -178,9 +184,10 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                     _ctxControl.Hide();
                 }
                 HighlightSectorContents(false);
+                ShowSectorDebugLog(false);
 
-                // OPTIMIZE cache sector and sectorView
-                SectorItem sector;
+                // OPTIMIZE cache sector
+                Sector sector;
                 if (_sectorGrid.__TryGetSector(CurrentSectorIndex, out sector)) {
                     if (sector.IsHudShowing) {
                         sector.ShowHud(false);
@@ -199,8 +206,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void HandleHoveredChanged(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
-            //D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
-            SectorItem sector;
+            D.Log(_showDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
+            Sector sector;
             if (_sectorGrid.__TryGetSector(CurrentSectorIndex, out sector)) {
                 sector.ShowHud(isOver);
             }
@@ -233,7 +240,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     #endregion
 
-
     private void UpdateSectorIDLabel() {
         if (_sectorIDLabel == null) {
             _sectorIDLabel = InitializeSectorIDLabel();
@@ -261,6 +267,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             else {
                 HighlightSectorContents(false);
                 ShowSectorWireframe(false);
+                ShowSectorDebugLog(false);
             }
         }
     }
@@ -269,7 +276,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         if (toShow == IsSectorWireframeShowing) {
             return;
         }
-        //D.Log("{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
+        D.Log(_showDebugLog, "{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
 
         if (toShow) {
             if (_wireframe == null) {
@@ -284,12 +291,21 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void HighlightSectorContents(bool toShow) {
         IEnumerable<ISectorViewHighlightable> highlightablesInSector;
         if (_sectorGrid.TryGetSectorViewHighlightables(CurrentSectorIndex, out highlightablesInSector)) {
-            //D.Log("{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(sb => sb.DisplayName).Concatenate(), CurrentSectorIndex);
+            D.Log(_showDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorIndex);
             highlightablesInSector.ForAll(highlightable => {
                 if (highlightable.IsSectorViewHighlightShowing != toShow) {
                     highlightable.ShowSectorViewHighlight(toShow);
                 }
             });
+        }
+    }
+
+    private void ShowSectorDebugLog(bool toShow) {
+        if (_showDebugLog) {
+            Sector sector;
+            if (_sectorGrid.__TryGetSector(CurrentSectorIndex, out sector)) {
+                sector.ShowDebugLog = toShow;
+            }
         }
     }
 

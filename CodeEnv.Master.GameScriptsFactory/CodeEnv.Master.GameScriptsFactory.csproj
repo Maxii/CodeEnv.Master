@@ -176,9 +176,7 @@
     <Compile Include="Game\GUI\SystemCtxControl_User.cs" />
     <Compile Include="Generic\IO\InputModeControlButton.cs" />
     <Compile Include="Generic\IO\OrbitalPlaneInputEventRouter.cs" />
-    <Compile Include="Generic\Framework\SectorFactory.cs" />
     <Compile Include="Game\GUI\AudioOptionMenuAcceptButton.cs" />
-    <Compile Include="Game\Framework\SectorItem.cs" />
     <Compile Include="Generic\Graphics\MenuCancelButton.cs" />
     <Compile Include="Generic\IO\SFXManager.cs" />
     <Compile Include="Generic\Graphics\GuiElement.cs" />
@@ -229,6 +227,7 @@
     <Compile Include="Game\Gameplay\Missile.cs" />
     <Compile Include="Generic\Graphics\PooledSphericalHighlight.cs" />
     <Compile Include="Generic\Graphics\SphericalHighlight.cs" />
+    <Compile Include="Game\Framework\Sector.cs" />
     <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />

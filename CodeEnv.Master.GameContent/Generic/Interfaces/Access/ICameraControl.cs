@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     public interface ICameraControl {
 
         /// <summary>
-        /// Readonly. The location of the camera in sector space.
+        /// Read-only. The location of the camera in sector space.
         /// </summary>
         Index3D SectorIndex { get; }
 

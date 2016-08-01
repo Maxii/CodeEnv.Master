@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are AItems.
     /// </summary>
-    public interface IItem : IDebugable {
+    public interface IItem : IDebugable, IShowDebugLog {
 
         /// <summary>
         /// Occurs when the owner of this <c>IItem</c> is about to change.
@@ -45,8 +45,6 @@ namespace CodeEnv.Master.GameContent {
         string Name { get; }
 
         Topography Topography { get; }
-
-        bool ShowDebugLog { get; }
 
     }
 }

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for Sectors, implemented using SectorExaminer.
@@ -39,12 +40,12 @@ public class SectorCtxControl : ACtxControl {
         get { return _userRemoteFleetDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _sector; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _sector.Position; } }
 
     protected override string OperatorName { get { return _sector.FullName; } }
 
     private SectorExaminer _sectorExaminerMenuOperator;
-    private SectorItem _sector;
+    private Sector _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
         : base(sectorExaminer.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
@@ -59,7 +60,8 @@ public class SectorCtxControl : ACtxControl {
     protected override void PopulateMenu_UserRemoteFleetIsSelected() {
         var sectorIndex = _sectorExaminerMenuOperator.CurrentSectorIndex;
         if (!SectorGrid.Instance.__TryGetSector(sectorIndex, out _sector)) {
-            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorIndex, GetType().Name);
+            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(Sector).Name, sectorIndex, GetType().Name);
+            //D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorIndex, GetType().Name);
             // no sectorItem present underneath this examiner so don't build the menu
             return;
         }

@@ -37,7 +37,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         get { return _userMenuOperatorDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _shipMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
 

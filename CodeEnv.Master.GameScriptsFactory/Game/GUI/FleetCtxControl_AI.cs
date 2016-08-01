@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="FleetCmdItem"/>s owned by the AI.
@@ -41,7 +42,7 @@ public class FleetCtxControl_AI : ACtxControl {
         get { return _userRemoteBaseDirectives; }
     }
 
-    protected override AItem ItemForDistanceMeasurements { get { return _fleetMenuOperator; } }
+    protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
 

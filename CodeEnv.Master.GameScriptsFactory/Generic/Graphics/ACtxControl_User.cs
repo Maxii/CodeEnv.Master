@@ -119,7 +119,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
                 var subMenu = _unusedSubMenus.Pop();
                 subMenu.items = new CtxMenu.Item[submenuItemCount];
                 for (int i = 0; i < submenuItemCount; i++) {
-                    var target = i == 0 ? FindClosestTarget(ItemForDistanceMeasurements, targets) : targetsStack.Pop();
+                    var target = i == 0 ? FindClosestTarget(PositionForDistanceMeasurements, targets) : targetsStack.Pop();
                     int subMenuItemId = i + _nextAvailableItemId; // submenu item IDs can't interfere with IDs already assigned
 
                     string textFormat = i == 0 ? SubmenuItemTextFormat_ClosestTarget : SubmenuItemTextFormat_Target;
@@ -134,13 +134,13 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
                 topLevelItem.id = -1;  // needed to get item spacing right
                 topLevelItem.submenu = subMenu;
                 _nextAvailableItemId += submenuItemCount;
-                return false;   // targets are present to populate the submenu so don't disable the toplevel item
+                return false;   // targets are present to populate the submenu so don't disable the top-level item
             }
             topLevelItem.isSubmenu = true;
             topLevelItem.id = -1;   // needed to get item spacing right
-            return true;    // targets are NOT present to populate the submenu so disable the toplevel item
+            return true;    // targets are NOT present to populate the submenu so disable the top-level item
         }
-        return false;   // directive doesn't support a submenu so don't disable the toplevel item
+        return false;   // directive doesn't support a submenu so don't disable the top-level item
     }
 
     /// <summary>
@@ -160,8 +160,8 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
         _unitTargetLookup.Clear();
     }
 
-    private INavigable FindClosestTarget(AItem item, IEnumerable<INavigable> targets) {
-        return targets.MinBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
+    private INavigable FindClosestTarget(Vector3 position, IEnumerable<INavigable> targets) {
+        return targets.MinBy(t => Vector3.SqrMagnitude(t.Position - position));
     }
 
 
