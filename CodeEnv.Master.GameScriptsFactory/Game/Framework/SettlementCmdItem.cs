@@ -93,8 +93,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, UserReport);
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
         RemoveSettlementFromSystem();
     }
 

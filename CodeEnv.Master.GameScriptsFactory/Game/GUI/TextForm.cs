@@ -29,7 +29,8 @@ public class TextForm : AForm {
         get { return _text; }
         set {
             D.Assert(_text == null);    // occurs only once between Resets
-            SetProperty<string>(ref _text, value, "Text", TextPropSetHandler); }
+            SetProperty<string>(ref _text, value, "Text", TextPropSetHandler);
+        }
     }
 
     public override FormID FormID { get { return FormID.TextHud; } }
@@ -49,10 +50,12 @@ public class TextForm : AForm {
     #endregion
 
     protected override void AssignValuesToMembers() {
+        //D.Log("{0}.AssignValuesToMembers() called. Text = {1}.", GetType().Name, Text);
         _label.text = Text;
     }
 
     public override void Reset() {
+        //D.Log("{0}.Reset() called.", GetType().Name);
         _text = null;
     }
 

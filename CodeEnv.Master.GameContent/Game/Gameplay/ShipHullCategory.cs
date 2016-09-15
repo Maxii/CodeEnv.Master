@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         Colonizer,
 
         [EnumAttribute("SS")]
-        Science,
+        Investigator,   // 8.24.16 changed from Science as Mono gets confused with the GameEnumExtension.Science(ShipHullCategory)
 
         [EnumAttribute("TT")]
         Troop,

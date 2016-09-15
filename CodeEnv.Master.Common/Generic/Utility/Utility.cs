@@ -194,6 +194,17 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         /// <summary>
+        /// The current DateTime as measured by .Net.
+        /// </summary>
+        public static DateTime SystemTime { get { return DateTime.UtcNow; } }
+
+        /// <summary>
+        /// A text time stamp as measured by .Net. Format is seconds.hundredths.
+        /// <remarks>Hundredths as accuracy of System.DateTime is no better than 15 milliseconds.</remarks>
+        /// </summary>
+        public static string TimeStamp { get { return DateTime.UtcNow.ToString("ss.ff"); } }
+
+        /// <summary>
         /// Determines whether an integer is in the range low..high, inclusive.
         /// </summary>
         /// <param name="number">The int number.</param>
@@ -251,7 +262,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Checks for legal content - ie. not null, not empty and not all whitespace.
+        /// Checks for legal content - i.e. not null, not empty and not all whitespace.
         /// </summary>
         /// <param name="text">The text.</param>
         /// <returns></returns>
@@ -334,7 +345,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns a number rounded to the nearest multiple of anothr number (rounds up)
+        /// Returns a number rounded to the nearest multiple of another number (rounds up)
         /// </summary>
         /// <param name="number">The number.</param>
         /// <param name="multiple">The multiple.</param>
@@ -344,7 +355,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns a number rounded to the nearest multiple of anothr number (rounds up or down)
+        /// Returns a number rounded to the nearest multiple of another number (rounds up or down)
         /// </summary>
         /// <param name="number">The number.</param>
         /// <param name="multiple">The multiple.</param>
@@ -354,7 +365,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns a number rounded to the nearest multiple of anothr number (rounds down)
+        /// Returns a number rounded to the nearest multiple of another number (rounds down)
         /// </summary>
         /// <param name="number">The number.</param>
         /// <param name="multiple">The multiple.</param>

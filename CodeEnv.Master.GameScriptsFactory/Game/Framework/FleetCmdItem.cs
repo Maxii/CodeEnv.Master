@@ -32,7 +32,7 @@ using UnityEngine;
 /// </summary>
 public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollowable, ISectorViewHighlightable {
 
-    private static ShipHullCategory[] _desiredExplorationShipCategories = { ShipHullCategory.Science,
+    private static ShipHullCategory[] _desiredExplorationShipCategories = { ShipHullCategory.Investigator,
                                                                             ShipHullCategory.Scout,
                                                                             ShipHullCategory.Frigate,
                                                                             ShipHullCategory.Destroyer };
@@ -41,6 +41,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
     }
+
+    public override float ClearanceRadius { get { return Data.UnitMaxFormationRadius * 2F; } }
 
     public new ShipItem HQElement {
         get { return base.HQElement as ShipItem; }
@@ -55,12 +57,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     public FleetCmdReport UserReport { get { return Publisher.GetUserReport(); } }
 
-    protected new FleetFormationManager FormationMgr { get { return base.FormationMgr as FleetFormationManager; } }
-
-    public new CameraFleetCmdStat CameraStat {
-        protected get { return base.CameraStat as CameraFleetCmdStat; }
+    public new FleetCmdCameraStat CameraStat {
+        protected get { return base.CameraStat as FleetCmdCameraStat; }
         set { base.CameraStat = value; }
     }
+
+    protected new FleetFormationManager FormationMgr { get { return base.FormationMgr as FleetFormationManager; } }
 
     private FleetPublisher _publisher;
     private FleetPublisher Publisher {
@@ -71,6 +73,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private FixedJoint _hqJoint;
 
     #region Initialization
+
+    protected override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowFleetCmdDebugLogs;
+    }
 
     protected override AFormationManager InitializeFormationMgr() {
         return new FleetFormationManager(this);
@@ -116,7 +122,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return new SectorViewHighlightManager(this, UnitMaxFormationRadius * 10F);
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         // 7.11.16 Moved from CommenceOperations as need to be Idling to receive initial events once sensors
         // are operational. Events include initial discovery of players which result in Relationship changes
@@ -163,14 +169,30 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     /// <summary>
     /// Selects and returns a new HQElement.
-    /// Throws an InvalidOperationException if there are no elements to select from.
+    /// <remarks>TEMP public to allow creator use.</remarks>
     /// </summary>
     /// <returns></returns>
-    private ShipItem SelectHQElement() {
-        var flagship = Elements.MaxBy(e => e.Data.Health) as ShipItem;
-        // IMPROVE to include large defense and small offense criteria as will be located in HQ formation slot (usually in center)
-        // and will have a CombatStance of Defensive - will entrench rather than pursue targets
-        return flagship;
+    public ShipItem SelectHQElement() {
+        AUnitElementItem bestElement = null;
+        float bestElementScore = Constants.ZeroF;
+        var descendingHQPriority = Enums<Priority>.GetValues(excludeDefault: true).OrderByDescending(p => p);
+        IEnumerable<AUnitElementItem> hqCandidates;
+        foreach (var priority in descendingHQPriority) {
+            AUnitElementItem bestCandidate;
+            float bestCandidateScore;
+            if (TryGetHQCandidatesOf(priority, out hqCandidates)) {
+                bestCandidate = hqCandidates.MaxBy(e => e.Data.Health);
+                bestCandidateScore = (int)priority * bestCandidate.Data.Health; // IMPROVE algorithm
+                if (bestCandidateScore > bestElementScore) {
+                    bestElement = bestCandidate;
+                    bestElementScore = bestCandidateScore;
+                }
+            }
+        }
+        D.Assert(bestElement != null);
+        // IMPROVE bestScore algorithm. Include large defense and small offense criteria as will be located in HQ formation slot (usually in center)
+        // Set CombatStance to Defensive? - will entrench rather than pursue targets
+        return bestElement as ShipItem;
     }
 
     protected override void AttachCmdToHQElement() {
@@ -190,8 +212,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         CurrentState = FleetState.Dead;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
     }
 
     /// <summary>
@@ -357,8 +379,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (target is ISector) {
             return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
         }
-        D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-            FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        D.Assert(OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+        FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
     }
 
     #endregion
@@ -2167,9 +2189,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != null) {
             D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        IFleetCmd fleetTgt = CurrentOrder.Target as IFleetCmd;
-        D.Assert(fleetTgt != null);
-        _fsmTgt = fleetTgt as IFleetNavigable;
+        var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
+        D.Assert(fleetToJoin != null);
+        _fsmTgt = fleetToJoin;
         _apMoveSpeed = Speed.Standard;
         _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't join an enemy fleet
 
@@ -2216,7 +2238,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
 
         // we've arrived so transfer the ship to the fleet we are joining
-        var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
         var ship = Elements[0] as ShipItem;   // HACK, IMPROVE more than one ship?
         TransferShip(ship, fleetToJoin);
         // removing the only ship will immediately call FleetState.Dead
@@ -2327,8 +2348,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Dead_EnterState() {
         LogEvent();
-        HandleDeathFromDeadState();
+        UnregisterForOrders();
+        HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
+        HandleDeathAfterBeginningDeathEffect();
     }
 
     void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
@@ -2718,38 +2741,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return true;
     }
 
-    //private bool _isFsmTgtDeathAlreadySubscribed;
-
-    ///// <summary>
-    ///// Attempts subscribing or unsubscribing to the provided <c>fsmTgt</c>'s death if mortal.
-    ///// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not, typically because the fsmTgt is not mortal.
-    ///// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
-    ///// <remarks>No need to specially handle Stationary or MobileLocations. In most cases they are simply Course Waypoints. 
-    ///// If they are Patrol or Guard Stations???.
-    ///// </remarks>
-    ///// </summary>
-    ///// <param name="fsmTgt">The target used by the State Machine.</param>
-    ///// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
-    ///// <returns></returns>
-    //private bool AttemptFsmTgtDeathSubscriptionChg(IFleetNavigable fsmTgt, bool toSubscribe) {
-    //    Utility.ValidateNotNull(fsmTgt);
-    //    var mortalFsmTgt = fsmTgt as IMortalItem;
-    //    if (mortalFsmTgt != null) {
-    //        if (!toSubscribe) {
-    //            mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
-    //        }
-    //        else if (!_isFsmTgtDeathAlreadySubscribed) {
-    //            mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
-    //        }
-    //        else {
-    //            D.Warn("{0}: Attempting to subscribe to {1}'s death when already subscribed.", FullName, fsmTgt.FullName);
-    //        }
-    //        _isFsmTgtDeathAlreadySubscribed = toSubscribe;
-    //        return true;
-    //    }
-    //    return false;
-    //}
-
     #endregion
 
     #endregion
@@ -2783,9 +2774,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     protected override void Cleanup() {
         base.Cleanup();
-        _navigator.Dispose();
+        CleanupNavigator();
         CleanupDebugShowVelocityRay();
         CleanupDebugShowCoursePlot();
+    }
+
+    private void CleanupNavigator() {
+        if (_navigator != null) {
+            // a preset fleet that begins ops during runtime won't build its navigator until time for deployment
+            _navigator.Dispose();
+        }
     }
 
     #endregion
@@ -2800,7 +2798,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private CoursePlotLine __coursePlot;
 
     private void InitializeDebugShowCoursePlot() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showFleetCoursePlotsChanged += ShowDebugFleetCoursePlotsChangedEventHandler;
         if (debugValues.ShowFleetCoursePlots) {
             EnableDebugShowCoursePlot(true);
@@ -2841,11 +2839,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     private void ShowDebugFleetCoursePlotsChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowCoursePlot(DebugValues.Instance.ShowFleetCoursePlots);
+        EnableDebugShowCoursePlot(DebugControls.Instance.ShowFleetCoursePlots);
     }
 
     private void CleanupDebugShowCoursePlot() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showFleetCoursePlotsChanged -= ShowDebugFleetCoursePlotsChangedEventHandler;
         }
@@ -2862,7 +2860,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private VelocityRay __velocityRay;
 
     private void InitializeDebugShowVelocityRay() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showFleetVelocityRaysChanged += ShowDebugFleetVelocityRaysChangedEventHandler;
         if (debugValues.ShowFleetVelocityRays) {
             EnableDebugShowVelocityRay(true);
@@ -2894,11 +2892,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     private void ShowDebugFleetVelocityRaysChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowVelocityRay(DebugValues.Instance.ShowFleetVelocityRays);
+        EnableDebugShowVelocityRay(DebugControls.Instance.ShowFleetVelocityRays);
     }
 
     private void CleanupDebugShowVelocityRay() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showFleetVelocityRaysChanged -= ShowDebugFleetVelocityRaysChangedEventHandler;
         }
@@ -3104,14 +3102,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         private Seeker _seeker;
         private GameTime _gameTime;
         private GameManager _gameMgr;
+        private JobManager _jobMgr;
         private FleetCmdItem _fleet;
         private FleetCmdData _fleetData;
-        private IList<IDisposable> _subscriptions;
+        //private IList<IDisposable> _subscriptions;
 
         internal FleetNavigator(FleetCmdItem fleet, Seeker seeker) {
             ApCourse = new List<IFleetNavigable>();
             _gameTime = GameTime.Instance;
             _gameMgr = GameManager.Instance;
+            _jobMgr = JobManager.Instance;
             _fleet = fleet;
             _fleetData = fleet.Data;
             _seeker = InitializeSeeker(seeker);
@@ -3137,8 +3137,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+            //_subscriptions = new List<IDisposable>();
             _seeker.pathCallback += PathPlotCompletedEventHandler;
             _seeker.postProcessPath += PathPostProcessingEventHandler;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
@@ -3183,13 +3182,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     };
                     return true;
                 }
-                Index3D fleetSectorIndex = _fleet.SectorIndex;
+
+                IntVector3 fleetSectorIndex = _fleet.SectorIndex;
                 var localSectorIndexes = SectorGrid.Instance.GetNeighboringIndices(fleetSectorIndex);
                 localSectorIndexes.Add(fleetSectorIndex);
-                IList<SystemItem> localSystems = new List<SystemItem>(9);
+                IList<ISystem_Ltd> localSystems = new List<ISystem_Ltd>(9);
                 foreach (var sectorIndex in localSectorIndexes) {
-                    SystemItem system;
-                    if (SystemCreator.TryGetSystem(sectorIndex, out system)) {
+                    ISystem_Ltd system;
+                    if (_fleet.OwnerAIMgr.Knowledge.TryGetSystem(sectorIndex, out system)) {
                         localSystems.Add(system);
                     }
                 }
@@ -3209,6 +3209,43 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             }
             return false;
         }
+        //private bool TryDirectCourse(out IList<Vector3> directCourse) {
+        //    directCourse = null;
+        //    if (_fleet.Topography == ApTarget.Topography && ApTgtDistance < PathfindingManager.Instance.Graph.maxDistance) {
+        //        if (_fleet.Topography == Topography.System) {
+        //            // same Topography is system and within maxDistance, so must be same system
+        //            directCourse = new List<Vector3>() {
+        //                _fleet.Position,
+        //                ApTarget.Position
+        //            };
+        //            return true;
+        //        }
+        //        IntVector3 fleetSectorIndex = _fleet.SectorIndex;
+        //        var localSectorIndexes = SectorGrid.Instance.GetNeighboringIndices(fleetSectorIndex);
+        //        localSectorIndexes.Add(fleetSectorIndex);
+        //        IList<SystemItem> localSystems = new List<SystemItem>(9);
+        //        foreach (var sectorIndex in localSectorIndexes) {
+        //            SystemItem system;
+        //            if (SystemCreator.TryGetSystem(sectorIndex, out system)) {
+        //                localSystems.Add(system);
+        //            }
+        //        }
+        //        if (localSystems.Any()) {
+        //            foreach (var system in localSystems) {
+        //                if (MyMath.DoesLineSegmentIntersectSphere(_fleet.Position, ApTarget.Position, system.Position, system.Radius)) {
+        //                    // there is a system between the open space positions of the fleet and its target
+        //                    return false;
+        //                }
+        //            }
+        //        }
+        //        directCourse = new List<Vector3>() {
+        //                        _fleet.Position,
+        //                        ApTarget.Position
+        //                    };
+        //        return true;
+        //    }
+        //    return false;
+        //}
 
         /// <summary>
         /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
@@ -3264,18 +3301,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 // but there is an obstacle, so add a waypoint
                 RefreshApCourse(CourseRefreshMode.AddWaypoint, detour);
             }
-
-            _apNavJob = new Job(EngageCourse(), toStart: true, jobCompleted: (wasKilled) => {
+            string jobName = "{0}.FleetApNavJob".Inject(Name);
+            _apNavJob = _jobMgr.StartGameplayJob(EngageCourse(), jobName, isPausable: true, jobCompleted: (wasKilled) => {
                 if (!wasKilled) {
                     HandleApTgtReached();
                 }
             });
-
-            // Reqd as I have no pause control over AStar while it is generating a path
-            if (_gameMgr.IsPaused) {
-                _apNavJob.IsPaused = true;
-                D.Log(ShowDebugLog, "{0} has paused ApNavJob immediately after starting it.", Name);
-            }
         }
 
         /// <summary>
@@ -3289,8 +3320,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             int apTgtCourseIndex = ApCourse.Count - 1;
             D.Assert(_currentApCourseIndex == 1);  // already set prior to the start of the Job
             IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];
-            D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
-            Name, currentWaypoint.Position, Vector3.Distance(Position, currentWaypoint.Position), apTgtCourseIndex - 1, ApTarget.FullName);
+            //D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
+            //Name, currentWaypoint.Position, Vector3.Distance(Position, currentWaypoint.Position), apTgtCourseIndex - 1, ApTarget.FullName);
 
             float waypointStandoffDistance = Constants.ZeroF;
             if (_currentApCourseIndex == apTgtCourseIndex) {
@@ -3309,8 +3340,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     else if (_currentApCourseIndex > apTgtCourseIndex) {
                         continue;   // conclude coroutine
                     }
-                    D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
-                        _currentApCourseIndex - 1, currentWaypoint.FullName, _currentApCourseIndex, ApCourse[_currentApCourseIndex].FullName);
+                    //D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
+                    //_currentApCourseIndex - 1, currentWaypoint.FullName, _currentApCourseIndex, ApCourse[_currentApCourseIndex].FullName);
 
                     currentWaypoint = ApCourse[_currentApCourseIndex];
                     if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
@@ -3441,7 +3472,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             if (!IsWaitForFleetToAlignJobRunning) {
                 float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
                 GameDate errorDate = GameUtility.CalcWarningDateForRotation(lowestShipTurnrate, ShipItem.ShipHelm.MaxReqdHeadingChange);
-                _waitForFleetToAlignJob = new Job(WaitWhileShipsAlignToRequestedHeading(errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+                string jobName = "{0}.WaitForFleetToAlignJob".Inject(Name);
+                _waitForFleetToAlignJob = _jobMgr.StartGameplayJob(WaitWhileShipsAlignToRequestedHeading(errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                     __waitForFleetToAlignJobIsExecuting = false;
                     if (jobWasKilled) {
                         D.Assert(_fleetIsAlignedCallbacks == null);  // only killed when all waiting delegates from ships removed
@@ -3456,13 +3488,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         _shipsWaitingForFleetAlignment.Clear();
                     }
                 });
-
-                // Reqd as I have no pause control over the Ship State Machine. The instance I found was ExecuteAttackOrder Call()ed Attacking
-                // which initiated an AutoPilot pursuit which launched this new wait for alignment job.
-                if (_gameMgr.IsPaused) {
-                    _waitForFleetToAlignJob.IsPaused = true;
-                    D.Log(ShowDebugLog, "{0} has paused WaitForFleetToAlignJob immediately after starting it.", Name);
-                }
             }
         }
 
@@ -3515,10 +3540,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         #endregion
 
         #region Event and Property Change Handlers
-
-        private void IsPausedPropChangedHandler() {
-            PauseJobs(_gameMgr.IsPaused);
-        }
 
         private void FlagshipReachedDestinationEventHandler(object sender, EventArgs e) {
             //D.Log(ShowDebugLog, "{0} reporting that Flagship {1} has reached destination.", Name, _fleet.HQElement.FullName);
@@ -3586,29 +3607,31 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
             GraphNode firstNode = path.path[0];
             Vector3 firstNodeLocation = (Vector3)firstNode.position;
-            D.Log(ShowDebugLog, "{0}: TargetDistance = {1:0.#}, ClosestNodeDistance = {2:0.#}.", Name, ApTgtDistance, Vector3.Distance(Position, firstNodeLocation));
+            //D.Log(ShowDebugLog, "{0}: TargetDistance = {1:0.#}, ClosestNodeDistance = {2:0.#}.", Name, ApTgtDistance, Vector3.Distance(Position, firstNodeLocation));
 
             if (_fleet.Topography == Topography.System) {
                 // starting in system
-                SystemItem fleetSystem;
-                bool isFleetSystemFound = SystemCreator.TryGetSystem(_fleet.SectorIndex, out fleetSystem);
-                D.Assert(isFleetSystemFound);
+                var ownerKnowledge = _fleet.OwnerAIMgr.Knowledge;
+                ISystem_Ltd fleetSystem;
+                bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorIndex, out fleetSystem);
+                D.Assert(isFleetSystemFound, "{0} should find a System in its current Sector {1}. SectorCheck = {2}.", Name, _fleet.SectorIndex, SectorGrid.Instance.GetSectorIndexThatContains(Position));
+                // 8.18.16 Failure of this assert has been caused in the past by a missed Topography change when leaving a System
 
                 if (ApTarget.Topography == Topography.System) {
-                    Index3D tgtSectorIndex = SectorGrid.Instance.GetSectorIndex(ApTarget.Position);
-                    SystemItem tgtSystem;
-                    bool isTgtSystemFound = SystemCreator.TryGetSystem(tgtSectorIndex, out tgtSystem);
+                    IntVector3 tgtSectorIndex = SectorGrid.Instance.GetSectorIndexThatContains(ApTarget.Position);
+                    ISystem_Ltd tgtSystem;
+                    bool isTgtSystemFound = ownerKnowledge.TryGetSystem(tgtSectorIndex, out tgtSystem);
                     D.Assert(isTgtSystemFound);
                     if (fleetSystem == tgtSystem) {
                         // fleet and target are in same system so whichever first node is found should be replaced by fleet location
                         return;
                     }
                 }
-                Topography firstNodeTopography = SectorGrid.Instance.GetSpaceTopography(firstNodeLocation);
+                Topography firstNodeTopography = _gameMgr.GameKnowledge.GetSpaceTopography(firstNodeLocation);  //SectorGrid.Instance.GetSpaceTopography(firstNodeLocation);
                 if (firstNodeTopography == Topography.OpenSpace) {
                     // first node outside of system so keep node
                     modifier.addPoints = true;
-                    D.LogBold(ShowDebugLog, "{0} has retained first AStarNode in path to quickly exit System.", Name);
+                    //D.Log(ShowDebugLog, "{0} has retained first AStarNode in path to quickly exit System.", Name);
                 }
             }
         }
@@ -3663,56 +3686,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             }
             ApCourse.Add(ApTarget); // places it at course[destinationIndex]
             HandleApCourseChanged();
-        }
-
-        /// <summary>
-        /// Improves the existing course with System entry or exit points if applicable. If it is determined that a system entry or exit
-        /// point is needed, the existing course will be modified to minimize the amount of InSystem travel time reqd to reach the target. 
-        /// </summary>
-        [Obsolete]
-        private void ImproveApCourseWithSystemAccessPoints() {
-            SystemItem fleetSystem = null;
-            if (_fleet.Topography == Topography.System) {
-                var fleetSectorIndex = SectorGrid.Instance.GetSectorIndex(Position);
-                var isSystemFound = SystemCreator.TryGetSystem(fleetSectorIndex, out fleetSystem);
-                D.Assert(isSystemFound);
-                __ValidateItemWithinSystem(fleetSystem, _fleet);
-            }
-
-            SystemItem targetSystem = null;
-            if (ApTarget.Topography == Topography.System) {
-                var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(ApTarget.Position);
-                var isSystemFound = SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem);
-                D.Assert(isSystemFound);
-                __ValidateItemWithinSystem(targetSystem, ApTarget);
-            }
-
-            if (fleetSystem != null) {
-                if (fleetSystem == targetSystem) {
-                    // the target and fleet are in the same system so exit and entry points aren't needed
-                    //D.Log(ShowDebugLog, "{0} and target {1} are both within System {2}.", _fleet.DisplayName, ApTarget.FullName, fleetSystem.FullName);
-                    return;
-                }
-                Vector3 fleetSystemExitPt = MyMath.FindClosestPointOnSphereTo(Position, fleetSystem.Position, fleetSystem.Radius);
-                ApCourse.Insert(1, new StationaryLocation(fleetSystemExitPt));
-                D.Log(ShowDebugLog, "{0} adding SystemExit Waypoint {1} for System {2}.", Name, fleetSystemExitPt, fleetSystem.FullName);
-            }
-
-            if (targetSystem != null) {
-                Vector3 targetSystemEntryPt;
-                if (ApTarget.Position.IsSameAs(targetSystem.Position)) {
-                    // Can't use FindClosestPointOnSphereTo(Point, SphereCenter, SphereRadius) as Point is the same as SphereCenter,
-                    // so use point on System periphery that is closest to the final course waypoint (can be course start) prior to the target.
-                    var finalCourseWaypointPosition = ApCourse[ApCourse.Count - 2].Position;
-                    var systemToWaypointDirection = (finalCourseWaypointPosition - targetSystem.Position).normalized;
-                    targetSystemEntryPt = targetSystem.Position + systemToWaypointDirection * targetSystem.Radius;
-                }
-                else {
-                    targetSystemEntryPt = MyMath.FindClosestPointOnSphereTo(ApTarget.Position, targetSystem.Position, targetSystem.Radius);
-                }
-                ApCourse.Insert(ApCourse.Count - 1, new StationaryLocation(targetSystemEntryPt));
-                D.Log(ShowDebugLog, "{0} adding SystemEntry Waypoint {1} for System {2}.", Name, targetSystemEntryPt, targetSystem.FullName);
-            }
         }
 
         /// <summary>
@@ -3809,14 +3782,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             // by this new set of orders. The final ship to remove their delegate will shut down the Job.
         }
 
-        private void PauseJobs(bool toPause) {
-            if (IsApNavJobRunning) {
-                _apNavJob.IsPaused = toPause;
-            }
-            if (IsWaitForFleetToAlignJobRunning) {
-                _waitForFleetToAlignJob.IsPaused = toPause;
-            }
-        }
+        // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
         private void Cleanup() {
             Unsubscribe();
@@ -3829,8 +3795,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         private void Unsubscribe() {
-            _subscriptions.ForAll(s => s.Dispose());
-            _subscriptions.Clear();
+            //_subscriptions.ForAll(s => s.Dispose());
+            //_subscriptions.Clear();
             _seeker.pathCallback -= PathPlotCompletedEventHandler;
             _seeker.postProcessPath -= PathPostProcessingEventHandler;
         }

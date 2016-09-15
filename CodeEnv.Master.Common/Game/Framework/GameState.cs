@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     public enum GameState {
 
         /// <summary>
-        /// The absense of any GameState.
+        /// The absence of any GameState.
         /// </summary>
         None,
 
@@ -59,10 +59,16 @@ namespace CodeEnv.Master.Common {
         Waiting,
 
         /// <summary>
-        /// Build, initialize and deploy all Systems and other potential pathfinding obstacles prior to generating the network
-        /// of waypoints known as a PathGraph. Planetoid operations donot commence until Running.
+        /// Deploys all SystemCreators that need to be deployed programmatically. 
+        /// It is OK if some system creators have already been deployed manually.
         /// </summary>
-        BuildAndDeploySystems,
+        DeployingSystemCreators,
+
+        /// <summary>
+        /// Build out all Systems from the deployed SystemCreators. The systems need to be built at their
+        /// deployed position before the path graph can be generated.
+        /// </summary>
+        BuildingSystems,
 
         /// <summary>
         /// Primary focus is to allow the AStar Pathfinding system time to generate the overall graph
@@ -71,21 +77,21 @@ namespace CodeEnv.Master.Common {
         GeneratingPathGraphs,
 
         /// <summary>
-        /// Build and initialize all starting units in preparation for deployment into the universe during
-        /// DeployingUnits. Unit operations donot commence until on or after Running.
+        /// Design and record all initial unit designs in preparation for building and deploying the units into the universe during
+        /// BuildingAndDeployingInitialUnits. Unit operations do not commence until on or after Running.
         /// </summary>
-        PrepareUnitsForDeployment,
+        DesigningInitialUnits,
 
         /// <summary>
-        /// Deploy all initialized units to their starting location in the universe. Currently, a physical
+        /// Build and deploy all starting units to their starting location in the universe. Currently, a physical
         /// change in location occurs only for Settlements as they are assigned to Systems.
         /// </summary>
-        DeployingUnits,
+        BuildingAndDeployingInitialUnits,
 
         /// <summary>
         /// The final countdown step in progression prior to Running.
         /// </summary>
-        RunningCountdown_1,
+        PreparingToRun,
 
         /// <summary>
         /// The normal state when the user is playing a game instance. The user may initiate the save of the game, 

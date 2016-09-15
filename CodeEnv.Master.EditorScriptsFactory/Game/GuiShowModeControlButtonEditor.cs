@@ -27,21 +27,23 @@ using UnityEngine;
 public class GuiShowModeControlButtonEditor : Editor {
 
     public override void OnInspectorGUI() {
-        var button = target as GuiShowModeControlButton;
+        serializedObject.Update();
 
-        button.showModeOnClick = (GuiShowModeControlButton.ShowMode)EditorGUILayout.EnumPopup("ShowMode on Click", button.showModeOnClick);
+        EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+        {
+            NGUIEditorTools.SetLabelWidth(140F);
+            SerializedProperty showModeSP = NGUIEditorTools.DrawProperty("Show Mode on Click", serializedObject, "_showModeOnClick");
 
-        if (button.showModeOnClick == GuiShowModeControlButton.ShowMode.Hide) {
-            EditorGUI.indentLevel++;
-            var serializedExceptionsList = serializedObject.FindProperty("hideExceptions");
-            EditorGUILayout.PropertyField(serializedExceptionsList, true);
-            serializedObject.ApplyModifiedProperties(); // saves the changes made to the property. see www.ryan-meier.com/blog/?p=67
-            EditorGUI.indentLevel--;
+            EditorGUI.BeginDisabledGroup(showModeSP.enumValueIndex == (int)GuiShowModeControlButton.ShowMode.Show);
+            {
+                NGUIEditorTools.SetLabelWidth(80F);
+                NGUIEditorTools.DrawProperty("Exceptions", serializedObject, "_hideExceptions");
+            }
+            EditorGUI.EndDisabledGroup();
         }
+        EditorGUI.EndDisabledGroup();
 
-        if (GUI.changed) {
-            EditorUtility.SetDirty(target);
-        }
+        serializedObject.ApplyModifiedProperties();
     }
 
     public override string ToString() {

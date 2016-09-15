@@ -46,55 +46,47 @@ namespace CodeEnv.Master.GameContent {
         #region PopupLists
 
         UserPlayerSpeciesPopupList = 6,
-
         AIPlayer1SpeciesPopupList = 7,
-
         AIPlayer2SpeciesPopupList = 8,
-
         AIPlayer3SpeciesPopupList = 9,
-
         AIPlayer4SpeciesPopupList = 10,
-
         AIPlayer5SpeciesPopupList = 11,
-
         AIPlayer6SpeciesPopupList = 12,
-
         AIPlayer7SpeciesPopupList = 13,
 
 
         UserPlayerColorPopupList = 14,
-
         AIPlayer1ColorPopupList = 15,
-
         AIPlayer2ColorPopupList = 16,
-
         AIPlayer3ColorPopupList = 17,
-
         AIPlayer4ColorPopupList = 18,
-
         AIPlayer5ColorPopupList = 19,
-
         AIPlayer6ColorPopupList = 20,
-
         AIPlayer7ColorPopupList = 21,
 
 
         AIPlayer1IQPopupList = 46,
-
         AIPlayer2IQPopupList = 47,
-
         AIPlayer3IQPopupList = 48,
-
         AIPlayer4IQPopupList = 49,
-
         AIPlayer5IQPopupList = 50,
-
         AIPlayer6IQPopupList = 51,
-
         AIPlayer7IQPopupList = 52,
 
 
-        PlayerCountPopupList = 53,  // last
+        UserPlayerTeamPopupList = 55,
+        AIPlayer1TeamPopupList = 56,
+        AIPlayer2TeamPopupList = 57,
+        AIPlayer3TeamPopupList = 58,
+        AIPlayer4TeamPopupList = 59,
+        AIPlayer5TeamPopupList = 60,
+        AIPlayer6TeamPopupList = 61,
+        AIPlayer7TeamPopupList = 62,     // last
+
+
+        PlayerCountPopupList = 53,
+
+        SystemDensityPopupList = 54,
 
         UniverseSizePopupList = 22,
 

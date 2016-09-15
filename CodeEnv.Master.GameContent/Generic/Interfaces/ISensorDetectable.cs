@@ -34,6 +34,16 @@ namespace CodeEnv.Master.GameContent {
         void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat);
 
         void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat);
+
+        /// <summary>
+        /// Resets the ISensorDetectable item based on current detection levels of the provided player.
+        /// <remarks>8.2.16 Currently used 
+        /// 1) when player has lost the Alliance relationship with the owner of this item, and
+        /// 2) when the owner of the item is about to be replaced by another player.</remarks>
+        /// </summary>
+        /// <param name="player">The player.</param>
+        void ResetBasedOnCurrentDetection(Player player);
+
     }
 }
 

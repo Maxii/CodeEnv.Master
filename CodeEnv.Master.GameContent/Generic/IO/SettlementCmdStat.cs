@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="unitName">Name of the unit.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
-        /// <param name="maxCmdEffect">The maximum command effect.</param>
+        /// <param name="maxCmdEffect">The maximum command effectiveness.</param>
         /// <param name="formation">The formation.</param>
         /// <param name="population">The population.</param>
         public SettlementCmdStat(string unitName, float maxHitPts, float maxCmdEffect, Formation formation, int population)

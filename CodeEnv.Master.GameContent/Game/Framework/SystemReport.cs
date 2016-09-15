@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public Index3D SectorIndex { get; private set; }
+        public IntVector3 SectorIndex { get; private set; }
 
         // 7.10.16 Eliminated usage of Star, Settlement and Planetoid Reports to calculate partial System values.
         // Access to Owner, Capacity and Resources values now determined (in SystemAccessController) by whether 

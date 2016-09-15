@@ -25,7 +25,7 @@ using UnityEngine;
 
 /// <summary>
 /// Singleton helper class for determining the state of Mouse controls using Ngui's 
-/// default mouse input values. These input values are different than Unitys.
+/// default mouse input values. These input values are different than Unity's.
 /// </summary>
 public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHelper, IDisposable {
 
@@ -248,10 +248,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         _isNotifying = false;
     }
 
-    private void Cleanup() {
-        CallOnDispose();
-        // other cleanup here including any tracking Gui2D elements
-    }
+    private void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -286,6 +283,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         if (isExplicitlyDisposing) {
             // Dispose of managed resources here as you have called Dispose() explicitly
             Cleanup();
+            CallOnDispose();
         }
 
         // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so

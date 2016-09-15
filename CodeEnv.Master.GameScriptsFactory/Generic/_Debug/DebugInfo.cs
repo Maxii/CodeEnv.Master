@@ -48,7 +48,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        if (_gameMgr.CurrentScene == _gameMgr.LobbyScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.LobbyScene) {
             Subscribe();
             BuildContent();
         }
@@ -63,10 +63,10 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, PauseStatePropChangedHandler));
         _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
             _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
             _subscriptions.Add(InputManager.Instance.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
         }
     }
@@ -76,7 +76,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         _debugInfoContent.Clear();
         _debugInfoContent.AppendLine("PauseState: " + _gameMgr.PauseState.GetValueName());
         _debugInfoContent.AppendLine(ConstructQualityText());
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetValueName());
             _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetValueName());
             _debugInfoContent.AppendLine(ConstructCameraSectorText());
@@ -90,7 +90,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     }
 
     private string ConstructCameraSectorText() {
-        Index3D index = MainCameraControl.Instance.SectorIndex;
+        IntVector3 index = MainCameraControl.Instance.SectorIndex;
         string sectorText = SectorGrid.Instance.__IsSectorPresentAt(index) ? index.ToString() : "None";
         return "Camera Sector: " + sectorText;
     }

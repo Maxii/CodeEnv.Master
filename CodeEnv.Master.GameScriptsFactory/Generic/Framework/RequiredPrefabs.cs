@@ -68,6 +68,12 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public ShipCloseOrbitSimulator shipCloseOrbitSimulator;
     public MobileShipCloseOrbitSimulator mobileShipCloseOrbitSimulator;
 
+    [Header("Creators")]
+    public FleetCreator fleetCreator;
+    public StarbaseCreator starbaseCreator;
+    public SettlementCreator settlementCreator;
+    public SystemCreator systemCreator;
+
     [Header("Commands")]
     public FleetCmdItem fleetCmd;
     public SettlementCmdItem settlementCmd;

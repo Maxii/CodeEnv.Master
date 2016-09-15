@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+
+<!-- Client is SystemNameXmlReader : AXmlReader -->
+<!-- Source of names: https://en.wikipedia.org/wiki/List_of_proper_names_of_stars -->
+
+<Values>
+  <SystemName>Acamar</SystemName>
+  <SystemName>Aldebaran</SystemName>
+  <SystemName>Alpha</SystemName>
+  <SystemName>Antares</SystemName>
+  <SystemName>Arcturus</SystemName>
+  <SystemName>Bellatrix</SystemName>
+  <SystemName>Beta</SystemName>
+  <SystemName>Capella</SystemName>
+  <SystemName>Delta</SystemName>
+  <SystemName>Deneb</SystemName>
+  <SystemName>Electra</SystemName>
+  <SystemName>Furud</SystemName>
+  <SystemName>Gamma</SystemName>
+  <SystemName>Garnet</SystemName>
+  <SystemName>Hadar</SystemName>
+  <SystemName>Jabbah</SystemName>
+  <SystemName>Kastra</SystemName>
+  <SystemName>Libertas</SystemName>
+  <SystemName>Mintaka</SystemName>
+  <SystemName>Mira</SystemName>
+  <SystemName>Nembus</SystemName>
+  <SystemName>Polaris</SystemName>
+  <SystemName>Procyon</SystemName>
+  <SystemName>Regulus</SystemName>
+  <SystemName>Rigel</SystemName>
+  <SystemName>Sirius</SystemName>
+  <SystemName>Syrma</SystemName>
+  <SystemName>Tyl</SystemName>
+  <SystemName>Vega</SystemName>
+  <SystemName>Zaurak</SystemName>
+</Values>
+<!-- Elements are only empty if they are in the format <ElementName/> -->
+

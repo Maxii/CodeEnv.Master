@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
     public class NewGamePreferenceSettings {
 
         public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
+        public SystemDensityGuiSelection SystemDensitySelection { get; set; }
         public int PlayerCount { get; set; }
 
         public SpeciesGuiSelection UserPlayerSpeciesSelection { get; set; }
@@ -33,6 +34,9 @@ namespace CodeEnv.Master.GameContent {
         public GameColor[] AIPlayerColors { get; set; }
 
         public IQ[] AIPlayerIQs { get; set; }
+
+        public TeamID UserPlayerTeam { get; set; }
+        public TeamID[] AIPlayersTeams { get; set; }
 
         public NewGamePreferenceSettings() { }
 

@@ -51,6 +51,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         set { base.Data = value; }
     }
 
+    public override float ClearanceRadius { get { return Data.CloseOrbitOuterRadius * 2F; } }
+
     public override float Radius { get { return Data.Radius; } }
 
     public UniverseCenterReport UserReport { get { return Publisher.GetUserReport(); } }
@@ -69,6 +71,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     private Rigidbody _highOrbitRigidbody;
 
     #region Initialization
+
+    protected override bool InitializeDebugLog() {
+        return _showDebugLog;
+    }
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -116,7 +122,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     private IList<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = Data.CloseOrbitOuterRadius * PatrolStationDistanceMultiplier;
-        var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
+        var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
             patrolStations.Add(new StationaryLocation(loc));
@@ -168,6 +174,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
     }
 
+    protected sealed override void HandleIsOperationalChanged() {
+        base.HandleIsOperationalChanged();
+        // Warning: Avoid doing anything here as IsOperational's purpose is to indicate alive or dead
+    }
+
     #endregion
 
     #region Cleanup
@@ -186,10 +197,15 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Debug
+
+    [SerializeField]
+    private bool _showDebugLog = false;
+
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
@@ -203,11 +219,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
         }
@@ -216,6 +232,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
             Destroy(drawCntl);
         }
     }
+
+    #endregion
 
     #endregion
 
@@ -325,6 +343,18 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
+    }
+
+    /// <summary>
+    /// Resets the ISensorDetectable item based on current detection levels of the provided player.
+    /// <remarks>8.2.16 Currently used
+    /// 1) when player has lost the Alliance relationship with the owner of this item, and
+    /// 2) when the owner of the item is about to be replaced by another player.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    public void ResetBasedOnCurrentDetection(Player player) {
+        // OPTIMIZE throw new System.NotSupportedException("{0}: Shouldn't happen.".Inject(GetType().Name));
+        _detectionHandler.ResetBasedOnCurrentDetection(player);
     }
 
     #endregion

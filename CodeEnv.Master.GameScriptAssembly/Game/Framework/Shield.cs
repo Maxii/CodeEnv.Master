@@ -124,7 +124,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     #region Debug Show Shield
 
     private void InitializeDebugShowShield() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showShieldsChanged += ShowDebugShieldsChangedEventHandler;
         if (debugValues.ShowShields) {
             EnableDebugShowShield(true);
@@ -138,7 +138,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     }
 
     private void HandleDebugShieldIsOperationalChanged() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         if (debugValues.ShowShields) {
             DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
             drawCntl.Color = IsOperational ? Color.green : Color.red;
@@ -146,11 +146,11 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     }
 
     private void ShowDebugShieldsChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowShield(DebugValues.Instance.ShowShields);
+        EnableDebugShowShield(DebugControls.Instance.ShowShields);
     }
 
     private void CleanupDebugShowShield() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showShieldsChanged -= ShowDebugShieldsChangedEventHandler;
         }

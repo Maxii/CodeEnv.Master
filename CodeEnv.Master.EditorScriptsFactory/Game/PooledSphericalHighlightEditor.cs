@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PooledSphericalHighlightEditor.cs
-// Custom Editor for the PooledSphericalHighlight Monobehaviour.
+// Custom Editor for the PooledSphericalHighlight MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,19 +21,31 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Custom Editor for the PooledSphericalHighlight Monobehaviour.
+/// Custom Editor for the PooledSphericalHighlight MonoBehaviour.
 /// </summary>
 [CustomEditor(typeof(PooledSphericalHighlight))]
 public class PooledSphericalHighlightEditor : Editor {
 
     public override void OnInspectorGUI() {
-        var script = target as PooledSphericalHighlight;
+        serializedObject.Update();
 
-        script.enableTrackingLabel = EditorGUILayout.Toggle(new GUIContent("Tracking Label", "Check to show a tracking label."), script.enableTrackingLabel);
+        EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+        {
+            EditorGUI.BeginDisabledGroup(true);
+            {
+                NGUIEditorTools.SetLabelWidth(120F);
+                NGUIEditorTools.DrawProperty("Edit transparency", serializedObject, "_enableEditorAlphaControl");
+                NGUIEditorTools.SetLabelWidth(100F);
+                NGUIEditorTools.DrawProperty("Transparency", serializedObject, "_alpha");
+            }
+            EditorGUI.EndDisabledGroup();
 
-        if (GUI.changed) {
-            EditorUtility.SetDirty(target);
+            NGUIEditorTools.SetLabelWidth(140F);
+            NGUIEditorTools.DrawProperty("Enable Tracking Label", serializedObject, "_enableTrackingLabel");
         }
+        EditorGUI.EndDisabledGroup();
+
+        serializedObject.ApplyModifiedProperties();
     }
 
     public override string ToString() {

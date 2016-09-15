@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ITopographyChangeListener {
 
-        void HandleTopographyChanged(Topography newTopography);
+        void ChangeTopographyTo(Topography newTopography);
 
     }
 }

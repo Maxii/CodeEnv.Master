@@ -43,7 +43,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     }
 
     protected override void Initialize() {
-        // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
+        // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         _globeFormation = RequiredPrefabs.Instance.globeFormation;
         _wedgeFormation = RequiredPrefabs.Instance.wedgeFormation;
         _planeFormation = RequiredPrefabs.Instance.planeFormation;
@@ -92,7 +92,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
     private IList<FormationStationSlotInfo> GenerateFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
-        System.DateTime startTime = System.DateTime.UtcNow;
+        //System.DateTime startTime = System.DateTime.UtcNow;
 
         GameObject formationGrid;
         switch (formation) {
@@ -139,8 +139,8 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
         }
         // this value is from HQ to the outside element, so add that element's formation station radius
         formationRadius += TempGameValues.FleetFormationStationRadius;
-        D.Log("{0} generated a {1} Formation accommodating up to {2} elements with radius {3:0.#}.", GetType().Name, formation.GetValueName(), placeholderCount, formationRadius);
-        D.Log("{0}: Generating a {1} Formation took {2:0.####} secs.", GetType().Name, formation.GetValueName(), (System.DateTime.UtcNow - startTime).TotalSeconds);
+        //D.Log("{0} generated a {1} Formation accommodating up to {2} elements with radius {3:0.#}.", GetType().Name, formation.GetValueName(), placeholderCount, formationRadius);
+        //D.Log("{0}: Generating a {1} Formation took {2:0.####} secs.", GetType().Name, formation.GetValueName(), (System.DateTime.UtcNow - startTime).TotalSeconds);
         ValidateSlotIDs(stationSlotInfos);
         return stationSlotInfos;
     }
@@ -150,9 +150,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
         D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate), "{0} found duplicate {1}: {2}.", GetType().Name, typeof(FormationStationSlotID).Name, duplicate.GetValueName());
     }
 
-    private void Cleanup() {
-        CallOnDispose();
-    }
+    private void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -187,6 +185,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
         if (isExplicitlyDisposing) {
             // Dispose of managed resources here as you have called Dispose() explicitly
             Cleanup();
+            CallOnDispose();
         }
 
         // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so

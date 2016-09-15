@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable stat containing externally acquirable values for UnitCmds.
-    /// This version is sufficient by itself for FleetCmds.
+    /// This version is sufficient by itself for Fleet and Starbase Cmds.
     /// </summary>
     public class UnitCmdStat {
 

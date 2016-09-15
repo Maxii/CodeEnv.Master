@@ -47,19 +47,19 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     [SerializeField]
     private int _distanceInSectorsFromCamera = 2;
 
-    private Index3D _currentSectorIndex;
+    private IntVector3 _currentSectorIndex;
     /// <summary>
     /// The Location of this SectorExaminer expressed as the index of the Sector it is over.
     /// </summary>
-    public Index3D CurrentSectorIndex {
+    public IntVector3 CurrentSectorIndex {
         get {
-            if (_currentSectorIndex == default(Index3D)) {
+            if (_currentSectorIndex == default(IntVector3)) {
                 // First time initialization. Can't be done in Awake as it can run before SectorGrid.Awake?
-                _currentSectorIndex = _sectorGrid.GetSectorIndex(Position);
+                _currentSectorIndex = _sectorGrid.GetSectorIndexThatContains(Position);
             }
             return _currentSectorIndex;
         }
-        private set { SetProperty<Index3D>(ref _currentSectorIndex, value, "CurrentSectorIndex", CurrentSectorIndexPropChangedHandler, CurrentSectorIndexPropChangingHandler); }
+        private set { SetProperty<IntVector3>(ref _currentSectorIndex, value, "CurrentSectorIndex", CurrentSectorIndexPropChangedHandler, CurrentSectorIndexPropChangingHandler); }
     }
 
     private bool IsSectorWireframeShowing { get { return _wireframe != null && _wireframe.IsShowing; } }
@@ -110,7 +110,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void DynamicallySubscribe(bool toSubscribe) {
         IDisposable d;
         if (toSubscribe) {
-            d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler);
+            d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler);
             D.Assert(!_subscriptions.Contains(d), "{0} found duplicate subscription.", DisplayName);
             _subscriptions.Add(d);
             UICamera.onMouseMove += MouseMovedEventHandler;
@@ -134,7 +134,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         ShowSectorUnderMouse();
     }
 
-    private void CurrentSectorIndexPropChangingHandler(Index3D newSectorIndex) {
+    private void CurrentSectorIndexPropChangingHandler(IntVector3 newSectorIndex) {
         // Current Sector Index is about to change so turn off any Sector Highlights showing
         HighlightSectorContents(false);
         ShowSectorDebugLog(false);
@@ -258,7 +258,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             Vector3 mousePosition = Input.mousePosition;
             mousePosition.z = _distanceToHighlightedSector;
             Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
-            Index3D sectorIndexUnderMouse = _sectorGrid.GetSectorIndex(mouseWorldPoint);
+            IntVector3 sectorIndexUnderMouse = _sectorGrid.GetSectorIndexThatContains(mouseWorldPoint);
             if (_sectorGrid.__IsSectorPresentAt(sectorIndexUnderMouse)) {
                 if (CurrentSectorIndex != sectorIndexUnderMouse) {    // avoid the SetProperty equivalent warnings
                     CurrentSectorIndex = sectorIndexUnderMouse;
@@ -290,7 +290,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void HighlightSectorContents(bool toShow) {
         IEnumerable<ISectorViewHighlightable> highlightablesInSector;
-        if (_sectorGrid.TryGetSectorViewHighlightables(CurrentSectorIndex, out highlightablesInSector)) {
+        if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorIndex, out highlightablesInSector)) {
             D.Log(_showDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorIndex);
             highlightablesInSector.ForAll(highlightable => {
                 if (highlightable.IsSectorViewHighlightShowing != toShow) {

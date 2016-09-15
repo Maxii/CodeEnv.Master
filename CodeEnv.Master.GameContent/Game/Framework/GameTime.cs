@@ -42,7 +42,8 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum precision used by Hours in the game.
         /// <remarks>0.1 hour tolerance is about the best I can expect at an FPS as low as 25 
-        /// (0.04 secs between updates to GameTime) and GameSettings.HoursPerSecond of 2.0
+        /// (0.04 secs between updates to GameTime, and Time.time is defined as the time at the beginning
+        /// of the frame and will not change until the next frame starts) and GameSettings.HoursPerSecond of 2.0
         /// => 0.04 * 2.0 = 0.08 hours tolerance. Granularity will be better at higher FPS, 
         /// but I can't count on it.</remarks>
         /// </summary>
@@ -63,6 +64,9 @@ namespace CodeEnv.Master.GameContent {
         public static readonly float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
         public static readonly int GameStartYear = GeneralSettings.Instance.GameStartYear;
         public static readonly int GameEndYear = GeneralSettings.Instance.GameEndYear;
+
+        public static readonly GameDate GameStartDate = new GameDate(Constants.ZeroF, Constants.Zero, GameStartYear);    // 2700.000.00.0
+        public static readonly GameDate GameEndDate = new GameDate(HoursPerDay - HoursPrecision, DaysPerYear - 1, GameEndYear);    // 8999.099.19.9
 
         #endregion
 
@@ -104,13 +108,19 @@ namespace CodeEnv.Master.GameContent {
 
         private float _gameSpeedMultiplier;
         public float GameSpeedMultiplier {
-            get { return _gameSpeedMultiplier; }
+            get {
+                D.Assert(_gameSpeedMultiplier > Constants.ZeroF);
+                return _gameSpeedMultiplier;
+            }
             set { SetProperty<float>(ref _gameSpeedMultiplier, value, "GameSpeedMultiplier"); }
         }
 
         private GameSpeed _gameSpeed;
         public GameSpeed GameSpeed {
-            get { return _gameSpeed; }
+            get {
+                D.Assert(_gameSpeed != GameSpeed.None);
+                return _gameSpeed;
+            }
             set { SetProperty<GameSpeed>(ref _gameSpeed, value, "GameSpeed", GameSpeedPropChangedHandler, GameSpeedPropChangingHandler); }
         }
 
@@ -157,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
         [Obsolete]
         public float DeltaTimeOrPaused {
             get {
-                WarnIfGameInstanceNotRunning();
+                __WarnIfGameNotRunning();
                 if (_gameMgr.IsPaused) {
                     return Constants.ZeroF;
                 }
@@ -175,6 +185,9 @@ namespace CodeEnv.Master.GameContent {
         /// The number of seconds since this current UnitySession started, aka UnityEngine.Time.time. 
         /// In a standalone player, this is the time since the player was started. In the editor, this is the 
         /// time since the Editor Play button was pushed. GameSpeed has no effect.
+        /// <remarks>Derived from Time.time which is the seconds value at the beginning of a frame. This value 
+        /// DOES NOT CHANGE within a frame, which means with an FPS rate of 25, accuracy is no better than 0.04 seconds.</remarks>
+        /// IMPROVE Use .Net System.DateTime.UTCNow?
         /// </summary>
         public float CurrentUnitySessionTime { get { return Time.time; } }
 
@@ -186,7 +199,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float GameInstanceTime {
             get {
-                WarnIfGameInstanceNotRunning();
+                __WarnIfGameNotRunning();
                 return _cumGameInstanceTimeInPriorUnitySessions + CurrentUnitySessionTime - _currentUnitySessionTimeWhenGameInstanceBegan;
             }
         }
@@ -199,7 +212,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float GameInstancePlayTime {
             get {
-                WarnIfGameInstanceNotRunning();
+                __WarnIfGameNotRunning();
                 float gameInstanceTimeSpentInCurrentPause = Constants.ZeroF;
                 if (_gameMgr.IsPaused) {
                     gameInstanceTimeSpentInCurrentPause = GameInstanceTime - _gameInstanceTimeCurrentPauseBegan;
@@ -214,14 +227,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public GameDate CurrentDate {
             get {
-                WarnIfGameInstanceNotRunning();
+                __WarnIfGameNotRunning();
                 return _currentDate;
             }
             private set { SetProperty<GameDate>(ref _currentDate, value, "CurrentDate"); }
         }
 
         /// <summary>
-        /// The number of seconds accummulated by a saved GameInstance in UnitySessions prior to this one.
+        /// The number of seconds accumulated by a saved GameInstance in UnitySessions prior to this one.
         /// This value is saved when a GameInstance is saved.
         /// </summary>
         private float _cumGameInstanceTimeInPriorUnitySessions;
@@ -232,7 +245,7 @@ namespace CodeEnv.Master.GameContent {
         private float _currentUnitySessionTimeWhenGameInstanceBegan;
 
         /// <summary>
-        /// The accummulated number of seconds this new or saved GameInstance has spent paused 
+        /// The accumulated number of seconds this new or saved GameInstance has spent paused 
         /// since it originally began in this or prior UnitySessions. This value is saved when a GameInstance is saved.
         /// </summary>
         private float _cumGameInstanceTimePaused;
@@ -270,8 +283,8 @@ namespace CodeEnv.Master.GameContent {
             D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision, "See {0}.HoursPrecision notes above.", GetType().Name);
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
-            PrepareToBeginNewGame();
             Subscribe();
+            ////PrepareToBeginNewGame();
         }
 
         private void Subscribe() {
@@ -281,7 +294,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void PrepareToBeginNewGame() {
-            D.Log("{0}.PrepareToBeginNewGame() called.", GetType().Name);
             _cumGameInstanceTimeInPriorUnitySessions = Constants.ZeroF;
             _currentUnitySessionTimeWhenGameInstanceBegan = Constants.ZeroF;
             _cumGameInstanceTimePaused = Constants.ZeroF;
@@ -292,8 +304,10 @@ namespace CodeEnv.Master.GameContent {
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
-            // no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synched CurrentDate instance once Date is requested
-            // onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
+            //// no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synced CurrentDate instance once Date is requested
+            //// onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
+            _currentDate = GameStartDate;   // 8.13.16 added as otherwise at the mercy of GameMgr calling CheckForDateChange() once IsRunning
+            D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", GetType().Name, Time.frameCount, Time.time, Utility.TimeStamp);
         }
 
         public void PrepareToSaveGame() {
@@ -322,10 +336,15 @@ namespace CodeEnv.Master.GameContent {
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the GameSpeed when saved is not relevant to the resumed GameInstance
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
-            // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime everytime it is used
+            // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime every time it is used
             // the list of subscribers to onDateChanged should be fine as saved
         }
 
+        /// <summary>
+        /// Checks for a change to the current date. Called by GameManager's Update
+        /// method to keep the date accurate. Does nothing if the game isn't running
+        /// or if it is paused.
+        /// </summary>
         public void CheckForDateChange() {
             if (_gameMgr.IsRunning && !_gameMgr.IsPaused) {
                 RefreshCurrentDateTime();
@@ -348,7 +367,7 @@ namespace CodeEnv.Master.GameContent {
                     toUpdateCurrentDate = true;
                 }
                 if (toUpdateCurrentDate) {
-                    D.Log("{0}: Changing CurrentDate to {1}.", GetType().Name, updatedDate);
+                    //D.Log("{0}: Changing CurrentDate to {1}.", GetType().Name, updatedDate);
                     CurrentDate = updatedDate;  // must be done before event fired
                 }
                 if (toFireCalenderDateChangedEvent) {
@@ -409,7 +428,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Brings _currentDateTime up to date. While the Date only needs to be refreshed when it is about to be used,
-        ///_currentDateTime must keep track of accummulated pauses and game speed changes. It is not necessary to 
+        /// _currentDateTime must keep track of accumulated pauses and game speed changes. It is not necessary to 
         /// refresh the date when a pause or speed change occurs as they don't have any use for the date.
         /// </summary>
         private void RefreshCurrentDateTime() {
@@ -422,13 +441,8 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", GetType().Name, _currentDateTime);
         }
 
-        private void WarnIfGameInstanceNotRunning() {
-            D.Warn(!_gameMgr.IsRunning, "{0} reports {1} should have a GameInstance running.", GetType().Name, typeof(IGameManager).Name);
-        }
-
         private void Cleanup() {
             Unsubscribe();
-            CallOnDispose();
         }
 
         private void Unsubscribe() {
@@ -439,6 +453,14 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Debug
+
+        private void __WarnIfGameNotRunning() {
+            D.Warn(!_gameMgr.IsRunning, "{0}: {1} should be running. Frame = {2}.", GetType().Name, typeof(IGameManager).Name, Time.frameCount);
+        }
+
+        #endregion
 
         #region IDisposable
 
@@ -469,6 +491,7 @@ namespace CodeEnv.Master.GameContent {
             if (isExplicitlyDisposing) {
                 // Dispose of managed resources here as you have called Dispose() explicitly
                 Cleanup();
+                CallOnDispose();
             }
 
             // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so

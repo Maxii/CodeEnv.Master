@@ -61,6 +61,11 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     public event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
+    /// <summary>
+    /// Indicates whether this sector is on the outer periphery of the universe.
+    /// </summary>
+    public bool IsOnPeriphery { get; private set; }
+
     public bool ShowDebugLog { get; set; }
 
     private SectorData _data;
@@ -90,6 +95,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     /// <summary>
     /// Indicates whether this item has commenced operations.
+    /// <remarks>Warning: Avoid implementing IsOperationalPropChangedHandler as IsOperational's purpose is about alive or dead.</remarks>
     /// </summary>
     public bool IsOperational {
         get { return Data != null ? Data.IsOperational : false; }
@@ -117,7 +123,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
-    public Index3D SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
 
     public SectorReport UserReport { get { return Publisher.GetUserReport(); } }
 
@@ -147,6 +153,16 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
     }
 
+    private Vector3 RandomInsidePoint {
+        get {
+            float radius = Radius;
+            float x = UnityEngine.Random.Range(-radius, radius);
+            float y = UnityEngine.Random.Range(-radius, radius);
+            float z = UnityEngine.Random.Range(-radius, radius);
+            return Position + new Vector3(x, y, z);
+        }
+    }
+
     private IList<IDisposable> _subscriptions;
     private IInputManager _inputMgr;
     private ItemHudManager _hudManager;
@@ -155,8 +171,9 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #region Initialization
 
-    public Sector(Vector3 position) {
+    public Sector(Vector3 position, bool isOnPeriphery) {
         Position = position;
+        IsOnPeriphery = isOnPeriphery;
         Initialize();
         Subscribe();
     }
@@ -194,7 +211,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     private IList<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = Radius * PatrolStationDistanceMultiplier;
-        var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
+        var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
             patrolStations.Add(new StationaryLocation(loc));
@@ -213,18 +230,19 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     /// <summary>
-    /// The final Initialization opportunity. The first method called from CommenceOperations,
-    /// BEFORE IsOperational is set to true.
+    /// The final Initialization opportunity before CommenceOperations().
     /// </summary>
-    private void FinalInitialize() { }
+    public void FinalInitialize() {
+        Data.FinalInitialize();
+    }
 
     #endregion
 
     /// <summary>
-    /// Called when the Item should start operations, typically once the game is running.
+    /// Called when the Sector should begin operations.
     /// </summary>
     public void CommenceOperations() {
-        FinalInitialize();
+        //D.Assert(_gameMgr.IsRunning); // OPTIMIZE Currently called in GameState.PrepareForRunning
         Data.CommenceOperations();
     }
 
@@ -267,6 +285,82 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public bool IsOwnerAccessibleTo(Player player) {
         return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
     }
+
+    /// <summary>
+    /// Returns a random position inside the sector that is clear of any interference.
+    /// </summary>
+    /// <returns></returns>
+    public Vector3 GetClearRandomPointInsideSector() {
+        return GetClearRandomPointInsideSector(Constants.Zero);
+    }
+
+    private Vector3 GetClearRandomPointInsideSector(int iterateCount) {
+        var pointCandidate = RandomInsidePoint;
+        if (ConfirmLocationIsClear(pointCandidate)) {
+            return pointCandidate;
+        }
+
+        D.Assert(iterateCount < 100, "{0} could not find a clear random point inside.", Name);
+        iterateCount++;
+        return GetClearRandomPointInsideSector(iterateCount);
+    }
+
+    /// <summary>
+    /// Checks the location to confirm it is in a 'clear' area, aka that it is not in a location that interferes
+    /// with other existing items. Returns <c>true</c> if the location is clear, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <returns></returns>
+    private bool ConfirmLocationIsClear(Vector3 location) {
+        bool isInsideSystem = false;
+        if (System != null) {
+            if (MyMath.IsPointInsideSphere(System.Position, System.ClearanceRadius, location)) {
+                // point is close to or inside System
+                if (MyMath.IsPointInsideSphere(System.Star.Position, System.Star.ClearanceRadius, location)) {
+                    return false;
+                }
+                if (System.Settlement != null && MyMath.IsPointInsideSphere(System.Settlement.Position, System.Settlement.ClearanceRadius, location)) {
+                    return false;
+                }
+                foreach (var planet in System.Planets) {
+                    if (MyMath.IsPointInsideSphere(planet.Position, planet.ClearanceRadius, location)) {
+                        return false;
+                    }
+                }
+                isInsideSystem = true;
+            }
+        }
+
+        var gameKnowledge = _gameMgr.GameKnowledge;
+        if (!isInsideSystem) {
+            // UNCLEAR can starbases be inside system?
+            var uCenter = gameKnowledge.UniverseCenter;
+            if (uCenter != null) {
+                if (MyMath.IsPointInsideSphere(uCenter.Position, uCenter.ClearanceRadius, location)) {
+                    return false;
+                }
+            }
+            IEnumerable<IStarbaseCmd> starbases;
+            if (gameKnowledge.TryGetStarbases(SectorIndex, out starbases)) {
+                foreach (var sbase in starbases) {
+                    if (MyMath.IsPointInsideSphere(sbase.Position, sbase.ClearanceRadius, location)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        IEnumerable<IFleetCmd> fleets;
+        if (gameKnowledge.TryGetFleets(SectorIndex, out fleets)) {
+            foreach (var fleet in fleets) {
+                if (MyMath.IsPointInsideSphere(fleet.Position, fleet.ClearanceRadius, location)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
 
     #region Event and Property Change Handlers
 

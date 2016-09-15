@@ -30,11 +30,13 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
-        public override Index3D SectorIndex { get { return _sectorIndex; } }
+        public override IntVector3 SectorIndex { get { return _sectorIndex; } }
 
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
-        private Index3D _sectorIndex;
+        private IntVector3 _sectorIndex;
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
@@ -46,11 +48,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
+        /// <param name="hqPriority">The HQ priority.</param>
         /// <param name="topography">The topography.</param>
         public FacilityData(IFacility facility, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Topography topography)
-            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
+            Priority hqPriority, Topography topography)
+            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority) {
             Topography = topography;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
@@ -61,18 +64,20 @@ namespace CodeEnv.Master.GameContent {
             return new FacilityInfoAccessController(this);
         }
 
-        protected override void FinalInitialize() {
+        public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
             _sectorIndex = InitializeSectorIndex();
         }
 
-        private Index3D InitializeSectorIndex() {
-            Index3D sectorIndex = References.SectorGrid.GetSectorIndex(Position);
-            D.Assert(sectorIndex != default(Index3D));
+        private IntVector3 InitializeSectorIndex() {
+            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
+            D.Assert(sectorIndex != default(IntVector3));
             MarkAsChanged();
             return sectorIndex;
         }
+
+        #endregion
 
         #region Event and Property Change Handlers
 

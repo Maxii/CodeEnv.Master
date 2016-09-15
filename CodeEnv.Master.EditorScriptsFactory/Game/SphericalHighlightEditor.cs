@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SphericalHighlightEditor.cs
-// Custom Editor for the SphericalHighlight Monobehaviour.
+// Custom Editor for the SphericalHighlight MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,27 +21,31 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Custom Editor for the SphericalHighlight Monobehaviour.
+/// Custom Editor for the SphericalHighlight MonoBehaviour.
 /// </summary>
 [CustomEditor(typeof(SphericalHighlight))]
 public class SphericalHighlightEditor : Editor {
 
     public override void OnInspectorGUI() {
-        var script = target as SphericalHighlight;
+        serializedObject.Update();
 
-        script.enableEditorAlphaControl = EditorGUILayout.Toggle(new GUIContent("Editor alpha only", "Check to enable manual control of the alpha value."), script.enableEditorAlphaControl);
+        EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+        {
+            NGUIEditorTools.SetLabelWidth(120F);
+            SerializedProperty alphaToggleSP = NGUIEditorTools.DrawProperty("Edit transparency", serializedObject, "_enableEditorAlphaControl");
+            EditorGUI.BeginDisabledGroup(!alphaToggleSP.boolValue);
+            {
+                NGUIEditorTools.SetLabelWidth(100F);
+                NGUIEditorTools.DrawProperty("Transparency", serializedObject, "_alpha");
+            }
+            EditorGUI.EndDisabledGroup();
 
-        if (script.enableEditorAlphaControl) {
-            EditorGUI.indentLevel++;
-            script.alpha = EditorGUILayout.Slider("Alpha", script.alpha, 0.1F, 1F);
-            EditorGUI.indentLevel--;
+            NGUIEditorTools.SetLabelWidth(140F);
+            NGUIEditorTools.DrawProperty("Enable Tracking Label", serializedObject, "_enableTrackingLabel");
         }
+        EditorGUI.EndDisabledGroup();
 
-        script.enableTrackingLabel = EditorGUILayout.Toggle(new GUIContent("Tracking Label", "Check to show a tracking label."), script.enableTrackingLabel);
-
-        if (GUI.changed) {
-            EditorUtility.SetDirty(target);
-        }
+        serializedObject.ApplyModifiedProperties();
     }
 
     public override string ToString() {

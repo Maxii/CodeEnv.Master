@@ -101,7 +101,9 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     public override float Radius { get { return Data.Radius; } }
 
-    public Index3D SectorIndex { get { return Data.SectorIndex; } }
+    public override float ClearanceRadius { get { return Data.Radius * RadiusMultiplierForApproachWaypointsInscribedSphere; } }
+
+    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
 
     private SystemPublisher _publisher;
     private SystemPublisher Publisher {
@@ -124,6 +126,10 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
+    protected override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowSystemDebugLogs;
+    }
+
     protected override void InitializeOnData() {
         base.InitializeOnData();
         // no primary collider that needs data, no ship transit ban zone, no ship orbit slot
@@ -136,7 +142,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     private void __InitializeOrbitalPlaneMeshCollider() {
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
-        _orbitalPlaneCollider.convex = true;    // must preceed isTrigger = true as Trigger's aren't supported on concave meshColliders
+        _orbitalPlaneCollider.convex = true;    // must precede isTrigger = true as Trigger's aren't supported on concave meshColliders
         _orbitalPlaneCollider.isTrigger = true;
         _orbitalPlaneCollider.enabled = true;
     }
@@ -170,7 +176,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     private IList<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = Radius * PatrolStationDistanceMultiplier;
-        var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
+        var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
             patrolStations.Add(new StationaryLocation(loc));
@@ -261,7 +267,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
             settlementCmd.CelestialOrbitSimulator.IsActivated = true;
         }
-        //D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
+        D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
 
     protected override void ShowSelectedItemHud() {
@@ -312,6 +318,11 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
     }
 
+    protected sealed override void HandleIsOperationalChanged() {
+        base.HandleIsOperationalChanged();
+        // Warning: Avoid doing anything here as IsOperational's purpose is to indicate alive or dead
+    }
+
     #endregion
 
     #region Cleanup
@@ -319,7 +330,9 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     protected override void Cleanup() {
         base.Cleanup();
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
-        Data.Dispose();
+        if (Data != null) {  // GameObject can be destroyed during Universe Creation before initialized
+            Data.Dispose();
+        }
     }
 
     #endregion
@@ -344,7 +357,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
         if (!IsDiscernibleToUser) {
             if (sectorViewHighlightMgr.IsHighlightShowing) {
-                D.Log(ShowDebugLog, "{0} recieved ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
+                D.Log(ShowDebugLog, "{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
                 sectorViewHighlightMgr.Show(false);
             }
             return;
@@ -452,9 +465,18 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
+    #region ISystem Members
+
+    ISettlementCmd ISystem.Settlement {
+        get { return Settlement; }
+        set { Settlement = value as SettlementCmdItem; }
+    }
+
+    #endregion
+
     #region ISystem_Ltd Members
 
-    IStar_Ltd ISystem_Ltd.Star { get { return Star as IStar_Ltd; } }
+    IStar_Ltd ISystem_Ltd.Star { get { return Star; } }
 
     public IEnumerable<IPlanet_Ltd> Planets { get { return _planets.Cast<IPlanet_Ltd>(); } }
 

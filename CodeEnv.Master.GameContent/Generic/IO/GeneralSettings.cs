@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _hudRefreshPeriod;
         /// <summary>
-        /// The number of hours between refreshes of the HUD.
+        /// The number of real-time seconds between refreshes of the HUD.
         /// </summary>
         public float HudRefreshPeriod {
             get {

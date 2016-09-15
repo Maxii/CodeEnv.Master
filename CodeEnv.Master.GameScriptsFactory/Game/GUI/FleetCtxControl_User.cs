@@ -122,7 +122,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(FleetDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case FleetDirective.Join:
-                targets = _userKnowledge.MyFleets.Except(_fleetMenuOperator).Cast<INavigable>();
+                targets = _userKnowledge.OwnerFleets.Except(_fleetMenuOperator).Cast<INavigable>();
                 return true;
             case FleetDirective.Patrol:
                 // TODO: More selective of patrol friendly systems. Other patrol targets should be explicitly chosen by user
@@ -130,7 +130,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 return true;
             case FleetDirective.Guard:
                 // Note: Easy access to guard my systems and bases. Other guard targets should be explicitly chosen by user
-                targets = _userKnowledge.MySystems.Cast<INavigable>().Union(_userKnowledge.MyBases.Cast<INavigable>());
+                targets = _userKnowledge.OwnerSystems.Cast<INavigable>().Union(_userKnowledge.OwnerBases.Cast<INavigable>());
                 return true;
             case FleetDirective.Explore:
                 // Note: Easy access to explore systems allowing exploration that need it. Other exploration targets should be explicitly chosen by user
@@ -148,7 +148,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Disband:
             case FleetDirective.Withdraw:   // TODO away from enemy
             case FleetDirective.Retreat:    // TODO away from enemy
-                targets = _userKnowledge.MyBases.Cast<INavigable>();
+                targets = _userKnowledge.OwnerBases.Cast<INavigable>();
                 return true;
             case FleetDirective.Scuttle:
             case FleetDirective.AssumeFormation:    // Note: In-place only, not going to offer LocalAssyStations as targets

@@ -60,6 +60,7 @@ namespace CodeEnv.Master.GameContent {
         private Rigidbody _rigidbody;
         private Transform _transform;
         private IGameManager _gameMgr;
+        private IJobManager _jobMgr;
 
         public DriftCorrector(Transform transform, Rigidbody rigidbody, string optionalClientName = "Unknown") {
             D.Assert(!rigidbody.useGravity);    // can be isKinematic until operations commence
@@ -67,12 +68,13 @@ namespace CodeEnv.Master.GameContent {
             _transform = transform;
             _rigidbody = rigidbody;
             _gameMgr = References.GameManager;
+            _jobMgr = References.JobManager;
         }
 
         public void Engage() {
             D.Assert(!IsDriftCorrectionEngaged);
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-            _driftCorrectionJob = new Job(OperateDriftCorrection(), toStart: true, jobCompleted: (jobWasKilled) => {
+            string jobName = "{0}.DriftCorrectionJob".Inject(Name);
+            _driftCorrectionJob = _jobMgr.StartGameplayJob(OperateDriftCorrection(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     //D.Log("{0}: DriftCorrection completed normally. Negating remaining drift.", Name);
                     Vector3 localVelocity = _transform.InverseTransformDirection(_rigidbody.velocity);
@@ -115,11 +117,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public void Pause(bool toPause) {
-            if (IsDriftCorrectionEngaged) {
-                _driftCorrectionJob.IsPaused = toPause;
-            }
-        }
+        // 8.12.16 Handling pausing for all Jobs moved to JobManager
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
 
         FleetCmdReport UserReport { get; }
 
+        FleetOrder CurrentOrder { set; }
+
         FleetCmdReport GetReport(Player player);
 
         ShipReport[] GetElementReports(Player player);

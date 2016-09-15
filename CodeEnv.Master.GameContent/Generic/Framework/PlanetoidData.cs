@@ -58,8 +58,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        public override Index3D SectorIndex { get { return _sectorIndex; } }
-        private Index3D _sectorIndex;
+        public override IntVector3 SectorIndex { get { return _sectorIndex; } }
+        private IntVector3 _sectorIndex;
 
         /// <summary>
         /// The mass of this Planetoid.
@@ -69,6 +69,8 @@ namespace CodeEnv.Master.GameContent {
         public float Mass { get; private set; }
 
         public new PlanetoidInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as PlanetoidInfoAccessController; } }
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetoidData" /> class
@@ -106,21 +108,23 @@ namespace CodeEnv.Master.GameContent {
             _sectorIndex = InitializeSectorIndex();
         }
 
-        private Index3D InitializeSectorIndex() {
-            Index3D sectorIndex = References.SectorGrid.GetSectorIndex(Position);
-            D.Assert(sectorIndex != default(Index3D));
+        private IntVector3 InitializeSectorIndex() {
+            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
+            D.Assert(sectorIndex != default(IntVector3));
             MarkAsChanged();
             return sectorIndex;
         }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new PlanetoidInfoAccessController(this);
+        }
+
+        #endregion
 
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
-        }
-
-        protected override AInfoAccessController InitializeInfoAccessController() {
-            return new PlanetoidInfoAccessController(this);
         }
 
         #region Event and Property Change Handlers

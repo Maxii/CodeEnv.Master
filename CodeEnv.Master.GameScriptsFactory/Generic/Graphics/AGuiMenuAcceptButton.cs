@@ -24,7 +24,7 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base class for Accept or Launch buttons used by AGuiWindow menus and screens. 
-/// Accummulates values from GuiElements that are components of the menu or screen and when clicked, 
+/// Accumulates values from GuiElements that are components of the menu or screen and when clicked, 
 /// communicates those values to the appropriate target.
 /// </summary>
 public abstract class AGuiMenuAcceptButton : AGuiButton {

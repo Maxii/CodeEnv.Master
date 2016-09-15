@@ -37,6 +37,18 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         set { base.Data = value; }
     }
 
+    public override float ClearanceRadius {
+        get {
+            float baseClearance = Data.CloseOrbitOuterRadius;
+            if (_childMoons.Any()) {
+                MoonItem outerMoon = _childMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+                float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+                baseClearance = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
+            }
+            return baseClearance * 2F;
+        }
+    }
+
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
     /// <summary>
@@ -83,14 +95,14 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         return new HoverHighlightManager(this, highlightRadius);
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         RecordAnyChildMoons();
     }
 
     private void RecordAnyChildMoons() {
         _childMoons = gameObject.GetComponentsInChildren<MoonItem>();
-        D.Log(ShowDebugLog && _childMoons.Any(), "{0} recorded {1} child moons.", FullName, _childMoons.Count());
+        //D.Log(ShowDebugLog && _childMoons.Any(), "{0} recorded {1} child moons.", FullName, _childMoons.Count());
     }
 
     #endregion
@@ -123,7 +135,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         base.HandleEffectSequenceFinished(effectID);
-        D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
+        //D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
         switch (effectID) {
             case EffectSequenceID.Dying:
                 if (_childMoons.Any()) {
@@ -158,7 +170,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     }
 
     private void HandleMoonDeathEffectFinished() {
-        D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, _childMoons.Count());
+        //D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, _childMoons.Count());
         if (_childMoons.Count() == Constants.Zero) {
             // The last moon has shown its death effect as a result of the planet's death
             DestroyMe();

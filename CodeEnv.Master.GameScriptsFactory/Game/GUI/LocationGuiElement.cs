@@ -31,12 +31,12 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     public override GuiElementID ElementID { get { return GuiElementID.Location; } }
 
-    private Index3D _sectorIndex;
-    public Index3D SectorIndex {
+    private IntVector3 _sectorIndex;
+    public IntVector3 SectorIndex {
         get { return _sectorIndex; }
         set {
-            D.Assert(_sectorIndex == default(Index3D)); // only occurs once between Resets
-            SetProperty<Index3D>(ref _sectorIndex, value, "SectorIndex", SectorIndexPropSetHandler);
+            D.Assert(_sectorIndex == default(IntVector3)); // only occurs once between Resets
+            SetProperty<IntVector3>(ref _sectorIndex, value, "SectorIndex", SectorIndexPropSetHandler);
         }
     }
 
@@ -54,7 +54,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    protected virtual bool AreAllValuesSet { get { return _isPositionSet && SectorIndex != default(Index3D); } }
+    protected virtual bool AreAllValuesSet { get { return _isPositionSet && SectorIndex != default(IntVector3); } }
 
     private float? _closestBaseDistanceInSectors;
     private UILabel _label;
@@ -110,7 +110,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     public override void Reset() {
         _isPositionSet = false;
-        _sectorIndex = default(Index3D);
+        _sectorIndex = default(IntVector3);
     }
 
     protected override void Cleanup() { }

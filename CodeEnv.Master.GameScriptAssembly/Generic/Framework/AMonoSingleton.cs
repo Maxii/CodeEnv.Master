@@ -192,7 +192,7 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     /// <remarks>Typically used to ID method calls that I don't expect to occur.</remarks>
     /// </summary>
     public override void LogEventWarning() {
-        string methodName = GetMethodName();
+        string methodName = GetCallingMethodName();
         string fullMethodName = AMonoSingletonDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, InstanceCount, methodName);
         Debug.LogWarning("Unclear why {0} was called.".Inject(fullMethodName));
     }
@@ -203,9 +203,9 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     /// </summary>
     public override void LogEvent() {
         if (_debugSettings.EnableEventLogging) {
-            string methodName = GetMethodName();
+            string methodName = GetCallingMethodName();
             string fullMethodName = AMonoSingletonDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, InstanceCount, methodName);
-            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
+            Debug.Log("{0} beginning execution. Frame {1}, UnityTime {2:0.0}.".Inject(fullMethodName, Time.frameCount, Time.time));
         }
     }
 

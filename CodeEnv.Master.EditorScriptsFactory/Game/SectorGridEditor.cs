@@ -27,21 +27,29 @@ using UnityEngine;
 public class SectorGridEditor : Editor {
 
     public override void OnInspectorGUI() {
-        var sectorGrid = target as SectorGrid;
+        serializedObject.Update();
 
-        sectorGrid.sectorVisibilityDepth = EditorGUILayout.FloatField(new GUIContent("Sector Visibility Depth", "Controls how many sectors are visible when in SectorViewMode."), sectorGrid.sectorVisibilityDepth);
+        EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+        {
+            NGUIEditorTools.SetLabelWidth(160F);
+            NGUIEditorTools.DrawProperty("Sector Visibility Depth", serializedObject, "_sectorVisibilityDepth");
 
-        sectorGrid.enableGridSizeLimit = EditorGUILayout.Toggle(new GUIContent("Enable GridSize Limits", "Allows limiting the size of the sector grid for debugging."), sectorGrid.enableGridSizeLimit);
+            GUILayout.Space(5F);
 
-        if (sectorGrid.enableGridSizeLimit) {
-            EditorGUI.indentLevel++;
-            sectorGrid.debugMaxGridSize = EditorGUILayout.Vector3Field(new GUIContent("Max Grid Size", "Max size of the grid of sectors. Must be cube of even values."), sectorGrid.debugMaxGridSize);
-            EditorGUI.indentLevel--;
+            NGUIEditorTools.SetLabelWidth(160F);
+            SerializedProperty isDebugGridSizeLimitEnabledSP = NGUIEditorTools.DrawProperty("Enable Grid Size Limits", serializedObject, "_enableGridSizeLimit");
+
+            EditorGUI.BeginDisabledGroup(!isDebugGridSizeLimitEnabledSP.boolValue);
+            {
+                NGUIEditorTools.SetLabelWidth(100F);
+                NGUIEditorTools.DrawProperty("Max Grid Size", serializedObject, "_debugMaxGridSize");
+
+            }
+            EditorGUI.EndDisabledGroup();
         }
+        EditorGUI.EndDisabledGroup();
 
-        if (GUI.changed) {
-            EditorUtility.SetDirty(target);
-        }
+        serializedObject.ApplyModifiedProperties();
     }
 
     public override string ToString() {

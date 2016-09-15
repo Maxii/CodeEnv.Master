@@ -102,14 +102,11 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         go.transform.position = position;
         go.layer = (int)Layers.TransparentFX;
         var destroyOnCompletion = go.AddComponent<DestroyEffectOnCompletion>();
-        destroyOnCompletion.effectType = DestroyEffectOnCompletion.EffectType.AudioSFX;
+        destroyOnCompletion.KindOfEffect = DestroyEffectOnCompletion.EffectType.AudioSFX;
         return go;
     }
 
-    private void Cleanup() {
-        CallOnDispose();
-        // other cleanup here including any tracking Gui2D elements
-    }
+    private void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -144,6 +141,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         if (isExplicitlyDisposing) {
             // Dispose of managed resources here as you have called Dispose() explicitly
             Cleanup();
+            CallOnDispose();
         }
 
         // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so

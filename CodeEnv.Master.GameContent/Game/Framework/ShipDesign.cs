@@ -34,8 +34,8 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipDesign(Player player, string designName, ShipHullStat hullStat, EnginesStat enginesStat, ShipCombatStance combatStance,
             IEnumerable<WeaponDesign> weaponDesigns, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-            IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats)
-            : base(player, designName, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats) {
+            IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority)
+            : base(player, designName, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, hqPriority) {
             HullStat = hullStat;
             EnginesStat = enginesStat;
             CombatStance = combatStance;

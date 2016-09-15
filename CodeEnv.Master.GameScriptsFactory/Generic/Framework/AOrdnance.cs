@@ -78,7 +78,9 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected float _range;
     protected GameManager _gameMgr;
     protected GameTime _gameTime;
+    protected JobManager _jobMgr;
     protected IList<IDisposable> _subscriptions;
+
     private int __instanceID;
     private string _rootName;
     private bool _isNameInitialized;
@@ -87,6 +89,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         base.Awake();
         _gameMgr = GameManager.Instance;
         _gameTime = GameTime.Instance;
+        _jobMgr = JobManager.Instance;
         _subscriptions = new List<IDisposable>();
         enabled = false;
     }

@@ -26,6 +26,10 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class MyMath {
 
+        public static float SqrtOfTwo = Mathf.Sqrt(2.0F);
+
+        public static float SqrtOfThree = Mathf.Sqrt(3.0F);
+
         /// <summary>
         /// Returns the percentage distance along the line where the nearest point on the line is located.
         /// 1.0 = 100%. The value can be greater than 1.0 if point is beyond lineEnd.
@@ -44,7 +48,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns an array of Vector3 local positions (y = 0F) that are uniformly distributed in a circle in the xz plane.
+        /// Returns an array of Vector3 local positions (y = 0F) that are uniformly distributed in a circle in the XZ plane.
         /// </summary>
         /// <param name="radius">The radius of the circle.</param>
         /// <param name="numberOfPoints">The number of points.</param>
@@ -76,22 +80,22 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Calculates the location in world space of 8 vertices of a box surrounding a point.
-        /// The minimum distance from this 'center' point to any side of the box is distance.
+        /// Calculates the location in world space of 8 vertices of a cube surrounding a point.
+        /// The distance from this 'center' point to any side of the cube is faceDistance.
         /// </summary>
         /// <param name="point">The point.</param>
-        /// <param name="distance">The minimum distance to the side of the box.</param>
+        /// <param name="faceDistance">The distance from point to any face of the cube.</param>
         /// <returns></returns>
-        public static IList<Vector3> CalcBoxVerticesAroundPoint(Vector3 point, float distance) {
+        public static IList<Vector3> CalcCubeVerticesAroundPoint(Vector3 point, float faceDistance) {
             IList<Vector3> vertices = new List<Vector3>(8);
-            var xPair = new float[2] { point.x - distance, point.x + distance };
-            var yPair = new float[2] { point.y - distance, point.y + distance };
-            var zPair = new float[2] { point.z - distance, point.z + distance };
+            var xPair = new float[2] { point.x - faceDistance, point.x + faceDistance };
+            var yPair = new float[2] { point.y - faceDistance, point.y + faceDistance };
+            var zPair = new float[2] { point.z - faceDistance, point.z + faceDistance };
             foreach (var x in xPair) {
                 foreach (var y in yPair) {
                     foreach (var z in zPair) {
-                        Vector3 gridBoxVertex = new Vector3(x, y, z);
-                        vertices.Add(gridBoxVertex);
+                        Vector3 cubeVertex = new Vector3(x, y, z);
+                        vertices.Add(cubeVertex);
                     }
                 }
             }
@@ -99,15 +103,43 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Calculates the vertices of an inscribed box inside a sphere with 
-        /// the provided radius and center point.
+        /// Calculates the vertices of a (circumscribed) cube surrounding an inscribed sphere with the provided radius and center point.
         /// </summary>
         /// <param name="center">The center.</param>
         /// <param name="radius">The radius.</param>
         /// <returns></returns>
-        public static IList<Vector3> CalcVerticesOfInscribedBoxInsideSphere(Vector3 center, float radius) {
+        public static IList<Vector3> CalcVerticesOfCubeSurroundingInscribedSphere(Vector3 center, float radius) {
+            float unusedVertexDistance;
+            return CalcVerticesOfCubeSurroundingInscribedSphere(center, radius, out unusedVertexDistance);
+        }
+
+        /// <summary>
+        /// Calculates the vertices of a (circumscribed) cube surrounding an inscribed sphere with the provided radius and center point.
+        /// </summary>
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="vertexDistance">The resulting distance from center to each vertex.</param>
+        /// <returns></returns>
+        public static IList<Vector3> CalcVerticesOfCubeSurroundingInscribedSphere(Vector3 center, float radius, out float vertexDistance) {
             IList<Vector3> vertices = new List<Vector3>(8);
-            IList<Vector3> normalizedVertices = Constants.NormalizedBoxVertices;
+            IList<Vector3> normalizedVertices = Constants.NormalizedCubeVertices;
+            vertexDistance = radius * SqrtOfThree;  // https://en.wikipedia.org/wiki/Cube
+            foreach (var normalizedVertex in normalizedVertices) {
+                vertices.Add(center + normalizedVertex * vertexDistance);
+            }
+            //D.Log("Center = {0}, Radius = {1}, Vertices = {2}.", center, radius, vertices.Concatenate());
+            return vertices;
+        }
+
+        /// <summary>
+        /// Calculates the vertices of an inscribed cube inside a sphere with the provided radius and center point.
+        /// </summary>
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        /// <returns></returns>
+        public static IList<Vector3> CalcVerticesOfInscribedCubeInsideSphere(Vector3 center, float radius) {
+            IList<Vector3> vertices = new List<Vector3>(8);
+            IList<Vector3> normalizedVertices = Constants.NormalizedCubeVertices;
             foreach (var normalizedVertex in normalizedVertices) {
                 vertices.Add(center + normalizedVertex * radius);
             }
@@ -207,7 +239,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static Vector3[] CalcVerticesOfIcosahedronAroundInscribedSphere(Vector3 center, float radius) {
             float unusedEdgeLength, unusedMaxNodeDistance;
-            return CalcVerticesOfIcosahedronAroundInscribedSphere(center, radius, out unusedEdgeLength, out unusedMaxNodeDistance);
+            return CalcVerticesOfIcosahedronSurroundingInscribedSphere(center, radius, out unusedEdgeLength, out unusedMaxNodeDistance);
         }
 
         /// <summary>
@@ -219,9 +251,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="radius">The radius.</param>
         /// <param name="edgeLength">The resulting length of the edge between neighboring vertices.</param>
         /// <returns></returns>
-        public static Vector3[] CalcVerticesOfIcosahedronAroundInscribedSphere(Vector3 center, float radius, out float edgeLength) {
+        public static Vector3[] CalcVerticesOfIcosahedronSurroundingInscribedSphere(Vector3 center, float radius, out float edgeLength) {
             float unusedMaxNodeDistance;
-            return CalcVerticesOfIcosahedronAroundInscribedSphere(center, radius, out edgeLength, out unusedMaxNodeDistance);
+            return CalcVerticesOfIcosahedronSurroundingInscribedSphere(center, radius, out edgeLength, out unusedMaxNodeDistance);
         }
 
         /// <summary>
@@ -234,9 +266,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="edgeLength">The resulting length of the edge between neighboring vertices.</param>
         /// <param name="maxNodeDistance">The resulting maximum node distance allowed between any 2 nodes.</param>
         /// <returns></returns>
-        public static Vector3[] CalcVerticesOfIcosahedronAroundInscribedSphere(Vector3 center, float radius, out float edgeLength, out float maxNodeDistance) {
+        public static Vector3[] CalcVerticesOfIcosahedronSurroundingInscribedSphere(Vector3 center, float radius, out float edgeLength, out float maxNodeDistance) {
             edgeLength = radius / 0.7557613141F;    // https://en.wikipedia.org/wiki/Regular_icosahedron#Dimensions
-            Vector3[] verticesAroundOrigin = CalcVerticesOfIcosahedron(edgeLength, out maxNodeDistance);
+            Vector3[] verticesAroundOrigin = GetVerticesOfIcosahedron(edgeLength, out maxNodeDistance);
             return new Vector3[] {
                 center + verticesAroundOrigin[0],
                 center + verticesAroundOrigin[1],
@@ -263,7 +295,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="minDistanceBetweenVertices">The minimum distance between vertices > edgeLength.
         /// Used to determine max allowable distance between AStar nodes.</param>
         /// <returns></returns>
-        private static Vector3[] CalcVerticesOfIcosahedron(float edgeLength, out float minDistanceBetweenVertices) {
+        private static Vector3[] GetVerticesOfIcosahedron(float edgeLength, out float minDistanceBetweenVertices) {
             Vector3[] vertices;
             if (!_icosahedronVerticesLookup.TryGetValue(edgeLength, out vertices)) {
                 float t2 = (float)Math.PI / 10F;
@@ -307,15 +339,15 @@ namespace CodeEnv.Master.Common {
             IList<float> sqrDistances = new List<float>(102); // remove same vertices (12) and edges (3)
             float sqrDistance;
             float sqrdEdgeLengthThreshold = edgeLength * edgeLength + 1F;
-            Vector3 vi, vj;
+            Vector3 iVertex, jVertex;
             for (int i = 0; i < 12; i++) {
-                vi = vertices[i];
+                iVertex = vertices[i];
                 for (int j = i; j < 12; j++) {
                     if (i == j) { continue; }
-                    vj = vertices[j];
-                    sqrDistance = Vector3.SqrMagnitude(vi - vj);
+                    jVertex = vertices[j];
+                    sqrDistance = Vector3.SqrMagnitude(iVertex - jVertex);
                     if (sqrDistance > sqrdEdgeLengthThreshold) {
-                        //D.Log("Adding {0} as > {1}. Vertices: {2} & {3}.", sqrDistance, sqrdEdgeLengthThreshold, vi, vj);
+                        //D.Log("Adding {0} as > {1}. Vertices: {2} & {3}.", sqrDistance, sqrdEdgeLengthThreshold, iVertex, jVertex);
                         sqrDistances.Add(sqrDistance);
                     }
                 }
@@ -334,11 +366,11 @@ namespace CodeEnv.Master.Common {
             Vector3 a = vertices[0];
             float sqrdEdgeLength = edgeLength * edgeLength;
             Vector3[] aEdges = new Vector3[] {
-                vertices[1] - a,    // ab
-                vertices[2] - a,    // ac
-                vertices[3] - a,    // ad
-                vertices[4] - a,    // ae
-                vertices[5] - a     // af
+                vertices[1] - a,    // a-b
+                vertices[2] - a,    // a-c
+                vertices[3] - a,    // a-d
+                vertices[4] - a,    // a-e
+                vertices[5] - a     // a-f
             };
             aEdges.ForAll<Vector3>(edge => {
                 bool isEqual = Mathfx.Approx(Vector3.SqrMagnitude(edge), sqrdEdgeLength, 1F);

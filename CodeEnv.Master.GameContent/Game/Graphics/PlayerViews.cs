@@ -92,11 +92,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Cleaup
+        #region Cleanup
 
         private void Cleanup() {
             _lastViewModeKeyPressed = ViewModeKeys.None;
-            CallOnDispose();    // PlayerViews has state and should not persist across scenes
         }
 
         #endregion
@@ -168,6 +167,7 @@ namespace CodeEnv.Master.GameContent {
             if (isExplicitlyDisposing) {
                 // Dispose of managed resources here as you have called Dispose() explicitly
                 Cleanup();
+                CallOnDispose();
             }
 
             // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so

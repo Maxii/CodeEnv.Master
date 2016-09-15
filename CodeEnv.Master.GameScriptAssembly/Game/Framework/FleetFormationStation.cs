@@ -101,7 +101,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     #region Debug Show Formation Station
 
     private void InitializeDebugShowFleetFormationStation() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showFleetFormationStationsChanged += ShowDebugFleetFormationStationsChangedEventHandler;
         if (debugValues.ShowFleetFormationStations) {
             EnableDebugShowFleetFormationStation(true);
@@ -116,11 +116,11 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     }
 
     private void ShowDebugFleetFormationStationsChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowFleetFormationStation(DebugValues.Instance.ShowFleetFormationStations);
+        EnableDebugShowFleetFormationStation(DebugControls.Instance.ShowFleetFormationStations);
     }
 
     private void CleanupDebugShowFleetFormationStation() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showFleetFormationStationsChanged -= ShowDebugFleetFormationStationsChangedEventHandler;
         }

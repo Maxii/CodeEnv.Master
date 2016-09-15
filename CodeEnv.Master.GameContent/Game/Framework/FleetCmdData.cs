@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<FleetComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
 
-        public override Index3D SectorIndex { get { return HQElementData.SectorIndex; } }
+        public override IntVector3 SectorIndex { get { return HQElementData.SectorIndex; } }
 
         public new ShipData HQElementData {
             protected get { return base.HQElementData as ShipData; }
@@ -108,6 +108,8 @@ namespace CodeEnv.Master.GameContent {
         public new FleetInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FleetInfoAccessController; } }
 
         public new IEnumerable<ShipData> ElementsData { get { return base.ElementsData.Cast<ShipData>(); } }
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData" /> class
@@ -133,6 +135,8 @@ namespace CodeEnv.Master.GameContent {
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new FleetInfoAccessController(this);
         }
+
+        #endregion
 
         public override void AddElement(AUnitElementData elementData) {
             base.AddElement(elementData);
@@ -223,7 +227,7 @@ namespace CodeEnv.Master.GameContent {
         protected override Topography GetTopography() {
             if (!IsOperational) {
                 // if not yet operational, the Flagship does not yet know its topography
-                return References.SectorGrid.GetSpaceTopography(Position);
+                return _gameMgr.GameKnowledge.GetSpaceTopography(Position);
             }
             return base.GetTopography();
         }

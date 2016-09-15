@@ -175,7 +175,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxTurnRate { get { return _enginesStat.MaxTurnRate; } }
 
-        public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
+        public override IntVector3 SectorIndex { get { return References.SectorGrid.GetSectorIndexThatContains(Position); } }
 
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
 
@@ -185,6 +185,8 @@ namespace CodeEnv.Master.GameContent {
 
         private EnginesStat _enginesStat;
         private GameTime _gameTime;
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipData" /> class.
@@ -196,12 +198,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
+        /// <param name="hqPriority">The HQ priority.</param>
         /// <param name="enginesStat">The engines stat.</param>
         /// <param name="combatStance">The combat stance.</param>
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            EnginesStat enginesStat, ShipCombatStance combatStance)
-            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators) {
+            Priority hqPriority, EnginesStat enginesStat, ShipCombatStance combatStance)
+            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority) {
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
@@ -220,10 +223,12 @@ namespace CodeEnv.Master.GameContent {
             return new ShipInfoAccessController(this);
         }
 
-        protected override void FinalInitialize() {
+        public override void FinalInitialize() {
             base.FinalInitialize();
-            Topography = References.SectorGrid.GetSpaceTopography(Position);    // will set CurrentDrag
+            Topography = _gameMgr.GameKnowledge.GetSpaceTopography(Position);   // will set CurrentDrag
         }
+
+        #endregion
 
         public override void CommenceOperations() {
             base.CommenceOperations();

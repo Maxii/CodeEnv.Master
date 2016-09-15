@@ -33,7 +33,7 @@ public class GuiUniverseSizePopupList : AGuiMenuPopupList<UniverseSizeGuiSelecti
     protected override string[] Choices { get { return Enums<UniverseSizeGuiSelection>.GetNames(excludeDefault: true); } }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
-    // from this popup list until the Menu Accept Button is pushed
+    // from this pop up list until the Menu Accept Button is pushed
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

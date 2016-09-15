@@ -119,7 +119,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     protected override void Awake() {
         base.Awake();
         _operatingEffectRenderer = UnityUtility.ValidateComponentPresence<LineRenderer>(gameObject);
-
         // No effects should initially show
         _operatingEffectRenderer.enabled = false;
         _initialBeamAnimationOffset = UnityEngine.Random.Range(0F, 5F);
@@ -302,7 +301,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
-        PauseJobs(_gameMgr.IsPaused);
+        // 8.12.16 Job pausing moved to JobManager to consolidate handling of pausing
         PauseAudio(_gameMgr.IsPaused);
     }
 
@@ -390,11 +389,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _animateOperatingEffectJob.Kill();
         }
         if (toShow) {
-            _animateOperatingEffectJob = new Job(AnimateBeam(), toStart: true);
-            if (_gameMgr.IsPaused) {
-                _animateOperatingEffectJob.IsPaused = true;
-                D.Log("{0} has paused AnimateOperatingEffectJob immediately after starting it.", Name);
-            }
+            string jobName = "{0}.AnimateOpsEffectJob".Inject(Name);
+            _animateOperatingEffectJob = _jobMgr.StartGameplayJob(AnimateBeam(), jobName, isPausable: true);
         }
 
         // Beam audio
@@ -465,12 +461,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
         else {
             ReportTargetMissed();
-        }
-    }
-
-    private void PauseJobs(bool toPause) {
-        if (IsAnimateOperatingEffectJobRunning) {
-            _animateOperatingEffectJob.IsPaused = toPause;
         }
     }
 

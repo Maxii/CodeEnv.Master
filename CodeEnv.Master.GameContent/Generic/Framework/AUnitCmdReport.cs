@@ -96,6 +96,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected float? CalcPartialUnitMaxHitPoints(IEnumerable<AUnitElementData> elementsData) {
+            //D.Log("{0}.CalcPartialUnitMaxHitPoints called.", Name + GetType().Name);
             float elementsHitPts = Constants.ZeroF;
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
@@ -149,7 +150,7 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        // IMPROVE other partial calcs can be added like income, expense, culture, etc.
+        // IMPROVE other partial calculations can be added like income, expense, culture, etc.
 
         #region Archive
 
@@ -186,20 +187,20 @@ namespace CodeEnv.Master.GameContent {
         //}
 
         //protected void AssignValuesFrom(AUnitElementReport[] elementReports) {
-        //   UnitDefensiveStrength = elementReports.Select(er => er.DefensiveStrength).NullableSum();
-        //    UnitOffensiveStrength = elementReports.Select(er => er.OffensiveStrength).NullableSum();
+        //   UnitDefensiveStrength = elementReports.Select(e => e.DefensiveStrength).NullableSum();
+        //    UnitOffensiveStrength = elementReports.Select(e => e.OffensiveStrength).NullableSum();
 
-        //    UnitMaxHitPoints = elementReports.Select(er => er.MaxHitPoints).NullableSum();
-        //    UnitCurrentHitPoints = elementReports.Select(er => er.CurrentHitPoints).NullableSum();
-        //    //elementReports.ForAll(er => {
+        //    UnitMaxHitPoints = elementReports.Select(e => e.MaxHitPoints).NullableSum();
+        //    UnitCurrentHitPoints = elementReports.Select(e => er.CurrentHitPoints).NullableSum();
+        //    //elementReports.ForAll(e => {
         //    //    D.Log("{0}.{1}.{2} IntelCoverage = {3}, CurrentHitPts = {4}, MaxHitPts = {5}, Health = {6}.", 
-        //    //        cmdData.FullName, er.GetType().Name, er.Name, er.IntelCoverage.GetValueName(), er.CurrentHitPoints, er.MaxHitPoints, er.Health);
+        //    //        cmdData.FullName, e.GetType().Name, e.Name, e.IntelCoverage.GetValueName(), e.CurrentHitPoints, e.MaxHitPoints, e.Health);
         //    //});
 
         //    UnitHealth = CalcUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
 
-        //    UnitScience = elementReports.Select(er => er.Science).NullableSum();
-        //    UnitExpense = elementReports.Select(er => er.Expense).NullableSum();
+        //    UnitScience = elementReports.Select(e => e.Science).NullableSum();
+        //    UnitExpense = elementReports.Select(e => e.Expense).NullableSum();
         //}
 
         //private float? CalcUnitHealth(float? unitCurrentHitPts, float? unitMaxHitPts) {

@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -45,7 +46,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsUser { get; private set; }
 
+        public DiplomaticRelationship UserRelations { get { return GetCurrentRelations(_gameMgr.UserPlayer); } }
+
         public IQ IQ { get; private set; }
+
+        public TeamID Team { get; private set; }
 
         public GameColor Color { get; private set; }
 
@@ -80,80 +85,129 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<Player> OtherKnownPlayers { get { return _currentRelationship.Keys.Except(this); } }
 
-        private IDictionary<Player, DiplomaticRelationship> _priorRelationship = new Dictionary<Player, DiplomaticRelationship>();
-        private IDictionary<Player, DiplomaticRelationship> _currentRelationship = new Dictionary<Player, DiplomaticRelationship>();
+        private IDictionary<Player, DiplomaticRelationship> _initialRelationship;
+        private IDictionary<Player, DiplomaticRelationship> _priorRelationship; // = new Dictionary<Player, DiplomaticRelationship>();
+        private IDictionary<Player, DiplomaticRelationship> _currentRelationship;   // = new Dictionary<Player, DiplomaticRelationship>();
         private LeaderStat _leaderStat;
         private SpeciesStat _speciesStat;
+        private IGameManager _gameMgr;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Player"/> class.
+        /// Initializes a new instance of the <see cref="Player" /> class.
         /// </summary>
         /// <param name="speciesStat">The species stat.</param>
         /// <param name="leaderStat">The leader stat.</param>
         /// <param name="iq">The IQ.</param>
+        /// <param name="team">The team.</param>
         /// <param name="color">The color.</param>
         /// <param name="isUser">if set to <c>true</c> [is user].</param>
-        public Player(SpeciesStat speciesStat, LeaderStat leaderStat, IQ iq, GameColor color, bool isUser = false) {
+        public Player(SpeciesStat speciesStat, LeaderStat leaderStat, IQ iq, TeamID team, GameColor color, bool isUser = false) {
             _speciesStat = speciesStat;
             _leaderStat = leaderStat;
             IQ = iq;
+            Team = team;
             Color = color;
             IsUser = isUser;
+
+            InitializeValuesAndReferences();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Player"/> class as an AIPlayer for debug purposes.
+        /// </summary>
+        /// <param name="species">The species.</param>
+        /// <param name="team">The team.</param>
+        /// <param name="color">The color.</param>
+        public Player(Species species, TeamID team, GameColor color) {
+            _speciesStat = SpeciesFactory.Instance.MakeInstance(species);
+            _leaderStat = LeaderFactory.Instance.MakeInstance(species);
+            IQ = IQ.Normal;
+            Team = team;
+            Color = color;
+            IsUser = false;
+            InitializeValuesAndReferences();
+        }
+
+        private void InitializeValuesAndReferences() {
+            _gameMgr = References.GameManager;
+            int maxPlayers = TempGameValues.MaxAIPlayers + Constants.One;
+            // Note: Each Player is instantiated by NewGameMenuLaunchButton before GameSettings is created and sent to GameManager
+            _initialRelationship = new Dictionary<Player, DiplomaticRelationship>(maxPlayers);
+            _priorRelationship = new Dictionary<Player, DiplomaticRelationship>(maxPlayers);
+            _currentRelationship = new Dictionary<Player, DiplomaticRelationship>(maxPlayers);
+            _initialRelationship[this] = DiplomaticRelationship.Self;
             _priorRelationship[this] = DiplomaticRelationship.Self;
-            _currentRelationship[this] = DiplomaticRelationship.Self;    // assigning relations this way allows NoPlayer to make SetRelations illegal
+            _currentRelationship[this] = DiplomaticRelationship.Self;
         }
 
-        public bool IsKnown(Player otherPlayer) {
-            D.Assert(otherPlayer != this);
-            return _currentRelationship.ContainsKey(otherPlayer);
+        public virtual void SetInitialRelationship(Player unmetPlayer, DiplomaticRelationship initialRelationship = DiplomaticRelationship.Neutral) {
+            D.Assert(!_initialRelationship.ContainsKey(unmetPlayer), "{0} already has initial relationship with {1}.", Name, unmetPlayer);
+            D.Assert(!_priorRelationship.ContainsKey(unmetPlayer), "{0} already has prior relationship with {1}.", Name, unmetPlayer);
+            D.Assert(!_currentRelationship.ContainsKey(unmetPlayer), "{0} already has current relationship with {1}.", Name, unmetPlayer);
+            _initialRelationship.Add(unmetPlayer, initialRelationship);
+            _priorRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
+            _currentRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
+            unmetPlayer.SetInitialRelationship_Internal(this, initialRelationship);
+        }
+
+        internal virtual void SetInitialRelationship_Internal(Player unmetPlayer, DiplomaticRelationship initialRelationship) {
+            D.Assert(!_initialRelationship.ContainsKey(unmetPlayer), "{0} already has initial relationship with {1}.", Name, unmetPlayer);
+            D.Assert(!_priorRelationship.ContainsKey(unmetPlayer), "{0} already has prior relationship with {1}.", Name, unmetPlayer);
+            D.Assert(!_currentRelationship.ContainsKey(unmetPlayer), "{0} already has current relationship with {1}.", Name, unmetPlayer);
+            _initialRelationship.Add(unmetPlayer, initialRelationship);
+            _priorRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
+            _currentRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
         }
 
         /// <summary>
-        /// Adds the newly discovered <c>otherPlayer</c> to this Player's known opponents, 
-        /// setting the DiplomaticRelationship to <c>initialRelations</c>, then synchronizes
-        /// <c>otherPlayer</c>'s DiploRelations state with this one, finally raising a
+        /// Adds the newly met player to this Player's known opponents,
+        /// setting their DiplomaticRelationship to the value stored for such an occasion, then synchronizes
+        /// the newlyMetPlayer's DiploRelations state with this one, finally raising a
         /// <c>relationsChanged</c> event after both states are synchronized.
-        /// <remarks>Done this way to allow both otherPlayer's DiploRelationship state to be
+        /// <remarks>Done this way to allow both newlyMetPlayer's DiploRelationship state to be
         /// synchronized BEFORE either raises a relationsChanged event.</remarks>
         /// </summary>
-        /// <param name="otherPlayer">The other otherPlayer.</param>
-        /// <param name="initialRelations">The initial relations. Default is Neutral.</param>
-        public void AddNewlyDiscovered(Player otherPlayer, DiplomaticRelationship initialRelations = DiplomaticRelationship.Neutral) {
-            D.Assert(initialRelations != DiplomaticRelationship.None);
-            D.Assert(!IsKnown(otherPlayer));    // priorRelationship is by definition None
-            _currentRelationship.Add(otherPlayer, initialRelations);
-            otherPlayer.AddNewlyDiscovered_Internal(this, initialRelations);
-            OnRelationsChanged(otherPlayer);
+        /// <param name="newlyMetPlayer">The newly met player.</param>
+        public virtual void HandleMetNewPlayer(Player newlyMetPlayer) {
+            D.Assert(newlyMetPlayer != this, "Newly Met Player not allowed to be self.");
+            D.Assert(!IsKnown(newlyMetPlayer));
+            _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
+            newlyMetPlayer.HandleMetNewPlayer_Internal(this);
+            OnRelationsChanged(newlyMetPlayer);
         }
 
         /// <summary>
-        /// Adds the newly discovered <c>otherPlayer</c> to this Player's known opponents, 
-        /// setting the DiplomaticRelationship to <c>initialRelations</c> and raises a
-        /// <c>relationsChanged</c> event. Internal version intended for Player to Player coordination. 
-        /// <remarks>Done this way to allow both otherPlayer's DiploRelationship state to be
+        /// Adds the newly met player to this Player's known opponents,
+        /// setting their DiplomaticRelationship to the value stored for such an occasion
+        /// and raises a <c>relationsChanged</c> event. Internal version intended for Player to Player synchronization. 
+        /// <remarks>Done this way to allow both newlyMetPlayer's DiploRelationship state to be
         /// synchronized BEFORE either raises a relationsChanged event.</remarks>
         /// </summary>
-        /// <param name="otherPlayer">The other otherPlayer.</param>
-        /// <param name="initialRelations">The initial relations.</param>
-        internal void AddNewlyDiscovered_Internal(Player otherPlayer, DiplomaticRelationship initialRelations) {
-            D.Assert(initialRelations != DiplomaticRelationship.None);
-            D.Assert(!IsKnown(otherPlayer));    // priorRelationship is by definition None
-            _currentRelationship.Add(otherPlayer, initialRelations);
-            OnRelationsChanged(otherPlayer);
+        /// <param name="newlyMetPlayer">The newly met player.</param>
+        internal virtual void HandleMetNewPlayer_Internal(Player newlyMetPlayer) {
+            D.Assert(newlyMetPlayer != this, "Newly Met Player not allowed to be self.");
+            D.Assert(!IsKnown(newlyMetPlayer));
+            _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
+            OnRelationsChanged(newlyMetPlayer);
         }
 
-        public DiplomaticRelationship GetCurrentRelations(Player otherPlayer) {
-            if (!_currentRelationship.ContainsKey(otherPlayer)) {
-                return DiplomaticRelationship.None;
-            }
-            return _currentRelationship[otherPlayer];
+        public virtual bool IsKnown(Player player) {
+            return _currentRelationship[player] != DiplomaticRelationship.None;
         }
 
-        public DiplomaticRelationship GetPriorRelations(Player otherPlayer) {
-            if (!_priorRelationship.ContainsKey(otherPlayer)) {
+        public virtual DiplomaticRelationship GetCurrentRelations(Player player) {
+            if (player == TempGameValues.NoPlayer) {
                 return DiplomaticRelationship.None;
             }
-            return _priorRelationship[otherPlayer];
+            //D.Log("{0}.GetCurrentRelations({1}) called. Keys = {2}.", Name, player, _currentRelationship.Keys.Concatenate());
+            return _currentRelationship[player];
+        }
+
+        public virtual DiplomaticRelationship GetPriorRelations(Player player) {
+            if (player == TempGameValues.NoPlayer) {
+                return DiplomaticRelationship.None;
+            }
+            return _priorRelationship[player];
         }
 
         /// <summary>
@@ -167,12 +221,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newRelationship">The relationship.</param>
         public virtual void SetRelationsWith(Player otherPlayer, DiplomaticRelationship newRelationship) {
             D.Assert(otherPlayer != TempGameValues.NoPlayer);
-            D.Assert(otherPlayer != this);
-            D.Assert(newRelationship != DiplomaticRelationship.None);
-            DiplomaticRelationship existingRelationship;
-            bool isPlayerMet = _currentRelationship.TryGetValue(otherPlayer, out existingRelationship);
-            D.Assert(isPlayerMet, "{0}: {1} not yet met.", Name, otherPlayer.Name);
-            D.Assert(existingRelationship != DiplomaticRelationship.None);
+            D.Assert(otherPlayer != this, "OtherPlayer not allowed to be self.");
+            D.Assert(newRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
+            D.Assert(IsKnown(otherPlayer), "{0}: {1} not yet met.", Name, otherPlayer.Name);
+            DiplomaticRelationship existingRelationship = _currentRelationship[otherPlayer];
+            D.Assert(existingRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
             if (existingRelationship == newRelationship) {
                 D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", Name, newRelationship.GetValueName());
                 return;
@@ -195,12 +248,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newRelationship">The relationship.</param>
         internal virtual void SetRelationsWith_Internal(Player otherPlayer, DiplomaticRelationship newRelationship) {
             D.Assert(otherPlayer != TempGameValues.NoPlayer);
-            D.Assert(otherPlayer != this);
-            D.Assert(newRelationship != DiplomaticRelationship.None);
-            DiplomaticRelationship existingRelationship;
-            bool isPlayerMet = _currentRelationship.TryGetValue(otherPlayer, out existingRelationship);
-            D.Assert(isPlayerMet, "{0}: {1} not yet met.", Name, otherPlayer.Name);
-            D.Assert(existingRelationship != DiplomaticRelationship.None);
+            D.Assert(otherPlayer != this, "OtherPlayer not allowed to be self.");
+            D.Assert(newRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
+            D.Assert(IsKnown(otherPlayer), "{0}: {1} not yet met.", Name, otherPlayer.Name);
+            DiplomaticRelationship existingRelationship = _currentRelationship[otherPlayer];
+            D.Assert(existingRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
             if (existingRelationship == newRelationship) {
                 D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", Name, newRelationship.GetValueName());
                 return;
@@ -211,46 +263,58 @@ namespace CodeEnv.Master.GameContent {
             OnRelationsChanged(otherPlayer);
         }
 
-        public bool IsRelationship(Player otherPlayer, params DiplomaticRelationship[] relations) {
-            return GetCurrentRelations(otherPlayer).EqualsAnyOf(relations);
+        public virtual IEnumerable<Player> GetOtherPlayersWithRelationship(params DiplomaticRelationship[] relations) {
+            Utility.ValidateNotNullOrEmpty(relations);
+            D.Assert(!relations.Contains(DiplomaticRelationship.Self));
+            IList<Player> playersWithRelations = new List<Player>();
+            foreach (Player knownPlayer in OtherKnownPlayers) {
+                if (IsRelationshipWith(knownPlayer, relations)) {
+                    playersWithRelations.Add(knownPlayer);
+                }
+            }
+            return playersWithRelations;
         }
 
-        public bool IsPriorRelationship(Player otherPlayer, params DiplomaticRelationship[] relations) {
-            return GetPriorRelations(otherPlayer).EqualsAnyOf(relations);
+        public bool IsRelationshipWith(Player player, params DiplomaticRelationship[] relations) {
+            return GetCurrentRelations(player).EqualsAnyOf(relations);
         }
 
-        public bool IsEnemyOf(Player otherPlayer) {
+        public bool IsPriorRelationshipWith(Player player, params DiplomaticRelationship[] relations) {
+            return GetPriorRelations(player).EqualsAnyOf(relations);
+        }
+
+        public bool IsEnemyOf(Player player) {
             D.Assert(DiplomaticRelationship.War.IsEnemy());
             D.Assert(DiplomaticRelationship.ColdWar.IsEnemy());
-            return IsRelationship(otherPlayer, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
+            return IsRelationshipWith(player, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
         }
 
-        public bool IsPreviouslyEnemyOf(Player otherPlayer) {
+        public bool IsPreviouslyEnemyOf(Player player) {
             D.Assert(DiplomaticRelationship.War.IsEnemy());
             D.Assert(DiplomaticRelationship.ColdWar.IsEnemy());
-            return IsPriorRelationship(otherPlayer, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
+            return IsPriorRelationshipWith(player, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
         }
 
-        public bool IsAtWarWith(Player otherPlayer) {
-            return IsRelationship(otherPlayer, DiplomaticRelationship.War);
+        public bool IsAtWarWith(Player player) {
+            return IsRelationshipWith(player, DiplomaticRelationship.War);
         }
 
-        public bool IsPreviouslyAtWarWith(Player otherPlayer) {
-            return IsPriorRelationship(otherPlayer, DiplomaticRelationship.War);
+        public bool IsPreviouslyAtWarWith(Player player) {
+            return IsPriorRelationshipWith(player, DiplomaticRelationship.War);
         }
 
-        public bool IsFriendlyWith(Player otherPlayer) {
+        public bool IsFriendlyWith(Player player) {
             D.Assert(DiplomaticRelationship.Self.IsFriendly());
             D.Assert(DiplomaticRelationship.Alliance.IsFriendly());
             D.Assert(DiplomaticRelationship.Friendly.IsFriendly());
-            return IsRelationship(otherPlayer, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance, DiplomaticRelationship.Friendly);
+            return IsRelationshipWith(player, DiplomaticRelationship.Alliance, DiplomaticRelationship.Friendly, DiplomaticRelationship.Self);
         }
 
-        public bool IsPreviouslyFriendlyWith(Player otherPlayer) {
+        public bool IsPreviouslyFriendlyWith(Player player) {
             D.Assert(DiplomaticRelationship.Self.IsFriendly());
             D.Assert(DiplomaticRelationship.Alliance.IsFriendly());
             D.Assert(DiplomaticRelationship.Friendly.IsFriendly());
-            return IsPriorRelationship(otherPlayer, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance, DiplomaticRelationship.Friendly);
+            return IsPriorRelationshipWith(player, DiplomaticRelationship.Alliance, DiplomaticRelationship.Friendly, DiplomaticRelationship.Self);
         }
 
         #region Event and Property Change Handlers
@@ -267,8 +331,12 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return Name;
         }
+
+        #region Debug
+
+        #endregion
 
     }
 }

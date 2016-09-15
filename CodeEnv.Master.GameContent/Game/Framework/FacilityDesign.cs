@@ -29,9 +29,8 @@ namespace CodeEnv.Master.GameContent {
         public FacilityHullStat HullStat { get; private set; }
 
         public FacilityDesign(Player player, string designName, FacilityHullStat hullStat, IEnumerable<WeaponDesign> weaponDesigns, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats,
-            IEnumerable<ShieldGeneratorStat> shieldGenStats)
-            : base(player, designName, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats) {
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority)
+            : base(player, designName, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, hqPriority) {
             HullStat = hullStat;
         }
 

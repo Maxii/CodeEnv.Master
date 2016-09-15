@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
 
         public UniverseSize UniverseSize { get; set; }
 
+        public SystemDensity SystemDensity { get; set; }
+
         public int PlayerCount { get; set; }
 
         public Player UserPlayer { get; set; }

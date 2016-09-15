@@ -67,6 +67,8 @@ namespace CodeEnv.Master.GameContent {
 
         private IList<IDisposable> _systemDataSubscriptions = new List<IDisposable>(2);
 
+        #region Initialization 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class
         /// with no passive countermeasures.
@@ -93,6 +95,8 @@ namespace CodeEnv.Master.GameContent {
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new SettlementInfoAccessController(this);
         }
+
+        #endregion
 
         private void SubscribeToSystemDataProperties() {
             _systemDataSubscriptions.Add(ParentSystemData.SubscribeToPropertyChanged<SystemData, int>(sd => sd.Capacity, SystemCapacityPropChangedHandler));

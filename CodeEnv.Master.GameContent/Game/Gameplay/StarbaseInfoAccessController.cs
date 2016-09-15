@@ -50,6 +50,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Composition:
                 case ItemInfoID.UnitOffense:
                 case ItemInfoID.UnitDefense:
+                    //D.Log("{0}.HasAccesstoInfo_Broad({1}, {2}) called.", GetType().Name, infoID.GetValueName(), player);
                     return true;
                 default:
                     return false;

@@ -235,9 +235,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         }
     }
 
-    private void Cleanup() {
-        CallOnDispose();
-    }
+    private void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -272,6 +270,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         if (isExplicitlyDisposing) {
             // Dispose of managed resources here as you have called Dispose() explicitly
             Cleanup();
+            CallOnDispose();
         }
 
         // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so

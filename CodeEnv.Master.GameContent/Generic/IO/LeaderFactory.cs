@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     public class LeaderFactory : AGenericSingleton<LeaderFactory>, IDisposable {
 
         private IDictionary<Species, IList<LeaderStat>> _leaderStatsCache;
-        private IList<LeaderStat> _leadersInUse;
+        private IList<LeaderStat> _leaderStatsInUse;
         private LeaderStatXmlReader _xmlReader;
 
         private LeaderFactory() {
@@ -37,31 +37,38 @@ namespace CodeEnv.Master.GameContent {
         protected sealed override void Initialize() {
             _xmlReader = LeaderStatXmlReader.Instance;
             _leaderStatsCache = new Dictionary<Species, IList<LeaderStat>>();
-            _leadersInUse = new List<LeaderStat>();
+            _leaderStatsInUse = new List<LeaderStat>();
             Subscribe();
-            // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
+            // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 
         private void Subscribe() {
             References.GameManager.newGameBuilding += NewGameBuildingEventHandler;
         }
 
+        /// <summary>
+        /// Makes a unique instance of a LeaderStat for the specified species.
+        /// <remarks></remarks>
+        /// </summary>
+        /// <param name="species">The species.</param>
+        /// <returns></returns>
         public LeaderStat MakeInstance(Species species) {
             IList<LeaderStat> stats;
             if (!_leaderStatsCache.TryGetValue(species, out stats)) {
                 stats = _xmlReader.CreateStats(species);
                 _leaderStatsCache.Add(species, stats);
             }
-            var randomSpeciesLeader = stats.Shuffle().First();
-            if (_leadersInUse.Contains(randomSpeciesLeader)) {
+            var randomSpeciesLeaderStat = stats.Shuffle().First();
+            if (_leaderStatsInUse.Contains(randomSpeciesLeaderStat)) {
                 return MakeInstance(species);
             }
-            _leadersInUse.Add(randomSpeciesLeader);
-            return randomSpeciesLeader;
+            _leaderStatsInUse.Add(randomSpeciesLeaderStat);
+            return randomSpeciesLeaderStat;
         }
 
         public void Reset() {
-            _leadersInUse.Clear();
+            //D.Log("{0}.Reset() called.", GetType().Name);
+            _leaderStatsInUse.Clear();
         }
 
         #region Event and Property Change Handlers
@@ -123,7 +130,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
         #region Nested Classes
 

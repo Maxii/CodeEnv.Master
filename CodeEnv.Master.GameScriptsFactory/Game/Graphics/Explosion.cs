@@ -50,9 +50,11 @@ public class Explosion : AMonoBase, IEffect {
     private ParticleSystem _primaryParticleSystem;
     private ParticleSystem[] _childParticleSystems;
     private float _prevScale = 1F;
+    private JobManager _jobMgr;
 
     protected override void Awake() {
         base.Awake();
+        _jobMgr = JobManager.Instance;
         _primaryParticleSystem = GetComponent<ParticleSystem>();
         _childParticleSystems = gameObject.GetSafeComponentsInChildren<ParticleSystem>(excludeSelf: true);
     }
@@ -69,7 +71,9 @@ public class Explosion : AMonoBase, IEffect {
             _prevScale = currentScale;
         }
         _primaryParticleSystem.Play(withChildren: true);
-        _waitForExplosionFinishedJob = WaitJobUtility.WaitForParticleSystemCompletion(_primaryParticleSystem, includeChildren: true, waitFinished: (jobWasKilled) => {
+        bool includeChildren = true;
+        string jobName = "WaitForExplosionFinishedJob";
+        _waitForExplosionFinishedJob = _jobMgr.WaitForParticleSystemCompletion(_primaryParticleSystem, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
             HandleExplosionFinished();
         });
     }
@@ -111,7 +115,6 @@ public class Explosion : AMonoBase, IEffect {
 
     private void Pause(bool toPause) {
         if (IsExplosionPlaying) {
-            _waitForExplosionFinishedJob.IsPaused = toPause;
             if (toPause) {
                 _primaryParticleSystem.Pause(withChildren: true);
             }

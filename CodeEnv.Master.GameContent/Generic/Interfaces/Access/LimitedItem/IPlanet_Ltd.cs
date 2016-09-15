@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IPlanet_Ltd : IPlanetoid_Ltd {
 
+        float ClearanceRadius { get; }
+
         IList<StationaryLocation> LocalAssemblyStations { get; }
 
 

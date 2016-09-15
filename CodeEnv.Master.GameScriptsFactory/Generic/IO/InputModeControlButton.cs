@@ -46,7 +46,7 @@ public class InputModeControlButton : AGuiButton {
     #region Event and Property Change Handlers
 
     protected override void HandleValidClick() {
-        D.Assert(_gameMgr.CurrentScene != _gameMgr.LobbyScene);
+        D.Assert(_gameMgr.CurrentSceneID != GameManager.SceneID.LobbyScene);
         GameInputMode gameInputMode;
         switch (_inputModeOnClick) {
             case GameSceneInputMode.PartialPopup:
@@ -100,7 +100,7 @@ public class InputModeControlButton : AGuiButton {
         FullPopup,
 
         /// <summary>
-        /// Input mode active when no UI popup windows are present. 
+        /// Input mode active when no UI pop up windows are present. 
         /// UI element interaction is allowed along with all 3D world interaction.
         /// </summary>
         Normal

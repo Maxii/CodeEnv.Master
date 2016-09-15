@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         private bool _isOperational;
         /// <summary>
         /// Indicates whether the equipment is operational. For equipment to be operational
-        /// it must be both activated and undamged.
+        /// it must be both activated and undamaged.
         /// </summary>
         public bool IsOperational {
             get { return _isOperational; }
@@ -66,6 +66,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected AEquipmentStat Stat { get; private set; }
+
+        protected IJobManager _jobMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipment"/> class.
@@ -75,6 +77,7 @@ namespace CodeEnv.Master.GameContent {
         public AEquipment(AEquipmentStat stat, string name = null) {
             Stat = stat;
             Name = name != null ? name : stat.Name;
+            _jobMgr = References.JobManager;
         }
 
         #region Event and Property Change Handlers

@@ -23,7 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IStar : IIntelItem {
 
-        Index3D SectorIndex { get; }
+        IntVector3 SectorIndex { get; }
+
+        ISystem ParentSystem { get; }
 
 
     }

@@ -35,6 +35,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     public static bool IsApplicationQuiting { get; private set; }
 
     #region MonoBehaviour Event Methods
+
     // Note: When declared in a base class this way, ALL of these events are called by Unity
     // even if the derived class doesn't declare them and call base.Event()
 
@@ -277,6 +278,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     #endregion
 
     #region Coroutine
+
     // Based on Func<IEnumerator> and Func<object, IEnumerator> Delegates that encapsulate methods with zero or one parameter that return IEnumerator, aka 'a task'.
     //This approach has the advantage of enabling the ability to stop the specific coroutine using the task.
     // Usage when method is on the AMonoBehaviour running the Coroutine: 
@@ -496,12 +498,35 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     private const string AMonoBaseDebugLogEventMethodNameFormat = "{0}(from transform).{1}.{2}()";
     protected DebugSettings _debugSettings;
 
+    private System.DateTime __durationStartTime;
+
+    protected void __RecordDurationStartTime() {
+        __durationStartTime = Utility.SystemTime;
+    }
+
+    /// <summary>
+    /// Clients should override this if they have multiple durations to log
+    /// with the same intro text.
+    /// </summary>
+    protected virtual string __DurationLogIntroText { get { return "[No intro text]"; } }
+
+    /// <summary>
+    /// Logs the duration. [introText] is for use when __DurationLogIntroText is not used.
+    /// </summary>
+    /// <param name="introText">The intro text.</param>
+    protected void __LogDuration(string introText = null) {
+        if (_debugSettings.EnableDurationLogging) {
+            string text = introText != null ? introText : __DurationLogIntroText;
+            D.Log("{0} took {1:0.##} seconds to execute.", text, (Utility.SystemTime - __durationStartTime).TotalSeconds);
+        }
+    }
+
     /// <summary>
     /// Logs a warning statement that the method that calls this has been called.
     /// <remarks>Typically used to ID method calls that I don't expect to occur.</remarks>
     /// </summary>
     public virtual void LogEventWarning() {
-        string methodName = GetMethodName();
+        string methodName = GetCallingMethodName();
         string fullMethodName = AMonoBaseDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, methodName);
         Debug.LogWarning("Unclear why {0} was called.".Inject(fullMethodName));
     }
@@ -512,14 +537,35 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     public virtual void LogEvent() {
         if (_debugSettings.EnableEventLogging) {
-            string methodName = GetMethodName();
+            string methodName = GetCallingMethodName();
             string fullMethodName = AMonoBaseDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, methodName);
-            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
+            Debug.Log("{0} beginning execution. Frame {1}, UnityTime {2:0.0}.".Inject(fullMethodName, Time.frameCount, Time.time));
         }
     }
 
-    protected string GetMethodName() {
+    /// <summary>
+    /// Returns the name of the method that called the method using this method.
+    /// </summary>
+    /// <returns></returns>
+    protected string GetCallingMethodName() {
         var stackFrame = new System.Diagnostics.StackFrame(2);
+        string methodName = stackFrame.GetMethod().ReflectedType.Name;
+        if (methodName.Contains(Constants.LessThan)) {
+            string coroutineMethodName = methodName.Substring(methodName.IndexOf(Constants.LessThan) + 1, methodName.IndexOf(Constants.GreaterThan) - 1);
+            methodName = coroutineMethodName;
+        }
+        else {
+            methodName = stackFrame.GetMethod().Name;
+        }
+        return methodName;
+    }
+
+    /// <summary>
+    /// Returns the name of the method using this method.
+    /// </summary>
+    /// <returns></returns>
+    protected string GetMethodName() {
+        var stackFrame = new System.Diagnostics.StackFrame(1);
         string methodName = stackFrame.GetMethod().ReflectedType.Name;
         if (methodName.Contains(Constants.LessThan)) {
             string coroutineMethodName = methodName.Substring(methodName.IndexOf(Constants.LessThan) + 1, methodName.IndexOf(Constants.GreaterThan) - 1);

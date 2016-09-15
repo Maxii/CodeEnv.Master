@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
                 {ItemInfoID.Name, "Name: {0}"},
                 {ItemInfoID.ParentName, "Parent: {0}"},
-                {ItemInfoID.Owner, "Owner: {0}"},
+                {ItemInfoID.Owner, "Owner: {0}, UserRelations: {1}"},
                 {ItemInfoID.Category, "Category: {0}"},
                 {ItemInfoID.SectorIndex, "Sector: {0}"},
                 {ItemInfoID.Position, "Position: {0}"},
@@ -178,6 +178,7 @@ namespace CodeEnv.Master.GameContent {
                     D.Warn("{0} reports missing {1}: {2}.", GetType().Name, typeof(ItemInfoID).Name, infoID.GetValueName());
                 }
             }
+            //D.Log("{0}.MakeInstance() returning {1}.", GetType().Name, csb.ToString());
             return csb;
         }
 
@@ -195,7 +196,7 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case ItemInfoID.Owner:
                     isSuccess = true;
-                    colorizedText = _lineTemplate.Inject(report.Owner != null ? report.Owner.LeaderName.SurroundWith(report.Owner.Color) : Unknown);
+                    colorizedText = GetColorizedOwnerText(report.Owner);
                     break;
                 case ItemInfoID.Position:
                     isSuccess = true;
@@ -212,6 +213,17 @@ namespace CodeEnv.Master.GameContent {
                     break;
             }
             return isSuccess;
+        }
+
+        private string GetColorizedOwnerText(Player owner) {
+            string colorizedOwnerText = Unknown;
+            string userRelationsText = Unknown;
+            if (owner != null) {
+                colorizedOwnerText = owner.LeaderName.SurroundWith(owner.Color);
+                userRelationsText = owner.UserRelations.GetValueName();
+            }
+            string text = _lineTemplate.Inject(colorizedOwnerText, userRelationsText);
+            return text;
         }
 
         #region Archive

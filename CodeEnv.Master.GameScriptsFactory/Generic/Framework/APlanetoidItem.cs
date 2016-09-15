@@ -30,11 +30,7 @@ using UnityEngine;
 public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, ICameraFollowable, IFleetNavigable, IUnitAttackable, IShipAttackable,
     ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
 
-    /// <summary>
-    /// Gets the maximum possible orbital speed of a planetoid in Units per hour, 
-    /// aka the max speed of any planet plus the max speed of any moon.
-    /// </summary>
-    public static float MaxOrbitalSpeed { get { return SystemCreator.AllPlanets.Max(p => p.Data.OrbitalSpeed) + SystemCreator.AllMoons.Max(m => m.Data.OrbitalSpeed); } }
+    // 8.21.16 Removed static, unused MaxOrbitalSpeed as not worthwhile maintaining once SystemCreator static values were removed
 
     [Tooltip("The category of planetoid")]
     public PlanetoidCategory category = PlanetoidCategory.None;
@@ -63,11 +59,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     protected SystemItem ParentSystem { get; private set; }
     protected SphereCollider ObstacleZoneCollider { get; private set; }
 
-    public new CameraFollowableStat CameraStat {
-        protected get { return base.CameraStat as CameraFollowableStat; }
+    public new FollowableItemCameraStat CameraStat {
+        protected get { return base.CameraStat as FollowableItemCameraStat; }
         set { base.CameraStat = value; }
     }
-
 
     private PlanetoidPublisher _publisher;
     private PlanetoidPublisher Publisher {
@@ -79,6 +74,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     private IList<IShip_Ltd> _shipsInHighOrbit;
 
     #region Initialization
+
+    protected sealed override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowPlanetoidDebugLogs;
+    }
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -125,7 +124,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         return new CircleHighlightManager(transform, circleRadius);
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
         // events once sensors are operational. Events include initial discovery of players which result in Relationship changes
@@ -159,8 +158,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         CurrentState = PlanetoidState.Dead;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
         // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
         // in-route ordnance to show its impact effect while the item is showing its death.
         // Also keep the ObstacleZoneCollider enabled to keep ships from flying through the exploding planetoid.
@@ -174,6 +173,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     private void ActivateParentOrbitSimulator(bool toActivate) {
         CelestialOrbitSimulator.IsActivated = toActivate;
+    }
+
+    protected sealed override void HandleAIMgrLosingOwnership() {
+        base.HandleAIMgrLosingOwnership();
+        ResetBasedOnCurrentDetection(Owner);
     }
 
     #region Event and Property Change Handlers
@@ -193,13 +197,14 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     private void HandleStateChange() {
-        D.Log(ShowDebugLog, "{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
+        //D.Log(ShowDebugLog, "{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetValueName());
         switch (CurrentState) {
             case PlanetoidState.Idling:
                 break;
             case PlanetoidState.Dead:
-                HandleDeathFromDeadState();
+                HandleDeathBeforeBeginningDeathEffect();
                 StartEffectSequence(EffectSequenceID.Dying);
+                HandleDeathAfterBeginningDeathEffect();
                 break;
             case PlanetoidState.None:
             default:
@@ -239,7 +244,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
@@ -253,17 +258,19 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
         }
-        DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
-        if (drawCntl != null) {
-            Destroy(drawCntl);
+        if (ObstacleZoneCollider != null) {
+            DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            if (drawCntl != null) {
+                Destroy(drawCntl);
+            }
         }
     }
 
@@ -318,25 +325,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
         if (!isAlive) {
-            //__GenerateExplosionMedia();
             IsOperational = false;
             return;
         }
         StartEffectSequence(EffectSequenceID.Hit);
-        //__GenerateHitImpactMedia();
     }
-
-    //private void __GenerateHitImpactMedia() {
-    //    var impactPrefab = RequiredPrefabs.Instance.hitImpact;
-    //    var impactClone = UnityUtility.AddChild(gameObject, impactPrefab);
-    //    D.Warn("{0} showing impact.", FullName);
-    //}
-
-    //private void __GenerateExplosionMedia() {
-    //    var explosionPrefab = RequiredPrefabs.Instance.explosion;
-    //    var explosionClone = UnityUtility.AddChild(gameObject, explosionPrefab);
-    //    D.Warn("{0} showing explosion.", FullName);
-    //}
 
     #endregion
 
@@ -366,6 +359,17 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
+    }
+
+    /// <summary>
+    /// Resets the ISensorDetectable item based on current detection levels of the provided player.
+    /// <remarks>8.2.16 Currently used
+    /// 1) when player has lost the Alliance relationship with the owner of this item, and
+    /// 2) when the owner of the item is about to be replaced by another player.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    public void ResetBasedOnCurrentDetection(Player player) {
+        _detectionHandler.ResetBasedOnCurrentDetection(player);
     }
 
     #endregion

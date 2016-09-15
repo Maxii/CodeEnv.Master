@@ -60,8 +60,7 @@ namespace CodeEnv.Master.GameContent {
         public float CountermeasureReloadPeriodMultiplier { get; private set; }
 
         public SpeciesStat(Species species, string pluralName, string description, AtlasID imageAtlasID, string imageFilename,
-            float sensorRangeMultiplier, float weaponRangeMultiplier, float activeCountermeasureRangeMultiplier, float weaponReloadPeriodMultiplier, float countermeasureReloadPeriodMultiplier)
-            : this() {
+            float sensorRangeMultiplier, float weaponRangeMultiplier, float activeCountermeasureRangeMultiplier, float weaponReloadPeriodMultiplier, float countermeasureReloadPeriodMultiplier) {
             Species = species;
             Name_Plural = pluralName;
             Description = description;

@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         public StationaryLocation(Vector3 position)
             : this() {
             Position = position;
-            Topography = References.SectorGrid.GetSpaceTopography(position);
+            Topography = References.GameManager.GameKnowledge.GetSpaceTopography(position);
         }
 
         #region Object.Equals and GetHashCode Override

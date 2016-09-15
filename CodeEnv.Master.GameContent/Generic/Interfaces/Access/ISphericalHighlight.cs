@@ -31,6 +31,11 @@ namespace CodeEnv.Master.GameContent {
 
         GameColor Color { get; set; }
 
+        /// <summary>
+        /// Gets the Target's name. Will be None if target is null.
+        /// </summary>
+        string TargetName { get; }
+
         ///// <summary>
         ///// Sets the target to highlight.
         ///// </summary>

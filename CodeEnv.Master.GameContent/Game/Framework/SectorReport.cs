@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public Index3D SectorIndex { get; private set; }
+        public IntVector3 SectorIndex { get; private set; }
 
         public SectorReport(SectorData data, Player player, ISector_Ltd item)
             : base(data, player, item) {

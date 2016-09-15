@@ -81,7 +81,6 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _collider.enabled = false;  // 7.19.16 now spawning so start not enabled so OnSpawned Assert passes
         ValidateEffects();
-        _displayMgr = InitializeDisplayMgr();
     }
 
     protected abstract void ValidateEffects();
@@ -92,6 +91,11 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     }
 
     public virtual void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
+        if (_displayMgr == null) {
+            // 8.9.16 moved from Awake() as PoolMgr spawns ordnance as soon as it wakes. In scene change from Lobby, this occurs 
+            // way before OnLevelIsLoaded() is called which is when GameMgr refreshes static References - aka TrackingWidgetFactory
+            _displayMgr = InitializeDisplayMgr();
+        }
         PrepareForLaunch(target, weapon);
         D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
         _launchPosition = transform.position;
@@ -359,8 +363,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     #region ITopographyChangeListener Members
 
-    public void HandleTopographyChanged(Topography newTopography) {
-        //D.Log("{0}.HandleTopographyChanged({1}).", FullName, newTopography.GetValueName());
+    public void ChangeTopographyTo(Topography newTopography) {
+        //D.Log("{0}.ChangeTopographyTo({1}).", FullName, newTopography.GetValueName());
         _rigidbody.drag = OpenSpaceDrag * newTopography.GetRelativeDensity();
     }
 

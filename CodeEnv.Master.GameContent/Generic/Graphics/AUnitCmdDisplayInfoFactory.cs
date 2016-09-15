@@ -52,6 +52,7 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.UnitMaxHitPts:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.UnitMaxHitPoints.HasValue ? GetFormat(infoID).Inject(report.UnitMaxHitPoints.Value) : Unknown);
+                        //D.Log("{0}.TryMakeColorizedText({1}) called. Text output = {2}.", GetType().Name, infoID.GetValueName(), colorizedText.ToString());
                         break;
                     case ItemInfoID.UnitCurrentHitPts:
                         isSuccess = true;
@@ -59,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.UnitHealth:
                         isSuccess = true;
-                        colorizedText = GetColorizedHealthText(report.UnitHealth, report.MaxHitPoints);
+                        colorizedText = GetColorizedHealthText(report.UnitHealth, report.UnitMaxHitPoints);
                         break;
                     case ItemInfoID.UnitWeaponsRange:
                         isSuccess = true;

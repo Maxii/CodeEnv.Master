@@ -34,7 +34,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         set { base.Data = value; }
     }
 
-    public Index3D SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
 
     #region Initialization
 
@@ -91,9 +91,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     }
 
     /// <summary>
-    /// Handles the death shutdown process, called by the item's Dead state.
+    /// Handles the death shutdown process prior to beginning the
+    /// death effect. Called by the item's Dead state.
     /// </summary>
-    protected virtual void HandleDeathFromDeadState() {
+    protected virtual void HandleDeathBeforeBeginningDeathEffect() {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         if (IsFocus) {
             References.MainCameraControl.CurrentFocus = null;
@@ -105,7 +106,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (IsHudShowing) {
             ShowHud(false);
         }
-        (DisplayMgr as IMortalDisplayManager).HandleDeath();
+        //(DisplayMgr as IMortalDisplayManager).HandleDeath();
 
         HandleDeathForHighlights();
     }
@@ -126,6 +127,17 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// </summary>
     protected virtual void AssignAlternativeFocusOnDeath() { }
 
+    /// <summary>
+    /// Handles the death shutdown process after beginning the death effect. Called by the item's Dead state.
+    /// <remarks>Death Effect will not begin if DisplayMgr has already disabled the display.
+    /// When the display is disabled, the dead item thinks the primary mesh is no longer in the camera's LOS
+    /// which results in IsVisualDetailDiscernibleToUser returning false, aka 'nobody can see it so don't show it'
+    ///</remarks>
+    /// </summary>
+    protected virtual void HandleDeathAfterBeginningDeathEffect() {
+        (DisplayMgr as IMortalDisplayManager).HandleDeath();
+    }
+
     #region Event and Property Change Handlers
 
     private void HealthPropChangedHandler() {
@@ -145,15 +157,19 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (!IsOperational) {
             D.Log(ShowDebugLog, "{0} is initiating death sequence.", FullName);
             InitiateDeadState();
+            // HandleDeath gets called after this, from Dead_EnterState
             //PrepareForDeathNotification();
             OnDeath();
             //CleanupAfterDeathNotification();
-            // HandleDeath gets called after this, from Dead_EnterState
         }
     }
 
     protected override void HandleAltLeftClick() {
         base.HandleAltLeftClick();
+        if (!IsSelected) {
+            D.Warn("{0} needs to be selected to Simulate Attack on itself.", FullName);
+            return;
+        }
         __SimulateAttacked();
     }
 
@@ -162,15 +178,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
             deathOneShot(this, new EventArgs());
             deathOneShot = null;
         }
-    }
-
-    #endregion
-
-    #region Attack Simulation
-
-    public virtual void __SimulateAttacked() {
-        float damageValue = UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints / 2F);
-        TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
     }
 
     #endregion
@@ -237,7 +244,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     protected override void Cleanup() {
         base.Cleanup();
-        Data.Dispose();
+        if (Data != null) {
+            Data.Dispose();
+        }
     }
 
     #endregion
@@ -248,6 +257,16 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         None,
         TargetDeath,
         InfoAccessChg
+    }
+
+    #endregion
+
+    #region Debug
+
+    public virtual void __SimulateAttacked() {
+        D.LogBold(ShowDebugLog, "{0} is having an attack simulated on itself.", FullName);
+        float damageValue = UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints / 2F);
+        TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
     }
 
     #endregion

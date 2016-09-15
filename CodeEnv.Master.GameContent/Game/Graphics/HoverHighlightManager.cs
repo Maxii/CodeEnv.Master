@@ -38,15 +38,18 @@ namespace CodeEnv.Master.GameContent {
             if (References.HoverHighlight != null) {  // allows deactivation of the SphericalHighlight gameObject
                 _hoverHighlight = References.HoverHighlight;
                 if (toShow) {
-                    D.Assert(!IsHighlightShowing, "{0} should not be showing.", Name);
+                    if (IsHighlightShowing) {
+                        D.Warn("{0} shouldn't still be showing over {1}. Fixing.", Name, _hoverHighlight.TargetName);
+                        _hoverHighlight.Show(false);
+                    }
                     _hoverHighlight.SetTarget(_trackedClientItem);
-                    _hoverHighlight.Alpha = 0.24F;
                     _hoverHighlight.Color = TempGameValues.HoveredHighlightColor;
+                    _hoverHighlight.Alpha = 0.15F;  // Should follow color as color comes with its own alpha, typically 1.0
                     _hoverHighlight.SetRadius(_highlightRadius);
                     _hoverHighlight.Show(true);
                 }
                 else {
-                    D.Assert(IsHighlightShowing, "{0} should be showing.", Name);
+                    D.Warn(!IsHighlightShowing, "{0} should be showing over {1}.", Name, _hoverHighlight.TargetName);
                     _hoverHighlight.Show(false);
                     _hoverHighlight = null;
                 }

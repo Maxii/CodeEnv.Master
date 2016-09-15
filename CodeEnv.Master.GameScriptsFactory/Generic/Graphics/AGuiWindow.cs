@@ -24,7 +24,7 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base class for Gui Windows with fading ability. 
-/// GuiWIndows have the ability to appear and disappear, aka 'popup'.
+/// GuiWIndows have the ability to appear and disappear, aka 'pop up'.
 /// </summary>
 /// <remarks>A replacement for SpaceD UIWindow without all the automatic _panel depth changes.</remarks>
 public abstract class AGuiWindow : AMonoBase {
@@ -68,6 +68,7 @@ public abstract class AGuiWindow : AMonoBase {
     private FadeMode _currentFadeMode = FadeMode.None;
     private Job _fadeJob;
     private GameTime _gameTime;
+    private JobManager _jobMgr;
 
     /// <summary>
     /// Note: InitializeOnAwake() must be called from Awake() from a derived class.
@@ -79,6 +80,7 @@ public abstract class AGuiWindow : AMonoBase {
 
     protected virtual void AcquireReferences() {
         _gameTime = GameTime.Instance;
+        _jobMgr = JobManager.Instance;
         _panel = UnityUtility.ValidateComponentPresence<UIPanel>(gameObject);
     }
 
@@ -99,8 +101,6 @@ public abstract class AGuiWindow : AMonoBase {
             IsShowing = true;
         }
     }
-
-    // Note: no pause controls on fadeJob as I want window access while paused
 
     /// <summary>
     /// Show the window.
@@ -163,7 +163,8 @@ public abstract class AGuiWindow : AMonoBase {
             _fadeJob.Kill();
             _currentFadeMode = FadeMode.None;
         }
-        _fadeJob = new Job(FadeAnimation(FadeMode.In, duration), toStart: true);
+        string jobName = "{0}.FadeInJob".Inject(GetType().Name);    // no pause controls on fadeJob as I want window access while paused
+        _fadeJob = _jobMgr.StartNonGameplayJob(FadeAnimation(FadeMode.In, duration), jobName);
     }
 
     /// <summary>
@@ -185,7 +186,8 @@ public abstract class AGuiWindow : AMonoBase {
             _fadeJob.Kill();
             _currentFadeMode = FadeMode.None;
         }
-        _fadeJob = new Job(FadeAnimation(FadeMode.Out, duration), toStart: true);
+        string jobName = "{0}.FadeOutJob".Inject(GetType().Name);    // no pause controls on fadeJob as I want window access while paused
+        _fadeJob = _jobMgr.StartNonGameplayJob(FadeAnimation(FadeMode.Out, duration), jobName);
     }
 
     private IEnumerator FadeAnimation(FadeMode mode, float duration) {

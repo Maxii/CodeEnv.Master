@@ -70,6 +70,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         set { base.Command = value; }
     }
 
+    public override float ClearanceRadius { get { return CollisionDetectionZoneRadius * 5F; } }
+
     /// <summary>
     /// Read only. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
     /// other than Normal (x1), this property always returns the proper reportable value.
@@ -132,6 +134,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         _gameTime = GameTime.Instance;
     }
 
+    protected override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowShipDebugLogs;
+    }
+
     protected override void InitializeOnData() {
         base.InitializeOnData();
         _helm = new ShipHelm(this, Rigidbody);
@@ -159,7 +165,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         _collisionDetectionMonitor.ParentItem = this;
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
         // events once sensors are operational. Events include initial discovery of players which result in Relationship changes
@@ -182,8 +188,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         CurrentState = ShipState.Dead;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
         TryBreakOrbit();
         _helm.HandleDeath();
         // Keep the collisionDetection Collider enabled to keep other ships from flying through this exploding ship
@@ -250,65 +256,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    protected override void __ValidateRadius(float radius) {
-        D.Assert(radius <= TempGameValues.ShipMaxRadius, "{0} Radius {1:0.00} > Max {2:0.00}.", FullName, radius, TempGameValues.ShipMaxRadius);
-    }
-
-    private Layers __DetermineMeshCullingLayer() {
-        switch (Data.HullCategory) {
-            case ShipHullCategory.Frigate:
-                return Layers.Cull_1;
-            case ShipHullCategory.Destroyer:
-            case ShipHullCategory.Support:
-                return Layers.Cull_2;
-            case ShipHullCategory.Cruiser:
-            case ShipHullCategory.Science:
-            case ShipHullCategory.Colonizer:
-                return Layers.Cull_3;
-            case ShipHullCategory.Dreadnought:
-            case ShipHullCategory.Troop:
-            case ShipHullCategory.Carrier:
-                return Layers.Cull_4;
-            case ShipHullCategory.Fighter:
-            case ShipHullCategory.Scout:
-            case ShipHullCategory.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));
-        }
-    }
-
-    private Vector3 __GetHullDimensions(ShipHullCategory hullCat) {
-        Vector3 dimensions;
-        switch (hullCat) {  // 10.28.15 Hull collider dimensions increased to encompass turrets, 11.20.15 reduced mesh scale from 2 to 1
-            case ShipHullCategory.Frigate:
-                dimensions = new Vector3(.02F, .03F, .05F); //new Vector3(.04F, .035F, .10F);
-                break;
-            case ShipHullCategory.Destroyer:
-            case ShipHullCategory.Support:
-                dimensions = new Vector3(.06F, .035F, .10F);    //new Vector3(.08F, .05F, .18F);
-                break;
-            case ShipHullCategory.Cruiser:
-            case ShipHullCategory.Science:
-            case ShipHullCategory.Colonizer:
-                dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
-                break;
-            case ShipHullCategory.Dreadnought:
-            case ShipHullCategory.Troop:
-                dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
-                break;
-            case ShipHullCategory.Carrier:
-                dimensions = new Vector3(.10F, .06F, .32F); // new Vector3(.20F, .10F, .60F); 
-                break;
-            case ShipHullCategory.Fighter:
-            case ShipHullCategory.Scout:
-            case ShipHullCategory.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
-        }
-        float radius = dimensions.magnitude / 2F;
-        D.Warn(radius > TempGameValues.ShipMaxRadius, "Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
-        return dimensions;
-    }
 
     #region Orders
 
@@ -447,8 +394,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
             }
         }
-        D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-            FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        D.Assert(OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+        FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
     }
 
     #endregion
@@ -1955,12 +1902,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         StartEffectSequence(EffectSequenceID.Repairing);
 
         float repairCapacityPerDay = GetRepairCapacity();
-        while (Data.Health < Constants.OneHundredPercent) {
+        string jobName = "{0}.RepairJob".Inject(FullName);
+        _repairJob = _jobMgr.RecurringWaitForHours(GameTime.HoursPerDay, jobName, waitMilestone: () => {
             var repairedHitPts = repairCapacityPerDay;
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
-            yield return new WaitForHours(GameTime.HoursPerDay);
+        });
+
+        while (Data.Health < Constants.OneHundredPercent) {
+            // Wait here until repair finishes
+            yield return null;
         }
+        _repairJob.Kill();
 
         // HACK
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
@@ -2019,6 +1972,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Repairing_ExitState() {
         LogEvent();
+        if (_repairJob != null && _repairJob.IsRunning) {
+            _repairJob.Kill();
+        }
     }
 
     #endregion
@@ -2056,7 +2012,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Log(ShowDebugLog, "{0} {1} {2} to {3}.", FullName, msg, typeof(FleetFormationStation).Name, ShipDirective.Disengage.GetValueName());
 
         IssueAssumeStationOrderFromCaptain();
-        yield return null;
+        yield return null;  // avoids void EnterState state change problem
     }
 
     void ExecuteDisengageOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -2105,7 +2061,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         //OnStartShow();
         //while (true) {
         //TODO refit until complete
-        yield return new WaitForHours(20F);
+        yield return null;
         //}
         //OnStopShow();   // must occur while still in target state
         Return();
@@ -2152,8 +2108,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
-        HandleDeathFromDeadState();
+        HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
+        HandleDeathAfterBeginningDeathEffect();
     }
 
     void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
@@ -2182,7 +2139,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (closeOrbitableTarget != null) {
             if (!(closeOrbitableTarget is StarItem) && !(closeOrbitableTarget is SystemItem) && !(closeOrbitableTarget is UniverseCenterItem)) {
                 // filter out objectToOrbit items that generate unnecessary knowledge check warnings    // OPTIMIZE
-                D.Assert(OwnerKnowledge.HasKnowledgeOf(closeOrbitableTarget as IItem_Ltd));  // ship very close so should know. UNCLEAR Dead sensors?, sensors w/FleetCmd
+                //D.Assert(OwnerKnowledge.HasKnowledgeOf(closeOrbitableTarget as IItem_Ltd));  // ship very close so should know. UNCLEAR Dead sensors?, sensors w/FleetCmd
+                D.Assert(OwnerAIMgr.HasKnowledgeOf(closeOrbitableTarget as IItem_Ltd));  // ship very close so should know. UNCLEAR Dead sensors?, sensors w/FleetCmd
             }
 
             if (closeOrbitableTarget.IsCloseOrbitAllowedBy(Owner)) {
@@ -2365,7 +2323,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             var planetoidOrbited = _itemBeingOrbited as APlanetoidItem;
             if (planetoidOrbited != null) {
                 // orbiting Planetoid
-                if (planetoidOrbited.Owner.IsRelationship(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance)) {
+                if (planetoidOrbited.Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance)) {
                     // allied planetoid
                     return IsInHighOrbit ? ShipData.RepairMode.AlliedPlanetHighOrbit : ShipData.RepairMode.AlliedPlanetCloseOrbit;
                 }
@@ -2377,7 +2335,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 var baseOrbited = _itemBeingOrbited as AUnitBaseCmdItem;
                 if (baseOrbited != null) {
                     // orbiting Base
-                    if (baseOrbited.Owner.IsRelationship(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance)) {
+                    if (baseOrbited.Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance)) {
                         // allied Base
                         return IsInHighOrbit ? ShipData.RepairMode.AlliedBaseHighOrbit : ShipData.RepairMode.AlliedBaseCloseOrbit;
                     }
@@ -2479,9 +2437,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void Cleanup() {
         base.Cleanup();
-        _helm.Dispose();
+        CleanupHelm();
         CleanupDebugShowVelocityRay();
         CleanupDebugShowCoursePlot();
+    }
+
+    private void CleanupHelm() {
+        if (_helm != null) {
+            // a preset fleet that begins ops during runtime won't build the ships until time for deployment
+            _helm.Dispose();
+        }
     }
 
     #endregion
@@ -2719,13 +2684,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
+    #region Debug
+
     #region Debug Show Course Plot
 
     private const string __coursePlotNameFormat = "{0} CoursePlot";
     private CoursePlotLine __coursePlot;
 
     private void InitializeDebugShowCoursePlot() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showShipCoursePlotsChanged += ShowDebugShipCoursePlotsChangedEventHandler;
         if (debugValues.ShowShipCoursePlots) {
             EnableDebugShowCoursePlot(true);
@@ -2763,11 +2730,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     private void ShowDebugShipCoursePlotsChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowCoursePlot(DebugValues.Instance.ShowShipCoursePlots);
+        EnableDebugShowCoursePlot(DebugControls.Instance.ShowShipCoursePlots);
     }
 
     private void CleanupDebugShowCoursePlot() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showShipCoursePlotsChanged -= ShowDebugShipCoursePlotsChangedEventHandler;
         }
@@ -2784,7 +2751,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private VelocityRay __velocityRay;
 
     private void InitializeDebugShowVelocityRay() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showShipVelocityRaysChanged += ShowDebugShipVelocityRaysChangedEventHandler;
         debugValues.showFleetVelocityRaysChanged += ShowDebugFleetVelocityRaysChangedEventHandler;
         if (debugValues.ShowShipVelocityRays) {
@@ -2809,14 +2776,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     private void AssessDebugShowVelocityRay() {
         if (__velocityRay != null) {
-            bool isRayHiddenByFleetRay = DebugValues.Instance.ShowFleetVelocityRays && IsHQ;
+            bool isRayHiddenByFleetRay = DebugControls.Instance.ShowFleetVelocityRays && IsHQ;
             bool toShow = IsDiscernibleToUser && !isRayHiddenByFleetRay;
             __velocityRay.Show(toShow);
         }
     }
 
     private void ShowDebugShipVelocityRaysChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowVelocityRay(DebugValues.Instance.ShowShipVelocityRays);
+        EnableDebugShowVelocityRay(DebugControls.Instance.ShowShipVelocityRays);
     }
 
     private void ShowDebugFleetVelocityRaysChangedEventHandler(object sender, EventArgs e) {
@@ -2824,7 +2791,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     private void CleanupDebugShowVelocityRay() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showShipVelocityRaysChanged -= ShowDebugShipVelocityRaysChangedEventHandler;
             debugValues.showFleetVelocityRaysChanged -= ShowDebugFleetVelocityRaysChangedEventHandler;
@@ -2878,6 +2845,69 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
         D.Warn(orbitStateMsg != null, "{0} has recorded a pending collision with {1} while {2} orbit.",
             FullName, obstacle.FullName, orbitStateMsg);
+    }
+
+    #endregion
+
+    protected override void __ValidateRadius(float radius) {
+        D.Assert(radius <= TempGameValues.ShipMaxRadius, "{0} Radius {1:0.00} > Max {2:0.00}.", FullName, radius, TempGameValues.ShipMaxRadius);
+    }
+
+    private Layers __DetermineMeshCullingLayer() {
+        switch (Data.HullCategory) {
+            case ShipHullCategory.Frigate:
+                return Layers.Cull_1;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                return Layers.Cull_2;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Investigator:
+            case ShipHullCategory.Colonizer:
+                return Layers.Cull_3;
+            case ShipHullCategory.Dreadnought:
+            case ShipHullCategory.Troop:
+            case ShipHullCategory.Carrier:
+                return Layers.Cull_4;
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));
+        }
+    }
+
+    [Obsolete]
+    private Vector3 __GetHullDimensions(ShipHullCategory hullCat) {
+        Vector3 dimensions;
+        switch (hullCat) {  // 10.28.15 Hull collider dimensions increased to encompass turrets, 11.20.15 reduced mesh scale from 2 to 1
+            case ShipHullCategory.Frigate:
+                dimensions = new Vector3(.02F, .03F, .05F); //new Vector3(.04F, .035F, .10F);
+                break;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                dimensions = new Vector3(.06F, .035F, .10F);    //new Vector3(.08F, .05F, .18F);
+                break;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Investigator:
+            case ShipHullCategory.Colonizer:
+                dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
+                break;
+            case ShipHullCategory.Dreadnought:
+            case ShipHullCategory.Troop:
+                dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
+                break;
+            case ShipHullCategory.Carrier:
+                dimensions = new Vector3(.10F, .06F, .32F); // new Vector3(.20F, .10F, .60F); 
+                break;
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = dimensions.magnitude / 2F;
+        D.Warn(radius > TempGameValues.ShipMaxRadius, "Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
+        return dimensions;
     }
 
     #endregion
@@ -3094,7 +3124,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         private IList<IDisposable> _subscriptions;
         private GameTime _gameTime;
-        private GameManager _gameMgr;
+        private JobManager _jobMgr;
         private ShipItem _ship;
         private ShipData _shipData;
         private EngineRoom _engineRoom;
@@ -3109,7 +3139,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         internal ShipHelm(ShipItem ship, Rigidbody shipRigidbody) {
             ApCourse = new List<IShipNavigable>();
             _gameTime = GameTime.Instance;
-            _gameMgr = GameManager.Instance;
+            _jobMgr = JobManager.Instance;
 
             _ship = ship;
             _shipData = ship.Data;
@@ -3119,7 +3149,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
             _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeedValue, FullSpeedPropChangedHandler));
         }
 
@@ -3207,7 +3236,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             //Name, TargetFullName, ApTargetProxy.Position, ApTargetDistance);
 
             Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
-            D.Assert(!targetBearing.IsSameAs(Vector3.zero), @"{0} ordered to move to target {1} at same location. 
+            D.Assert(!targetBearing.IsSameAs(Vector3.zero), @"{0} ordered to _move to target {1} at same location. 
                 This should be filtered out by EngagePilot().", Name, ApTargetFullName);
             if (_isApFleetwideMove) {
                 ChangeHeading_Internal(targetBearing);
@@ -3216,7 +3245,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     //D.Log(ShowDebugLog, "{0} reports fleet {1} is aligned. Initiating departure for target {2}.", Name, _ship.Command.DisplayName, TargetFullName);
                     _apActionToExecuteWhenFleetIsAligned = null;
                     EngageEnginesAtApSpeed(isFleetSpeed: true);
-                    InitiateNavigationTo(ApTargetProxy, arrived: () => {
+                    InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
                         HandleTargetReached();
                     });
                     InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
@@ -3228,7 +3257,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 ChangeHeading_Internal(targetBearing, headingConfirmed: () => {
                     //D.Log(ShowDebugLog, "{0} is initiating direct course to {1}.", Name, TargetFullName);
                     EngageEnginesAtApSpeed(isFleetSpeed: false);
-                    InitiateNavigationTo(ApTargetProxy, arrived: () => {
+                    InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
                         HandleTargetReached();
                     });
                     InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
@@ -3260,7 +3289,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
                                                                    // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
 
-                    InitiateNavigationTo(obstacleDetour, arrived: () => {
+                    InitiateNavigationTo(obstacleDetour, hasArrived: () => {
                         RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
                         ResumeDirectCourseToTarget();
                     });
@@ -3273,7 +3302,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 ChangeHeading_Internal(newHeading, headingConfirmed: () => {
                     EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
                                                                    // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-                    InitiateNavigationTo(obstacleDetour, arrived: () => {
+                    InitiateNavigationTo(obstacleDetour, hasArrived: () => {
                         RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
                         ResumeDirectCourseToTarget();
                     });
@@ -3295,7 +3324,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
             ChangeHeading_Internal(targetBearing, headingConfirmed: () => {
                 //D.Log(ShowDebugLog, "{0} is now on heading to reach {1}.", Name, TargetFullName);
-                InitiateNavigationTo(ApTargetProxy, arrived: () => {
+                InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
                     HandleTargetReached();
                 });
                 InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
@@ -3315,7 +3344,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
             ChangeHeading_Internal(newHeading, headingConfirmed: () => {
                 //D.Log(ShowDebugLog, "{0} is now on heading to reach obstacle detour {1}.", Name, obstacleDetour.FullName);
-                InitiateNavigationTo(obstacleDetour, arrived: () => {
+                InitiateNavigationTo(obstacleDetour, hasArrived: () => {
                     // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then direct to target
                     RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
                     ResumeDirectCourseToTarget();
@@ -3324,26 +3353,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             });
         }
 
-        private void InitiateNavigationTo(AutoPilotDestinationProxy destination, Action arrived = null) {
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+        private void InitiateNavigationTo(AutoPilotDestinationProxy destination, Action hasArrived = null) {
             D.Assert(_engineRoom.IsPropulsionEngaged, "{0}.InitiateNavigationTo({1}) called without propulsion engaged. AutoPilotSpeed: {2}",
                 Name, destination.FullName, ApSpeed.GetValueName());
             D.Assert(!IsApNavJobRunning, "{0} already has an AutoPilotNavJob running!", Name);
-            _apNavJob = new Job(EngageDirectCourseTo(destination), toStart: true, jobCompleted: (jobWasKilled) => {
-                if (!jobWasKilled) {
-                    if (arrived != null) {
-                        arrived();
-                    }
-                }
-            });
-        }
 
-        /// <summary>
-        /// Coroutine that moves the ship directly to destination. No A* course is used.
-        /// </summary>
-        /// <param name="destination">The destination's proxy.</param>
-        /// <returns></returns>
-        private IEnumerator EngageDirectCourseTo(AutoPilotDestinationProxy destination) {
             bool isDestinationADetour = destination != ApTargetProxy;
             bool isDestFastMover = destination.IsFastMover;
             bool isIncreaseAboveApSpeedAllowed = isDestinationADetour || isDestFastMover;
@@ -3357,7 +3371,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 #pragma warning restore 0219
             if (arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
                 // arrived
-                yield break;
+                if (hasArrived != null) {
+                    hasArrived();
+                }
             }
             else {
                 //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", Name, destination.FullName, distanceToArrival);
@@ -3370,7 +3386,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
 
             float halfArrivalWindowDepth = destination.ArrivalWindowDepth / 2F;
-            while (!(arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival))) {
+
+            string jobName = "{0}.ApNavJob".Inject(Name);
+            _apNavJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
+                if (arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
+                    _apNavJob.Kill();
+                    if (hasArrived != null) {
+                        hasArrived();
+                    }
+                    return;
+                }
+
                 //D.Log(ShowDebugLog, "{0} beginning progress check on Date: {1}.", Name, _gameTime.CurrentDate);
                 if (CheckForCourseCorrection(directionToArrival)) {
                     //D.Log(ShowDebugLog, "{0} is making a mid course correction of {1:0.00} degrees.", Name, Vector3.Angle(directionToArrival, _ship.Data.IntendedHeading));
@@ -3395,13 +3421,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
                 //D.Log(ShowDebugLog, "{0} completed progress check on Date: {1}, NextProgressCheckPeriod: {2}.", Name, _gameTime.CurrentDate, progressCheckPeriod);
                 //D.Log(ShowDebugLog, "{0} not yet arrived. DistanceToArrival = {1:0.0}.", Name, distanceToArrival);
-
-                var waitForHours = new WaitForHours(progressCheckPeriod);
-                //D.Log(ShowDebugLog, "{0} is about to wait until {1} before checking progress again.", Name, waitForHours);
-                yield return waitForHours;
-            }
-            //D.Log(ShowDebugLog, "{0} has arrived at {1}.", Name, destination.FullName);
+            });
         }
+
 
         /// <summary>
         /// Generates a progress check period that allows <c>MinNumberOfProgressChecksToDestination</c> and
@@ -3623,7 +3645,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             _engineRoom.HandleTurnBeginning();
 
             GameDate errorDate = GameUtility.CalcWarningDateForRotation(_ship.Data.MaxTurnRate, MaxReqdHeadingChange);
-            _headingJob = new Job(ExecuteHeadingChange(errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+            string jobName = "{0}.HeadingJob".Inject(Name);
+            _headingJob = _jobMgr.StartGameplayJob(ExecuteHeadingChange(errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     //D.Log(ShowDebugLog, "{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
                     //Name, _ship.Data.IntendedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.IntendedHeading));
@@ -3648,13 +3671,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     // that the heading is confirmed so a response here would be a duplicate.
                 }
             });
-
-            // Reqd as I have no pause control over the State Machine. The instance I found was ExecuteAttackOrder Call()ed Attacking
-            // which initiated an AutoPilot pursuit which launched this new heading job 
-            if (_gameMgr.IsPaused) {
-                _headingJob.IsPaused = true;
-                D.Log(ShowDebugLog, "{0} has paused HeadingJob immediately after starting it.", Name);
-            }
         }
 
         /// <summary>
@@ -3761,24 +3777,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         #region Obstacle Checking
 
         private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destination, CourseRefreshMode courseRefreshMode) {
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(!IsApObstacleCheckJobRunning, "{0} already has a ObstacleCheckJob running!", Name);
-            _apObstacleCheckJob = new Job(CheckForObstacles(destination, courseRefreshMode), toStart: true);
-            // Note: can't use jobCompleted because 'out' cannot be used on coroutine method parameters
-        }
-
-        private IEnumerator CheckForObstacles(AutoPilotDestinationProxy destination, CourseRefreshMode courseRefreshMode) {
             _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
             AutoPilotDestinationProxy detour;
-            while (!TryCheckForObstacleEnrouteTo(destination, out detour)) {
+            string jobName = "{0}.ApObstacleCheckJob".Inject(Name);
+            _apObstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _apObstacleCheckPeriod), jobName, waitMilestone: () => {
+                if (TryCheckForObstacleEnrouteTo(destination, out detour)) {
+                    _apObstacleCheckJob.Kill();
+                    RefreshCourse(courseRefreshMode, detour);
+                    ContinueCourseToTargetVia(detour);
+                    return;
+                }
                 if (_doesApObstacleCheckPeriodNeedRefresh) {
                     _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
                     _doesApObstacleCheckPeriodNeedRefresh = false;
                 }
-                yield return new WaitForHours(_apObstacleCheckPeriod);
-            }
-            RefreshCourse(courseRefreshMode, detour);
-            ContinueCourseToTargetVia(detour);
+            });
         }
 
         private GameTimeDuration __GenerateObstacleCheckPeriod() {
@@ -3923,7 +3937,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.Assert(!IsApMaintainPursuitJobRunning);
 
             ChangeSpeed_Internal(Speed.Stop, isFleetSpeed: false);
-            _apMaintainPursuitJob = new Job(WaitWhileArrived(), toStart: true, jobCompleted: (jobWasKilled) => {
+            string jobName = "ShipApMaintainPursuitJob";
+            _apMaintainPursuitJob = _jobMgr.StartGameplayJob(WaitWhileArrived(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 if (!jobWasKilled) {    // killed only by CleanupAnyRemainingAutoPilotJobs
                                         // lost pursuit position
                     D.Log(ShowDebugLog, "{0} is resuming pursuit of {1}.", Name, ApTargetFullName);
@@ -3945,10 +3960,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         #endregion
 
         #region Event and Property Change Handlers
-
-        private void IsPausedPropChangedHandler() {
-            PauseJobs(_gameMgr.IsPaused);
-        }
 
         private void FullSpeedPropChangedHandler() {
             HandleFullSpeedValueChanged();
@@ -4072,21 +4083,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 _doesApProgressCheckPeriodNeedRefresh = false;
                 _apObstacleCheckPeriod = default(GameTimeDuration);
                 _isApInPursuit = false;
-            }
-        }
-
-        private void PauseJobs(bool toPause) {
-            if (IsApNavJobRunning) {
-                _apNavJob.IsPaused = toPause;
-            }
-            if (IsHeadingJobRunning) {
-                _headingJob.IsPaused = toPause;
-            }
-            if (IsApObstacleCheckJobRunning) {
-                _apObstacleCheckJob.IsPaused = toPause;
-            }
-            if (IsApMaintainPursuitJobRunning) {
-                _apMaintainPursuitJob.IsPaused = toPause;
             }
         }
 
@@ -4457,6 +4453,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             private IList<IDisposable> _subscriptions;
             private GameManager _gameMgr;
             private GameTime _gameTime;
+            private JobManager _jobMgr;
 
             public EngineRoom(ShipItem ship, Rigidbody shipRigidbody) {
                 _ship = ship;
@@ -4465,6 +4462,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 _shipRigidbody = shipRigidbody;
                 _gameMgr = GameManager.Instance;
                 _gameTime = GameTime.Instance;
+                _jobMgr = JobManager.Instance;
                 _driftCorrector = new DriftCorrector(ship.transform, shipRigidbody, Name);
                 Subscribe();
             }
@@ -4580,9 +4578,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
                 if (!IsForwardPropulsionEngaged) {
                     //D.Log(ShowDebugLog, "{0} is engaging forward propulsion at Speed {1}.", Name, CurrentSpeed.GetValueName());
-                    D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+
                     D.Assert(ActualForwardSpeedValue.IsLessThanOrEqualTo(IntendedCurrentSpeedValue, .01F), "{0}: ActualForwardSpeed {1:0.##} > IntendedSpeedValue {2:0.##}.", Name, ActualForwardSpeedValue, IntendedCurrentSpeedValue);
-                    _forwardPropulsionJob = new Job(OperateForwardPropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
+                    string jobName = "{0}.FwdPropulsionJob".Inject(Name);
+                    _forwardPropulsionJob = _jobMgr.StartGameplayJob(OperateForwardPropulsion(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                         //D.Log(ShowDebugLog, "{0} forward propulsion has ended.", Name);
                     });
                 }
@@ -4641,9 +4640,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
                 if (!IsReversePropulsionEngaged) {
                     //D.Log(ShowDebugLog, "{0} is engaging reverse propulsion.", Name);
-                    D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+
                     D.Assert(ActualForwardSpeedValue > IntendedCurrentSpeedValue, "{0}: ActualForwardSpeed {1.0.##} <= IntendedSpeedValue {2:0.##}.", Name, ActualForwardSpeedValue, IntendedCurrentSpeedValue);
-                    _reversePropulsionJob = new Job(OperateReversePropulsion(), toStart: true, jobCompleted: (jobWasKilled) => {
+                    string jobName = "{0}.RevPropulsionJob".Inject(Name);
+                    _reversePropulsionJob = _jobMgr.StartGameplayJob(OperateReversePropulsion(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
                             // ReverseEngines completed naturally and should engage forward engines unless RequestedSpeed is zero
                             if (IntendedCurrentSpeedValue > Constants.ZeroF) {
@@ -4745,12 +4745,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
             private void EngageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
                 D.Assert(!_caPropulsionJobs.ContainsKey(obstacle));
-                D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-
                 Vector3 worldSpaceDirectionToAvoidCollision = (_shipData.Position - obstacle.Position).normalized;
 
                 GameDate errorDate = new GameDate(new GameTimeDuration(5F));    // HACK
-                Job job = new Job(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision, errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+                string jobName = "{0}.CollisionAvoidanceJob".Inject(Name);
+                Job job = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision, errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                     D.Assert(jobWasKilled); // CA Jobs never complete naturally
                 });
                 _caPropulsionJobs.Add(obstacle, job);
@@ -4824,9 +4823,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
 
             private void IsPausedPropChangedHandler() {
-                PauseJobs(_gameMgr.IsPaused);
                 PauseVelocity(_gameMgr.IsPaused);
-                _driftCorrector.Pause(_gameMgr.IsPaused);
             }
 
             private void CurrentDragPropChangedHandler() {
@@ -4860,17 +4857,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
             }
 
-            private void PauseJobs(bool toPause) {
-                if (IsForwardPropulsionEngaged) {
-                    _forwardPropulsionJob.IsPaused = toPause;
-                }
-                if (IsReversePropulsionEngaged) {
-                    _reversePropulsionJob.IsPaused = toPause;
-                }
-                if (IsCollisionAvoidanceEngaged) {
-                    _caPropulsionJobs.Values.ForAll(caJob => caJob.IsPaused = toPause);
-                }
-            }
+            // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
             /// <summary>
             /// Adjusts the velocity and thrust of the ship to reflect the new GameSpeed setting. 
@@ -5344,9 +5331,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region ITopographyChangeListener Members
 
-    public void HandleTopographyChanged(Topography newTopography) {
-        //D.Log(ShowDebugLog, "{0}.HandleTopographyChanged({1}), Previous = {2}.",
-        //    FullName, newTopography.GetValueName(), Data.Topography.GetValueName());
+    public void ChangeTopographyTo(Topography newTopography) {
+        D.LogBold(ShowDebugLog, "{0}.ChangeTopographyTo({1}), Previous = {2}.", FullName, newTopography.GetValueName(), Data.Topography.GetValueName());
         Data.Topography = newTopography;
     }
 

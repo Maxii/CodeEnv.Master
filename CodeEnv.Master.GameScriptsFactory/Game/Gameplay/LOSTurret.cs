@@ -86,18 +86,16 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     public override Vector3 MuzzleFacing { get { return (Muzzle.position - _barrel.position).normalized; } }
 
+    public new ALOSWeapon Weapon {
+        get { return base.Weapon as ALOSWeapon; }
+        set { base.Weapon = value; }
+    }
+
     /// <summary>
     /// The inaccuracy of this Turret when traversing in degrees.
     /// Affects both hub rotation and barrel elevation.
     /// </summary>
     private float AllowedTraverseInaccuracy { get { return UnityConstants.AngleEqualityPrecision; } }
-
-    //public GameObject Muzzle { get { return _muzzle.gameObject; } }
-
-    public new ALOSWeapon Weapon {
-        get { return base.Weapon as ALOSWeapon; }
-        set { base.Weapon = value; }
-    }
 
     private bool IsTraverseJobRunning { get { return _traverseJob != null && _traverseJob.IsRunning; } }
 
@@ -119,35 +117,21 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     private float _allowedBarrelElevationAngleDeviationFromMax;
     private GameTime _gameTime;
     private GameManager _gameMgr;
+    private JobManager _jobMgr;
     private Job _traverseJob;
-    private IList<IDisposable> _subscriptions;
-
-    #region Debug
-
-    /// <summary>
-    /// Used for debugging when a traverse job is killed.
-    /// </summary>
-    private LosWeaponFiringSolution __lastFiringSolution;
-
-    #endregion
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _gameTime = GameTime.Instance;
         _gameMgr = GameManager.Instance;
+        _jobMgr = JobManager.Instance;
         _barrelRestElevation = _barrel.localRotation;
-        Subscribe();
     }
 
     protected override void Validate() {
         base.Validate();
         D.Assert(_hub != null);
         D.Assert(_barrel != null);
-    }
-
-    private void Subscribe() {
-        _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
     /// <summary>
@@ -253,9 +237,9 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         D.Assert(!IsTraverseJobRunning, "{0} received TraverseTo while traversing to {1}.", Name, __lastFiringSolution);
         var errorDate = CalcLatestDateToCompleteTraverse();
         //D.Log("{0}: time allowed to Traverse = {1}.", Name, errorDate - _gameTime.CurrentDate);
-        _traverseJob = new Job(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+        string jobName = "{0}.TraverseJob".Inject(Name);
+        _traverseJob = _jobMgr.StartGameplayJob(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
             Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
-
             if (!jobWasKilled) {
                 HandleTraverseCompleted(firingSolution);
             }
@@ -389,10 +373,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     #region Event and Property Change Handlers
 
-    private void IsPausedPropChangedHandler() {
-        PauseJobs(_gameMgr.IsPaused);
-    }
-
     private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
         D.Assert(!Weapon.IsOperational);  // only subscribed when we are traversing and weapon is operational
         if (IsTraverseJobRunning) {
@@ -403,11 +383,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     #endregion
 
-    private void PauseJobs(bool toPause) {
-        if (IsTraverseJobRunning) {
-            _traverseJob.IsPaused = toPause;
-        }
-    }
+    // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
     private GameDate CalcLatestDateToCompleteTraverse() {
         var latestDateToCompleteHubRotation = GameUtility.CalcWarningDateForRotation(HubRotationRate, HubMaxRotationTraversal);
@@ -419,17 +395,20 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         if (_traverseJob != null) {
             _traverseJob.Dispose();
         }
-        Unsubscribe();
-    }
-
-    private void Unsubscribe() {
-        _subscriptions.ForAll(d => d.Dispose());
-        _subscriptions.Clear();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    /// <summary>
+    /// Used for debugging when a traverse job is killed.
+    /// </summary>
+    private LosWeaponFiringSolution __lastFiringSolution;
+
+    #endregion
 
 }
 

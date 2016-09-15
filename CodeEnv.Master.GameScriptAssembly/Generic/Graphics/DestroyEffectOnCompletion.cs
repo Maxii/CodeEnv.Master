@@ -28,12 +28,23 @@ using UnityEngine;
 /// </summary>
 public class DestroyEffectOnCompletion : AMonoBase {
 
-    public EffectType effectType;   // Has Editor
+    [SerializeField]
+    private EffectType _effectType = EffectType.None;
+    public EffectType KindOfEffect {
+        get { return _effectType; }
+        set {
+            _effectType = value;
+            //D.Log("{0}.EffectType set = {1}. Result after set is {2}.", GetType().Name, value.GetValueName(), _effectType.GetValueName());
+        }
+    }
 
     /// <summary>
     /// The duration of the EffectType.Mesh effect in seconds.
     /// </summary>
-    public float meshEffectDuration;
+    [Tooltip("Duration in seconds of the Mesh effect")]
+    [Range(0F, 2F)]
+    [SerializeField]
+    private float _meshEffectDuration = Constants.OneF;
 
     private float _cumTimeShowingMeshEffect;
     private ParticleSystem _particleEffect;
@@ -41,6 +52,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
     private IList<IDisposable> _subscriptions;
     private GameTime _gameTime;
     private IGameManager _gameMgr;
+    private bool _isInitialized;
 
     protected override void Awake() {
         base.Awake();
@@ -56,47 +68,58 @@ public class DestroyEffectOnCompletion : AMonoBase {
 
     /// <summary>
     /// Starts this MonoBehaviour.
-    /// Note: Moved from Awake() to allow instantiation followed by
-    /// the addition of a AudioSource.
+    /// Note: Moved from Awake() to allow instantiation followed by the addition of an AudioSource,
+    /// an anomaly caused by SoundManagerPro.
     /// </summary>
     protected override void Start() {
         base.Start();
-        D.Assert(effectType != EffectType.None);
-        if (effectType == EffectType.Particle) {
+        Initialize();
+    }
+
+    private void Initialize() {
+        D.Assert(_effectType != EffectType.None);
+        if (_effectType == EffectType.Particle) {
             _particleEffect = gameObject.GetComponentInChildren<ParticleSystem>();
         }
-        if (effectType == EffectType.Mesh) {
-            D.Assert(meshEffectDuration > Constants.ZeroF, "{0}'s {1}.{2} duration not set.", gameObject.name, typeof(EffectType).Name, effectType.GetValueName());
+        if (_effectType == EffectType.Mesh) {
+            D.Assert(_meshEffectDuration > Constants.ZeroF, "{0}'s {1}.{2} duration not set.", gameObject.name, typeof(EffectType).Name, _effectType.GetValueName());
         }
-        if (effectType == EffectType.AudioSFX) {
-            _audioSource = gameObject.GetComponent<AudioSource>();
+        if (_effectType == EffectType.AudioSFX) {
+            _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
             D.Assert(!_audioSource.loop);
         }
-        D.Log("{0} Effect: {1} begun.", effectType.GetValueName(), gameObject.name);
+        if (_gameMgr.IsPaused) {
+            D.Log("{0} Effect: {1} is being paused immediately after beginning.", _effectType.GetValueName(), gameObject.name);
+            PauseEffects(true);
+        }
+        else {
+            D.Log("{0} Effect: {1} begun.", _effectType.GetValueName(), gameObject.name);
+        }
+        _isInitialized = true;
     }
 
     protected override void Update() {
         base.Update();
         bool toDestroy = false;
 
-        switch (effectType) {
+        switch (_effectType) {
             case EffectType.Particle:
                 toDestroy = !_particleEffect.IsAlive(withChildren: true);
                 break;
             case EffectType.Mesh:
                 _cumTimeShowingMeshEffect += _gameTime.DeltaTime;
-                toDestroy = _cumTimeShowingMeshEffect > meshEffectDuration;
+                toDestroy = _cumTimeShowingMeshEffect > _meshEffectDuration;
                 break;
             case EffectType.AudioSFX:
                 toDestroy = !_audioSource.isPlaying;
                 break;
             case EffectType.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(effectType));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_effectType));
         }
 
         if (toDestroy) {
-            D.Log("{0} Effect: {1} being destroyed.", effectType.GetValueName(), gameObject.name);
+            D.Log("{0} Effect: {1} being destroyed.", _effectType.GetValueName(), gameObject.name);
             Destroy(gameObject);
         }
     }
@@ -110,8 +133,16 @@ public class DestroyEffectOnCompletion : AMonoBase {
     #endregion
 
     private void PauseEffects(bool toPause) {
+        if (!_isInitialized) {
+            // IMPROVE If the effect is immediately generated as a result of issuing an order from a context menu,
+            // then the menu will generate an IsPaused = false event from GameManager as it closes. This will
+            // occur BEFORE Start() and Initialize() is called which means _particleEffect and _audioSource
+            // will be null. The root cause of this problem stems from relying on Start to initialize which I have
+            // encountered numerous times before.
+            return;
+        }
         enabled = !toPause;
-        switch (effectType) {
+        switch (_effectType) {
             case EffectType.Particle:
                 if (toPause) {
                     _particleEffect.Pause(withChildren: true);
@@ -133,7 +164,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
                 break;
             case EffectType.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(effectType));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_effectType));
         }
     }
 

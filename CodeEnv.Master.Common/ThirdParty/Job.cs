@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Job.cs
-// Interruptable Coroutine container that is run from JobRunner.
+// Interruptible Coroutine container that is executed on IJobRunner.
 // Derived from P31JobManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,16 +20,17 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
-    /// Interruptable Coroutine container that is run from JobRunner.
-    /// WARNING: Jobs should not be reused after having been started. Instead, create a new Job.
+    /// Interruptible Coroutine container that is executed on IJobRunner.
+    /// WARNING: Jobs should not be reused after having been started. Instead, create a new Job using JobManager.
     /// </summary>
     public class Job : IDisposable {
 
         private const string DefaultJobName = "UnnamedJob";
 
-        public static IJobRunner jobRunner;
+        public static IJobRunner JobRunner { private get; set; }
 
         /// <summary>
         /// Action delegate executed when the job is completed. Contains a
@@ -45,11 +46,13 @@ namespace CodeEnv.Master.Common {
             set {
                 D.Assert(_isPaused != value, "{0} is trying to set IsPaused to value {1} it already has.", JobName, value);
                 _isPaused = value;
+                IsPausedPropChangedHandler();
             }
         }
 
         public string JobName { get; private set; } // My 4.26.16 addition
 
+        private APausableKillableYieldInstruction _customYI;   // My 8.12.16 addition
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
         private Stack<Job> _childJobStack;
@@ -58,22 +61,24 @@ namespace CodeEnv.Master.Common {
         /// killed after running part way through (_coroutine.MoveNext() returns true, but the element that _coroutine.Current
         /// points at is not the first element) cannot be reused as there is no way to reset the iterator back to the first element 
         /// (IEnumerator.Reset() is not supported). Theoretically, to reuse a Job instance the _coroutine must use while(true)
-        /// so it doesn't end itself, you manually kill it, and it should have no state (ie. it doesn't make any difference which 
+        /// so it doesn't end itself, you manually kill it, and it should have no state (i.e. it doesn't make any difference which 
         /// element of the coroutine is used when restarting. As this is way too complicated to govern, I've added a test in Start
         /// that will not allow reuse. Instead, create a new Job for each use.
         /// </summary>
         private bool _hasBeenPreviouslyRun;
 
-        public Job(IEnumerator coroutine, string jobName = DefaultJobName, bool toStart = false, Action<bool> jobCompleted = null) {
+        public Job(IEnumerator coroutine, string jobName = DefaultJobName, APausableKillableYieldInstruction customYI = null, bool toStart = false, Action<bool> jobCompleted = null) {
             _coroutine = coroutine;
-            JobName = jobName; // My 4.26.16 addition
+            JobName = jobName;      // My 4.26.16 addition
+            _customYI = customYI;   // My 8.12.16 addition
             this.jobCompleted = jobCompleted;
-            if (toStart) { Start(); }
+            if (toStart) {
+                Start();
+            }
         }
 
         private IEnumerator Run() {
-            // null out the first run through in case we start paused
-            yield return null;
+            yield return null;            // null out the first run through in case we start paused?
 
             while (IsRunning) {
                 if (IsPaused) {
@@ -127,8 +132,8 @@ namespace CodeEnv.Master.Common {
             }
             // ************************************************************************************
 
-            // *************** My 3.24.16 Addition to allow GC of this Job instance ***************
-            jobRunner.StopCoroutine(_coroutine);
+            // *************** My Addition to allow GC of this Job instance ***************
+            JobRunner.StopCoroutine(_coroutine);        // added 3.24.16
             // ************************************************************************************
         }
 
@@ -165,7 +170,6 @@ namespace CodeEnv.Master.Common {
                     if (j != childJob)
                         childStack.Push(j);
                 }
-
                 // assign the new stack
                 _childJobStack = childStack;
             }
@@ -177,7 +181,7 @@ namespace CodeEnv.Master.Common {
                 {1}Either create a new Job for each use or use while(true) and manually kill it.",
                 JobName, Constants.NewLine);
             IsRunning = true;
-            jobRunner.StartCoroutine(Run());
+            JobRunner.StartCoroutine(Run());
             _hasBeenPreviouslyRun = true;
         }
 
@@ -194,11 +198,13 @@ namespace CodeEnv.Master.Common {
                 D.Log(JobName != DefaultJobName, "{0} was killed while running.", JobName);
                 _jobWasKilled = true;
                 IsRunning = false;
+                KillYieldInstruction();
             }
-            _isPaused = false;
+            // 8.15.16 removed as Kill() followed by an external IsPaused = false throws IsPaused Assert
+            //_isPaused = false;    // no real purpose for this anyhow
         }
 
-        // IMPROVE This and KillInDays needs to use GameTime which includes gamespeed and pausing
+        // IMPROVE This and KillInDays needs to use GameTime which includes gameSpeed and pausing
         public void Kill(float delayInSeconds) {
             var delay = (int)(delayInSeconds * 1000);
             new System.Threading.Timer(obj => {
@@ -218,12 +224,32 @@ namespace CodeEnv.Master.Common {
         //    }, null, delay, System.Threading.Timeout.Infinite);
         //}
 
-
         #endregion
+
+        #region Event and Property Change Handlers
+
+        private void IsPausedPropChangedHandler() { // my 8.12.16 addition
+            PauseYieldInstruction(IsPaused);
+        }
+
 
         private void OnJobCompleted() {
             if (jobCompleted != null) {
                 jobCompleted(_jobWasKilled);
+            }
+        }
+
+        #endregion
+
+        private void PauseYieldInstruction(bool toPause) {  // My 8.12.16 addition
+            if (_customYI != null) {
+                _customYI.IsPaused = toPause;
+            }
+        }
+
+        private void KillYieldInstruction() {               // My 8.12.16 addition
+            if (_customYI != null) {
+                _customYI.Kill();
             }
         }
 
@@ -274,8 +300,6 @@ namespace CodeEnv.Master.Common {
         }
 
         #endregion
-
-
 
     }
 }

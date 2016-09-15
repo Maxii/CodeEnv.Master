@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUniverseCenter : IIntelItem {
 
+        float ClearanceRadius { get; }
+
     }
 }
 

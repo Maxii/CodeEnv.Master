@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SettlementsFolder.cs
-//  Easy access to Settlements folder in Scene.  
+// Easy access to Settlements folder in Scene.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@
 using CodeEnv.Master.Common;
 
 /// <summary>
-///  Easy access to Settlements folder in Scene.  
+/// Easy access to Settlements folder in Scene.  
 /// </summary>
 public class SettlementsFolder : AFolderAccess<SettlementsFolder> {
 

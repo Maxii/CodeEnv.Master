@@ -31,11 +31,11 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 #pragma warning disable 0649
 
     /// <summary>
-    /// The fixed panels of the GUI that should normally be hidden when a popup shows.
+    /// The fixed panels of the GUI that should normally be hidden when a pop up shows.
     /// Use GuiShowModeControlButton.exceptions to exclude a _panel listed here from being hidden.
     /// </summary>
     //[FormerlySerializedAs("fixedGuiPanels")]
-    [Tooltip("The fixed panels of the GUI that should be hidden when a popup shows.")]
+    [Tooltip("The fixed panels of the GUI that should be hidden when a pop up shows.")]
     [SerializeField]
     private List<UIPanel> _fixedGuiPanels;
 
@@ -47,7 +47,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _hiddenPanels = new List<UIPanel>();
-        if (GameManager.Instance.CurrentScene == GameManager.Instance.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
+        if (GameManager.Instance.CurrentSceneID == GameManager.SceneID.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
             D.WarnContext(gameObject, "{0}.fixedGuiPanels list is empty.", GetType().Name);
         }
         CheckDebugSettings();
@@ -189,7 +189,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     //        ChangeVisibility(true, panelsToReappear);
     //    }
     //    //ReadyForSceneChange = true;
-    //    // no need to reset this to false after as GuiManagers donot survive scene changes
+    //    // no need to reset this to false after as GuiManagers do not survive scene changes
     //}
 
     #endregion

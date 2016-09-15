@@ -35,13 +35,14 @@ namespace CodeEnv.Master.GameContent {
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         // No Mass as no Rigidbody
-
         // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UniverseCenterData" /> class.
         /// </summary>
-        /// <param name="ucenter">The ucenter.</param>
+        /// <param name="ucenter">The uCenter.</param>
         /// <param name="radius">The radius.</param>
         /// <param name="closeOrbitInnerRadius">The close orbit inner radius.</param>
         public UniverseCenterData(IUniverseCenter ucenter, float radius, float closeOrbitInnerRadius)
@@ -51,14 +52,16 @@ namespace CodeEnv.Master.GameContent {
             Topography = Topography.OpenSpace;
         }
 
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new UniverseCenterInfoAccessController(this);
+        }
+
+        #endregion
+
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
-        }
-
-        protected override AInfoAccessController InitializeInfoAccessController() {
-            return new UniverseCenterInfoAccessController(this);
         }
 
         #region Event and Property Change Handlers

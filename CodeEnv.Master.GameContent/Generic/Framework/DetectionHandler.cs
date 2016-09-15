@@ -18,12 +18,17 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Component that handles detection events for IDetectable items.
     /// </summary>
     public class DetectionHandler : IDisposable {
+
+        private const string FullNameFormat = "{0}.{1}";
+
+        public string FullName { get { return FullNameFormat.Inject(_item.FullName, typeof(DetectionHandler).Name); } }
 
         /// <summary>
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
@@ -37,17 +42,11 @@ namespace CodeEnv.Master.GameContent {
             _item = item;
             _gameMgr = References.GameManager;
             _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>>(_gameMgr.AllPlayers.Count);
-            Subscribe();
-        }
-
-        private void Subscribe() {
-            _item.ownerChanging += OwnerChangingEventHandler;
-            _item.ownerChanged += OwnerChangedEventHandler;
         }
 
         public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
             D.Assert(_item.IsOperational, "{0} should not be detected by {1} when dead!", _item.FullName, cmdItem.FullName);
-            //D.Log("{0}.{1}.HandleDetectionBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
+            //D.Log("{0}.HandleDetectionBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
@@ -60,8 +59,30 @@ namespace CodeEnv.Master.GameContent {
                 cmds = new List<IUnitCmd_Ltd>();
                 rangeLookup.Add(sensorRange, cmds);
             }
-            D.Assert(!cmds.Contains(cmdItem), "{0} attempted to add duplicate {1}.".Inject(_item.FullName, cmdItem.FullName));
+            D.Assert(!cmds.Contains(cmdItem), "{0} attempted to add duplicate {1}.", FullName, cmdItem.FullName);
             cmds.Add(cmdItem);
+
+            // The following returns can not move earlier in method as detection state must be kept current to support Reset
+            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+                // Should already be set to comprehensive during game startup
+                __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
+                // Note: this debug setting DOES NOT pre-populate all player's knowledge
+                if (_item.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
+                    // even with DebugSettings all coverage comprehensive, still no reason to update if Alliance or Self
+                    __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
+                    __ValidatePlayerKnowledgeOfItem(detectingPlayer);
+                    return;
+                }
+                UpdatePlayerKnowledge(detectingPlayer);
+                return; // continuing could regress coverage on items that allow it
+            }
+
+            if (_item.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
+                // Should already be set to comprehensive when became self or alliance took place
+                __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
+                __ValidatePlayerKnowledgeOfItem(detectingPlayer);
+                return; // continuing could regress coverage on items that allow it
+            }
 
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
             UpdatePlayerKnowledge(detectingPlayer);
@@ -69,25 +90,43 @@ namespace CodeEnv.Master.GameContent {
 
         public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
             D.Assert(sensorRange != RangeCategory.None);    // 7.20.16 detected items no longer notified of lost detection when they die
-            D.Assert(_item.IsOperational, "{0} should not be notified by {1} of detection lost when dead!", _item.FullName, cmdItem.FullName);
-            //D.Log("{0}.{1}.HandleDetectionLostBy called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetValueName());
+            D.Assert(_item.IsOperational, "{0} should not be notified by {1} of detection lost when dead!", FullName, cmdItem.FullName);
+            //D.Log("{0}.HandleDetectionLostBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", _item.FullName, cmdItem.FullName);
+                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", FullName, cmdItem.FullName);
                 return;
             }
 
             IList<IUnitCmd_Ltd> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
-                D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", _item.FullName, cmdItem.FullName, sensorRange.GetValueName());
+                D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
                 return;
             }
 
             bool isRemoved = cmds.Remove(cmdItem);
-            D.Assert(isRemoved, "{0} could not find {1} to remove.".Inject(_item.FullName, cmdItem.FullName));
+            D.Assert(isRemoved, "{0} could not find {1} to remove.", FullName, cmdItem.FullName);
             if (cmds.Count == Constants.Zero) {
                 rangeLookup.Remove(sensorRange);
+                if (rangeLookup.Count == Constants.Zero) {
+                    _detectionLookup.Remove(detectingPlayer);
+                }
+            }
+
+            // The following returns can not move earlier in method as detection state must be kept current to support Reset
+            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+                // Should already be set to comprehensive during game startup
+                __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
+                __ValidatePlayerKnowledgeOfItem(detectingPlayer);   // must have already detected item to have lost it
+                return; // continuing could regress coverage on items that allow it
+            }
+
+            if (_item.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
+                // Should already be set to comprehensive when became self or alliance took place
+                __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
+                __ValidatePlayerKnowledgeOfItem(detectingPlayer);
+                return; // continuing could regress coverage on items that allow it
             }
 
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
@@ -99,113 +138,121 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectingPlayer">The detecting player.</param>
         private void AssignDetectingPlayerIntelCoverage(Player detectingPlayer) {
-            AssignIntelCoverage(detectingPlayer, _item.Owner);
+            D.Assert(detectingPlayer != _item.Owner);
+            AssignIntelCoverage(detectingPlayer);
         }
 
         /// <summary>
         /// Assesses and assigns the Item's IntelCoverage for this <c>player</c>.
+        /// Makes no changes if item Owner is allied with player.
         /// </summary>
-        /// <remarks>
-        /// This version is used in cases where the <c>itemOwner</c> is changing,
-        /// thereby not allowing an effective comparison to _item.Owner.
-        /// </remarks>
         /// <param name="player">The player.</param>
-        /// <param name="itemOwner">The item owner.</param>
-        private void AssignIntelCoverage(Player player, Player itemOwner) {
+        private void AssignIntelCoverage(Player player) {
             D.Assert(player != null && player != TempGameValues.NoPlayer);
-            D.Assert(itemOwner != null);
+            D.Assert(!DebugSettings.Instance.AllIntelCoverageComprehensive);
+            D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
+
+            // Note: Player can be self when the current owner is losing ownership and needs to reassess their coverage
+            // and knowledge of their (about to be former) item
 
             IntelCoverage newCoverage;
-            if (DebugSettings.Instance.AllIntelCoverageComprehensive || player == itemOwner) {
-                newCoverage = IntelCoverage.Comprehensive;
+            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
+            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
+                newCoverage = IntelCoverage.None;
+            }
+            else if (rangeLookup.ContainsKey(RangeCategory.Short)) {
+                newCoverage = IntelCoverage.Broad;
+            }
+            else if (rangeLookup.ContainsKey(RangeCategory.Medium)) {
+                newCoverage = IntelCoverage.Essential;
+            }
+            else if (rangeLookup.ContainsKey(RangeCategory.Long)) {
+                newCoverage = IntelCoverage.Basic;
             }
             else {
-                IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
-                if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-                    D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
-                    return;
-                }
-                if (rangeLookup.ContainsKey(RangeCategory.Short)) {
-                    newCoverage = IntelCoverage.Broad;
-                }
-                else if (rangeLookup.ContainsKey(RangeCategory.Medium)) {
-                    newCoverage = IntelCoverage.Essential;
-                }
-                else if (rangeLookup.ContainsKey(RangeCategory.Long)) {
-                    newCoverage = IntelCoverage.Basic;
-                }
-                else {
-                    newCoverage = IntelCoverage.None;
-                }
+                newCoverage = IntelCoverage.None;   // OPTIMIZE needed?
             }
 
             if (_item.SetIntelCoverage(player, newCoverage)) {
-                //D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _item.FullName, player.LeaderName, newCoverage.GetValueName());
+                //D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", FullName, player.LeaderName, newCoverage.GetValueName());
             }
         }
 
         private void UpdatePlayerKnowledge(Player player) {
-            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
-            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-                D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
-                return;
-            }
+            D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
+
+            // Notes: 
+            // 1)   AllIntelCoverageComprehensive does not pre-populate all player's knowledge so this can still be called 
+            //      when player first detects this item
+            // 2)   Player can be self when the current owner is losing ownership and needs to reassess their coverage
+            //      and knowledge of their (about to be former) item
 
             var playerAiMgr = _gameMgr.GetAIManagerFor(player);
-            if (rangeLookup.Keys.Count > Constants.Zero) {
-                // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
 
-                // 7.20.16 removed as detected items no longer notified of lost detection when they die
-                ////if (!_item.IsOperational) {   
-                ////    // Item is dead so defer any knowledge update until the final DistanceRange key is removed, 
-                ////    // at which time playerKnowledge.HandleItemDetectionLost will be called
-                ////    return;
-                ////}
-
-                playerAiMgr.HandleItemDetection(_item as ISensorDetectable);
+            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
+            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
+                playerAiMgr.HandleItemDetectionLost(_item as ISensorDetectable);
             }
             else {
-                // there are no DistanceRange keys so player has no Cmds in sensor range of this item
-                playerAiMgr.HandleItemDetectionLost(_item as ISensorDetectable);
+                // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
+                D.Assert(rangeLookup.Keys.Count > Constants.Zero);
+                playerAiMgr.HandleItemDetection(_item as ISensorDetectable);
             }
         }
 
         #region Event and Property Change Handlers
 
-        private void OwnerChangingEventHandler(object sender, OwnerChangingEventArgs e) {
-            var outgoingOwner = (sender as IItem).Owner;
-            D.Assert(outgoingOwner != null);    // default should be NoPlayer rather than null
-            if (outgoingOwner == TempGameValues.NoPlayer) {
-                return; // NoPlayer is not a player in the game with IntelCoverage to track
-            }
-            Player newOwner = e.IncomingOwner;
-            AssignIntelCoverage(outgoingOwner, newOwner);
-        }
-
-        private void OwnerChangedEventHandler(object sender, EventArgs e) {
-            var newOwner = (sender as IItem).Owner;
-            if (newOwner == TempGameValues.NoPlayer) {
-                return; // NoPlayer is not a player in the game with IntelCoverage to track
-            }
-            AssignIntelCoverage(newOwner, newOwner);
-        }
+        // 8.3.16 Owner changing/changed now handled by Items
 
         #endregion
 
-        private void Cleanup() {
-            Unsubscribe();
+        /// <summary>
+        /// Reassesses the player's coverage and knowledge of this item based on 
+        /// current detection levels.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        public void ResetBasedOnCurrentDetection(Player player) {
+            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+                // player must already know about this item to call this so can't lose knowledge once Comprehensive and aware of it
+                return;
+            }
+            AssignIntelCoverage(player);
+
+            // by definition, the player must have knowledge of the item before reassessing that knowledge
+            __ValidatePlayerKnowledgeOfItem(player);
+            UpdatePlayerKnowledge(player);
         }
 
-        private void Unsubscribe() {
-            _item.ownerChanging -= OwnerChangingEventHandler;
-            _item.ownerChanged -= OwnerChangedEventHandler;
-        }
+        private void Cleanup() { }
+
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region IDisposable
+        #region Debug
+
+        private void __ValidatePlayerIntelCoverageOfItemIsComprehensive(Player player) {
+            D.Assert(_item.GetIntelCoverage(player) == IntelCoverage.Comprehensive, "{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.",
+                FullName, player, _item.FullName, _item.GetIntelCoverage(player));
+        }
+
+        private void __ValidatePlayerKnowledgeOfItem(Player player) {
+            if (_item is IStar || _item is IUniverseCenter) {
+                // unnecessary check as all players have knowledge of these sensor detectable items
+                return;
+            }
+            var playerAIMgr = _gameMgr.GetAIManagerFor(player);
+            if (!playerAIMgr.HasKnowledgeOf(_item as IIntelItem_Ltd)) {
+                string itemsKnownText = playerAIMgr.__GetItemsOwnedBy(_item.Owner).Select(item => item.FullName).Concatenate();
+                D.Error("{0}: {1} has no knowledge of {2}. IsOperational = {3}. Items known: {4}.", FullName, player, _item.FullName, _item.IsOperational, itemsKnownText);
+            }
+        }
+
+        #endregion
+
+        // OPTIMIZE IDisposable not really needed when no longer subscribing to owner change events
+        #region IDisposable 
 
         private bool _alreadyDisposed = false;
 
@@ -243,7 +290,7 @@ namespace CodeEnv.Master.GameContent {
             _alreadyDisposed = true;
         }
 
-        #endregion
+        #endregion 
 
         #region Archive
 

@@ -29,18 +29,17 @@ namespace CodeEnv.Master.GameContent {
     /// when a new instance is created.
     ///     - Persistent MonoSingletons: 
     ///         - no issues as they all persist
-    ///     - Non-persistent MonoSingletons: MainCameraControl, GuiCameraControl, DynamicObjectsFolder, SectorGrid, SphericalHighlight, 
-    ///         Tooltip, MyPoolManager
+    ///     - Non-persistent MonoSingletons:
     ///         - all need to refresh the reference on instantiation in InitializeOnInstance
     ///         - all should null the reference in Cleanup
     ///     - Non-persistent StdGenericSingletons: 
     ///         - all should implement IDisposable and call CallOnDispose from Cleanup to null _instance
     ///         - all should be disposed of and re-instantiated in GameManager.RefreshStaticReferences()
     /// 
-    /// WARNING: These references should not be accessed from the using class's Awake()
+    /// WARNING: Non-persistent references should not be accessed from the using class's Awake()
     /// (or equivalent) method as they can be null during Awake() when a new scene is 
     /// loaded. This is because all new scene object Awake()s are called before these new
-    /// references are established during OnSceneWasLoaded() in GameManager.
+    /// references are re-established during OnSceneWasLoaded() in GameManager.
     /// 
     /// IMPROVE: Alternative ways of gaining these references without access to these loose
     /// scripts are 1) for non-MonoBehaviour classes use Constructor Dependency
@@ -56,33 +55,175 @@ namespace CodeEnv.Master.GameContent {
 
         #region Persistent MonoBehaviour Singletons
 
-        public static IGameManager GameManager { get; set; }
-        public static IUsefulTools UsefulTools { get; set; }
-        public static IInputManager InputManager { get; set; }
-        public static ISFXManager SFXManager { get; set; }
+        private static IGameManager _gameManager;
+        public static IGameManager GameManager {
+            get {
+                D.Assert(_gameManager != null);
+                return _gameManager;
+            }
+            set { _gameManager = value; }
+        }
+
+        private static IInputManager _inputManager;
+        public static IInputManager InputManager {
+            get {
+                D.Assert(_inputManager != null);
+                return _inputManager;
+            }
+            set { _inputManager = value; }
+        }
+
+        private static ISFXManager _sfxManager;
+        public static ISFXManager SFXManager {
+            get {
+                D.Assert(_sfxManager != null);
+                return _sfxManager;
+            }
+            set { _sfxManager = value; }
+        }
+
+        private static IJobManager _jobManager;
+        public static IJobManager JobManager {
+            get {
+                D.Assert(_jobManager != null);
+                return _jobManager;
+            }
+            set { _jobManager = value; }
+        }
 
         #endregion
 
         #region Non-persistent MonoBehaviour Singletons
 
-        public static ICameraControl MainCameraControl { get; set; }
-        public static IGuiCameraControl GuiCameraControl { get; set; }
-        public static ISectorGrid SectorGrid { get; set; }
-        public static ISphericalHighlight HoverHighlight { get; set; }
-        public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }
-        public static ITooltipHudWindow TooltipHudWindow { get; set; }
-        public static ISelectedItemHudWindow SelectedItemHudWindow { get; set; }
-        public static IHoveredHudWindow HoveredItemHudWindow { get; set; }
-        public static IMyPoolManager MyPoolManager { get; set; }
+        private static ICameraControl _mainCameraControl;
+        public static ICameraControl MainCameraControl {
+            get {
+                D.Assert(_mainCameraControl != null);
+                return _mainCameraControl;
+            }
+            set { _mainCameraControl = value; }
+        }
+
+        private static IGuiCameraControl _guiCameraControl;
+        public static IGuiCameraControl GuiCameraControl {
+            get {
+                D.Assert(_guiCameraControl != null);
+                return _guiCameraControl;
+            }
+            set { _guiCameraControl = value; }
+        }
+
+        private static ISectorGrid _sectorGrid;
+        public static ISectorGrid SectorGrid {
+            get {
+                D.Assert(_sectorGrid != null);
+                return _sectorGrid;
+            }
+            set { _sectorGrid = value; }
+        }
+
+        private static ISphericalHighlight _hoverHighlight;
+        public static ISphericalHighlight HoverHighlight {
+            get {
+                D.Assert(_hoverHighlight != null);
+                return _hoverHighlight;
+            }
+            set { _hoverHighlight = value; }
+        }
+
+        private static IDynamicObjectsFolder _dynamicObjectsFolder;
+        public static IDynamicObjectsFolder DynamicObjectsFolder {
+            get {
+                D.Assert(_dynamicObjectsFolder != null);
+                return _dynamicObjectsFolder;
+            }
+            set { _dynamicObjectsFolder = value; }
+        }
+
+        private static ITooltipHudWindow _tooltipHudWindow;
+        public static ITooltipHudWindow TooltipHudWindow {
+            get {
+                D.Assert(_tooltipHudWindow != null);
+                return _tooltipHudWindow;
+            }
+            set { _tooltipHudWindow = value; }
+        }
+
+        private static ISelectedItemHudWindow _selectedItemHudWindow;
+        public static ISelectedItemHudWindow SelectedItemHudWindow {
+            get {
+                D.Assert(_selectedItemHudWindow != null);
+                return _selectedItemHudWindow;
+            }
+            set { _selectedItemHudWindow = value; }
+        }
+
+        private static IHoveredHudWindow _hoveredItemHudWindow;
+        public static IHoveredHudWindow HoveredItemHudWindow {
+            get {
+                D.Assert(_hoveredItemHudWindow != null);
+                return _hoveredItemHudWindow;
+            }
+            set { _hoveredItemHudWindow = value; }
+        }
+
+        private static IMyPoolManager _myPoolManager;
+        public static IMyPoolManager MyPoolManager {
+            get {
+                D.Assert(_myPoolManager != null);
+                return _myPoolManager;
+            }
+            set { _myPoolManager = value; }
+        }
+
+        private static IDebugControls _debugControls;
+        public static IDebugControls DebugControls {
+            get {
+                D.Assert(_debugControls != null);
+                return _debugControls;
+            }
+            set { _debugControls = value; }
+        }
 
         #endregion
 
         #region Standard Generic Singletons
 
-        public static IGeneralFactory GeneralFactory { get; set; }
-        public static ITrackingWidgetFactory TrackingWidgetFactory { get; set; }
-        public static IGameInputHelper InputHelper { get; set; }
-        public static IFormationGenerator FormationGenerator { get; set; }
+        private static IGeneralFactory _generalFactory;
+        public static IGeneralFactory GeneralFactory {
+            get {
+                D.Assert(_generalFactory != null);
+                return _generalFactory;
+            }
+            set { _generalFactory = value; }
+        }
+
+        private static ITrackingWidgetFactory _trackingWidgetFactory;
+        public static ITrackingWidgetFactory TrackingWidgetFactory {
+            get {
+                D.Assert(_trackingWidgetFactory != null);
+                return _trackingWidgetFactory;
+            }
+            set { _trackingWidgetFactory = value; }
+        }
+
+        private static IGameInputHelper _inputHelper;
+        public static IGameInputHelper InputHelper {
+            get {
+                D.Assert(_inputHelper != null);
+                return _inputHelper;
+            }
+            set { _inputHelper = value; }
+        }
+
+        private static IFormationGenerator _formationGenerator;
+        public static IFormationGenerator FormationGenerator {
+            get {
+                D.Assert(_formationGenerator != null);
+                return _formationGenerator;
+            }
+            set { _formationGenerator = value; }
+        }
 
         #endregion
 

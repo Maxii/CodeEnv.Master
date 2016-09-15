@@ -122,7 +122,8 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (toShow) {
-                _drawCirclesJob = _drawCirclesJob ?? new Job(DrawCircles(), toStart: true, jobCompleted: (jobWasKilled) => {
+                string jobName = "{0}.DrawCirclesJob".Inject(LineName);
+                _drawCirclesJob = _drawCirclesJob ?? _jobMgr.StartGameplayJob(DrawCircles(), jobName, isPausable: false, jobCompleted: (jobWasKilled) => {
                     D.Assert(jobWasKilled);
                     //TODO
                 });

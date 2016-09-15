@@ -32,7 +32,6 @@
       <PropertyName></PropertyName>
       <PropertyValue>0</PropertyValue>
     </Setting>
-
   </Integer>
 
   <Float>
@@ -40,6 +39,9 @@
       <PropertyName>HoursPerSecond</PropertyName>
       <PropertyValue>2.0</PropertyValue>
     </Setting>
+  </Float>
+
+  <Float>
     <Setting>
       <PropertyName>HealthThreshold_Damaged</PropertyName>
       <PropertyValue>0.80</PropertyValue>
@@ -52,6 +54,9 @@
       <PropertyName>HealthThreshold_CriticallyDamaged</PropertyName>
       <PropertyValue>0.20</PropertyValue>
     </Setting>
+  </Float>
+
+  <Float>
     <Setting>
       <PropertyName>ContentApprovalThreshold</PropertyName>
       <PropertyValue>0.60</PropertyValue>
@@ -64,12 +69,14 @@
       <PropertyName>RevoltApprovalThreshold</PropertyName>
       <PropertyValue>0.20</PropertyValue>
     </Setting>
+  </Float>
 
+  <Float>
     <Setting>
       <PropertyName>HudRefreshPeriod</PropertyName>
       <PropertyValue>2.0</PropertyValue>
     </Setting>
-
   </Float>
+
 </Values>
 <!-- Elements are only empty if they are in the format <ElementName/> -->

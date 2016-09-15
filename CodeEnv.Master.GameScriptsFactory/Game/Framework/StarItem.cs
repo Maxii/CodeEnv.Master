@@ -40,11 +40,13 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     public override float Radius { get { return Data.Radius; } }
 
+    public override float ClearanceRadius { get { return Data.CloseOrbitOuterRadius * 2F; } }
+
     public StarReport UserReport { get { return Publisher.GetUserReport(); } }
 
     public SystemItem ParentSystem { get; private set; }
 
-    public Index3D SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
 
     protected new StarDisplayManager DisplayMgr { get { return base.DisplayMgr as StarDisplayManager; } }
 
@@ -61,6 +63,10 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
+
+    protected override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowStarDebugLogs;
+    }
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -182,9 +188,19 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         }
     }
 
+    protected sealed override void HandleIsOperationalChanged() {
+        base.HandleIsOperationalChanged();
+        // Warning: Avoid doing anything here as IsOperational's purpose is to indicate alive or dead
+    }
+
     // Selecting a Star used to select the System for convenience. Stars are now selectable.
 
     #endregion
+
+    protected override void HandleAIMgrLosingOwnership() {
+        base.HandleAIMgrLosingOwnership();
+        ResetBasedOnCurrentDetection(Owner);
+    }
 
     #region Cleanup
 
@@ -220,10 +236,12 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Debug
+
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
@@ -237,19 +255,23 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugValues.Instance;
-        if (debugValues != null) {
-            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+        var debugCntls = DebugControls.Instance;
+        if (debugCntls != null) {
+            debugCntls.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
         }
-        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
-        if (drawCntl != null) {
-            Destroy(drawCntl);
+        if (_obstacleZoneCollider != null) {
+            DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            if (drawCntl != null) {
+                Destroy(drawCntl);
+            }
         }
     }
+
+    #endregion
 
     #endregion
 
@@ -369,6 +391,17 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
     }
 
+    /// <summary>
+    /// Resets the ISensorDetectable item based on current detection levels of the provided player.
+    /// <remarks>8.2.16 Currently used
+    /// 1) when player has lost the Alliance relationship with the owner of this item, and
+    /// 2) when the owner of the item is about to be replaced by another player.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    public void ResetBasedOnCurrentDetection(Player player) {
+        _detectionHandler.ResetBasedOnCurrentDetection(player);
+    }
+
     #endregion
 
     #region IFleetNavigable Members
@@ -416,9 +449,15 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #endregion
 
+    #region IStar Members
+
+    ISystem IStar.ParentSystem { get { return ParentSystem; } }
+
+    #endregion
+
     #region IStar_Ltd Members
 
-    ISystem_Ltd IStar_Ltd.ParentSystem { get { return ParentSystem as ISystem_Ltd; } }  // Explicit interface to return more limited System ref
+    ISystem_Ltd IStar_Ltd.ParentSystem { get { return ParentSystem; } }  // Explicit interface to return more limited System ref
 
     #endregion
 }

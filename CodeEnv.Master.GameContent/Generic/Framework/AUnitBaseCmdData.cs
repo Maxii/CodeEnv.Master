@@ -40,25 +40,29 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
-        public override Index3D SectorIndex { get { return _sectorIndex; } }
+        public override IntVector3 SectorIndex { get { return _sectorIndex; } }
 
-        private Index3D _sectorIndex;
+        private IntVector3 _sectorIndex;
+
+        #region Initialization 
 
         public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(cmd, owner, passiveCMs, cmdStat) { }
 
-        protected override void FinalInitialize() {
+        public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
             _sectorIndex = InitializeSectorIndex();
         }
 
-        private Index3D InitializeSectorIndex() {
-            Index3D sectorIndex = References.SectorGrid.GetSectorIndex(Position);
-            D.Assert(sectorIndex != default(Index3D));
+        private IntVector3 InitializeSectorIndex() {
+            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
+            D.Assert(sectorIndex != default(IntVector3));
             MarkAsChanged();
             return sectorIndex;
         }
+
+        #endregion
 
         #region Event and Property Change Handlers
 

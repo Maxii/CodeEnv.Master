@@ -27,7 +27,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ItemHudManager : IDisposable {
 
-        private static readonly GameTimeDuration HudRefreshPeriod = new GameTimeDuration(GeneralSettings.Instance.HudRefreshPeriod);
+        /// <summary>
+        /// The HUD refresh period in seconds.
+        /// </summary>
+        private static readonly float HudRefreshPeriod = GeneralSettings.Instance.HudRefreshPeriod;
 
         public bool IsHudShowing { get { return IsHudRefreshJobRunning; } }
 
@@ -35,12 +38,12 @@ namespace CodeEnv.Master.GameContent {
 
         private APublisher _publisher;
         private Job _hudRefreshJob;
+        private IJobManager _jobMgr;
 
         public ItemHudManager(APublisher publisher) {
             _publisher = publisher;
+            _jobMgr = References.JobManager;
         }
-
-        // Note: Not pausing _hudRefreshJob when paused as I want to be able to look at item status while paused
 
         public void ShowHud() {
             Show(true);
@@ -53,8 +56,14 @@ namespace CodeEnv.Master.GameContent {
         private void Show(bool toShow) {
             if (toShow) {
                 if (!IsHudRefreshJobRunning) {
-                    _hudRefreshJob = new Job(RefreshHudContent(), toStart: true, jobCompleted: (wasKilled) => {
-                        //D.Log("{0} HudRefreshJob {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
+                    var itemHud = References.HoveredItemHudWindow;
+                    string jobName = "{0}.HudRefreshJob".Inject(GetType().Name);
+                    // Note: This job refreshes the values in the HUD as item values can change when the game is not paused.
+                    // When the game is paused, this refresh is unneeded. OPTIMIZE The job is not required to make
+                    // the HUD respond to mouse moves between objects when paused.
+                    _hudRefreshJob = _jobMgr.RecurringWaitForGameplaySeconds(HudRefreshPeriod, jobName, waitMilestone: () => {
+                        //D.Log("{0}: {1}.Show() being called on refresh.", GetType().Name, itemHud.GetType().Name);
+                        itemHud.Show(_publisher.ItemHudText);
                     });
                 }
             }
@@ -63,14 +72,6 @@ namespace CodeEnv.Master.GameContent {
                     _hudRefreshJob.Kill();
                 }
                 References.HoveredItemHudWindow.Hide();
-            }
-        }
-
-        private IEnumerator RefreshHudContent() {
-            var itemHud = References.HoveredItemHudWindow;
-            while (true) {
-                itemHud.Show(_publisher.ItemHudText);
-                yield return new WaitForHours(HudRefreshPeriod);
             }
         }
 

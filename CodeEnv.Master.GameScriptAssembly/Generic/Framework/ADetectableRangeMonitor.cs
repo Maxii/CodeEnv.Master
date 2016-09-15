@@ -35,6 +35,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     where IDetectableType : class, IDetectable
     where EquipmentType : ARangedEquipment {
 
+    private static LayerMask DefaultLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
+
     protected override bool IsTriggerCollider { get { return true; } }
 
     /// <summary>
@@ -64,7 +66,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         if (detectedObject != null) {
             //D.Log(ShowDebugLog, "{0} detected {1} at {2:0.} units.", FullName, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
             if (!detectedObject.IsOperational) {
-                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
+                D.Warn(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
                 return;
             }
             if (_gameMgr.IsPaused) {
@@ -274,11 +276,13 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         __objectsDetectedViaWorkaround.Clear();
 
         //D.Log(ShowDebugLog, "{0}.BulkDetectAllCollidersInRange() called.", FullName);
-        var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
+        // 8.3.16 added layer mask and Trigger.Ignore
+        var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance, DefaultLayerMask, QueryTriggerInteraction.Ignore);
+
         var allDetectableObjectsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
         foreach (var detectableObject in allDetectableObjectsInRange) {
             if (!detectableObject.IsOperational) {
-                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectableObject.FullName);
+                D.Warn(ShowDebugLog, "{0} BulkDetect avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectableObject.FullName);
                 continue;
             }
             //D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", FullName, detectableObject.FullName);

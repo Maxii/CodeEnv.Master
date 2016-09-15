@@ -28,20 +28,15 @@ using UnityEngine;
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-//public class UsefulTools : AMonoBaseSingleton<UsefulTools>, IUsefulTools {
 public class UsefulTools : AMonoSingleton<UsefulTools>, IUsefulTools {
 
-    //*******************************************************************
-    // Prefabs you want to keep between scenes t here and
-    // can be accessed by UsefulPrefabs.Instance.variableName
-    //*******************************************************************
     public Light flareLight;
 
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.UsefulTools = Instance;
+        //References.UsefulTools = Instance;
     }
 
     public void DestroyGameObject(GameObject objectToDestroy) {
@@ -50,7 +45,7 @@ public class UsefulTools : AMonoSingleton<UsefulTools>, IUsefulTools {
     }
 
     protected override void Cleanup() {
-        References.UsefulTools = null;
+        //References.UsefulTools = null;
     }
 
     public override string ToString() {

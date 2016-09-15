@@ -147,15 +147,9 @@ namespace CodeEnv.Master.GameContent {
             _gameMgr = References.GameManager;
             _qualifiedEnemyTargets = new List<IElementAttackable>();
             _combatResults = new Dictionary<IElementAttackable, CombatResult>();
-            Subscribe();
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
-
-        private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
-        }
 
         /*****************************************************************************************************************************
         * This weapon does not need to track Owner changes. When the owner of the item with this weapon changes, the weapon's 
@@ -263,10 +257,6 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        private void IsPausedPropChangedHandler() {
-            PauseJobs(_gameMgr.IsPaused);
-        }
-
         private void IsFiringSequenceUnderwayPropChangedHandler() {
             AssessReadiness();
         }
@@ -348,9 +338,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateReloadCycle() {
             //D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
-            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, waitFinished: (jobWasKilled) => {
+            string jobName = "{0}.ReloadJob".Inject(FullName);
+            _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     HandleReloaded();
                 }
@@ -391,32 +381,19 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void LaunchFiringSolutionsCheckJob() {
             KillFiringSolutionsCheckJob();
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(IsReady);
             D.Assert(IsAnyEnemyInRange);
             //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
-            _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, jobCompleted: (jobWasKilled) => {
-                //TODO
-            });
-        }
-
-        /// <summary>
-        /// Continuously checks for firing solutions against any target in range. When it finds
-        /// one or more, it signals the weapon's readiness to fire and the job terminates.
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator CheckForFiringSolutions() {
-            bool hasFiringSolutions = false;
-            while (!hasFiringSolutions) {
-                IList<WeaponFiringSolution> firingSolutions;
+            IList<WeaponFiringSolution> firingSolutions;
+            string jobName = "{0}.CheckForFiringSolutionsJob".Inject(FullName);
+            _checkForFiringSolutionsJob = _jobMgr.RecurringWaitForHours(FiringSolutionCheckPeriod, jobName, waitMilestone: () => {
                 if (TryGetFiringSolutions(out firingSolutions)) {
-                    hasFiringSolutions = true;
                     //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
                     IsFiringSequenceUnderway = true;
                     OnReadyToFire(firingSolutions);
+                    KillFiringSolutionsCheckJob();
                 }
-                yield return new WaitForHours(FiringSolutionCheckPeriod);
-            }
+            });
         }
 
         private void KillFiringSolutionsCheckJob() {
@@ -483,16 +460,6 @@ namespace CodeEnv.Master.GameContent {
             combatResult.Interdictions++;
         }
 
-        // 3.28.16 Added during review of all Jobs for pausing controls
-        private void PauseJobs(bool toPause) {
-            if (IsCheckForFiringSolutionsJobRunning) {
-                _checkForFiringSolutionsJob.IsPaused = toPause;
-            }
-            if (IsReloadJobRunning) {
-                _reloadJob.IsPaused = toPause;
-            }
-        }
-
         private void ReportCombatResults(IElementAttackable target) {
             if (DebugSettings.Instance.EnableCombatResultLogging) {
                 CombatResult combatResult;
@@ -505,6 +472,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        // 8.12.16 Handling pausing for all Jobs moved to JobManager
+
         private void Cleanup() {
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
                 _reloadJob.Dispose();
@@ -512,12 +481,6 @@ namespace CodeEnv.Master.GameContent {
             if (_checkForFiringSolutionsJob != null) {
                 _checkForFiringSolutionsJob.Dispose();
             }
-            Unsubscribe();
-        }
-
-        private void Unsubscribe() {
-            _subscriptions.ForAll(d => d.Dispose());
-            _subscriptions.Clear();
         }
 
         public sealed override string ToString() { return Stat.ToString(); }

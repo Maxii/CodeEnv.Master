@@ -40,7 +40,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string FullName {
-            get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
+            get { return Name; }    // OPTIMIZE Star Name already includes its System's name
+            //get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
         private int _capacity;
@@ -55,13 +56,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        public Index3D SectorIndex { get; private set; }
+        public IntVector3 SectorIndex { get; private set; }
 
         public new StarInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarInfoAccessController; } }
 
         // No Mass as no Rigidbody
 
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData" /> class
@@ -86,17 +89,19 @@ namespace CodeEnv.Master.GameContent {
             Capacity = starStat.Capacity;
             Resources = starStat.Resources;
             Topography = Topography.System;
-            SectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            SectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
         }
+
+        protected override AInfoAccessController InitializeInfoAccessController() {
+            return new StarInfoAccessController(this);
+        }
+
+        #endregion
 
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
             var intel = new ImprovingIntel();
             intel.InitializeCoverage(initialcoverage);
             return intel;
-        }
-
-        protected override AInfoAccessController InitializeInfoAccessController() {
-            return new StarInfoAccessController(this);
         }
 
         #region Event and Property Change Handlers

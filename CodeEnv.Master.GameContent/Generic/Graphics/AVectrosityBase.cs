@@ -47,6 +47,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected VectorLine _line;
         protected IGameManager _gameMgr;
+        protected IJobManager _jobMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AVectrosityBase" /> class.
@@ -55,6 +56,7 @@ namespace CodeEnv.Master.GameContent {
         public AVectrosityBase(string name) {
             _lineName = name;
             _gameMgr = References.GameManager;
+            _jobMgr = References.JobManager;
         }
 
         #region Event and Property Change Handlers

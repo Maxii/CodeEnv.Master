@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd, ISectorViewHighlightable {
 
+    public const float RadiusMultiplierForApproachWaypointsInscribedSphere = 5F;
+
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
         set { base.Data = value; }
@@ -71,9 +73,9 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, UserReport);
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
-        PathfindingManager.Instance.Graph.UpdateGraph(this);
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
+        PathfindingManager.Instance.Graph.RemoveFromGraph(this);        //PathfindingManager.Instance.Graph.UpdateGraph(this);
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 
@@ -109,7 +111,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
         if (!IsDiscernibleToUser) {
             if (sectorViewHighlightMgr.IsHighlightShowing) {
-                D.Log(ShowDebugLog, "{0} recieved ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
+                D.Log(ShowDebugLog, "{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
                 sectorViewHighlightMgr.Show(false);
             }
             return;

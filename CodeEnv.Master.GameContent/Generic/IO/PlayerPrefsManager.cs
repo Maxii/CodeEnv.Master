@@ -34,6 +34,7 @@ namespace CodeEnv.Master.GameContent {
         private static readonly GameColor[] _defaultPlayerColors = TempGameValues.AllPlayerColors.Except(GameColor.Green).ToArray();
 
         private string _universeSizeKey = "Universe Size";
+        private string _systemDensityKey = "System Density";
         private string _playerCountKey = "Player Count";
         private string _usernameKey = "Username";
 
@@ -63,6 +64,15 @@ namespace CodeEnv.Master.GameContent {
         private string _aiPlayer6IQKey = "AIPlayer6 IQ";
         private string _aiPlayer7IQKey = "AIPlayer7 IQ";
 
+        private string _userPlayerTeamKey = "User Player Team";
+        private string _aiPlayer1TeamKey = "AIPlayer1 Team";
+        private string _aiPlayer2TeamKey = "AIPlayer2 Team";
+        private string _aiPlayer3TeamKey = "AIPlayer3 Team";
+        private string _aiPlayer4TeamKey = "AIPlayer4 Team";
+        private string _aiPlayer5TeamKey = "AIPlayer5 Team";
+        private string _aiPlayer6TeamKey = "AIPlayer6 Team";
+        private string _aiPlayer7TeamKey = "AIPlayer7 Team";
+
         private string _gameSpeedOnLoadKey = "Game Speed On Load";
         private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor";
         private string _isCameraRollEnabledKey = "Camera Roll";
@@ -75,6 +85,7 @@ namespace CodeEnv.Master.GameContent {
         // WARNING: Changing the name of a Property here requires a commensurate change in the name returned by GuiMenuElementIDExtensions
         // Note: Notifications are not needed for properties that cannot change during a game instance
         public UniverseSizeGuiSelection UniverseSizeSelection { get; private set; }
+        public SystemDensityGuiSelection SystemDensitySelection { get; private set; }
         public int PlayerCount { get; private set; }
         public string Username { get; set; }
 
@@ -103,6 +114,17 @@ namespace CodeEnv.Master.GameContent {
         public IQ AIPlayer5IQ { get; private set; }
         public IQ AIPlayer6IQ { get; private set; }
         public IQ AIPlayer7IQ { get; private set; }
+
+        public TeamID UserPlayerTeam { get; private set; }
+        public TeamID AIPlayer1Team { get; private set; }
+        public TeamID AIPlayer2Team { get; private set; }
+        public TeamID AIPlayer3Team { get; private set; }
+        public TeamID AIPlayer4Team { get; private set; }
+        public TeamID AIPlayer5Team { get; private set; }
+        public TeamID AIPlayer6Team { get; private set; }
+        public TeamID AIPlayer7Team { get; private set; }
+
+
         //********************************************************************************************
 
         //*******************************************************************************************
@@ -184,50 +206,60 @@ namespace CodeEnv.Master.GameContent {
 
         public void RecordNewGameSettings(NewGamePreferenceSettings settings) {
             UniverseSizeSelection = settings.UniverseSizeSelection;
+            SystemDensitySelection = settings.SystemDensitySelection;
             PlayerCount = settings.PlayerCount;
 
             UserPlayerSpeciesSelection = settings.UserPlayerSpeciesSelection;
             UserPlayerColor = settings.UserPlayerColor;
+            UserPlayerTeam = settings.UserPlayerTeam;
 
             for (int i = Constants.Zero; i < TempGameValues.MaxAIPlayers; i++) {
                 var species = settings.AIPlayerSpeciesSelections[i];
                 var color = settings.AIPlayerColors[i];
                 var iq = settings.AIPlayerIQs[i];
+                var team = settings.AIPlayersTeams[i];
                 switch (i) {
                     case 0:
                         AIPlayer1SpeciesSelection = species;
                         AIPlayer1Color = color;
                         AIPlayer1IQ = iq;
+                        AIPlayer1Team = team;
                         break;
                     case 1:
                         AIPlayer2SpeciesSelection = species;
                         AIPlayer2Color = color;
                         AIPlayer2IQ = iq;
+                        AIPlayer2Team = team;
                         break;
                     case 2:
                         AIPlayer3SpeciesSelection = species;
                         AIPlayer3Color = color;
                         AIPlayer3IQ = iq;
+                        AIPlayer3Team = team;
                         break;
                     case 3:
                         AIPlayer4SpeciesSelection = species;
                         AIPlayer4Color = color;
                         AIPlayer4IQ = iq;
+                        AIPlayer4Team = team;
                         break;
                     case 4:
                         AIPlayer5SpeciesSelection = species;
                         AIPlayer5Color = color;
                         AIPlayer5IQ = iq;
+                        AIPlayer5Team = team;
                         break;
                     case 5:
                         AIPlayer6SpeciesSelection = species;
                         AIPlayer6Color = color;
                         AIPlayer6IQ = iq;
+                        AIPlayer6Team = team;
                         break;
                     case 6:
                         AIPlayer7SpeciesSelection = species;
                         AIPlayer7Color = color;
                         AIPlayer7IQ = iq;
+                        AIPlayer7Team = team;
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(i));
@@ -240,6 +272,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public void Store() {
             StoreEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeSelection);
+            StoreEnumPref<SystemDensityGuiSelection>(_systemDensityKey, SystemDensitySelection);
             StoreEnumPref<GameSpeed>(_gameSpeedOnLoadKey, GameSpeedOnLoad);
 
             StoreEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey, UserPlayerSpeciesSelection);
@@ -267,6 +300,15 @@ namespace CodeEnv.Master.GameContent {
             StoreEnumPref<IQ>(_aiPlayer5IQKey, AIPlayer5IQ);
             StoreEnumPref<IQ>(_aiPlayer6IQKey, AIPlayer6IQ);
             StoreEnumPref<IQ>(_aiPlayer7IQKey, AIPlayer7IQ);
+
+            StoreEnumPref<TeamID>(_userPlayerTeamKey, UserPlayerTeam);
+            StoreEnumPref<TeamID>(_aiPlayer1TeamKey, AIPlayer1Team);
+            StoreEnumPref<TeamID>(_aiPlayer2TeamKey, AIPlayer2Team);
+            StoreEnumPref<TeamID>(_aiPlayer3TeamKey, AIPlayer3Team);
+            StoreEnumPref<TeamID>(_aiPlayer4TeamKey, AIPlayer4Team);
+            StoreEnumPref<TeamID>(_aiPlayer5TeamKey, AIPlayer5Team);
+            StoreEnumPref<TeamID>(_aiPlayer6TeamKey, AIPlayer6Team);
+            StoreEnumPref<TeamID>(_aiPlayer7TeamKey, AIPlayer7Team);
 
             StoreBooleanPref(_isZoomOutOnCursorEnabledKey, IsZoomOutOnCursorEnabled);
             StoreBooleanPref(_isCameraRollEnabledKey, IsCameraRollEnabled);
@@ -324,6 +366,7 @@ namespace CodeEnv.Master.GameContent {
         /// </remarks>
         public void Retrieve() {
             UniverseSizeSelection = RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeGuiSelection.Normal);
+            SystemDensitySelection = RetrieveEnumPref<SystemDensityGuiSelection>(_systemDensityKey, SystemDensityGuiSelection.Normal);
             GameSpeedOnLoad = RetrieveEnumPref<GameSpeed>(_gameSpeedOnLoadKey, GameSpeed.Normal);
 
             UserPlayerSpeciesSelection = RetrieveEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey, SpeciesGuiSelection.Human);
@@ -352,6 +395,16 @@ namespace CodeEnv.Master.GameContent {
             AIPlayer5IQ = RetrieveEnumPref<IQ>(_aiPlayer5IQKey, IQ.Normal);
             AIPlayer6IQ = RetrieveEnumPref<IQ>(_aiPlayer6IQKey, IQ.Normal);
             AIPlayer7IQ = RetrieveEnumPref<IQ>(_aiPlayer7IQKey, IQ.Normal);
+
+            UserPlayerTeam = RetrieveEnumPref<TeamID>(_userPlayerTeamKey, TeamID.Team_1);
+            AIPlayer1Team = RetrieveEnumPref<TeamID>(_aiPlayer1TeamKey, TeamID.Team_2);
+            AIPlayer2Team = RetrieveEnumPref<TeamID>(_aiPlayer2TeamKey, TeamID.Team_3);
+            AIPlayer3Team = RetrieveEnumPref<TeamID>(_aiPlayer3TeamKey, TeamID.Team_4);
+            AIPlayer4Team = RetrieveEnumPref<TeamID>(_aiPlayer4TeamKey, TeamID.Team_5);
+            AIPlayer5Team = RetrieveEnumPref<TeamID>(_aiPlayer5TeamKey, TeamID.Team_6);
+            AIPlayer6Team = RetrieveEnumPref<TeamID>(_aiPlayer6TeamKey, TeamID.Team_7);
+            AIPlayer7Team = RetrieveEnumPref<TeamID>(_aiPlayer7TeamKey, TeamID.Team_8);
+
 
             IsPauseOnLoadEnabled = RetrieveBooleanPref(_isPauseOnLoadEnabledKey, false);
 

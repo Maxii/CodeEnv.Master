@@ -34,11 +34,12 @@ namespace CodeEnv.Master.GameContent {
         public const float __MaxFleetWeaponsRangeDistance = 20F;
 
         /// <summary>
-        /// The maximum allowed orbit speed in units per hour of each planetoids.
+        /// The maximum allowed orbit speed in units per hour of each planetoid.
         /// Used to warn if orbit period causes this speed to be exceeded.
         /// IDEA: Derive OrbitPeriod of each planetoid from this value?
+        /// <remarks>Originally derived from reporting each planets orbit speed.</remarks>
         /// </summary>
-        public const float __MaxPlanetoidOrbitSpeed = 0.1F;
+        public const float __MaxPlanetoidOrbitSpeed = 0.11F;    // 8.16.16 getting too many warnings at 0.10x
 
         /// <summary>
         /// The slowest ship speed value allowed under propulsion. Set at twice
@@ -236,10 +237,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const int TotalOrbitSlotsPerSystem = 6;
 
+        public const int MaxPlayers = 8;
+
         /// <summary>
         /// The maximum number of AI Players allowed in any game instance.
         /// </summary>
-        public static int MaxAIPlayers { get { return UniverseSize.Gigantic.DefaultPlayerCount() - 1; } }
+        public static int MaxAIPlayers = MaxPlayers - 1;
 
         /// <summary>
         /// The colors acceptable for use by players.
@@ -256,7 +259,16 @@ namespace CodeEnv.Master.GameContent {
             GameColor.Green
         };
 
-        public static readonly Player NoPlayer = new NoPlayer();
+        private static Player _noPlayer;
+        public static Player NoPlayer {
+            get {
+                if (_noPlayer == null) {
+                    // lazy initialize to avoid creating before References populated with values
+                    _noPlayer = new NoPlayer();
+                }
+                return _noPlayer;
+            }
+        }
 
         public static readonly ResourceYield NoResources = default(ResourceYield);
 

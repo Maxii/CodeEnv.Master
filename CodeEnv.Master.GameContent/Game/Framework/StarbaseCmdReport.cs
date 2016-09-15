@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
                 UnitHealth = sbData.UnitHealth;
             }
             else {
-                // Calculate HitPts before attempting calc of partial unit health
+                // Calculate HitPts before attempting calculation of partial unit health
                 UnitHealth = CalcPartialUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
             }
 
@@ -137,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
                 Resources = sbData.Resources;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Composition)) { // must preceed Category
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Composition)) { // must precede Category
                 UnitComposition = sbData.UnitComposition;
             }
             else {

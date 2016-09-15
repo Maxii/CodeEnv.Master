@@ -237,7 +237,8 @@ namespace CodeEnv.Master.GameContent {
         private void InitiateReloadCycle() {
             //D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
             D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
-            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, waitFinished: (jobWasKilled) => {
+            string jobName = "{0}.ReloadJob".Inject(Name);
+            _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
                     HandleReloaded();
                 }

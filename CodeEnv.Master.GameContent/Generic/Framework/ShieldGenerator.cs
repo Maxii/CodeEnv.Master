@@ -97,7 +97,6 @@ namespace CodeEnv.Master.GameContent {
         private Job _rechargeJob;
         private bool _isRecharging;
         private bool _isReloading;
-        private IList<IDisposable> _subscriptions;
         private IGameManager _gameMgr;
 
         /// <summary>
@@ -110,13 +109,8 @@ namespace CodeEnv.Master.GameContent {
             _gameTime = GameTime.Instance;
             _gameMgr = References.GameManager;
             CurrentCharge = Constants.ZeroF;
-            Subscribe();
         }
 
-        private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
-        }
         /// <summary>
         /// Attempts to absorb the impact of an ordnance delivery vehicle. If the full value of the impact is absorbed
         /// by this generator, the method returns <c>true</c> and the unabsorbedImpactValue is Zero.
@@ -153,10 +147,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
-
-        private void IsPausedPropChangedHandler() {
-            PauseJobs(_gameMgr.IsPaused);
-        }
 
         protected override void IsOperationalPropChangedHandler() {
             base.IsOperationalPropChangedHandler();
@@ -205,12 +195,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateRechargeProcess() {
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+
             D.Assert(HasCharge);
             D.Assert(!_isRecharging);
             D.Log("{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.FullName, Name, TrickleChargeRate);
             _isRecharging = true;
-            _rechargeJob = new Job(Recharge(), toStart: true, jobCompleted: (jobWasKilled) => {
+            string jobName = "ShieldRechargeJob";
+            _rechargeJob = _jobMgr.StartGameplayJob(Recharge(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 _isRecharging = false;
                 if (!jobWasKilled) {
                     D.Log("{0}.{1} completed recharging.", Shield.FullName, Name);
@@ -249,12 +240,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
-            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
             D.Assert(!HasCharge);
             D.Assert(!_isReloading);
             _isReloading = true;
             D.Log("{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.FullName, Name, ReloadPeriod);
-            _reloadJob = WaitJobUtility.WaitForHours(ReloadPeriod, waitFinished: (jobWasKilled) => {
+            string jobName = "{0}.ReloadJob".Inject(FullName);
+            _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
                 _isReloading = false;
                 if (!jobWasKilled) {
                     D.Log("{0}.{1} completed reload.", Shield.FullName, Name);
@@ -271,30 +262,18 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private void PauseJobs(bool toPause) {
-            if (IsRechargeJobRunning) {
-                _rechargeJob.IsPaused = toPause;
-            }
-            if (IsReloadJobRunning) {
-                _reloadJob.IsPaused = toPause;
-            }
-        }
+        // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
         private void Cleanup() {
+            //D.Log("{0}.Cleanup() called.", FullName);
             if (_reloadJob != null) {   // can be null if element is destroyed before Running
+                //D.Log("{0} reloadJob.Dispose() being called.", FullName);
                 _reloadJob.Dispose();
             }
             if (_rechargeJob != null) {
                 _rechargeJob.Dispose();
             }
-            Unsubscribe();
         }
-
-        private void Unsubscribe() {
-            _subscriptions.ForAll(d => d.Dispose());
-            _subscriptions.Clear();
-        }
-
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

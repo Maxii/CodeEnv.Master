@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -93,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Changes a Unity Color value into a 6 digit Hex RGB string, ignoring the alpha channel.
-        /// <remarks>Note that Color32 and Color implictly convert to each other. You may pass a Color object to this method without first casting it.</remarks>
+        /// <remarks>Note that Color32 and Color implicitly convert to each other. You may pass a Color object to this method without first casting it.</remarks>
         /// </summary>
         /// <param name="color">The Unity Color.</param>
         /// <returns></returns>
@@ -104,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Changes the first 6 digits of a hex value string into a Unity Color value.
-        /// <remarks>Note that Color32 and Color implictly convert to each other. You may pass a Color object to this method without first casting it.</remarks>
+        /// <remarks>Note that Color32 and Color implicitly convert to each other. You may pass a Color object to this method without first casting it.</remarks>
         /// </summary>
         /// <param name="hex">The hex value string.</param>
         /// <returns></returns>
@@ -180,9 +181,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Destroys the specified game object.
+        /// <remarks>Warning: If delayInHours > Zero, a pause or gameSpeed change will effect when the gameObject is destroyed.</remarks>
         /// </summary>
         /// <param name="gameObject">The game object.</param>
-        /// <param name="delayInSeconds">The delay in seconds.</param>
+        /// <param name="delayInHours">The delay in game hours.</param>
         /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
         public static void Destroy(GameObject gameObject, float delayInHours, Action onCompletion = null) {
             if (gameObject == null) {
@@ -198,7 +200,8 @@ namespace CodeEnv.Master.GameContent {
                 if (onCompletion != null) { onCompletion(); }
                 return;
             }
-            WaitJobUtility.WaitForHours(delayInHours, waitFinished: (jobWasKilled) => {
+            string jobName = "{0}.Destroy".Inject(typeof(GameUtility).Name);
+            References.JobManager.WaitForHours(delayInHours, jobName, waitFinished: (jobWasKilled) => {
                 if (gameObject == null) {
                     D.Warn("Trying to destroy GameObject {0} that has already been destroyed.", goName);
                 }
@@ -208,9 +211,6 @@ namespace CodeEnv.Master.GameContent {
                 if (onCompletion != null) { onCompletion(); }
             });
         }
-
-
-        // Note: WaitJobs moved to WaitJobUtility to allow auto job termination when a game instance ends (aka isRunning = false)
 
     }
 }

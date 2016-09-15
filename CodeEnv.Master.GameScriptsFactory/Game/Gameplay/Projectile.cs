@@ -114,7 +114,8 @@ public class Projectile : AProjectileOrdnance {
         _muzzleEffect.transform.position = Position;
         _muzzleEffect.transform.rotation = transform.rotation;
         _muzzleEffect.SetActive(true);
-        _waitForMuzzleEffectCompletionJob = WaitJobUtility.WaitForSeconds(0.2F, waitFinished: (jobWasKilled) => {
+        string jobName = "{0}.WaitForMuzzleEffectCompletionJob".Inject(Name);
+        _waitForMuzzleEffectCompletionJob = _jobMgr.WaitForGameplaySeconds(0.2F, jobName, waitFinished: (jobWasKilled) => {
             _muzzleEffect.SetActive(false);
         });
         //TODO Add audio
@@ -130,7 +131,9 @@ public class Projectile : AProjectileOrdnance {
         _impactEffect.transform.position = position;
         _impactEffect.transform.rotation = rotation;
         _impactEffect.Play();
-        _waitForImpactEffectCompletionJob = WaitJobUtility.WaitForParticleSystemCompletion(_impactEffect, includeChildren: true, waitFinished: (jobWasKilled) => {
+        bool includeChildren = true;
+        string jobName = "{0}.WaitForImpactEffectCompletionJob".Inject(Name);   // pausable for debug observation
+        _waitForImpactEffectCompletionJob = _jobMgr.WaitForParticleSystemCompletion(_impactEffect, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
             if (IsOperational) {
                 // ordnance has not already been terminated by other paths such as the death of the target
                 TerminateNow();
@@ -156,11 +159,6 @@ public class Projectile : AProjectileOrdnance {
         D.Assert(_waitForMuzzleEffectCompletionJob == null);
     }
 
-    protected override void IsPausedPropChangedHandler() {
-        base.IsPausedPropChangedHandler();
-        PauseJobs(_gameMgr.IsPaused);
-    }
-
     protected override void OnDespawned() {
         base.OnDespawned();
         _waitForImpactEffectCompletionJob = null;
@@ -169,14 +167,7 @@ public class Projectile : AProjectileOrdnance {
 
     #endregion
 
-    private void PauseJobs(bool toPause) {
-        if (IsWaitForMuzzleEffectCompletionJobRunning) {
-            _waitForMuzzleEffectCompletionJob.IsPaused = toPause;
-        }
-        if (IsWaitForImpactEffectCompletionJobRunning) {
-            _waitForImpactEffectCompletionJob.IsPaused = toPause;
-        }
-    }
+    // 8.12.16 Job pausing moved to JobManager to consolidate pause handling
 
     protected override float GetDistanceTraveled() {
         return Vector3.Distance(Position, _launchPosition);

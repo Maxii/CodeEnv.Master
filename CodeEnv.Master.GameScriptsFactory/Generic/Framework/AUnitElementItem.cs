@@ -81,18 +81,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     // OPTIMIZE all elements followable for now to support facilities rotating around bases or stars
-    public new CameraFollowableStat CameraStat {
-        protected get { return base.CameraStat as CameraFollowableStat; }
+    public new FollowableItemCameraStat CameraStat {
+        protected get { return base.CameraStat as FollowableItemCameraStat; }
         set { base.CameraStat = value; }
     }
 
-
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
-    protected PlayerKnowledge OwnerKnowledge { get; private set; }
     protected IList<IWeaponRangeMonitor> WeaponRangeMonitors { get; private set; }
     protected IList<IActiveCountermeasureRangeMonitor> CountermeasureRangeMonitors { get; private set; }
     protected IList<IShield> Shields { get; private set; }
     protected Rigidbody Rigidbody { get; private set; }
+    protected Job _repairJob;
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
@@ -121,6 +120,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void InitializePrimaryCollider() {
         _primaryCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        // Early detection of colliders that start out enabled can occur when data is added during runtime
+        D.Warn(_primaryCollider.enabled, "{0}'s primary collider should start disabled to avoid early detection by monitors.", FullName);
         _primaryCollider.isTrigger = false;
         _primaryCollider.enabled = false;
         _primaryCollider.size = Data.HullDimensions;
@@ -173,9 +174,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         return new HoverHighlightManager(this, Radius);
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
-        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
         Rigidbody.isKinematic = false;
     }
 
@@ -195,8 +195,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         transform.parent = unitContainer;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
         // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
         // in-route ordnance to show its impact effect while the item is showing its death.
         Data.Weapons.ForAll(w => {
@@ -600,7 +600,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             AssessIcon();
         }
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
-        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
     }
 
     private void WeaponReadyToFireEventHandler(object sender, AWeapon.WeaponFiringSolutionEventArgs e) {
@@ -650,7 +649,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    protected abstract void __ValidateRadius(float radius);
+    protected sealed override void HandleAIMgrLosingOwnership() {
+        base.HandleAIMgrLosingOwnership();
+        ResetBasedOnCurrentDetection(Owner);
+    }
 
     #region StateMachine Support Members
 
@@ -734,6 +736,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (_detectionHandler != null) {
             _detectionHandler.Dispose();
         }
+        if (_repairJob != null) {
+            _repairJob.Dispose();
+        }
     }
 
     protected override void Unsubscribe() {
@@ -757,6 +762,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #endregion
 
     #region Debug
+
+    protected abstract void __ValidateRadius(float radius);
 
     private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
         {FsmTgtEventSubscriptionMode.TargetDeath, false },
@@ -891,6 +898,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
         _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
+    }
+
+    /// <summary>
+    /// Resets the ISensorDetectable item based on current detection levels of the provided player.
+    /// <remarks>8.2.16 Currently used
+    /// 1) when player has lost the Alliance relationship with the owner of this item, and
+    /// 2) when the owner of the item is about to be replaced by another player.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    public void ResetBasedOnCurrentDetection(Player player) {
+        _detectionHandler.ResetBasedOnCurrentDetection(player);
     }
 
     #endregion

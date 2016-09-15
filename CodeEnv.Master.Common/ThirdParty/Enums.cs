@@ -36,7 +36,7 @@ namespace CodeEnv.Master.Common {
 
         private static Random _rng = new Random();
 
-        // Each dIctionary is completely populated for the Type E the first time any of these methods are called for the type.
+        // Each Dictionary is completely populated for the Type E the first time any of these methods are called for the type.
         private static readonly IEnumerable<E> All = Enum.GetValues(typeof(E)).Cast<E>();
         private static readonly Dictionary<string, E> InsensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(E), k).ToUpperInvariant());  // Upper chg from FxCop
         private static readonly Dictionary<string, E> SensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(E), k));
@@ -223,7 +223,7 @@ namespace CodeEnv.Master.Common {
         /// Casts the provided int value into its equivalentType E Constant.
         /// </summary>
         /// <param name="value">The int value.</param>
-        /// <returns>The Type Econstant or null if there is no equivalent.</returns>
+        /// <returns>The Type E constant or null if there is no equivalent.</returns>
         public static E? CastOrNull(int value) {
             E foundConstant;
             if (Values.TryGetValue(value, out foundConstant)) {

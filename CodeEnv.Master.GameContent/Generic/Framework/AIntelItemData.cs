@@ -34,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<Player, AIntel> _playerIntelLookup;
 
+        #region Initialization 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AIntelItemData" /> class.
         /// </summary>
@@ -62,9 +64,13 @@ namespace CodeEnv.Master.GameContent {
 
         private AIntel InitializeIntelState(Player player) {
             bool isCoverageComprehensive = DebugSettings.Instance.AllIntelCoverageComprehensive || Owner == player;
+            // 8.1.16 OPTIMIZE alliance test may not be needed. Currently, new items created in runtime test for this in their creators
+            isCoverageComprehensive = isCoverageComprehensive || Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance);
             var coverage = isCoverageComprehensive ? IntelCoverage.Comprehensive : DefaultStartingIntelCoverage;
             return MakeIntel(coverage);
         }
+
+        #endregion
 
         /// <summary>
         /// Derived classes should override this if they have a different type of AIntel than <see cref="Intel" />.
@@ -127,7 +133,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Hook for derived Data classes that allows them to handle a change in this item's intel coverage.
         /// <remarks>Typically this item's data would not have anything to do when the item's IntelCoverage 
-        /// changes since data, by definition, is where full knowledge about the item is kept, independant 
+        /// changes since data, by definition, is where full knowledge about the item is kept, independent 
         /// of info access restrictions. Reports and interfaces play the role of 'filtering' a player's 
         /// access to this knowledge stored in data by using the item's InfoAccessController.</remarks>
         /// </summary>
@@ -146,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
         public class IntelCoverageChangedEventArgs : EventArgs {
 
             /// <summary>
-            /// The player whos IntelCoverage of this item changed .
+            /// The player whose IntelCoverage of this item changed.
             /// </summary>
             public Player Player { get; private set; }
 

@@ -105,9 +105,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeNonpersistentReferences() {
-        //D.Log("{0}_{1} is [re]initializing nonpersistent references.", GetType().Name, InstanceCount);
+        //D.Log("{0}_{1} is [re]initializing non-persistent references.", GetType().Name, InstanceCount);
         InitializeUIEventDispatcher();
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             _playerViews = PlayerViews.Instance;
             InitializeWorldEventDispatchers();
         }
@@ -141,7 +141,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                   * hearing about all events (currently onScroll, onPress, onDragStart, onDrag, onDragEnd). Setting the fallThrough field to any 
                   * gameObject makes sure all event delegates are raised, bypassing the mask and collider requirement. The fallThrough 
                   * gameObject is used in place of a 'visible' gameObject if none is found.
-                  * Warning: the gameobject used should not have methods for handling UICamera delegates as SendMessage finds them
+                  * Warning: the gameObject used should not have methods for handling UICamera delegates as SendMessage finds them
                   * and generates an error that the method found does not have the correct number of parameters!
                   */
         UICamera.fallThrough = MainCameraControl.Instance.gameObject;
@@ -156,9 +156,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     /// <summary>
     /// Subscribes to world mouse events. 
-    /// Note: Subscribing (and unsubscribing) to these mouse events via their delegate is req'd to 
+    /// Note: Subscribing (and unsubscribing) to these mouse events via their delegate is reqd to 
     /// control which events occur as changing the UICamera.eventRcvrMask does not affect the delegate
-    /// being fired. The assignment of the fallthrough gameObject makes sure the delegate fires whether the
+    /// being fired. The assignment of the fall-through gameObject makes sure the delegate fires whether the
     /// UICamera sees a gameObject or not.
     /// </summary>
     private void SubscribeToWorldMouseEvents() {
@@ -220,7 +220,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
                 UnsubscribeToViewModeKeyEvents();
-                if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+                if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
                     WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                     UnsubscribeToWorldMouseEvents();
                 }
@@ -233,7 +233,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToViewModeKeyEvents();
                 break;
             case GameInputMode.PartialPopup:
-                D.Assert(_gameMgr.CurrentScene == _gameMgr.GameScene);
+                D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
@@ -242,7 +242,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.FullPopup:
-                D.Assert(_gameMgr.CurrentScene == _gameMgr.GameScene);
+                D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
@@ -251,7 +251,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.Normal:
-                D.Assert(_gameMgr.CurrentScene == _gameMgr.GameScene);
+                D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
@@ -265,13 +265,13 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         }
     }
 
-    #endregion
-
     protected override void Update() {
         base.Update();
         CheckForArrowKeyActivity();
         CheckForScreenEdgeActivity();
     }
+
+    #endregion
 
     #region ScrollWheel Events
 
@@ -396,10 +396,10 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     // Note: Changed SelectionManager to use onUnconsumedPressDown rather than onClick as this way
     // an open ContextMenu hides itself (and changes the inputMode back to normal) AFTER the onPress
     // delegate would have been received. The delegate isn't received as there is no subscription active
-    // while in the popup inputMode. The upshot is that the SelectionManager will not lose its selection when
+    // while in the pop up inputMode. The upshot is that the SelectionManager will not lose its selection when
     // randomly clicking on open space to get out of a context menu. Using onClick didn't work as the onClick
     // delegate isn't fired until the completion of the click action, which is way after the input mode is changed
-    // back to normal, thereby firing onUnconsumedClick which undesireably clears the SelectionManager.
+    // back to normal, thereby firing onUnconsumedClick which undesirably clears the SelectionManager.
 
     /// <summary>
     /// Occurs when a mouse button is pressed down, but not over a gameObject.
@@ -416,7 +416,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         //WriteMessage(go.name);    // FIXME: UICamera.onPress bug? go can be null, posted on Ngui support 11/7/14
 
         if (isDown && UICamera.fallThrough == go) {
-            // the target of the press is the fallThrough event handler, so this press wasn't consumed by another gameobject
+            // the target of the press is the fallThrough event handler, so this press wasn't consumed by another gameObject
             //OnUnconsumedPress(isDown);
             OnUnconsumedPress();
         }
@@ -533,7 +533,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     // Beginning with Ngui 3.9, all KeyCodes are now supported by the onKey delegate.
     // However, the onKey delegate still only fires on individual presses and doesn't recognize being held down.
-    // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whos typical use case is holding down.
+    // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whose typical use case is holding down.
 
     private KeyCode[] _arrowKeyCodes = new KeyCode[] { KeyCode.RightArrow, KeyCode.LeftArrow, KeyCode.UpArrow, KeyCode.DownArrow };
     private bool _isHorizontalAxisEventWaiting;
@@ -600,7 +600,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     // Beginning with Ngui 3.9, all KeyCodes are now supported by the onKey delegate.
     // However, the onKey delegate still only fires on individual presses and doesn't recognize being held down.
-    // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whos typical use case is holding down.
+    // Accordingly, I can use it for ViewModeKey detection but not for ArrowKeys whose typical use case is holding down.
 
     private void SubscribeToViewModeKeyEvents() {
         UICamera.onKey += KeyEventHandler;
@@ -628,7 +628,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void InvalidateNonpersistentReferences() {
         UIEventDispatcher = null;
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             if (!IsApplicationQuiting) { // GameManager.DisposeOfGlobals() handles this when Quiting
                 _playerViews.Dispose();
             }
@@ -648,9 +648,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     /// <summary>
     /// Unsubscribes to world mouse events. 
-    /// Note: Subscribing (and unsubscribing) to these mouse events via their delegate is req'd to 
+    /// Note: Subscribing (and unsubscribing) to these mouse events via their delegate is reqd to 
     /// control which events occur as changing the UICamera.eventRcvrMask does not affect the delegate
-    /// being fired. The assignment of the fallthrough gameObject makes sure the delegate fires whether the
+    /// being fired. The assignment of the fall-through gameObject makes sure the delegate fires whether the
     /// UICamera sees a gameObject or not.
     /// </summary>
     private void UnsubscribeToWorldMouseEvents() {
@@ -677,7 +677,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             string hoveredObject = UICamera.hoveredObject.name;
             string camera = UICamera.currentCamera.name;
             string screenPosition = UICamera.lastEventPosition.ToString();  // UICamera.lastTouchPosition.ToString();
-            UICamera.lastHit = new RaycastHit();    // clears any gameobject that was hit. Otherwise it is cached until the next hit
+            UICamera.lastHit = new RaycastHit();    // clears any gameObject that was hit. Otherwise it is cached until the next hit
             string msg = @"{0}.{1}({2}) event. MouseButton = {3}, HoveredObject = {4}, Camera = {5}, ScreenPosition = {6}."
                 .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, hoveredObject, camera, screenPosition);
             Debug.Log(msg);
@@ -690,7 +690,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     ///throw an error.
     /// </summary>
     private void __ValidateEventDispatchersNotDestroyed() {
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
 #pragma warning disable 0168
             var dummy = UIEventDispatcher.gameObject;
             WorldEventDispatchers.ForAll(wed => dummy = wed.gameObject);
@@ -743,7 +743,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     // Previously used by SectorExaminer to open a contextMenu without using a collider.
     // This works but I replaced the Wireframe Mouse hot spot with a small collider instead
     // as the same approach using onUnconsumedHover was unreliable due to the way Ngui
-    // spams onHover events
+    // spam onHover events
 
     //public event Action<NguiMouseButton, bool> onUnconsumedPress;
 
@@ -772,7 +772,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     //    WriteMessage(go.name);
 
     //    if (UICamera.fallThrough == go) {
-    //        // the target of the click is the fallThrough event handler, so this click wasn't consumed by another gameobject
+    //        // the target of the click is the fallThrough event handler, so this click wasn't consumed by another gameObject
     //        OnUnconsumedClick();
     //    }
     //}

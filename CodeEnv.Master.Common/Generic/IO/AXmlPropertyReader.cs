@@ -18,6 +18,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections.Generic;
     using System.Reflection;
     using System.Xml.Linq;
 
@@ -45,91 +46,111 @@ namespace CodeEnv.Master.Common {
         }
 
         private void InitializePropertyValues() {
-            XElement topNode = _xElement.Element(_booleanTagName);
-            if (topNode != null) {
-                var settingNodes = topNode.Elements(_settingTagName);
-                foreach (var settingNode in settingNodes) {
-                    XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                    if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                        D.Log("Boolean PropertyName = {0}.", propertyNameNode.Value);
-                        XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
-                        string propertyValue = "false";
-                        if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
-                            D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
-                        }
-                        else {
-                            propertyValue = propertyValueNode.Value;
-                            D.Log("Float PropertyValue = {0}.", propertyValue);
-                        }
-                        AssignValueToProperty(propertyNameNode.Value, bool.Parse(propertyValue));
-                    }
-                }
+            IEnumerable<XElement> topBooleanNodes = _xElement.Elements(_booleanTagName);
+            foreach (var topBooleanNode in topBooleanNodes) {
+                InitializeBooleanPropertyValuesFor(topBooleanNode);
             }
 
-            topNode = _xElement.Element(_intTagName);
-            if (topNode != null) {
-                var settingNodes = topNode.Elements(_settingTagName);
-                foreach (var settingNode in settingNodes) {
-                    XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                    if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                        D.Log("Integer PropertyName = {0}.", propertyNameNode.Value);
-                        XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
-                        string propertyValue = "0";
-                        if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
-                            D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
-                        }
-                        else {
-                            propertyValue = propertyValueNode.Value;
-                            D.Log("Float PropertyValue = {0}.", propertyValue);
-                        }
-                        AssignValueToProperty(propertyNameNode.Value, int.Parse(propertyValue));
-                    }
-                }
+            IEnumerable<XElement> topIntegerNodes = _xElement.Elements(_intTagName);
+            foreach (var topIntegerNode in topIntegerNodes) {
+                InitializeIntegerPropertyValuesFor(topIntegerNode);
             }
 
-            topNode = _xElement.Element(_floatTagName);
-            if (topNode != null) {
-                var settingNodes = topNode.Elements(_settingTagName);
-                foreach (var settingNode in settingNodes) {
-                    XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                    if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                        D.Log("Float PropertyName = {0}.", propertyNameNode.Value);
-                        XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
-                        string propertyValue = "0.0";
-                        if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
-                            D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
-                        }
-                        else {
-                            propertyValue = propertyValueNode.Value;
-                            D.Log("Float PropertyValue = {0}.", propertyValue);
-                        }
-                        AssignValueToProperty(propertyNameNode.Value, float.Parse(propertyValue));
-                    }
-                }
+            IEnumerable<XElement> topFloatNodes = _xElement.Elements(_floatTagName);
+            foreach (var topFloatNode in topFloatNodes) {
+                InitializeFloatPropertyValuesFor(topFloatNode);
             }
 
-            topNode = _xElement.Element(_textTagName);
-            if (topNode != null) {
-                var settingNodes = topNode.Elements(_settingTagName);
-                foreach (var settingNode in settingNodes) {
-                    XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                    if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) { // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                        D.Log("Text PropertyName = {0}.", propertyNameNode.Value);
-                        XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
-                        string propertyValue = string.Empty;
-                        if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
-                            D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
-                        }
-                        else {
-                            propertyValue = propertyValueNode.Value;
-                            D.Log("Text PropertyValue = {0}.", propertyValue);
-                        }
-                        AssignValueToProperty(propertyNameNode.Value, propertyValue);
-                    }
-                }
+            IEnumerable<XElement> topTextNodes = _xElement.Elements(_textTagName);
+            foreach (var topTextNode in topTextNodes) {
+                InitializeTextPropertyValuesFor(topTextNode);
             }
 
             _isPropertyValuesInitialized = true;
+        }
+
+        private void InitializeBooleanPropertyValuesFor(XElement topNode) {
+            D.Assert(topNode != null);
+            var settingNodes = topNode.Elements(_settingTagName);
+            foreach (var settingNode in settingNodes) {
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                    D.Log("Boolean PropertyName = {0}.", propertyNameNode.Value);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
+                    string propertyValue = "false";
+                    if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
+                        D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
+                    }
+                    else {
+                        propertyValue = propertyValueNode.Value;
+                        D.Log("Boolean PropertyValue = {0}.", propertyValue);
+                    }
+                    AssignValueToProperty(propertyNameNode.Value, bool.Parse(propertyValue));
+                }
+            }
+        }
+
+        private void InitializeIntegerPropertyValuesFor(XElement topNode) {
+            D.Assert(topNode != null);
+            var settingNodes = topNode.Elements(_settingTagName);
+            foreach (var settingNode in settingNodes) {
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                    D.Log("Integer PropertyName = {0}.", propertyNameNode.Value);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
+                    string propertyValue = "0";
+                    if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
+                        D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
+                    }
+                    else {
+                        propertyValue = propertyValueNode.Value;
+                        D.Log("Integer PropertyValue = {0}.", propertyValue);
+                    }
+                    AssignValueToProperty(propertyNameNode.Value, int.Parse(propertyValue));
+                }
+            }
+        }
+
+        private void InitializeFloatPropertyValuesFor(XElement topNode) {
+            D.Assert(topNode != null);
+            var settingNodes = topNode.Elements(_settingTagName);
+            foreach (var settingNode in settingNodes) {
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                    D.Log("Float PropertyName = {0}.", propertyNameNode.Value);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
+                    string propertyValue = "0.0";
+                    if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
+                        D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
+                    }
+                    else {
+                        propertyValue = propertyValueNode.Value;
+                        D.Log("Float PropertyValue = {0}.", propertyValue);
+                    }
+                    AssignValueToProperty(propertyNameNode.Value, float.Parse(propertyValue));
+                }
+            }
+        }
+
+        private void InitializeTextPropertyValuesFor(XElement topNode) {
+            D.Assert(topNode != null);
+            var settingNodes = topNode.Elements(_settingTagName);
+            foreach (var settingNode in settingNodes) {
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) { // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                    D.Log("Text PropertyName = {0}.", propertyNameNode.Value);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
+                    string propertyValue = string.Empty;
+                    if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
+                        D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
+                    }
+                    else {
+                        propertyValue = propertyValueNode.Value;
+                        D.Log("Text PropertyValue = {0}.", propertyValue);
+                    }
+                    AssignValueToProperty(propertyNameNode.Value, propertyValue);
+                }
+            }
         }
 
         /// <summary>

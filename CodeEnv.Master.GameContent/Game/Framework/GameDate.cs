@@ -30,9 +30,6 @@ namespace CodeEnv.Master.GameContent {
         public const string CalenderDateFormat = "{0}.{1:D3}.{2:00.}";  //= "{0}.{1:D3}.{2:D2}";
         public const string FullDateFormat = "{0}.{1:D3}.{2:00.0}";  //= "{0}.{1:D3}.{2:D2}";
 
-        public static readonly GameDate GameStartDate = new GameDate(Constants.ZeroF, Constants.Zero, GameTime.GameStartYear);    // 2700.000.00.0
-        public static readonly GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - GameTime.HoursPrecision, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19.9
-
         #region Comparison Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
@@ -67,6 +64,10 @@ namespace CodeEnv.Master.GameContent {
             return !left.Equals(right);
         }
 
+        #endregion
+
+        #region Arithmetic Operators Override
+
         public static GameTimeDuration operator -(GameDate left, GameDate right) {
             D.Assert(left >= right);
             return new GameTimeDuration(right, left);
@@ -95,11 +96,17 @@ namespace CodeEnv.Master.GameContent {
         /// are set to the future that is <c>timeFromCurrentDate</c> from the CurrentDate.
         /// </summary>
         /// <param name="timeFromCurrentDate">The time from current date.</param>
-        public GameDate(GameTimeDuration timeFromCurrentDate)
-            : this() {
-            GameDate currentDate = GameTime.Instance.CurrentDate;
-            float totalHoursSinceGameStart = currentDate.TotalHoursSinceGameStart;
-            totalHoursSinceGameStart += timeFromCurrentDate.TotalInHours;
+        public GameDate(GameTimeDuration timeFromCurrentDate) : this(GameTime.Instance.CurrentDate, timeFromCurrentDate) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameDate" /> struct whose values
+        /// are set to the future that is <c>timeFromStartDate</c> from the startDate.
+        /// </summary>
+        /// <param name="startDate">The start date.</param>
+        /// <param name="timeFromStartDate">The time from start date.</param>
+        public GameDate(GameDate startDate, GameTimeDuration timeFromStartDate) : this() {
+            float totalHoursSinceGameStart = startDate.TotalHoursSinceGameStart;
+            totalHoursSinceGameStart += timeFromStartDate.TotalInHours;
             Initialize(totalHoursSinceGameStart);
         }
 

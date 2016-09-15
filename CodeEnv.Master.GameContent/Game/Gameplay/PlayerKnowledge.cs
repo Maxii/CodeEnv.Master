@@ -10,13 +10,14 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -31,179 +32,188 @@ namespace CodeEnv.Master.GameContent {
 
         private const string NameFormat = "{0}'s {1}";
 
-        private string Name { get { return NameFormat.Inject(Player.LeaderName, typeof(PlayerKnowledge).Name); } }
+        private string Name { get { return NameFormat.Inject(Owner.LeaderName, typeof(PlayerKnowledge).Name); } }
 
-        public Player Player { get; private set; }
+        public Player Owner { get; private set; }
 
         public IUniverseCenter_Ltd UniverseCenter { get; private set; }
 
-        public IEnumerable<IMoon> MyMoons {
+        public IEnumerable<IMoon> OwnerMoons {
             get {
-                var myMoons = new List<IMoon>();
+                var ownerMoons = new List<IMoon>();
                 Player moonOwner;
                 Moons.ForAll(m => {
-                    if (m.TryGetOwner(Player, out moonOwner) && moonOwner == Player) {
-                        myMoons.Add(m as IMoon);
+                    if (m.TryGetOwner(Owner, out moonOwner) && moonOwner == Owner) {
+                        ownerMoons.Add(m as IMoon);
                     }
                 });
-                return myMoons;
+                return ownerMoons;
             }
         }
 
-        public IEnumerable<IPlanet> MyPlanets {
+        public IEnumerable<IPlanet> OwnerPlanets {
             get {
-                var myPlanets = new List<IPlanet>();
+                var ownerPlanets = new List<IPlanet>();
                 Player planetOwner;
                 Planets.ForAll(p => {
-                    if (p.TryGetOwner(Player, out planetOwner) && planetOwner == Player) {
-                        myPlanets.Add(p as IPlanet);
+                    if (p.TryGetOwner(Owner, out planetOwner) && planetOwner == Owner) {
+                        ownerPlanets.Add(p as IPlanet);
                     }
                 });
-                return myPlanets;
+                return ownerPlanets;
             }
         }
 
-        public IEnumerable<IPlanetoid> MyPlanetoids {
+        public IEnumerable<IPlanetoid> OwnerPlanetoids {
             get {
-                var myPlanetoids = new List<IPlanetoid>();
+                var ownerPlanetoids = new List<IPlanetoid>();
                 Player planetoidOwner;
                 Planetoids.ForAll(p => {
-                    if (p.TryGetOwner(Player, out planetoidOwner) && planetoidOwner == Player) {
-                        myPlanetoids.Add(p as IPlanetoid);
+                    if (p.TryGetOwner(Owner, out planetoidOwner) && planetoidOwner == Owner) {
+                        ownerPlanetoids.Add(p as IPlanetoid);
                     }
                 });
-                return myPlanetoids;
+                return ownerPlanetoids;
             }
         }
 
-        public IEnumerable<IStar> MyStars {
+        public IEnumerable<IStar> OwnerStars {
             get {
-                var myStars = new List<IStar>();
+                var ownerStars = new List<IStar>();
                 Player starOwner;
                 Stars.ForAll(s => {
-                    if (s.TryGetOwner(Player, out starOwner) && starOwner == Player) {
-                        myStars.Add(s as IStar);
+                    if (s.TryGetOwner(Owner, out starOwner) && starOwner == Owner) {
+                        ownerStars.Add(s as IStar);
                     }
                 });
-                return myStars;
+                return ownerStars;
             }
         }
 
-        public IEnumerable<ISystem> MySystems {
+        public IEnumerable<ISystem> OwnerSystems {
             get {
-                var mySystems = new List<ISystem>();
+                var ownerSystems = new List<ISystem>();
                 Player systemOwner;
                 Systems.ForAll(s => {
-                    if (s.TryGetOwner(Player, out systemOwner) && systemOwner == Player) {
-                        mySystems.Add(s as ISystem);
+                    if (s.TryGetOwner(Owner, out systemOwner) && systemOwner == Owner) {
+                        ownerSystems.Add(s as ISystem);
                     }
                 });
-                return mySystems;
+                return ownerSystems;
             }
         }
 
-        public IEnumerable<IUnitCmd> MyCommands {
+        public IEnumerable<IUnitCmd> OwnerCommands {
             get {
-                var myCmds = new List<IUnitCmd>();
+                var ownerCmds = new List<IUnitCmd>();
                 Player cmdOwner;
                 _commands.ForAll(cmd => {
-                    if (cmd.TryGetOwner(Player, out cmdOwner) && cmdOwner == Player) {
-                        myCmds.Add(cmd as IUnitCmd);
+                    if (cmd.TryGetOwner(Owner, out cmdOwner) && cmdOwner == Owner) {
+                        ownerCmds.Add(cmd as IUnitCmd);
                     }
                 });
-                return myCmds;
+                return ownerCmds;
             }
         }
 
-        public IEnumerable<IFleetCmd> MyFleets {
+        public IEnumerable<IFleetCmd> OwnerFleets {
             get {
-                var myFleets = new List<IFleetCmd>();
+                var ownerFleets = new List<IFleetCmd>();
                 Player fleetOwner;
                 Fleets.ForAll(f => {
-                    if (f.TryGetOwner(Player, out fleetOwner) && fleetOwner == Player) {
-                        myFleets.Add(f as IFleetCmd);
+                    if (f.TryGetOwner(Owner, out fleetOwner) && fleetOwner == Owner) {
+                        ownerFleets.Add(f as IFleetCmd);
                     }
                 });
-                return myFleets;
+                return ownerFleets;
             }
         }
 
-        public IEnumerable<ISettlementCmd> MySettlements {
+        public IEnumerable<ISettlementCmd> OwnerSettlements {
             get {
-                var mySettlements = new List<ISettlementCmd>();
+                var ownerSettlements = new List<ISettlementCmd>();
                 Player settlementOwner;
                 Settlements.ForAll(s => {
-                    if (s.TryGetOwner(Player, out settlementOwner) && settlementOwner == Player) {
-                        mySettlements.Add(s as ISettlementCmd);
+                    if (s.TryGetOwner(Owner, out settlementOwner) && settlementOwner == Owner) {
+                        ownerSettlements.Add(s as ISettlementCmd);
                     }
                 });
-                return mySettlements;
+                return ownerSettlements;
             }
         }
 
-        public IEnumerable<IStarbaseCmd> MyStarbases {
+        public IEnumerable<IStarbaseCmd> OwnerStarbases {
             get {
-                var myStarbases = new List<IStarbaseCmd>();
+                var ownerStarbases = new List<IStarbaseCmd>();
                 Player starbaseOwner;
                 Starbases.ForAll(s => {
-                    if (s.TryGetOwner(Player, out starbaseOwner) && starbaseOwner == Player) {
-                        myStarbases.Add(s as IStarbaseCmd);
+                    if (s.TryGetOwner(Owner, out starbaseOwner) && starbaseOwner == Owner) {
+                        ownerStarbases.Add(s as IStarbaseCmd);
                     }
                 });
-                return myStarbases;
+                return ownerStarbases;
             }
         }
 
-        public IEnumerable<IUnitBaseCmd> MyBases {
+        public IEnumerable<IUnitBaseCmd> OwnerBases {
             get {
-                var myBases = new List<IUnitBaseCmd>();
+                var ownerBases = new List<IUnitBaseCmd>();
                 Player baseOwner;
                 Bases.ForAll(b => {
-                    if (b.TryGetOwner(Player, out baseOwner) && baseOwner == Player) {
-                        myBases.Add(b as IUnitBaseCmd);
+                    if (b.TryGetOwner(Owner, out baseOwner) && baseOwner == Owner) {
+                        ownerBases.Add(b as IUnitBaseCmd);
                     }
                 });
-                return myBases;
+                return ownerBases;
             }
         }
 
-        public IEnumerable<IUnitElement> MyElements {
+        public IEnumerable<IUnitElement> OwnerElements {
             get {
-                var myElements = new List<IUnitElement>();
+                var ownerElements = new List<IUnitElement>();
                 Player elementOwner;
                 Elements.ForAll(e => {
-                    if (e.TryGetOwner(Player, out elementOwner) && elementOwner == Player) {
-                        myElements.Add(e as IUnitElement);
+                    if (e.TryGetOwner(Owner, out elementOwner) && elementOwner == Owner) {
+                        ownerElements.Add(e as IUnitElement);
                     }
                 });
-                return myElements;
+                return ownerElements;
             }
         }
 
-        public IEnumerable<IShip> MyShips {
+        public IEnumerable<IShip> OwnerShips {
             get {
-                var myShips = new List<IShip>();
+                var ownerShips = new List<IShip>();
                 Player shipOwner;
                 Ships.ForAll(s => {
-                    if (s.TryGetOwner(Player, out shipOwner) && shipOwner == Player) {
-                        myShips.Add(s as IShip);
+                    if (s.TryGetOwner(Owner, out shipOwner) && shipOwner == Owner) {
+                        ownerShips.Add(s as IShip);
                     }
                 });
-                return myShips;
+                return ownerShips;
             }
         }
 
-        public IEnumerable<IFacility> MyFacilities {
+        public IEnumerable<IFacility> OwnerFacilities {
             get {
-                var myFacilities = new List<IFacility>();
+                var ownerFacilities = new List<IFacility>();
                 Player facilityOwner;
                 Facilities.ForAll(f => {
-                    if (f.TryGetOwner(Player, out facilityOwner) && facilityOwner == Player) {
-                        myFacilities.Add(f as IFacility);
+                    if (f.TryGetOwner(Owner, out facilityOwner) && facilityOwner == Owner) {
+                        ownerFacilities.Add(f as IFacility);
                     }
                 });
-                return myFacilities;
+                return ownerFacilities;
             }
+        }
+
+        public IEnumerable<IItem> OwnerItems {
+            get { return GetItemsOwnedBy(Owner).Cast<IItem>(); }
+        }
+
+        [Obsolete]
+        public IEnumerable<ISensorDetectable> MySensorDetectableItems {
+            get { return OwnerItems.Where(myItem => (myItem is ISensorDetectable)).Cast<ISensorDetectable>(); }
         }
 
         /// <summary>
@@ -229,7 +239,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Systems this player has knowledge of.
         /// </summary>
-        public IEnumerable<ISystem_Ltd> Systems { get { return _systems; } }
+        public IEnumerable<ISystem_Ltd> Systems { get { return _systemLookupBySectorIndex.Values; } }
 
         /// <summary>
         /// The Elements this player has knowledge of.
@@ -269,15 +279,28 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Starbases this player has knowledge of.
         /// </summary>
-        public IEnumerable<IStarbaseCmd_Ltd> Starbases { get { return _commands.Where(cmd => cmd is IStarbaseCmd_Ltd).Cast<IStarbaseCmd_Ltd>(); } }
+        public IEnumerable<IStarbaseCmd_Ltd> Starbases {
+            get {
+                if (_starbasesLookupBySectorIndex.Values.Count > Constants.Zero) {
+                    var firstSectorsBases = _starbasesLookupBySectorIndex.Values.First();
+                    var otherSectorsBases = _starbasesLookupBySectorIndex.Values.Except(firstSectorsBases);
+                    return firstSectorsBases.UnionBy(otherSectorsBases.ToArray());
+                }
+                return Enumerable.Empty<IStarbaseCmd_Ltd>();
+            }
+        }
+        //public IEnumerable<IStarbaseCmd_Ltd> Starbases { get { return _commands.Where(cmd => cmd is IStarbaseCmd_Ltd).Cast<IStarbaseCmd_Ltd>(); } }
 
         // Note: Other players this Player has met is held by the Player
 
+        private IDictionary<IntVector3, ISystem_Ltd> _systemLookupBySectorIndex;
+        private IDictionary<IntVector3, IList<IStarbaseCmd_Ltd>> _starbasesLookupBySectorIndex = new Dictionary<IntVector3, IList<IStarbaseCmd_Ltd>>();
+
         private HashSet<IPlanetoid_Ltd> _planetoids = new HashSet<IPlanetoid_Ltd>();
         private HashSet<IStar_Ltd> _stars = new HashSet<IStar_Ltd>();
-        private HashSet<ISystem_Ltd> _systems = new HashSet<ISystem_Ltd>();
         private HashSet<IUnitElement_Ltd> _elements = new HashSet<IUnitElement_Ltd>();
         private HashSet<IUnitCmd_Ltd> _commands = new HashSet<IUnitCmd_Ltd>();
+        private HashSet<IItem_Ltd> _items = new HashSet<IItem_Ltd>();
         private DebugSettings _debugSettings;
 
         /// <summary>
@@ -301,14 +324,67 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="allStars">All stars.</param>
         public PlayerKnowledge(Player player, IUniverseCenter_Ltd uCenter, IEnumerable<IStar_Ltd> allStars) {
             D.Assert(player != null && player != TempGameValues.NoPlayer);
-            Player = player;
-            _debugSettings = DebugSettings.Instance;
+            Owner = player;
+            InitializeValuesAndReferences();
             AddUniverseCenter(uCenter);
             allStars.ForAll(star => AddStar(star));
+            AddAllSystems(allStars);
+            __InitializeValidatePlayerKnowledge();
+        }
+
+        private void InitializeValuesAndReferences() {
+            _debugSettings = DebugSettings.Instance;
         }
 
         /// <summary>
-        /// Indicates whether the player has knowledge of the provided item.
+        /// Returns true if the sector indicated by sectorIndex contains a System.
+        /// </summary>
+        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="system">The system if present in the sector.</param>
+        /// <returns></returns>
+        public bool TryGetSystem(IntVector3 sectorIndex, out ISystem_Ltd system) {
+            bool isSystemFound = _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
+            if (isSystemFound) {
+                //D.Log("{0} found System {1} in Sector {2}.", Name, system.FullName, sectorIndex);
+            }
+            return isSystemFound;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Starbases, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="starbasesInSector">The resulting starbases in sector.</param>
+        /// <returns></returns>
+        public bool TryGetStarbases(IntVector3 sectorIndex, out IEnumerable<IStarbaseCmd_Ltd> starbasesInSector) {
+            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+            IList<IStarbaseCmd_Ltd> sBases;
+            if (_starbasesLookupBySectorIndex.TryGetValue(sectorIndex, out sBases)) {
+                starbasesInSector = sBases;
+                return true;
+            }
+            starbasesInSector = Enumerable.Empty<IStarbaseCmd_Ltd>();
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Fleets, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="fleetsInSector">The resulting fleets present in the sector.</param>
+        /// <returns></returns>
+        public bool TryGetFleets(IntVector3 sectorIndex, out IEnumerable<IFleetCmd_Ltd> fleetsInSector) {
+            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+            fleetsInSector = Fleets.Where(fleet => fleet.SectorIndex == sectorIndex);
+            if (fleetsInSector.Any()) {
+                return true;
+            }
+            return false;
+        }
+
+
+        /// <summary>
+        /// Indicates whether the Owner has knowledge of the provided item.
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns></returns>
@@ -334,45 +410,73 @@ namespace CodeEnv.Master.GameContent {
                 return true;
             }
             if (item is ISystem_Ltd) {
-                D.Assert(_systems.Contains(item as ISystem_Ltd));
+                D.Assert(_systemLookupBySectorIndex.Values.Contains(item as ISystem_Ltd));
                 D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
                 return true;
             }
             return false;
         }
 
-        private void AddStar(IStar_Ltd star) {
-            // A Star should only be added once when all players get Basic IntelCoverage of all stars
-            bool isAdded = _stars.Add(star);
-            D.Assert(isAdded, "{0} tried to add Star {1} it already has.", Name, star.FullName);
-            AddSystem(star.ParentSystem);
+        /// <summary>
+        /// Returns the items that we know about and to which we have 
+        /// owner access that are owned by player.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
+        public IEnumerable<IItem_Ltd> GetItemsOwnedBy(Player player) {
+            var playerOwnedItems = new List<IItem_Ltd>();
+            _items.ForAll(item => {
+                Player itemOwner;
+                if (item.TryGetOwner(Owner, out itemOwner) && itemOwner == player) {
+                    playerOwnedItems.Add(item);
+                }
+            });
+            return playerOwnedItems;
         }
 
         private void AddUniverseCenter(IUniverseCenter_Ltd universeCenter) {
             D.Assert(UniverseCenter == null);   // should only be added once when all players get Basic IntelCoverage of UCenter
+            _items.Add(universeCenter);
             UniverseCenter = universeCenter;
         }
 
-        internal void AddPlanetoid(IPlanetoid_Ltd planetoid) {
-            bool isAdded = _planetoids.Add(planetoid);
-            if (!isAdded) {
-                D.Log("{0} tried to add Planet {1} it already has.", Name, planetoid.FullName);
-                return;
-            }
-            planetoid.deathOneShot += ItemDeathEventHandler;
+        private void AddStar(IStar_Ltd star) {
+            // A Star should only be added once when all players get Basic IntelCoverage of all stars
+            bool isAdded = _stars.Add(star);
+            isAdded = isAdded & _items.Add(star);
+            D.Assert(isAdded, "{0} tried to add Star {1} it already has.", Name, star.FullName);
         }
 
-        internal void AddElement(IUnitElement_Ltd element) {
-            var isAdded = _elements.Add(element);
+        private void AddAllSystems(IEnumerable<IStar_Ltd> allStars) {   // properly sizes the dictionary
+            _systemLookupBySectorIndex = allStars.ToDictionary(star => star.SectorIndex, star => star.ParentSystem);
+            allStars.ForAll(star => _items.Add(star.ParentSystem));
+        }
+
+        internal bool AddPlanetoid(IPlanetoid_Ltd planetoid) {
+            bool isAdded = _planetoids.Add(planetoid);
+            isAdded = isAdded & _items.Add(planetoid);
             if (!isAdded) {
-                D.Log("{0} tried to add Element {1} it already has.", Name, element.FullName);
-                return;
+                //D.Log("{0} tried to add Planetoid {1} it already has.", Name, planetoid.FullName);
+                return false;
+            }
+            planetoid.deathOneShot += ItemDeathEventHandler;
+            return true;
+        }
+
+        internal bool AddElement(IUnitElement_Ltd element) {
+            var isAdded = _elements.Add(element);
+            isAdded = isAdded & _items.Add(element);
+            if (!isAdded) {
+                //D.Log("{0} tried to add Element {1} it already has.", Name, element.FullName);
+                return false;
             }
             element.isHQChanged += ElementIsHQChangedEventHandler;
+            element.deathOneShot += ItemDeathEventHandler;  // 8.21.16 was missing?
 
             if (element.IsHQ) {
                 AddCommand(element.Command);
             }
+            return true;
         }
 
         #region Event and Property Change Handlers
@@ -406,19 +510,39 @@ namespace CodeEnv.Master.GameContent {
 
         private void AddCommand(IUnitCmd_Ltd command) {
             var isAdded = _commands.Add(command);
+            isAdded = isAdded & _items.Add(command);
             D.Assert(isAdded);  // Cmd cannot already be present. If adding due to a change in an element's IsHQ state, then previous HQElement removed Cmd before this Add
-            D.Log("{0} has added Command {1}.", Name, command.FullName);
+                                //D.Log("{0} has added Command {1}.", Name, command.FullName);
+
+            IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
+            if (sbCmd != null) {
+                var sbSectorIndex = sbCmd.SectorIndex;
+
+                IList<IStarbaseCmd_Ltd> sbCmds;
+                if (!_starbasesLookupBySectorIndex.TryGetValue(sbSectorIndex, out sbCmds)) {
+                    sbCmds = new List<IStarbaseCmd_Ltd>(2);
+                    _starbasesLookupBySectorIndex.Add(sbSectorIndex, sbCmds);
+                }
+                sbCmds.Add(sbCmd);
+            }
         }
 
         private void RemoveCommand(IUnitCmd_Ltd command) {
             var isRemoved = _commands.Remove(command);
+            isRemoved = isRemoved & _items.Remove(command);
             D.Assert(isRemoved);
-            D.Log("{0} has removed Command {1}.", Name, command.FullName);
-        }
+            //D.Log("{0} has removed Command {1}.", Name, command.FullName);
 
-        private void AddSystem(ISystem_Ltd system) {
-            bool isAdded = _systems.Add(system);
-            D.Assert(isAdded, "{0} tried to add System {1} it already has.", Name, system.FullName);
+            IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
+            if (sbCmd != null) {
+                var sbSectorIndex = sbCmd.SectorIndex;
+
+                IList<IStarbaseCmd_Ltd> sbCmds = _starbasesLookupBySectorIndex[sbSectorIndex];
+                sbCmds.Remove(sbCmd);
+                if (sbCmds.Count == Constants.Zero) {
+                    _starbasesLookupBySectorIndex.Remove(sbSectorIndex);
+                }
+            }
         }
 
         /// <summary>
@@ -430,7 +554,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="element">The element.</param>
         internal void RemoveElement(IUnitElement_Ltd element) {
             var isRemoved = _elements.Remove(element);
+            isRemoved = isRemoved & _items.Remove(element);
             D.Assert(isRemoved, "{0} could not remove Element {1}.", Name, element.FullName);
+
+            if (element.IsOperational && (element as IUnitElement).Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
+                D.Error("{0}: {1} is alive and being removed while in Alliance!", Name, element.FullName);
+            }
 
             element.isHQChanged -= ElementIsHQChangedEventHandler;
             element.deathOneShot -= ItemDeathEventHandler;
@@ -441,7 +570,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Removes the dead planetoid from the knowledge of this player.
-        /// <remarks>Knowledge of the existance of a system is not effected, 
+        /// <remarks>Knowledge of the existence of a system is not effected, 
         /// even if this is the only planetoid in the system the player has knowledge of.
         /// </remarks>
         /// </summary>
@@ -449,10 +578,12 @@ namespace CodeEnv.Master.GameContent {
         private void RemoveDeadPlanetoid(IPlanetoid_Ltd deadPlanetoid) {
             D.Assert(!deadPlanetoid.IsOperational);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
+            isRemoved = isRemoved & _items.Remove(deadPlanetoid);
             D.Assert(isRemoved, "{0} could not remove Planetoid {1}.", Name, deadPlanetoid.FullName);
         }
 
         private void Cleanup() {
+            __CleanupValidatePlayerKnowledge();
             Unsubscribe();
         }
 
@@ -467,6 +598,53 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Debug 
+
+        /// <summary>
+        /// Debug. Returns the items that we know about that are owned by player.
+        /// No Owner-access restrictions.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
+        public IEnumerable<IItem> __GetItemsOwnedBy(Player player) {
+            var playerOwnedItems = new List<IItem>();
+            _items.Cast<IItem>().ForAll(item => {
+                if (item.Owner == player) {
+                    playerOwnedItems.Add(item);
+                }
+            });
+            return playerOwnedItems;
+        }
+
+        private void __InitializeValidatePlayerKnowledge() {
+            References.DebugControls.validatePlayerKnowledgeNow += __ValidatePlayerKnowledgeNowEventHandler;
+        }
+
+        private void __ValidatePlayerKnowledgeNowEventHandler(object sender, EventArgs e) {
+            __ValidatePlayerKnowledgeNow();
+        }
+
+        private void __ValidatePlayerKnowledgeNow() {
+            D.Log("{0} is validating all Player Knowledge.", Name);
+            IList<IItem> myItems = OwnerItems.ToList();
+            foreach (var item in _items) {
+                D.Assert(item.IsOperational, "{0} has retained knowledge of dead {1}.", Name, item.FullName);
+                IntelCoverage coverage = (item as IIntelItem).GetIntelCoverage(Owner);
+                if (myItems.Contains(item as IItem)) {
+                    // item is mine so should be comprehensive
+                    D.Assert(coverage == IntelCoverage.Comprehensive, "{0}: {1}.IntelCoverage {2} should be Comprehensive.", Name, item.FullName, coverage.GetValueName());
+                    continue;
+                }
+                D.Assert(coverage != IntelCoverage.None, "{0}: {1}.IntelCoverage {2} should not be None.", Name, item.FullName, coverage.GetValueName());
+            }
+        }
+
+        private void __CleanupValidatePlayerKnowledge() {
+            References.DebugControls.validatePlayerKnowledgeNow -= __ValidatePlayerKnowledgeNowEventHandler;
+        }
+
+        #endregion
 
         #region IDisposable
 

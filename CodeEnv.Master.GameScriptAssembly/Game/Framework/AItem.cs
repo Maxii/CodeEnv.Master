@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -45,17 +46,6 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// </summary>
     public event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
-    /// <summary>
-    /// Debug flag in editor indicating whether to show the D.Log for this item.
-    /// <remarks>Requires #define DEBUG_LOG for D.Log() to be compiled.</remarks>
-    /// </summary>
-    [SerializeField]
-    private bool _showDebugLog = false;
-    public bool ShowDebugLog {
-        get { return _showDebugLog; }
-        set { SetProperty<bool>(ref _showDebugLog, value, "ShowDebugLog"); }
-    }
-
     private AItemData _data;
     public AItemData Data {
         get { return _data; }
@@ -75,7 +65,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// </summary>
     public bool IsUserOwned { get { return Owner.IsUser; } }
 
-    public virtual Topography Topography { get { return Data.Topography; } }
+    public Topography Topography { get { return Data.Topography; } }
 
     public bool IsHudShowing {
         get { return _hudManager != null && _hudManager.IsHudShowing; }
@@ -120,7 +110,16 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// </summary>
     public abstract float Radius { get; }
 
-    public Player Owner { get { return Data.Owner; } }
+    /// <summary>
+    /// The radius of the conceptual 'globe' surrounding this Item, outside of which will be clear of interference from
+    /// this item or anything normally associated with this item.
+    /// </summary>
+    public abstract float ClearanceRadius { get; }
+
+    public Player Owner {
+        get { return Data.Owner; }
+        set { Data.Owner = value; }
+    }
 
     public bool TryGetOwner(Player requestingPlayer, out Player owner) {
         if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
@@ -135,18 +134,22 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
     }
 
+    protected PlayerAIManager OwnerAIMgr { get; private set; }  // will be null if Owner is NoPlayer
+
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
     protected IList<IDisposable> _subscriptions;
     protected IInputManager _inputMgr;
     protected ItemHudManager _hudManager;
     protected IGameManager _gameMgr;
+    protected IJobManager _jobMgr;
 
     #region Initialization
 
     protected sealed override void Awake() {
         base.Awake();
         InitializeOnAwake();
+        ShowDebugLog = InitializeDebugLog();
         Subscribe();
         enabled = false;
     }
@@ -154,7 +157,10 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     protected virtual void InitializeOnAwake() {
         _inputMgr = References.InputManager;
         _gameMgr = References.GameManager;
+        _jobMgr = References.JobManager;
     }
+
+    protected abstract bool InitializeDebugLog();
 
     protected virtual void Subscribe() {
         _subscriptions = new List<IDisposable>();
@@ -184,18 +190,21 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     /// <summary>
-    /// The final Initialization opportunity. The first method called from CommenceOperations,
-    /// BEFORE IsOperational is set to true.
+    /// The final Initialization opportunity before CommenceOperations().
     /// </summary>
-    protected virtual void FinalInitialize() { }
+    public virtual void FinalInitialize() {
+        Data.FinalInitialize();
+        D.Assert(IsOperational);
+        OwnerAIMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
+    }
 
     #endregion
 
     /// <summary>
-    /// Called when the Item should start operations, typically once the game is running.
+    /// Called when the Item should begin operations.
     /// </summary>
     public virtual void CommenceOperations() {
-        FinalInitialize();
+        D.Assert(_gameMgr.IsRunning);
         Data.CommenceOperations();
     }
 
@@ -234,6 +243,9 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     protected virtual void HandleOwnerChanging(Player newOwner) {
+        if (Owner != TempGameValues.NoPlayer) {
+            HandleAIMgrLosingOwnership();
+        }
         OnOwnerChanging(newOwner);
     }
 
@@ -242,6 +254,10 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     protected virtual void HandleOwnerChanged() {
+        OwnerAIMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
+        if (OwnerAIMgr != null) {
+            HandleAIMgrGainedOwnership();
+        }
         OnOwnerChanged();
     }
 
@@ -288,6 +304,47 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     #endregion
 
+    /// <summary>
+    /// Handles AIMgr notifications when the current Owner just gained ownership of this item.
+    /// <remarks>Warning: The item handler that calls this method gets subscribed to data's owner property change once data has been 
+    /// assigned to this item. All Items get assigned their initial owner via the Data constructor. As a result, this method is not be 
+    /// called on the initial owner change. This doesn't matter for celestial objects (planets, stars, etc) as their initial owner is 
+    /// NoPlayer. Subsequent owner changes, if any, all take place during runtime when this handler will fire. However, for Unit cmds 
+    /// and elements, their initial owner is an actual player assigned prior to commencing operation. Accordingly, it is the responsibility 
+    /// of the UnitCreator to inform the first owner's PlayerAIMgr of their ownership using PlayerAIMgr.HandleGainedItemOwnership() just 
+    /// prior to commencing operation. IMPROVE There is another way to handle this - take the owner out of the Data.Constructor and assign 
+    /// the owner (including NoPlayer) just prior to commencing operation. As a result, PlayerAIMgr's knowledge of ownership would be 
+    /// completely handled by the Item's OwnerChanging/Changed handlers and this exception that requires the UnitCreator to handle it 
+    /// would be eliminated.</remarks>
+    /// </summary>
+    protected virtual void HandleAIMgrGainedOwnership() {
+        D.Assert(OwnerAIMgr.Owner == Owner);
+        OwnerAIMgr.HandleGainedItemOwnership(this);
+
+        IEnumerable<Player> allies;
+        if (TryGetAllies(out allies)) {
+            allies.ForAll(ally => {
+                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
+                allyAIMgr.HandleChgdItemOwnerIsAlly(this);
+            });
+        }
+    }
+
+    /// <summary>
+    /// Handles the condition where the current Owner of this item is about to be replaced by another owner.
+    /// </summary>
+    protected virtual void HandleAIMgrLosingOwnership() {
+        D.Assert(OwnerAIMgr.Owner == Owner);
+        D.Assert(Owner != TempGameValues.NoPlayer);
+        OwnerAIMgr.HandleLosingItemOwnership(this);
+    }
+
+    private bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
+        D.Assert(Owner != TempGameValues.NoPlayer);
+        alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
+        return alliedPlayers.Any();
+    }
+
     #region Cleanup
 
     protected sealed override void OnDestroy() {
@@ -306,13 +363,21 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     protected virtual void Unsubscribe() {
-        _subscriptions.ForAll(s => s.Dispose());
-        _subscriptions.Clear();
+        if (_subscriptions != null) {
+            _subscriptions.ForAll(s => s.Dispose());
+            _subscriptions.Clear();
+        }
     }
 
     #endregion
 
     #region Debug
+
+    /// <summary>
+    /// Debug flag in editor indicating whether to show the D.Log for this item.
+    /// <remarks>Requires #define DEBUG_LOG for D.Log() to be compiled.</remarks>
+    /// </summary>
+    public bool ShowDebugLog { get; private set; }
 
     public Player Owner_Debug { get { return Data.Owner; } }
 
@@ -324,7 +389,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// </summary>
     public override void LogEvent() {
         if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
-            string methodName = GetMethodName();
+            string methodName = GetCallingMethodName();
             string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(FullName, methodName);
             Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }

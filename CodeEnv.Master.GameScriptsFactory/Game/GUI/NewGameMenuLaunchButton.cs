@@ -34,6 +34,10 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     private UniverseSize _universeSize;
     private UniverseSizeGuiSelection _universeSizeSelection;
+
+    private SystemDensity _systemDensity;
+    private SystemDensityGuiSelection _systemDensitySelection;
+
     private Species _userPlayerSpecies;
     private Species[] _aiPlayersSpecies;
     private SpeciesGuiSelection _userPlayerSpeciesSelection;
@@ -41,6 +45,8 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private GameColor _userPlayerColor;
     private GameColor[] _aiPlayersColors;
     private IQ[] _aiPlayersIQs;
+    private TeamID _userPlayerTeam;
+    private TeamID[] _aiPlayersTeams;
     private int _playerCount;
 
     private SpeciesFactory _speciesFactory;
@@ -54,6 +60,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         _aiPlayersSpeciesSelections = new SpeciesGuiSelection[TempGameValues.MaxAIPlayers];
         _aiPlayersColors = new GameColor[TempGameValues.MaxAIPlayers];
         _aiPlayersIQs = new IQ[TempGameValues.MaxAIPlayers];
+        _aiPlayersTeams = new TeamID[TempGameValues.MaxAIPlayers];
     }
 
     protected override void RecordPopupListState(GuiElementID popupListID, string selection) {
@@ -63,6 +70,10 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
             case GuiElementID.UniverseSizePopupList:
                 _universeSizeSelection = Enums<UniverseSizeGuiSelection>.Parse(selection);
                 _universeSize = _universeSizeSelection.Convert();
+                break;
+            case GuiElementID.SystemDensityPopupList:
+                _systemDensitySelection = Enums<SystemDensityGuiSelection>.Parse(selection);
+                _systemDensity = _systemDensitySelection.Convert();
                 break;
             case GuiElementID.PlayerCountPopupList:
                 _playerCount = int.Parse(selection);
@@ -148,6 +159,31 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
                 _aiPlayersIQs[6] = Enums<IQ>.Parse(selection);
                 break;
 
+            case GuiElementID.UserPlayerTeamPopupList:
+                _userPlayerTeam = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer1TeamPopupList:
+                _aiPlayersTeams[0] = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer2TeamPopupList:
+                _aiPlayersTeams[1] = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer3TeamPopupList:
+                _aiPlayersTeams[2] = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer4TeamPopupList:
+                _aiPlayersTeams[3] = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer5TeamPopupList:
+                _aiPlayersTeams[4] = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer6TeamPopupList:
+                _aiPlayersTeams[5] = Enums<TeamID>.Parse(selection);
+                break;
+            case GuiElementID.AIPlayer7TeamPopupList:
+                _aiPlayersTeams[6] = Enums<TeamID>.Parse(selection);
+                break;
+
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
         }
@@ -166,12 +202,15 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private void RecordPreferences() {
         var settings = new NewGamePreferenceSettings() {
             UniverseSizeSelection = _universeSizeSelection,
+            SystemDensitySelection = _systemDensitySelection,
             PlayerCount = _playerCount,
             UserPlayerSpeciesSelection = _userPlayerSpeciesSelection,
             AIPlayerSpeciesSelections = _aiPlayersSpeciesSelections,
             UserPlayerColor = _userPlayerColor,
             AIPlayerColors = _aiPlayersColors,
-            AIPlayerIQs = _aiPlayersIQs
+            AIPlayerIQs = _aiPlayersIQs,
+            UserPlayerTeam = _userPlayerTeam,
+            AIPlayersTeams = _aiPlayersTeams
         };
         _playerPrefsMgr.RecordNewGameSettings(settings);
     }
@@ -183,15 +222,16 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
             Species aiSpecies = _aiPlayersSpecies[i];
             SpeciesStat aiSpeciesStat = _speciesFactory.MakeInstance(aiSpecies);
             LeaderStat aiLeaderStat = _leaderFactory.MakeInstance(aiSpecies);
-            aiPlayers[i] = new Player(aiSpeciesStat, aiLeaderStat, _aiPlayersIQs[i], _aiPlayersColors[i]);
+            aiPlayers[i] = new Player(aiSpeciesStat, aiLeaderStat, _aiPlayersIQs[i], _aiPlayersTeams[i], _aiPlayersColors[i]);
         }
 
         SpeciesStat userSpeciesStat = _speciesFactory.MakeInstance(_userPlayerSpecies);
         LeaderStat userLeaderStat = _leaderFactory.MakeInstance(_userPlayerSpecies);
-        Player userPlayer = new Player(userSpeciesStat, userLeaderStat, IQ.None, _userPlayerColor, isUser: true);
+        Player userPlayer = new Player(userSpeciesStat, userLeaderStat, IQ.None, _userPlayerTeam, _userPlayerColor, isUser: true);
 
         GameSettings settings = new GameSettings() {
             UniverseSize = _universeSize,
+            SystemDensity = _systemDensity,
             PlayerCount = _playerCount,
             UserPlayer = userPlayer,
             AIPlayers = aiPlayers
@@ -202,6 +242,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();
         D.Assert(_universeSize != UniverseSize.None, "UniverseSize has not been set!");
+        D.Assert(_systemDensity != SystemDensity.None, "SystemDensity has not been set!");
         D.Assert(_playerCount > Constants.One, "Player count {0} is illegal!".Inject(_playerCount));
         D.Assert(_userPlayerSpecies != Species.None, "User Player Species has not been set!");
         //TODO

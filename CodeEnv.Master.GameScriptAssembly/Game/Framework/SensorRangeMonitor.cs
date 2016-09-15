@@ -351,7 +351,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     #region Debug Show Sensors
 
     private void InitializeDebugShowSensor() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showSensorsChanged += ShowDebugSensorsChangedEventHandler;
         if (debugValues.ShowSensors) {
             EnableDebugShowSensor(true);
@@ -365,7 +365,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     }
 
     private void HandleDebugSensorIsOperationalChanged() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         if (debugValues.ShowSensors) {
             DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
             drawCntl.Color = IsOperational ? DetermineRangeColor() : Color.red;
@@ -373,7 +373,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     }
 
     private void ShowDebugSensorsChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowSensor(DebugValues.Instance.ShowSensors);
+        EnableDebugShowSensor(DebugControls.Instance.ShowSensors);
     }
 
     private Color DetermineRangeColor() {
@@ -391,7 +391,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     }
 
     private void CleanupDebugShowSensor() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showSensorsChanged -= ShowDebugSensorsChangedEventHandler;
         }

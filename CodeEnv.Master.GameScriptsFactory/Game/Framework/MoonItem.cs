@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
+    public override float ClearanceRadius { get { return ObstacleZoneRadius * 2F; } }
+
     private PlanetItem _parentPlanet;
     private bool _isParentPlanetDying;
 
@@ -46,7 +48,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         return new HoverHighlightManager(this, highlightRadius);
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         RecordParentPlanet();
     }
@@ -74,8 +76,8 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         IsOperational = false;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
         //ParentPlanet.RemoveMoon(this);    // removing moon here when 2 moons both die at roughly same time makes ChildMoons.Count == 0
         // which causes planet to try to destroy itself twice
     }

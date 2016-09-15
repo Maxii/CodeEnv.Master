@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISector_Ltd : IIntelItem_Ltd {
 
-        Index3D SectorIndex { get; }
+        IntVector3 SectorIndex { get; }
 
         ISystem_Ltd System { get; }
 

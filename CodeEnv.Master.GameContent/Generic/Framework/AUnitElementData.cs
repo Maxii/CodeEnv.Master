@@ -28,6 +28,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementData : AMortalItemData {
 
+        public event EventHandler topographyChanged;
+
+        public Priority HQPriority { get; private set; }
+
         public IList<AWeapon> Weapons { get { return HullEquipment.Weapons; } }
         public IList<Sensor> Sensors { get; private set; }
         public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
@@ -111,6 +115,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected AHullEquipment HullEquipment { get; private set; }
 
+        #region Initialization 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitElementItemData" /> class.
         /// </summary>
@@ -121,8 +127,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
+        /// <param name="hqPriority">The HQ priority.</param>
         public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators)
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Priority hqPriority)
             : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
@@ -131,7 +138,9 @@ namespace CodeEnv.Master.GameContent {
             Initialize(sensors);
             Initialize(activeCMs);
             Initialize(shieldGenerators);
+            HQPriority = hqPriority;
         }
+
         private void InitializeWeapons() {
             // weapons are already present in hullEquipment
             Weapons.ForAll(weap => {
@@ -171,6 +180,8 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
+        #endregion
+
         public override void CommenceOperations() {
             base.CommenceOperations();
             Weapons.ForAll(w => w.IsActivated = true);
@@ -198,6 +209,17 @@ namespace CodeEnv.Master.GameContent {
         private void ShieldGeneratorIsDamagedChangedEventHandler(object sender, EventArgs e) {
             RecalcShieldRange();
             RecalcDefensiveValues();
+        }
+
+        protected override void HandleTopographyChanged() {
+            base.HandleTopographyChanged();
+            OnTopographyChanged();
+        }
+
+        private void OnTopographyChanged() {
+            if (topographyChanged != null) {
+                topographyChanged(this, new EventArgs());
+            }
         }
 
         #endregion

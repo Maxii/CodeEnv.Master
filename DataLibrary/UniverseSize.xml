@@ -9,7 +9,8 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
   </Boolean>
-
+  
+  <!-- Player Count -->
   <Integer>
     <Setting>
       <PropertyName>TinyDefaultPlayerCount</PropertyName>
@@ -36,32 +37,34 @@
       <PropertyValue>8</PropertyValue>
     </Setting>
   </Integer>
-
-  <Float>
+  
+  <!-- Radius in Sectors. Does not need to be even number. -->
+  <Integer>
     <Setting>
       <PropertyName>TinyRadius</PropertyName>
-      <PropertyValue>6000</PropertyValue>
+      <PropertyValue>5</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>SmallRadius</PropertyName>
-      <PropertyValue>10000</PropertyValue>
+      <PropertyValue>8</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>NormalRadius</PropertyName>
-      <PropertyValue>15000</PropertyValue>
+      <PropertyValue>12</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>LargeRadius</PropertyName>
-      <PropertyValue>23000</PropertyValue>
+      <PropertyValue>18</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>EnormousRadius</PropertyName>
-      <PropertyValue>34000</PropertyValue>
+      <PropertyValue>27</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>GiganticRadius</PropertyName>
-      <PropertyValue>50000</PropertyValue>
+      <PropertyValue>40</PropertyValue>
     </Setting>
-  </Float>
+  </Integer>
+
 </EnumValues>
 <!-- Empty property value nodes return the default of the type, but only in this format <PropertyValue/>-->

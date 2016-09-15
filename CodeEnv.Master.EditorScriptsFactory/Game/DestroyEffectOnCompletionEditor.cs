@@ -27,19 +27,25 @@ using UnityEngine;
 public class DestroyEffectOnCompletionEditor : Editor {
 
     public override void OnInspectorGUI() {
-        var script = target as DestroyEffectOnCompletion;
+        serializedObject.Update();
 
-        script.effectType = (DestroyEffectOnCompletion.EffectType)EditorGUILayout.EnumPopup("Effect Type", script.effectType);
+        EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+        {
+            NGUIEditorTools.SetLabelWidth(80F);
+            SerializedProperty effectTypeSP = NGUIEditorTools.DrawProperty("Effect Type", serializedObject, "_effectType");
 
-        if (script.effectType == DestroyEffectOnCompletion.EffectType.Mesh) {
-            EditorGUI.indentLevel++;
-            script.meshEffectDuration = EditorGUILayout.Slider("EffectDuration", script.meshEffectDuration, 0F, 1F);
-            EditorGUI.indentLevel--;
+            bool isMeshEffect = effectTypeSP.enumValueIndex == (int)DestroyEffectOnCompletion.EffectType.Mesh;
+
+            EditorGUI.BeginDisabledGroup(!isMeshEffect);
+            {
+                NGUIEditorTools.SetLabelWidth(100F);
+                NGUIEditorTools.DrawProperty("Mesh Effect Duration", serializedObject, "_meshEffectDuration");
+            }
+            EditorGUI.EndDisabledGroup();
         }
+        EditorGUI.EndDisabledGroup();
 
-        if (GUI.changed) {
-            EditorUtility.SetDirty(target);
-        }
+        serializedObject.ApplyModifiedProperties();
     }
 
     public override string ToString() {

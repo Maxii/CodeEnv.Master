@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlayersDesigns.cs
-// Wrapper that holds a collection of ElementDesigns organized by the owner of the design and the design's name.
+// Wrapper that holds a collection of UnitDesigns organized by the owner of the design and the design's name.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,21 +21,31 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Wrapper that holds a collection of ElementDesigns organized by the owner of the design and the design's name.
+    /// Wrapper that holds a collection of UnitDesigns organized by the owner of the design and the design's name.
     /// </summary>
     public class PlayersDesigns {
 
-        private IDictionary<Player, IDictionary<string, ShipDesign>> _shipDesignsByPlayer;
-        private IDictionary<Player, IDictionary<string, FacilityDesign>> _facilityDesignsByPlayer;
+        private IDictionary<Player, IDictionary<string, StarbaseCmdDesign>> _starbaseCmdDesignsLookup;
+        private IDictionary<Player, IDictionary<string, FleetCmdDesign>> _fleetCmdDesignsLookup;
+        private IDictionary<Player, IDictionary<string, SettlementCmdDesign>> _settlementCmdDesignsLookup;
+
+        private IDictionary<Player, IDictionary<string, ShipDesign>> _shipDesignsLookup;
+        private IDictionary<Player, IDictionary<string, FacilityDesign>> _facilityDesignsLookup;
         private Player _userPlayer;
 
         public PlayersDesigns(IEnumerable<Player> allPlayers) {
             int playerCount = allPlayers.Count();
-            _shipDesignsByPlayer = new Dictionary<Player, IDictionary<string, ShipDesign>>(playerCount);
-            _facilityDesignsByPlayer = new Dictionary<Player, IDictionary<string, FacilityDesign>>(playerCount);
+            _shipDesignsLookup = new Dictionary<Player, IDictionary<string, ShipDesign>>(playerCount);
+            _facilityDesignsLookup = new Dictionary<Player, IDictionary<string, FacilityDesign>>(playerCount);
+            _starbaseCmdDesignsLookup = new Dictionary<Player, IDictionary<string, StarbaseCmdDesign>>(playerCount);
+            _fleetCmdDesignsLookup = new Dictionary<Player, IDictionary<string, FleetCmdDesign>>(playerCount);
+            _settlementCmdDesignsLookup = new Dictionary<Player, IDictionary<string, SettlementCmdDesign>>(playerCount);
             allPlayers.ForAll(p => {
-                _shipDesignsByPlayer.Add(p, new Dictionary<string, ShipDesign>());
-                _facilityDesignsByPlayer.Add(p, new Dictionary<string, FacilityDesign>());
+                _shipDesignsLookup.Add(p, new Dictionary<string, ShipDesign>());
+                _facilityDesignsLookup.Add(p, new Dictionary<string, FacilityDesign>());
+                _starbaseCmdDesignsLookup.Add(p, new Dictionary<string, StarbaseCmdDesign>());
+                _fleetCmdDesignsLookup.Add(p, new Dictionary<string, FleetCmdDesign>());
+                _settlementCmdDesignsLookup.Add(p, new Dictionary<string, SettlementCmdDesign>());
                 if (p.IsUser) {
                     _userPlayer = p;
                 }
@@ -45,22 +55,52 @@ namespace CodeEnv.Master.GameContent {
         public void Add(ShipDesign design) {
             Player player = design.Player;
             string designName = design.DesignName;
-            var designsByName = _shipDesignsByPlayer[player];
+            var designsByName = _shipDesignsLookup[player];
             D.Assert(!designsByName.ContainsKey(designName));
             designsByName.Add(designName, design);
+            //D.Log("{0} added {1} {2} for {3}.", GetType().Name, design.GetType().Name, designName, player);
         }
 
         public void Add(FacilityDesign design) {
             Player player = design.Player;
             string designName = design.DesignName;
-            var designsByName = _facilityDesignsByPlayer[player];
+            var designsByName = _facilityDesignsLookup[player];
             D.Assert(!designsByName.ContainsKey(designName));
             designsByName.Add(designName, design);
+            //D.Log("{0} added {1} {2} for {3}.", GetType().Name, design.GetType().Name, designName, player);
+        }
+
+        public void Add(StarbaseCmdDesign design) {
+            Player player = design.Player;
+            string designName = design.DesignName;
+            var designsByName = _starbaseCmdDesignsLookup[player];
+            D.Assert(!designsByName.ContainsKey(designName));
+            designsByName.Add(designName, design);
+            //D.Log("{0} added {1} {2} for {3}.", GetType().Name, design.GetType().Name, designName, player);
+        }
+
+        public void Add(FleetCmdDesign design) {
+            Player player = design.Player;
+            string designName = design.DesignName;
+            var designsByName = _fleetCmdDesignsLookup[player];
+            D.Assert(!designsByName.ContainsKey(designName));
+            designsByName.Add(designName, design);
+            //D.Log("{0} added {1} {2} for {3}.", GetType().Name, design.GetType().Name, designName, player);
+        }
+
+        public void Add(SettlementCmdDesign design) {
+            Player player = design.Player;
+            string designName = design.DesignName;
+            var designsByName = _settlementCmdDesignsLookup[player];
+            D.Assert(!designsByName.ContainsKey(designName));
+            designsByName.Add(designName, design);
+            //D.Log("{0} added {1} {2} for {3}.", GetType().Name, design.GetType().Name, designName, player);
         }
 
         public ShipDesign GetShipDesign(Player player, string designName) {
-            var designsByName = _shipDesignsByPlayer[player];
-            D.Assert(designsByName.ContainsKey(designName), "No design named {0} present for {1}.".Inject(designName, player.LeaderName));
+            var designsByName = _shipDesignsLookup[player];
+            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
+                GetType().Name, typeof(ShipDesign).Name, designName, player, designsByName.Keys.Concatenate());
             return designsByName[designName];
         }
 
@@ -69,13 +109,47 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public FacilityDesign GetFacilityDesign(Player player, string designName) {
-            var designsByName = _facilityDesignsByPlayer[player];
-            D.Assert(designsByName.ContainsKey(designName), "No design named {0} present for {1}.".Inject(designName, player.LeaderName));
+            var designsByName = _facilityDesignsLookup[player];
+            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
+                GetType().Name, typeof(FacilityDesign).Name, designName, player, designsByName.Keys.Concatenate());
             return designsByName[designName];
         }
 
         public FacilityDesign GetUserFacilityDesign(string designName) {
             return GetFacilityDesign(_userPlayer, designName);
+        }
+
+        public StarbaseCmdDesign GetStarbaseCmdDesign(Player player, string designName) {
+            var designsByName = _starbaseCmdDesignsLookup[player];
+            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
+                GetType().Name, typeof(StarbaseCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            return designsByName[designName];
+        }
+
+        public StarbaseCmdDesign GetUserStarbaseCmdDesign(string designName) {
+            return GetStarbaseCmdDesign(_userPlayer, designName);
+        }
+
+        public FleetCmdDesign GetFleetCmdDesign(Player player, string designName) {
+            var designsByName = _fleetCmdDesignsLookup[player];
+            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
+                GetType().Name, typeof(FleetCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            return designsByName[designName];
+        }
+
+        public FleetCmdDesign GetUserFleetCmdDesign(string designName) {
+            return GetFleetCmdDesign(_userPlayer, designName);
+        }
+
+        public SettlementCmdDesign GetSettlementCmdDesign(Player player, string designName) {
+            var designsByName = _settlementCmdDesignsLookup[player];
+            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
+                GetType().Name, typeof(SettlementCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            return designsByName[designName];
+        }
+
+        public SettlementCmdDesign GetUserSettlementCmdDesign(string designName) {
+            return GetSettlementCmdDesign(_userPlayer, designName);
         }
 
         public override string ToString() {

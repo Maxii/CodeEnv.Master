@@ -68,7 +68,9 @@ namespace CodeEnv.Master.GameContent {
             protected set { SetProperty<DamageStrength>(ref _damageMitigation, value, "DamageMitigation"); }
         }
 
-        public abstract Index3D SectorIndex { get; }
+        public abstract IntVector3 SectorIndex { get; }
+
+        #region Initialization 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
@@ -92,11 +94,13 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        protected override void FinalInitialize() {
+        public override void FinalInitialize() {
             base.FinalInitialize();
             PassiveCountermeasures.ForAll(cm => cm.IsActivated = true);
             RecalcDefensiveValues();
         }
+
+        #endregion
 
         protected virtual void RecalcDefensiveValues() {
             var undamagedCMs = PassiveCountermeasures.Where(cm => !cm.IsDamaged);

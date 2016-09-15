@@ -114,7 +114,8 @@ namespace CodeEnv.Master.GameContent {
         #region IMortalDisplayManager Members
 
         /// <summary>
-        /// Called on the death of the client. Disables the display and ends all InCameraLOS calls.
+        /// Called on the death of the client AFTER the death effect has begun. 
+        /// Disables the display and ends all InCameraLOS calls.
         /// </summary>
         public void HandleDeath() {
             IsDisplayEnabled = false;

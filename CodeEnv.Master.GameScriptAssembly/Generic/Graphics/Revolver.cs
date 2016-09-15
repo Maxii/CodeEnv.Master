@@ -59,7 +59,7 @@ public class Revolver : AMonoBase, IRevolver {
     /// <summary>
     /// The duration of one rotation of the object on its own axis.
     /// </summary>
-    private GameTimeDuration _rotationPeriod; // IMPROVE use custom editor to make setable from inspector
+    private GameTimeDuration _rotationPeriod; // IMPROVE use custom editor to make settable from inspector
 
     /// <summary>
     /// The rotation rate of the object around <c>axisOfRotation</c> in degrees per hour.
@@ -101,7 +101,7 @@ public class Revolver : AMonoBase, IRevolver {
 
     /// <summary>
     /// Updates the rotation of the revolving object this script is attached to around 
-    /// the <c>axisOfRotation</c>. For esthetic purposes, the visual rate of rotation 
+    /// the <c>axisOfRotation</c>. For aesthetic purposes, the visual rate of rotation 
     /// varies with gameSpeed and it may not cease while paused.
     /// OPTIMIZE Consider calling this centrally for all revolvers.
     /// </summary>

@@ -43,10 +43,18 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// Detail here refers to the mesh(es) and animations, not to the icon, if any.
     /// </summary>
     public bool IsVisualDetailDiscernibleToUser {
-        get { return DisplayMgr != null ? IsDiscernibleToUser && DisplayMgr.IsPrimaryMeshInMainCameraLOS : IsDiscernibleToUser; }
+        get {
+            bool result = false;
+            if (IsDiscernibleToUser) {  // effectively IsDiscernibleToUser && IsPrimaryMeshInMainCameraLOS
+                D.Assert(DisplayMgr != null);
+                result = DisplayMgr.IsPrimaryMeshInMainCameraLOS;
+            }
+            //D.Log(ShowDebugLog, "{0}.IsVisualDetailDiscernibleToUser = {1}. IsDiscernible = {2}.", FullName, result, IsDiscernibleToUser);
+            return result;
+        }
     }
 
-    public ACameraItemStat CameraStat { protected get; set; }
+    public AItemCameraStat CameraStat { protected get; set; }
 
     private ADisplayManager _displayMgr;
     protected ADisplayManager DisplayMgr {
@@ -224,7 +232,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected void StartEffectSequence(EffectSequenceID effectSeqID) {
         OnEffectSeqStarting(effectSeqID);
+        D.Log(ShowDebugLog, "{0} attempting to start {1} effect.", FullName, effectSeqID.GetValueName());
         if (IsVisualDetailDiscernibleToUser) {
+            D.Log(ShowDebugLog, "{0} visual detail is discernible so starting {1} effect.", FullName, effectSeqID.GetValueName());
             D.Assert(EffectsMgr != null);   // if DisplayMgr is initialized, so is EffectsMgr
             EffectsMgr.StartEffect(effectSeqID);
         }
@@ -545,7 +555,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
                 // the user has set the value manually
                 return _optimalCameraViewingDistance;
             }
-            return (CameraStat as CameraFocusableStat).OptimalViewingDistance;
+            return (CameraStat as FocusableItemCameraStat).OptimalViewingDistance;
         }
         set { SetProperty<float>(ref _optimalCameraViewingDistance, value, "OptimalCameraViewingDistance"); }
     }

@@ -79,14 +79,16 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The current GameState. 
-        /// WARNING: Donot subscribe to this. 
+        /// WARNING: Do not subscribe to this. 
         /// Use the events as I can find out who has subscribed to them.
         /// </summary>
         GameState CurrentState { get; }
 
         GameSettings GameSettings { get; }
 
-        PlayerAIManager UserAIManager { get; }
+        AllKnowledge GameKnowledge { get; }
+
+        UserPlayerAIManager UserAIManager { get; }
 
         PlayerAIManager GetAIManagerFor(Player player);
 

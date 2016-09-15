@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region IFleetNavigable Members
 
-        public Topography Topography { get { return References.SectorGrid.GetSpaceTopography(Position); } }
+        public Topography Topography { get { return References.GameManager.GameKnowledge.GetSpaceTopography(Position); } }
 
         public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
             return Vector3.Distance(fleetPosition, Position);

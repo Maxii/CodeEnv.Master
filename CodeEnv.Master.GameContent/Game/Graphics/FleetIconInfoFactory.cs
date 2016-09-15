@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IconSelectionCriteria[] GetSelectionCriteria(FleetCmdReport userRqstdCmdReport) {
             if (userRqstdCmdReport.IntelCoverage == IntelCoverage.None) {
-                // Reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+                // Reports are requested when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
                 return new IconSelectionCriteria[] { IconSelectionCriteria.None };
             }
 
@@ -76,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (userRqstdCmdReport.UnitComposition != null) {   // check for access rights
                 IEnumerable<ShipHullCategory> elementCategories = userRqstdCmdReport.UnitComposition.GetUniqueElementCategories();
-                if (elementCategories.Contains(ShipHullCategory.Science)) {
+                if (elementCategories.Contains(ShipHullCategory.Investigator)) {
                     criteria.Add(IconSelectionCriteria.Science);
                 }
                 if (elementCategories.Contains(ShipHullCategory.Troop)) {

@@ -34,17 +34,17 @@ public class DefinesWindow : EditorWindow {
     /// </summary>
     private static string Define_GridFramework = "GRID_FRAMEWORK_VECTROSITY";
 
-    public bool _isDebugLogEnabled;
-
-    [SerializeField]
-    private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
-    private bool _isGuiEnabled = true;
-
     [MenuItem("My Tools/DEFINEs to Include")]
     public static void ShowDefinesWindow() {
         var window = GetWindow<DefinesWindow>();
         window.Show();
     }
+
+    public bool _isDebugLogEnabled;
+
+    [SerializeField]
+    private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
+    private bool _isGuiEnabled = true;
 
     #region Event and Property Change Handlers
 
@@ -58,11 +58,8 @@ public class DefinesWindow : EditorWindow {
 
     void OnGUI() {
         CheckForRecompile();
-        //EditorGUIUtility.LookLikeInspector();
-        //EditorGUIUtility.LookLikeControls();    // the default as Toggle is a control
         GUI.enabled = _isGuiEnabled;
         _isDebugLogEnabled = EditorGUILayout.Toggle("Enable Scripts Debug Log", _isDebugLogEnabled);
-        //_enableDebugLog = EditorGUI.Toggle(new Rect(0, 5, position.width, 20), "Enable Debug Log", _enableDebugLog);
         GUI.enabled = true;
         if (_isGuiEnabled && _isDebugLogEnabled != _previousDebugLogEnabledValue) {
             _previousDebugLogEnabledValue = _isDebugLogEnabled;

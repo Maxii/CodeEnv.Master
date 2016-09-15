@@ -33,18 +33,18 @@ namespace CodeEnv.Master.Common {
         public static readonly IEqualityComparer<Vector3> Vector3EqualityComparer = new Vector3EqualityComparer();
 
         /// <summary>
-        /// Determines whether the world point provided is currently within the viewport of the main camera.
+        /// Determines whether the world point provided is currently within the view port of the main camera.
         /// </summary>
         /// <param name="worldPoint">The world point.</param>
         /// <returns>
-        ///   <c>true</c> if the worldPoint is within the viewport of the main camera; otherwise, <c>false</c>.
+        ///   <c>true</c> if the worldPoint is within the view port of the main camera; otherwise, <c>false</c>.
         /// </returns>
         public static bool IsWithinCameraViewport(Vector3 worldPoint) {
             return IsWithinCameraViewport(worldPoint, Camera.main);
         }
 
         /// <summary>
-        /// Determines whether the world point provided is currently within the viewport of the provided camera.
+        /// Determines whether the world point provided is currently within the view port of the provided camera.
         /// </summary>
         /// <param name="worldPoint">The world point.</param>
         /// <param name="camera">The camera.</param>
@@ -218,6 +218,138 @@ namespace CodeEnv.Master.Common {
             return actualDeviation <= allowedDeviation;
         }
 
+        #region Common Animation Coroutines
+
+        /// <summary>
+        /// Waits for an animation.
+        /// </summary>
+        /// <param name="animation">The animation component running the animation.</param>
+        /// <param name="name">The name of the animation.</param>
+        /// <param name="ratio">The 0..1 duration ratio to wait for.</param>
+        /// <returns>
+        /// A coroutine that waits for the animation
+        /// </returns>
+        public static IEnumerator WaitForAnimation(Animation animation, string name, float ratio) {
+            AnimationState state = animation[name];
+            state.wrapMode = WrapMode.ClampForever;
+            state.enabled = true;
+            state.speed = state.speed == 0 ? 1 : state.speed;
+            var t = state.time;
+            while ((t / state.length) + float.Epsilon < ratio) {
+                t += Time.deltaTime * state.speed;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Plays the named animation and waits for completion.
+        /// </summary>
+        /// <param name="animation">The animation component running the animation.</param>
+        /// <param name="name">The name of the animation to play.</param>
+        /// <returns>
+        /// A coroutine that waits for the animation to finish.
+        /// </returns>
+        public static IEnumerator PlayAnimation(Animation animation, string name) {
+            AnimationState state = animation[name];
+            state.time = 0;
+            state.weight = 1;
+            state.speed = 1;
+            state.enabled = true;
+            var wait = WaitForAnimation(animation, name, 1f);
+            while (wait.MoveNext())
+                yield return null;
+            state.weight = 0;
+        }
+
+        /// <summary>
+        /// Waits for an object to reach a position.
+        /// </summary>
+        /// <param name="transform">The object that is moving.</param>
+        /// <param name="position">The position to attain.</param>
+        /// <param name="accuracy">The accuracy with which the object must reach the position
+        /// in world units. Default is 1.</param>
+        /// <returns>
+        /// A coroutine to wait for the object
+        /// </returns>
+        public static IEnumerator WaitForPosition(Transform transform, Vector3 position, float accuracy = 1F) {
+            var accuracySq = accuracy * accuracy;
+            while ((transform.position - position).sqrMagnitude > accuracySq)
+                yield return null;
+        }
+
+        /// <summary>
+        /// Waits for the object to achieve a particular rotation.
+        /// </summary>
+        /// <param name="transform">The transform that is rotating.</param>
+        /// <param name="rotation">The rotation to achieve</param>
+        /// <returns>
+        /// A coroutine to wait for the object
+        /// </returns>
+        public static IEnumerator WaitForRotation(Transform transform, Vector3 rotation) {
+            return WaitForRotation(transform, rotation, Vector3.one);
+        }
+
+        /// <summary>
+        /// Waits for the object to achieve a particular rotation
+        /// </summary>
+        /// <param name="transform">The transform that is rotating.</param>
+        /// <param name="rotation">The rotation to achieve</param>
+        /// <param name="mask">A Vector mask to indicate which axes are important (can also be fractional)</param>
+        /// <param name="accuracy">The value to which the rotation must be within. Default is 1 degree.</param>
+        /// <returns>
+        /// A coroutine to wait for the object
+        /// </returns>
+        public static IEnumerator WaitForRotation(Transform transform, Vector3 rotation, Vector3 mask, float accuracy = 1F) {
+            var accuracySq = accuracy * accuracy;
+            if (accuracySq == 0) { accuracySq = float.Epsilon; }
+
+            rotation.Scale(mask);
+
+            while (true) {
+                var currentAngles = transform.rotation.eulerAngles;
+                currentAngles.Scale(mask);
+                if ((currentAngles - rotation).sqrMagnitude <= accuracySq)
+                    yield break;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Moves an object over a period of time
+        /// </summary>
+        /// <param name="objectToMove">The Transform of the object to move.</param>
+        /// <param name="position">The destination position</param>
+        /// <param name="time">The number of seconds that the move should take</param>
+        /// <returns>
+        /// A coroutine that moves the object
+        /// </returns>
+        public static IEnumerator MoveObject(Transform objectToMove, Vector3 position, float time) {
+            return MoveObject(objectToMove, position, time, EasingType.Quadratic);
+        }
+
+        /// <summary>
+        /// Moves an object over a period of time
+        /// </summary>
+        /// <param name="objectToMove">The Transform of the object to move.</param>
+        /// <param name="position">The destination position</param>
+        /// <param name="time">The number of seconds that the move should take</param>
+        /// <param name="ease">The easing function to use when moving the object</param>
+        /// <returns>
+        /// A coroutine that moves the object
+        /// </returns>
+        public static IEnumerator MoveObject(Transform objectToMove, Vector3 position, float time, EasingType ease) {
+            var t = 0f;
+            var pos = objectToMove.position;
+            while (t < 1f) {
+                objectToMove.position = Vector3.Lerp(pos, position, Easing.EaseInOut(t, ease));
+                t += Time.deltaTime / time;
+                yield return null;
+            }
+            objectToMove.position = position;
+        }
+
+        #endregion
+
         #region Deprecated WaitFor Coroutines
 
         // 3.26.16 Deprecated all of these as their use is a bad practice
@@ -374,138 +506,6 @@ namespace CodeEnv.Master.Common {
                 }
                 methodToExecute();
             }
-        }
-
-        #endregion
-
-        #region Common Animation Coroutines
-
-        /// <summary>
-        /// Waits for an animation.
-        /// </summary>
-        /// <param name="animation">The animation component running the animation.</param>
-        /// <param name="name">The name of the animation.</param>
-        /// <param name="ratio">The 0..1 duration ratio to wait for.</param>
-        /// <returns>
-        /// A coroutine that waits for the animation
-        /// </returns>
-        public static IEnumerator WaitForAnimation(Animation animation, string name, float ratio) {
-            AnimationState state = animation[name];
-            state.wrapMode = WrapMode.ClampForever;
-            state.enabled = true;
-            state.speed = state.speed == 0 ? 1 : state.speed;
-            var t = state.time;
-            while ((t / state.length) + float.Epsilon < ratio) {
-                t += Time.deltaTime * state.speed;
-                yield return null;
-            }
-        }
-
-        /// <summary>
-        /// Plays the named animation and waits for completion.
-        /// </summary>
-        /// <param name="animation">The animation component running the animation.</param>
-        /// <param name="name">The name of the animation to play.</param>
-        /// <returns>
-        /// A coroutine that waits for the animation to finish.
-        /// </returns>
-        public static IEnumerator PlayAnimation(Animation animation, string name) {
-            AnimationState state = animation[name];
-            state.time = 0;
-            state.weight = 1;
-            state.speed = 1;
-            state.enabled = true;
-            var wait = WaitForAnimation(animation, name, 1f);
-            while (wait.MoveNext())
-                yield return null;
-            state.weight = 0;
-        }
-
-        /// <summary>
-        /// Waits for an object to reach a position.
-        /// </summary>
-        /// <param name="transform">The object that is moving.</param>
-        /// <param name="position">The position to attain.</param>
-        /// <param name="accuracy">The accuracy with which the object must reach the position
-        /// in world units. Default is 1.</param>
-        /// <returns>
-        /// A coroutine to wait for the object
-        /// </returns>
-        public static IEnumerator WaitForPosition(Transform transform, Vector3 position, float accuracy = 1F) {
-            var accuracySq = accuracy * accuracy;
-            while ((transform.position - position).sqrMagnitude > accuracySq)
-                yield return null;
-        }
-
-        /// <summary>
-        /// Waits for the object to achieve a particular rotation.
-        /// </summary>
-        /// <param name="transform">The transform that is rotating.</param>
-        /// <param name="rotation">The rotation to achieve</param>
-        /// <returns>
-        /// A coroutine to wait for the object
-        /// </returns>
-        public static IEnumerator WaitForRotation(Transform transform, Vector3 rotation) {
-            return WaitForRotation(transform, rotation, Vector3.one);
-        }
-
-        /// <summary>
-        /// Waits for the object to achieve a particular rotation
-        /// </summary>
-        /// <param name="transform">The transform that is rotating.</param>
-        /// <param name="rotation">The rotation to achieve</param>
-        /// <param name="mask">A Vector mask to indicate which axes are important (can also be fractional)</param>
-        /// <param name="accuracy">The value to which the rotation must be within. Default is 1 degree.</param>
-        /// <returns>
-        /// A coroutine to wait for the object
-        /// </returns>
-        public static IEnumerator WaitForRotation(Transform transform, Vector3 rotation, Vector3 mask, float accuracy = 1F) {
-            var accuracySq = accuracy * accuracy;
-            if (accuracySq == 0) { accuracySq = float.Epsilon; }
-
-            rotation.Scale(mask);
-
-            while (true) {
-                var currentAngles = transform.rotation.eulerAngles;
-                currentAngles.Scale(mask);
-                if ((currentAngles - rotation).sqrMagnitude <= accuracySq)
-                    yield break;
-                yield return null;
-            }
-        }
-
-        /// <summary>
-        /// Moves an object over a period of time
-        /// </summary>
-        /// <param name="objectToMove">The Transform of the object to move.</param>
-        /// <param name="position">The destination position</param>
-        /// <param name="time">The number of seconds that the move should take</param>
-        /// <returns>
-        /// A coroutine that moves the object
-        /// </returns>
-        public static IEnumerator MoveObject(Transform objectToMove, Vector3 position, float time) {
-            return MoveObject(objectToMove, position, time, EasingType.Quadratic);
-        }
-
-        /// <summary>
-        /// Moves an object over a period of time
-        /// </summary>
-        /// <param name="objectToMove">The Transform of the object to move.</param>
-        /// <param name="position">The destination position</param>
-        /// <param name="time">The number of seconds that the move should take</param>
-        /// <param name="ease">The easing function to use when moving the object</param>
-        /// <returns>
-        /// A coroutine that moves the object
-        /// </returns>
-        public static IEnumerator MoveObject(Transform objectToMove, Vector3 position, float time, EasingType ease) {
-            var t = 0f;
-            var pos = objectToMove.position;
-            while (t < 1f) {
-                objectToMove.position = Vector3.Lerp(pos, position, Easing.EaseInOut(t, ease));
-                t += Time.deltaTime / time;
-                yield return null;
-            }
-            objectToMove.position = position;
         }
 
         #endregion

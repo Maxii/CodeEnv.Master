@@ -59,6 +59,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
+    <Compile Include="Generic\Framework\ADebugUnitCreator.cs" />
+    <Compile Include="Game\Framework\FleetCreator.cs" />
+    <Compile Include="Game\Framework\SettlementCreator.cs" />
+    <Compile Include="Game\Framework\StarbaseCreator.cs" />
     <Compile Include="Generic\Framework\FormationGenerator.cs" />
     <Compile Include="Game\_Debug\FormationGridOrganizer.cs" />
     <Compile Include="Generic\Framework\AOrdnance.cs" />
@@ -76,7 +81,7 @@
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\AUnitElementItem.cs" />
     <Compile Include="Generic\Framework\AWeaponMount.cs" />
-    <Compile Include="Generic\Framework\FleetUnitCreator.cs" />
+    <Compile Include="Game\_Debug\DebugFleetCreator.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
     <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
     <Compile Include="Game\Gameplay\FacilityHull.cs" />
@@ -157,10 +162,10 @@
     <Compile Include="Game\GUI\GuiQualitySettingPopupList.cs" />
     <Compile Include="Game\GUI\GuiFocusedReadout.cs" />
     <Compile Include="Generic\Framework\SectorGrid.cs" />
-    <Compile Include="Generic\Framework\StarbaseUnitCreator.cs" />
-    <Compile Include="Generic\Framework\SettlementUnitCreator.cs" />
+    <Compile Include="Game\_Debug\DebugStarbaseCreator.cs" />
+    <Compile Include="Game\_Debug\DebugSettlementCreator.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
-    <Compile Include="Generic\Framework\SystemCreator.cs" />
+    <Compile Include="Game\Framework\SystemCreator.cs" />
     <Compile Include="Game\Framework\StarItem.cs" />
     <Compile Include="Game\Framework\PlanetItem.cs" />
     <Compile Include="Game\Framework\MoonItem.cs" />
@@ -228,6 +233,10 @@
     <Compile Include="Generic\Graphics\PooledSphericalHighlight.cs" />
     <Compile Include="Generic\Graphics\SphericalHighlight.cs" />
     <Compile Include="Game\Framework\Sector.cs" />
+    <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
+    <Compile Include="Game\GUI\GuiSystemDensityPopupList.cs" />
+    <Compile Include="Game\GUI\GuiPlayerTeamPopupList.cs" />
+    <Compile Include="Generic\Framework\NewGameUnitConfigurator.cs" />
     <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
@@ -242,7 +251,7 @@
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
     <Compile Include="Generic\Framework\UsefulTools.cs" />
-    <Compile Include="Generic\_Debug\__UniverseInitializer.cs" />
+    <Compile Include="Game\Gameplay\UniverseBuilder.cs" />
     <Compile Include="Generic\Graphics\StarFlare.cs" />
     <Compile Include="Game\Graphics\SectorExaminer.cs" />
     <Compile Include="Generic\Graphics\UITrackingLabel.cs" />
@@ -254,6 +263,7 @@
     <Compile Include="Game\Framework\UniverseCenterItem.cs" />
     <Compile Include="Game\GUI\UniverseCenterCtxControl.cs" />
     <Compile Include="Generic\_Debug\VisualEffectScale.cs" />
+    <Compile Include="Generic\_Debug\UnitDebugControl.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

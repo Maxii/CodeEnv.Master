@@ -148,7 +148,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Calculates the combined sensor range (distance) from the provided sensors. The sensors donot have
+        /// Calculates the combined sensor range (distance) from the provided sensors. The sensors do not have
         /// to be activated to have their range calculated, but they do have to have the same RangeCategory and RangeDistance values. 
         /// The algorithm takes the range distance of the first undamaged sensor and adds the sqrt 
         /// of the range distance of each of the remaining undamaged sensors. If there are no sensors, then 0 is returned. 

@@ -64,6 +64,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected IItem Item { get; private set; }
 
+        #region Initialization
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AItemData" /> class.
         /// </summary>
@@ -79,20 +81,24 @@ namespace CodeEnv.Master.GameContent {
             InfoAccessCntlr = InitializeInfoAccessController();
         }
 
-        /// <summary>
-        /// The final Initialization opportunity. The first method called from CommenceOperations,
-        /// BEFORE IsOperational is set to true.
-        /// </summary>
-        protected virtual void FinalInitialize() { }
-
-
         protected abstract AInfoAccessController InitializeInfoAccessController();
 
-        public virtual void CommenceOperations() {
-            D.Assert(!IsOperational, "{0}.CommenceOperations() called when already operational.", FullName);
-            FinalInitialize();
+        /// <summary>
+        /// Called by Item.FinalInitialize(), this is the counterpart in data
+        /// providing an opportunity to complete initialization before CommenceOperations is called.
+        /// </summary>
+        public virtual void FinalInitialize() {
+            // 8.1.16 moved from CommenceOperations to allow all items to be IsOperational before the first Item.CommenceOperations is called
             IsOperational = true;
         }
+
+        #endregion
+
+        /// <summary>
+        /// Called by Item.CommenceOperations(), this is its counterpart in data
+        /// providing an opportunity to activate equipment that resides in data.
+        /// </summary>
+        public virtual void CommenceOperations() { }
 
         #region Event and Property Change Handlers
 

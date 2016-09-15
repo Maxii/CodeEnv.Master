@@ -60,7 +60,7 @@
     <Compile Include="Game\Framework\CollisionDetectionMonitor.cs" />
     <Compile Include="Generic\Framework\AMount.cs" />
     <Compile Include="Generic\_Debug\DrawSphereGizmo.cs" />
-    <Compile Include="Generic\_Debug\DebugValues.cs" />
+    <Compile Include="Generic\_Debug\DebugControls.cs" />
     <Compile Include="Game\Framework\FleetFormationStation.cs" />
     <Compile Include="Generic\Framework\AMonoBaseSingleton.cs" />
     <Compile Include="Game\Framework\SensorRangeMonitor.cs" />
@@ -87,7 +87,6 @@
     <Compile Include="Generic\Framework\AMortalItemStateMachine.cs" />
     <Compile Include="Game\Framework\AMortalItem.cs" />
     <Compile Include="Game\Framework\ADiscernibleItem.cs" />
-    <Compile Include="Generic\Framework\ACreator.cs" />
     <Compile Include="Generic\Framework\AMonoSingleton.cs" />
     <Compile Include="Generic\Graphics\Revolver.cs" />
     <Compile Include="Generic\IO\GuiCameraControl.cs" />
@@ -97,9 +96,10 @@
     <Compile Include="Generic\Graphics\MobileShipCloseOrbitSimulator.cs" />
     <Compile Include="Generic\Graphics\OrbitSimulator.cs" />
     <Compile Include="Generic\Graphics\ShipCloseOrbitSimulator.cs" />
+    <Compile Include="Game\_Debug\SystemsFolder.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
-    <Compile Include="ThirdParty\JobRunner.cs" />
+    <Compile Include="Generic\Framework\JobManager.cs" />
     <Compile Include="Generic\_Debug\AFolderAccess.cs" />
     <Compile Include="Game\Framework\DummyTargetManager.cs" />
     <Compile Include="Generic\_Debug\DrawBoundsGizmo.cs" />

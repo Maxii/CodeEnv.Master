@@ -212,7 +212,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     #region Debug Show Collision Detection Zone
 
     private void InitializeDebugShowCollisionDetectionZone() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showShipCollisionDetectionZonesChanged += ShowDebugCollisionDetectionZonesChangedEventHandler;
         if (debugValues.ShowShipCollisionDetectionZones) {
             EnableDebugShowCollisionDetectionZone(true);
@@ -226,11 +226,11 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     }
 
     private void ShowDebugCollisionDetectionZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowCollisionDetectionZone(DebugValues.Instance.ShowShipCollisionDetectionZones);
+        EnableDebugShowCollisionDetectionZone(DebugControls.Instance.ShowShipCollisionDetectionZones);
     }
 
     private void CleanupDebugShowCollisionDetectionZone() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showShipCollisionDetectionZonesChanged -= ShowDebugCollisionDetectionZonesChangedEventHandler;
         }

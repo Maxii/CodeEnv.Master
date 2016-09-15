@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler deathOneShot;
 
-        Index3D SectorIndex { get; }
+        IntVector3 SectorIndex { get; }
 
     }
 }

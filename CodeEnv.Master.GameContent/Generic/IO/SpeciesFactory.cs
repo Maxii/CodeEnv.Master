@@ -34,10 +34,11 @@ namespace CodeEnv.Master.GameContent {
         protected sealed override void Initialize() {
             _xmlReader = SpeciesStatXmlReader.Instance;
             _statCache = new Dictionary<Species, SpeciesStat>();
-            // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
+            // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 
         public SpeciesStat MakeInstance(Species species) {
+            D.Assert(species != Species.None);
             SpeciesStat stat;
             if (!_statCache.TryGetValue(species, out stat)) {
                 stat = _xmlReader.CreateStat(species);
@@ -94,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     }
                 }
-                D.Assert(!stat.Equals(default(SpeciesStat)));
+                D.Assert(stat != default(SpeciesStat), "{0} could not find Xml Node for Species {1}.", GetType().Name, species.GetValueName());
                 return stat;
             }
 

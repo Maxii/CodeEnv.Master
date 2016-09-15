@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Initialize() {
             _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>();
-            // WARNING: Donot use Instance or _instance in here as this is still part of Constructor
+            // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 
         /// <summary>

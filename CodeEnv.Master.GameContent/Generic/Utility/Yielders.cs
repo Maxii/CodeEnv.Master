@@ -65,16 +65,16 @@ namespace CodeEnv.Master.GameContent {
         //}
 
         //public static WaitForHours GetWaitForHours(GameTimeDuration duration) {
-        //    WaitForHours wfh;
-        //    if (!_waitForHoursLookup.TryGetValue(duration, out wfh)) {
-        //        _waitForHoursLookup.Add(duration, wfh = new WaitForHours(duration));
-        //        D.Log("{0}: {1} not yet cached. Caching.", typeof(Yielders).Name, wfh);
+        //    WaitForHours w;
+        //    if (!_waitForHoursLookup.TryGetValue(duration, out w)) {
+        //        _waitForHoursLookup.Add(duration, w = new WaitForHours(duration));
+        //        D.Log("{0}: {1} not yet cached. Caching.", typeof(Yielders).Name, w);
         //    }
         //    else {
         //        wfh.RefreshTargetDate(duration);
-        //        D.Log("{0}: reusing cached {1}.", typeof(Yielders).Name, wfh);
+        //        D.Log("{0}: reusing cached {1}.", typeof(Yielders).Name, w);
         //    }
-        //    return wfh;
+        //    return w;
         //}
 
         #endregion

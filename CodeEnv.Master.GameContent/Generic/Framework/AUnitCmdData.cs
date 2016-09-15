@@ -190,6 +190,8 @@ namespace CodeEnv.Master.GameContent {
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _subscriptions;
 
+        #region Initialization 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitCmdItemData" /> class.
         /// </summary>
@@ -211,6 +213,8 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions = new Dictionary<AUnitElementData, IList<IDisposable>>();
         }
 
+        #endregion
+
         protected virtual void Subscribe(AUnitElementData elementData) {
             _subscriptions.Add(elementData, new List<IDisposable>());
             IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
@@ -231,7 +235,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleOwnerChanged() {
             base.HandleOwnerChanged();
             // Only Cmds can be 'taken over'
-            _elementsData.ForAll(eData => eData.Owner = Owner);
+            PropagateOwnerChanged();
         }
 
         private void HQElementDataPropChangingHandler(AUnitElementData newHQElementData) {
@@ -242,6 +246,7 @@ namespace CodeEnv.Master.GameContent {
             var previousHQElementData = HQElementData;
             if (previousHQElementData != null) {
                 previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
+                previousHQElementData.topographyChanged -= HQElementTopographyChangedEventHandler;
             }
         }
 
@@ -253,6 +258,11 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(_elementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
             Topography = GetTopography();
+            HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
+        }
+
+        private void HQElementTopographyChangedEventHandler(object sender, EventArgs e) {
+            Topography = HQElementData.Topography;
         }
 
         private void HQElementIntelCoverageChangedEventHandler(object sender, IntelCoverageChangedEventArgs e) {
@@ -370,6 +380,10 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitExpense();
         }
         #endregion
+
+        private void PropagateOwnerChanged() {
+            _elementsData.ForAll(eData => eData.Owner = Owner);
+        }
 
         private void RefreshCurrentCmdEffectiveness() {
             CurrentCmdEffectiveness = MaxCmdEffectiveness * Health;

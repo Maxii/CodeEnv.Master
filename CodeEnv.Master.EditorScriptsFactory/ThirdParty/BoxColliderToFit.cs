@@ -53,32 +53,6 @@ public class BoxColliderToFit : MonoBehaviour {
             boxCollider.size = bounds.size;
         }
     }
-    //public static void FitToChildren() {
-    //    foreach (GameObject rootGameObject in Selection.gameObjects) {
-    //        if (!(rootGameObject.collider is BoxCollider))
-    //            continue;
-
-    //        bool hasBounds = false;
-    //        Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
-
-    //        for (int i = 0; i < rootGameObject.transform.childCount; ++i) {
-    //            Renderer childRenderer = rootGameObject.transform.GetChild(i).renderer;
-    //            if (childRenderer != null) {
-    //                if (hasBounds) {
-    //                    bounds.Encapsulate(childRenderer.bounds);
-    //                }
-    //                else {
-    //                    bounds = childRenderer.bounds;
-    //                    hasBounds = true;
-    //                }
-    //            }
-    //        }
-
-    //        BoxCollider collider = (BoxCollider)rootGameObject.collider;
-    //        collider.center = bounds.center - rootGameObject.transform.position;
-    //        collider.size = bounds.size;
-    //    }
-    //}
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

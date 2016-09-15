@@ -27,6 +27,12 @@ using UnityEngine;
 /// </summary>
 public class TopographyMonitor : AColliderMonitor {
 
+    private const string FullNameFormat = "{0}.{1}";
+
+    public override string FullName {
+        get { return ParentItem != null ? FullNameFormat.Inject(ParentItem.FullName, base.FullName) : base.FullName; }
+    }
+
     private Topography _surroundingTopography;  // IMPROVE ParentItem should know about their surrounding topology
     public Topography SurroundingTopography {
         get { return _surroundingTopography; }
@@ -50,7 +56,7 @@ public class TopographyMonitor : AColliderMonitor {
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             if (__ValidateTopographyChange(listener)) {
-                listener.HandleTopographyChanged(ParentItem.Topography);
+                listener.ChangeTopographyTo(ParentItem.Topography);
             }
         }
     }
@@ -66,7 +72,7 @@ public class TopographyMonitor : AColliderMonitor {
         var listener = other.GetComponent<ITopographyChangeListener>();
         if (listener != null) {
             if (__ValidateTopographyChange(listener)) {
-                listener.HandleTopographyChanged(SurroundingTopography);
+                listener.ChangeTopographyTo(SurroundingTopography);
             }
         }
     }
@@ -93,7 +99,15 @@ public class TopographyMonitor : AColliderMonitor {
         Vector3 listenerPosition = (listener as Component).transform.position;
         ISystem parentSystem = ParentItem as ISystem;
         float distanceToListener = Vector3.Distance(parentSystem.Position, listenerPosition);
-        return Mathfx.Approx(distanceToListener, parentSystem.Radius, 1F);
+        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, 5F);
+        if (!isValid) {
+            if (Mathfx.Approx(distanceToListener, parentSystem.Radius, 10F)) {
+                D.Warn("{0} has found a marginal invalid Topography change for {1} at distance {2:0.0}. Validating.",
+                    FullName, (listener as Component).transform.name, distanceToListener);
+                isValid = true;
+            }
+        }
+        return isValid;
     }
 
     public override string ToString() {

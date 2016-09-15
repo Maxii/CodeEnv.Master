@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SectorData : AIntelItemData, IDisposable {
 
-        public Index3D SectorIndex { get; private set; }
+        public IntVector3 SectorIndex { get; private set; }
 
         private int _capacity;
         public int Capacity {
@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sectorTransform">The sector transform.</param>
         /// <param name="index">The index.</param>
-        public SectorData(ISector sector, Index3D index)
+        public SectorData(ISector sector, IntVector3 index)
             : this(sector, index, TempGameValues.NoPlayer) { }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sector">The sector.</param>
         /// <param name="index">The index.</param>
         /// <param name="owner">The owner.</param>
-        public SectorData(ISector sector, Index3D index, Player owner)
+        public SectorData(ISector sector, IntVector3 index, Player owner)
             : base(sector, owner) {
             SectorIndex = index;
             Topography = Topography.OpenSpace;
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
             SystemData.intelCoverageChanged += SystemIntelCoverageChangedEventHandler;
         }
 
-        protected override void FinalInitialize() {
+        public override void FinalInitialize() {
             base.FinalInitialize();
             RecalcAllProperties();
             AssessIntelCoverage();
@@ -106,6 +106,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessIntelCoverage() {
+            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+                return;
+            }
             foreach (Player player in _gameMgr.AllPlayers) {
                 AssessIntelCoverageFor(player);
             }

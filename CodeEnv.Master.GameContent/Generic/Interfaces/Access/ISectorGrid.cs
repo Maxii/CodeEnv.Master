@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -25,19 +25,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISectorGrid {
 
-        /// <summary>
-        /// Gets the SpaceTopography value associated with this location in worldspace.
-        /// </summary>
-        /// <param name="worldLocation">The world location.</param>
-        /// <returns></returns>
-        Topography GetSpaceTopography(Vector3 worldLocation);
+        IEnumerable<ISector> AllSectors { get; }
 
         /// <summary>
         /// Gets the index of the sector.
         /// </summary>
         /// <param name="worldPoint">The world point.</param>
         /// <returns></returns>
-        Index3D GetSectorIndex(Vector3 worldPoint);
+        IntVector3 GetSectorIndexThatContains(Vector3 worldPoint);
 
 
     }

@@ -24,7 +24,7 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base class for a spherical collider GameObject whose parent is an AItem. 
-/// Called a Monitor as it generally is used to take action wrt objects that enter/exit the collider.
+/// Called a Monitor as it generally is used to take action on objects that enter/exit the collider.
 /// </summary>
 public abstract class AColliderMonitor : AMonoBase {
 

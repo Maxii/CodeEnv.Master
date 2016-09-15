@@ -31,19 +31,14 @@ public class AnimateOnHoverEditor : Editor {
         serializedObject.Update();
 
         NGUIEditorTools.SetLabelWidth(80F);
-        var animateOnHover = target as AnimateOnHover;
+        var animateOnHoverTarget = target as AnimateOnHover;
 
         NGUIEditorTools.DrawProperty("Target Sprite", serializedObject, "targetSprite");
 
-        if (animateOnHover.targetSprite != null) {
-            SerializedObject spriteSO = new SerializedObject(animateOnHover.targetSprite);
+        if (animateOnHoverTarget.targetSprite != null) {
+            SerializedObject spriteSO = new SerializedObject(animateOnHoverTarget.targetSprite);
             spriteSO.Update();
-            SerializedProperty atlas = spriteSO.FindProperty("mAtlas"); // UNCLEAR "atlas" doesn't find the property?
-            //D.Assert(atlas != null, "{0} atlas is null.".Inject(typeof(SerializedProperty).Name));
-#pragma warning disable 0219
-            SerializedProperty spriteName = spriteSO.FindProperty("mSpriteName");   // UNCLEAR "spriteName" doesn't find the property?
-#pragma warning restore 0219
-            //D.Assert(spriteName != null, "{0} spriteName is null.".Inject(typeof(SerializedProperty).Name));
+            SerializedProperty atlas = spriteSO.FindProperty("mAtlas");
 
             spriteSO.ApplyModifiedProperties();
 

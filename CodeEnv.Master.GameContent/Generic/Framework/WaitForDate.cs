@@ -24,8 +24,10 @@ namespace CodeEnv.Master.GameContent {
     /// Accommodates changes in GameSpeed during use.
     /// <remarks>More expensive than WaitForCalenderDate as GameTime.CurrentDate
     /// changes much more often than GameTime.CurrentCalenderDate.</remarks>
+    /// <remarks>Use WaitJobUtility.WaitForHours() instead of making a new instance
+    /// as WaitJobUtility handles IsRunning and IsPaused changes.</remarks>
     /// </summary>
-    public class WaitForDate : CustomYieldInstruction {
+    public class WaitForDate : APausableKillableYieldInstruction {
 
         private GameDate _targetDate;
         private GameTime _gameTime;
@@ -35,7 +37,17 @@ namespace CodeEnv.Master.GameContent {
             _targetDate = date;
         }
 
-        public override bool keepWaiting { get { return _gameTime.CurrentDate < _targetDate; } }
+        public override bool keepWaiting {
+            get {
+                if (_toKill) {
+                    return false;
+                }
+                if (IsPaused) {
+                    return true;
+                }
+                return _gameTime.CurrentDate < _targetDate;
+            }
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

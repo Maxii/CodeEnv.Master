@@ -72,22 +72,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static GameTimeDuration operator +(GameTimeDuration left, GameTimeDuration right) {
-            int years = left.Years + right.Years;
-            int days = left.Days + right.Days;
-            if (days >= GameTime.DaysPerYear) {
-                days = days % GameTime.DaysPerYear;
-                years++;
-            }
-            float hours = left.Hours + right.Hours;
-            if (hours.IsGreaterThanOrEqualTo(GameTime.HoursPerDay)) {
-                hours = hours % GameTime.HoursPerDay;
-                days++;
-                if (days >= GameTime.DaysPerYear) {
-                    days = days % GameTime.DaysPerYear;
-                    years++;
-                }
-            }
-            return new GameTimeDuration(hours, days, years);
+            float totalHours = left.TotalInHours + right.TotalInHours;
+            return new GameTimeDuration(totalHours);
         }
 
         public static GameTimeDuration operator *(int scaler, GameTimeDuration right) {
@@ -179,8 +165,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="endDate">The end date.</param>
         public GameTimeDuration(GameDate startDate, GameDate endDate)
             : this() {
-            GameUtility.ValidateForRange(startDate, GameDate.GameStartDate, GameDate.GameEndDate);
-            GameUtility.ValidateForRange(endDate, startDate, GameDate.GameEndDate);
+            GameUtility.ValidateForRange(startDate, GameTime.GameStartDate, GameTime.GameEndDate);
+            GameUtility.ValidateForRange(endDate, startDate, GameTime.GameEndDate);
             float totalHours = endDate.TotalHoursSinceGameStart - startDate.TotalHoursSinceGameStart;
             Initialize(totalHours);
         }
@@ -290,6 +276,25 @@ namespace CodeEnv.Master.GameContent {
         //        }
         //    }
         //    return false;
+        //}
+
+        //public static GameTimeDuration operator +(GameTimeDuration left, GameTimeDuration right) {
+        //    int years = left.Years + right.Years;
+        //    int days = left.Days + right.Days;
+        //    if (days >= GameTime.DaysPerYear) {
+        //        days = days % GameTime.DaysPerYear;
+        //        years++;
+        //    }
+        //    float hours = left.Hours + right.Hours;
+        //    if (hours.IsGreaterThanOrEqualTo(GameTime.HoursPerDay)) {
+        //        hours = hours % GameTime.HoursPerDay;
+        //        days++;
+        //        if (days >= GameTime.DaysPerYear) {
+        //            days = days % GameTime.DaysPerYear;
+        //            years++;
+        //        }
+        //    }
+        //    return new GameTimeDuration(hours, days, years);
         //}
 
         //public GameTimeDuration(float hours)

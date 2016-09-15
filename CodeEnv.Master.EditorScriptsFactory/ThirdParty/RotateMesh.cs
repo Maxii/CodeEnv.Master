@@ -93,7 +93,7 @@ public class RotateMesh : EditorWindow {
         }
 
         if (curr.localScale.x < 0.0 || curr.localScale.y < 0.0f || curr.localScale.z < 0.0f) {
-            error = "Cannot process game objecrt with negative scale values.";
+            error = "Cannot process game object with negative scale values.";
             Debug.Log(error);
             return;
         }
@@ -147,7 +147,7 @@ public class RotateMesh : EditorWindow {
         // Set selection to new game object
         Selection.activeObject = curr.gameObject;
 
-        //--- Do a rudamentary fixup of mesh, box, and sphere colliders----
+        //--- Do a rudimentary fix of mesh, box, and sphere colliders----
         MeshCollider mc = curr.GetComponent<MeshCollider>();
         if (mc != null) {
             mc.sharedMesh = mf.sharedMesh;

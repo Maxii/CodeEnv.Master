@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCreator.cs
-//  Abstract, generic base class for Unit Creators.
+// Abstract base class for Unit Creators.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,280 +17,141 @@
 // default namespace
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// Abstract, generic base class for Unit Creators.
+/// Abstract base class for Unit Creators.
 /// </summary>
-/// <typeparam name="ElementType">The Type of Element contained in the Command.</typeparam>
-/// <typeparam name="ElementHullCategoryType">The Type holding the Element's HullCategories.</typeparam>
-/// <typeparam name="ElementDataType">The Type of the Element's Data.</typeparam>
-/// <typeparam name="ElementHullStatType">The Type of the Element's hull stat.</typeparam>
-/// <typeparam name="CommandType">The Type of the Command.</typeparam>
-public abstract class AUnitCreator<ElementType, ElementHullCategoryType, ElementDataType, ElementHullStatType, CommandType> : ACreator
-    where ElementType : AUnitElementItem
-    where ElementHullCategoryType : struct
-    where ElementDataType : AUnitElementData
-    where ElementHullStatType : AHullStat
-    where CommandType : AUnitCmdItem {
+public abstract class AUnitCreator : AMonoBase {
 
-    private static IList<CommandType> _allUnitCommands = new List<CommandType>();
-    public static IList<CommandType> AllUnitCommands { get { return _allUnitCommands; } }
+    private const string NameFormat = "{0}.{1}";
 
-    protected static UnitFactory _factory;
-    protected static string _designNameFormat = "{0}_{1}";
-
-    /// <summary>
-    /// Gets a unique design name.
-    /// <remarks>Replaced static instance count approach with Random.Range() as Settlement and Starbase
-    /// Facility designs can have the same name since there isn't really only one static counter when using Generic classes.</remarks>
-    /// </summary>
-    /// <param name="hullCategory">The hull category.</param>
-    /// <returns></returns>
-    private static string GetUniqueDesignName(ElementHullCategoryType hullCategory) {
-        return _designNameFormat.Inject(hullCategory.ToString(), UnityEngine.Random.Range(Constants.Zero, int.MaxValue).ToString());
-    }
+    public string Name { get { return NameFormat.Inject(UnitName, GetType().Name); } }
 
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
     /// A Unit contains a Command and one or more Elements.
     /// </summary>
-    public string UnitName { get { return transform.name; } }
+    public string UnitName {
+        get { return transform.name; }
+        set { transform.name = value; }
+    }
 
-    /// <summary>
-    /// Local list of design names keyed by hull category. Each Creator needs their own local list
-    /// to make sure the designs used comply with this creator's settings for weapon count, etc.
-    /// </summary>
-    protected IDictionary<ElementHullCategoryType, IList<string>> _designNamesByHullCategory;
+    public IntVector3 SectorIndex { get { return SectorGrid.Instance.GetSectorIndexThatContains(transform.position); } }
 
-    protected IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
-    protected IList<ActiveCountermeasureStat> _availableActiveCountermeasureStats;
-    protected IList<ShieldGeneratorStat> _availableShieldGeneratorStats;
-    protected CommandType _command;
-    protected Player _owner;
+    private UnitCreatorConfiguration _configuration;
+    public UnitCreatorConfiguration Configuration {
+        get { return _configuration; }
+        set { SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationChangedHandler); }
+    }
 
-    private IList<ElementHullStatType> _elementHullStats;
-    private IList<ElementType> _elements;
-    private IList<SensorStat> _availableSensorStats;
+    protected Player Owner { get { return Configuration.Owner; } }
 
-    private IList<AWeaponStat> _availableLosWeaponStats;
-    private IList<AWeaponStat> _availableMissileWeaponStats;
-
-    private bool _isUnitDeployed;
-    private IGameManager _gameMgr;
+    protected JobManager _jobMgr;
+    protected GameManager _gameMgr;
+    protected UnitFactory _factory;
+    protected bool _isUnitDeployed;
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(isCompositionPreset == transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
         InitializeValuesAndReferences();
+        InitializeDeploymentSystem();
     }
 
     private void InitializeValuesAndReferences() {
-        if (_factory == null) {
-            _factory = UnitFactory.Instance;
-        }
-        _gameMgr = References.GameManager;
-        Subscribe();
+        _factory = UnitFactory.Instance;
+        _gameMgr = GameManager.Instance;
+        _jobMgr = JobManager.Instance;
     }
 
-    private void Subscribe() {
-        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
-        SubscribeStaticallyOnce();
-    }
+    protected abstract void InitializeDeploymentSystem();
 
-    /// <summary>
-    /// Allows a one time static subscription to event publishers from this class.
-    /// </summary>
-    private static bool _isStaticallySubscribed;
-    /// <summary>
-    /// Subscribes this class using static event handler(s) to instance events exactly one time.
-    /// </summary>
-    private void SubscribeStaticallyOnce() {
-        if (!_isStaticallySubscribed) {
-            //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
-            _gameMgr.sceneLoaded += SceneLoadedEventHandler;
-            _isStaticallySubscribed = true;
-        }
+    protected void Subscribe() {
+        _gameMgr.isRunningOneShot += IsRunningEventHandler;
     }
 
     #region Event and Property Change Handlers
 
-    private void GameStateChangedEventHandler(object sender, EventArgs e) {
-        var gameState = _gameMgr.CurrentState;
-        switch (gameState) {
-            case GameState.Building:
-                _availableLosWeaponStats = __CreateAvailableLosWeaponStats(TempGameValues.MaxLosWeaponsForAnyElement);
-                _availableMissileWeaponStats = __CreateAvailableMissileWeaponStats(TempGameValues.MaxMissileWeaponsForAnyElement);
-                _availablePassiveCountermeasureStats = __CreateAvailablePassiveCountermeasureStats(9);
-                _availableActiveCountermeasureStats = __CreateAvailableActiveCountermeasureStats(9);
-                _availableSensorStats = __CreateAvailableSensorStats(9);
-                _availableShieldGeneratorStats = __CreateAvailableShieldGeneratorStats(9);
-                break;
-            case GameState.Lobby:
-            case GameState.Waiting:
-            case GameState.BuildAndDeploySystems:
-            case GameState.GeneratingPathGraphs:
-                break;
-            case GameState.PrepareUnitsForDeployment:
-                // 7.8.16 Warning: This is the latest _owner can be initialized before it is needed. Temporarily moved here 
-                // from Building to allow access to PlayerAIManager which is not available until after BuildAndDeploySystems
-                // as it needs Stars and UCenter to populate initial knowledge of universe.
-                _owner = ValidateAndInitializeOwner();
-                if (_owner == null) {
-                    D.Warn("{0}.{1} found insufficient players to create unit so destroying unit before created.", UnitName, GetType().Name);
-                    Destroy(gameObject);
-                    return;
-                }
-                break;
-            case GameState.DeployingUnits:
-            case GameState.RunningCountdown_1:
-            case GameState.Running:
-            case GameState.Loading:
-            case GameState.Restoring:
-                break;
-            case GameState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameState));
-        }
-
-        if (toDelayOperations) {
-            if (toDelayBuild) {
-                DelayBuildDeployAndBeginUnitOperations(gameState);
-                return;
-            }
-            BuildDeployDuringStartupAndDelayBeginUnitOperations(gameState);
-            return;
-        }
-        BuildDeployAndBeginUnitOperationsDuringStartup(gameState);
+    private void IsRunningEventHandler(object sender, EventArgs e) {
+        HandleGameIsRunning();
     }
 
-    private static void UnitDeathHandler(object sender, EventArgs e) {
-        CommandType command = sender as CommandType;
-        _allUnitCommands.Remove(command);
+    protected void HandleGameIsRunning() {
+        if (GameTime.Instance.CurrentDate >= Configuration.DeployDate) {
+            HandleDeployDateReached();
+        }
+        else {
+            BuildDeployAndBeginUnitOpsOnDeployDate();
+        }
     }
 
-    private void SceneLoadedEventHandler(object sender, EventArgs e) {
-        CleanupStaticMembers();
+    private void ConfigurationChangedHandler() {
+        UnitName = Configuration.UnitName;
     }
 
     #endregion
 
-    private void BuildDeployAndBeginUnitOperationsDuringStartup(GameState gameState) {
-        D.Assert(!toDelayOperations);  // toDelayBuild can be true from previous editor setting
-        if (gameState == GameState.PrepareUnitsForDeployment) {
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
-            CreateElementHullStats();
-            MakeAndRecordDesigns();
-            PrepareUnitForOperations();
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
-        }
+    protected void BuildDeployAndBeginUnitOpsOnDeployDate() {
+        D.Assert(_gameMgr.IsRunning);
+        string jobName = "{0}.WaitForDeployDate({1})".Inject(Name, Configuration.DeployDate);
+        _jobMgr.WaitForDate(Configuration.DeployDate, jobName, waitFinished: (jobWasKilled) => {
+            D.Assert(!jobWasKilled);
+            HandleDeployDateReached();
+        });
+    }
 
-        if (gameState == GameState.DeployingUnits) {
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: false);
+    protected void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
+        if (!ValidateConfiguration()) {
+            return;
+        }
+        GameDate currentDate = GameTime.Instance.CurrentDate;
+        D.Log("{0}.HandleDeployDateReached() called. Date: {1}.", Name, currentDate);
+        GameDate dateToDeploy = Configuration.DeployDate;
+        if (currentDate >= dateToDeploy) {
+            D.Warn(currentDate > dateToDeploy, "{0} recorded current date {1} beyond target date {2}.", Name, currentDate, dateToDeploy);
+            D.Log("{0} is about to build, deploy and begin ops during runtime. Date: {1}.", Name, currentDate);
+
+            MakeUnitAndPrepareForDeployment();
             _isUnitDeployed = DeployUnit();
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: true);
             if (!_isUnitDeployed) {
                 Destroy(gameObject);
+                return;
             }
-        }
-
-        if (gameState == GameState.Running && _isUnitDeployed) {
+            PrepareForUnitOperations();
             BeginUnitOperations();
         }
     }
 
-    #region Delay into Runtime System
-
-    private GameDate _delayedDateInRuntime;
-
-    private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
-        D.Assert(toDelayOperations && !toDelayBuild);
-        if (gameState == GameState.PrepareUnitsForDeployment) {
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
-            CreateElementHullStats();
-            MakeAndRecordDesigns();
-            PrepareUnitForOperations();
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
+    private bool ValidateConfiguration() {
+        if (Configuration == default(UnitCreatorConfiguration)) {
+            D.Warn("{0} found Configuration unassigned so destroying unit before created.", Name);
+            Destroy(gameObject);
+            return false;
         }
-
-        if (gameState == GameState.DeployingUnits) {
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: false);
-            _isUnitDeployed = DeployUnit();
-            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: true);
-            if (!_isUnitDeployed) {
-                Destroy(gameObject);
-            }
-        }
-
-        if (gameState == GameState.Running && _isUnitDeployed) {
-            var delay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
-            if (delay == default(GameTimeDuration)) {
-                // delayOperations selected but delay is 0 so begin operations now
-                BeginUnitOperations();
-            }
-            else {
-                _delayedDateInRuntime = new GameDate(delay);
-                WaitJobUtility.WaitForDate(_delayedDateInRuntime, waitFinished: (jobWasKilled) => {
-                    D.Assert(!jobWasKilled);
-                    HandleReachedDelayDate();
-                });
-            }
-        }
+        return true;
     }
 
-    private void DelayBuildDeployAndBeginUnitOperations(GameState gameState) {
-        D.Assert(toDelayOperations && toDelayBuild);
-
-        if (gameState == GameState.Running) {
-            var runtimeDelay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
-            if (runtimeDelay == default(GameTimeDuration)) {
-                // delayOperations selected but delay is 0 so begin operations now
-                //D.Log("Beginning Unit Operations with 0 hours delay.");
-                BuildDeployAndBeginUnitOperations();
-            }
-            else {
-                _delayedDateInRuntime = new GameDate(runtimeDelay);
-                WaitJobUtility.WaitForDate(_delayedDateInRuntime, waitFinished: (jobWasKilled) => {
-                    D.Assert(!jobWasKilled);
-                    HandleReachedDelayDate();
-                });
-            }
-        }
-    }
-
-    private void HandleReachedDelayDate() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
-        GameDate currentDate = GameTime.Instance.CurrentDate;
-        //D.Log("{0}.{1}.HandleReachedDelayDate() called. Date: {2}.", UnitName, GetType().Name,  currentDate);
-        D.Assert(toDelayOperations);
-        if (currentDate >= _delayedDateInRuntime) {
-            D.Warn(currentDate > _delayedDateInRuntime, "{0}.{1} recorded current date {2} beyond target date {3}.", UnitName, GetType().Name, currentDate, _delayedDateInRuntime);
-            if (toDelayBuild) {
-                D.Log("{0} is about to build, deploy and begin ops. Date: {1}.", UnitName, currentDate);
-                BuildDeployAndBeginUnitOperations();
-            }
-            else {
-                D.Log("{0} has already been built and deployed. It is about to begin ops. Date: {1}.", UnitName, currentDate);
-                BeginUnitOperations();
-            }
-        }
-    }
-
-    #endregion
-
-    private void PrepareUnitForOperations() {
+    protected void MakeUnitAndPrepareForDeployment() {
         LogEvent();
-        _elements = MakeElements();
-        _command = MakeCommand(_owner);
-        _command.__ShowHQDebugLog = showHQDebugLog;
-        AddElements();
+        MakeElements();
+        MakeCommand(Configuration.Owner);
+        AddElementsToCommand();
         AssignHQElement();
     }
+
+    protected abstract void MakeElements();
+
+    protected abstract void MakeCommand(Player owner);
+
+    protected abstract void AddElementsToCommand();
+
+    /// <summary>
+    /// Assigns the HQ element to the command. The assignment itself regenerates the formation,
+    /// resulting in each element assuming the proper position.
+    /// Note: This method must not be called before AddElementsToCommand().
+    /// </summary>
+    protected abstract void AssignHQElement();
 
     /// <summary>
     /// Deploys the unit. Returns true if successfully deployed, false
@@ -299,9 +160,35 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     /// <returns></returns>
     protected abstract bool DeployUnit();
 
-    private void BeginUnitOperations() {
+    protected void PrepareForUnitOperations() {
         LogEvent();
+        AddUnitToGameKnowledge();
+        AddUnitToOwnerAndAllysKnowledge();
+        RegisterCommandForOrders();
+        CompleteUnitInitialization();
+    }
 
+    /// <summary>
+    /// Adds the unit to game knowledge.
+    /// </summary>
+    protected abstract void AddUnitToGameKnowledge();
+
+    /// <summary>
+    /// Adds the unit to its owner's knowledge as well as any of the owner's allies. 
+    /// <remarks>OPTIMIZE 8.2.16 Currently required as can't rely on Owner changed events to handle all this 
+    /// since owner is set in data before owner changed events are wired.</remarks>
+    /// </summary>
+    protected abstract void AddUnitToOwnerAndAllysKnowledge();
+
+    /// <summary>
+    /// Registers the command with the Owner's AIMgr so it can receive orders.
+    /// </summary>
+    protected abstract void RegisterCommandForOrders();
+
+    protected abstract void CompleteUnitInitialization();
+
+    protected void BeginUnitOperations() {
+        LogEvent();
         BeginElementsOperations();
         BeginCommandOperations();
         // 3.25.16 I eliminated the 1 frame delay onCompletion delegate to allow Element and Command Idling_EnterState to execute
@@ -309,510 +196,96 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
         // to finish if it had more than one set of yields in it. In addition, if there is going to be a problem with 
         // changing state (from issued orders here) when Idling is the state, but its EnterState hasn't run yet, I
         // should find it out now as this can easily happen during the game.
-        RecordCommandInStaticCollections();
-        __IssueFirstUnitOrder(onCompleted: delegate {
-            // issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
-            RemoveCreatorScript();
-        });
+
+        InitializeUnitDebugControl();
+        //__IssueFirstUnitOrder(onCompleted: delegate {
+        //    //// issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
+        //    //RemoveCreatorScript();
+        //});
     }
-
-    private void BuildDeployAndBeginUnitOperations() {
-        CreateElementHullStats();
-        MakeAndRecordDesigns();
-        PrepareUnitForOperations();
-        _isUnitDeployed = DeployUnit();
-        if (!_isUnitDeployed) {
-            Destroy(gameObject);
-            return;
-        }
-        BeginUnitOperations();
-    }
-
-    #region Create Stats
-
-    private IList<AWeaponStat> __CreateAvailableMissileWeaponStats(int quantity) {
-        IList<AWeaponStat> statsList = new List<AWeaponStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            WDVCategory deliveryVehicleCategory = WDVCategory.Missile;
-
-            RangeCategory rangeCat = RangeCategory.Long; ;
-            float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);    // 0.04 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(10F, 12F);
-            string name = "Torpedo Launcher";
-            float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageValue = UnityEngine.Random.Range(3F, 8F);
-            float ordMaxSpeed = UnityEngine.Random.Range(4F, 6F);
-            float ordMass = 5F;
-            float ordDrag = 0.01F;
-            float ordTurnRate = 700F;   // degrees per hour
-            float ordCourseUpdateFreq = 0.5F; // course updates per hour
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
-
-            var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag,
-                ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
-            statsList.Add(weapStat);
-        }
-        return statsList;
-    }
-
-    private IList<AWeaponStat> __CreateAvailableLosWeaponStats(int quantity) {
-        IList<AWeaponStat> statsList = new List<AWeaponStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            AWeaponStat weapStat;
-            RangeCategory rangeCat;
-            float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
-            float reloadPeriod;
-            string name;
-            float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageValue = UnityEngine.Random.Range(3F, 8F);
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVCategory deliveryVehicleCategory = Enums<WDVCategory>.GetRandomExcept(default(WDVCategory), WDVCategory.Missile);
-            //WDVCategory deliveryVehicleCategory = WDVCategory.Beam;
-            //WDVCategory deliveryVehicleCategory = WDVCategory.Projectile;
-            WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
-
-            switch (deliveryVehicleCategory) {
-                case WDVCategory.Beam:
-                    rangeCat = RangeCategory.Short;
-                    reloadPeriod = UnityEngine.Random.Range(3F, 5F);
-                    name = "Phaser Projector";
-                    float duration = UnityEngine.Random.Range(1F, 2F);
-                    weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxLaunchInaccuracy);
-                    break;
-                case WDVCategory.Projectile:
-                    rangeCat = RangeCategory.Medium;
-                    reloadPeriod = UnityEngine.Random.Range(2F, 4F);
-                    name = "KineticKill Projector";
-                    float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);
-                    float ordMass = 1F;
-                    float ordDrag = 0.02F;
-                    weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                        deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(deliveryVehicleCategory));
-            }
-            statsList.Add(weapStat);
-        }
-        return statsList;
-    }
-
-    private IList<PassiveCountermeasureStat> __CreateAvailablePassiveCountermeasureStats(int quantity) {
-        IList<PassiveCountermeasureStat> statsList = new List<PassiveCountermeasureStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            string name = string.Empty;
-            DamageStrength damageMitigation;
-            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: false);
-            float damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
-            switch (damageMitigationCategory) {
-                case DamageCategory.Thermal:
-                    name = "ThermalArmor";
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Atomic:
-                    name = "AtomicArmor";
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Kinetic:
-                    name = "KineticArmor";
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.None:
-                    name = "GeneralArmor";
-                    damageMitigation = new DamageStrength(2F, 2F, 2F);
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
-            }
-            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, damageMitigation);
-            statsList.Add(countermeasureStat);
-        }
-        return statsList;
-    }
-
-    private IList<ActiveCountermeasureStat> __CreateAvailableActiveCountermeasureStats(int quantity) {
-        IList<ActiveCountermeasureStat> statsList = new List<ActiveCountermeasureStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            string name = string.Empty;
-            RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
-            WDVStrength[] interceptStrengths;
-            float interceptAccuracy;
-            float reloadPeriod;
-            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageMitigationValue = UnityEngine.Random.Range(1F, 2F);
-            switch (rangeCat) {
-                case RangeCategory.Short:
-                    name = "CIWS";
-                    interceptStrengths = new WDVStrength[] {
-                        new WDVStrength(WDVCategory.Projectile, 0.2F),
-                        new WDVStrength(WDVCategory.Missile, 0.5F)
-                    };
-                    interceptAccuracy = 0.50F;
-                    reloadPeriod = 0.1F;
-                    break;
-                case RangeCategory.Medium:
-                    name = "AvengerADS";
-                    interceptStrengths = new WDVStrength[] {
-                        new WDVStrength(WDVCategory.Missile, 3.0F)
-                    };
-                    interceptAccuracy = 0.80F;
-                    reloadPeriod = 2.0F;
-                    break;
-                case RangeCategory.Long:
-                    name = "PatriotADS";
-                    interceptStrengths = new WDVStrength[] {
-                        new WDVStrength(WDVCategory.Missile, 1.0F)
-                    };
-                    interceptAccuracy = 0.70F;
-                    reloadPeriod = 3.0F;
-                    break;
-                case RangeCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
-            }
-            DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-            var countermeasureStat = new ActiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
-            statsList.Add(countermeasureStat);
-        }
-        return statsList;
-    }
-
-    private IList<SensorStat> __CreateAvailableSensorStats(int quantity) {
-        IList<SensorStat> statsList = new List<SensorStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            string name = string.Empty;
-            RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
-            //RangeCategory rangeCat = RangeCategory.Long;
-            switch (rangeCat) {
-                case RangeCategory.Short:
-                    name = "ProximityDetector";
-                    break;
-                case RangeCategory.Medium:
-                    name = "PulseSensor";
-                    break;
-                case RangeCategory.Long:
-                    name = "DeepScanArray";
-                    break;
-                case RangeCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
-            }
-            var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat);
-            statsList.Add(sensorStat);
-        }
-        return statsList;
-    }
-
-    private IList<ShieldGeneratorStat> __CreateAvailableShieldGeneratorStats(int quantity) {
-        IList<ShieldGeneratorStat> statsList = new List<ShieldGeneratorStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            RangeCategory rangeCat = RangeCategory.Short;
-            string name = "Deflector Generator";
-            float maxCharge = 20F;
-            float trickleChargeRate = 1F;
-            float reloadPeriod = 20F;
-            DamageStrength damageMitigation = default(DamageStrength);  // none for now
-            var generatorStat = new ShieldGeneratorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 1F, 0F, 0F,
-                rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
-            statsList.Add(generatorStat);
-        }
-        return statsList;
-    }
-
-    private void CreateElementHullStats() {
-        LogEvent();
-        _elementHullStats = isCompositionPreset ? CreateElementHullStatsFromChildren() : CreateRandomElementHullStats();
-    }
-
-    private IList<ElementHullStatType> CreateElementHullStatsFromChildren() {
-        LogEvent();
-        var elements = gameObject.GetSafeComponentsInChildren<ElementType>();
-        var elementHullStats = new List<ElementHullStatType>(elements.Count());
-        foreach (var element in elements) {
-            AHull hull = element.gameObject.GetSingleComponentInChildren<AHull>();
-            ElementHullCategoryType category = GetCategory(hull);
-            int elementInstanceID = _elementInstanceIDCounter;
-            _elementInstanceIDCounter++;
-            string uniqueElementName = category.ToString() + Constants.Underscore + elementInstanceID;
-            elementHullStats.Add(CreateElementHullStat(category, uniqueElementName));
-        }
-        return elementHullStats;
-    }
-
-    private IList<ElementHullStatType> CreateRandomElementHullStats() {
-        LogEvent();
-        int elementCount = elementsInRandomUnit;
-        //D.Log("{0} Element count is {1}.", UnitName, elementCount);
-        var elementHullStats = new List<ElementHullStatType>(elementCount);
-        for (int i = 0; i < elementCount; i++) {
-            ElementHullCategoryType category = (i == 0) ? RandomExtended.Choice(HQElementCategories) : RandomExtended.Choice(ElementCategories);
-            int elementInstanceID = _elementInstanceIDCounter;
-            _elementInstanceIDCounter++;
-            string uniqueElementName = category.ToString() + Constants.Underscore + elementInstanceID;
-            elementHullStats.Add(CreateElementHullStat(category, uniqueElementName));
-        }
-        return elementHullStats;
-    }
-
-    protected abstract ElementHullStatType CreateElementHullStat(ElementHullCategoryType hullCat, string elementName);
-
-    #endregion
-
-    protected abstract ElementHullCategoryType[] HQElementCategories { get; }
-
-    protected abstract ElementHullCategoryType[] ElementCategories { get; }
-
-    private void MakeAndRecordDesigns() {
-        _designNamesByHullCategory = new Dictionary<ElementHullCategoryType, IList<string>>();
-        foreach (var hullStat in _elementHullStats) {
-            ElementHullCategoryType hullCategory = GetCategory(hullStat);
-            int losWeaponsPerElement = GetLosWeaponQtyToInstall(hullCategory);
-            var weaponStats = _availableLosWeaponStats.Shuffle().Take(losWeaponsPerElement).ToList();
-            int missileWeaponsPerElement = GetMissileWeaponQtyToInstall(hullCategory);
-            weaponStats.AddRange(_availableMissileWeaponStats.Shuffle().Take(missileWeaponsPerElement));
-
-            var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(passiveCMsPerElement);
-            var activeCmStats = _availableActiveCountermeasureStats.Shuffle().Take(activeCMsPerElement);
-            var sensorStats = _availableSensorStats.Shuffle().Take(sensorsPerElement);
-            var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGeneratorsPerElement);
-
-            string designName = GetUniqueDesignName(hullCategory);
-            RecordDesignName(hullCategory, designName);
-            MakeAndRecordDesign(designName, hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
-        }
-    }
-
-    private void RecordDesignName(ElementHullCategoryType hullCategory, string designName) {
-        if (!_designNamesByHullCategory.ContainsKey(hullCategory)) {
-            _designNamesByHullCategory.Add(hullCategory, new List<string>());
-        }
-        _designNamesByHullCategory[hullCategory].Add(designName);
-    }
-
-    protected abstract void MakeAndRecordDesign(string designName, ElementHullStatType hullStat, IEnumerable<AWeaponStat> weaponStats,
-        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats);
-
-    private IList<ElementType> MakeElements() {
-        LogEvent();
-        var elements = new List<ElementType>();
-        foreach (var hullStat in _elementHullStats) {
-            ElementHullCategoryType hullCategory = GetCategory(hullStat);
-            string designName = _designNamesByHullCategory[hullCategory].Shuffle().First();
-            ElementType element = null;
-            if (isCompositionPreset) {
-                // find a preExisting element of the right category first to provide to Make
-                var categoryElements = gameObject.GetSafeComponentsInChildren<ElementType>()
-                    .Where(e => GetCategory(e.gameObject.GetSingleComponentInChildren<AHull>()).Equals(hullCategory));
-
-                var categoryElementsStillAvailable = categoryElements.Except(elements);
-                element = categoryElementsStillAvailable.First();
-                PopulateElement(designName, ref element);
-            }
-            else {
-                element = MakeElement(designName);
-            }
-            // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
-            // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
-            // rigidbodies that are not kinematic are imparted with both linear and angular velocity from this intentional collision. 
-            // This occurs before the elements are moved away from each other by being formed into a formation. 
-            // Accordingly, all element rigidbodies start as kinematic, then I change ships to non-kinematic during CommenceOperations.
-            element.transform.position = transform.position;
-            elements.Add(element);
-        }
-        return elements;
-    }
-
-    protected abstract ElementHullCategoryType GetCategory(ElementHullStatType hullStat);
-
-    protected abstract ElementHullCategoryType GetCategory(AHull hull);
-
-    /// <summary>
-    /// Populates the provided element with data and mounts derived from the stats
-    /// tied to the design name.
-    /// </summary>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="element">The element.</param>
-    protected abstract void PopulateElement(string designName, ref ElementType element);
-
-    /// <summary>
-    /// Instantiates a new element derived from the design name and populates it with data and mounts
-    /// derived from the stats tied to the design name.
-    /// </summary>
-    /// <param name="designName">Name of the design.</param>
-    /// <returns></returns>
-    protected abstract ElementType MakeElement(string designName);
-
-    protected abstract CommandType MakeCommand(Player owner);
-
-    private void AddElements() {
-        LogEvent();
-        _elements.ForAll(e => _command.AddElement(e));
-        // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
-    }
-
-    /// <summary>
-    /// Assigns the HQ element to the command. The assignment itself regenerates the formation,
-    /// resulting in each element assuming the proper position.
-    /// Note: This method must not be called before AddElements().
-    /// </summary>
-    protected abstract void AssignHQElement();
-
-    // Element positioning and formationPosition assignments have been moved to AUnitCommand to support runtime adds and removals
 
     /// <summary>
     /// Starts the state machine of each element in this Unit.
     /// </summary>
-    private void BeginElementsOperations() {
-        LogEvent();
-        _elements.ForAll(e => e.CommenceOperations());
-    }
+    protected abstract void BeginElementsOperations();
 
     /// <summary>
     /// Starts the state machine of this Unit's Command.
     /// </summary>
-    private void BeginCommandOperations() {
-        LogEvent();
-        _command.CommenceOperations();
+    protected abstract void BeginCommandOperations();
+
+    private void InitializeUnitDebugControl() {
+        var unitDebugCntl = UnityUtility.ValidateComponentPresence<UnitDebugControl>(gameObject);
+        unitDebugCntl.Initialize();
     }
+
+    [Obsolete]
+    protected abstract void __IssueFirstUnitOrder(Action onCompleted);
+
+    [Obsolete]  // 8.7.16 destroying script replaced by disabling it so settings visible while playing
+    private void RemoveCreatorScript() {
+        Destroy(this);
+    }
+
+    #region Static Member Management in non-persistent MonoBehaviours Archive
+
+    // By definition, static members are persistent even if their MonoBehaviours are not.
+    // When the MonoBehaviour is created again in a new game instance, the static members from
+    // the previous instance of the MonoBehaviour will still retain its previous values
+    // thereby requiring careful management (clearing and repopulating).
+
+    //private static IEnumerable<IUnitCmd> _allUnitCommands;
+
+    //private void Subscribe() {
+    //    ...
+    //    SubscribeStaticallyOnce();
+    //}
+
+    /// <summary>
+    /// Allows a one time static subscription to event publishers from this class.
+    /// </summary>
+    //private static bool _isStaticallySubscribed;
+
+    /// <summary>
+    /// Subscribes this class using static event handler(s) to instance events exactly one time.
+    /// </summary>
+    //private void SubscribeStaticallyOnce() {
+    //    if (!_isStaticallySubscribed) {
+    //        //D.Log("{0} is subscribing statically to {1}.", Name, _gameMgr.GetType().Name);
+    //        _gameMgr.sceneLoaded += SceneLoadedEventHandler;
+    //        _isStaticallySubscribed = true;
+    //    }
+    //}
+
+    //private static void UnitDeathHandler(object sender, EventArgs e) {
+    //    CommandType command = sender as CommandType;
+    //    _allUnitCommands.Remove(command);
+    //}
+
+    //private void SceneLoadedEventHandler(object sender, EventArgs e) {
+    //    CleanupStaticMembers();
+    //}
 
     /// <summary>
     /// Records the Command in its static collection holding all instances.
     /// Note: The Assert tests are here to make sure instances from a prior scene are not still present, as the collections
     /// these items are stored in are static and persist across scenes.
     /// </summary>
-    private void RecordCommandInStaticCollections() {
-        _command.deathOneShot += UnitDeathHandler;
-        var cmdNamesStored = _allUnitCommands.Select(cmd => cmd.DisplayName);
-        // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
-        D.Assert(!cmdNamesStored.Contains(_command.DisplayName), "{0}.{1} reports {2} already present.".Inject(UnitName, GetType().Name, _command.DisplayName));
-        _allUnitCommands.Add(_command);
-    }
+    //private void RecordCommandInStaticCollections() {
+    //    _command.deathOneShot += UnitDeathHandler;
+    //    var cmdNamesStored = _allUnitCommands.Select(cmd => cmd.DisplayName);
+    //    // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
+    //    D.Assert(!cmdNamesStored.Contains(_command.DisplayName), "{0}.{1} reports {2} already present.".Inject(UnitName, GetType().Name, _command.DisplayName));
+    //    _allUnitCommands.Add(_command);
+    //}
 
-    private int GetMissileWeaponQtyToInstall(ElementHullCategoryType hullCategory) {
-        int maxMissilesAllowed = GetMaxMissileWeaponsAllowed(hullCategory);
-        switch (missileWeaponsPerElement) {
-            case WeaponLoadout.None:
-                return Constants.Zero;
-            case WeaponLoadout.One:
-                return maxMissilesAllowed > Constants.Zero ? Constants.One : Constants.Zero;
-            case WeaponLoadout.Random:
-                return RandomExtended.Range(Constants.Zero, maxMissilesAllowed);
-            case WeaponLoadout.Max:
-                return maxMissilesAllowed;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(missileWeaponsPerElement));
-        }
-    }
-
-    private int GetLosWeaponQtyToInstall(ElementHullCategoryType hullCategory) {
-        int maxLosWeaponsAllowed = GetMaxLosWeaponsAllowed(hullCategory);
-        switch (losWeaponsPerElement) {
-            case WeaponLoadout.None:
-                return Constants.Zero;
-            case WeaponLoadout.One:
-                return maxLosWeaponsAllowed > Constants.Zero ? Constants.One : Constants.Zero;
-            case WeaponLoadout.Random:
-                return RandomExtended.Range(Constants.Zero, maxLosWeaponsAllowed);
-            case WeaponLoadout.Max:
-                return maxLosWeaponsAllowed;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(missileWeaponsPerElement));
-        }
-    }
-
-    protected abstract int GetMaxMissileWeaponsAllowed(ElementHullCategoryType hullCategory);
-
-    protected abstract int GetMaxLosWeaponsAllowed(ElementHullCategoryType hullCategory);
-
-    protected abstract void __IssueFirstUnitOrder(Action onCompleted);
-
-    private Player ValidateAndInitializeOwner() {
-        Player userPlayer = _gameMgr.UserPlayer;
-        if (isOwnerUser) {
-            return userPlayer;
-        }
-        DiplomaticRelationship desiredRelationship;
-        switch (ownerRelationshipWithUser) {
-            case __DiploStateWithUser.Alliance:
-                desiredRelationship = DiplomaticRelationship.Alliance;
-                break;
-            case __DiploStateWithUser.Friendly:
-                desiredRelationship = DiplomaticRelationship.Friendly;
-                break;
-            case __DiploStateWithUser.Neutral:
-                desiredRelationship = DiplomaticRelationship.Neutral;
-                break;
-            case __DiploStateWithUser.ColdWar:
-                desiredRelationship = DiplomaticRelationship.ColdWar;
-                break;
-            case __DiploStateWithUser.War:
-                desiredRelationship = DiplomaticRelationship.War;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithUser));
-        }
-
-        Player aiOwner = null;
-        IEnumerable<Player> aiOwnerCandidates;
-        var userPlayerAIMgr = _gameMgr.UserAIManager;
-        if (userPlayerAIMgr.__TryGetPlayersWithAssignedInitialRelationship(desiredRelationship, out aiOwnerCandidates)) {
-            aiOwner = aiOwnerCandidates.Shuffle().First();
-        }
-        else {
-            IEnumerable<Player> playersWithAssignedInitialRelationshipWithUser = userPlayerAIMgr.__PlayersWithAssignedInitialRelationships;
-            if (!_gameMgr.IsRunning) {
-                D.Assert(_gameMgr.AIPlayers.All(aiPlayer => aiPlayer.IsRelationship(userPlayer, DiplomaticRelationship.None)));
-                aiOwnerCandidates = _gameMgr.AIPlayers.Except(playersWithAssignedInitialRelationshipWithUser);
-            }
-            else {
-                // accommodate delayed operations
-                IEnumerable<Player> unmetPlayersWithNoUserRelationshipYet = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.IsRelationship(userPlayer, DiplomaticRelationship.None));
-                aiOwnerCandidates = unmetPlayersWithNoUserRelationshipYet.Except(playersWithAssignedInitialRelationshipWithUser);
-            }
-
-            if (aiOwnerCandidates.Any()) {
-                aiOwner = aiOwnerCandidates.Shuffle().First();
-                D.Assert(!aiOwner.IsKnown(userPlayer));
-                var aiOwnerAIMgr = _gameMgr.GetAIManagerFor(aiOwner);
-                aiOwnerAIMgr.__AssignInitialDiploRelation(userPlayer, desiredRelationship);
-
-                D.Assert(!userPlayer.IsKnown(aiOwner));
-                userPlayerAIMgr.__AssignInitialDiploRelation(aiOwner, desiredRelationship);
-            }
-            // else no AI players matched desiredRelationship and no AI players left with unassigned relationship, so not enough players
-        }
-
-        if (aiOwner != null) {
-            D.Log("{0}.{1} picked AI Owner {2}. User relationship upon detection will be {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetValueName());
-        }
-        return aiOwner;
-    }
-
-    private void RemoveCreatorScript() {
-        Destroy(this);
-    }
-
-    protected override void Cleanup() {
-        Unsubscribe();
-        if (IsApplicationQuiting) {
-            CleanupStaticMembers();
-            UnsubscribeStaticallyOnceOnQuit();
-        }
-    }
-
-    protected virtual void Unsubscribe() {
-        if (_gameMgr != null) {
-            _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
-        }
-    }
+    //protected override void Cleanup() {
+    //    Unsubscribe();
+    //    if (IsApplicationQuiting) {
+    //        CleanupStaticMembers();
+    //        UnsubscribeStaticallyOnceOnQuit();
+    //    }
+    //}
 
     /// <summary>
     /// Cleans up static members of this class whose value should not persist across scenes or after quiting.
@@ -820,23 +293,25 @@ public abstract class AUnitCreator<ElementType, ElementHullCategoryType, Element
     /// Should static values be reset on a scene change from a saved game? 1) do the static members
     /// retain their value after deserialization, and/or 2) can static members even be serialized? 
     /// </summary>
-    private static void CleanupStaticMembers() {
-        _allUnitCommands.ForAll(cmd => cmd.deathOneShot -= UnitDeathHandler);
-        _allUnitCommands.Clear();
-        _elementInstanceIDCounter = Constants.One;
-    }
+    //private static void CleanupStaticMembers() {
+    //    _allUnitCommands.ForAll(cmd => cmd.deathOneShot -= UnitDeathHandler);
+    //    _allUnitCommands.Clear();
+    //    _elementInstanceIDCounter = Constants.One;
+    //}
 
     /// <summary>
     /// Unsubscribes this class from all events that use a static event handler on Quit.
     /// </summary>
-    private void UnsubscribeStaticallyOnceOnQuit() {
-        if (_isStaticallySubscribed) {
-            if (_gameMgr != null) {
-                _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
-            }
-            _isStaticallySubscribed = false;
-        }
-    }
+    //private void UnsubscribeStaticallyOnceOnQuit() {
+    //    if (_isStaticallySubscribed) {
+    //        if (_gameMgr != null) {
+    //            _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
+    //        }
+    //        _isStaticallySubscribed = false;
+    //    }
+    //}
+
+    #endregion
 
 }
 

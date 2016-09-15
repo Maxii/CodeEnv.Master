@@ -31,12 +31,12 @@ namespace CodeEnv.Master.GameContent {
 
         /******************************************************************************************
         * IDEA: I can relocate the Vectrosity LineManager to wherever I want to cleanup my root
-        * heirarchy. The code below works fine. However, when the scene is about to change I would 
+        * hierarchy. The code below works fine. However, when the scene is about to change I would 
         * then have to move it back to the root so it's DontDestroyOnLoad would work. Otherwise,
         * LineManager is destroyed and will not be recreated when the next scene appears causing
         * a Unity error when the new Vectrosity objects created in the new scene try to access it.
         * This will involve a fair amount of work (like I did in SystemCreator) to make sure the
-        * correct static states are handled, along with alot of event subscriptions from all these
+        * correct static states are handled, along with a lot of event subscriptions from all these
         * Vectrosity3D objects. The benefit is small so I've commented all this out for now.
         *******************************************************************************************/
 
@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<List<Vector3>>(ref _points, value, "Points", PointsPropChangedHandler); }
         }
 
-        protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
+        protected Transform _target;    // can be null as GridWireframe doesn't use a target Transform
 
         private LineType _lineType;
         private Transform _lineParent;
@@ -166,7 +166,7 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void HandleLineActivated() { }
 
         /// <summary>
-        /// Hook that is called immediately after the VectorLine _line is de-activated.
+        /// Hook that is called immediately after the VectorLine _line is deactivated.
         /// Default does nothing.
         /// </summary>
         protected virtual void HandleLineDeactivated() { }

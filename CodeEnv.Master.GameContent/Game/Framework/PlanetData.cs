@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
+        #region Initialization 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PlanetData" /> class
         /// with no countermeasures and no owner.
@@ -59,6 +61,8 @@ namespace CodeEnv.Master.GameContent {
             : base(planet, owner, passiveCMs, planetStat) {
             CloseOrbitInnerRadius = planetStat.CloseOrbitInnerRadius;
         }
+
+        #endregion
 
         #region Event and Property Change Handlers
 

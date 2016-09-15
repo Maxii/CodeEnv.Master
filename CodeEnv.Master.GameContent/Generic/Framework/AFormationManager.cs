@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
                 _occupiedStationSlotLookup.Clear();
                 float formationRadius;
                 _availableStationSlots = GenerateFormationSlotInfo(formation, _unitCmd.transform, out formationRadius);
-                D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", Name, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
+                //D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", Name, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
                 _unitCmd.UnitMaxFormationRadius = formationRadius;
                 _currentFormation = formation;
             }

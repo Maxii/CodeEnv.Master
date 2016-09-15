@@ -181,6 +181,19 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Creates a union (no duplicates) of sequence with all the provided otherSequences.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sequence">The sequence.</param>
+        /// <param name="otherSequences">The other sequences.</param>
+        /// <returns></returns>
+        public static IEnumerable<T> UnionBy<T>(this IEnumerable<T> sequence, params IEnumerable<T>[] otherSequences) {
+            IEnumerable<T> result = sequence;
+            otherSequences.ForAll(seq => result = result.Union(seq));
+            return result;
+        }
+
+        /// <summary>
         /// Provides for the application of a work action to all the elements in an IEnumerable source sequence.
         /// Throws an exception of source sequence is null. If it is empty, the method simply returns.
         /// Syntax: <code>sequenceOfTypeT.ForAll((T n) => Console.WriteLine(n.ToString()));</code> read as

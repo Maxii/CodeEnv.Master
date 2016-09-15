@@ -46,6 +46,8 @@ namespace CodeEnv.Master.GameContent {
 
         public new StarbaseInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarbaseInfoAccessController; } }
 
+        #region Initialization 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class
         /// with no passive countermeasures.
@@ -72,6 +74,8 @@ namespace CodeEnv.Master.GameContent {
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new StarbaseInfoAccessController(this);
         }
+
+        #endregion
 
         public override void AddElement(AUnitElementData elementData) {
             base.AddElement(elementData);

@@ -29,6 +29,10 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
+      <PropertyName>EnableDurationLogging</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
+    <Setting>
       <PropertyName>ForceFpsToTarget</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>

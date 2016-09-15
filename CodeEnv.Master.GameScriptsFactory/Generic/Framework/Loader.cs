@@ -74,7 +74,7 @@ public class Loader : AMonoSingleton<Loader> {
     #region Event and Property Change Handlers
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {
-        D.Assert(_gameMgr.CurrentScene == _gameMgr.GameScene);
+        D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
         AssignAudioListener();
     }
 
@@ -91,7 +91,7 @@ public class Loader : AMonoSingleton<Loader> {
     #endregion
 
     private void AssignAudioListener() {
-        if (_gameMgr.CurrentScene == _gameMgr.GameScene) {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             var cameraAL = MainCameraControl.Instance.gameObject.AddComponent<AudioListener>();
             cameraAL.gameObject.SetActive(true);
             var loaderAL = gameObject.GetComponent<AudioListener>();
@@ -99,7 +99,7 @@ public class Loader : AMonoSingleton<Loader> {
                 Destroy(loaderAL);  // destroy AFTER cameraAL installed and activated
             }
 
-            // Ngui installs an AudioSource next to the AudioListener when it trys to play a sound so remove it if it is there
+            // Ngui installs an AudioSource next to the AudioListener when it tries to play a sound so remove it if it is there
             // Another will be added to the new AudioListener gameObject if needed
             var loaderAS = gameObject.GetComponent<AudioSource>();
             if (loaderAS != null) {

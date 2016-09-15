@@ -103,8 +103,20 @@ namespace CodeEnv.Master.Common {
             private set { _forceFpsToTarget = value; }
         }
 
-        private bool _enableCombatResultLogging;
+        private bool _enableDurationLogging;
+        /// <summary>
+        /// Controls whether the time it takes for states and methods
+        /// to execute is logged to the Console.
+        /// </summary>
+        public bool EnableDurationLogging {
+            get {
+                CheckValuesInitialized();
+                return _enableDurationLogging;
+            }
+            private set { _enableDurationLogging = value; }
+        }
 
+        private bool _enableCombatResultLogging;
         /// <summary>
         /// Controls whether weapons will log CombatResults
         /// to the Console.

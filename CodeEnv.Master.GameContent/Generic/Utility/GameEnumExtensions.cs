@@ -29,18 +29,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameEnumExtensions {
 
-        #region Universe Size and Default Player Count
+        #region Universe Size, SystemDensity and Default Player Count
 
         private static UniverseSizeXmlPropertyReader _universeSizeXmlReader = UniverseSizeXmlPropertyReader.Instance;
 
         /// <summary>
         /// Converts this UniverseSizeGuiSelection value to a UniverseSize value.
         /// </summary>
-        /// <param name="universeSizeSelection">The universe size GUI selection.</param>
+        /// <param name="guiSelection">The universe size GUI selection.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static UniverseSize Convert(this UniverseSizeGuiSelection universeSizeSelection) {
-            switch (universeSizeSelection) {
+        public static UniverseSize Convert(this UniverseSizeGuiSelection guiSelection) {
+            switch (guiSelection) {
                 case UniverseSizeGuiSelection.Random:
                     return Enums<UniverseSize>.GetRandom(excludeDefault: true);
                 case UniverseSizeGuiSelection.Tiny:
@@ -57,28 +57,94 @@ namespace CodeEnv.Master.GameContent {
                     return UniverseSize.Gigantic;
                 case UniverseSizeGuiSelection.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSizeSelection));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(guiSelection));
             }
         }
 
         public static float Radius(this UniverseSize universeSize) {
+            float sectorSideLength = TempGameValues.SectorSideLength;
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return _universeSizeXmlReader.TinyRadius;
+                    return _universeSizeXmlReader.TinyRadius * sectorSideLength;
                 case UniverseSize.Small:
-                    return _universeSizeXmlReader.SmallRadius;
+                    return _universeSizeXmlReader.SmallRadius * sectorSideLength;
                 case UniverseSize.Normal:
-                    return _universeSizeXmlReader.NormalRadius;
+                    return _universeSizeXmlReader.NormalRadius * sectorSideLength;
                 case UniverseSize.Large:
-                    return _universeSizeXmlReader.LargeRadius;
+                    return _universeSizeXmlReader.LargeRadius * sectorSideLength;
                 case UniverseSize.Enormous:
-                    return _universeSizeXmlReader.EnormousRadius;
+                    return _universeSizeXmlReader.EnormousRadius * sectorSideLength;
                 case UniverseSize.Gigantic:
-                    return _universeSizeXmlReader.GiganticRadius;
+                    return _universeSizeXmlReader.GiganticRadius * sectorSideLength;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
+        }
+
+        /// <summary>
+        /// Converts this SystemDensityGuiSelection value to a SystemDensity value.
+        /// </summary>
+        /// <param name="guiSelection">The selection.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static SystemDensity Convert(this SystemDensityGuiSelection guiSelection) {
+            switch (guiSelection) {
+                case SystemDensityGuiSelection.Random:
+                    return Enums<SystemDensity>.GetRandom(excludeDefault: true);
+                case SystemDensityGuiSelection.Sparse:
+                    return SystemDensity.Sparse;
+                case SystemDensityGuiSelection.Low:
+                    return SystemDensity.Low;
+                case SystemDensityGuiSelection.Normal:
+                    return SystemDensity.Normal;
+                case SystemDensityGuiSelection.High:
+                    return SystemDensity.High;
+                case SystemDensityGuiSelection.Dense:
+                    return SystemDensity.Dense;
+                case SystemDensityGuiSelection.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(guiSelection));
+            }
+        }
+
+        /// <summary>
+        /// Returns the percentage of occupiable sectors that contain a system.
+        /// </summary>
+        /// <param name="sysDensity">The system density.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float SystemsPerSector(this SystemDensity sysDensity) {
+            float density = Constants.ZeroPercent;
+            switch (sysDensity) {
+                case SystemDensity.None:
+                    break;
+                case SystemDensity.Existing_Debug:
+                    D.Error("Don't use SystemsPerSector() to get {0} density.", sysDensity.GetValueName());
+                    break;
+                case SystemDensity.Sparse:
+                    density = 0.01F;
+                    break;
+                case SystemDensity.Low:
+                    density = 0.05F;
+                    break;
+                case SystemDensity.Normal:
+                    density = 0.15F;
+                    break;
+                case SystemDensity.High:
+                    density = 0.25F;
+                    break;
+                case SystemDensity.Dense:
+                    density = 0.40F;
+                    break;
+                case SystemDensity.Full_Debug:
+                    density = Constants.OneHundredPercent;
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sysDensity));
+            }
+            D.Log("{0}: System Density of Universe is {1:0.##}.", typeof(GameEnumExtensions).Name, density);
+            return density;
         }
 
         public static int DefaultPlayerCount(this UniverseSize universeSize) {
@@ -106,6 +172,7 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
+            D.Assert(defaultPlayerCount <= TempGameValues.MaxPlayers);
             return defaultPlayerCount;
         }
 
@@ -253,11 +320,13 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        //TODO The following have not yet externalized to XML
+        // TODO The following have not yet externalized to XML
 
-        #region Element Category
+        #region Element Hull Category
 
-        //TODO MaxMountPoints and Dimensions are temporary until I determine whether I want either value
+        #region Element Hull Category - Weapons
+
+        // TODO MaxMountPoints and Dimensions are temporary until I determine whether I want either value
         // to be independent of the element category. If independent, the values would then be placed
         // in the HullStat.
 
@@ -268,7 +337,7 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Scout:
                     value = 1;
                     break;
-                case ShipHullCategory.Science:
+                case ShipHullCategory.Investigator:
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Colonizer:
                 case ShipHullCategory.Troop:
@@ -301,7 +370,7 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Fighter:
                 case ShipHullCategory.Scout:
                     break;
-                case ShipHullCategory.Science:
+                case ShipHullCategory.Investigator:
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Colonizer:
                 case ShipHullCategory.Troop:
@@ -326,36 +395,6 @@ namespace CodeEnv.Master.GameContent {
             }
             D.Assert(value <= TempGameValues.MaxMissileWeaponsForAnyElement);
             return value;
-        }
-
-        [System.Obsolete]
-        public static Vector3 __HullDimensions(this ShipHullCategory cat) {
-            switch (cat) {
-                case ShipHullCategory.Frigate:  // 10.28.15 Hull collider dimensions increased to encompass turrets
-                    //return new Vector3(.03F, .01F, .05F);
-                    return new Vector3(.04F, .035F, .10F);
-                case ShipHullCategory.Destroyer:
-                case ShipHullCategory.Support:
-                    //return new Vector3(.05F, .02F, .10F);
-                    return new Vector3(.08F, .05F, .18F);
-                case ShipHullCategory.Cruiser:
-                case ShipHullCategory.Science:
-                case ShipHullCategory.Colonizer:
-                    //return new Vector3(.07F, .04F, .15F);
-                    return new Vector3(.15F, .08F, .30F);
-                case ShipHullCategory.Dreadnought:
-                case ShipHullCategory.Troop:
-                    //return new Vector3(.10F, .06F, .25F);
-                    return new Vector3(.21F, .07F, .45F);
-                case ShipHullCategory.Carrier:
-                    //return new Vector3(.12F, .06F, .35F);
-                    return new Vector3(.20F, .10F, .60F);
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-            }
         }
 
         public static int __MaxLOSWeapons(this FacilityHullCategory cat) {
@@ -404,6 +443,415 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Element Hull Category - Physics
+
+        /// <summary>
+        /// The dimensions of the hull of the Ship.
+        /// </summary>
+        /// <param name="hullCat">The category of hull.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static Vector3 Dimensions(this ShipHullCategory hullCat) {
+            Vector3 dimensions;
+            switch (hullCat) {  // 10.28.15 Hull collider dimensions increased to encompass turrets, 11.20.15 reduced mesh scale from 2 to 1
+                case ShipHullCategory.Frigate:
+                    dimensions = new Vector3(.02F, .03F, .05F); //new Vector3(.04F, .035F, .10F);
+                    break;
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
+                    dimensions = new Vector3(.06F, .035F, .10F);    //new Vector3(.08F, .05F, .18F);
+                    break;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Colonizer:
+                    dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
+                    break;
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                    dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
+                    break;
+                case ShipHullCategory.Carrier:
+                    dimensions = new Vector3(.10F, .06F, .32F); // new Vector3(.20F, .10F, .60F); 
+                    break;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            float radius = dimensions.magnitude / 2F;
+            D.Warn(radius > TempGameValues.ShipMaxRadius, "Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
+            return dimensions;
+        }
+
+        /// <summary>
+        /// The dimensions of the hull of the Facility.
+        /// </summary>
+        /// <param name="hullCat">The category of hull.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static Vector3 Dimensions(this FacilityHullCategory hullCat) {
+            Vector3 dimensions;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Defense:
+                    dimensions = new Vector3(.4F, .4F, .4F);
+                    break;
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Barracks:
+                    dimensions = new Vector3(.2F, .2F, .2F);
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            float radius = dimensions.magnitude / 2F;
+            D.Warn(radius > TempGameValues.FacilityMaxRadius, "Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.FacilityMaxRadius);
+            return dimensions;
+        }
+
+        /// <summary>
+        /// Drag of the ship's hull in Topography.OpenSpace.
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static float Drag(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    return .05F;
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
+                    return .08F;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Investigator:
+                    return .10F;
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                    return .15F;
+                case ShipHullCategory.Carrier:
+                    return .25F;
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        /// <summary>
+        /// Mass of the element's hull.
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float Mass(this FacilityHullCategory hullCat) {
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                    return 10000F;
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                    return 5000F;
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Laboratory:
+                    return 2000F;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        /// <summary>
+        /// Mass of the element's hull.
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float Mass(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    return 50F;                     // mass * drag = 2.5
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
+                    return 100F;                     // mass * drag = 8
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Investigator:
+                    return 200F;                     // mass * drag = 20
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                    return 400F;                     // mass * drag = 60
+                case ShipHullCategory.Carrier:
+                    return 500F;                     // mass * drag = 125
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        #endregion
+
+        #region Element Hull Category - Economics
+
+        /// <summary>
+        /// Baseline science generated by the element's hull.
+        /// <remarks>Not really the hull that generates the science, but what's inside the hull.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float Science(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Investigator:
+                    return 10F;
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Frigate:
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Troop:
+                    return Constants.ZeroF;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        /// <summary>
+        /// Baseline culture generated by the element's hull.
+        /// <remarks>Not really the hull that generates the culture, but what's inside the hull.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float Culture(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Support:
+                    return 2F;
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Frigate:
+                    return Constants.ZeroF;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+
+        /// <summary>
+        /// Baseline income generated by the element's hull.
+        /// <remarks>Not really the hull that generates the income, but what's inside the hull.</remarks>
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float Income(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Support:
+                    return 3F;
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Frigate:
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Troop:
+                    return Constants.ZeroF;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        /// <summary>
+        /// Baseline expense to maintain the element's hull.
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float Expense(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Colonizer:
+                    return 5F;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Investigator:
+                    return 3F;
+                case ShipHullCategory.Destroyer:
+                    return 2F;
+                case ShipHullCategory.Frigate:
+                    return 1F;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        public static float Income(this FacilityHullCategory hullCat, bool _isSettlement) {
+            float factor = _isSettlement ? 2.0F : 1.0F;
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                    result = 5F;
+                    break;
+                case FacilityHullCategory.Economic:
+                    result = 20F;
+                    break;
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result * factor;
+        }
+
+        public static float Expense(this FacilityHullCategory hullCat, bool _isSettlement) {
+            float factor = _isSettlement ? 2.0F : 1.0F;
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Economic:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                    result = 3F;
+                    break;
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = 5F;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result * factor;
+        }
+
+        public static float Science(this FacilityHullCategory hullCat, bool _isSettlement) {
+            float factor = _isSettlement ? 2.0F : 1.0F;
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.Laboratory:
+                    result = 10F;
+                    break;
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result * factor;
+        }
+
+        public static float Culture(this FacilityHullCategory hullCat, bool _isSettlement) {
+            float factor = _isSettlement ? 2.0F : 1.0F;
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.ColonyHab:
+                    result = 3F;
+                    break;
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result * factor;
+        }
+
+        #endregion
+
+        public static Priority __HQPriority(this FacilityHullCategory cat) {
+            switch (cat) {
+                case FacilityHullCategory.CentralHub:
+                    return Priority.Primary;
+                case FacilityHullCategory.Defense:
+                    return Priority.Secondary;
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Laboratory:
+                    return Priority.Low;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+        }
+
+        public static Priority __HQPriority(this ShipHullCategory cat) {
+            switch (cat) {
+                case ShipHullCategory.Carrier:
+                    return Priority.Primary;
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Dreadnought:
+                    return Priority.Secondary;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                    return Priority.Tertiary;
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Frigate:
+                    return Priority.Low;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+        }
+
+        #endregion
+
         #region Gui Menu ElementID
 
         /// <summary>
@@ -432,6 +880,8 @@ namespace CodeEnv.Master.GameContent {
                     return "UniverseSizeSelection";
                 case GuiElementID.PlayerCountPopupList:
                     return "PlayerCount";
+                case GuiElementID.SystemDensityPopupList:
+                    return "SystemDensitySelection";
 
                 case GuiElementID.UserPlayerSpeciesPopupList:
                     return "UserPlayerSpeciesSelection";
@@ -482,7 +932,27 @@ namespace CodeEnv.Master.GameContent {
                 case GuiElementID.AIPlayer7IQPopupList:
                     return "AIPlayer7IQ";
 
+                case GuiElementID.UserPlayerTeamPopupList:
+                    return "UserPlayerTeam";
+                case GuiElementID.AIPlayer1TeamPopupList:
+                    return "AIPlayer1Team";
+                case GuiElementID.AIPlayer2TeamPopupList:
+                    return "AIPlayer2Team";
+                case GuiElementID.AIPlayer3TeamPopupList:
+                    return "AIPlayer3Team";
+                case GuiElementID.AIPlayer4TeamPopupList:
+                    return "AIPlayer4Team";
+                case GuiElementID.AIPlayer5TeamPopupList:
+                    return "AIPlayer5Team";
+                case GuiElementID.AIPlayer6TeamPopupList:
+                    return "AIPlayer6Team";
+                case GuiElementID.AIPlayer7TeamPopupList:
+                    return "AIPlayer7Team";
+
                 default:
+                    if (elementID != GuiElementID.SavedGamesPopupList) { // TODO Not currently implemented
+                        D.Warn("{0}: No Property Name found for {1}.{2}.", typeof(GameEnumExtensions).Name, typeof(GuiElementID).Name, elementID.GetValueName());
+                    }
                     return null;
             }
         }
@@ -808,6 +1278,63 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #endregion
+
+
+        #region Debug Enums
+
+        public static DiplomaticRelationship Convert(this DebugDiploUserRelations debugUserRelations) {
+            switch (debugUserRelations) {
+                case DebugDiploUserRelations.Alliance:
+                    return DiplomaticRelationship.Alliance;
+                case DebugDiploUserRelations.Friendly:
+                    return DiplomaticRelationship.Friendly;
+                case DebugDiploUserRelations.Neutral:
+                    return DiplomaticRelationship.Neutral;
+                case DebugDiploUserRelations.ColdWar:
+                    return DiplomaticRelationship.ColdWar;
+                case DebugDiploUserRelations.War:
+                    return DiplomaticRelationship.War;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugUserRelations));
+            }
+        }
+
+        public static Formation Convert(this DebugBaseFormation debugFormation) {
+            switch (debugFormation) {
+                case DebugBaseFormation.Random:
+                    return Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+                case DebugBaseFormation.Globe:
+                    return Formation.Globe;
+                case DebugBaseFormation.Plane:
+                    return Formation.Plane;
+                case DebugBaseFormation.Diamond:
+                    return Formation.Diamond;
+                case DebugBaseFormation.Spread:
+                    return Formation.Spread;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugFormation));
+            }
+        }
+
+        public static Formation Convert(this DebugFleetFormation debugFormation) {
+            switch (debugFormation) {
+                case DebugFleetFormation.Random:
+                    return Enums<Formation>.GetRandom(excludeDefault: true);
+                case DebugFleetFormation.Globe:
+                    return Formation.Globe;
+                case DebugFleetFormation.Plane:
+                    return Formation.Plane;
+                case DebugFleetFormation.Diamond:
+                    return Formation.Diamond;
+                case DebugFleetFormation.Spread:
+                    return Formation.Spread;
+                case DebugFleetFormation.Wedge:
+                    return Formation.Wedge;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugFormation));
+            }
+        }
 
 
         #endregion
@@ -824,8 +1351,8 @@ namespace CodeEnv.Master.GameContent {
 
             #region Universe Radius
 
-            private float _tinyRadius;
-            public float TinyRadius {
+            private int _tinyRadius;
+            public int TinyRadius {
                 get {
                     CheckValuesInitialized();
                     return _tinyRadius;
@@ -833,8 +1360,8 @@ namespace CodeEnv.Master.GameContent {
                 private set { _tinyRadius = value; }
             }
 
-            private float _smallRadius;
-            public float SmallRadius {
+            private int _smallRadius;
+            public int SmallRadius {
                 get {
                     CheckValuesInitialized();
                     return _smallRadius;
@@ -842,8 +1369,8 @@ namespace CodeEnv.Master.GameContent {
                 private set { _smallRadius = value; }
             }
 
-            private float _normalRadius;
-            public float NormalRadius {
+            private int _normalRadius;
+            public int NormalRadius {
                 get {
                     CheckValuesInitialized();
                     return _normalRadius;
@@ -851,8 +1378,8 @@ namespace CodeEnv.Master.GameContent {
                 private set { _normalRadius = value; }
             }
 
-            private float _largeRadius;
-            public float LargeRadius {
+            private int _largeRadius;
+            public int LargeRadius {
                 get {
                     CheckValuesInitialized();
                     return _largeRadius;
@@ -860,8 +1387,8 @@ namespace CodeEnv.Master.GameContent {
                 private set { _largeRadius = value; }
             }
 
-            private float _enormousRadius;
-            public float EnormousRadius {
+            private int _enormousRadius;
+            public int EnormousRadius {
                 get {
                     CheckValuesInitialized();
                     return _enormousRadius;
@@ -869,8 +1396,8 @@ namespace CodeEnv.Master.GameContent {
                 private set { _enormousRadius = value; }
             }
 
-            private float _giganticRadius;
-            public float GiganticRadius {
+            private int _giganticRadius;
+            public int GiganticRadius {
                 get {
                     CheckValuesInitialized();
                     return _giganticRadius;
@@ -878,8 +1405,62 @@ namespace CodeEnv.Master.GameContent {
                 private set { _giganticRadius = value; }
             }
 
-            #endregion
 
+            //private float _tinyRadius;
+            //public float TinyRadius {
+            //    get {
+            //        CheckValuesInitialized();
+            //        return _tinyRadius;
+            //    }
+            //    private set { _tinyRadius = value; }
+            //}
+
+            //private float _smallRadius;
+            //public float SmallRadius {
+            //    get {
+            //        CheckValuesInitialized();
+            //        return _smallRadius;
+            //    }
+            //    private set { _smallRadius = value; }
+            //}
+
+            //private float _normalRadius;
+            //public float NormalRadius {
+            //    get {
+            //        CheckValuesInitialized();
+            //        return _normalRadius;
+            //    }
+            //    private set { _normalRadius = value; }
+            //}
+
+            //private float _largeRadius;
+            //public float LargeRadius {
+            //    get {
+            //        CheckValuesInitialized();
+            //        return _largeRadius;
+            //    }
+            //    private set { _largeRadius = value; }
+            //}
+
+            //private float _enormousRadius;
+            //public float EnormousRadius {
+            //    get {
+            //        CheckValuesInitialized();
+            //        return _enormousRadius;
+            //    }
+            //    private set { _enormousRadius = value; }
+            //}
+
+            //private float _giganticRadius;
+            //public float GiganticRadius {
+            //    get {
+            //        CheckValuesInitialized();
+            //        return _giganticRadius;
+            //    }
+            //    private set { _giganticRadius = value; }
+            //}
+
+            #endregion
 
             #region Universe Default Player Count
 
@@ -952,7 +1533,6 @@ namespace CodeEnv.Master.GameContent {
                 return new ObjectAnalyzer().ToString(this);
             }
         }
-
 
         /// <summary>
         /// Parses ResourceID.xml used to provide externalized values for the ResourceID enum.
@@ -1267,7 +1847,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
         }
-
 
         /// <summary>
         /// Parses GameSpeed.xml used to provide externalized values for the GameSpeed enum.

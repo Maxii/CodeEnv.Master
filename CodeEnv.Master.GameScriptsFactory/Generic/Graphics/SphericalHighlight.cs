@@ -26,21 +26,34 @@ using UnityEngine;
 /// </summary>
 public class SphericalHighlight : AMonoBase, ISphericalHighlight {
 
-    public bool enableTrackingLabel = false;
+    [Tooltip("Shows a label that tracks the highlight")]
+    [SerializeField]
+    private bool _enableTrackingLabel = false;
 
-    public bool enableEditorAlphaControl = false;
+    [Tooltip("Enables manual control of the alpha value from the editor, ignoring programmatic changes.")]
+    [SerializeField]
+    private bool _enableEditorAlphaControl = false;
 
     public bool IsShowing { get { return enabled; } }
 
-    public float alpha = Constants.ZeroF;
+    [Tooltip("Adjust to change transparency of highlight during Edit")]
+    [Range(0F, 1.0F)]
+    [SerializeField]
+    private float _alpha = Constants.ZeroF;
+    /// <summary>
+    /// The transparency level of the material. Set this AFTER setting Color and
+    /// make sure _enableEditorAlphaControl is not enabled as this change will be
+    /// ignored if manually setting from the editor.
+    /// </summary>
     public float Alpha {
-        get { return alpha; }
+        get { return _alpha; }
         set {
-            if (enableEditorAlphaControl) {
+            if (_enableEditorAlphaControl) {
+                D.Warn("{0}: Attempt to set Alpha to {1:0.00} is being ignored with manual control enabled.", GetType().Name, value);
                 return;
             }
             value = Mathf.Clamp01(value);
-            SetProperty<float>(ref alpha, value, "Alpha", AlphaPropChangedEventHandler);
+            SetProperty<float>(ref _alpha, value, "Alpha", AlphaPropChangedEventHandler);
         }
     }
 
@@ -49,6 +62,8 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
         get { return _color; }
         set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedEventHandler); }
     }
+
+    public string TargetName { get { return _target != null ? _target.DisplayName : "None"; } }
 
     private IWidgetTrackable _target;
     private Renderer _renderer;
@@ -82,7 +97,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
     public void SetTarget(IWidgetTrackable target, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
         _target = target;
 
-        if (enableTrackingLabel && _trackingLabel == null) {
+        if (_enableTrackingLabel && _trackingLabel == null) {
             _trackingLabel = InitializeTrackingLabel();
         }
 
@@ -144,6 +159,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
 
     private void ColorPropChangedEventHandler() {
         _renderer.material.color = Color.ToUnityColor();
+        _renderer.material.SetAlpha(Alpha);
     }
 
     #endregion
@@ -151,7 +167,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
     protected void ValidateReuseable() {
         D.Assert(_target == null);
         D.Assert(Color == GameColor.None);
-        D.Assert(!enableEditorAlphaControl, "{0} spawned with EditorAlphaControl enabled.", gameObject.name);
+        D.Assert(!_enableEditorAlphaControl, "{0} spawned with EditorAlphaControl enabled.", gameObject.name);
         D.Assert(Alpha == Constants.ZeroF, "{0}.Alpha {1} should be Zero.", GetType().Name, Alpha);
         //D.Log("{0}.ValidateReuseable() called.", GetType().Name);
     }
@@ -160,7 +176,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
         //D.Log("{0}.ResetForReuse called.", GetType().Name);
         _target = null;
         _color = GameColor.None;
-        alpha = Constants.ZeroF;
+        _alpha = Constants.ZeroF;
     }
 
     protected override void Cleanup() {

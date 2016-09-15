@@ -129,6 +129,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
                 D.ErrorContext(this, "No {0} property named {1} found!", typeof(PlayerPrefsManager).Name, prefsPropertyName);
                 isPrefSelected = false;
             }
+            //D.Log("{0} type is {1}.", name, typeof(T).Name);
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
             valueName = propertyGet().ToString();    // gets the value of the PlayerPrefsManager Property named prefsPropertyName
             //D.Log("{0} is using preference value {1} as its selection.", ElementID.GetValueName(), valueName);

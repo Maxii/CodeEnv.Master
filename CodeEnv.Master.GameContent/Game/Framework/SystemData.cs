@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public Index3D SectorIndex { get; private set; }
+        public IntVector3 SectorIndex { get; private set; }
 
         public new SystemInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SystemInfoAccessController; } }
 
@@ -86,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public SystemData(ISystem system, Player owner)
             : base(system, owner) {
-            SectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            SectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
             Topography = Topography.System;
             Subscribe();
         }
@@ -124,7 +124,7 @@ namespace CodeEnv.Master.GameContent {
             return new SystemInfoAccessController(this);
         }
 
-        protected override void FinalInitialize() {
+        public override void FinalInitialize() {
             base.FinalInitialize();
             RecalcAllProperties();
             AssessIntelCoverage();
@@ -180,12 +180,12 @@ namespace CodeEnv.Master.GameContent {
             IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(allMemberCoverages);
             var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
             if (isCoverageSet) {
-                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
-                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
+                //    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
             }
             else {
-                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
-                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
+                //    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
             }
         }
 

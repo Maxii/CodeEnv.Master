@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public Index3D SectorIndex { get; private set; }
+        public IntVector3 SectorIndex { get; private set; }
 
         public StarReport(StarData data, Player player, IStar_Ltd item) : base(data, player, item) { }
 

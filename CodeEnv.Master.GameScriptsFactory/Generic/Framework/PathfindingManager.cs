@@ -30,6 +30,13 @@ using UnityEngine;
 /// </summary>
 public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
+    /// <summary>
+    /// Occurs when [graph update completed].
+    /// 8.16.16 Does not currently fire as I'm using WorkItems in place of GraphUpdate
+    /// TODO fleets should re-plot their paths when this occurs.
+    /// </summary>
+    public event EventHandler graphUpdateCompleted;
+
     private MyPathfindingGraph _graph;
     public MyPathfindingGraph Graph {
         get { return _graph; }
@@ -102,20 +109,22 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     /// <summary>
     /// Event handler for completed GraphObjectUpdates during runtime.
+    /// <remarks>8.17.16 not currently using UpdateGraph(GUO) in MyPathfindingGraph. I've replaced
+    /// it with the use of multiple work items which accomplishes the same thing but doesn't generate this callback.</remarks>
     /// </summary>
-    /// <param name="astarPath">The astar path.</param>
+    /// <param name="astarPath">The AStar path.</param>
     private void GraphUpdateCompletedEventHandler(AstarPath astarPath) {
         D.Assert(astarPath.graphs[0] == Graph);
-        int connectionCount = Constants.Zero;
-        int walkableNodeCount = Constants.Zero;
-        Graph.GetNodes(delegate (GraphNode node) {   // while return true, passes each node to this anonymous method
-            if (node.Walkable) {
-                walkableNodeCount++;
-                connectionCount += (node as PointNode).connections.Length;
-            }
-            return true;    // pass the next node
-        });
-        D.Log("{0} after graph update: WalkableNodeCount = {1}, ConnectionCount = {2}.", GetType().Name, walkableNodeCount, connectionCount);
+        OnGraphUpdateCompleted();
+        //__ReportUpdateDuration();
+        //__ReportNodeCountAndDuration();
+        D.Warn("{0}.GraphUpdateCompletedEventHandler() called.", GetType().Name);
+    }
+
+    private void OnGraphUpdateCompleted() {
+        if (graphUpdateCompleted != null) {
+            graphUpdateCompleted(this, new EventArgs());
+        }
     }
 
     #endregion
@@ -133,6 +142,33 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    //private void __ReportUpdateDuration() {
+    //    D.LogBold("{0} took {1:0.##} secs updating graph for the addition/removal of one or more StarBases.",
+    //        GetType().Name, (Utility.SystemTime - Graph.__GraphUpdateStartTime).TotalSeconds);
+    //    Graph.__GraphUpdateStartTime = default(System.DateTime);
+    //}
+
+    //private void __ReportNodeCountAndDuration() {
+    //    System.DateTime nodeCountStartTime = Utility.SystemTime;
+
+    //    int connectionCount = Constants.Zero;
+    //    int walkableNodeCount = Constants.Zero;
+    //    Graph.GetNodes(delegate (GraphNode node) {   // while return true, passes each node to this anonymous method
+    //        if (node.Walkable) {
+    //            walkableNodeCount++;
+    //            connectionCount += (node as PointNode).connections.Length;
+    //        }
+    //        return true;    // pass the next node
+    //    });
+
+    //    D.Log("{0}: Counting graph update nodes took {1:0.##} secs. WalkableNodeCount = {2}, ConnectionCount = {3}.",
+    //        GetType().Name, (Utility.SystemTime - nodeCountStartTime).TotalSeconds, walkableNodeCount, connectionCount);
+    //}
+
+    #endregion
 
 }
 

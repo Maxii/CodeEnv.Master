@@ -54,6 +54,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         set { base.Data = value; }
     }
 
+    public override float ClearanceRadius { get { return CloseOrbitOuterRadius * 2F; } }
+
     public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
     private float CloseOrbitInnerRadius { get { return UnitMaxFormationRadius; } }
@@ -62,6 +64,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
+
+    protected override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowBaseCmdDebugLogs;
+    }
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -75,7 +81,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     private IList<StationaryLocation> InitializePatrolStations() {
         float radiusOfSphereContainingPatrolStations = CloseOrbitOuterRadius * PatrolStationDistanceMultiplier;
-        var stationLocations = MyMath.CalcVerticesOfInscribedBoxInsideSphere(Position, radiusOfSphereContainingPatrolStations);
+        var stationLocations = MyMath.CalcVerticesOfInscribedCubeInsideSphere(Position, radiusOfSphereContainingPatrolStations);
         var patrolStations = new List<StationaryLocation>(8);
         foreach (Vector3 loc in stationLocations) {
             patrolStations.Add(new StationaryLocation(loc));
@@ -93,7 +99,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return guardStations;
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         // 7.11.16 Moved from CommenceOperations as need to be Idling to receive initial events once sensors
         // are operational. Events include initial discovery of players which result in Relationship changes
@@ -104,7 +110,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        //CurrentState = BaseState.Idling;
     }
 
     /// <summary>
@@ -146,11 +151,30 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     /// <summary>
     /// Selects and returns a new HQElement.
-    /// Throws an InvalidOperationException if there are no elements to select from.
+    /// <remarks>TEMP public to allow creator use.</remarks>
     /// </summary>
     /// <returns></returns>
-    private FacilityItem SelectHQElement() {
-        return Elements.MaxBy(e => e.Data.Health) as FacilityItem;  // IMPROVE
+    public FacilityItem SelectHQElement() {
+        AUnitElementItem bestElement = null;
+        float bestElementScore = Constants.ZeroF;
+        var descendingHQPriority = Enums<Priority>.GetValues(excludeDefault: true).OrderByDescending(p => p);
+        IEnumerable<AUnitElementItem> hqCandidates;
+        foreach (var priority in descendingHQPriority) {
+            AUnitElementItem bestCandidate;
+            float bestCandidateScore;
+            if (TryGetHQCandidatesOf(priority, out hqCandidates)) {
+                bestCandidate = hqCandidates.MaxBy(e => e.Data.Health);
+                bestCandidateScore = (int)priority * bestCandidate.Data.Health; // IMPROVE algorithm
+                if (bestCandidateScore > bestElementScore) {
+                    bestElement = bestCandidate;
+                    bestElementScore = bestCandidateScore;
+                }
+            }
+        }
+        D.Assert(bestElement != null);
+        // IMPROVE bestScore algorithm. Include large defense and small offense criteria as will be located in HQ formation slot (usually in center)
+        // Set CombatStance to Defensive? - will entrench rather than pursue targets
+        return bestElement as FacilityItem;
     }
 
     protected override void AttachCmdToHQElement() {
@@ -164,8 +188,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.Dead;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
     }
 
     /// <summary>
@@ -409,8 +433,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
-        HandleDeathFromDeadState();
+        UnregisterForOrders();
+        HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);    // currently no death effect for a BaseCmd, just its elements
+        HandleDeathAfterBeginningDeathEffect();
     }
 
     protected void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {

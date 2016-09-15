@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are AItems.
     /// </summary>
-    public interface IItem : IDebugable, IShowDebugLog {
+    public interface IItem : IDebugable/*, IShowDebugLog*/ {
 
         /// <summary>
         /// Occurs when the owner of this <c>IItem</c> is about to change.
@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event EventHandler ownerChanged;
 
-        Player Owner { get; }
+        Player Owner { get; }   // TODO will need ability to set
         bool IsOperational { get; }
         float Radius { get; }
         Vector3 Position { get; }
@@ -45,6 +45,8 @@ namespace CodeEnv.Master.GameContent {
         string Name { get; }
 
         Topography Topography { get; }
+
+        bool ShowDebugLog { get; }
 
     }
 }

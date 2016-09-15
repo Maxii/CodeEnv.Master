@@ -66,9 +66,9 @@ namespace CodeEnv.Master.GameContent {
             _glowBillboard = itemGo.GetSingleInterfaceInChildren<IBillboard>();
 
             var starLight = itemGo.GetComponentInChildren<Light>();
-            // UNCLEAR no runtime assessible option to set Baking = Realtime
+            // UNCLEAR no runtime assessable option to set Baking = Realtime
             starLight.type = LightType.Point;
-            starLight.range = References.GameManager.GameSettings.UniverseSize.Radius();
+            starLight.range = References.DebugControls.UniverseSize.Radius();
             starLight.intensity = 1F;
             //starLight.bounceIntensity = 1F; // bounce light shadowing not currently supported for point lights
             starLight.shadows = LightShadows.None;  // point light shadows are expensive

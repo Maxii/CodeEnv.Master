@@ -16,19 +16,14 @@
 namespace CodeEnv.Master.GameContent {
 
     using System.Collections.Generic;
+    using Common;
 
     /// <summary>
     /// Abstract base class holding the design of an element for a player.
     /// </summary>
-    public abstract class AElementDesign {
-
-        public Player Player { get; private set; }
-
-        public string DesignName { get; private set; }
+    public abstract class AElementDesign : AUnitDesign {
 
         public IEnumerable<WeaponDesign> WeaponDesigns { get; private set; }
-
-        public IEnumerable<PassiveCountermeasureStat> PassiveCmStats { get; private set; }
 
         public IEnumerable<ActiveCountermeasureStat> ActiveCmStats { get; private set; }
 
@@ -36,16 +31,16 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<ShieldGeneratorStat> ShieldGeneratorStats { get; private set; }
 
+        public Priority HQPriority { get; private set; }
+
         public AElementDesign(Player player, string designName, IEnumerable<WeaponDesign> weaponDesigns, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats,
-            IEnumerable<ShieldGeneratorStat> shieldGenStats) {
-            Player = player;
-            DesignName = designName;
+        IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority)
+            : base(player, designName, passiveCmStats) {
             WeaponDesigns = weaponDesigns;
-            PassiveCmStats = passiveCmStats;
             ActiveCmStats = activeCmStats;
             SensorStats = sensorStats;
             ShieldGeneratorStats = shieldGenStats;
+            HQPriority = hqPriority;
         }
 
     }

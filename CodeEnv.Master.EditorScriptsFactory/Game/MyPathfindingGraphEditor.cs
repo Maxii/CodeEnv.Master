@@ -31,7 +31,7 @@ namespace Pathfinding {
         public override void OnInspectorGUI(NavGraph target) {
             var graph = target as MyPathfindingGraph;
             graph.maxDistance = EditorGUILayout.FloatField(new GUIContent("Max Distance", "The max distance in world space for a connection to be valid. A zero counts as infinity"), graph.maxDistance);
-            graph.optimizeForSparseGraph = EditorGUILayout.Toggle(new GUIContent("Optimize For Sparse Graph", "Check online documentation for more information."), graph.optimizeForSparseGraph);
+            graph.optimizeForSparseGraph = EditorGUILayout.Toggle(new GUIContent("Optimize For Sparse Graph", "Check on line documentation for more information."), graph.optimizeForSparseGraph);
         }
 
         public override void OnDrawGizmos() {

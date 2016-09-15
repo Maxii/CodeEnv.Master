@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common", "CodeEnv.Master.Common\CodeEnv.Master.Common.csproj", "{1557C03E-56EE-4C70-9BD8-AB637D3191CF}"
 EndProject
@@ -31,6 +31,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataLibrary", "DataLibrary"
 		DataLibrary\LeaderValues.xml = DataLibrary\LeaderValues.xml
 		DataLibrary\ResourceID.xml = DataLibrary\ResourceID.xml
 		DataLibrary\SpeciesValues.xml = DataLibrary\SpeciesValues.xml
+		DataLibrary\SystemNames.xml = DataLibrary\SystemNames.xml
 		DataLibrary\UniverseSize.xml = DataLibrary\UniverseSize.xml
 	EndProjectSection
 EndProject

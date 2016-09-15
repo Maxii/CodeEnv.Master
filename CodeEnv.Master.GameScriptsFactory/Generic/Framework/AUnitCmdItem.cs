@@ -68,16 +68,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private bool _isTrackingLabelEnabled;
     public bool IsTrackingLabelEnabled {
         private get { return _isTrackingLabelEnabled; }
-        set { SetProperty<bool>(ref _isTrackingLabelEnabled, value, "IsTrackingLabelEnabled"); }
-    }
-
-    private bool __showHQDebugLog;
-    /// <summary>
-    /// Indicates whether the Cmd and HQELement should show their debug logs.
-    /// </summary>
-    public bool __ShowHQDebugLog {
-        get { return __showHQDebugLog; }
-        set { SetProperty<bool>(ref __showHQDebugLog, value, "__ShowHQDebugLog", __ShowHQDebugLogPropChangedHandler); }
+        set { SetProperty<bool>(ref _isTrackingLabelEnabled, value, "IsTrackingLabelEnabled", IsTrackingLabelEnabledChangedHandler); }
     }
 
     public IconInfo IconInfo {
@@ -113,14 +104,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<ISensorRangeMonitor> SensorRangeMonitors { get; private set; }
 
-    public new CameraUnitCmdStat CameraStat {
-        protected get { return base.CameraStat as CameraUnitCmdStat; }
+    public new CmdCameraStat CameraStat {
+        protected get { return base.CameraStat as CmdCameraStat; }
         set { base.CameraStat = value; }
     }
 
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
     protected AFormationManager FormationMgr { get; private set; }
-    protected PlayerKnowledge OwnerKnowledge { get; private set; }
 
     private ITrackingWidget _trackingLabel;
 
@@ -192,9 +182,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return new CircleHighlightManager(iconTransform, radius, isCircleSizeDynamic: false);
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
-        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
         AssessIcon();
     }
 
@@ -317,10 +306,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected abstract void AttachCmdToHQElement();
 
-    public override void __SimulateAttacked() {
-        Elements.ForAll(e => e.__SimulateAttacked());
-    }
-
     public void AssessIcon() {
         if (DisplayMgr == null) { return; }
 
@@ -347,16 +332,18 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
+    protected bool TryGetHQCandidatesOf(Priority priority, out IEnumerable<AUnitElementItem> hqCandidates) {
+        D.Assert(priority != default(Priority));
+        hqCandidates = Elements.Where(e => e.Data.HQPriority == priority);
+        return hqCandidates.Any();
+    }
+
     // 7.20.16 Not needed as Cmd is not detectable. The only way Cmd IntelCoverage changes is when HQELement Coverage changes.
     // Icon needs to be assessed when any of Cmd's elements has its coverage changed as that can change which icon to show
-    // protected override void HandleUserIntelCoverageChanged() {
-    //    base.HandleUserIntelCoverageChanged();
-    //    AssessIcon();   
-    // }
-
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
-    }
+    //// protected override void HandleUserIntelCoverageChanged() {
+    ////    base.HandleUserIntelCoverageChanged();
+    ////    AssessIcon();   
+    //// }
 
     #region Event and Property Change Handlers
 
@@ -386,6 +373,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (isAvailableChanged != null) {
             isAvailableChanged(this, new EventArgs());
         }
+    }
+
+    private void IsTrackingLabelEnabledChangedHandler() {
+        //D.LogBold(ShowDebugLog, "{0}.IsTrackingLabelEnabled changed to {1}.", FullName, IsTrackingLabelEnabled);
     }
 
     private void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
@@ -419,10 +410,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void HandleHQElementChanged() {
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
-        if (__ShowHQDebugLog) {
-            HQElement.ShowDebugLog = true;
-        }
-        //D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
+        D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
         if (DisplayMgr != null) {
@@ -455,8 +443,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             DisplayMgr.MeshColor = Owner.Color;
         }
         AssessIcon();
-        OwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
         UponOwnerChanged();
+    }
+
+    protected override void HandleAIMgrGainedOwnership() {
+        base.HandleAIMgrGainedOwnership();
+        OwnerAIMgr.RegisterForOrders(this);
+    }
+
+    protected override void HandleAIMgrLosingOwnership() {
+        base.HandleAIMgrLosingOwnership();
+        UnregisterForOrders();
     }
 
     private void UnitFormationPropChangedHandler() {
@@ -473,10 +470,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         Elements.ForAll(e => e.AssessCircleHighlighting());
     }
 
-    private void __ShowHQDebugLogPropChangedHandler() {
-        ShowDebugLog = __ShowHQDebugLog;
-    }
-
     #endregion
 
     #region StateMachine Support Members
@@ -485,6 +478,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// The reported cause of a failure to complete execution of an Order.
     /// </summary>
     protected UnitItemOrderFailureCause _orderFailureCause;
+
+    protected void UnregisterForOrders() {
+        OwnerAIMgr.UnregisterForOrders(this);
+    }
 
     protected void Dead_ExitState() {
         LogEventWarning();
@@ -685,6 +682,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
         }
         return isSubscribeActionTaken;
+    }
+
+    public override void __SimulateAttacked() {
+        Elements.ForAll(e => e.__SimulateAttacked());
     }
 
     #endregion

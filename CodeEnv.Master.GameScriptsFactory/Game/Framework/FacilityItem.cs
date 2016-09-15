@@ -44,6 +44,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         set { base.Data = value; }
     }
 
+    public override float ClearanceRadius { get { return _obstacleZoneCollider.radius * 5F; } }
+
     public new AUnitBaseCmdItem Command {
         get { return base.Command as AUnitBaseCmdItem; }
         set { base.Command = value; }
@@ -73,6 +75,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private DetourGenerator _detourGenerator;
 
     #region Initialization
+
+    protected override bool InitializeDebugLog() {
+        return DebugControls.Instance.ShowFacilityDebugLogs;
+    }
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -118,7 +124,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
     }
 
-    protected override void FinalInitialize() {
+    public override void FinalInitialize() {
         base.FinalInitialize();
         // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
         // events once sensors are operational. Events include initial discovery of players which result in Relationship changes
@@ -151,8 +157,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         CurrentState = FacilityState.Dead;
     }
 
-    protected override void HandleDeathFromDeadState() {
-        base.HandleDeathFromDeadState();
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
         // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
     }
 
@@ -262,8 +268,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.Assert(target == null);
             return;
         }
-        D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-            FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        //D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+        //    FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        D.Assert(OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
+        FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
     }
 
     #endregion
@@ -519,12 +527,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         StartEffectSequence(EffectSequenceID.Repairing);
 
         float repairCapacityPerDay = GetRepairCapacity();
-        while (Data.Health < Constants.OneHundredPercent) {
+        string jobName = "{0}.RepairJob".Inject(FullName);
+        _repairJob = _jobMgr.RecurringWaitForHours(GameTime.HoursPerDay, jobName, waitMilestone: () => {
             var repairedHitPts = repairCapacityPerDay;
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
-            yield return new WaitForHours(GameTime.HoursPerDay);
+        });
+
+        while (Data.Health < Constants.OneHundredPercent) {
+            // Wait here until repair finishes
+            yield return null;
         }
+        _repairJob.Kill();
 
         // HACK
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
@@ -575,6 +589,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Repairing_ExitState() {
         LogEvent();
+        if (_repairJob != null && _repairJob.IsRunning) {
+            _repairJob.Kill();
+        }
     }
 
     #endregion
@@ -588,7 +605,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         //OnStartShow();
         //while (true) {
         //TODO refit until complete
-        yield return new WaitForHours(20F);
+        yield return null;
 
         //yield return new WaitForSeconds(2);
         //}
@@ -628,8 +645,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
-        HandleDeathFromDeadState();
+        HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
+        HandleDeathAfterBeginningDeathEffect();
     }
 
     void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
@@ -719,7 +737,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugValues debugValues = DebugValues.Instance;
+        DebugControls debugValues = DebugControls.Instance;
         debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
@@ -733,17 +751,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugValues.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugValues.Instance;
+        var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
         }
-        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
-        if (drawCntl != null) {
-            Destroy(drawCntl);
+        if (_obstacleZoneCollider != null) { // can be null if creator destroys facility 
+            DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            if (drawCntl != null) {
+                Destroy(drawCntl);
+            }
         }
     }
 

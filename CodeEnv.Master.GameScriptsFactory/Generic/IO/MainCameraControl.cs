@@ -146,13 +146,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private CameraUpdateMode _followUpdateMode = CameraUpdateMode.FixedUpdate;
 
 
-    private Index3D _sectorIndex;
+    private IntVector3 _sectorIndex;
     /// <summary>
     /// Read only. The location of the camera in sector space.
     /// </summary>
-    public Index3D SectorIndex {
+    public IntVector3 SectorIndex {
         get { return _sectorIndex; }
-        private set { SetProperty<Index3D>(ref _sectorIndex, value, "SectorIndex"); }
+        private set { SetProperty<IntVector3>(ref _sectorIndex, value, "SectorIndex"); }
     }
 
     /// <summary>
@@ -340,7 +340,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void InitializeFields() {
-        _universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
+        _universeRadius = DebugControls.Instance.UniverseSize.Radius(); //8.20.16 _gameMgr.GameSettings.UniverseSize.Radius();
     }
 
     private void SetCameraSettings() {
@@ -430,7 +430,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         float yElevation = _universeRadius * 0.3F;
         float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
-        _sectorIndex = _sectorGrid.GetSectorIndex(Position);
+        _sectorIndex = _sectorGrid.GetSectorIndexThatContains(Position);
         transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
 
         ResetAtCurrentLocation();
@@ -524,11 +524,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             case GameState.Lobby:
             case GameState.Building:
             case GameState.Loading:
-            case GameState.BuildAndDeploySystems:
+            case GameState.DeployingSystemCreators:
+            case GameState.BuildingSystems:
             case GameState.GeneratingPathGraphs:
-            case GameState.PrepareUnitsForDeployment:
-            case GameState.DeployingUnits:
-            case GameState.RunningCountdown_1:
+            case GameState.DesigningInitialUnits:
+            case GameState.BuildingAndDeployingInitialUnits:
+            case GameState.PreparingToRun:
             case GameState.Running:
                 // do nothing
                 break;
@@ -1552,7 +1553,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (currentPosition.IsSameAs(proposedPosition) || !ValidatePosition(proposedPosition)) {
             return;
         }
-        Index3D proposedSectorIndex = _sectorGrid.GetSectorIndex(proposedPosition);
+        IntVector3 proposedSectorIndex = _sectorGrid.GetSectorIndexThatContains(proposedPosition);
         if (!proposedSectorIndex.Equals(SectorIndex)) {
             SectorIndex = proposedSectorIndex;
         }
@@ -1619,12 +1620,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, InputManager.WorldEventDispatcherMask_NormalInput);
 
         var eligibleIctHits = ConvertToEligibleICameraTargetableHits(hits);
-        // Example of from and let use
-        //var eligibleIctHits = (from h in hits
-        //                       // allows collider to be present in child of ICameraTargetable parent
-        //                       let ict = h.transform.GetInterfaceInParents<ICameraTargetable>(excludeSelf: false)
-        //                       where ict != null && ict.IsEligible
-        //                       select h);
 
         //D.Log("Eligible {0} RaycastHits on Zoom: {1}.", typeof(ICameraTargetable).Name, eligibleIctHits.Select(h => h.transform.name).Concatenate());
         if (eligibleIctHits.Any()) {

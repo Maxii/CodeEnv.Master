@@ -155,7 +155,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _muzzleEffect.transform.position = Position;
         _muzzleEffect.transform.rotation = transform.rotation;
         _muzzleEffect.SetActive(true);
-        _waitForMuzzleEffectCompletionJob = WaitJobUtility.WaitForSeconds(0.2F, waitFinished: (jobWasKilled) => {
+        string jobName = "{0}.WaitForMuzzleEffectCompletionJob".Inject(Name);
+        _waitForMuzzleEffectCompletionJob = _jobMgr.WaitForGameplaySeconds(0.2F, jobName, waitFinished: (jobWasKilled) => {
             _muzzleEffect.SetActive(false);
         });
         //TODO Add audio
@@ -171,7 +172,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _impactEffect.transform.position = position;
         _impactEffect.transform.rotation = rotation;
         _impactEffect.Play();
-        _waitForImpactEffectCompletionJob = WaitJobUtility.WaitForParticleSystemCompletion(_impactEffect, includeChildren: true, waitFinished: (jobWasKilled) => {
+        bool includeChildren = true;
+        string jobName = "{0}.WaitForImpactEffectCompletionJob".Inject(Name);   // pausable for debug observation
+        _waitForImpactEffectCompletionJob = _jobMgr.WaitForParticleSystemCompletion(_impactEffect, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
             if (IsOperational) {
                 // ordnance has not already been terminated by other paths such as the death of the target
                 TerminateNow();
@@ -246,12 +249,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
     }
 
-    protected override void IsPausedPropChangedHandler() {
-        base.IsPausedPropChangedHandler();
-        PauseJobs(_gameMgr.IsPaused);
-        _driftCorrector.Pause(_gameMgr.IsPaused);
-    }
-
     protected override void OnDespawned() {
         base.OnDespawned();
         _cumDistanceTraveled = Constants.ZeroF;
@@ -277,16 +274,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private void LaunchCourseUpdateJob() {
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
         D.Assert(!IsCourseUpdateJobRunning);
-        _courseUpdateJob = new Job(UpdateCourse(), toStart: true, jobCompleted: (jobWasKilled) => {
-            //TODO
-        });
-    }
-
-    private IEnumerator UpdateCourse() {
-        while (true) {
+        string jobName = "{0}.CourseUpdateJob".Inject(FullName);
+        _courseUpdateJob = _jobMgr.RecurringWaitForHours(_courseUpdatePeriod, jobName, waitMilestone: () => {
             CheckCourse();
-            yield return new WaitForHours(_courseUpdatePeriod);
-        }
+        });
     }
 
     private void CheckCourse() {
@@ -306,7 +297,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
         HandleTurnBeginning();
         GameDate errorDate = GameUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
-        _changeHeadingJob = new Job(ChangeHeading(newHeading, errorDate), toStart: true, jobCompleted: (jobWasKilled) => {
+        string jobName = "{0}.ChgHeadingJob".Inject(Name);
+        _changeHeadingJob = _jobMgr.StartGameplayJob(ChangeHeading(newHeading, errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
             if (IsOperational && !jobWasKilled) {
                 //D.Log("{0} has completed a heading change.", Name);
                 HandleTurnCompleted();
@@ -363,20 +355,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         return _cumDistanceTraveled;
     }
 
-    private void PauseJobs(bool toPause) {
-        if (IsChangeHeadingJobRunning) {
-            _changeHeadingJob.IsPaused = toPause;
-        }
-        if (IsCourseUpdateJobRunning) {
-            _courseUpdateJob.IsPaused = toPause;
-        }
-        if (IsWaitForMuzzleEffectCompletionJobRunning) {
-            _waitForMuzzleEffectCompletionJob.IsPaused = toPause;
-        }
-        if (IsWaitForImpactEffectCompletionJobRunning) {
-            _waitForImpactEffectCompletionJob.IsPaused = toPause;
-        }
-    }
+    // 8.12.16 Job pausing moved to JobManager to consolidate pause controls
 
     protected override void PrepareForTermination() {
         base.PrepareForTermination();

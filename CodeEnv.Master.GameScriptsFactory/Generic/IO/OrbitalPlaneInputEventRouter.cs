@@ -41,7 +41,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     /// <summary>
     /// Flag indicating that this orbital plane has already received OnHover(true) without an intervening OnHover(false). 
     /// Used to filter out the duplicate OnHover(true) events which I don't expect Ngui to remedy.
-    /// <remarks>Ngui sends a duplicate OnHover(true) everytime the gameObject is clicked. According to ArenMook, 
+    /// <remarks>Ngui sends a duplicate OnHover(true) every time the gameObject is clicked. According to ArenMook, 
     /// this is intended to regain some unknown OnHover state that was overridden by the click. The original 
     /// design was based on the erroneous understanding that between every true there will always be a false.</remarks>
     /// </summary>
@@ -49,14 +49,14 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private GameObject _systemItemGo;
     private GameInputHelper _inputHelper;
     private InputManager _inputMgr;
-    private GameManager _gameMgr;
     private IList<IDisposable> _subscriptions;
+    private JobManager _jobMgr;
 
     protected override void Awake() {
         base.Awake();
         _inputHelper = GameInputHelper.Instance;
         _inputMgr = InputManager.Instance;
-        _gameMgr = GameManager.Instance;
+        _jobMgr = JobManager.Instance;
         _systemItemGo = gameObject.GetSingleComponentInParents<SystemItem>().gameObject;
         Subscribe();
     }
@@ -66,7 +66,6 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
     }
 
     #region Event and Property Change Handlers
@@ -87,10 +86,6 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
         }
-    }
-
-    private void IsPausedPropChangedHandler() {
-        PauseJobs(_gameMgr.IsPaused);
     }
 
     private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler(Vector2 moveDelta) {
@@ -188,7 +183,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
      * checks while the mouse is over the OrbitalPlane collider. To make this approach sufficiently 
      * responsive to the user, two different mechanisms spawn these checks - mouse movement 
      * and an elapsed time approach. The elapsed time approach is needed because some 
-     * occluded objects move on their own (eg - fleets and planetoids) and can move under 
+     * occluded objects move on their own (e.g. - fleets and planetoids) and can move under 
      * (or away from) the mouse by themselves without any required user mouse movement.
      *
      * Note: An additional OnHover(true) event is also generated each time the mouse is clicked.
@@ -275,7 +270,6 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());
         }
 
-
         EnableOnHoverCheckingForOccludedObjects(isOver);
         bool toExecuteNormalOnHover = false;
         if (isOver) {
@@ -327,7 +321,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     //            // occluded -> same occluded transition: do nothing
     //        }
     //        else {
-    //            // notOccluded -> occluded transtion
+    //            // notOccluded -> occluded transition
     //            // also handles offSystem -> occluded transition with unneeded ProcessSystemViewOnHover(false)
     //            ExecuteThisOnHoverContent(false);
     //            _inputHelper.Notify(newOccludedObject, "OnHover", true);
@@ -359,7 +353,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
                 // occluded -> same occluded transition: do nothing
             }
             else {
-                // notOccluded -> occluded transtion
+                // notOccluded -> occluded transition
                 // also handles offSystem -> occluded transition with unneeded ExecuteThisOnHoverContent(false)
                 _inputHelper.Notify(_systemItemGo, "OnHover", false);
                 _inputHelper.Notify(newOccludedObject, "OnHover", true);
@@ -378,15 +372,6 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     }
 
     /// <summary>
-    /// Debug flag indicating whether this instance has subscribed to the mouse move delegate.
-    /// Used as a double check to Assert that multiple subscriptions aren't occuring from
-    /// this instance as there isn't another way to tell. Note: this delegate is static and
-    /// therefore can be subscribed to by each instance so checking for number of subscriptions in
-    /// the InvocationList won't work.
-    /// </summary>
-    private bool __isSubscribedToMouseMove = false;
-
-    /// <summary>
     ///  Enables continuous checking for occluded objects over time (currently every second)
     ///  and each time the mouse moves. Used to work around the fact that UICamera only sends 
     ///  OnHover events when the object under the mouse changes. This way, the check for an occluded 
@@ -400,7 +385,9 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
             CheckForOccludedObjectAndProcessOnHoverNotifications();
 
             if (!IsSpawnOccludedObjectChecksJobRunning) {
-                _spawnOccludedObjectChecksJob = new Job(SpawnOnHoverOccludedObjectChecks(), toStart: true);
+                string jobName = "OrbitalPlaneCheckOcclusionsJob";
+                // spawn job gets paused as its sole purpose is to show occluded objects that move on their own
+                _spawnOccludedObjectChecksJob = _jobMgr.StartGameplayJob(SpawnOnHoverOccludedObjectChecks(), jobName, isPausable: true);
             }
 
             D.Assert(!__isSubscribedToMouseMove);
@@ -439,12 +426,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
     #endregion
 
-    private void PauseJobs(bool toPause) {
-        if (IsSpawnOccludedObjectChecksJobRunning) {
-            // spawn job gets paused as its sole purpose is to show occluded objects that move on their own
-            _spawnOccludedObjectChecksJob.IsPaused = toPause;
-        }
-    }
+    // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
     protected override void Cleanup() {
         EnableOnHoverCheckingForOccludedObjects(false);
@@ -452,13 +434,27 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     }
 
     private void Unsubscribe() {
-        _subscriptions.ForAll(d => d.Dispose());
-        _subscriptions.Clear();
+        if (_subscriptions != null) {
+            _subscriptions.ForAll(d => d.Dispose());
+            _subscriptions.Clear();
+        }
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Debug
+
+    /// <summary>
+    /// Debug flag indicating whether this instance has subscribed to the mouse move delegate.
+    /// Used as a double check to Assert that multiple subscriptions aren't occurring from
+    /// this instance as there isn't another way to tell. Note: this delegate is static and
+    /// therefore can be subscribed to by each instance so checking for number of subscriptions in
+    /// the InvocationList won't work.
+    /// </summary>
+    private bool __isSubscribedToMouseMove = false;
+
+    #endregion
 }
 

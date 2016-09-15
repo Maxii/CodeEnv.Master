@@ -15,7 +15,7 @@
 #define DEBUG_ERROR
 
 namespace Pathfinding {
-
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -40,7 +40,8 @@ namespace Pathfinding {
         /// <summary>
         /// The size of the grid of Sectors this Pathfinding system will scan for waypoint interconnection.
         /// </summary>
-        private static readonly Index3D __MaxAllowedSectorGridSizeToScan = new Index3D(4, 4, 4);  // limit to divisible by 2
+        [System.Obsolete]
+        private static readonly IntVector3 __MaxAllowedSectorGridSizeToScan = new IntVector3(4, 4, 4);  // limit to divisible by 2
 
         private static readonly Int3[] ThreeDNeighbours = {
             new Int3(-1,  0, -1),
@@ -373,38 +374,14 @@ namespace Pathfinding {
             return nnInfo;
         }
 
-        /** Add a node with the specified type to the graph at the specified position.
-         *
-         * \param position The node will be set to this position.
-         * \note Vector3 can be casted to Int3 using (Int3)myVector.
-         *
-         * \note This needs to be called when it is safe to update nodes, which is
-         * - when scanning
-         * - during a graph update
-         * - inside a callback registered using AstarPath.RegisterSafeUpdate
-         *
-         * \see AstarPath.RegisterSafeUpdate
-         */
-        public PointNode AddNode(Int3 position) {
-            if (nodes == null || nodeCount == nodes.Length) {
-                var nds = new PointNode[nodes != null ? System.Math.Max(nodes.Length + 4, nodes.Length * 2) : 4];
-                for (int i = 0; i < nodeCount; i++) nds[i] = nodes[i];
-                nodes = nds;
-            }
+        /* Per Aren: 8.16.16 SparseGraph Algorithm: In your version what it did was to divide the world into cells with a size of 
+         * maxNodeDistance(I think...), and then it inserted all nodes into those cells. If multiple nodes were in the same cell, 
+         * they would be stored as a linked list(using the .next field). When searching for a node, it would search the cells 
+         * in an outward pattern. When connecting them, it could just check a few cells around each node.
 
-            PointNode node = new PointNode(active);
-
-            node.SetPosition(position);
-            node.GraphIndex = graphIndex;
-            node.Walkable = true;
-
-            nodes[nodeCount] = node;
-            nodeCount++;
-
-            AddToLookup(node);
-
-            return node;
-        }
+           In the newer version I rewrote it to use a self balancing KD-tree instead. That will also perform a lot better when 
+           searching for the nearest node to a point which is far away from all nodes (previously it would have to search a lot of empty cells).
+        */
 
         /** Rebuilds the lookup structure for nodes.
          *
@@ -433,6 +410,7 @@ namespace Pathfinding {
 
             for (int i = 0; i < nodeCount; i++) {
                 PointNode node = nodes[i];
+                node.next = null;   // 8.16.16 My addition with Aren's approval
                 AddToLookup(node);
             }
         }
@@ -477,28 +455,18 @@ namespace Pathfinding {
             return lookupPosition;
         }
 
-        /************************** My Work Start ********************************************************************************/
+        #region My Work
 
         private float _nodeSeparationDistance;
-        private IDictionary<StarbaseCmdItem, GraphUpdateObject> _starbaseGuos = new Dictionary<StarbaseCmdItem, GraphUpdateObject>();
+
 
         public override void ScanInternal(OnScanStatus statusCallback) {
             var walkableOpenSpaceWaypoints = GenerateWalkableOpenSpaceWaypoints();
             var walkableSystemWaypoints = GenerateWalkableInteriorSystemWaypoints();
 
-            int waypointCount = walkableOpenSpaceWaypoints.Count + walkableSystemWaypoints.Count;
-
-            // Make the Nodes array
-            nodes = new PointNode[waypointCount];
-            nodeCount = waypointCount;
-
             int nextNodeIndex = Constants.Zero;
             AddNodes(walkableOpenSpaceWaypoints, Topography.OpenSpace.AStarTagValue(), ref nextNodeIndex);  // OpenSpaceTagMask
-            //D.Log("NextNodeIndex = {0}.", nextNodeIndex);
             AddNodes(walkableSystemWaypoints, Topography.System.AStarTagValue(), ref nextNodeIndex);    // SystemTagMask
-            //D.Log("NextNodeIndex = {0}.", nextNodeIndex);
-
-            //D.Log("Pathfinding walkable node count = {0}.", nodeCount);
 
             MakeConnections();
         }
@@ -506,10 +474,10 @@ namespace Pathfinding {
         private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
             D.Assert(_nodeSeparationDistance != Constants.ZeroF);   // method should follow GenerateWalkableOpenSpaceWaypoints
             List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
-            var systems = SystemCreator.AllSystems;
+            var systems = GameManager.Instance.GameKnowledge.Systems;
             if (systems.Any()) {
                 systems.ForAll(sys => {
-                    var aSystemInteriorWaypoints = MyMath.CalcVerticesOfInscribedBoxInsideSphere(sys.Position, sys.Radius * SystemItem.InteriorWaypointDistanceMultiplier);
+                    var aSystemInteriorWaypoints = MyMath.CalcVerticesOfInscribedCubeInsideSphere(sys.Position, sys.Radius * SystemItem.InteriorWaypointDistanceMultiplier);
                     allSystemInteriorWaypoints.AddRange(aSystemInteriorWaypoints);
                 });
             }
@@ -518,7 +486,7 @@ namespace Pathfinding {
 
         private IList<Vector3> GenerateWalkableOpenSpaceWaypoints() {
 #pragma warning disable 0219
-            System.DateTime startTime = System.DateTime.UtcNow;
+            System.DateTime startTime = Utility.SystemTime;
 #pragma warning restore 0219
             List<Vector3> walkableOpenSpaceWaypoints = new List<Vector3>();
 
@@ -526,14 +494,15 @@ namespace Pathfinding {
             List<Vector3> systemApproachWaypoints = new List<Vector3>();
             float distanceBetweenSystemApproachWaypoints = Constants.ZeroF;         // 174.7
             float maxNodeDistance = Constants.ZeroF;    // 282.6 // max distance allowed before waypoints are skipped
-            var allSystems = SystemCreator.AllSystems;
+            var allSystems = GameManager.Instance.GameKnowledge.Systems;    //SystemCreator.AllSystems;
             bool hasSystems = allSystems.Any();
             if (hasSystems) {
                 foreach (SystemItem system in allSystems) { // 6.15.16 replaced box with icosahedron whose edges are all the same length
                     float previousDistanceBetweenWaypoints = distanceBetweenSystemApproachWaypoints;
                     float previousMaxNodeDistance = maxNodeDistance;
                     float systemApproachWaypointsInscribedSphereRadius = system.Radius * SystemItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
-                    var aSystemApproachWaypoints = MyMath.CalcVerticesOfIcosahedronAroundInscribedSphere(system.Position, systemApproachWaypointsInscribedSphereRadius, out distanceBetweenSystemApproachWaypoints, out maxNodeDistance);
+                    var aSystemApproachWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(system.Position,
+                        systemApproachWaypointsInscribedSphereRadius, out distanceBetweenSystemApproachWaypoints, out maxNodeDistance);
                     if (previousMaxNodeDistance > Constants.ZeroF) {
                         D.Assert(Mathfx.Approx(previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints, .1F), "{0} != {1}.", previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints);
                         D.Assert(Mathfx.Approx(previousMaxNodeDistance, maxNodeDistance, .1F), "{0} != {1}.", previousMaxNodeDistance, maxNodeDistance);
@@ -556,12 +525,13 @@ namespace Pathfinding {
                 maxDistance = proposedMaxDistance;
             }
 
-            //D.Log("{0} took {1:0.####} secs generating {2} SystemApproachWaypoints for {3} Systems.",
-            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count);
-            //startTime = System.DateTime.UtcNow;
+            //D.Log("{0} took {1:0.##} secs generating {2} SystemApproachWaypoints for {3} Systems.",
+            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count);
+            //startTime = Utility.SystemTime;
 
             // populate all space with sector navigation waypoints separated by nodeSeparationDistance
-            var allSectors = __GetAllowedSectorsToScan();
+            IList<Sector> allSectors = SectorGrid.Instance.AllSectors.ToList();     //// = __GetAllowedSectorsToScan();
+            D.Log("{0}: Sectors to scan = {1}.", GetType().Name, allSectors.Count);
             List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 25);
             float distanceToCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
             //D.Log("{0}: Distance to Sector Corners = {1:0.#}.", GetType().Name, distanceToCorners);
@@ -571,7 +541,7 @@ namespace Pathfinding {
                 float distanceFromCenter = _nodeSeparationDistance;
                 // propagate sector nav waypoints outward, inside corners
                 while (distanceFromCenter < distanceToCorners) {    // 275, 550, 825
-                    aSectorWaypoints.AddRange(MyMath.CalcVerticesOfInscribedBoxInsideSphere(sector.Position, distanceFromCenter));
+                    aSectorWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(sector.Position, distanceFromCenter));
                     distanceFromCenter += _nodeSeparationDistance;
                 }
                 // place a sector nav waypoint inside each corner (outside of radius)
@@ -580,9 +550,9 @@ namespace Pathfinding {
 #pragma warning disable 0219
             int sectorNavWaypointCount = sectorNavWaypoints.Count;
 #pragma warning restore 0219
-            //D.Log("{0} took {1:0.####} secs generating {2} SectorNavWaypoints for {3} sectors.",
-            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
-            //startTime = System.DateTime.UtcNow;
+            //D.Log("{0} took {1:0.##} secs generating {2} SectorNavWaypoints for {3} sectors.",
+            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
+            //startTime = Utility.SystemTime;
 
 
             //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
@@ -604,9 +574,9 @@ namespace Pathfinding {
                     sectorNavWaypoints = tmpSectorNavWaypoints;
                 }
             }
-            //D.Log("{0} took {1:0.####} secs removing {2} SectorNavWaypoints from {3} Systems.",
-            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count);
-            //startTime = System.DateTime.UtcNow;
+            //D.Log("{0} took {1:0.##} secs removing {2} SectorNavWaypoints from {3} Systems.",
+            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count);
+            //startTime = Utility.SystemTime;
             sectorNavWaypointCount = sectorNavWaypoints.Count;
 
             float uCenterWaypointsInscribedSphereRadius = Constants.ZeroF;
@@ -615,7 +585,7 @@ namespace Pathfinding {
             if (universeCenter != null) {
                 float distanceBetweenUCenterWaypoints;
                 uCenterWaypointsInscribedSphereRadius = universeCenter.Data.CloseOrbitOuterRadius * UniverseCenterItem.RadiusMultiplierForWaypointInscribedSphere;
-                universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronAroundInscribedSphere(universeCenter.Position, uCenterWaypointsInscribedSphereRadius, out distanceBetweenUCenterWaypoints);
+                universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(universeCenter.Position, uCenterWaypointsInscribedSphereRadius, out distanceBetweenUCenterWaypoints);
                 D.Assert(distanceBetweenUCenterWaypoints <= _nodeSeparationDistance, "{0} > {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
                 //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", GetType().Name, distanceBetweenUCenterWaypoints);
 
@@ -631,63 +601,56 @@ namespace Pathfinding {
                 sectorNavWaypoints = tmpSectorNavWaypoints;
             }
 
-            //D.Log("{0} took {1:0.####} secs removing {2} SectorNavWaypoints around UniverseCenter.",
-            //    GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count);
-            //startTime = Time.time;
+            //D.Log("{0} took {1:0.##} secs removing {2} SectorNavWaypoints around UniverseCenter.",
+            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count);
+            //startTime = Utility.SystemTime;
 
             walkableOpenSpaceWaypoints.AddRange(sectorNavWaypoints);
             walkableOpenSpaceWaypoints.AddRange(universeCenterWaypoints);
             walkableOpenSpaceWaypoints.AddRange(systemApproachWaypoints);
 
-            D.Log("{0} took {1:0.####} secs generating {2} WalkableOpenSpaceWaypoints for {3} Sectors.",
-                GetType().Name, (System.DateTime.UtcNow - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allSectors.Count);
+            //D.Log("{0} took {1:0.##} secs generating {2} WalkableOpenSpaceWaypoints for {3} Sectors.",
+            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allSectors.Count);
 
             return walkableOpenSpaceWaypoints;
         }
 
         private void AddNodes(IList<Vector3> waypoints, uint tag, ref int nextNodeIndex) {
-            int lastNodeIndex = nextNodeIndex + waypoints.Count;
-            for (int index = nextNodeIndex; index < lastNodeIndex; index++) {
+            CheckAndAdjustNodesSize(waypoints.Count);
+
+            int indexAfterLastNode = nextNodeIndex + waypoints.Count;
+            for (int index = nextNodeIndex; index < indexAfterLastNode; index++) {
                 PointNode node = new PointNode(active);
                 node.SetPosition((Int3)waypoints[index - nextNodeIndex]);
                 node.Walkable = true;
                 node.GraphIndex = graphIndex;
                 node.Tag = tag;
                 nodes[index] = node;
+
+                nodeCount++;
+                AddToLookup(node);
             }
-            nextNodeIndex = lastNodeIndex;
+            D.Assert(nodeCount == nodes.Length, "{0}: {1} != {2}.", GetType().Name, nodeCount, nodes.Length);
+            nextNodeIndex = indexAfterLastNode;
         }
 
-        /// <summary>
-        /// Gets the sectors this pathfinding system is allowed to scan for waypoint interconnection. 
-        /// This method reduces the total sector count to a manageable value so the scan time is not onerous. 
-        /// This allows SectorGrid to build out a large number of sectors for testing without requiring the
-        /// Pathfinding system to make interconnections between all the waypoints in all sectors.
-        /// </summary>
-        /// <returns></returns>
-        private IList<Sector> __GetAllowedSectorsToScan() {
-            IList<Sector> sectorsToScan = new List<Sector>();
-
-            int maxIndexX = __MaxAllowedSectorGridSizeToScan.x / 2;
-            int maxIndexY = __MaxAllowedSectorGridSizeToScan.y / 2;
-            int maxIndexZ = __MaxAllowedSectorGridSizeToScan.z / 2;
-            var allSectors = SectorGrid.Instance.AllSectors;
-            allSectors.ForAll(s => {
-                var index = s.SectorIndex;
-                if (Mathf.Abs(index.x) <= maxIndexX) {
-                    if (Mathf.Abs(index.y) <= maxIndexY) {
-                        if (Mathf.Abs(index.z) <= maxIndexZ) {
-                            //D.Log("{0} adding Sector {1} to scan.", GetType().Name, s);
-                            sectorsToScan.Add(s);
-                        }
-                    }
+        private void CheckAndAdjustNodesSize(int additionalNodes) {
+            if (nodes == null || nodeCount == nodes.Length) {
+                //var startTime = Utility.SystemTime;
+                var nds = new PointNode[nodes != null ? nodes.Length + additionalNodes : additionalNodes];
+                for (int i = 0; i < nodeCount; i++) {
+                    nds[i] = nodes[i];
                 }
-            });
-            //D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
-            return sectorsToScan;
+                nodes = nds;
+                //D.Log("{0}.CheckAndAdjustNodesSize({1}) took {2:0.00} seconds.", GetType().Name, additionalNodes, (Utility.SystemTime - startTime).TotalSeconds);
+            }
         }
 
         private void MakeConnections() {
+#pragma warning disable 0219
+            System.DateTime startTime = Utility.SystemTime;
+#pragma warning restore 0219
+
             if (optimizeForSparseGraph) {
                 RebuildNodeLookup();
             }
@@ -700,7 +663,7 @@ namespace Pathfinding {
                 //Loop through all nodes and add connections to other nodes
                 int connectionCount = 0;
                 int invalidConnectionCount = 0;
-                for (int i = 0; i < nodes.Length; i++) {
+                for (int i = 0; i < nodeCount; i++) {    // 8.16.16 changed from nodes.Length
                     connections.Clear();
                     costs.Clear();
 
@@ -712,10 +675,10 @@ namespace Pathfinding {
                         int l = _lookupCellSize.y == 0 ? 9 : ThreeDNeighbours.Length;
 
                         for (int j = 0; j < l; j++) {
-                            Int3 np = lookupPosition + ThreeDNeighbours[j];
+                            Int3 neighborNodeLookupPosition = lookupPosition + ThreeDNeighbours[j]; // 8.17.16 was called 'n_p'
 
                             PointNode other;
-                            if (_nodeLookup.TryGetValue(np, out other)) {
+                            if (_nodeLookup.TryGetValue(neighborNodeLookupPosition, out other)) {
                                 while (other != null) {
                                     float dist;
                                     if (IsValidConnection(node, other, out dist)) {
@@ -733,7 +696,7 @@ namespace Pathfinding {
                     }
                     else {
                         // Only brute force is available in the free version
-                        for (int j = 0; j < nodes.Length; j++) {
+                        for (int j = 0; j < nodeCount; j++) {    // 8.16.16 changed from nodes.Length
                             if (i == j) {
                                 continue;
                             }
@@ -757,14 +720,139 @@ namespace Pathfinding {
                 }
 
                 int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
-                D.Log("{0}/{1} valid pathfinding connections.", connectionCount, totalConnectionsAttempted);
+                int connectionCountChg = connectionCount - __previousConnectionsCount;
+                __previousConnectionsCount = connectionCount;
+
+                if (connectionCountChg == Constants.Zero) {
+                    D.Warn("{0}.MakeConnections() took {1:0.##} secs generating {2}/{3} valid pathfinding connections, but no connections (net) added or removed?",
+                        GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted);
+                }
+                else {
+                    // (net) refers to the net of added and removed. I can't separate them using this approach to making connections
+                    string connectionCountChgText = connectionCountChg < 0 ? "removed" : "added";
+                    D.Log("{0}.MakeConnections() took {1:0.##} secs generating {2}/{3} valid pathfinding connections. {4} connections (net) were {5}.",
+                        GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted, Mathf.Abs(connectionCountChg), connectionCountChgText);
+                }
             }
         }
 
+        /// <summary>
+        /// Updates the graph during runtime adding approach waypoints for this starbase, 
+        /// and makes any waypoints located inside the new approach waypoints unwalkable, then reconnects.
+        /// </summary>
+        /// <param name="baseCmd">The Starbase command.</param>
+        public void AddToGraph(StarbaseCmdItem baseCmd) {
+            D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.FullName);
+            // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
+
+            // forceCompletion is set by AstarPath internally 
+            var makeNodesInsideApproachNodesUnwalkableWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+                active.QueueWorkItemFloodFill();
+                ChangeWalkabilityOfNodesInsideApproachNodes(baseCmd, isWalkable: false);
+                return true;
+            });
+            active.AddWorkItem(makeNodesInsideApproachNodesUnwalkableWorkItem);
+
+            var addApproachNodesWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+                AddStarbaseApproachNodes(baseCmd);
+                return true;
+            });
+            active.AddWorkItem(addApproachNodesWorkItem);
+
+            // Note: 8.17.16 no current way to remove a work item once added. Otherwise, if I got another call to this
+            // method with IsAnyGraphUpdatesQueued = true, I'd remove the previous queued MakeConnections and replace 
+            // with a new one at the end. Currently, if I get another call while queued, MakeConnections will run twice.
+
+            var makeConnectionsWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+                MakeConnections();
+                return true;
+            });
+            active.AddWorkItem(makeConnectionsWorkItem);
+        }
+
+        /// <summary>
+        /// Updates the graph during runtime removing the approach waypoints (marking them as unwalkable) for this starbase, 
+        /// and makes any waypoints walkable that were previously made unwalkable when the base was added, then reconnects.
+        /// </summary>
+        /// <param name="baseCmd">The Starbase command.</param>
+        public void RemoveFromGraph(StarbaseCmdItem baseCmd) {
+            D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.FullName);
+            // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
+
+            // forceCompletion is set by AstarPath internally 
+            var makeApproachNodesUnwalkable = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+                active.QueueWorkItemFloodFill();
+                MakeStarbaseApproachNodesUnwalkable(baseCmd);
+                return true;
+            });
+            active.AddWorkItem(makeApproachNodesUnwalkable);
+
+            // restore any nodes made unwalkable when this starbase was added
+            // Note: cannot precede makeApproachNodesUnwalkable as the above also makes all nodes INSIDE the approach nodes unwalkable
+            var restoreNodesInsideApproachNodesWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+                ChangeWalkabilityOfNodesInsideApproachNodes(baseCmd, isWalkable: true);
+                return true;
+            });
+            active.AddWorkItem(restoreNodesInsideApproachNodesWorkItem);
+
+            // Note: 8.17.16 no current way to remove a work item once added. Otherwise, if I got another call to this
+            // method with IsAnyGraphUpdatesQueued = true, I'd remove the previous queued MakeConnections and replace 
+            // with a new one at the end. Currently, if I get another call while queued, MakeConnections will run twice.
+
+            var makeConnectionsWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+                MakeConnections();
+                return true;
+            });
+            active.AddWorkItem(makeConnectionsWorkItem);
+        }
+
+        // NOTE: For now, no Add/Remove(Settlement). Settlements aren't likely to be on top of existing waypoints, and,
+        // surrounding them with waypoints makes no sense if I allow them to orbit
+
+        private void ChangeWalkabilityOfNodesInsideApproachNodes(StarbaseCmdItem starbaseCmd, bool isWalkable) {
+            float radiusOfApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
+            Vector3 sphereCenter = starbaseCmd.Position;
+            float sphereRadius = radiusOfApproachWaypointsInscribedSphere;
+            for (int i = 0; i < nodeCount; i++) {
+                if (MyMath.IsPointInsideSphere(sphereCenter, sphereRadius, (Vector3)nodes[i].position)) {
+                    nodes[i].Walkable = isWalkable;
+                }
+            }
+        }
+
+        private void AddStarbaseApproachNodes(StarbaseCmdItem starbaseCmd) {
+            // Note: There may be unwalkable approach nodes from a previously removed starbase at the same locations, but
+            // I am choosing to ignore them rather than try to make them walkable again. Can't currently remove nodes once added
+            float radiusOfApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
+
+            Vector3 sphereCenter = starbaseCmd.Position;
+            float sphereRadius = radiusOfApproachWaypointsInscribedSphere;
+            var approachWaypoints = MyMath.CalcVerticesOfCubeSurroundingInscribedSphere(sphereCenter, sphereRadius);
+
+            int nextNodeIndex = nodeCount;
+            AddNodes(approachWaypoints, Topography.OpenSpace.AStarTagValue(), ref nextNodeIndex);
+        }
+
+        private void MakeStarbaseApproachNodesUnwalkable(StarbaseCmdItem starbaseCmd) {
+            float radiusOfApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
+            float vertexDistanceFromStarbase;
+            MyMath.CalcVerticesOfCubeSurroundingInscribedSphere(starbaseCmd.Position, radiusOfApproachWaypointsInscribedSphere, out vertexDistanceFromStarbase);
+
+            Vector3 sphereCenter = starbaseCmd.Position;
+            float sphereRadius = vertexDistanceFromStarbase + 0.1F; // just beyond approach waypoints
+            for (int i = 0; i < nodeCount; i++) {
+                if (MyMath.IsPointInsideSphere(sphereCenter, sphereRadius, (Vector3)nodes[i].position)) {
+                    nodes[i].Walkable = false;
+                }
+            }
+        }
+
+        #endregion
+
         /** Returns if the connection between \a a and \a b is valid.
-         * Checks for obstructions using raycasts (if enabled) and checks for height differences.\n
-         * As a bonus, it outputs the distance between the nodes too if the connection is valid
-         */
+ * Checks for obstructions using raycasts (if enabled) and checks for height differences.\n
+ * As a bonus, it outputs the distance between the nodes too if the connection is valid
+ */
         private bool IsValidConnection(PointNode a, PointNode b, out float dist) {
             dist = Constants.ZeroF;
 
@@ -779,44 +867,39 @@ namespace Pathfinding {
             return false;
         }
 
-        /// <summary>
-        /// Updates the graph during runtime adding or removing the waypoints (marking them as walkable or unwalkable) and connections 
-        /// associated with this starbase. The method determines add/remove based on whether the starbase has previously been recorded.
-        /// </summary>
-        /// <param name="baseCmd">The Starbase command.</param>
-        public void UpdateGraph(StarbaseCmdItem baseCmd) {
-            GraphUpdateObject guo = null;
-            if (_starbaseGuos.TryGetValue(baseCmd, out guo)) {
-                // this base is being removed
-                //D.LogBold("{0}: RevertFromBackup() called upon loss of {1}.", GetType().Name, baseCmd.FullName);
-                //guo.RevertFromBackup(); // FIXME DOES NOT WORK reverses the node changes made when base was added 
-                guo.setWalkability = true;
-                //D.Log("{0}: Resetting node walkability to {1} upon loss of {2}.", GetType().Name, guo.setWalkability, baseCmd.FullName);
-                active.UpdateGraphs(guo);
-                _starbaseGuos.Remove(baseCmd);
+        /** Add a node with the specified type to the graph at the specified position.
+ *
+ * \param position The node will be set to this position.
+ * \note Vector3 can be casted to Int3 using (Int3)myVector.
+ *
+ * \note This needs to be called when it is safe to update nodes, which is
+ * - when scanning
+ * - during a graph update
+ * - inside a callback registered using AstarPath.RegisterSafeUpdate
+ *
+ * \see AstarPath.RegisterSafeUpdate
+ */
+        [Obsolete]  // 8.17.16 use my AddNodes(waypoints)
+        public PointNode AddNode(Int3 position) {
+            if (nodes == null || nodeCount == nodes.Length) {
+                var nds = new PointNode[nodes != null ? System.Math.Max(nodes.Length + 4, nodes.Length * 2) : 4];
+                for (int i = 0; i < nodeCount; i++) nds[i] = nodes[i];
+                nodes = nds;
             }
-            else {
-                // Base is being added so create GUO that makes the base/sector position node unwalkable
-                float baseRadius = baseCmd.CloseOrbitOuterRadius;
-                Vector3 baseUnwalkableAreaSize = Vector3.one * baseRadius;
-                Bounds baseUnwalkableBounds = new Bounds(baseCmd.Position, baseUnwalkableAreaSize);
-                //D.Log("{0} Unwalkable Bounds {1} contains {2} = {3}.", baseCmd.FullName, baseUnwalkableBounds, baseCmd.Position, baseUnwalkableBounds.Contains(baseCmd.Position));
-                GraphUpdateObject baseUnwalkableGuo = new GraphUpdateObject(baseUnwalkableBounds) {
-                    modifyWalkability = true,
-                    setWalkability = false,     // default
-                    updatePhysics = true,       // default
-                    trackChangedNodes = false,   // = true; allows RevertFromBackup DOES NOT WORK
-                    requiresFloodFill = true    // default
-                };
-                active.UpdateGraphs(baseUnwalkableGuo);
-                _starbaseGuos.Add(baseCmd, baseUnwalkableGuo);
-            }
+
+            PointNode node = new PointNode(active);
+
+            node.SetPosition(position);
+            node.GraphIndex = graphIndex;
+            node.Walkable = true;
+
+            nodes[nodeCount] = node;
+            nodeCount++;
+
+            AddToLookup(node);
+
+            return node;
         }
-
-        // NOTE: For now, no UpdateGraph(Settlement). Settlements aren't likely to be on top of existing waypoints, and,
-        // surrounding them with waypoints makes no sense if I allow them to orbit
-
-        /************************** My Work End ********************************************************************************/
 
         public override void PostDeserialization() {
             RebuildNodeLookup();
@@ -904,6 +987,44 @@ namespace Pathfinding {
             return new ObjectAnalyzer().ToString(this);
         }
 
+        #region Debug
+
+        private int __previousConnectionsCount = Constants.Zero;
+
+        /// <summary>
+        /// Gets the sectors this pathfinding system is allowed to scan for waypoint interconnection. 
+        /// This method reduces the total sector count to a manageable value so the scan time is not onerous. 
+        /// This allows SectorGrid to build out a large number of sectors for testing without requiring the
+        /// Pathfinding system to make interconnections between all the waypoints in all sectors.
+        /// </summary>
+        /// <returns></returns>
+        [System.Obsolete]
+        private IList<Sector> __GetAllowedSectorsToScan() {
+            IList<Sector> sectorsToScan = new List<Sector>();
+
+            int maxIndexX = __MaxAllowedSectorGridSizeToScan.x / 2;
+            int maxIndexY = __MaxAllowedSectorGridSizeToScan.y / 2;
+            int maxIndexZ = __MaxAllowedSectorGridSizeToScan.z / 2;
+            var allSectors = SectorGrid.Instance.AllSectors;
+            allSectors.ForAll(s => {
+                var index = s.SectorIndex;
+                if (Mathf.Abs(index.x) <= maxIndexX) {
+                    if (Mathf.Abs(index.y) <= maxIndexY) {
+                        if (Mathf.Abs(index.z) <= maxIndexZ) {
+                            //D.Log("{0} adding Sector {1} to scan.", GetType().Name, s);
+                            sectorsToScan.Add(s);
+                        }
+                    }
+                }
+            });
+            //D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
+            return sectorsToScan;
+        }
+
+        //private System.DateTime __GraphUpdateStartTime { get; set; }
+
+        #endregion
+
         #region IUpdatableGraph Members
 
         public GraphUpdateThreading CanUpdateAsync(GraphUpdateObject o) {
@@ -916,102 +1037,229 @@ namespace Pathfinding {
          * Recalculates possibly affected connections, i.e all connection lines passing trough the bounds of the \a GUO will be recalculated
          * \astarpro */
         public void UpdateArea(GraphUpdateObject guo) {
-            if (nodes == null) {
-                return;
-            }
-
-            for (int i = 0; i < nodeCount; i++) {
-                if (guo.bounds.Contains((Vector3)nodes[i].position)) {
-                    guo.WillUpdateNode(nodes[i]);
-                    guo.Apply(nodes[i]);
-                }
-            }
-
-            // Make connection changes
-            if (guo.updatePhysics) {
-                //Use a copy of the bounding box, we should not change the GUO's bounding box since it might be used for other graph updates
-                Bounds bounds = guo.bounds;
-
-                //Create two temporary arrays used for holding new connections and costs
-                List<GraphNode> tmp_arr = Pathfinding.Util.ListPool<GraphNode>.Claim();
-                List<uint> tmp_arr2 = Pathfinding.Util.ListPool<uint>.Claim();
-
-                int connectionsAdded = Constants.Zero;
-                int connectionsRemoved = Constants.Zero;
-
-                for (int i = 0; i < nodeCount; i++) {
-                    PointNode node = nodes[i];
-                    var a = (Vector3)node.position;
-
-                    List<GraphNode> conn = null;
-                    List<uint> costs = null;
-
-                    for (int j = 0; j < nodeCount; j++) {
-                        if (j == i) continue;
-
-                        var b = (Vector3)nodes[j].position;
-                        if (VectorMath.SegmentIntersectsBounds(bounds, a, b)) {
-                            float dist;
-                            PointNode other = nodes[j];
-                            bool contains = node.ContainsConnection(other);
-                            bool validConnection = IsValidConnection(node, other, out dist);
-
-                            if (!contains && validConnection) {
-                                // A new connection should be added
-
-                                if (conn == null) {
-                                    tmp_arr.Clear();
-                                    tmp_arr2.Clear();
-                                    conn = tmp_arr;
-                                    costs = tmp_arr2;
-                                    conn.AddRange(node.connections);
-                                    costs.AddRange(node.connectionCosts);
-                                }
-
-                                uint cost = (uint)Mathf.RoundToInt(dist * Int3.FloatPrecision);
-                                conn.Add(other);
-                                connectionsAdded++;
-                                costs.Add(cost);
-                            }
-                            else if (contains && !validConnection) {
-                                // A connection should be removed
-
-                                if (conn == null) {
-                                    tmp_arr.Clear();
-                                    tmp_arr2.Clear();
-                                    conn = tmp_arr;
-                                    costs = tmp_arr2;
-                                    conn.AddRange(node.connections);
-                                    costs.AddRange(node.connectionCosts);
-                                }
-
-                                int p = conn.IndexOf(other);
-
-                                //Shouldn't have to check for it, but who knows what might go wrong
-                                if (p != -1) {
-                                    conn.RemoveAt(p);
-                                    connectionsRemoved++;
-                                    costs.RemoveAt(p);
-                                }
-                            }
-                        }
-                    }
-
-                    // Save the new connections if any were changed
-                    if (conn != null) {
-                        node.connections = conn.ToArray();
-                        node.connectionCosts = costs.ToArray();
-                    }
-                }
-
-                // Release buffers back to the pool
-                Pathfinding.Util.ListPool<GraphNode>.Release(tmp_arr);
-                Pathfinding.Util.ListPool<uint>.Release(tmp_arr2);
-
-                // Connections are single direction so each node pair will have 2
-                D.Log("Pathfinding GraphUpdate has occurred. ConnectionsAdded: {0}, ConnectionsRemoved: {1}.", connectionsAdded, connectionsRemoved);
-            }
+            throw new NotImplementedException();    // I'm not using GraphUpdateObjects for graph updates so shouldn't be called
         }
+
+        #endregion
+
+        #region GUO Approach Archive
+
+        //private IDictionary<StarbaseCmdItem, GraphUpdateObject> _starbaseGuoLookup = new Dictionary<StarbaseCmdItem, GraphUpdateObject>();
+
+        //public void AddToGraph(StarbaseCmdItem baseCmd) {
+        //if (active.IsAnyGraphUpdatesQueued) {
+        //    D.Log("{0}.AddToGraph({1}) was called with graph updates already queued.", GetType().Name, baseCmd.FullName);
+        //}
+        //else {
+        //    D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.FullName);
+        //}
+
+        // forceCompletion is set by AstarPath internally 
+        //var addApproachNodesWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+        //    active.QueueWorkItemFloodFill();
+        //    AddStarbaseApproachNodes(baseCmd);
+        //    MakeConnections();  // Graph Updates using a Guo are only for modifying existing nodes
+        //    return true;
+        //});
+        //active.AddWorkItem(addApproachNodesWorkItem);
+
+        // GraphUpdateObject approach 
+        //float baseRadius = baseCmd.CloseOrbitOuterRadius;
+        //Vector3 baseUnwalkableAreaSize = Vector3.one * baseRadius;
+        //Bounds baseUnwalkableBounds = new Bounds(baseCmd.Position, baseUnwalkableAreaSize);
+        //if (IsAnyNodeInsideBounds(baseUnwalkableBounds)) {
+        //    // one or more nodes are within the base's bounds so update the graph and store the Guo
+
+        //    if (!active.IsAnyGraphUpdatesQueued) {
+        //        // start the timer if this is the first update in the queue. Avoids overriding start time with any consecutive update calls
+        //        __GraphUpdateStartTime = Utility.SystemTime;
+        //    }
+
+        //    GraphUpdateObject baseUnwalkableGuo = new GraphUpdateObject(baseUnwalkableBounds) {
+        //        modifyWalkability = true,   // default is false
+        //        setWalkability = false,     // default is false
+        //        updatePhysics = true,       // default is true. Should have been called refreshConnections as that is what it does
+        //        trackChangedNodes = true,   // default is false, Enables RevertFromBackup
+        //        requiresFloodFill = false    // default is true
+        //    };
+        //    active.UpdateGraphs(baseUnwalkableGuo);
+        //    _starbaseGuoLookup.Add(baseCmd, baseUnwalkableGuo);
+        //}
+        // else no node within the base's bounds so no reason to update the graph or store the Guo
+        //}
+
+        //public void RemoveFromGraph(StarbaseCmdItem baseCmd) {
+        //    D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.FullName);
+        //    if (active.IsAnyGraphUpdatesQueued) {
+        //        D.Log("{0}.RemoveFromGraph({1}) was called with graph updates already queued.", GetType().Name, baseCmd.FullName);
+        //    }
+
+        //    GraphUpdateObject guo;
+        //    if (_starbaseGuoLookup.TryGetValue(baseCmd, out guo)) {
+        //        // the Guo is stored, so the base had one or more nodes within its bounds
+        //        D.Assert(IsAnyNodeInsideBounds(guo.bounds));
+
+        //        if (!active.IsAnyGraphUpdatesQueued) {
+        //            // start the timer if this is the first update in the queue. Avoids overriding start time with any consecutive update calls
+        //            __GraphUpdateStartTime = Utility.SystemTime;
+        //        }
+
+        //        D.LogBold("{0}: RevertFromBackup() about to be called upon removal of {1}.", GetType().Name, baseCmd.FullName);
+        //        guo.RevertFromBackup();
+
+        //        // Notes: RevertFromBackup() instantly reverses the node changes made when StarBase was added, but it DOES NOT re-establish 
+        //        // connections! Currently, I'm only changing node walkability so using RevertFromBackup() is overkill. I could just as easily
+        //        // set guo.setWalkability = true here and UpdateGraphs() without using RevertFromBackup(). If I leave the Guo settings as is
+        //        // after RevertFromBackup(), during UpdateGraphs(guo) it will revert the reversions, so I tell it to not modify walkability again. 
+        //        // As I'm getting rid of the Guo after this, there is no point in tracking changes.
+        //        guo.modifyWalkability = false;
+        //        guo.trackChangedNodes = false;
+
+        //        active.UpdateGraphs(guo);
+        //        _starbaseGuoLookup.Remove(baseCmd);
+        //    }
+        //    // else no Guo was stored so there were no nodes within the base's bounds
+        //}
+
+
+        //public void UpdateArea(GraphUpdateObject guo) {
+        //    if (nodes == null) {
+        //        return;
+        //    }
+        //    D.Log("{0}.UpdateArea(GraphUpdateObject) called.", GetType().Name);
+
+        //    for (int i = 0; i < nodeCount; i++) {
+        //        if (guo.bounds.Contains((Vector3)nodes[i].position)) {
+        //            //D.Log("{0}: Bounds node walkability before apply = {1}.", GetType().Name, nodes[i].Walkable);
+        //            guo.WillUpdateNode(nodes[i]);
+        //            guo.Apply(nodes[i]);
+        //            //D.Log("{0}: Bounds node walkability after apply = {1}.", GetType().Name, nodes[i].Walkable);
+        //        }
+        //    }
+
+        //    // Make connection changes
+        //    if (guo.updatePhysics) {
+        //        MakeConnectionChanges(guo);
+        //    }
+        //}
+
+        /// <summary>
+        /// Makes the connection changes needed by guo using the original 'connection intersects bounds' algorithm.
+        /// </summary>
+        /// <param name="guo">The guo.</param>
+        //private void MakeConnectionChanges(GraphUpdateObject guo) {
+        //    System.DateTime startTime = Utility.SystemTime;
+        //    //Use a copy of the bounding box, we should not change the GUO's bounding box since it might be used for other graph updates
+        //    Bounds bounds = guo.bounds;
+
+        //    //Create two temporary arrays used for holding new connections and costs
+        //    List<GraphNode> tmp_arr = Pathfinding.Util.ListPool<GraphNode>.Claim();
+        //    List<uint> tmp_arr2 = Pathfinding.Util.ListPool<uint>.Claim();
+
+        //    int connectionsAdded = Constants.Zero;
+        //    int connectionsRemoved = Constants.Zero;
+
+        //    for (int i = 0; i < nodeCount; i++) {
+        //        PointNode node = nodes[i];
+        //        var a = (Vector3)node.position;
+
+        //        List<GraphNode> conn = null;
+        //        List<uint> costs = null;
+
+        //        for (int j = 0; j < nodeCount; j++) {
+        //            if (j == i) continue;
+
+        //            var b = (Vector3)nodes[j].position;
+        //            if (VectorMath.SegmentIntersectsBounds(bounds, a, b)) {
+        //                float dist;
+        //                PointNode other = nodes[j];
+        //                bool contains = node.ContainsConnection(other);
+        //                bool validConnection = IsValidConnection(node, other, out dist);
+
+        //                if (!contains && validConnection) {
+        //                    // A new connection should be added
+
+        //                    if (conn == null) {
+        //                        tmp_arr.Clear();
+        //                        tmp_arr2.Clear();
+        //                        conn = tmp_arr;
+        //                        costs = tmp_arr2;
+        //                        conn.AddRange(node.connections);
+        //                        costs.AddRange(node.connectionCosts);
+        //                    }
+
+        //                    uint cost = (uint)Mathf.RoundToInt(dist * Int3.FloatPrecision);
+        //                    conn.Add(other);
+        //                    connectionsAdded++;
+        //                    costs.Add(cost);
+        //                }
+        //                else if (contains && !validConnection) {
+        //                    // A connection should be removed
+
+        //                    if (conn == null) {
+        //                        tmp_arr.Clear();
+        //                        tmp_arr2.Clear();
+        //                        conn = tmp_arr;
+        //                        costs = tmp_arr2;
+        //                        conn.AddRange(node.connections);
+        //                        costs.AddRange(node.connectionCosts);
+        //                    }
+
+        //                    int p = conn.IndexOf(other);
+
+        //                    //Shouldn't have to check for it, but who knows what might go wrong
+        //                    if (p != -1) {
+        //                        conn.RemoveAt(p);
+        //                        connectionsRemoved++;
+        //                        costs.RemoveAt(p);
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        // Save the new connections if any were changed
+        //        if (conn != null) {
+        //            node.connections = conn.ToArray();
+        //            node.connectionCosts = costs.ToArray();
+        //        }
+        //    }
+
+        //    // Release buffers back to the pool
+        //    Pathfinding.Util.ListPool<GraphNode>.Release(tmp_arr);
+        //    Pathfinding.Util.ListPool<uint>.Release(tmp_arr2);
+
+        //    // Connections are single direction so each node pair will have 2
+        //    if (connectionsAdded == Constants.Zero && connectionsRemoved == Constants.Zero) {
+        //        D.Warn("{0}.UpdateArea() occurred with no connections added or removed?", GetType().Name);
+        //    }
+        //    else {
+        //        D.Log("{0}.UpdateArea() occurred. ConnectionsAdded: {1}, ConnectionsRemoved: {2}.", GetType().Name, connectionsAdded, connectionsRemoved);
+        //    }
+
+        //    D.LogBold("{0}.UpdateArea() took {1:0.00} seconds to process {2} nodes.", GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, nodeCount);
+        //}
+
+        /// <summary>
+        /// Determines whether there is any node inside the provided guoBounds.
+        /// </summary>
+        /// <param name="guoBounds">The guo bounds.</param>
+        /// <returns>
+        ///   <c>true</c> if [is any node inside bounds] [the specified guo bounds]; otherwise, <c>false</c>.
+        /// </returns>
+        //private bool IsAnyNodeInsideBounds(Bounds guoBounds) {
+        //    //var startTime = Utility.SystemTime;
+        //    bool isNodeInside = false;
+        //    for (int i = 0; i < nodeCount; i++) {
+        //        if (guoBounds.Contains((Vector3)nodes[i].position)) {
+        //            isNodeInside = true;
+        //            break;
+        //        }
+        //    }
+        //    //D.Log("{0}.IsAnyNodeInsideBounds() took {1:0.00} seconds.", GetType().Name, (Utility.SystemTime - startTime).TotalSeconds);
+        //    return isNodeInside;
+        //}
+
+
 
         #endregion
 

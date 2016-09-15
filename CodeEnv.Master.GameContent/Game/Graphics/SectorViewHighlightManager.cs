@@ -40,8 +40,8 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(!IsHighlightShowing, "{0} highlight should not be showing.", Name);
                 _sectorViewHighlight = References.MyPoolManager.SpawnHighlight(_trackedClientTransform.position);
                 _sectorViewHighlight.SetTarget(_trackedClientItem);
-                _sectorViewHighlight.Alpha = 0.4F;
                 _sectorViewHighlight.Color = TempGameValues.SectorHighlightColor;
+                _sectorViewHighlight.Alpha = 0.4F;  // Should follow color as color comes with its own alpha, typically 1.0
                 _sectorViewHighlight.SetRadius(_highlightRadius);
                 _sectorViewHighlight.Show(true);
             }

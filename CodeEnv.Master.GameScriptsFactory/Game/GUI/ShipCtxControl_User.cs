@@ -90,10 +90,10 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = _userKnowledge.MyFleets.Except(_shipMenuOperator.Command).Cast<INavigable>();
+                targets = _userKnowledge.OwnerFleets.Except(_shipMenuOperator.Command).Cast<INavigable>();
                 return true;
             case ShipDirective.Disband:
-                targets = _userKnowledge.MyBases.Cast<INavigable>();
+                targets = _userKnowledge.OwnerBases.Cast<INavigable>();
                 return true;
             case ShipDirective.Disengage:
             case ShipDirective.Scuttle:
