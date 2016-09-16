@@ -72,7 +72,7 @@ public class PlayerColorManager : AMonoBase {
         _userPlayerColorPopupList.RefreshSelectionFromPreference();   // no default value needed as its preference will be used
         _userPlayerColorSelected = _userPlayerColorPopupList.SelectedColor;
 
-        // initialize ai player color values
+        // initialize AIPlayer color values
         var aiColorChoices = _allPlayerColors.Except(_userPlayerColorSelected);
 
         _aiPlayerColorPopupLists.ForAll(aiCpl => {
@@ -155,7 +155,7 @@ public class PlayerColorManager : AMonoBase {
     /// restores the choices available to the popupList to allPlayerColors except the color currently used by
     /// the UserPlayer.
     /// </summary>
-    /// <param name="aiPopupList">The ai popup list.</param>
+    /// <param name="aiPopupList">The AIpopup list.</param>
     /// <param name="unusedColors">The unused colors.</param>
     private void ChangeAIPlayerColorSelection(GuiPlayerColorPopupList aiPopupList, IEnumerable<GameColor> unusedColors) {
         // pick an unused color for this aiPlayer
@@ -179,7 +179,7 @@ public class PlayerColorManager : AMonoBase {
     /// <summary>
     /// Processes the AiPlayer's color selection change.
     /// </summary>
-    /// <param name="aiPlayerColorPopupList">The ai player color popup list.</param>
+    /// <param name="aiPlayerColorPopupList">The AI player color popup list.</param>
     /// <param name="aiPlayerColorSelected">The changed AiPlayer color selected.</param>
     private void ProcessAIPlayerColorSelectionChange(GuiPlayerColorPopupList aiPlayerColorPopupList, GameColor changedAiPlayerColorSelected) {
         // the user has selected a color for an aiPlayer so refresh the colors in use

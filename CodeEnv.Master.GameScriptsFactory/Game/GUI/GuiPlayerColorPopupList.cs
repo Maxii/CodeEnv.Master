@@ -47,7 +47,12 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     /// <summary>
     /// The GameColor currently selected.
     /// </summary>
-    public GameColor SelectedColor { get { return Enums<GameColor>.Parse(_popupList.value); } }
+    public GameColor SelectedColor {
+        get {
+            D.LogBold("{0} selectedValue text to derive color from is {1}.", Name, _popupList.value);
+            return Enums<GameColor>.Parse(_popupList.value);
+        }
+    }
 
     private string[] _choices;
     protected override string[] Choices { get { return _choices; } }
