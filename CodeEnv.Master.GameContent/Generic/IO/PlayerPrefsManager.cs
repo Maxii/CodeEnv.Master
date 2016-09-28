@@ -365,8 +365,8 @@ namespace CodeEnv.Master.GameContent {
         /// but as they are only used once, there is little value to the modder having access to them.
         /// </remarks>
         public void Retrieve() {
-            UniverseSizeSelection = RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeGuiSelection.Normal);
-            SystemDensitySelection = RetrieveEnumPref<SystemDensityGuiSelection>(_systemDensityKey, SystemDensityGuiSelection.Normal);
+            UniverseSizeSelection = RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeGuiSelection.Small);
+            SystemDensitySelection = RetrieveEnumPref<SystemDensityGuiSelection>(_systemDensityKey, SystemDensityGuiSelection.Sparse);
             GameSpeedOnLoad = RetrieveEnumPref<GameSpeed>(_gameSpeedOnLoadKey, GameSpeed.Normal);
 
             UserPlayerSpeciesSelection = RetrieveEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey, SpeciesGuiSelection.Human);

@@ -322,6 +322,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void HandleIsVisualDetailDiscernibleToUserChanged() { }
 
     void OnHover(bool isOver) {
+        //D.Log(ShowDebugLog, "{0}.OnHover({1}) called at {2}.", FullName, isOver, Utility.TimeStamp);
         HoverEventHandler(gameObject, isOver);
     }
 

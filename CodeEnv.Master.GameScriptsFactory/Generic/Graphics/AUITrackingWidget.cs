@@ -21,7 +21,7 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base class widget parent on the UI layer that tracks world objects.  The user perceives the widget as maintaining a constant size on the screen
-/// independant of the distance from the tracked world object to the main camera.
+/// independent of the distance from the tracked world object to the main camera.
 /// </summary>
 public abstract class AUITrackingWidget : ATrackingWidget {
 

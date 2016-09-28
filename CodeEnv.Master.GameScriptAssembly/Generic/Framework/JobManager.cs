@@ -269,7 +269,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// Waits the designated number of seconds during GamePlay, then executes the provided waitMilestone delegate and repeats.
     /// Warning: Does not pause and does not account for GameSpeed changes.
     /// Usage:
-    /// RecurringWaitForGameplaySeconds(seconds, jobName, waitMilestone: () =&gt; {
+    /// RecurringWaitForGameplaySeconds(initialWait, recurringWait, jobName, waitMilestone: () =&gt; {
     /// Code to execute after the wait;
     /// });
     /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
@@ -277,16 +277,17 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// before the code assigned to the waitFinished delegate.
     /// <remarks>WARNING: The return Job must be killed by the client to end the recurring wait.</remarks>
     /// </summary>
-    /// <param name="seconds">The seconds to wait.</param>
+    /// <param name="initialWait">The initial wait in seconds.</param>
+    /// <param name="recurringWait">The recurring wait in seconds.</param>
     /// <param name="jobName">Name of the job.</param>
     /// <param name="waitMilestone">The delegate to execute when the waitMilestone occurs. The
     /// signature is waitMilestone().</param>
     /// <returns>
     /// A reference to the Job so it can be killed before it finishes, if needed.
     /// </returns>
-    public Job RecurringWaitForGameplaySeconds(float seconds, string jobName, Action waitMilestone) {
+    public Job RecurringWaitForGameplaySeconds(float initialWait, float recurringWait, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
-        var job = new Job(RepeatingWaitForSeconds(seconds, waitMilestone), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
+        var job = new Job(RepeatingWaitForSeconds(initialWait, recurringWait, waitMilestone), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
             D.Assert(jobWasKilled);
             RemoveCompletedJobs();
         });
@@ -520,9 +521,11 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
         yield return Yielders.GetWaitForSeconds(seconds);
     }
 
-    private IEnumerator RepeatingWaitForSeconds(float seconds, Action waitMilestone) {
+    private IEnumerator RepeatingWaitForSeconds(float initialWait, float recurringWait, Action waitMilestone) {
+        yield return Yielders.GetWaitForSeconds(initialWait);
+        waitMilestone();
         while (true) {
-            yield return Yielders.GetWaitForSeconds(seconds);
+            yield return Yielders.GetWaitForSeconds(recurringWait);
             waitMilestone();
         }
     }

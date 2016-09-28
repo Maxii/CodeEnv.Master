@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlayersDesigns.cs
-// Wrapper that holds a collection of UnitDesigns organized by the owner of the design and the design's name.
+// Holds a collection of UnitDesigns organized by the owner of the design and the design's name.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Wrapper that holds a collection of UnitDesigns organized by the owner of the design and the design's name.
+    /// Holds a collection of UnitDesigns organized by the owner of the design and the design's name.
     /// </summary>
     public class PlayersDesigns {
 

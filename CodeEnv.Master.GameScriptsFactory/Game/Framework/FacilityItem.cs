@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidableObstacle {
 
-    private static readonly Vector2 IconSize = new Vector2(16F, 16F);
+    private static readonly Vector2 IconSize = new Vector2(24F, 24F);
 
     /// <summary>
     /// Indicates whether this facility is capable of firing on a target in an attack.

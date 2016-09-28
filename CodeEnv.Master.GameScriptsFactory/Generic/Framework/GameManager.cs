@@ -34,6 +34,8 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameManager {
 
+    private const string NameFormat = "{0}_{1}";
+
     public static bool IsFirstStartup { // UNCLEAR, IMPROVE not used
         get {
             if (PlayerPrefs.HasKey("IsNotFirstStartup")) {
@@ -85,6 +87,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// Occurs when a new game enters its Building state.
     /// </summary>
     public event EventHandler newGameBuilding;
+
+    public string Name { get { return NameFormat.Inject(GetType().Name, InstanceCount); } }
 
     private GameSettings _gameSettings;
     /// <summary>
@@ -170,8 +174,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public PlayersDesigns PlayersDesigns {
         get { return _playersDesigns; }
-        set { SetProperty<PlayersDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
+        private set { SetProperty<PlayersDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
     }
+
+    private CelestialDesigns _celestialDesigns = new CelestialDesigns();
+    /// <summary>
+    /// A collection of CelestialDesigns (Stars, Planets and Moons).
+    /// </summary>
+    public CelestialDesigns CelestialDesigns { get { return _celestialDesigns; } }
 
     /// <summary>
     /// The User's AIManager instance.
@@ -202,6 +212,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
+        // Note: Dummy InstanceCount as it does not get incremented until after InitializeOnInstance()
+        //D.Log("{0}.{1}() called.", NameFormat.Inject(GetType().Name, InstanceCount + 1), GetMethodName());
         References.GameManager = Instance;
         RefreshCurrentSceneID();
         RefreshLastSceneID();
@@ -212,6 +224,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         base.InitializeOnAwake();
         InitializeValuesAndReferences();
         InitializeGameStateProgressionReadinessSystem();
+        // 9.19.16 Subscribe() moved to Start() to avoid receiving SceneLoaded event during startup. 
+        // Previously, OnLevelWasLoaded() was not called during scene startup so this wasn't an issue.
+
         //TODO add choose language GUI
         //string language = "fr-FR";
         // ChangeLanguage(language);
@@ -274,17 +289,24 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
     }
 
+    private void Subscribe() {
+        SceneManager.sceneLoaded += SceneLoadedEventHandler;
+    }
+
     #endregion
 
     protected override void Start() {
         base.Start();
+        // 9.19.16 Subscribe() moved from InitializeOnAwake() to avoid receiving SceneLoaded event during startup.
+        // Previously, OnLevelWasLoaded() was not called during scene startup so this wasn't an issue.
+        Subscribe();
         __SimulateStartup();
     }
 
     #region Startup Simulation
 
     private void __SimulateStartup() {
-        //D.Log("{0}{1}.SimulateStartup() called.", GetType().Name, InstanceCount);
+        //D.Log("{0}.SimulateStartup() called.", Name);
         if (CurrentSceneID == SceneID.LobbyScene) {
             CurrentState = GameState.Lobby;
         }
@@ -356,7 +378,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private void StartGameStateProgressionReadinessChecks() {
         D.Assert(!IsPaused, "{0} should not be paused.", GetType().Name);
-        //D.Log("{0}_{1} is preparing to start GameState Progression System Readiness Checks.", GetType().Name, InstanceCount);
+        //D.Log("{0} is preparing to start GameState Progression System Readiness Checks.", Name);
         __ValidateGameStateProgressionReadinessSystemState();
         string jobName = "GameMgrProgressCheckJob";
         _progressCheckJob = _jobMgr.StartNonGameplayJob(AssessReadinessToProgressGameState(), jobName, jobCompleted: (wasJobKilled) => {
@@ -365,7 +387,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             }
             else {
                 D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.", GetType().Name, InstanceCount, typeof(GameState).Name, CurrentState.GetValueName());
-                //D.Log("{0}'s GameState Progression Readiness System has successfully completed.", GetType().Name);
+                //D.Log("{0}'s GameState Progression Readiness System has successfully completed.", Name);
             }
         });
     }
@@ -383,7 +405,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(CurrentState), "{0} key not found.", CurrentState.GetValueName());
             // this will tell me what state failed, whereas failing while accessing the dictionary won't
             IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[CurrentState];
-            //D.Log("{0}_{1}.AssessReadinessToProgressGameState() called. GameState = {2}, UnreadyElements count = {3}.", GetType().Name, InstanceCount, CurrentState.GetValueName(), unreadyElements.Count);
+            //D.Log("{0}.AssessReadinessToProgressGameState() called. GameState = {1}, UnreadyElements count = {2}.", Name, CurrentState.GetValueName(), unreadyElements.Count);
             if (unreadyElements != null && unreadyElements.Count == Constants.Zero) {
                 //D.Log("State prior to ProgressState = {0}.", CurrentState.GetValueName());
                 ProgressState();
@@ -423,7 +445,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #region Players
 
     private void InitializePlayers() {
-        D.Log("{0} is initializing Players.", GetType().Name);
+        //D.Log("{0} is initializing Players.", Name);
 
         AllPlayers = DebugControls.Instance.Players;    // 9.14.16 allows editor control over number of players
         UserPlayer = AllPlayers.Single(p => p.IsUser);
@@ -438,7 +460,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         var desiredAiUserRelationships = aiOwnedEditorUnitCreators.Select(uc => uc.EditorSettings.DesiredRelationshipWithUser.Convert());
 
         HashSet<DiplomaticRelationship> uniqueDesiredAiUserRelationships = new HashSet<DiplomaticRelationship>(desiredAiUserRelationships);
-        //D.Log("{0}: Unique desired AI/User Relationships = {1}.", GetType().Name, uniqueDesiredAiUserRelationships.Select(r => r.GetValueName()).Concatenate());
+        //D.Log("{0}: Unique desired AI/User Relationships = {1}.", Name, uniqueDesiredAiUserRelationships.Select(r => r.GetValueName()).Concatenate());
 
         // Setup initial AIPlayer <-> User relationships derived from editorCreators..
         Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup = new Dictionary<DiplomaticRelationship, IList<Player>>(AIPlayers.Count);
@@ -446,7 +468,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         uniqueDesiredAiUserRelationships.ForAll(aiUserRelationship => {
             if (unassignedAIPlayers.Count > Constants.Zero) {
                 var aiPlayer = unassignedAIPlayers.Pop();
-                //D.Log("{0} about to set {1}'s user relationship to {2}.", GetType().Name, aiPlayer, aiUserRelationship.GetValueName());
+                //D.Log("{0} about to set {1}'s user relationship to {2}.", Name, aiPlayer, aiUserRelationship.GetValueName());
                 UserPlayer.SetInitialRelationship(aiPlayer, aiUserRelationship);  // will auto handle both assignments
                 aiPlayerInitialUserRelationsLookup.Add(aiUserRelationship, new List<Player>() { aiPlayer });
             }
@@ -459,7 +481,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 aiPlayerInitialUserRelationsLookup.Add(DiplomaticRelationship.Neutral, neutralAiPlayers);
             }
             unassignedAIPlayers.ForAll(aiPlayer => {
-                //D.Log("{0} about to set {1}'s user relationship to {2}.", GetType().Name, aiPlayer, DiplomaticRelationship.Neutral.GetValueName());
+                //D.Log("{0} about to set {1}'s user relationship to {2}.", Name, aiPlayer, DiplomaticRelationship.Neutral.GetValueName());
                 UserPlayer.SetInitialRelationship(aiPlayer); // Neutral, will auto handle both assignments
                 neutralAiPlayers.Add(aiPlayer);
             });
@@ -484,22 +506,22 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         var playersWithoutEditorCreator = _newGameUnitConfigurator.ConfigureExistingEditorCreators();
 
         foreach (var player in playersWithoutEditorCreator) {
-            string debugText;
+            //string debugText;
             int randomValue = RandomExtended.Range(1, 3);
             if (randomValue == 1) {
-                debugText = "fleet";
+                //debugText = "fleet";
                 _newGameUnitConfigurator.GenerateRandomAutoFleetCreator(player);
             }
             else if (randomValue == 2) {
-                debugText = "starbase";
+                //debugText = "starbase";
                 _newGameUnitConfigurator.GenerateRandomAutoStarbaseCreator(player);
             }
             else {
                 D.Assert(randomValue == 3);
-                debugText = "settlement";
+                //debugText = "settlement";
                 _newGameUnitConfigurator.GenerateRandomAutoSettlementCreator(player);
             }
-            D.Log("{0}: Creating auto {1} creator for {2}.", GetType().Name, debugText, player);
+            //D.Log("{0}: Creating auto {1} creator for {2}.", Name, debugText, player);
         }
     }
 
@@ -545,24 +567,30 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #region Event and Property Change Handlers
 
-    /// <summary>
-    /// This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
-    /// NOTE: Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
-    /// might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
-    /// NOTE: In fact, my experience is that OnLevelWasLoaded occurs AFTER all Awake calls for objects that are already in the level.
-    /// </summary>
-    /// <param name="level">The scene level.</param>
-    void OnLevelWasLoaded(int level) {
-        if (IsExtraCopy) { return; }
-        D.Assert(CurrentScene.buildIndex == level);
-        D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneID)level).GetValueName(), CurrentState.GetValueName());
-        RefreshCurrentSceneID();
-        RefreshStaticReferences();
-        UponLevelLoaded(level);
+    private void SceneLoadedEventHandler(Scene scene, LoadSceneMode mode) {
+        //D.Log("{0}.SceneLoadedEventHandler({1}, {2}) called.", Name, scene.name, mode);
+        HandleSceneLoaded(scene);
     }
 
+    /// <summary>
+    /// Handles the scene loaded.
+    /// <remarks>Replaces OnLevelWasLoaded() which Unity 5.4.1 deprecated.</remarks>
+    /// </summary>
+    /// <param name="scene">The scene.</param>
+    private void HandleSceneLoaded(Scene scene) {
+        D.Assert(!IsExtraCopy);
+        D.Assert(CurrentScene == scene);
+        D.Assert(CurrentState != default(GameState));   // if subscribed too early, can be called when GameState = None
+        //D.Log("{0}.HandleSceneLoaded({1}) called. Current State = {2}.", Name, scene.name, CurrentState.GetValueName());
+        RefreshCurrentSceneID();
+        RefreshStaticReferences();
+        UponSceneLoaded(scene);
+    }
+
+    // void OnLevelWasLoaded(level) deprecated by Unity 5.4.1. Replaced it with SceneLoadedEventHandler()
+
     private void IsRunningPropChangedHandler() {
-        D.LogBold("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
+        D.LogBold("{0}.IsRunning changed to {1}.", Name, IsRunning);
         if (IsRunning) {
             OnIsRunning();
         }
@@ -584,14 +612,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void IsPausedPropChangedHandler() {
-        D.LogBold("{0}.IsPaused changed to {1}.", GetType().Name, IsPaused);
+        D.LogBold("{0}.IsPaused changed to {1}.", Name, IsPaused);
     }
 
     private void OnIsRunning() {
         D.Assert(IsRunning);
         if (isRunningOneShot != null) {
             //var targetNames = isRunningOneShot.GetInvocationList().Select(d => d.Target.GetType().Name);
-            //D.Log("{0} is sending onIsRunning event to {1}.", GetType().Name, targetNames.Concatenate());
+            //D.Log("{0} is sending onIsRunning event to {1}.", Name, targetNames.Concatenate());
             isRunningOneShot(this, new EventArgs());
             isRunningOneShot = null;
         }
@@ -607,7 +635,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void OnSceneLoaded() {
         D.Assert(!IsSceneLoading);
         if (sceneLoaded != null) {
-            //D.Log("{0}.sceneLoaded event dispatched.", GetType().Name);
+            //D.Log("{0}.sceneLoaded event dispatched.", Name);
             sceneLoaded(this, new EventArgs());
         }
     }
@@ -615,7 +643,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void OnGameStateChanging() {
         if (gameStateChanging != null) {
             //var targetNames = gameStateChanging.GetInvocationList().Select(d => d.Target.GetType().Name);
-            //D.Log("{0} is sending gameStateChanging event to {1}.", GetType().Name, targetNames.Concatenate());
+            //D.Log("{0} is sending gameStateChanging event to {1}.", Name, targetNames.Concatenate());
             gameStateChanging(this, new EventArgs());
         }
     }
@@ -623,7 +651,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private void OnGameStateChanged() {
         if (gameStateChanged != null) {
             //var targetNames = gameStateChanged.GetInvocationList().Select(d => d.Target.GetType().Name);
-            //D.Log("{0} is sending gameStateChanged event to {1}.", GetType().Name, targetNames.Concatenate());
+            //D.Log("{0} is sending gameStateChanged event to {1}.", Name, targetNames.Concatenate());
             gameStateChanged(this, new EventArgs());
         }
     }
@@ -653,7 +681,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void LoadAndBuildNewGame(GameSettings settings) {
-        D.Log("{0}.LoadAndBuildNewGame() called.", GetType().Name);
+        D.Log("{0}.LoadAndBuildNewGame() called.", Name);
 
         GameSettings = settings;
         CurrentState = GameState.Loading;
@@ -670,11 +698,11 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #region Saving and Restoring
 
     public void SaveGame(string gameName) {
-        D.Warn("{0}.SaveGame() not currently implemented.", GetType().Name);
+        D.Warn("{0}.SaveGame() not currently implemented.", Name);
     }
 
     public void LoadSavedGame(string gameID) {
-        D.Warn("{0}.LoadSavedGame() not currently implemented.", GetType().Name);
+        D.Warn("{0}.LoadSavedGame() not currently implemented.", Name);
     }
 
     #region WhyDoIDoIt.UnitySerializer Save/Restore Archive
@@ -734,6 +762,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             _playerAiMgrLookup.Values.ForAll(pAiMgr => pAiMgr.Dispose());
         }
         GameKnowledge.Reset();
+        CelestialDesigns.Reset();
     }
 
     private void InitializeGameKnowledge() {
@@ -842,10 +871,23 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         OnSceneLoading();
     }
 
+    [Obsolete]
     void Loading_UponLevelLoaded(int level) {
-        D.Assert(!GameSettings.__IsStartupSimulation);
         LogEvent();
+        D.Assert(!GameSettings.__IsStartupSimulation);
 
+        D.Assert(CurrentSceneID == SceneID.GameScene, "Scene transition to {0} not implemented.", CurrentSceneID.GetValueName());
+        IsSceneLoading = false;
+        OnSceneLoaded();
+
+        RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: true);
+    }
+
+    void Loading_UponSceneLoaded(Scene scene) {
+        LogEvent();
+        D.Assert(!GameSettings.__IsStartupSimulation);
+
+        D.Assert(CurrentScene == scene);
         D.Assert(CurrentSceneID == SceneID.GameScene, "Scene transition to {0} not implemented.", CurrentSceneID.GetValueName());
         IsSceneLoading = false;
         OnSceneLoaded();
@@ -1103,7 +1145,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private void UponProgressState() { RelayToCurrentState(); }
 
+    [Obsolete]
     private void UponLevelLoaded(int level) { RelayToCurrentState(level); }
+
+    private void UponSceneLoaded(Scene scene) { RelayToCurrentState(scene); }
 
     #endregion
 
@@ -1126,6 +1171,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             _playerAiMgrLookup.Values.ForAll(pAiMgr => pAiMgr.Dispose());
         }
         GameKnowledge.Dispose();
+        Unsubscribe();
 
         DisposeOfGlobals();
         References.GameManager = null;  // last, as Globals may use it when disposing
@@ -1150,6 +1196,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             SystemNameFactory.Instance.Dispose();
             FormationGenerator.Instance.Dispose();
         }
+    }
+
+    private void Unsubscribe() {
+        SceneManager.sceneLoaded -= SceneLoadedEventHandler;
     }
 
     #endregion

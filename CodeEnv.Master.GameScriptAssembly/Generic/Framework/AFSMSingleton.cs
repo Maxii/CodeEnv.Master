@@ -53,7 +53,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// Any parameter passed to the current handler that should be passed on
     /// </param>
     protected void RelayToCurrentState(params object[] param) {
-        if (CurrentState.Equals(default(E))) { return; }
+        if (CurrentState.Equals(default(E))) {
+            return;
+        }
         string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
         D.Warn(!callingMethodName.StartsWith("Upon"), "Calling method name: {0) should start with 'Upon'.", callingMethodName);
         var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;

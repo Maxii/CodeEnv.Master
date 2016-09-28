@@ -176,6 +176,33 @@ namespace CodeEnv.Master.GameContent {
             return defaultPlayerCount;
         }
 
+        public static float Radius(this PlanetoidCategory cat) {
+            switch (cat) {
+                case PlanetoidCategory.GasGiant:
+                    return 5F;
+                case PlanetoidCategory.Ice:
+                    return 2F;
+                case PlanetoidCategory.Moon_001:
+                    return 0.2F;
+                case PlanetoidCategory.Moon_002:
+                    return 0.2F;
+                case PlanetoidCategory.Moon_003:
+                    return 0.2F;
+                case PlanetoidCategory.Moon_004:
+                    return 0.5F;
+                case PlanetoidCategory.Moon_005:
+                    return 1F;
+                case PlanetoidCategory.Terrestrial:
+                    return 2F;
+                case PlanetoidCategory.Volcanic:
+                    return 1F;
+                case PlanetoidCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+        }
+
+
         #endregion
 
         #region ResourceID

@@ -59,6 +59,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="DebugSystemCreator2.cs" />
+    <Compile Include="SystemCreator2.cs" />
+    <Compile Include="Generic\Graphics\AGuiMenuPopupListBase.cs" />
     <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
     <Compile Include="Generic\Framework\ADebugUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetCreator.cs" />

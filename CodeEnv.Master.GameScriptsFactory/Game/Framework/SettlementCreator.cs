@@ -72,13 +72,13 @@ public class SettlementCreator : AAutoUnitCreator {
 
     protected override void AddUnitToGameKnowledge() {
         LogEvent();
-        D.Log("{0} is adding Unit {1} to GameKnowledge.", Name, UnitName);
+        //D.Log("{0} is adding Unit {1} to GameKnowledge.", Name, UnitName);
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
     protected override void AddUnitToOwnerAndAllysKnowledge() {
         LogEvent();
-        D.Log("{0} is adding Unit {1} to {2}'s Knowledge.", Name, UnitName, Owner);
+        //D.Log("{0} is adding Unit {1} to {2}'s Knowledge.", Name, UnitName, Owner);
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
         ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
@@ -86,7 +86,7 @@ public class SettlementCreator : AAutoUnitCreator {
         var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
         if (alliedPlayers.Any()) {
             alliedPlayers.ForAll(ally => {
-                D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", Name, UnitName, ally);
+                //D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", Name, UnitName, ally);
                 var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
                 _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
                 allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled

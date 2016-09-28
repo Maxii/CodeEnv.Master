@@ -42,7 +42,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITr
 
         GameObject widgetGo = WidgetTransform.gameObject;
         CameraLosChangedListener = widgetGo.AddComponent<CameraLosChangedListener>();
-        // Note: donot disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
+        // Note: do not disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
     }
 
     /// <summary>

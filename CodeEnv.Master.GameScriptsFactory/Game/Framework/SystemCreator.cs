@@ -309,7 +309,7 @@ public class SystemCreator : AMonoBase {
             D.Assert(IsSystemNamed);
         }
 
-        FocusableItemCameraStat cameraStat = __MakeSystemCameraStat();
+        FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
         if (IsCompositionPreset) {
             _system = gameObject.GetSingleComponentInChildren<SystemItem>();
             _systemFactory.PopulateSystemInstance(SystemName, cameraStat, ref _system);
@@ -325,7 +325,7 @@ public class SystemCreator : AMonoBase {
 
     private void MakeStar() {
         LogEvent();
-        FocusableItemCameraStat cameraStat = __MakeStarCameraStat(_starStat.Radius, _starStat.CloseOrbitInnerRadius);
+        FocusableItemCameraStat cameraStat = MakeStarCameraStat(_starStat.Radius, _starStat.CloseOrbitInnerRadius);
         if (IsCompositionPreset) {
             _star = gameObject.GetSingleComponentInChildren<StarItem>();
             _systemFactory.PopulateInstance(_starStat, cameraStat, SystemName, ref _star);
@@ -351,7 +351,7 @@ public class SystemCreator : AMonoBase {
                     if (planetsOfStatCategoryStillAvailable.Any()) {    // IEnumerable.First() does not like empty IEnumerables
                         var planet = planetsOfStatCategoryStillAvailable.First();
                         var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(CMsPerPlanetoid);
-                        FollowableItemCameraStat cameraStat = __MakePlanetCameraStat(planetStat);
+                        FollowableItemCameraStat cameraStat = MakePlanetCameraStat(planetStat);
                         planetsAlreadyUsed.Add(planet);
                         _systemFactory.PopulateInstance(planetStat, cameraStat, countermeasureStats, SystemName, ref planet);
                     }
@@ -362,7 +362,7 @@ public class SystemCreator : AMonoBase {
             _planets = new List<PlanetItem>(MaxPlanets);
             foreach (var planetStat in _planetStats) {
                 var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(CMsPerPlanetoid);
-                FollowableItemCameraStat cameraStat = __MakePlanetCameraStat(planetStat);
+                FollowableItemCameraStat cameraStat = MakePlanetCameraStat(planetStat);
                 var planet = _systemFactory.MakeInstance(planetStat, cameraStat, countermeasureStats, _system);
                 _planets.Add(planet);
             }
@@ -479,7 +479,7 @@ public class SystemCreator : AMonoBase {
                                 var moon = moonsOfStatCategoryStillAvailable.First();
                                 moonsAlreadyUsed.Add(moon);
                                 var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(CMsPerPlanetoid);
-                                FollowableItemCameraStat cameraStat = __MakeMoonCameraStat(moonStat);
+                                FollowableItemCameraStat cameraStat = MakeMoonCameraStat(moonStat);
                                 _systemFactory.PopulateInstance(moonStat, cameraStat, countermeasureStats, planet.Data.Name, ref moon);
                             }
                         }
@@ -492,7 +492,7 @@ public class SystemCreator : AMonoBase {
             foreach (var moonStat in _moonStats) {
                 var chosenPlanet = RandomExtended.Choice(_planets);
                 var countermeasureStats = _availablePassiveCountermeasureStats.Shuffle().Take(CMsPerPlanetoid);
-                FollowableItemCameraStat cameraStat = __MakeMoonCameraStat(moonStat);
+                FollowableItemCameraStat cameraStat = MakeMoonCameraStat(moonStat);
                 var moon = _systemFactory.MakeInstance(moonStat, cameraStat, countermeasureStats, chosenPlanet);
                 _moons.Add(moon);
             }
@@ -663,30 +663,30 @@ public class SystemCreator : AMonoBase {
     }
 
     private PlanetStat __MakePlanetStat(PlanetoidCategory pCategory) {
-        float radius = __GetRadius(pCategory);
+        float radius = pCategory.Radius();  //__GetRadius(pCategory);
         float lowOrbitRadius = radius + 1F;
         return new PlanetStat(radius, 1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic), lowOrbitRadius);
     }
 
     private PlanetoidStat __MakeMoonStat(PlanetoidCategory mCategory) {
-        float radius = __GetRadius(mCategory);
+        float radius = mCategory.Radius();  //__GetRadius(mCategory);
         return new PlanetoidStat(radius, 10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
     }
 
-    private FocusableItemCameraStat __MakeSystemCameraStat() {
+    private FocusableItemCameraStat MakeSystemCameraStat() {
         float minViewDistance = 2F;   // 2 units from the orbital plane
         float optViewDistance = TempGameValues.SystemRadius;
         return new FocusableItemCameraStat(minViewDistance, optViewDistance, fov: 70F);
     }
 
-    private FocusableItemCameraStat __MakeStarCameraStat(float radius, float lowOrbitRadius) {
+    private FocusableItemCameraStat MakeStarCameraStat(float radius, float lowOrbitRadius) {
         float minViewDistance = radius + 1F;
         float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipCloseOrbitSlotDepth;
         float optViewDistance = highOrbitRadius + 1F;
         return new FocusableItemCameraStat(minViewDistance, optViewDistance, fov: 70F);
     }
 
-    private FollowableItemCameraStat __MakePlanetCameraStat(PlanetStat planetStat) {
+    private FollowableItemCameraStat MakePlanetCameraStat(PlanetStat planetStat) {
         float fov;
         PlanetoidCategory pCat = planetStat.Category;
         switch (pCat) {
@@ -716,7 +716,7 @@ public class SystemCreator : AMonoBase {
         return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov);
     }
 
-    private FollowableItemCameraStat __MakeMoonCameraStat(PlanetoidStat moonStat) {
+    private FollowableItemCameraStat MakeMoonCameraStat(PlanetoidStat moonStat) {
         float fov;
         PlanetoidCategory pCat = moonStat.Category;
         switch (pCat) {
@@ -743,31 +743,31 @@ public class SystemCreator : AMonoBase {
         return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov);
     }
 
-    private float __GetRadius(PlanetoidCategory cat) {
-        switch (cat) {
-            case PlanetoidCategory.GasGiant:
-                return 5F;
-            case PlanetoidCategory.Ice:
-                return 2F;
-            case PlanetoidCategory.Moon_001:
-                return 0.2F;
-            case PlanetoidCategory.Moon_002:
-                return 0.2F;
-            case PlanetoidCategory.Moon_003:
-                return 0.2F;
-            case PlanetoidCategory.Moon_004:
-                return 0.5F;
-            case PlanetoidCategory.Moon_005:
-                return 1F;
-            case PlanetoidCategory.Terrestrial:
-                return 2F;
-            case PlanetoidCategory.Volcanic:
-                return 1F;
-            case PlanetoidCategory.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-        }
-    }
+    //private float __GetRadius(PlanetoidCategory cat) {
+    //    switch (cat) {
+    //        case PlanetoidCategory.GasGiant:
+    //            return 5F;
+    //        case PlanetoidCategory.Ice:
+    //            return 2F;
+    //        case PlanetoidCategory.Moon_001:
+    //            return 0.2F;
+    //        case PlanetoidCategory.Moon_002:
+    //            return 0.2F;
+    //        case PlanetoidCategory.Moon_003:
+    //            return 0.2F;
+    //        case PlanetoidCategory.Moon_004:
+    //            return 0.5F;
+    //        case PlanetoidCategory.Moon_005:
+    //            return 1F;
+    //        case PlanetoidCategory.Terrestrial:
+    //            return 2F;
+    //        case PlanetoidCategory.Volcanic:
+    //            return 1F;
+    //        case PlanetoidCategory.None:
+    //        default:
+    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+    //    }
+    //}
 
     protected override void Cleanup() {
         Unsubscribe();

@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IconSelectionCriteria[] GetSelectionCriteria(StarbaseCmdReport userRqstdCmdReport) {
             if (userRqstdCmdReport.IntelCoverage == IntelCoverage.None) {
-                // Reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+                // Reports are requested when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
                 return new IconSelectionCriteria[] { IconSelectionCriteria.None };
             }
 

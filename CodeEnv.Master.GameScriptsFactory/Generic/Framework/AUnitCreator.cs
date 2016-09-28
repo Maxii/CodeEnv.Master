@@ -35,7 +35,7 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     public string UnitName {
         get { return transform.name; }
-        set { transform.name = value; }
+        private set { transform.name = value; }
     }
 
     public IntVector3 SectorIndex { get { return SectorGrid.Instance.GetSectorIndexThatContains(transform.position); } }
@@ -106,11 +106,11 @@ public abstract class AUnitCreator : AMonoBase {
             return;
         }
         GameDate currentDate = GameTime.Instance.CurrentDate;
-        D.Log("{0}.HandleDeployDateReached() called. Date: {1}.", Name, currentDate);
+        //D.Log("{0}.HandleDeployDateReached() called. Date: {1}.", Name, currentDate);
         GameDate dateToDeploy = Configuration.DeployDate;
         if (currentDate >= dateToDeploy) {
             D.Warn(currentDate > dateToDeploy, "{0} recorded current date {1} beyond target date {2}.", Name, currentDate, dateToDeploy);
-            D.Log("{0} is about to build, deploy and begin ops during runtime. Date: {1}.", Name, currentDate);
+            //D.Log("{0} is about to build, deploy and begin ops during runtime. Date: {1}.", Name, currentDate);
 
             MakeUnitAndPrepareForDeployment();
             _isUnitDeployed = DeployUnit();
@@ -300,7 +300,7 @@ public abstract class AUnitCreator : AMonoBase {
     //}
 
     /// <summary>
-    /// Unsubscribes this class from all events that use a static event handler on Quit.
+    /// Unsubscribe this class from all events that use a static event handler on Quit.
     /// </summary>
     //private void UnsubscribeStaticallyOnceOnQuit() {
     //    if (_isStaticallySubscribed) {

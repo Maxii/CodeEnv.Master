@@ -16,11 +16,8 @@
 
 // default namespace
 
-using System;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Abstract base class for Accept or Launch buttons used by AGuiWindow menus and screens. 
@@ -29,10 +26,10 @@ using UnityEngine;
 /// </summary>
 public abstract class AGuiMenuAcceptButton : AGuiButton {
 
-    protected UIToggle[] _checkboxes;
-    protected UIPopupList[] _popupLists;
-    protected UISlider[] _sliders;
-    protected UIPanel _panel;
+    private UIToggle[] _checkboxes;
+    private UIPopupList[] _popupLists;
+    private UISlider[] _sliders;
+    private UIPanel _panel;
 
     protected override void Awake() {
         base.Awake();
@@ -65,8 +62,9 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
             RecordCheckboxState(checkboxID, checkedState);
         }
         foreach (UIPopupList popupList in _popupLists) {
-            var popupListID = popupList.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
-            string selection = popupList.value;
+            AGuiMenuPopupListBase popupListBase = popupList.gameObject.GetSafeComponent<AGuiMenuPopupListBase>();
+            var popupListID = popupListBase.ElementID;
+            string selection = popupListBase.SelectedValue;
             RecordPopupListState(popupListID, selection);
         }
         foreach (UISlider slider in _sliders) {

@@ -31,7 +31,7 @@ using UnityEngine;
 /// </summary>
 public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeListener, IObstacle {
 
-    private static readonly Vector2 IconSize = new Vector2(16F, 16F);
+    private static readonly Vector2 IconSize = new Vector2(24F, 24F);
 
     public event EventHandler apTgtReached;
 

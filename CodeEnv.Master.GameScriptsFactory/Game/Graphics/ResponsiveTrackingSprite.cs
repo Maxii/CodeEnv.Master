@@ -48,7 +48,7 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveT
     protected override void Hide() {
         base.Hide();
         _collider.enabled = false;
-        // Note: donot disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
+        // Note: do not disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
     }
 
     #region Event and Property Change Handlers

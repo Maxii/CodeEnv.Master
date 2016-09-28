@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static readonly WidgetPlacement Placement = WidgetPlacement.Above;
 
-        private static readonly Vector2 Size = new Vector2(32F, 32F);
+        private static readonly Vector2 Size = new Vector2(40F, 40F);
 
         protected abstract AtlasID AtlasID { get; }
 
@@ -196,7 +196,7 @@ namespace CodeEnv.Master.GameContent {
     //        case IntelCoverage.Comprehensive:
     //            // always returns a comprehensive icon
     //            criteria.Add(GetCriteriaFromCategory(userRqstdCmdReport));
-    //            GetCriteriaFromComposition(userRqstdCmdReport).ForAll(isc => criteria.Add(isc));
+    //            GetCriteriaFromComposition(userRqstdCmdReport).ForAll(iSc => criteria.Add(iSc));
     //            break;
     //        default:
     //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(intelCoverageUserHasWithCmd));

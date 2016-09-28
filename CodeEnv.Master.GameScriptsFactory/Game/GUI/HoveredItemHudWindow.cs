@@ -63,6 +63,7 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
     }
 
     public void Show(string text) {
+        //D.Log("{0}.Show() called at {1}.", GetType().Name, Utility.TimeStamp);
         var form = PrepareForm(FormID.TextHud);
         (form as TextForm).Text = text;
         ShowForm(form);

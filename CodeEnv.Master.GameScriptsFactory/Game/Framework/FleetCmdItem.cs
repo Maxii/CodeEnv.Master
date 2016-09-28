@@ -498,7 +498,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     toReassessMoving = true;
                 }
                 if (fleetExploreTgt.IsFullyExploredBy(Owner)) {
-                    // last remaining ship explore tgt was explored by another fleet's ship owned by us
+                    // last remaining ship explore target was explored by another fleet's ship owned by us
                     // OR a relations change to Ally instantly made target fully explored
                     failureCause = UnitItemOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
@@ -646,7 +646,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
         D.Assert(_fsmTgt == fsmTgt);
         if (fsmTgt.IsOwnerAccessibleTo(Owner)) {
-            // evaluate reassessing move as tgt's owner is accessible to us
+            // evaluate reassessing move as target's owner is accessible to us
             UnitItemOrderFailureCause failCause;
             if (ShouldMovingBeReassessed(out failCause)) {
                 _orderFailureCause = failCause;
@@ -664,7 +664,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             if (fsmItemTgt.TryGetOwner(Owner, out fsmItemTgtOwner)) {
                 // we have access to the owner
                 if (fsmItemTgtOwner == chgdRelationsPlayer) {
-                    // evaluate reassessing move as tgt's owner has a relations change with us
+                    // evaluate reassessing move as target's owner has a relations change with us
                     UnitItemOrderFailureCause failCause;
                     if (ShouldMovingBeReassessed(out failCause)) {
                         _orderFailureCause = failCause;
@@ -2572,7 +2572,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     //private bool __ValidateOrbit(IShipCloseOrbitable orbitTgt) {
     //    bool isValid = true;
     //    if (!orbitTgt.IsCloseOrbitAllowedBy(Owner)) {
-    //        D.Warn("{0} Orbit order of {1} is no longer valid. Diplo state with Owner {2} must have changed and is now {3}.",
+    //        D.Warn("{0} Orbit order of {1} is no longer valid. Diplomatic state with Owner {2} must have changed and is now {3}.",
     //            FullName, orbitTgt.FullName, orbitTgt.Owner.LeaderName, Owner.GetRelations(orbitTgt.Owner).GetValueName());
     //        isValid = false;
     //    }

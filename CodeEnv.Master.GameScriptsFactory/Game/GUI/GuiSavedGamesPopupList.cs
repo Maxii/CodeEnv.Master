@@ -32,7 +32,7 @@ public class GuiSavedGamesPopupList : AGuiMenuPopupList<string> {
 
     //protected override string[] GetNames() {
     //    var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
-    //    return savedGames.Select(sg => sg.Caption).ToArray();
+    //    return savedGames.Select(game => game.Caption).ToArray();
     //}
 
     public override string ToString() {

@@ -26,11 +26,7 @@ using CodeEnv.Master.GameContent;
 /// Abstract generic base class for popup lists that are elements of a menu with an Accept button.
 /// </summary>
 /// <typeparam name="T">Limited to Types supported by PlayerPrefsManager (Enum, string, int, float?)</typeparam>
-public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
-
-    private const string NameFormat = "{0}.{1}";
-
-    public string Name { get { return NameFormat.Inject(GetType().Name, ElementID.GetValueName()); } }
+public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
 
     /// <summary>
     /// Flag indicating whether this popupList should initialize its selection itself.
@@ -115,7 +111,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
             _popupList.AddItem(choiceName);
 
         });
-        Validate();
+        ValidateAvailableChoices();
     }
 
     /// <summary>
@@ -154,26 +150,27 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuElement {
             isPrefSelected = false;
         }
 
-        //D.Log(_popupList.value == valueName, "{0} selection unchanged from {1}.", Name, valueName);
-        D.Log("{0} is about to assign popupList selection value as string {1}.", Name, valueName);
+        //D.Log("{0} is about to assign popupList selection value as string {1}.", Name, valueName);
         _popupList.value = valueName;
         return isPrefSelected;
     }
 
     #region Event and Property Change Handlers
 
-
     /// <summary>
     /// Called when a selection has been made.
     /// Note: Called when any selection is made, even a selection that is the same as the previous selection.
+    /// <remarks>Warning: As of Ngui 3.9.7 - 3.10.1, popupList.value is only valid during the execution of 
+    /// the popupList.onChange event.</remarks>
     /// </summary>
     protected virtual void PopupListSelectionChangedEventHandler() {
+        SelectedValue = _popupList.value;
         _label.SetCurrentSelection();
     }
 
     #endregion
 
-    protected virtual void Validate() {
+    protected virtual void ValidateAvailableChoices() {
         if (IncludesRandom) {
             D.Assert(_popupList.items.Contains("Random"));
         }

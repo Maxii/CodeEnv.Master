@@ -99,7 +99,13 @@ public class PlayerColorManager : AMonoBase {
 
     private void RefreshAIPlayerColorsInUse() {
         _aiPlayerColorsInUse.Clear();
-        _aiPlayerColorPopupLists.ForAll(pList => _aiPlayerColorsInUse.Add(pList.SelectedColor));
+        _aiPlayerColorPopupLists.ForAll(pList => {
+            GameColor selectedColor = pList.SelectedColor;
+            if (_aiPlayerColorsInUse.Contains(selectedColor)) {
+                D.Warn("{0}: PlayerColor {1} is already in use.", GetType().Name, selectedColor.GetValueName());
+            }
+            _aiPlayerColorsInUse.Add(selectedColor);
+        });
     }
 
     #region Event and Property Change Handlers

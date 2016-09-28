@@ -282,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myOwnedItem">My owned item.</param>
         public void HandleGainedItemOwnership(IItem myOwnedItem) {
-            D.Log("{0}.HandleGainedItemOwnership({1}) called.", Name, myOwnedItem.FullName);
+            //D.Log("{0}.HandleGainedItemOwnership({1}) called.", Name, myOwnedItem.FullName);
             D.Assert(Owner == myOwnedItem.Owner);
             D.Assert(!(myOwnedItem is IUniverseCenter));
 
@@ -419,7 +419,7 @@ namespace CodeEnv.Master.GameContent {
             var priorRelationship = Owner.GetPriorRelations(chgdRelationsPlayer);
             var newRelationship = Owner.GetCurrentRelations(chgdRelationsPlayer);
             D.Assert(priorRelationship != newRelationship);
-            D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner.LeaderName, chgdRelationsPlayer.LeaderName);
+            //D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner.LeaderName, chgdRelationsPlayer.LeaderName);
             if (priorRelationship == DiplomaticRelationship.Alliance) {
                 HandleLostAllianceWith(chgdRelationsPlayer);
             }

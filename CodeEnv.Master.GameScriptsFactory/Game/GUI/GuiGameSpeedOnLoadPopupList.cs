@@ -16,8 +16,6 @@
 
 // default namespace
 
-using System;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 

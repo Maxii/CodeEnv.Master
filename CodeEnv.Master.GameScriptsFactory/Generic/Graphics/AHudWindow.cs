@@ -173,6 +173,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
     /// Hide the window.
     /// </summary>
     public void Hide() {
+        //D.Log("{0}.Hide() called at {1}.", GetType().Name, Utility.TimeStamp);
         HideWindow();
     }
 

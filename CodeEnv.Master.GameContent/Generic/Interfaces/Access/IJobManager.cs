@@ -97,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
         /// Waits the designated number of seconds during GamePlay, then executes the provided waitMilestone delegate and repeats.
         /// Warning: Does not pause and does not account for GameSpeed changes.
         /// Usage:
-        /// RecurringWaitForGameplaySeconds(seconds, jobName, waitMilestone: () =&gt; {
+        /// RecurringWaitForGameplaySeconds(initialWait, recurringWait, jobName, waitMilestone: () =&gt; {
         /// Code to execute after the wait;
         /// });
         /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
@@ -105,14 +105,15 @@ namespace CodeEnv.Master.GameContent {
         /// before the code assigned to the waitFinished delegate.
         /// <remarks>WARNING: The return Job must be killed by the client to end the recurring wait.</remarks>
         /// </summary>
-        /// <param name="seconds">The seconds to wait.</param>
+        /// <param name="initialWait">The initial wait in seconds.</param>
+        /// <param name="recurringWait">The recurring wait in seconds.</param>
         /// <param name="jobName">Name of the job.</param>
         /// <param name="waitMilestone">The delegate to execute when the waitMilestone occurs. The
         /// signature is waitMilestone().</param>
         /// <returns>
         /// A reference to the Job so it can be killed before it finishes, if needed.
         /// </returns>
-        Job RecurringWaitForGameplaySeconds(float seconds, string jobName, Action waitMilestone);
+        Job RecurringWaitForGameplaySeconds(float initialWait, float recurringWait, string jobName, Action waitMilestone);
 
         /// <summary>
         /// Waits the designated number of hours during GamePlay, then executes the provided delegate.

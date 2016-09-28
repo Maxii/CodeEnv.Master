@@ -37,7 +37,7 @@ public class GuiPlayerSpeciesPopupList : AGuiMenuPopupList<SpeciesGuiSelection> 
     /// <summary>
     /// The SpeciesGuiSelection currently selected. Can be 'Random".
     /// </summary>
-    public SpeciesGuiSelection SelectedSpecies { get { return Enums<SpeciesGuiSelection>.Parse(_popupList.value); } }
+    public SpeciesGuiSelection SelectedSpecies { get { return Enums<SpeciesGuiSelection>.Parse(SelectedValue); } }
 
     protected override bool IncludesRandom { get { return true; } }
 

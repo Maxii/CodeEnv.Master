@@ -78,7 +78,9 @@ public class MenuCancelButton : AGuiButton {
             _checkboxesStateOnShow[i] = _checkboxes[i].value;
         }
         for (int i = 0; i < _popupLists.Length; i++) {
-            _popupListsSelectionOnShow[i] = _popupLists[i].value;
+            // 9.19.16 Must acquire stored value from AGuiMenuPopupListBase as UIPopupList.value 
+            // is no longer valid except during onChange events // _popupListsSelectionOnShow[i] = _popupLists[i].value;
+            _popupListsSelectionOnShow[i] = _popupLists[i].GetComponent<AGuiMenuPopupListBase>().SelectedValue;
         }
     }
 
@@ -99,8 +101,9 @@ public class MenuCancelButton : AGuiButton {
     protected virtual void RestorePopupListsState() {
         for (int i = 0; i < _popupLists.Length; i++) {
             string popupListSelectionOnShow = _popupListsSelectionOnShow[i];
-            if (_popupLists[i].value != popupListSelectionOnShow) { // UIPopupList fires onChange events when set whether changed or not
-                //D.Log("Restoring {0} from {1} to {2}.", _popupLists[i].name, _popupLists[i].value, popupListSelectionOnShow);
+            string popupListCurrentSelection = _popupLists[i].GetComponent<AGuiMenuPopupListBase>().SelectedValue;
+            if (popupListCurrentSelection != popupListSelectionOnShow) { // UIPopupList fires onChange events when set whether changed or not
+                //D.Log("Restoring {0} from {1} to {2}.", _popupLists[i].name, popupListCurrentSelection, popupListSelectionOnShow);
                 _popupLists[i].value = popupListSelectionOnShow;
             }
         }

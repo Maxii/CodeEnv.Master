@@ -61,7 +61,8 @@ namespace CodeEnv.Master.GameContent {
                     // Note: This job refreshes the values in the HUD as item values can change when the game is not paused.
                     // When the game is paused, this refresh is unneeded. OPTIMIZE The job is not required to make
                     // the HUD respond to mouse moves between objects when paused.
-                    _hudRefreshJob = _jobMgr.RecurringWaitForGameplaySeconds(HudRefreshPeriod, jobName, waitMilestone: () => {
+                    float initialWaitPeriod = Constants.ZeroF;
+                    _hudRefreshJob = _jobMgr.RecurringWaitForGameplaySeconds(initialWaitPeriod, HudRefreshPeriod, jobName, waitMilestone: () => {
                         //D.Log("{0}: {1}.Show() being called on refresh.", GetType().Name, itemHud.GetType().Name);
                         itemHud.Show(_publisher.ItemHudText);
                     });

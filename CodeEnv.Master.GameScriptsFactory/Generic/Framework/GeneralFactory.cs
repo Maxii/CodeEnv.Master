@@ -28,7 +28,9 @@ using UnityEngine;
 /// </summary>
 public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory, IDisposable {
 
+    [Obsolete]
     private OrbitSimulator _immobileCelestialOrbitSimPrefab;
+    [Obsolete]
     private MobileOrbitSimulator _mobileCelestialOrbitSimPrefab;
     private ShipCloseOrbitSimulator _immobileShipOrbitSimPrefab;
     private MobileShipCloseOrbitSimulator _mobileShipOrbitSimPrefab;
@@ -53,6 +55,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     /// </summary>
     /// <param name="orbitingGo">The orbiting GameObject.</param>
     /// <param name="orbitData">The orbit slot.</param>
+    [Obsolete]
     public void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData) {
         GameObject orbitSimPrefab = orbitData.IsOrbitedItemMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
         GameObject orbitSimGo = UnityUtility.AddChild(orbitData.OrbitedItem, orbitSimPrefab);
@@ -68,6 +71,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     /// Use to set the local position of the orbiting object once attached to the orbiter.
     /// </summary>
     /// <returns></returns>
+    [Obsolete]
     private Vector3 GenerateRandomLocalPositionWithinSlot(OrbitData orbitData) {
         Vector2 pointOnCircle = RandomExtended.PointOnCircle(orbitData.MeanRadius);
         return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);

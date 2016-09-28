@@ -22,7 +22,7 @@ using UnityEngine;
 
 /// <summary>
 /// Sprite on the UI layer that tracks world objects.  The user perceives the sprite as maintaining a constant size on the screen
-/// independant of the distance from the tracked world object to the main camera.
+/// independent of the distance from the tracked world object to the main camera.
 /// </summary>
 public class UITrackingSprite : AUITrackingWidget {
 
@@ -36,7 +36,6 @@ public class UITrackingSprite : AUITrackingWidget {
     /// Temporary. The desired dimensions in pixels of this sprite. 
     /// </summary>
     public Vector2 desiredSpriteDimensions = new Vector2(16, 16);    //TODO: Use properly sized sprite
-
 
     protected new UISprite Widget { get { return base.Widget as UISprite; } }
 

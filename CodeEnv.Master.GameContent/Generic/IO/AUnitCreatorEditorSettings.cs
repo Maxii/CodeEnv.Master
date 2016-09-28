@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCreatorEditorSettings.cs
-// Abstract wrapper for Unit Creator editor settings used in debugging.
+// Abstract data container for Unit Creator editor settings used in debugging.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract wrapper for Unit Creator editor settings used in debugging.
+    /// Abstract data container for Unit Creator editor settings used in debugging.
     /// </summary>
     public abstract class AUnitCreatorEditorSettings {
 
