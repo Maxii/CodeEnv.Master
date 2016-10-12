@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: NewGameUnitConfigurator.cs
-// Configures existing UnitCreators by generating and applying a UnitCreatorConfiguration 
-// including owner, derived from the UnitCreator's EditorSettings.
+// Provides methods to generate and/or configure UnitCreators.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,8 +25,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Configures existing UnitCreators by generating and applying a UnitCreatorConfiguration 
-/// including owner, derived from the UnitCreator's EditorSettings.
+/// Provides methods to generate and/or configure UnitCreators. Existing DebugUnitCreators that are already present in the editor
+/// just need to be configured by accessing the EditorSettings. AutoUnitCreators are both generated and then randomly configured.
 /// </summary>
 public class NewGameUnitConfigurator {
 
@@ -91,6 +90,8 @@ public class NewGameUnitConfigurator {
         return unitName;
     }
 
+    private string Name { get { return GetType().Name; } }
+
     private IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
     private IList<ActiveCountermeasureStat> _availableActiveCountermeasureStats;
     private IList<ShieldGeneratorStat> _availableShieldGeneratorStats;
@@ -98,59 +99,27 @@ public class NewGameUnitConfigurator {
     private IList<AWeaponStat> _availableLosWeaponStats;
     private IList<AWeaponStat> _availableMissileWeaponStats;
 
-    private IList<ADebugUnitCreator> _existingEditorCreators;
-    private IDictionary<DiplomaticRelationship, IList<Player>> _aiPlayerInitialUserRelationsLookup;
     private GameManager _gameMgr;
     private UnitFactory _factory;
 
-    public NewGameUnitConfigurator(IDictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup, IList<ADebugUnitCreator> editorCreators) {
+    public NewGameUnitConfigurator() {
+        InitializeValuesAndReferences();
+        CreateEquipmentStats();
+    }
+
+    private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
         _factory = UnitFactory.Instance;
-        _aiPlayerInitialUserRelationsLookup = aiPlayerInitialUserRelationsLookup;
-        _existingEditorCreators = editorCreators;
-        CreateEquipmentStats();
     }
 
     #region Configure Existing Creators
 
-    /// <summary>
-    /// Configures the existing editor creators, returning the list of players that were not assigned a creator.
-    /// </summary>
-    /// <returns></returns>
-    public IList<Player> ConfigureExistingEditorCreators() {
-        IList<Player> creatorOwners = new List<Player>();
-        foreach (var creator in _existingEditorCreators) {
-            Player owner;
-            if (creator is DebugStarbaseCreator) {
-                owner = AssignConfigurationToExistingCreator(creator as DebugStarbaseCreator);
-            }
-            else if (creator is DebugSettlementCreator) {
-                owner = AssignConfigurationToExistingCreator(creator as DebugSettlementCreator);
-            }
-            else {
-                owner = AssignConfigurationToExistingCreator(creator as DebugFleetCreator);
-            }
-            if (owner != null) {
-                creatorOwners.Add(owner);
-            }
-        }
-        return _gameMgr.AllPlayers.Except(creatorOwners).ToList();
-    }
+    public void AssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location) {
+        var editorSettings = creator.EditorSettings as BaseCreatorEditorSettings;
 
-    /// <summary>
-    /// Assigns a configuration including an owner to the provided unit creator.
-    /// Returns the Player that is now the new owner of the creator.
-    /// </summary>
-    /// <param name="unitCreator">The unit creator.</param>
-    /// <returns></returns>
-    private Player AssignConfigurationToExistingCreator(DebugStarbaseCreator unitCreator) {
-        var editorSettings = unitCreator.EditorSettings as BaseCreatorEditorSettings;
+        ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        Player owner;
-        if (!TryDetermineOwner(editorSettings, out owner)) {
-            return null;
-        }
         GameDate deployDate = editorSettings.DateToDeploy;
         string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateFacilityHullStats(editorSettings, isSettlement: false);
@@ -160,18 +129,17 @@ public class NewGameUnitConfigurator {
         bool enableTrackingLabel = editorSettings.EnableTrackingLabel;
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames,
             enableTrackingLabel);
-        unitCreator.Configuration = config;
-        return owner;
+        creator.Configuration = config;
+        creator.transform.position = location;
+        //D.Log("{0} has placed a {1} for {2}.", Name, typeof(DebugStarbaseCreator).Name, owner);
     }
 
-    private Player AssignConfigurationToExistingCreator(DebugSettlementCreator unitCreator) {
-        var editorSettings = unitCreator.EditorSettings as BaseCreatorEditorSettings;
+    public void AssignConfigurationToExistingCreator(DebugSettlementCreator creator, Player owner, SystemItem system) {
+        var editorSettings = creator.EditorSettings as BaseCreatorEditorSettings;
+
+        ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        Player owner;
-        if (!TryDetermineOwner(editorSettings, out owner)) {
-            return null;
-        }
         GameDate deployDate = editorSettings.DateToDeploy;
         string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateFacilityHullStats(editorSettings, isSettlement: true);
@@ -181,18 +149,17 @@ public class NewGameUnitConfigurator {
         bool enableTrackingLabel = editorSettings.EnableTrackingLabel;
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames,
             enableTrackingLabel);
-        unitCreator.Configuration = config;
-        return owner;
+        creator.Configuration = config;
+        SystemFactory.Instance.InstallCelestialItemInOrbit(creator.gameObject, system.SettlementOrbitData);
+        D.Log("{0} has installed a {1} for {2} in System {3}.", Name, typeof(DebugSettlementCreator).Name, owner, system.FullName);
     }
 
-    private Player AssignConfigurationToExistingCreator(DebugFleetCreator unitCreator) {
-        var editorSettings = unitCreator.EditorSettings as FleetCreatorEditorSettings;
+    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location) {
+        var editorSettings = creator.EditorSettings as FleetCreatorEditorSettings;
+
+        ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        Player owner;
-        if (!TryDetermineOwner(editorSettings, out owner)) {
-            return null;
-        }
         GameDate deployDate = editorSettings.DateToDeploy;
         string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateShipHullStats(editorSettings);
@@ -203,40 +170,27 @@ public class NewGameUnitConfigurator {
         bool enableTrackingLabel = editorSettings.EnableTrackingLabel;
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames,
              enableTrackingLabel);
-        unitCreator.Configuration = config;
-        return owner;
+        creator.Configuration = config;
+        creator.transform.position = location;
+        //D.Log("{0} has placed a {1} for {2}.", Name, typeof(DebugFleetCreator).Name, owner);
     }
 
-    /// <summary>
-    /// Returns true if owner is valid and should be assigned to the creator, false otherwise.
-    /// </summary>
-    /// <param name="settings">The settings.</param>
-    /// <param name="owner">The owner.</param>
-    /// <returns></returns>
-    private bool TryDetermineOwner(AUnitCreatorEditorSettings settings, out Player owner) {
-        if (settings.IsOwnerUser) {
-            owner = _gameMgr.UserPlayer;
-            return true;
+    private void ValidateOwner(Player owner, AUnitCreatorEditorSettings editorSettings) {
+        if (owner.IsUser) {
+            D.Assert(editorSettings.IsOwnerUser);
         }
         else {
-            var desiredUserRelationship = settings.DesiredRelationshipWithUser.Convert();
-            IList<Player> aiOwnerCandidates;
-            if (_aiPlayerInitialUserRelationsLookup.TryGetValue(desiredUserRelationship, out aiOwnerCandidates)) {
-                owner = RandomExtended.Choice(aiOwnerCandidates);
-                return true;
-            }
+            D.Assert(owner.__InitialUserRelationship == editorSettings.DesiredRelationshipWithUser.Convert());
         }
-        owner = null;
-        return false;
     }
 
     #endregion
 
     #region Generate Random AutoCreators
 
-    public void GenerateRandomAutoFleetCreator(Player owner) {
+    public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
         string unitName = GetUniqueUnitName("AutoFleet");
-        GameDate deployDate = GameTime.GameStartDate;
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
         int cmsPerCmd = RandomExtended.Range(0, 3);
         Formation formation = Enums<Formation>.GetRandom(excludeDefault: true);
@@ -256,15 +210,38 @@ public class NewGameUnitConfigurator {
         bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-
-        Sector randomSector = SectorGrid.Instance.RandomSector;
-        Vector3 randomPointInSector = randomSector.GetClearRandomPointInsideSector();
-        UnitFactory.Instance.MakeFleetCreatorInstance(randomPointInSector, config);
+        //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(FleetCreator).Name, owner);
+        return UnitFactory.Instance.MakeFleetCreatorInstance(location, config);
     }
+    //public void GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
+    //    string unitName = GetUniqueUnitName("AutoFleet");
+    //    GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
-    public void GenerateRandomAutoStarbaseCreator(Player owner) {
+    //    int cmsPerCmd = RandomExtended.Range(0, 3);
+    //    Formation formation = Enums<Formation>.GetRandom(excludeDefault: true);
+    //    string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, unitName, cmsPerCmd, formation);
+
+    //    int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
+    //    var hullStats = CreateShipHullStats(elementQty);
+    //    var turretLoadout = DebugWeaponLoadout.Random;
+    //    var missileLoadout = DebugWeaponLoadout.Random;
+    //    int elementPassiveCMs = RandomExtended.Range(0, 3);
+    //    int elementActiveCMs = RandomExtended.Range(0, 3);
+    //    int elementSensors = RandomExtended.Range(1, 5);
+    //    int elementShieldGens = RandomExtended.Range(0, 3);
+    //    var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
+    //    var elementDesignNames = MakeAndRecordShipDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens, combatStance);
+
+    //    bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
+
+    //    UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
+    //    UnitFactory.Instance.MakeFleetCreatorInstance(location, config);
+    //    //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(FleetCreator).Name, owner);
+    //}
+
+    public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
         string unitName = GetUniqueUnitName("AutoStarbase");
-        GameDate deployDate = GameTime.GameStartDate;
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
         int cmsPerCmd = RandomExtended.Range(0, 3);
         Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
@@ -283,15 +260,37 @@ public class NewGameUnitConfigurator {
         bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-
-        Sector randomSector = SectorGrid.Instance.RandomSector;
-        Vector3 randomPointInSector = randomSector.GetClearRandomPointInsideSector();
-        UnitFactory.Instance.MakeStarbaseCreatorInstance(randomPointInSector, config);
+        //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(StarbaseCreator).Name, owner);
+        return UnitFactory.Instance.MakeStarbaseCreatorInstance(location, config);
     }
+    //public void GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
+    //    string unitName = GetUniqueUnitName("AutoStarbase");
+    //    GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
-    public void GenerateRandomAutoSettlementCreator(Player owner) {
+    //    int cmsPerCmd = RandomExtended.Range(0, 3);
+    //    Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+    //    string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, unitName, cmsPerCmd, formation);
+
+    //    int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
+    //    var hullStats = CreateFacilityHullStats(elementQty, isSettlement: false);
+    //    var turretLoadout = DebugWeaponLoadout.Random;
+    //    var missileLoadout = DebugWeaponLoadout.Random;
+    //    int elementPassiveCMs = RandomExtended.Range(0, 3);
+    //    int elementActiveCMs = RandomExtended.Range(0, 3);
+    //    int elementSensors = RandomExtended.Range(1, 5);
+    //    int elementShieldGens = RandomExtended.Range(0, 3);
+    //    var elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens);
+
+    //    bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
+
+    //    UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
+    //    UnitFactory.Instance.MakeStarbaseCreatorInstance(location, config);
+    //    //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(StarbaseCreator).Name, owner);
+    //}
+
+    public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
         string unitName = GetUniqueUnitName("AutoSettlement");
-        GameDate deployDate = GameTime.GameStartDate;
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
         int cmsPerCmd = RandomExtended.Range(0, 3);
         Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
@@ -310,40 +309,40 @@ public class NewGameUnitConfigurator {
         bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-
-        UnitFactory.Instance.MakeSettlementCreatorInstance(config);
+        D.Log("{0} has generated/installed a random {1} for {2} in System {3}.", Name, typeof(SettlementCreator).Name, owner, system.FullName);
+        return UnitFactory.Instance.MakeSettlementCreatorInstance(config, system);
     }
+    //public void GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
+    //    string unitName = GetUniqueUnitName("AutoSettlement");
+    //    GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
+
+    //    int cmsPerCmd = RandomExtended.Range(0, 3);
+    //    Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+    //    string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, unitName, cmsPerCmd, formation);
+
+    //    int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
+    //    var hullStats = CreateFacilityHullStats(elementQty, isSettlement: true);
+    //    var turretLoadout = DebugWeaponLoadout.Random;
+    //    var missileLoadout = DebugWeaponLoadout.Random;
+    //    int elementPassiveCMs = RandomExtended.Range(0, 3);
+    //    int elementActiveCMs = RandomExtended.Range(0, 3);
+    //    int elementSensors = RandomExtended.Range(1, 5);
+    //    int elementShieldGens = RandomExtended.Range(0, 3);
+    //    var elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens);
+
+    //    bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
+
+    //    UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
+    //    UnitFactory.Instance.MakeSettlementCreatorInstance(config, system);
+    //    D.Log("{0} has generated/installed a random {1} for {2} in System {3}.", Name, typeof(SettlementCreator).Name, owner, system.FullName);
+    //}
 
     #endregion
 
-    /// <summary>
-    /// Gets the AiPlayers that either currently have the specified user relationship or will have it when they meet.
-    /// </summary>
-    /// <param name="userRelationship">The specified user relationship.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public IEnumerable<Player> GetAiPlayersWithCurrentOrInitialUserRelationsOf(DiplomaticRelationship userRelationship) {
-        Player userPlayer = _gameMgr.UserPlayer;
-        var aiPlayersWithSpecifiedCurrentUserRelations = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.IsRelationshipWith(userPlayer, userRelationship));
-        IList<Player> aiPlayersWithSpecifiedInitialUserRelations;
-        if (_aiPlayerInitialUserRelationsLookup.TryGetValue(userRelationship, out aiPlayersWithSpecifiedInitialUserRelations)) {
-            return aiPlayersWithSpecifiedInitialUserRelations.Union(aiPlayersWithSpecifiedCurrentUserRelations);
-        }
-        return aiPlayersWithSpecifiedCurrentUserRelations;
-    }
-
-    /// <summary>
-    /// Gets the AIPlayers that the User has not yet met, that have been assigned the initialUserRelationship to begin with when they do meet.
-    /// </summary>
-    /// <param name="initialUserRelationship">The initial user relationship.</param>
-    /// <returns></returns>
-    public IEnumerable<Player> GetUnmetAiPlayersWithInitialUserRelationsOf(DiplomaticRelationship initialUserRelationship) {
-        Player userPlayer = _gameMgr.UserPlayer;
-        IList<Player> aiPlayersWithSpecifiedInitialUserRelations;
-        if (_aiPlayerInitialUserRelationsLookup.TryGetValue(initialUserRelationship, out aiPlayersWithSpecifiedInitialUserRelations)) {
-            return aiPlayersWithSpecifiedInitialUserRelations.Except(userPlayer.OtherKnownPlayers);
-        }
-        return Enumerable.Empty<Player>();
+    public void Reset() {
+        _elementInstanceIDCounter = Constants.One;
+        _designNameCounter = Constants.One;
+        _unitNameCounter = Constants.One;
     }
 
     #region Create Equipment Stats
@@ -842,6 +841,10 @@ public class NewGameUnitConfigurator {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    #endregion
 
 }
 

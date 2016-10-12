@@ -150,6 +150,10 @@ namespace CodeEnv.Master.Common {
         public const float ZeroPercent = 0.0F;
         public const float OneF = 1.0F;
         public const float OneHundredPercent = 1.0F;
+        public static float OneThird = 1F / 3F;
+        public static float TwoThirds = 2F / 3F;
+
+
 
         public const int OneKilobyte = 1024;
         public const int OneMegabyte = 1048576;

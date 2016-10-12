@@ -35,8 +35,14 @@ namespace CodeEnv.Master.GameContent {
 
         private string _universeSizeKey = "Universe Size";
         private string _systemDensityKey = "System Density";
-        private string _playerCountKey = "Player Count";
         private string _usernameKey = "Username";
+
+        private string _tinyPlayerCountKey = "Player Count_Tiny";
+        private string _smallPlayerCountKey = "Player Count_Small";
+        private string _normalPlayerCountKey = "Player Count_Normal";
+        private string _largePlayerCountKey = "Player Count_Large";
+        private string _enormousPlayerCountKey = "Player Count_Enormous";
+        private string _giganticPlayerCountKey = "Player Count_Gigantic";
 
         private string _userPlayerSpeciesKey = "User Player Species";
         private string _aiPlayer1SpeciesKey = "AIPlayer1 Species";
@@ -86,8 +92,14 @@ namespace CodeEnv.Master.GameContent {
         // Note: Notifications are not needed for properties that cannot change during a game instance
         public UniverseSizeGuiSelection UniverseSizeSelection { get; private set; }
         public SystemDensityGuiSelection SystemDensitySelection { get; private set; }
-        public int PlayerCount { get; private set; }
         public string Username { get; set; }
+
+        public int TinyPlayerCount { get; private set; }
+        public int SmallPlayerCount { get; private set; }
+        public int NormalPlayerCount { get; private set; }
+        public int LargePlayerCount { get; private set; }
+        public int EnormousPlayerCount { get; private set; }
+        public int GiganticPlayerCount { get; private set; }
 
         public SpeciesGuiSelection UserPlayerSpeciesSelection { get; private set; }
         public SpeciesGuiSelection AIPlayer1SpeciesSelection { get; private set; }
@@ -205,9 +217,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void RecordNewGameSettings(NewGamePreferenceSettings settings) {
-            UniverseSizeSelection = settings.UniverseSizeSelection;
+            UniverseSizeSelection = settings.UniverseSizeGuiSelection;
             SystemDensitySelection = settings.SystemDensitySelection;
-            PlayerCount = settings.PlayerCount;
+
+            RecordPlayerCount(settings.UniverseSize, settings.PlayerCount);
 
             UserPlayerSpeciesSelection = settings.UserPlayerSpeciesSelection;
             UserPlayerColor = settings.UserPlayerColor;
@@ -267,6 +280,32 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private void RecordPlayerCount(UniverseSize universeSize, int playerCount) {
+            switch (universeSize) {
+                case UniverseSize.Tiny:
+                    TinyPlayerCount = playerCount;
+                    break;
+                case UniverseSize.Small:
+                    SmallPlayerCount = playerCount;
+                    break;
+                case UniverseSize.Normal:
+                    NormalPlayerCount = playerCount;
+                    break;
+                case UniverseSize.Large:
+                    LargePlayerCount = playerCount;
+                    break;
+                case UniverseSize.Enormous:
+                    EnormousPlayerCount = playerCount;
+                    break;
+                case UniverseSize.Gigantic:
+                    GiganticPlayerCount = playerCount;
+                    break;
+                case UniverseSize.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+            }
+        }
+
         /// <summary>
         /// Stores all PlayerPrefs to disk.
         /// </summary>
@@ -319,7 +358,13 @@ namespace CodeEnv.Master.GameContent {
             StoreStringPref(_qualitySettingKey, QualitySetting);
             StoreStringPref(_usernameKey, Username);
 
-            StoreIntPref(_playerCountKey, PlayerCount);
+            StoreIntPref(_tinyPlayerCountKey, TinyPlayerCount);
+            StoreIntPref(_smallPlayerCountKey, SmallPlayerCount);
+            StoreIntPref(_normalPlayerCountKey, NormalPlayerCount);
+            StoreIntPref(_largePlayerCountKey, LargePlayerCount);
+            StoreIntPref(_enormousPlayerCountKey, EnormousPlayerCount);
+            StoreIntPref(_giganticPlayerCountKey, GiganticPlayerCount);
+
             PlayerPrefs.Save();
             //var retrievedPlayerCount = RetrieveIntPref(_playerCountKey, UniverseSize.Normal.DefaultPlayerCount());
             //D.Log("{0} confirming PlayerCount value stored is {1}.", GetType().Name, retrievedPlayerCount);
@@ -405,7 +450,6 @@ namespace CodeEnv.Master.GameContent {
             AIPlayer6Team = RetrieveEnumPref<TeamID>(_aiPlayer6TeamKey, TeamID.Team_7);
             AIPlayer7Team = RetrieveEnumPref<TeamID>(_aiPlayer7TeamKey, TeamID.Team_8);
 
-
             IsPauseOnLoadEnabled = RetrieveBooleanPref(_isPauseOnLoadEnabledKey, false);
 
             // the initial change notification sent out by these Properties occur so early they won't be heard by anyone so clients must initialize by calling the Properties directly
@@ -415,7 +459,14 @@ namespace CodeEnv.Master.GameContent {
             IsElementIconsEnabled = RetrieveBooleanPref(_isElementIconsEnabledKey, true);
 
             QualitySetting = RetrieveStringPref(_qualitySettingKey, QualitySettings.names[QualitySettings.GetQualityLevel()]);
-            PlayerCount = RetrieveIntPref(_playerCountKey, UniverseSize.Normal.DefaultPlayerCount());
+
+            TinyPlayerCount = RetrieveIntPref(_tinyPlayerCountKey, UniverseSize.Tiny.DefaultPlayerCount());
+            SmallPlayerCount = RetrieveIntPref(_smallPlayerCountKey, UniverseSize.Small.DefaultPlayerCount());
+            NormalPlayerCount = RetrieveIntPref(_normalPlayerCountKey, UniverseSize.Normal.DefaultPlayerCount());
+            LargePlayerCount = RetrieveIntPref(_largePlayerCountKey, UniverseSize.Large.DefaultPlayerCount());
+            EnormousPlayerCount = RetrieveIntPref(_enormousPlayerCountKey, UniverseSize.Enormous.DefaultPlayerCount());
+            GiganticPlayerCount = RetrieveIntPref(_giganticPlayerCountKey, UniverseSize.Gigantic.DefaultPlayerCount());
+
             Username = RetrieveStringPref(_usernameKey, "Default Username");
         }
 

@@ -34,26 +34,6 @@ public class DebugControlsEditor : Editor {
 
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
         {
-            if (NGUIEditorTools.DrawHeader("New Game Debug Settings")) {
-                NGUIEditorTools.BeginContents();
-                {
-                    NGUIEditorTools.SetLabelWidth(140F);
-                    SerializedProperty useDebugSettingsSP = NGUIEditorTools.DrawProperty("Use Debug Settings", serializedObject, "_useDebugSettings");
-
-                    EditorGUI.BeginDisabledGroup(!useDebugSettingsSP.boolValue);
-                    {
-                        NGUIEditorTools.SetLabelWidth(80F);
-                        NGUIEditorTools.DrawProperty("Size", serializedObject, "_universeSize");
-                        NGUIEditorTools.DrawProperty("Density", serializedObject, "_systemDensity");
-                        NGUIEditorTools.DrawProperty("Players", serializedObject, "_playerCount");
-                    }
-                    EditorGUI.EndDisabledGroup();
-                }
-                NGUIEditorTools.EndContents();
-            }
-
-            GUILayout.Space(10F);
-
             if (NGUIEditorTools.DrawHeader("Unit/System AutoCreator Debug Settings")) {
                 NGUIEditorTools.BeginContents();
                 {

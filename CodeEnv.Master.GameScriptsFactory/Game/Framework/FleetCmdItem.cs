@@ -420,7 +420,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region Idling
 
-    void Idling_EnterState() {
+    IEnumerator Idling_EnterState() {
         LogEvent();
 
         if (_fsmTgt != null) {
@@ -428,7 +428,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         Data.Target = null; // temp to remove target from data after order has been completed or failed
-        IsAvailable = true;
+        IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
+                            // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
+        yield return null;
     }
 
     void Idling_UponOwnerChanged() {
@@ -1257,8 +1259,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable; // Fleet explorable targets are non-enemy owned sectors, systems and UCenter
         D.Assert(fleetExploreTgt != null);
-        D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
-        D.Assert(!fleetExploreTgt.IsFullyExploredBy(Owner));
+        D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner), "{0} ordered to explore {1} that is not allowed.", FullName, fleetExploreTgt.FullName);
+        D.Assert(!fleetExploreTgt.IsFullyExploredBy(Owner), "{0} ordered to explore {1} that is fully explored.", FullName, fleetExploreTgt.FullName);
 
         _fsmTgt = fleetExploreTgt;
         _apMoveSpeed = Speed.Standard;
@@ -1467,7 +1469,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteExploreOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
-        if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
+        if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) { // 10.16 Getting NRE
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 FullName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.FullName, fleetExploreTgt.Owner_Debug.LeaderName, Owner.GetCurrentRelations(fleetExploreTgt.Owner_Debug).GetValueName());
             // TODO Communicate failure to boss?

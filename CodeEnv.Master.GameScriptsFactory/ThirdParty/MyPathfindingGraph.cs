@@ -530,7 +530,7 @@ namespace Pathfinding {
             //startTime = Utility.SystemTime;
 
             // populate all space with sector navigation waypoints separated by nodeSeparationDistance
-            IList<Sector> allSectors = SectorGrid.Instance.AllSectors.ToList();     //// = __GetAllowedSectorsToScan();
+            IList<Sector> allSectors = SectorGrid.Instance.Sectors.ToList();     //// = __GetAllowedSectorsToScan();
             D.Log("{0}: Sectors to scan = {1}.", GetType().Name, allSectors.Count);
             List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 25);
             float distanceToCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
@@ -1005,7 +1005,7 @@ namespace Pathfinding {
             int maxIndexX = __MaxAllowedSectorGridSizeToScan.x / 2;
             int maxIndexY = __MaxAllowedSectorGridSizeToScan.y / 2;
             int maxIndexZ = __MaxAllowedSectorGridSizeToScan.z / 2;
-            var allSectors = SectorGrid.Instance.AllSectors;
+            var allSectors = SectorGrid.Instance.Sectors;
             allSectors.ForAll(s => {
                 var index = s.SectorIndex;
                 if (Mathf.Abs(index.x) <= maxIndexX) {

@@ -320,7 +320,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
                     return false;
                 }
                 if (System.Settlement != null && MyMath.IsPointInsideSphere(System.Settlement.Position, System.Settlement.ClearanceRadius, location)) {
-                    return false;
+                    return false;   // IMPROVE Settlement can be null while a Settlement is being built in the system
                 }
                 foreach (var planet in System.Planets) {
                     if (MyMath.IsPointInsideSphere(planet.Position, planet.ClearanceRadius, location)) {

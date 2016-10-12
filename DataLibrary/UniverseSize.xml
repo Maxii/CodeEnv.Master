@@ -18,51 +18,80 @@
     </Setting>
     <Setting>
       <PropertyName>SmallDefaultPlayerCount</PropertyName>
-      <PropertyValue>3</PropertyValue>
+      <PropertyValue>2</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>NormalDefaultPlayerCount</PropertyName>
-      <PropertyValue>5</PropertyValue>
+      <PropertyValue>4</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>LargeDefaultPlayerCount</PropertyName>
-      <PropertyValue>6</PropertyValue>
+      <PropertyValue>5</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>EnormousDefaultPlayerCount</PropertyName>
-      <PropertyValue>7</PropertyValue>
+      <PropertyValue>6</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>GiganticDefaultPlayerCount</PropertyName>
+      <PropertyValue>7</PropertyValue>
+    </Setting>
+  </Integer>
+
+  <!-- Max Player Count -->
+  <Integer>
+    <Setting>
+      <PropertyName>TinyMaxPlayerCount</PropertyName>
+      <PropertyValue>2</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>SmallMaxPlayerCount</PropertyName>
+      <PropertyValue>3</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>NormalMaxPlayerCount</PropertyName>
+      <PropertyValue>5</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>LargeMaxPlayerCount</PropertyName>
+      <PropertyValue>7</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnormousMaxPlayerCount</PropertyName>
+      <PropertyValue>8</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>GiganticMaxPlayerCount</PropertyName>
       <PropertyValue>8</PropertyValue>
     </Setting>
   </Integer>
-  
+
+
   <!-- Radius in Sectors. Does not need to be even number. -->
   <Integer>
     <Setting>
       <PropertyName>TinyRadius</PropertyName>
-      <PropertyValue>5</PropertyValue>
+      <PropertyValue>3</PropertyValue>      <!--3, 5-->
     </Setting>
     <Setting>
       <PropertyName>SmallRadius</PropertyName>
-      <PropertyValue>8</PropertyValue>
+      <PropertyValue>4</PropertyValue>      <!--5, 8-->
     </Setting>
     <Setting>
       <PropertyName>NormalRadius</PropertyName>
-      <PropertyValue>12</PropertyValue>
+      <PropertyValue>6</PropertyValue>      <!--8, 12-->
     </Setting>
     <Setting>
       <PropertyName>LargeRadius</PropertyName>
-      <PropertyValue>18</PropertyValue>
+      <PropertyValue>8</PropertyValue>      <!--11, 18-->
     </Setting>
     <Setting>
       <PropertyName>EnormousRadius</PropertyName>
-      <PropertyValue>27</PropertyValue>
+      <PropertyValue>11</PropertyValue>      <!--17, 27-->
     </Setting>
     <Setting>
       <PropertyName>GiganticRadius</PropertyName>
-      <PropertyValue>40</PropertyValue>
+      <PropertyValue>15</PropertyValue>      <!--25, 40-->
     </Setting>
   </Integer>
 

@@ -92,7 +92,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
         return popupList;
     }
 
-    private void Subscribe() {
+    protected virtual void Subscribe() {
         EventDelegate.Add(_popupList.onChange, PopupListSelectionChangedEventHandler);
     }
 
@@ -126,7 +126,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
     protected virtual bool TryMakePreferenceSelection() {
         bool isPrefSelected = true;
         string valueName;
-        string prefsPropertyName = ElementID.PreferencePropertyName();
+        string prefsPropertyName = DeterminePreferencePropertyName();
         if (prefsPropertyName != null) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
             if (propertyInfo == null) {
@@ -153,6 +153,16 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
         //D.Log("{0} is about to assign popupList selection value as string {1}.", Name, valueName);
         _popupList.value = valueName;
         return isPrefSelected;
+    }
+
+    /// <summary>
+    /// Determines the name of the preference property to use. Default is the
+    /// property name associated with the ElementID. Derived classes can override
+    /// if more the property name will vary depending on the state of the derived class.
+    /// </summary>
+    /// <returns></returns>
+    protected virtual string DeterminePreferencePropertyName() {
+        return ElementID.PreferencePropertyName();
     }
 
     #region Event and Property Change Handlers

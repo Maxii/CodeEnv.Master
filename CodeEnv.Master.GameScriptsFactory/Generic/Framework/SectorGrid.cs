@@ -36,6 +36,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private const string SectorNameFormat = "Sector {0}";
 
+    private string Name { get { return GetType().Name; } }
+
     [Tooltip("Controls how many layers of sectors are visible when in SectorViewMode")]
     [Range(2F, 5F)]
     [SerializeField]
@@ -49,15 +51,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     [SerializeField]
     private Vector3 _debugMaxGridSize = new Vector3(10, 10, 10);
 
-    public IEnumerable<Sector> AllSectors { get { return _sectorIndexToSectorLookup.Values; } }
+    public IEnumerable<Sector> Sectors { get { return _sectorIndexToSectorLookup.Values; } }
 
-    public IEnumerable<IntVector3> AllSectorIndexes { get { return _sectorIndexToSectorLookup.Keys; } }
+    public IEnumerable<IntVector3> SectorIndices { get { return _sectorIndexToSectorLookup.Keys; } }
+
+    public IEnumerable<IntVector3> NonPeripheralSectorIndices { get { return _nonPeripheralSectorIndices; } }
 
     /// <summary>
     /// Read-only. The location of the center of all sectors in world space.
     /// </summary>
     public IEnumerable<Vector3> SectorCenters { get { return _sectorIndexToCellWorldLocationLookup.Values; } }
 
+    [Obsolete]
     public Sector RandomSector { get { return RandomExtended.Choice(_sectorIndexToSectorLookup.Values); } }
 
     /// <summary>
@@ -73,29 +78,38 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private Vector3 _cellVertexGridCoordinatesToCellGridCoordinatesOffset = new Vector3(0.5F, 0.5F, 0.5F);
 
     /// <summary>
-    /// The world location of each cell vertex.
+    /// The world location of each cell vertex. Only contains cells inside the radius of the universe.
     /// <remarks>A cell vertex is effectively the cell index in the grid coordinate system, aka Vector3(1, -1, 0).</remarks>
     /// </summary>
     private IList<Vector3> _cellVertexWorldLocations;
 
     /// <summary>
     /// Lookup that translates a cell's GridCoordinates into the appropriate sector index.
+    /// Only contains cells inside the radius of the universe.
     /// <remarks>Cell GridCoordinates are always half values, aka Vector3(0.5F, 2.0F, -3.5F).
     /// They mark the center of each cell in the GridCoordinate system.</remarks>
     /// </summary>
     private IDictionary<Vector3, IntVector3> _cellGridCoordinatesToSectorIndexLookup;
 
     /// <summary>
-    /// Lookup that translates sector indices into the GridCoordinates of the cell/sector.
+    /// Lookup that translates sector indices into the GridCoordinates of the cell/sector. 
+    /// Only contains cells inside the radius of the universe.
     /// <remarks>Cell GridCoordinates are always half values, aka Vector3(0.5F, 2.0F, -3.5F).</remarks>
     /// </summary>
     private IDictionary<IntVector3, Vector3> _sectorIndexToCellGridCoordinatesLookup;
 
     /// <summary>
     /// Lookup that translates sector indices into the world location of the cell/sector.
+    /// Only contains cells inside the radius of the universe.
     /// </summary>
     private IDictionary<IntVector3, Vector3> _sectorIndexToCellWorldLocationLookup;
+
+    /// <summary>
+    /// The sector index to sector lookup. Only contains sectors inside the radius of the universe.
+    /// </summary>
     private IDictionary<IntVector3, Sector> _sectorIndexToSectorLookup;
+
+    private IList<IntVector3> _nonPeripheralSectorIndices;
 
     /// <summary>
     /// The grid coordinates of the cell vertex furthest from the center along the positive axes of the grid.
@@ -113,7 +127,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private Parallelepiped _gridRenderer;
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscriptions;
-    //private GameManager _gameMgr;
+    private GameManager _gameMgr;
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
@@ -128,7 +142,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void InitializeLocalReferencesAndValues() {
-        //_gameMgr = GameManager.Instance;
+        _gameMgr = GameManager.Instance;
     }
 
     private void InitializeGrid() {
@@ -165,7 +179,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void InitializeGridSize() {
         int cellCountInsideUniverseAlongAGridAxis = CalcCellCountInsideUniverseAlongAGridAxis();
-        D.Assert(cellCountInsideUniverseAlongAGridAxis % 2 == Constants.Zero, "{0}: CellCount {1} can't be odd.", GetType().Name, cellCountInsideUniverseAlongAGridAxis);
+        D.Assert(cellCountInsideUniverseAlongAGridAxis % 2 == Constants.Zero, "{0}: CellCount {1} can't be odd.", Name, cellCountInsideUniverseAlongAGridAxis);
         _gridSize = Vector3.one * cellCountInsideUniverseAlongAGridAxis;
         if (_enableGridSizeLimit) {
             if (_gridSize.sqrMagnitude > _debugMaxGridSize.sqrMagnitude) {
@@ -173,15 +187,15 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                 _gridSize = _debugMaxGridSize;
             }
         }
-        D.Assert(_gridSize.x.ApproxEquals(_gridSize.y) && _gridSize.y.ApproxEquals(_gridSize.z), "{0}: {1} must be cube.", GetType().Name, _gridSize);
-        D.Assert((_gridSize.x % 2F).ApproxEquals(Constants.ZeroF), "{0}: {1} must use even values.", GetType().Name, _gridSize);
+        D.Assert(_gridSize.x.ApproxEquals(_gridSize.y) && _gridSize.y.ApproxEquals(_gridSize.z), "{0}: {1} must be cube.", Name, _gridSize);
+        D.Assert((_gridSize.x % 2F).ApproxEquals(Constants.ZeroF), "{0}: {1} must use even values.", Name, _gridSize);
 
         _outermostCellVertexGridCoordinates = _gridSize / 2F;
-        D.Log("{0}: Universe Grid Size = {1}.", GetType().Name, _gridSize);
+        D.Log("{0}: Universe Grid Size = {1}.", Name, _gridSize);
     }
 
     private int CalcCellCountInsideUniverseAlongAGridAxis() {
-        float universeRadius = DebugControls.Instance.UniverseSize.Radius();
+        float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
         float cellCountAlongGridPosAxisInsideUniverse = universeRadius / TempGameValues.SectorSideLength;
         return Mathf.RoundToInt(cellCountAlongGridPosAxisInsideUniverse) * 2;
     }
@@ -216,7 +230,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private List<Vector3> GenerateWireframeGridPoints(IntVector3 cameraSectorIndex) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
-        D.Assert(Mathfx.Approx(transform.position, Vector3.zero, .01F), "{0} must be located at origin.", GetType().Name);
+        D.Assert(Mathfx.Approx(transform.position, Vector3.zero, .01F), "{0} must be located at origin.", Name);
         Vector3 cameraCellVertexGridCoordinates = GetCellVertexGridCoordinatesFrom(cameraSectorIndex);
 
         float cameraCellVertexGridCoordinate_X = cameraCellVertexGridCoordinates.x;
@@ -239,14 +253,14 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
         Vector3 renderFrom = new Vector3(xRenderFrom, yRenderFrom, zRenderFrom);
         Vector3 renderTo = new Vector3(xRenderTo, yRenderTo, zRenderTo);
-        //D.Log("{0} after depth adjust: CameraCellVertexGridCoordinates {1}, RenderFrom {2}, RenderTo {3}.", GetType().Name, cameraCellVertexGridCoordinates, renderFrom, renderTo);
+        //D.Log("{0} after depth adjust: CameraCellVertexGridCoordinates {1}, RenderFrom {2}, RenderTo {3}.", Name, cameraCellVertexGridCoordinates, renderFrom, renderTo);
 
         // reqd as Version 2 GetVectrosityPoints() directly derives from Renderer's From and To
         _gridRenderer.From = renderFrom;
         _gridRenderer.To = renderTo;
         List<Vector3> gridPoints = _gridRenderer.GetVectrosityPoints();
 
-        D.Assert(gridPoints.Any(), "{0}: No grid points to render.", GetType().Name);
+        D.Assert(gridPoints.Any(), "{0}: No grid points to render.", Name);
         return gridPoints;
     }
 
@@ -277,8 +291,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         _sectorIndexToCellGridCoordinatesLookup = new Dictionary<IntVector3, Vector3>(cellQty);
         _sectorIndexToCellWorldLocationLookup = new Dictionary<IntVector3, Vector3>(cellQty);
         _sectorIndexToSectorLookup = new Dictionary<IntVector3, Sector>(cellQty);
+        _nonPeripheralSectorIndices = new List<IntVector3>();
 
-        float universeRadius = DebugControls.Instance.UniverseSize.Radius();
+        float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
         float universeRadiusSqrd = universeRadius * universeRadius;
         float cellOnPeripheryThresholdDistance = universeRadius - TempGameValues.SectorSideLength;
         float cellOnPeripheryThresholdDistanceSqrd = cellOnPeripheryThresholdDistance * cellOnPeripheryThresholdDistance;
@@ -311,15 +326,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                         if (isCellOnPeriphery) {
                             peripheryCellCount++;
                         }
+                        else {
+                            _nonPeripheralSectorIndices.Add(sectorIndex);
+                        }
                         __AddSector(sectorIndex, cellWorldLocation, isCellOnPeriphery);
                     }
                 }
             }
         }
 
-        D.Log("{0}: Found {1} grid/world vertices and created {2} sectors/cells. Periphery cell count = {3}.",
-        GetType().Name, _cellVertexWorldLocations.Count, _sectorIndexToSectorLookup.Keys.Count, peripheryCellCount);
-        __LogDuration("{0}.ConstructSectors()".Inject(GetType().Name));
+        D.Log("{0} found {1} grid/world vertices and created {2} sectors/cells of which {3} are non-periphery.",
+        Name, _cellVertexWorldLocations.Count, _sectorIndexToSectorLookup.Keys.Count, _sectorIndexToSectorLookup.Keys.Count - peripheryCellCount);
+        __LogDuration("{0}.ConstructSectors()".Inject(Name));
     }
 
     /// <summary>
@@ -357,7 +375,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         int yIndex = y.ApproxEquals(Constants.ZeroF) ? 1 : (y > Constants.ZeroF ? Mathf.CeilToInt(y) : Mathf.FloorToInt(y));
         int zIndex = z.ApproxEquals(Constants.ZeroF) ? 1 : (z > Constants.ZeroF ? Mathf.CeilToInt(z) : Mathf.FloorToInt(z));
         var index = new IntVector3(xIndex, yIndex, zIndex);
-        //D.Log("{0}: CellGridCoordinates = {1}, resulting SectorIndex = {2}.", GetType().Name, cellGridCoordinates, index);
+        //D.Log("{0}: CellGridCoordinates = {1}, resulting SectorIndex = {2}.", Name, cellGridCoordinates, index);
         return index;
     }
 
@@ -400,7 +418,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sectorIndex">The sector index.</param>
     /// <returns></returns>
     private Vector3 GetCellVertexGridCoordinatesFrom(IntVector3 sectorIndex) {
-        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, sectorIndex);
         return GetCellGridCoordinatesFor(sectorIndex) - _cellVertexGridCoordinatesToCellGridCoordinatesOffset;
     }
 
@@ -433,9 +451,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="worldPosition">The world position of the sector's center.</param>
     /// <returns></returns>
     public bool __TryGetSectorPosition(IntVector3 sectorIndex, out Vector3 worldPosition) {
-        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, sectorIndex);
         bool isSectorFound = _sectorIndexToCellWorldLocationLookup.TryGetValue(sectorIndex, out worldPosition);
-        D.Warn(!isSectorFound, "{0} could not find a sector at Index {1}.", GetType().Name, sectorIndex);
+        D.Warn(!isSectorFound, "{0} could not find a sector at Index {1}.", Name, sectorIndex);
         return isSectorFound;
     }
 
@@ -446,10 +464,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sectorIndex">Index of the sector.</param>
     /// <returns></returns>
     public Vector3 GetSectorPosition(IntVector3 sectorIndex) {
-        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, sectorIndex);
         Vector3 worldPosition;
         bool isSectorFound = _sectorIndexToCellWorldLocationLookup.TryGetValue(sectorIndex, out worldPosition);
-        D.Assert(isSectorFound, "{0} could not find a sector at Index {1}.", GetType().Name, sectorIndex);
+        D.Assert(isSectorFound, "{0} could not find a sector at Index {1}.", Name, sectorIndex);
         return worldPosition;
     }
 
@@ -462,7 +480,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sector">The sector.</param>
     /// <returns></returns>
     public bool __TryGetSector(IntVector3 sectorIndex, out Sector sector) {
-        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, sectorIndex);
         return _sectorIndexToSectorLookup.TryGetValue(sectorIndex, out sector);
     }
 
@@ -487,10 +505,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sectorIndex">The index.</param>
     /// <returns></returns>
     public Sector GetSector(IntVector3 sectorIndex) {
-        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, sectorIndex);
         Sector sector;
         if (!_sectorIndexToSectorLookup.TryGetValue(sectorIndex, out sector)) {
-            D.Warn("{0}: No Sector at {1}, returning null.", GetType().Name, sectorIndex);
+            D.Warn("{0}: No Sector at {1}, returning null.", Name, sectorIndex);
         }
         return sector;
     }
@@ -508,8 +526,60 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
-    /// Gets the indexes of the neighbors to this sector index. A sector must
-    /// occupy the index location to be included. The sector at center is not included.
+    /// Gets a random sector index.
+    /// </summary>
+    /// <param name="includePeriphery">if set to <c>true</c> [include periphery].</param>
+    /// <param name="excludedIndices">The excluded indices.</param>
+    /// <returns></returns>
+    public IntVector3 GetRandomSectorIndex(bool includePeriphery = false, IEnumerable<IntVector3> excludedIndices = null) {
+        IEnumerable<IntVector3> indicesToChooseFrom = includePeriphery ? _sectorIndexToSectorLookup.Keys : _nonPeripheralSectorIndices;
+        if (excludedIndices != null) {
+            indicesToChooseFrom = indicesToChooseFrom.Except(excludedIndices);
+        }
+        return RandomExtended.Choice(indicesToChooseFrom);
+    }
+
+    /// <summary>
+    /// Returns the indices surrounding <c>center</c> that are between <c>minDistance</c> and <c>maxDistance</c>
+    /// from <c>center</c>. The UOM for both distance values is sectors.
+    /// </summary>
+    /// <param name="center">The center.</param>
+    /// <param name="minDistance">The minimum distance in sectors.</param>
+    /// <param name="maxDistance">The maximum distance in sectors.</param>
+    /// <returns></returns>
+    public IList<IntVector3> GetSurroundingIndicesBetween(IntVector3 center, int minDistance, int maxDistance) {
+        D.Assert(center != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, center);
+        D.Assert(__IsSectorPresentAt(center));
+        Utility.ValidateForRange(minDistance, 0, maxDistance - 1);
+        Utility.ValidateForRange(maxDistance, minDistance + 1, _gameMgr.GameSettings.UniverseSize.RadiusInSectors() * 2);
+
+        __RecordDurationStartTime();
+
+        int minDistanceSqrd = minDistance * minDistance;
+        int maxDistanceSqrd = maxDistance * maxDistance;
+
+        Vector3 centerCell = _sectorIndexToCellGridCoordinatesLookup[center];
+
+        Vector3[] allCandidateGridCells = _cellGridCoordinatesToSectorIndexLookup.Keys.Except(centerCell).ToArray();
+        int gridCellQty = allCandidateGridCells.Length;
+        IList<IntVector3> result = new List<IntVector3>(gridCellQty);
+
+        for (int i = 0; i < gridCellQty; i++) {
+            Vector3 candidateCell = allCandidateGridCells[i];
+            Vector3 vectorFromCenterToCandidateCell = candidateCell - centerCell;
+            float vectorSqrMagnitude = vectorFromCenterToCandidateCell.sqrMagnitude;
+            if (vectorSqrMagnitude >= minDistanceSqrd && vectorSqrMagnitude <= maxDistanceSqrd) {
+                IntVector3 candidateCellIndex = _cellGridCoordinatesToSectorIndexLookup[candidateCell];
+                result.Add(candidateCellIndex);
+            }
+        }
+        __LogDuration("{0}.GetSurroundingIndicesBetween()".Inject(Name));
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the indexes of the neighbors to this sector index. 
+    /// A sector must be present at the index location to be included. The sector at center is not included.
     /// </summary>
     /// <param name="center">The center.</param>
     /// <returns></returns>
@@ -540,9 +610,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
-    /// Gets the neighboring sectors to this sector index. A sector must
-    /// occupy the index location to be included. The sector at center is
-    /// not included.
+    /// Gets the neighboring sectors to this sector index. 
+    /// A sector must be present at the index location to be included. The sector at center is not included.
     /// </summary>
     /// <param name="center">The center.</param>
     /// <returns></returns>
@@ -564,11 +633,21 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="secondSectorIndex">The second.</param>
     /// <returns></returns>
     public float GetDistanceInSectors(IntVector3 firstSectorIndex, IntVector3 secondSectorIndex) {
-        D.Assert(firstSectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, firstSectorIndex);
-        D.Assert(secondSectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, secondSectorIndex);
+        D.Assert(firstSectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, firstSectorIndex);
+        D.Assert(secondSectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", Name, secondSectorIndex);
         Vector3 firstCellGridCoordinates = GetCellGridCoordinatesFor(firstSectorIndex);
         Vector3 secondCellGridCoordindates = GetCellGridCoordinatesFor(secondSectorIndex);
         return Vector3.Distance(firstCellGridCoordinates, secondCellGridCoordindates);
+    }
+
+    /// <summary>
+    /// Gets the distance in sectors from the origin, aka the location of the UniverseCenter.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <returns></returns>
+    public float GetDistanceInSectorsFromOrigin(IntVector3 sectorIndex) {
+        Vector3 cellGridCoordinates = GetCellGridCoordinatesFor(sectorIndex);
+        return Vector3.Distance(cellGridCoordinates, Vector3.zero);
     }
 
     public void ShowSectorGrid(bool toShow) {
@@ -588,7 +667,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             _gridWireframe = null;
         }
         //string msg = toShow ? "making new GridWireframe" : "destroying existing GridWireframe";
-        //D.Log("{0} is {1}.", GetType().Name, msg);
+        //D.Log("{0} is {1}.", Name, msg);
     }
 
     /// <summary>
@@ -610,8 +689,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                 D.Assert(!Mathfx.Approx(iCorner, jCorner, 10F), "{0} == {1}.", iCorner.ToPreciseString(), jCorner.ToPreciseString());
             }
         }
-        D.Log("{0} validated {1} sector corners.", GetType().Name, SectorCorners.Count);
-        __LogDuration("{0}.__ValidateWorldSectorCorners()".Inject(GetType().Name));
+        D.Log("{0} validated {1} sector corners.", Name, SectorCorners.Count);
+        __LogDuration("{0}.__ValidateWorldSectorCorners()".Inject(Name));
     }
 
     private Sector MakeSectorInstance(IntVector3 sectorIndex, Vector3 worldLocation, bool isOnPeriphery) {
@@ -627,10 +706,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     public void CommenceSectorOperations() {
-        AllSectors.ForAll(s => {
+        Sectors.ForAll(s => {
             s.FinalInitialize();
         });
-        AllSectors.ForAll(s => {
+        Sectors.ForAll(s => {
             s.CommenceOperations();
         });
     }
@@ -640,7 +719,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         if (_gridWireframe != null) {
             _gridWireframe.Dispose();
         }
-        foreach (var sector in AllSectors) {
+        foreach (var sector in Sectors) {
             sector.Dispose();
         }
         Unsubscribe();
@@ -657,8 +736,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     #region ISectorGrid Members
 
-    IEnumerable<ISector> ISectorGrid.AllSectors { get { return AllSectors.Cast<ISector>(); } }
+    IEnumerable<ISector> ISectorGrid.AllSectors { get { return Sectors.Cast<ISector>(); } }
 
     #endregion
+
 }
 

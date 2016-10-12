@@ -74,6 +74,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     private SettlementCmdItem _settlement;
+    //public SettlementCmdItem Settlement { get { return _settlement; } }
     public SettlementCmdItem Settlement {
         get { return _settlement; }
         set {
@@ -83,6 +84,17 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             SetProperty<SettlementCmdItem>(ref _settlement, value, "Settlement", SettlementPropChangedHandler);
         }
     }
+
+    //private ISettlementCreator _settlementCreator;
+    //public ISettlementCreator SettlementCreator {
+    //    private get { return _settlementCreator; }
+    //    set {
+    //        if (_settlementCreator != null && value != null) {
+    //            D.Error("{0} cannot assign {1} when {2} is already present.", FullName, value.Name, SettlementCreator.Name);
+    //        }
+    //        SetProperty<ISettlementCreator>(ref _settlementCreator, value, "SettlementCreator", SettlementCreatorPropChangedHandler);
+    //    }
+    //}
 
     private StarItem _star;
     public StarItem Star {
@@ -262,13 +274,21 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return Settlement != null ? Settlement.GetReport(player) : null;
     }
 
+    [Obsolete]
     private void AttachSettlement(SettlementCmdItem settlementCmd) {
-        GeneralFactory.Instance.InstallCelestialItemInOrbit(settlementCmd.UnitContainer.gameObject, SettlementOrbitData);
+        SystemFactory.Instance.InstallCelestialItemInOrbit(settlementCmd.UnitContainer.gameObject, SettlementOrbitData);
         if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
             settlementCmd.CelestialOrbitSimulator.IsActivated = true;
         }
         D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
+
+    //private void AttachSettlementCreator(ISettlementCreator settlementCreator) {
+    //    SystemFactory.Instance.InstallCelestialItemInOrbit(settlementCreator.gameObject, SettlementOrbitData);
+    //    D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCreator.Name, FullName);
+    //}
+
+
 
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, UserReport);
@@ -281,12 +301,48 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
     }
 
+    //public void AssignSettlementCreator(ISettlementCreator settlementCreator) {
+    //    Utility.ValidateNotNull(settlementCreator);
+    //    if (_settlementCreator != null) {
+    //        D.Error("{0} cannot assign {1} when {2} is already present.", FullName, settlementCreator.Name, _settlementCreator.Name);
+    //    }
+    //    _settlementCreator = settlementCreator;
+    //    AttachSettlementCreator(settlementCreator);
+    //}
+
+    //public void RemoveSettlementCreator() {
+    //    if (_settlementCreator == null) {
+    //        D.Error("{0} cannot remove {1} that is not present.", FullName, typeof(ISettlementCreator).Name);
+    //    }
+    //    _settlementCreator = null;
+    //}
+
     #region Event and Property Change Handlers
 
     private void StarPropSetHandler() {
         Data.StarData = Star.Data;
     }
 
+    //private void SettlementCreatorPropChangedHandler() {
+    //    HandleSettlementCreatorChanged();
+    //}
+
+    //private void HandleSettlementCreatorChanged() {
+    //    if (_settlementCreator != null) {
+    //        ////Settlement.ParentSystem = this;
+    //        ////Data.SettlementData = Settlement.Data;
+    //        AttachSettlementCreator(_settlementCreator);
+    //    }
+    //    else {
+    //        //// The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
+    //        //// The settlement's CelestialOrbitSimulator is destroyed as a new one is created with a new settlement
+    //        Data.SettlementData = null;
+    //    }
+    //    // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
+
+    //}
+
+    //[Obsolete]
     private void SettlementPropChangedHandler() {
         HandleSettlementChanged();
     }
@@ -295,7 +351,10 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         if (Settlement != null) {
             Settlement.ParentSystem = this;
             Data.SettlementData = Settlement.Data;
-            AttachSettlement(Settlement);
+            if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
+                Settlement.CelestialOrbitSimulator.IsActivated = true;
+            }
+            D.Log(ShowDebugLog, "{0} has been deployed to {1}.", Settlement.DisplayName, FullName);
         }
         else {
             // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
@@ -304,6 +363,19 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
+    //private void HandleSettlementChanged() {
+    //    if (Settlement != null) {
+    //        Settlement.ParentSystem = this;
+    //        Data.SettlementData = Settlement.Data;
+    //        AttachSettlement(Settlement);
+    //    }
+    //    else {
+    //        // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
+    //        // The settlement's CelestialOrbitSimulator is destroyed as a new one is created with a new settlement
+    //        Data.SettlementData = null;
+    //    }
+    //    // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
+    //}
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();

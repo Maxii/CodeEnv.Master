@@ -56,11 +56,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Dense,
 
-        /// <summary>
-        /// 100% of deployable sectors will have a system.
-        /// </summary>
-        Full_Debug
-
     }
 }
 

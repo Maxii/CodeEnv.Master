@@ -331,7 +331,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void InitializeMainCamera() {   // called from OnGameStateChanged()
-
         InitializeFields();
         SetCameraSettings();
         InitializeCameraLight();
@@ -340,7 +339,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void InitializeFields() {
-        _universeRadius = DebugControls.Instance.UniverseSize.Radius(); //8.20.16 _gameMgr.GameSettings.UniverseSize.Radius();
+        _universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
     }
 
     private void SetCameraSettings() {
@@ -1950,7 +1949,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         public NguiMouseButton mouseButton;
 
         public override float InputTypeNormalizer {
-            // typ dragDelta is 10F per frame
+            // typical dragDelta is 10F per frame
             get { return 0.1F; }
         }
 
@@ -1969,7 +1968,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         public NguiMouseButton secondMouseButton;
 
         public override float InputTypeNormalizer {
-            // typ dragDelta is 10F per frame
+            // typical dragDelta is 10F per frame
             get { return 0.1F; }
         }
 
@@ -2001,7 +2000,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     public class MouseScrollWheelConfiguration : CameraConfigurationBase {
 
         public override float InputTypeNormalizer {
-            // typ scroll tick value is 0.1F per frame
+            // typical scroll tick value is 0.1F per frame
             get { return 10F; }
         }
 
@@ -2018,7 +2017,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         public KeyboardAxis keyboardAxis;
 
-        // typ Key value is 1F per frame, but it is very easy to hold down a key and get a movement command every frame
+        // typical Key value is 1F per frame, but it is very easy to hold down a key and get a movement command every frame
         // Over a very short period of time (< 1 second), the effective movement value of the accumulated commands is
         // roughly the same between key, scroll and drag. Over a longer period though (say 3 seconds), the value of 
         // movement commands is much greater with a key as there is no need to reposition the hand to continue.

@@ -485,7 +485,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
-        IsAvailable = true;
+        IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
+                            // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
     }
 
     void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {

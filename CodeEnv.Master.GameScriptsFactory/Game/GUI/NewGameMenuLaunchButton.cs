@@ -63,17 +63,17 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         _aiPlayersTeams = new TeamID[TempGameValues.MaxAIPlayers];
     }
 
-    protected override void RecordPopupListState(GuiElementID popupListID, string selection) {
-        base.RecordPopupListState(popupListID, selection);
+    protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
+        base.RecordPopupListState(popupListID, selection, convertedSelection);
         //D.Log("{0}.RecordPopupListState() called. ID = {1}, Selection = {2}.", GetType().Name, popupListID.GetValueName(), selectionName);
         switch (popupListID) {
             case GuiElementID.UniverseSizePopupList:
                 _universeSizeSelection = Enums<UniverseSizeGuiSelection>.Parse(selection);
-                _universeSize = _universeSizeSelection.Convert();
+                _universeSize = Enums<UniverseSize>.Parse(convertedSelection);
                 break;
             case GuiElementID.SystemDensityPopupList:
                 _systemDensitySelection = Enums<SystemDensityGuiSelection>.Parse(selection);
-                _systemDensity = _systemDensitySelection.Convert();
+                _systemDensity = Enums<SystemDensity>.Parse(convertedSelection);
                 break;
             case GuiElementID.PlayerCountPopupList:
                 _playerCount = int.Parse(selection);
@@ -81,35 +81,35 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
             case GuiElementID.UserPlayerSpeciesPopupList:
                 _userPlayerSpeciesSelection = Enums<SpeciesGuiSelection>.Parse(selection);
-                _userPlayerSpecies = _userPlayerSpeciesSelection.Convert();
+                _userPlayerSpecies = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer1SpeciesPopupList:
                 _aiPlayersSpeciesSelections[0] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[0] = _aiPlayersSpeciesSelections[0].Convert();
+                _aiPlayersSpecies[0] = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer2SpeciesPopupList:
                 _aiPlayersSpeciesSelections[1] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[1] = _aiPlayersSpeciesSelections[1].Convert();
+                _aiPlayersSpecies[1] = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer3SpeciesPopupList:
                 _aiPlayersSpeciesSelections[2] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[2] = _aiPlayersSpeciesSelections[2].Convert();
+                _aiPlayersSpecies[2] = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer4SpeciesPopupList:
                 _aiPlayersSpeciesSelections[3] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[3] = _aiPlayersSpeciesSelections[3].Convert();
+                _aiPlayersSpecies[3] = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer5SpeciesPopupList:
                 _aiPlayersSpeciesSelections[4] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[4] = _aiPlayersSpeciesSelections[4].Convert();
+                _aiPlayersSpecies[4] = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer6SpeciesPopupList:
                 _aiPlayersSpeciesSelections[5] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[5] = _aiPlayersSpeciesSelections[5].Convert();
+                _aiPlayersSpecies[5] = Enums<Species>.Parse(convertedSelection);
                 break;
             case GuiElementID.AIPlayer7SpeciesPopupList:
                 _aiPlayersSpeciesSelections[6] = Enums<SpeciesGuiSelection>.Parse(selection);
-                _aiPlayersSpecies[6] = _aiPlayersSpeciesSelections[6].Convert();
+                _aiPlayersSpecies[6] = Enums<Species>.Parse(convertedSelection);
                 break;
 
             case GuiElementID.UserPlayerColorPopupList:
@@ -201,9 +201,12 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     private void RecordPreferences() {
         var settings = new NewGamePreferenceSettings() {
-            UniverseSizeSelection = _universeSizeSelection,
-            SystemDensitySelection = _systemDensitySelection,
+            UniverseSizeGuiSelection = _universeSizeSelection,
+
+            UniverseSize = _universeSize,   // 10.4.16 needed to know which pref property gets assigned PlayerCount
             PlayerCount = _playerCount,
+
+            SystemDensitySelection = _systemDensitySelection,
             UserPlayerSpeciesSelection = _userPlayerSpeciesSelection,
             AIPlayerSpeciesSelections = _aiPlayersSpeciesSelections,
             UserPlayerColor = _userPlayerColor,
@@ -218,23 +221,38 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private void InitiateNewGame() {
         int aiPlayerCount = _playerCount - Constants.One;
         var aiPlayers = new Player[aiPlayerCount];
+        var aiPlayersStartLevel = new EmpireStartLevel[aiPlayerCount];
+        var aiPlayersHomeSystemDesirability = new SystemDesirability[aiPlayerCount];
+        var aiPlayersSeparationFromUser = new PlayerSeparation[aiPlayerCount];
+
         for (int i = 0; i < aiPlayerCount; i++) {
             Species aiSpecies = _aiPlayersSpecies[i];
             SpeciesStat aiSpeciesStat = _speciesFactory.MakeInstance(aiSpecies);
             LeaderStat aiLeaderStat = _leaderFactory.MakeInstance(aiSpecies);
             aiPlayers[i] = new Player(aiSpeciesStat, aiLeaderStat, _aiPlayersIQs[i], _aiPlayersTeams[i], _aiPlayersColors[i]);
+            aiPlayersStartLevel[i] = EmpireStartLevel.Normal;
+            aiPlayersHomeSystemDesirability[i] = SystemDesirability.Normal;
+            aiPlayersSeparationFromUser[i] = PlayerSeparation.Normal;
         }
 
         SpeciesStat userSpeciesStat = _speciesFactory.MakeInstance(_userPlayerSpecies);
         LeaderStat userLeaderStat = _leaderFactory.MakeInstance(_userPlayerSpecies);
         Player userPlayer = new Player(userSpeciesStat, userLeaderStat, IQ.None, _userPlayerTeam, _userPlayerColor, isUser: true);
+        EmpireStartLevel userPlayerStartLevel = EmpireStartLevel.Normal;
+        SystemDesirability userPlayerHomeSystemDesirability = SystemDesirability.Normal;
 
         GameSettings settings = new GameSettings() {
+            __IsStartup = false,
             UniverseSize = _universeSize,
             SystemDensity = _systemDensity,
             PlayerCount = _playerCount,
             UserPlayer = userPlayer,
-            AIPlayers = aiPlayers
+            AIPlayers = aiPlayers,
+            UserStartLevel = userPlayerStartLevel,
+            AIPlayersStartLevel = aiPlayersStartLevel,
+            UserHomeSystemDesirability = userPlayerHomeSystemDesirability,
+            AIPlayersHomeSystemDesirability = aiPlayersHomeSystemDesirability,
+            AIPlayersSeparationFromUser = aiPlayersSeparationFromUser
         };
         _gameMgr.InitiateNewGame(settings);
     }

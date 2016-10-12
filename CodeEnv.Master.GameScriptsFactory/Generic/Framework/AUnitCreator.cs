@@ -43,7 +43,10 @@ public abstract class AUnitCreator : AMonoBase {
     private UnitCreatorConfiguration _configuration;
     public UnitCreatorConfiguration Configuration {
         get { return _configuration; }
-        set { SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationChangedHandler); }
+        set {
+            D.Assert(_configuration == null);   // currently one time only
+            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationSetHandler);
+        }
     }
 
     protected Player Owner { get { return Configuration.Owner; } }
@@ -56,7 +59,6 @@ public abstract class AUnitCreator : AMonoBase {
     protected override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
-        InitializeDeploymentSystem();
     }
 
     private void InitializeValuesAndReferences() {
@@ -65,32 +67,65 @@ public abstract class AUnitCreator : AMonoBase {
         _jobMgr = JobManager.Instance;
     }
 
-    protected abstract void InitializeDeploymentSystem();
-
-    protected void Subscribe() {
-        _gameMgr.isRunningOneShot += IsRunningEventHandler;
+    protected override void Start() {
+        base.Start();
+        //D.Log("{0}.Start() called.", Name);
+        //InitializeDeploymentSystem();
+        if (_gameMgr.IsRunning) {
+            InitiateDeployment();
+        }
     }
+
+    /// <summary>
+    /// Initializes the deployment system.
+    /// <remarks>Do not call from Awake as Configuration will not yet be set.</remarks>
+    /// </summary>
+    //protected abstract void InitializeDeploymentSystem();
+
+    //protected void Subscribe() {
+    //    _gameMgr.isRunningOneShot += IsRunningEventHandler;
+    //}
 
     #region Event and Property Change Handlers
 
-    private void IsRunningEventHandler(object sender, EventArgs e) {
-        HandleGameIsRunning();
+    //private void IsRunningEventHandler(object sender, EventArgs e) {
+    //    HandleGameIsRunning();
+    //}
+
+    //protected virtual void HandleGameIsRunning() {
+    //    if (GameTime.Instance.CurrentDate >= Configuration.DeployDate) {
+    //        HandleDeployDateReached();
+    //    }
+    //    else {
+    //        BuildDeployAndBeginUnitOpsOnDeployDate();
+    //    }
+    //}
+
+    protected void ConfigurationSetHandler() {
+        UnitName = Configuration.UnitName;
     }
 
-    protected void HandleGameIsRunning() {
+    #endregion
+
+    /// <summary>
+    /// Initiates the deployment process which will deploy and commence operations
+    /// on the DeployDate specified by the Configuration.
+    /// <remarks>If this creator is present in the scene before the game IsRunning
+    /// then UniverseCreator will call InitiateDeployment() when the game begins running
+    /// but after all CelestialObjects have commenced operations. This way, celestial objects
+    /// are operational before they can be detected by units. If this creator is placed in
+    /// the scene during runtime, then it will awake, detect the game is already running 
+    /// and call InitiateDeployment() itself.</remarks>
+    /// </summary>
+    public virtual void InitiateDeployment() {
         if (GameTime.Instance.CurrentDate >= Configuration.DeployDate) {
             HandleDeployDateReached();
         }
         else {
             BuildDeployAndBeginUnitOpsOnDeployDate();
         }
-    }
 
-    private void ConfigurationChangedHandler() {
-        UnitName = Configuration.UnitName;
     }
-
-    #endregion
 
     protected void BuildDeployAndBeginUnitOpsOnDeployDate() {
         D.Assert(_gameMgr.IsRunning);
@@ -102,14 +137,11 @@ public abstract class AUnitCreator : AMonoBase {
     }
 
     protected void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
-        if (!ValidateConfiguration()) {
-            return;
-        }
         GameDate currentDate = GameTime.Instance.CurrentDate;
         //D.Log("{0}.HandleDeployDateReached() called. Date: {1}.", Name, currentDate);
         GameDate dateToDeploy = Configuration.DeployDate;
         if (currentDate >= dateToDeploy) {
-            D.Warn(currentDate > dateToDeploy, "{0} recorded current date {1} beyond target date {2}.", Name, currentDate, dateToDeploy);
+            D.Log(currentDate > dateToDeploy, "{0} recorded current date {1} beyond target date {2}.", Name, currentDate, dateToDeploy);
             //D.Log("{0} is about to build, deploy and begin ops during runtime. Date: {1}.", Name, currentDate);
 
             MakeUnitAndPrepareForDeployment();
@@ -121,15 +153,6 @@ public abstract class AUnitCreator : AMonoBase {
             PrepareForUnitOperations();
             BeginUnitOperations();
         }
-    }
-
-    private bool ValidateConfiguration() {
-        if (Configuration == default(UnitCreatorConfiguration)) {
-            D.Warn("{0} found Configuration unassigned so destroying unit before created.", Name);
-            Destroy(gameObject);
-            return false;
-        }
-        return true;
     }
 
     protected void MakeUnitAndPrepareForDeployment() {

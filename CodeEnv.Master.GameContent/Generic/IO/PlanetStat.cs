@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetStat.cs
-// Immutable stat containing externally acquirable values for Planets.
+// Data container holding externally acquirable values for Planets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable stat containing externally acquirable values for Planets.
+    /// Data container holding externally acquirable values for Planets.
     /// </summary>
     public class PlanetStat : PlanetoidStat {
 

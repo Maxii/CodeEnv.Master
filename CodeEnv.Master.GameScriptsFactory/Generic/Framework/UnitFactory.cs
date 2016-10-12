@@ -324,15 +324,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Settlements
 
-    /// <summary>
-    /// Makes an unnamed SettlementCreator instance at the provided location, parented to the SettlementsFolder.
-    /// </summary>
-    /// <param name="config">The configuration.</param>
-    /// <returns></returns>
-    public SettlementCreator MakeSettlementCreatorInstance(UnitCreatorConfiguration config) {
+    public SettlementCreator MakeSettlementCreatorInstance(UnitCreatorConfiguration config, SystemItem system) {
         GameObject creatorPrefabGo = _settlementCreatorPrefab.gameObject;
-        GameObject creatorGo = UnityUtility.AddChild(SettlementsFolder.Instance.gameObject, creatorPrefabGo);
+        GameObject creatorGo = GameObject.Instantiate(creatorPrefabGo);
         D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", GetType().Name, typeof(SettlementCreator).Name);
+        SystemFactory.Instance.InstallCelestialItemInOrbit(creatorGo, system.SettlementOrbitData);
         var creator = creatorGo.GetComponent<SettlementCreator>();
         creator.Configuration = config;
         return creator;

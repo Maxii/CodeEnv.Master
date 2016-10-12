@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
@@ -24,14 +25,23 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AAutoUnitCreator : AUnitCreator {
 
-    protected override void InitializeDeploymentSystem() {
-        if (_gameMgr.IsRunning) {
-            HandleGameIsRunning();
-        }
-        else {
-            Subscribe();
-        }
-    }
+    //protected override void InitializeDeploymentSystem() {
+    //    if (_gameMgr.IsRunning) {
+    //        HandleGameIsRunning();
+    //    }
+    //    else {
+    //        Subscribe();
+    //    }
+    //}
 
+    //protected override void HandleGameIsRunning() {
+    //    D.Assert(Configuration != null);    // AutoCreator would only be deployed with a Configuration
+    //    base.HandleGameIsRunning();
+    //}
+
+    public override void InitiateDeployment() {
+        D.Assert(Configuration != null);    // AutoCreator would only be deployed with a Configuration
+        base.InitiateDeployment();
+    }
 }
 

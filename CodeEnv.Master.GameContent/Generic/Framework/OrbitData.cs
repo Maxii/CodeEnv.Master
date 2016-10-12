@@ -24,14 +24,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class OrbitData {
 
-        public GameObject OrbitedItem { get; set; }
-        //public GameObject OrbitedItem { get; private set; }
+        private GameObject _orbitedItem;
+        /// <summary>
+        /// The item being orbited. 
+        /// <remarks>Not all constructors initially populate this property. Use 
+        /// AssignOrbitedItem(orbitedItem, isOrbitedItemMobile) if needed.</remarks>
+        /// </summary>
+        public GameObject OrbitedItem {
+            get {
+                D.Assert(_orbitedItem != null, "{0}.OrbitedItem has not been assigned!", GetType().Name);
+                return _orbitedItem;
+            }
+            private set { _orbitedItem = value; }
+        }
 
         /// <summary>
-        /// Indicates whether the OrbitSimulator created by this OrbitData should rotate
-        /// when activated.
+        /// Indicates whether the OrbitSimulator created by this OrbitData should rotate when activated.
+        /// <remarks>Not all constructors initially populate this property so it may need to be set externally.</remarks>
         /// </summary>
-        public bool ToOrbit { get; private set; }
+        public bool ToOrbit { get; set; }
 
         /// <summary>
         /// The closest distance from the orbited body available for orbiting.
@@ -61,27 +72,25 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OrbitData" /> class without a
-        /// designated OrbitedItem. The OrbitPeriod defaults to OneYear.
+        /// designated OrbitedItem that moves in orbit. The OrbitPeriod defaults to OneYear.
         /// </summary>
         /// <param name="slotIndex">Index of the slot.</param>
         /// <param name="innerRadius">The radius at this slot's lowest orbit.</param>
         /// <param name="outerRadius">The radius at this slot's highest orbit.</param>
-        /// <param name="isOrbitedItemMobile">if set to <c>true</c> [is orbited item mobile].</param>
-        public OrbitData(int slotIndex, float innerRadius, float outerRadius, bool isOrbitedItemMobile)
-                        : this(slotIndex, innerRadius, outerRadius, isOrbitedItemMobile, GameTimeDuration.OneYear) {
+        public OrbitData(int slotIndex, float innerRadius, float outerRadius)
+                        : this(slotIndex, innerRadius, outerRadius, GameTimeDuration.OneYear) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OrbitData" /> class without a
-        /// designated OrbitedItem.
+        /// designated OrbitedItem that moves in orbit.
         /// </summary>
         /// <param name="slotIndex">Index of the slot.</param>
         /// <param name="innerRadius">The radius at this slot's lowest orbit.</param>
         /// <param name="outerRadius">The radius at this slot's highest orbit.</param>
-        /// <param name="isOrbitedItemMobile">if set to <c>true</c> [is orbited item mobile].</param>
         /// <param name="orbitPeriod">The orbit period.</param>
-        public OrbitData(int slotIndex, float innerRadius, float outerRadius, bool isOrbitedItemMobile, GameTimeDuration orbitPeriod)
-            : this(slotIndex, innerRadius, outerRadius, isOrbitedItemMobile, orbitPeriod, toOrbit: true) {
+        public OrbitData(int slotIndex, float innerRadius, float outerRadius, GameTimeDuration orbitPeriod)
+            : this(slotIndex, innerRadius, outerRadius, orbitPeriod, toOrbit: true) {
         }
 
         /// <summary>
@@ -91,10 +100,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="slotIndex">Index of the slot.</param>
         /// <param name="innerRadius">The closest distance to the body orbited.</param>
         /// <param name="outerRadius">The furthest distance from the body orbited.</param>
-        /// <param name="isOrbitedItemMobile">if set to <c>true</c> [is orbited object mobile].</param>
         /// <param name="orbitPeriod">The orbit period.</param>
         /// <param name="toOrbit">if set to <c>true</c> the orbitSimulator will rotate if activated.</param>
-        public OrbitData(int slotIndex, float innerRadius, float outerRadius, bool isOrbitedItemMobile, GameTimeDuration orbitPeriod, bool toOrbit) {
+        public OrbitData(int slotIndex, float innerRadius, float outerRadius, GameTimeDuration orbitPeriod, bool toOrbit) {
             Utility.Validate(innerRadius != outerRadius);
             Utility.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);
@@ -104,13 +112,12 @@ namespace CodeEnv.Master.GameContent {
             OuterRadius = outerRadius;
             MeanRadius = innerRadius + (outerRadius - innerRadius) / 2F;
             Depth = outerRadius - innerRadius;
-            IsOrbitedItemMobile = isOrbitedItemMobile;
             OrbitPeriod = orbitPeriod;
             ToOrbit = toOrbit;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="OrbitData" /> class.
+        /// Initializes a new instance of the <see cref="OrbitData" /> class that moves in orbit.
         /// The OrbitPeriod defaults to OneYear.
         /// <remarks>Used to create a single ShipCloseOrbitSlot during runtime around <c>orbitedItem</c>.
         /// The slotIndex is by definition 0.</remarks>
@@ -163,6 +170,11 @@ namespace CodeEnv.Master.GameContent {
             IsOrbitedItemMobile = isOrbitedItemMobile;
             OrbitPeriod = orbitPeriod;
             ToOrbit = toOrbit;
+        }
+
+        public void AssignOrbitedItem(GameObject orbitedItem, bool isOrbitedItemMobile) {
+            OrbitedItem = orbitedItem;
+            IsOrbitedItemMobile = isOrbitedItemMobile;
         }
 
         public override string ToString() {

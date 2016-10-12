@@ -58,8 +58,8 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void RecordPopupListState(GuiElementID popupListID, string selection) {
-        base.RecordPopupListState(popupListID, selection);
+    protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
+        base.RecordPopupListState(popupListID, selection, convertedSelection);
         switch (popupListID) {
             case GuiElementID.GameSpeedOnLoadPopupList:
                 _gameSpeedOnLoad = Enums<GameSpeed>.Parse(selection);

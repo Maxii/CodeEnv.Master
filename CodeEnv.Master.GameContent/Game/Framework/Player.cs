@@ -73,6 +73,9 @@ namespace CodeEnv.Master.GameContent {
         public string SpeciesImageFilename { get { return _speciesStat.ImageFilename; } }
 
 
+        public string HomeSystemName { get; private set; }
+
+
         public float SensorRangeMultiplier { get { return _speciesStat.SensorRangeMultiplier; } }
 
         public float WeaponRangeMultiplier { get { return _speciesStat.WeaponRangeMultiplier; } }
@@ -130,7 +133,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeValuesAndReferences() {
             _gameMgr = References.GameManager;
-            int maxPlayers = TempGameValues.MaxAIPlayers + Constants.One;
+            int maxPlayers = TempGameValues.MaxPlayers;
             // Note: Each Player is instantiated by NewGameMenuLaunchButton before GameSettings is created and sent to GameManager
             _initialRelationship = new Dictionary<Player, DiplomaticRelationship>(maxPlayers);
             _priorRelationship = new Dictionary<Player, DiplomaticRelationship>(maxPlayers);
@@ -140,6 +143,12 @@ namespace CodeEnv.Master.GameContent {
             _currentRelationship[this] = DiplomaticRelationship.Self;
         }
 
+        /// <summary>
+        /// Sets the initial relationship between this player and unmetPlayer.
+        /// <remarks>This method takes care of setting both players initial relationship.</remarks>
+        /// </summary>
+        /// <param name="unmetPlayer">The unmet player.</param>
+        /// <param name="initialRelationship">The initial relationship.</param>
         public virtual void SetInitialRelationship(Player unmetPlayer, DiplomaticRelationship initialRelationship = DiplomaticRelationship.Neutral) {
             D.Assert(!_initialRelationship.ContainsKey(unmetPlayer), "{0} already has initial relationship with {1}.", Name, unmetPlayer);
             D.Assert(!_priorRelationship.ContainsKey(unmetPlayer), "{0} already has prior relationship with {1}.", Name, unmetPlayer);
@@ -335,6 +344,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
+
+        public DiplomaticRelationship __InitialUserRelationship { get { return _initialRelationship[_gameMgr.UserPlayer]; } }
 
         #endregion
 

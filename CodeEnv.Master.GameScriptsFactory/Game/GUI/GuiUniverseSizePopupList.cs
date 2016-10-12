@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -26,7 +27,17 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiUniverseSizePopupList : AGuiMenuPopupList<UniverseSizeGuiSelection> {
 
+    public event EventHandler universeSizeChanged;
+
     public override GuiElementID ElementID { get { return GuiElementID.UniverseSizePopupList; } }
+
+    public override string ConvertedSelectedValue {
+        get {
+            string unconvertedSelectedValue = SelectedValue;
+            UniverseSize convertedValue = Enums<UniverseSizeGuiSelection>.Parse(unconvertedSelectedValue).Convert();
+            return convertedValue.GetValueName();
+        }
+    }
 
     protected override bool IncludesRandom { get { return true; } }
 
@@ -34,6 +45,21 @@ public class GuiUniverseSizePopupList : AGuiMenuPopupList<UniverseSizeGuiSelecti
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this pop up list until the Menu Accept Button is pushed
+
+    #region Event and Property Change Handlers
+
+    protected override void PopupListSelectionChangedEventHandler() {
+        base.PopupListSelectionChangedEventHandler();
+        OnUniverseSizeChanged();
+    }
+
+    private void OnUniverseSizeChanged() {
+        if (universeSizeChanged != null) {
+            universeSizeChanged(this, new EventArgs());
+        }
+    }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

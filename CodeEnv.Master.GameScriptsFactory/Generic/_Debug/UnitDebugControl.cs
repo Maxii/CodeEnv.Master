@@ -48,6 +48,12 @@ public class UnitDebugControl : AMonoBase {
     [SerializeField]
     private NewOwnerUserRelationshipChoices _newOwnerUserRelationsChoice;
 
+#pragma warning disable 0414
+    [Tooltip("The Owner's name. For display only.")]
+    [SerializeField]
+    private string _ownerName = "No owner";
+#pragma warning restore
+
     private bool _allowNewOwnerUserRelationsCheck = false;
     private AUnitCmdItem _unitCmd;
     private GameManager _gameMgr;
@@ -61,6 +67,7 @@ public class UnitDebugControl : AMonoBase {
     public void Initialize() {
         _unitCmd = gameObject.GetSingleComponentInChildren<AUnitCmdItem>();
         SyncUserRelationsFieldsTo(_unitCmd.Owner.UserRelations);
+        AssignOwnerName();
         Subscribe();
         EnableDebugCntlInEditor = true;
     }
@@ -80,6 +87,7 @@ public class UnitDebugControl : AMonoBase {
     private void UnitOwnerChangedEventHandler(object sender, EventArgs e) {
         SyncUserRelationsFieldsTo(_unitCmd.Owner.UserRelations);
         _unitCmd.Owner.relationsChanged += UnitOwnerRelationsChangedEventHandler;
+        AssignOwnerName();
     }
 
     private void UnitOwnerRelationsChangedEventHandler(object sender, RelationsChangedEventArgs e) {
@@ -99,6 +107,10 @@ public class UnitDebugControl : AMonoBase {
         _allowNewOwnerUserRelationsCheck = true;
     }
 
+    private void AssignOwnerName() {
+        _ownerName = _unitCmd.Owner.Name;
+    }
+
     #region Value Change Checking
 
     void OnValidate() {
@@ -108,7 +120,7 @@ public class UnitDebugControl : AMonoBase {
 
     private void CheckValuesForChange() {
         if (_allowNewOwnerUserRelationsCheck) {
-            CheckNewOwnerUserRelations();
+            CheckNewOwnerUserRelations();   // test above only allows this check when the user changes a relationship during runtime
         }
     }
 
@@ -131,7 +143,7 @@ public class UnitDebugControl : AMonoBase {
                     // newOwner has already been met and has the desired relationship
                 }
                 else {
-                    newOwnerCandidates = _gameMgr.GetUnmetAiPlayersWithInitialUserRelationsOf(newOwnerUserRelationshipChoice);
+                    newOwnerCandidates = _gameMgr.UniverseCreator.__GetUnmetAiPlayersWithInitialUserRelationsOf(newOwnerUserRelationshipChoice);
                     if (newOwnerCandidates.Any()) {
                         // newOwner is an unmet, unassigned player
                         newOwner = newOwnerCandidates.Shuffle().First();

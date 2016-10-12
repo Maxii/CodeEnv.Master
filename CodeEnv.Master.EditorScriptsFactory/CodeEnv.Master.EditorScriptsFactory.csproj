@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\GameSettingsDebugControlEditor.cs" />
     <Compile Include="Generic\ExampleEditor.cs" />
     <Compile Include="Game\DebugControlsEditor.cs" />
     <Compile Include="Generic\ATableWindowEditor.cs" />

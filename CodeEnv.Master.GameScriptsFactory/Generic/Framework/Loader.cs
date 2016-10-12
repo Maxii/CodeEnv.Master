@@ -40,30 +40,44 @@ public class Loader : AMonoSingleton<Loader> {
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        _playerPrefsMgr = PlayerPrefsManager.Instance;
-        _gameMgr = GameManager.Instance;
     }
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        InitializeValuesAndReferences();
+
+        // 10.6.16 Subscribe is too late to receive the initial scene loaded and quality settings changed event generated 
+        // when initiating play in the editor, so assigning the audio listener and initializing quality settings must be called on Awake
         AssignAudioListener();
         InitializeQualitySettings();
-        ////InitializeVectrosity();
         Subscribe();
     }
 
-    private void InitializeQualitySettings() {
-        // the initial QualitySettingChanged event occurs earlier than we can subscribe so do it manually
-        QualitySettingPropChangedHandler();
+    private void InitializeValuesAndReferences() {
+        _gameMgr = GameManager.Instance;
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
     }
 
-    ////private void InitializeVectrosity() {
-    ////    // Note: not necessary to use VectorLine.SetCamera3D(mainCamera) as the default camera for 3D lines Vectrosity finds is mainCamera
+    private void InitializeQualitySettings() {
+        HandleQualitySettingChanged();
+        CheckQualityDebugSettings();
+    }
 
-    ////    VectorLine.useMeshLines = true; // removed in Vectrosity 4.0
-    ////    VectorLine.useMeshPoints = true;    // removed in Vectrosity 4.0
-    ////    VectorLine.useMeshQuads = true;       // removed in Vectrosity 3.0 as no advantages to using it
-    ////}
+    protected override void Start() {
+        base.Start();
+        LaunchGameManagerStartupScene();
+    }
+
+    private void LaunchGameManagerStartupScene() {
+        if (_gameMgr.CurrentSceneID == GameManager.SceneID.LobbyScene) {
+            _gameMgr.LaunchInLobby();
+        }
+        else {
+            D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
+            var startupGameSettings = GameSettingsDebugControl.Instance.CreateNewGameSettings(isStartup: true);
+            _gameMgr.InitiateNewGame(startupGameSettings);
+        }
+    }
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
@@ -74,18 +88,22 @@ public class Loader : AMonoSingleton<Loader> {
     #region Event and Property Change Handlers
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {
+        //D.Log("{0}.SceneLoadedEventHandler() called.", GetType().Name);
         D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
         AssignAudioListener();
     }
 
     private void QualitySettingPropChangedHandler() {
+        HandleQualitySettingChanged();
+    }
+
+    private void HandleQualitySettingChanged() {
         string newQualitySetting = _playerPrefsMgr.QualitySetting;
         if (newQualitySetting != QualitySettings.names[QualitySettings.GetQualityLevel()]) {
             // EDITOR Quality Level Changes will not be saved while in Editor play mode
             int newQualitySettingIndex = QualitySettings.names.IndexOf(newQualitySetting);
             QualitySettings.SetQualityLevel(newQualitySettingIndex, applyExpensiveChanges: true);
         }
-        CheckDebugSettings();
     }
 
     #endregion
@@ -126,7 +144,7 @@ public class Loader : AMonoSingleton<Loader> {
 
     #region Debug
 
-    private void CheckDebugSettings() {
+    private void CheckQualityDebugSettings() {
         if (_debugSettings.ForceFpsToTarget) {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = _targetFPS;

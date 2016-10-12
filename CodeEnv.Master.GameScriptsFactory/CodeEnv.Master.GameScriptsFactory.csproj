@@ -59,8 +59,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="DebugSystemCreator2.cs" />
-    <Compile Include="SystemCreator2.cs" />
+    <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
+    <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
+    <Compile Include="Game\Framework\SystemCreator.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuPopupListBase.cs" />
     <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
     <Compile Include="Generic\Framework\ADebugUnitCreator.cs" />
@@ -168,7 +169,6 @@
     <Compile Include="Game\_Debug\DebugStarbaseCreator.cs" />
     <Compile Include="Game\_Debug\DebugSettlementCreator.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
-    <Compile Include="Game\Framework\SystemCreator.cs" />
     <Compile Include="Game\Framework\StarItem.cs" />
     <Compile Include="Game\Framework\PlanetItem.cs" />
     <Compile Include="Game\Framework\MoonItem.cs" />
@@ -236,7 +236,6 @@
     <Compile Include="Generic\Graphics\PooledSphericalHighlight.cs" />
     <Compile Include="Generic\Graphics\SphericalHighlight.cs" />
     <Compile Include="Game\Framework\Sector.cs" />
-    <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
     <Compile Include="Game\GUI\GuiSystemDensityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerTeamPopupList.cs" />
     <Compile Include="Generic\Framework\NewGameUnitConfigurator.cs" />
@@ -254,7 +253,6 @@
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
     <Compile Include="Generic\Framework\UsefulTools.cs" />
-    <Compile Include="Game\Gameplay\UniverseBuilder.cs" />
     <Compile Include="Generic\Graphics\StarFlare.cs" />
     <Compile Include="Game\Graphics\SectorExaminer.cs" />
     <Compile Include="Generic\Graphics\UITrackingLabel.cs" />
@@ -267,6 +265,7 @@
     <Compile Include="Game\GUI\UniverseCenterCtxControl.cs" />
     <Compile Include="Generic\_Debug\VisualEffectScale.cs" />
     <Compile Include="Generic\_Debug\UnitDebugControl.cs" />
+    <Compile Include="Generic\Framework\UniverseCreator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

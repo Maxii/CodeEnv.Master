@@ -104,14 +104,31 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// This method returns a random element chosen from an IEnumerable of elements.
-        /// Cannot be empty.
+        /// Returns a random element chosen from an IEnumerable of elements.
+        /// Collection cannot be empty.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection">The collection.</param>
         /// <returns></returns>
         public static T Choice<T>(IEnumerable<T> collection) {
             return collection.ToArray<T>()[Random.Range(0, collection.Count())];
+        }
+
+        /// <summary>
+        /// Returns a list of <c>qty</c> randomly chosen elements from an IEnumerable of elements.
+        /// Likely to have duplicate elements depending on the size of the collection and qty.
+        /// Collection cannot be empty.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="qty">The qty.</param>
+        /// <returns></returns>
+        public static IList<T> Choices<T>(IEnumerable<T> collection, int qty) {
+            IList<T> result = new List<T>(qty);
+            for (int i = 0; i < qty; i++) {
+                result.Add(Choice(collection));
+            }
+            return result;
         }
 
         /// <summary>

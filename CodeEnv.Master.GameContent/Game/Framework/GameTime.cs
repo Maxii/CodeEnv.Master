@@ -427,6 +427,21 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         /// <summary>
+        /// Generates a random date in the future. If called before the game is
+        /// running, the date will be on or after the GameStartDate, otherwise it
+        /// will be on or after the current date.
+        /// </summary>
+        /// <param name="maxDelay">The maximum delay after the start date.</param>
+        /// <returns></returns>
+        public GameDate GenerateRandomFutureDate(GameTimeDuration maxDelay) {
+            GameDate startDate = _gameMgr.IsRunning ? CurrentDate : GameStartDate;
+            float maxHoursDelayed = maxDelay.TotalInHours;
+            float hoursDelayed = UnityEngine.Random.Range(Constants.ZeroF, maxHoursDelayed);
+            return new GameDate(startDate, new GameTimeDuration(hoursDelayed));
+        }
+
+
+        /// <summary>
         /// Brings _currentDateTime up to date. While the Date only needs to be refreshed when it is about to be used,
         /// _currentDateTime must keep track of accumulated pauses and game speed changes. It is not necessary to 
         /// refresh the date when a pause or speed change occurs as they don't have any use for the date.

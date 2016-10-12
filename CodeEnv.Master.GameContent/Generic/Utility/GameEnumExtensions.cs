@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameEnumExtensions {
 
-        #region Universe Size, SystemDensity and Default Player Count
+        #region New Game - UniverseSize, SystemDensity, PlayerCount, StartLevel, SystemDesirability, PlayerSeparation
 
         private static UniverseSizeXmlPropertyReader _universeSizeXmlReader = UniverseSizeXmlPropertyReader.Instance;
 
@@ -61,25 +61,262 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public static float Radius(this UniverseSize universeSize) {
-            float sectorSideLength = TempGameValues.SectorSideLength;
+        /// <summary>
+        /// Radius of the Universe in Sectors.
+        /// </summary>
+        /// <param name="universeSize">Size of the universe.</param>
+        /// <returns></returns>
+        public static int RadiusInSectors(this UniverseSize universeSize) {
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return _universeSizeXmlReader.TinyRadius * sectorSideLength;
+                    return _universeSizeXmlReader.TinyRadius;
                 case UniverseSize.Small:
-                    return _universeSizeXmlReader.SmallRadius * sectorSideLength;
+                    return _universeSizeXmlReader.SmallRadius;
                 case UniverseSize.Normal:
-                    return _universeSizeXmlReader.NormalRadius * sectorSideLength;
+                    return _universeSizeXmlReader.NormalRadius;
                 case UniverseSize.Large:
-                    return _universeSizeXmlReader.LargeRadius * sectorSideLength;
+                    return _universeSizeXmlReader.LargeRadius;
                 case UniverseSize.Enormous:
-                    return _universeSizeXmlReader.EnormousRadius * sectorSideLength;
+                    return _universeSizeXmlReader.EnormousRadius;
                 case UniverseSize.Gigantic:
-                    return _universeSizeXmlReader.GiganticRadius * sectorSideLength;
+                    return _universeSizeXmlReader.GiganticRadius;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
+        }
+
+        /// <summary>
+        /// Radius of the Universe in Units.
+        /// </summary>
+        /// <param name="universeSize">Size of the universe.</param>
+        /// <returns></returns>
+        public static float Radius(this UniverseSize universeSize) {
+            return universeSize.RadiusInSectors() * TempGameValues.SectorSideLength;
+        }
+
+        public static int DefaultPlayerCount(this UniverseSize universeSize) {
+            int defaultPlayerCount;
+            switch (universeSize) {
+                case UniverseSize.Tiny:
+                    defaultPlayerCount = _universeSizeXmlReader.TinyDefaultPlayerCount;
+                    break;
+                case UniverseSize.Small:
+                    defaultPlayerCount = _universeSizeXmlReader.SmallDefaultPlayerCount;
+                    break;
+                case UniverseSize.Normal:
+                    defaultPlayerCount = _universeSizeXmlReader.NormalDefaultPlayerCount;
+                    break;
+                case UniverseSize.Large:
+                    defaultPlayerCount = _universeSizeXmlReader.LargeDefaultPlayerCount;
+                    break;
+                case UniverseSize.Enormous:
+                    defaultPlayerCount = _universeSizeXmlReader.EnormousDefaultPlayerCount;
+                    break;
+                case UniverseSize.Gigantic:
+                    defaultPlayerCount = _universeSizeXmlReader.GiganticDefaultPlayerCount;
+                    break;
+                case UniverseSize.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+            }
+            D.Assert(defaultPlayerCount <= MaxPlayerCount(universeSize));
+            return defaultPlayerCount;
+        }
+
+        public static int MaxPlayerCount(this UniverseSize universeSize) {
+            int maxPlayerCount;
+            switch (universeSize) {
+                case UniverseSize.Tiny:
+                    maxPlayerCount = _universeSizeXmlReader.TinyMaxPlayerCount;
+                    break;
+                case UniverseSize.Small:
+                    maxPlayerCount = _universeSizeXmlReader.SmallMaxPlayerCount;
+                    break;
+                case UniverseSize.Normal:
+                    maxPlayerCount = _universeSizeXmlReader.NormalMaxPlayerCount;
+                    break;
+                case UniverseSize.Large:
+                    maxPlayerCount = _universeSizeXmlReader.LargeMaxPlayerCount;
+                    break;
+                case UniverseSize.Enormous:
+                    maxPlayerCount = _universeSizeXmlReader.EnormousMaxPlayerCount;
+                    break;
+                case UniverseSize.Gigantic:
+                    maxPlayerCount = _universeSizeXmlReader.GiganticMaxPlayerCount;
+                    break;
+                case UniverseSize.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+            }
+            D.Assert(maxPlayerCount <= TempGameValues.MaxPlayers);
+            return maxPlayerCount;
+        }
+
+        /// <summary>
+        /// Returns the minimum required number of systems that must be present
+        /// for this universeSize.
+        /// <remarks>Varies from ~6 (Tiny) to ~24 (Gigantic) to allow the maximum number of players
+        /// to each start using EmpireStartLevel.Advanced.</remarks>
+        /// </summary>
+        /// <param name="universeSize">Size of the universe.</param>
+        /// <returns></returns>
+        public static int MinReqdSystemQty(this UniverseSize universeSize) {
+            int maxPlayerCount = universeSize.MaxPlayerCount();
+            int maxStartingSystemRqmtPerPlayer = EmpireStartLevel.Advanced.SettlementStartQty();
+            return maxPlayerCount * maxStartingSystemRqmtPerPlayer;
+        }
+
+        /// <summary>
+        /// Returns the percentage of occupiable sectors that should contain a system.
+        /// <remarks>10.7.16 Manually tweaked to make sure the density value returned will generate
+        /// at least the minimum system requirement for the universe size. This minimum system
+        /// requirement is a function of the maximum number of players for a particular UniverseSize,
+        /// and the maximum number of settlements per player that would be required if all players
+        /// where set to start with EmpireStartLevel.Advanced. See UniverseSize.MinReqdSystemQty() extension below.</remarks>
+        /// </summary>
+        /// <param name="sysDensity">The system density.</param>
+        /// <param name="universeSize">Size of the universe.</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float SystemsPerSector(this SystemDensity sysDensity, UniverseSize universeSize) {
+            float density = Constants.ZeroPercent;
+            switch (sysDensity) {
+                case SystemDensity.None:
+                    break;
+                case SystemDensity.Existing_Debug:
+                    D.Error("Don't use SystemsPerSector() to get {0} density.", sysDensity.GetValueName());
+                    break;
+                case SystemDensity.Sparse:
+                    switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
+                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
+                            density = 0.20F;        // 6 systems
+                            break;
+                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
+                            density = 0.08F;        // 9 systems
+                            break;
+                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
+                            density = 0.03F;        // 15 systems
+                            break;
+                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
+                            density = 0.015F;       // 21 systems
+                            break;
+                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
+                            density = 0.008F;       // 33 systems
+                            break;
+                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
+                            density = 0.004F;       // 46 systems
+                            break;
+                        case UniverseSize.None:
+                        default:
+                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+                    }
+                    break;
+                case SystemDensity.Low:
+                    switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
+                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
+                            density = 0.25F;        // 8 systems
+                            break;
+                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
+                            density = 0.10F;        // 12 systems
+                            break;
+                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
+                            density = 0.05F;        // 25 systems
+                            break;
+                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
+                            density = 0.03F;        // 42 systems
+                            break;
+                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
+                            density = 0.015F;       // 62 systems
+                            break;
+                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
+                            density = 0.008F;       // 92 systems
+                            break;
+                        case UniverseSize.None:
+                        default:
+                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+                    }
+                    break;
+                case SystemDensity.Normal:
+                    switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
+                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
+                            density = 0.32F;        // 10 systems
+                            break;
+                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
+                            density = 0.15F;        // 18 systems
+                            break;
+                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
+                            density = 0.08F;        // 41 systems
+                            break;
+                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
+                            density = 0.04F;        // 56 systems
+                            break;
+                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
+                            density = 0.02F;        // 83 systems
+                            break;
+                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
+                            density = 0.012F;       // 138 systems
+                            break;
+                        case UniverseSize.None:
+                        default:
+                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+                    }
+                    break;
+                case SystemDensity.High:
+                    switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
+                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
+                            density = 0.40F;        // 13 systems
+                            break;
+                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
+                            density = 0.25F;        // 30 systems
+                            break;
+                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
+                            density = 0.15F;        // 77 systems
+                            break;
+                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
+                            density = 0.10F;        // 141 systems
+                            break;
+                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
+                            density = 0.07F;        // 291 systems  (FPS < 20)
+                            break;
+                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
+                            density = 0.04F;        // 460 systems  (FPS ~ 15)
+                            break;
+                        case UniverseSize.None:
+                        default:
+                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+                    }
+                    break;
+                case SystemDensity.Dense:
+                    switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
+                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
+                            density = 0.50F;        // 16 systems
+                            break;
+                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
+                            density = 0.35F;        // 43 systems
+                            break;
+                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
+                            density = 0.25F;        // 128 systems
+                            break;
+                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
+                            density = 0.15F;        // 212 systems
+                            break;
+                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
+                            density = 0.10F;        // 416 systems (FPS ~ 15)
+                            break;
+                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
+                            density = 0.06F;        // 690 systems  (FPS ~ 6)
+                            break;
+                        case UniverseSize.None:
+                        default:
+                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+                    }
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sysDensity));
+            }
+            D.Log("{0}: System Density of Universe is {1:0.##}.", typeof(GameEnumExtensions).Name, density);
+            return density;
         }
 
         /// <summary>
@@ -109,72 +346,98 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns the percentage of occupiable sectors that contain a system.
+        /// The number of fleets each player starts with.
         /// </summary>
-        /// <param name="sysDensity">The system density.</param>
+        /// <param name="level">The start level.</param>
         /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static float SystemsPerSector(this SystemDensity sysDensity) {
-            float density = Constants.ZeroPercent;
-            switch (sysDensity) {
-                case SystemDensity.None:
-                    break;
-                case SystemDensity.Existing_Debug:
-                    D.Error("Don't use SystemsPerSector() to get {0} density.", sysDensity.GetValueName());
-                    break;
-                case SystemDensity.Sparse:
-                    density = 0.01F;
-                    break;
-                case SystemDensity.Low:
-                    density = 0.05F;
-                    break;
-                case SystemDensity.Normal:
-                    density = 0.15F;
-                    break;
-                case SystemDensity.High:
-                    density = 0.25F;
-                    break;
-                case SystemDensity.Dense:
-                    density = 0.40F;
-                    break;
-                case SystemDensity.Full_Debug:
-                    density = Constants.OneHundredPercent;
-                    break;
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static int FleetStartQty(this EmpireStartLevel level) {
+            switch (level) {
+                case EmpireStartLevel.Early:
+                    return 1;
+                case EmpireStartLevel.Normal:
+                    return 2;
+                case EmpireStartLevel.Advanced:
+                    return 3;
+                case EmpireStartLevel.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sysDensity));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
             }
-            D.Log("{0}: System Density of Universe is {1:0.##}.", typeof(GameEnumExtensions).Name, density);
-            return density;
         }
 
-        public static int DefaultPlayerCount(this UniverseSize universeSize) {
-            int defaultPlayerCount;
-            switch (universeSize) {
-                case UniverseSize.Tiny:
-                    defaultPlayerCount = _universeSizeXmlReader.TinyDefaultPlayerCount;
-                    break;
-                case UniverseSize.Small:
-                    defaultPlayerCount = _universeSizeXmlReader.SmallDefaultPlayerCount;
-                    break;
-                case UniverseSize.Normal:
-                    defaultPlayerCount = _universeSizeXmlReader.NormalDefaultPlayerCount;
-                    break;
-                case UniverseSize.Large:
-                    defaultPlayerCount = _universeSizeXmlReader.LargeDefaultPlayerCount;
-                    break;
-                case UniverseSize.Enormous:
-                    defaultPlayerCount = _universeSizeXmlReader.EnormousDefaultPlayerCount;
-                    break;
-                case UniverseSize.Gigantic:
-                    defaultPlayerCount = _universeSizeXmlReader.GiganticDefaultPlayerCount;
-                    break;
-                case UniverseSize.None:
+        /// <summary>
+        /// The number of settlements each player starts with.
+        /// </summary>
+        /// <param name="level">The start level.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static int SettlementStartQty(this EmpireStartLevel level) {
+            switch (level) {
+                case EmpireStartLevel.Early:
+                    return 0;
+                case EmpireStartLevel.Normal:
+                    return 1;
+                case EmpireStartLevel.Advanced:
+                    return 3;
+                case EmpireStartLevel.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
             }
-            D.Assert(defaultPlayerCount <= TempGameValues.MaxPlayers);
-            return defaultPlayerCount;
         }
+
+        /// <summary>
+        /// The number of starbases each player starts with.
+        /// </summary>
+        /// <param name="level">The start level.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static int StarbaseStartQty(this EmpireStartLevel level) {
+            switch (level) {
+                case EmpireStartLevel.Early:
+                    return 0;
+                case EmpireStartLevel.Normal:
+                    return 1;
+                case EmpireStartLevel.Advanced:
+                    return 2;
+                case EmpireStartLevel.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
+            }
+        }
+
+        public static SystemDesirability Convert(this SystemDesirabilityGuiSelection desirabilitySelection) {
+            switch (desirabilitySelection) {
+                case SystemDesirabilityGuiSelection.Random:
+                    return RandomExtended.Choice(Enums<SystemDesirability>.GetValues(excludeDefault: true));
+                case SystemDesirabilityGuiSelection.Desirable:
+                    return SystemDesirability.Desirable;
+                case SystemDesirabilityGuiSelection.Normal:
+                    return SystemDesirability.Normal;
+                case SystemDesirabilityGuiSelection.Challenged:
+                    return SystemDesirability.Challenged;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(desirabilitySelection));
+            }
+        }
+
+        public static PlayerSeparation Convert(this PlayerSeparationGuiSelection separationSelection) {
+            switch (separationSelection) {
+                case PlayerSeparationGuiSelection.Random:
+                    return RandomExtended.Choice(Enums<PlayerSeparation>.GetValues(excludeDefault: true));
+                case PlayerSeparationGuiSelection.Close:
+                    return PlayerSeparation.Close;
+                case PlayerSeparationGuiSelection.Normal:
+                    return PlayerSeparation.Normal;
+                case PlayerSeparationGuiSelection.Distant:
+                    return PlayerSeparation.Distant;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(separationSelection));
+            }
+        }
+
+        #endregion
+
+        #region Celestial Category
 
         public static float Radius(this PlanetoidCategory cat) {
             switch (cat) {
@@ -905,8 +1168,6 @@ namespace CodeEnv.Master.GameContent {
                     return "QualitySetting";
                 case GuiElementID.UniverseSizePopupList:
                     return "UniverseSizeSelection";
-                case GuiElementID.PlayerCountPopupList:
-                    return "PlayerCount";
                 case GuiElementID.SystemDensityPopupList:
                     return "SystemDensitySelection";
 
@@ -976,6 +1237,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiElementID.AIPlayer7TeamPopupList:
                     return "AIPlayer7Team";
 
+                case GuiElementID.PlayerCountPopupList:
                 default:
                     if (elementID != GuiElementID.SavedGamesPopupList) { // TODO Not currently implemented
                         D.Warn("{0}: No Property Name found for {1}.{2}.", typeof(GameEnumExtensions).Name, typeof(GuiElementID).Name, elementID.GetValueName());
@@ -1118,15 +1380,15 @@ namespace CodeEnv.Master.GameContent {
                 case Speed.Stop:
                     return Constants.ZeroF;
                 case Speed.ThrustersOnly:
-                    // 4.13.16 InSystem, STL = 0.05 but clamped at 0.2 below, OpenSpace, FTL = 1.2
+                    // 4.13.16 InSystem, STL = 0.05 but clamped at ~0.2 below, OpenSpace, FTL = 1.2
                     fullSpeedFactor = 0.03F;
                     break;
                 case Speed.Docking:
-                    // 4.9.16 InSystem, STL = 0.08 but clamped at 0.2 below, OpenSpace, FTL = 2
+                    // 4.9.16 InSystem, STL = 0.08 but clamped at ~0.2 below, OpenSpace, FTL = 2
                     fullSpeedFactor = 0.05F;
                     break;
                 case Speed.DeadSlow:
-                    // 4.9.16 InSystem, STL = 0.13 but clamped at 0.2 below, OpenSpace, FTL = 3.2
+                    // 4.9.16 InSystem, STL = 0.13 but clamped at ~0.2 below, OpenSpace, FTL = 3.2
                     fullSpeedFactor = 0.08F;
                     break;
                 case Speed.Slow:
@@ -1363,6 +1625,82 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public static UniverseSize Convert(this DebugUniverseSize debugUniverseSize) {
+            switch (debugUniverseSize) {
+                case DebugUniverseSize.Tiny:
+                    return UniverseSize.Tiny;
+                case DebugUniverseSize.Small:
+                    return UniverseSize.Small;
+                case DebugUniverseSize.Normal:
+                    return UniverseSize.Normal;
+                case DebugUniverseSize.Large:
+                    return UniverseSize.Large;
+                case DebugUniverseSize.Enormous:
+                    return UniverseSize.Enormous;
+                case DebugUniverseSize.Gigantic:
+                    return UniverseSize.Gigantic;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugUniverseSize));
+            }
+        }
+
+        public static SystemDensity Convert(this DebugSystemDensity debugSystemDensity) {
+            switch (debugSystemDensity) {
+                case DebugSystemDensity.Existing_Debug:
+                    return SystemDensity.Existing_Debug;
+                case DebugSystemDensity.Sparse:
+                    return SystemDensity.Sparse;
+                case DebugSystemDensity.Low:
+                    return SystemDensity.Low;
+                case DebugSystemDensity.Normal:
+                    return SystemDensity.Normal;
+                case DebugSystemDensity.High:
+                    return SystemDensity.High;
+                case DebugSystemDensity.Dense:
+                    return SystemDensity.Dense;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugSystemDensity));
+            }
+        }
+
+        public static EmpireStartLevel Convert(this DebugEmpireStartLevel debugEmpireStartLevel) {
+            switch (debugEmpireStartLevel) {
+                case DebugEmpireStartLevel.Early:
+                    return EmpireStartLevel.Early;
+                case DebugEmpireStartLevel.Normal:
+                    return EmpireStartLevel.Normal;
+                case DebugEmpireStartLevel.Advanced:
+                    return EmpireStartLevel.Advanced;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugEmpireStartLevel));
+            }
+        }
+
+        public static SystemDesirability Convert(this DebugSystemDesirability debugDesirability) {
+            switch (debugDesirability) {
+                case DebugSystemDesirability.Desirable:
+                    return SystemDesirability.Desirable;
+                case DebugSystemDesirability.Normal:
+                    return SystemDesirability.Normal;
+                case DebugSystemDesirability.Challenged:
+                    return SystemDesirability.Challenged;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugDesirability));
+            }
+        }
+
+        public static PlayerSeparation Convert(this DebugPlayerSeparation debugSeparation) {
+            switch (debugSeparation) {
+                case DebugPlayerSeparation.Close:
+                    return PlayerSeparation.Close;
+                case DebugPlayerSeparation.Normal:
+                    return PlayerSeparation.Normal;
+                case DebugPlayerSeparation.Distant:
+                    return PlayerSeparation.Distant;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(debugSeparation));
+            }
+        }
 
         #endregion
 
@@ -1546,6 +1884,65 @@ namespace CodeEnv.Master.GameContent {
             }
 
             #endregion
+
+            #region Universe Max Player Count
+
+            private int _tinyMaxPlayerCount;
+            public int TinyMaxPlayerCount {
+                get {
+                    CheckValuesInitialized();
+                    return _tinyMaxPlayerCount;
+                }
+                private set { _tinyMaxPlayerCount = value; }
+            }
+
+            private int _smallMaxPlayerCount;
+            public int SmallMaxPlayerCount {
+                get {
+                    CheckValuesInitialized();
+                    return _smallMaxPlayerCount;
+                }
+                private set { _smallMaxPlayerCount = value; }
+            }
+
+            private int _normalMaxPlayerCount;
+            public int NormalMaxPlayerCount {
+                get {
+                    CheckValuesInitialized();
+                    return _normalMaxPlayerCount;
+                }
+                private set { _normalMaxPlayerCount = value; }
+            }
+
+            private int _largeMaxPlayerCount;
+            public int LargeMaxPlayerCount {
+                get {
+                    CheckValuesInitialized();
+                    return _largeMaxPlayerCount;
+                }
+                private set { _largeMaxPlayerCount = value; }
+            }
+
+            private int _enormousMaxPlayerCount;
+            public int EnormousMaxPlayerCount {
+                get {
+                    CheckValuesInitialized();
+                    return _enormousMaxPlayerCount;
+                }
+                private set { _enormousMaxPlayerCount = value; }
+            }
+
+            private int _giganticMaxPlayerCount;
+            public int GiganticMaxPlayerCount {
+                get {
+                    CheckValuesInitialized();
+                    return _giganticMaxPlayerCount;
+                }
+                private set { _giganticMaxPlayerCount = value; }
+            }
+
+            #endregion
+
 
             /// <summary>
             /// The type of the enum being supported by this class.

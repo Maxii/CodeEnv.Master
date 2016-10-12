@@ -53,17 +53,24 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="APlanetoidDesign.cs" />
-    <Compile Include="CelestialDesigns.cs" />
+    <Compile Include="DebugPlayerSeparation.cs" />
+    <Compile Include="DebugSystemDesirability.cs" />
+    <Compile Include="Generic\_Debug\DebugEmpireStartLevel.cs" />
+    <Compile Include="Generic\_Debug\DebugSystemDensity.cs" />
+    <Compile Include="Generic\_Debug\DebugUniverseSize.cs" />
+    <Compile Include="Game\Framework\UniverseSize.cs" />
+    <Compile Include="Game\Gameplay\EmpireStartLevel.cs" />
+    <Compile Include="Generic\Framework\APlanetoidDesign.cs" />
+    <Compile Include="Game\Framework\CelestialDesigns.cs" />
     <Compile Include="Generic\Framework\ACommandDesign.cs" />
     <Compile Include="Generic\Framework\AUnitDesign.cs" />
-    <Compile Include="Generic\IO\BaseCreatorEditorSettings.cs" />
+    <Compile Include="Generic\_Debug\BaseCreatorEditorSettings.cs" />
     <Compile Include="Generic\_Debug\DebugBaseFormation.cs" />
     <Compile Include="Generic\_Debug\DebugDiploUserRelations.cs" />
     <Compile Include="Generic\_Debug\DebugFleetFormation.cs" />
     <Compile Include="Generic\_Debug\DebugWeaponLoadout.cs" />
     <Compile Include="Generic\_Debug\DebugShipCombatStanceExclusions.cs" />
-    <Compile Include="Generic\IO\FleetCreatorEditorSettings.cs" />
+    <Compile Include="Generic\_Debug\FleetCreatorEditorSettings.cs" />
     <Compile Include="Game\Framework\StarbaseCmdDesign.cs" />
     <Compile Include="Game\Framework\FleetCmdDesign.cs" />
     <Compile Include="Generic\Framework\AllKnowledge.cs" />
@@ -394,11 +401,15 @@
     <Compile Include="Game\Framework\SettlementCmdDesign.cs" />
     <Compile Include="Generic\IO\UnitCreatorConfiguration.cs" />
     <Compile Include="Generic\Interfaces\Access\IDebugFleetCreator.cs" />
-    <Compile Include="MoonDesign.cs" />
-    <Compile Include="PlanetDesign.cs" />
-    <Compile Include="StarDesign.cs" />
-    <Compile Include="SystemCreatorConfiguration.cs" />
-    <Compile Include="SystemCreatorEditorSettings.cs" />
+    <Compile Include="Game\Framework\MoonDesign.cs" />
+    <Compile Include="Game\Framework\PlanetDesign.cs" />
+    <Compile Include="Game\Framework\StarDesign.cs" />
+    <Compile Include="Generic\IO\SystemCreatorConfiguration.cs" />
+    <Compile Include="Generic\_Debug\SystemCreatorEditorSettings.cs" />
+    <Compile Include="PlayerSeparation.cs" />
+    <Compile Include="PlayerSeparationGuiSelection.cs" />
+    <Compile Include="SystemDesirability.cs" />
+    <Compile Include="SystemDesirabilityGuiSelection.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -453,7 +464,7 @@
     <Compile Include="Game\Gameplay\UniverseCenterInfoAccessController.cs" />
     <Compile Include="Game\Gameplay\UserPlayerAIManager.cs" />
     <Compile Include="Game\Gameplay\UserPlayerKnowledge.cs" />
-    <Compile Include="Generic\IO\AUnitCreatorEditorSettings.cs" />
+    <Compile Include="Generic\_Debug\AUnitCreatorEditorSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Deferred\" />

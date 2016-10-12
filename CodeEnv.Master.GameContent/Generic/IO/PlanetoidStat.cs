@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetoidStat.cs
-// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
+// Data container holding externally acquirable values for Planetoids, aka Planets and Moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable stat containing externally acquirable values for Planetoids, aka Planets and Moons.
+    /// Data container holding externally acquirable values for Planetoids, aka Planets and Moons.
     /// </summary>
     public class PlanetoidStat {
 
@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         public ResourceYield Resources { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="APlanetoidStat" /> struct.
+        /// Initializes a new instance of the <see cref="APlanetoidStat" /> class.
         /// </summary>
         /// <param name="radius">The radius.</param>
         /// <param name="mass">The mass.</param>

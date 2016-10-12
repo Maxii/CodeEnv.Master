@@ -36,7 +36,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
     protected override void InitializeObstacleZone() {
         base.InitializeObstacleZone();
-        ObstacleZoneCollider.radius = Radius + 1F;
+        ObstacleZoneCollider.radius = Radius + TempGameValues.MoonObstacleZoneRadiusAdder;
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {

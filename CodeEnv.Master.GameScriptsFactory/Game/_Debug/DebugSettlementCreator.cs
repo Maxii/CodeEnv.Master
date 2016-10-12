@@ -63,6 +63,14 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     private SettlementCmdItem _command;
     private IList<FacilityItem> _elements;
 
+    protected override void ValidateStaticSetting() {
+        if (gameObject.isStatic) {
+            D.Warn("{0} should not start as static. Correcting.", Name);
+            gameObject.isStatic = false;
+        }
+    }
+
+
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
 
@@ -129,15 +137,10 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     }
 
     protected override bool DeployUnit() {
-        LogEvent();
-        var allSystems = _gameMgr.GameKnowledge.Systems;
-        var availableSystems = allSystems.Where(sys => sys.Settlement == null);
-        if (availableSystems.Any()) {
-            availableSystems.First().Settlement = _command;
-            return true;
-        }
-        D.Warn("{0}: No Systems available for deployment.", Name);
-        return false;
+        LogEvent(); // 10.6.16 Selection of system to deploy to moved to UniverseCreator
+        var system = gameObject.GetSingleComponentInParents<SystemItem>();
+        system.Settlement = _command;
+        return true;
     }
 
     protected override void AddUnitToGameKnowledge() {

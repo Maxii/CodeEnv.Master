@@ -71,10 +71,8 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// The prefab used to make a SystemCreator. There are no children of a SystemCreator.
     /// </summary>
     private SystemCreator _systemCreatorPrefab;
-
     private OrbitSimulator _immobileCelestialOrbitSimPrefab;
     private MobileOrbitSimulator _mobileCelestialOrbitSimPrefab;
-
 
     private GameManager _gameMgr;
 
@@ -90,10 +88,8 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         _systemPrefab = reqdPrefabs.system;
         _moonPrefabs = reqdPrefabs.moons;
         _systemCreatorPrefab = reqdPrefabs.systemCreator;
-
         _immobileCelestialOrbitSimPrefab = reqdPrefabs.orbitSimulator;
         _mobileCelestialOrbitSimPrefab = reqdPrefabs.mobileOrbitSimulator;
-
     }
 
     #region Stars
@@ -122,7 +118,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     public StarItem MakeInstance(StarDesign design, FocusableItemCameraStat cameraStat, GameObject systemParent, string systemName) {
         return MakeInstance(design.StarStat, cameraStat, systemParent, systemName);
     }
-
 
     /// <summary>
     /// Makes an instance of a Star based on the stat provided. The returned Item (with its Data)
@@ -279,114 +274,18 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
         D.Assert(orbitSlot.OrbitedItem != null, "{0}: {1}.OrbitedItem should not be null.", GetType().Name, typeof(OrbitData).Name);
 
-        string parentSystemName = orbitSlot.OrbitedItem.name;
-        planet.Name = PlanetNameFormat.Inject(parentSystemName, PlanetNumbers[orbitSlot.SlotIndex]);
+        string systemName = orbitSlot.OrbitedItem.name;
+        planet.Name = PlanetNameFormat.Inject(systemName, PlanetNumbers[orbitSlot.SlotIndex]);
         var passiveCMs = MakeCountermeasures(cmStats);
         PlanetData data = new PlanetData(planet, passiveCMs, planetStat) {
-            ParentName = parentSystemName
+            ParentName = systemName
         };
         planet.GetComponent<Rigidbody>().mass = data.Mass;  // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         planet.CameraStat = cameraStat;
         planet.Data = data;
 
-        InstallCelestialItemInOrbit(planet.gameObject, orbitSlot);
-    }
-
-
-    /// <summary>
-    /// Makes and returns a planet instance.
-    /// </summary>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="parentSystem">The parent system.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public PlanetItem MakeInstance(string designName, FollowableItemCameraStat cameraStat, SystemItem parentSystem) {
-        PlanetDesign design = _gameMgr.CelestialDesigns.GetPlanetDesign(designName);
-        return MakeInstance(design, cameraStat, parentSystem);
-    }
-
-    /// <summary>
-    /// Makes and returns a planet instance.
-    /// </summary>
-    /// <param name="design">The design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="parentSystem">The parent system.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public PlanetItem MakeInstance(PlanetDesign design, FollowableItemCameraStat cameraStat, SystemItem parentSystem) {
-        return MakeInstance(design.Stat, cameraStat, design.PassiveCmStats, parentSystem);
-    }
-
-    /// <summary>
-    /// Makes an instance of a Planet based on the stat provided. The returned
-    /// Item (with its Data)  will not be enabled but their gameObject will be parented to the provided parent.
-    /// </summary>
-    /// <param name="planetStat">The planet stat.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="parentSystem">The parent system.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public PlanetItem MakeInstance(PlanetStat planetStat, FollowableItemCameraStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, SystemItem parentSystem) {
-        GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
-        GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
-
-        var planetItem = planetGo.GetSafeComponent<PlanetItem>();
-        PopulateInstance(planetStat, cameraStat, cmStats, parentSystem.Data.Name, ref planetItem);
-        return planetItem;
-    }
-
-    /// <summary>
-    /// Populates the provided planet instance.
-    /// </summary>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="systemName">Name of the system.</param>
-    /// <param name="planet">The planet.</param>
-    [Obsolete]
-    public void PopulateInstance(string designName, FollowableItemCameraStat cameraStat, string systemName, ref PlanetItem planet) {
-        PlanetDesign design = _gameMgr.CelestialDesigns.GetPlanetDesign(designName);
-        PopulateInstance(design, cameraStat, systemName, ref planet);
-    }
-
-    /// <summary>
-    /// Populates the provided planet instance.
-    /// </summary>
-    /// <param name="design">The design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="systemName">Name of the system.</param>
-    /// <param name="planet">The planet.</param>
-    [Obsolete]
-    public void PopulateInstance(PlanetDesign design, FollowableItemCameraStat cameraStat, string systemName, ref PlanetItem planet) {
-        PopulateInstance(design.Stat, cameraStat, design.PassiveCmStats, systemName, ref planet);
-    }
-
-    /// <summary>
-    /// Populates the item instance provided from the stats provided.
-    /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
-    /// </summary>
-    /// <param name="planetStat">The planet stat.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="parentSystemName">Name of the parent system.</param>
-    /// <param name="planet">The planet item.</param>
-    [Obsolete]
-    public void PopulateInstance(PlanetStat planetStat, FollowableItemCameraStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats,
-        string parentSystemName, ref PlanetItem planet) {
-        D.Assert(!planet.IsOperational, "{0} should not be operational.", planet.FullName);
-        D.Assert(planet.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(planet.FullName));
-        D.Assert(planetStat.Category == planet.category,
-            "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
-
-        planet.Name = planetStat.Category.GetValueName();  // avoids Assert(Name != null), name gets updated when assigned to an orbit slot
-        var passiveCMs = MakeCountermeasures(cmStats);
-        PlanetData data = new PlanetData(planet, passiveCMs, planetStat) {
-            ParentName = parentSystemName
-        };
-        planet.GetComponent<Rigidbody>().mass = data.Mass;  // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
-        planet.CameraStat = cameraStat;
-        planet.Data = data;
+        GameObject planetsFolder = orbitSlot.OrbitedItem.GetComponentsInImmediateChildren<Transform>().Single(t => t.name == "Planets").gameObject;
+        InstallCelestialItemInOrbit(planet.gameObject, orbitSlot, planetsFolder);
     }
 
     #endregion
@@ -494,102 +393,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         InstallCelestialItemInOrbit(moon.gameObject, orbitSlot);
     }
 
-    /// <summary>
-    /// Makes and returns a moon instance.
-    /// </summary>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="parentPlanet">The parent planet.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public MoonItem MakeInstance(string designName, FollowableItemCameraStat cameraStat, PlanetItem parentPlanet) {
-        MoonDesign design = _gameMgr.CelestialDesigns.GetMoonDesign(designName);
-        return MakeInstance(design, cameraStat, parentPlanet);
-    }
-
-    /// <summary>
-    /// Makes and returns a moon instance.
-    /// </summary>
-    /// <param name="design">The design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="parentPlanet">The parent planet.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public MoonItem MakeInstance(MoonDesign design, FollowableItemCameraStat cameraStat, PlanetItem parentPlanet) {
-        return MakeInstance(design.Stat, cameraStat, design.PassiveCmStats, parentPlanet);
-    }
-
-    /// <summary>
-    /// Makes an instance of a Moon based on the stat provided. The returned
-    /// Item (with its Data)  will not be enabled but their gameObject will be parented to the provided parent.
-    /// </summary>
-    /// <param name="moonStat">The moon stat.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="parentPlanet">The parent planet.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public MoonItem MakeInstance(PlanetoidStat moonStat, FollowableItemCameraStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats, PlanetItem parentPlanet) {
-        GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
-        GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
-
-        var moonItem = moonGo.GetSafeComponent<MoonItem>();
-        PopulateInstance(moonStat, cameraStat, cmStats, parentPlanet.Data.Name, ref moonItem);
-        return moonItem;
-    }
-
-    /// <summary>
-    /// Populates the provided moon instance.
-    /// </summary>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="parentPlanetName">Name of the parent planet.</param>
-    /// <param name="moon">The moon.</param>
-    [Obsolete]
-    public void PopulateInstance(string designName, FollowableItemCameraStat cameraStat, string parentPlanetName, ref MoonItem moon) {
-        MoonDesign design = _gameMgr.CelestialDesigns.GetMoonDesign(designName);
-        PopulateInstance(design, cameraStat, parentPlanetName, ref moon);
-    }
-
-    /// <summary>
-    /// Populates the provided moon instance.
-    /// </summary>
-    /// <param name="design">The design.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="parentPlanetName">Name of the parent planet.</param>
-    /// <param name="moon">The moon.</param>
-    [Obsolete]
-    public void PopulateInstance(MoonDesign design, FollowableItemCameraStat cameraStat, string parentPlanetName, ref MoonItem moon) {
-        PopulateInstance(design.Stat, cameraStat, design.PassiveCmStats, parentPlanetName, ref moon);
-    }
-
-    /// <summary>
-    /// Populates the item instance provided from the stats provided.
-    /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
-    /// </summary>
-    /// <param name="moonStat">The moon stat.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="cmStats">The countermeasure stats.</param>
-    /// <param name="parentPlanetName">Name of the parent planet.</param>
-    /// <param name="moon">The item.</param>
-    [Obsolete]
-    public void PopulateInstance(PlanetoidStat moonStat, FollowableItemCameraStat cameraStat, IEnumerable<PassiveCountermeasureStat> cmStats,
-        string parentPlanetName, ref MoonItem moon) {
-        D.Assert(!moon.IsOperational, "{0} should not be operational.", moon.FullName);
-        D.Assert(moon.GetComponentInParent<SystemItem>() != null, "{0} must have a system parent before data assigned.".Inject(moon.FullName));
-        D.Assert(moonStat.Category == moon.category,
-            "{0} {1} should = {2}.", typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName());
-
-        moon.Name = moonStat.Category.GetValueName();  // avoids Assert(Name != null), name gets updated when assigned to an orbit slot
-        var passiveCMs = MakeCountermeasures(cmStats);
-        PlanetoidData data = new PlanetoidData(moon, passiveCMs, moonStat) {
-            ParentName = parentPlanetName
-        };
-        moon.GetComponent<Rigidbody>().mass = data.Mass;    // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
-        moon.CameraStat = cameraStat;
-        moon.Data = data;
-    }
-
     #endregion
 
     #region Systems
@@ -647,24 +450,19 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     #endregion
 
     /// <summary>
-    /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures do not use RangeMonitors.
-    /// </summary>
-    /// <param name="cmStats">The cm stats.</param>
-    /// <returns></returns>
-    private IEnumerable<PassiveCountermeasure> MakeCountermeasures(IEnumerable<PassiveCountermeasureStat> cmStats) {
-        var passiveCMs = new List<PassiveCountermeasure>(cmStats.Count());
-        cmStats.ForAll(stat => passiveCMs.Add(new PassiveCountermeasure(stat)));
-        return passiveCMs;
-    }
-
-    /// <summary>
     /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitData.
+    /// If altParent is not set, the orbitingObject's parent OrbitSimulator becomes a child of OrbitedObject.
+    /// If altParent is set, the parent OrbitSimulator becomes a child of altParent.
+    /// <remarks>altParent is principally used to place orbit simulators under a altParent folder, aka a 
+    /// System's planets are organized under the System's Planets folder.</remarks>
     /// </summary>
     /// <param name="orbitingGo">The orbiting GameObject.</param>
     /// <param name="orbitData">The orbit slot.</param>
-    private void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData) {
+    /// <param name="altParent">The alternative parent for the orbitingGo's parent OrbitSimulator.</param>
+    public void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData, GameObject altParent = null) {
         GameObject orbitSimPrefab = orbitData.IsOrbitedItemMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
-        GameObject orbitSimGo = UnityUtility.AddChild(orbitData.OrbitedItem, orbitSimPrefab);
+        GameObject orbitSimParent = altParent == null ? orbitData.OrbitedItem : altParent;
+        GameObject orbitSimGo = UnityUtility.AddChild(orbitSimParent, orbitSimPrefab);
         var orbitSim = orbitSimGo.GetSafeComponent<OrbitSimulator>();
         orbitSim.OrbitData = orbitData;
         orbitSimGo.name = orbitingGo.name + Constants.Space + typeof(OrbitSimulator).Name;
@@ -682,6 +480,16 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
     }
 
+    /// <summary>
+    /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures do not use RangeMonitors.
+    /// </summary>
+    /// <param name="cmStats">The cm stats.</param>
+    /// <returns></returns>
+    private IEnumerable<PassiveCountermeasure> MakeCountermeasures(IEnumerable<PassiveCountermeasureStat> cmStats) {
+        var passiveCMs = new List<PassiveCountermeasure>(cmStats.Count());
+        cmStats.ForAll(stat => passiveCMs.Add(new PassiveCountermeasure(stat)));
+        return passiveCMs;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -120,8 +120,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Initialize() {
-            _debugSettings = DebugSettings.Instance;
             // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
+            InitializeValuesAndReferences();
+        }
+
+        private void InitializeValuesAndReferences() {
+            _debugSettings = DebugSettings.Instance;
         }
 
         public void Initialize(IUniverseCenter uCenter) {
@@ -129,6 +133,14 @@ namespace CodeEnv.Master.GameContent {
             __InitializeValidateKnowledge();
 
             AddUniverseCenter(uCenter);
+        }
+
+        private void AddUniverseCenter(IUniverseCenter universeCenter) {
+            D.Assert(UniverseCenter == null);
+            if (universeCenter != null) {
+                _items.Add(universeCenter);
+                UniverseCenter = universeCenter;
+            }
         }
 
         public void AddSystem(IStar star, IEnumerable<IPlanetoid> planetoids) {
@@ -158,6 +170,23 @@ namespace CodeEnv.Master.GameContent {
                 }
             });
             return playerOwnedItems;
+        }
+
+        /// <summary>
+        /// Tries to get a random system, returning <c>true</c> if a system was found that is
+        /// not in <c>excludedSystems</c>, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="excludedSystems">The excluded systems.</param>
+        /// <param name="randomSystem">The random system.</param>
+        /// <returns></returns>
+        public bool TryGetRandomSystem(IList<ISystem> excludedSystems, out ISystem randomSystem) {
+            var availableSystems = _systemLookupBySectorIndex.Values.Except(excludedSystems);
+            if (availableSystems.Any()) {
+                randomSystem = RandomExtended.Choice(availableSystems);
+                return true;
+            }
+            randomSystem = null;
+            return false;
         }
 
         public bool TryGetSystem(IntVector3 sectorIndex, out ISystem system) {
@@ -221,12 +250,6 @@ namespace CodeEnv.Master.GameContent {
             isAdded = isAdded & _items.Add(star);
             D.Assert(isAdded, "{0} tried to add Star {1} it already has.", Name, star.FullName);
             AddSystem(star.ParentSystem);
-        }
-
-        private void AddUniverseCenter(IUniverseCenter universeCenter) {
-            D.Assert(UniverseCenter == null);
-            _items.Add(universeCenter);
-            UniverseCenter = universeCenter;
         }
 
         private void AddPlanetoid(IPlanetoid planetoid) {

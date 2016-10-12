@@ -28,10 +28,6 @@ using UnityEngine;
 /// </summary>
 public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory, IDisposable {
 
-    [Obsolete]
-    private OrbitSimulator _immobileCelestialOrbitSimPrefab;
-    [Obsolete]
-    private MobileOrbitSimulator _mobileCelestialOrbitSimPrefab;
     private ShipCloseOrbitSimulator _immobileShipOrbitSimPrefab;
     private MobileShipCloseOrbitSimulator _mobileShipOrbitSimPrefab;
 
@@ -42,39 +38,9 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     }
 
     protected sealed override void Initialize() {
-        _immobileCelestialOrbitSimPrefab = RequiredPrefabs.Instance.orbitSimulator;
-        _mobileCelestialOrbitSimPrefab = RequiredPrefabs.Instance.mobileOrbitSimulator;
         _immobileShipOrbitSimPrefab = RequiredPrefabs.Instance.shipCloseOrbitSimulator;
         _mobileShipOrbitSimPrefab = RequiredPrefabs.Instance.mobileShipCloseOrbitSimulator;
-
         _dynamicObjectsFolderGo = DynamicObjectsFolder.Instance.gameObject;
-    }
-
-    /// <summary>
-    /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitData.
-    /// </summary>
-    /// <param name="orbitingGo">The orbiting GameObject.</param>
-    /// <param name="orbitData">The orbit slot.</param>
-    [Obsolete]
-    public void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData) {
-        GameObject orbitSimPrefab = orbitData.IsOrbitedItemMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
-        GameObject orbitSimGo = UnityUtility.AddChild(orbitData.OrbitedItem, orbitSimPrefab);
-        var orbitSim = orbitSimGo.GetSafeComponent<OrbitSimulator>();
-        orbitSim.OrbitData = orbitData;
-        orbitSimGo.name = orbitingGo.name + Constants.Space + typeof(OrbitSimulator).Name;
-        UnityUtility.AttachChildToParent(orbitingGo, orbitSimGo);
-        orbitingGo.transform.localPosition = GenerateRandomLocalPositionWithinSlot(orbitData);
-    }
-
-    /// <summary>
-    /// Generates a random local position within the orbit slot at <c>MeanDistance</c> from the body orbited.
-    /// Use to set the local position of the orbiting object once attached to the orbiter.
-    /// </summary>
-    /// <returns></returns>
-    [Obsolete]
-    private Vector3 GenerateRandomLocalPositionWithinSlot(OrbitData orbitData) {
-        Vector2 pointOnCircle = RandomExtended.PointOnCircle(orbitData.MeanRadius);
-        return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
     }
 
     /// <summary>

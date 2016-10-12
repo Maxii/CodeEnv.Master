@@ -39,14 +39,13 @@ namespace CodeEnv.Master.GameContent {
         /// IDEA: Derive OrbitPeriod of each planetoid from this value?
         /// <remarks>Originally derived from reporting each planets orbit speed.</remarks>
         /// </summary>
-        public const float __MaxPlanetoidOrbitSpeed = 0.11F;    // 8.16.16 getting too many warnings at 0.10x
+        public const float __MaxPlanetoidOrbitSpeed = 0.125F;    // 10.3.16 getting too many warnings at 0.11x
 
         /// <summary>
-        /// The slowest ship speed value allowed under propulsion. Set at twice
-        /// __MaxPlanetoidOrbitSpeed to make sure a ship can catch a planet moving
-        /// directly away from it.
+        /// The slowest ship speed value allowed under propulsion. Set above __MaxPlanetoidOrbitSpeed
+        /// to make sure a ship can catch a planet moving directly away from it.
         /// </summary>
-        public const float ShipMinimumSpeedValue = __MaxPlanetoidOrbitSpeed * 2F;
+        public const float ShipMinimumSpeedValue = __MaxPlanetoidOrbitSpeed * 1.5F;
 
         public const float WaypointCloseEnoughDistance = 2F;
 
@@ -91,6 +90,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+
+        #region Close Orbit Values    
+
         /// <summary>
         /// The depth of a ship close orbit slot.
         /// <remarks>4.9.16 increased from 1.0F after allowing ship APilot to change speed.
@@ -98,6 +100,19 @@ namespace CodeEnv.Master.GameContent {
         /// arrival depth forced ships to go too slow and couldn't catch moving planets.</remarks>
         /// </summary>
         public const float ShipCloseOrbitSlotDepth = 1.5F;
+
+        /// <summary>
+        /// Value to add to the Moon's Radius when setting the radius of the ObstacleZone surrounding the moon.
+        /// </summary>
+        public const float MoonObstacleZoneRadiusAdder = 1F;
+
+        /// <summary>
+        /// Value to add to the Planet's Radius when setting the CloseOrbitInnerRadius surrounding the moon.
+        /// </summary>
+        public const float PlanetCloseOrbitInnerRadiusAdder = 1F;
+
+
+        #endregion
 
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.

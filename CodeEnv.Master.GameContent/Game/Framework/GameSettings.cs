@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GameSettings {
 
-        public bool __IsStartupSimulation { get; set; }
+        public bool __IsStartup { get; set; }
         public bool IsSavedGame { get; set; }
 
         public UniverseSize UniverseSize { get; set; }
@@ -30,6 +30,14 @@ namespace CodeEnv.Master.GameContent {
 
         public Player UserPlayer { get; set; }
         public Player[] AIPlayers { get; set; }
+
+        public EmpireStartLevel UserStartLevel { get; set; }
+        public EmpireStartLevel[] AIPlayersStartLevel { get; set; }
+
+        public SystemDesirability UserHomeSystemDesirability { get; set; }
+        public SystemDesirability[] AIPlayersHomeSystemDesirability { get; set; }
+
+        public PlayerSeparation[] AIPlayersSeparationFromUser { get; set; }
 
         public GameSettings() { }
 

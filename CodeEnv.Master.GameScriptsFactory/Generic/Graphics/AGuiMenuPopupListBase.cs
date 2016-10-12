@@ -36,6 +36,17 @@ public abstract class AGuiMenuPopupListBase : AGuiMenuElement {
     /// </summary>
     public string SelectedValue { get; protected set; }
 
+    /// <summary>
+    /// The currently selected value of the PopupList as a string after conversion, if needed.
+    /// Default implementation returns SelectedValue. 
+    /// <remarks>Derived classes should override if their selections need to be converted to another string value.
+    /// Conversion is typically required when the popup list uses values from a PopupList-specific enum 
+    /// that is a substitute for another primary enum used in the game. Such PopupList-specific
+    /// enums typically exclude one or more values from the primary enum that shouldn't be
+    /// shown in the list, and/or add the 'Random' choice.</remarks>
+    /// </summary>
+    public virtual string ConvertedSelectedValue { get { return SelectedValue; } }
+
 
 }
 

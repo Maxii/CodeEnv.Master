@@ -336,7 +336,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", FullName, CurrentOrder);
             CurrentOrder = null;
         }
-        IsAvailable = true;
+        IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
+                            // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
     }
 
     void Idling_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {

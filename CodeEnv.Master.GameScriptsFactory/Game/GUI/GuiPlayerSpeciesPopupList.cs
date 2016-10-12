@@ -34,6 +34,14 @@ public class GuiPlayerSpeciesPopupList : AGuiMenuPopupList<SpeciesGuiSelection> 
 
     public override GuiElementID ElementID { get { return _elementID; } }
 
+    public override string ConvertedSelectedValue {
+        get {
+            string unconvertedSelectedValue = SelectedValue;
+            Species convertedValue = Enums<SpeciesGuiSelection>.Parse(unconvertedSelectedValue).Convert();
+            return convertedValue.GetValueName();
+        }
+    }
+
     /// <summary>
     /// The SpeciesGuiSelection currently selected. Can be 'Random".
     /// </summary>

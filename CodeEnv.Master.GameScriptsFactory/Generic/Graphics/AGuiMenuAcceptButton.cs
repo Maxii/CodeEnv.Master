@@ -65,7 +65,8 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
             AGuiMenuPopupListBase popupListBase = popupList.gameObject.GetSafeComponent<AGuiMenuPopupListBase>();
             var popupListID = popupListBase.ElementID;
             string selection = popupListBase.SelectedValue;
-            RecordPopupListState(popupListID, selection);
+            string convertedSelection = popupListBase.ConvertedSelectedValue;
+            RecordPopupListState(popupListID, selection, convertedSelection);
         }
         foreach (UISlider slider in _sliders) {
             var sliderID = slider.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
@@ -83,11 +84,12 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     protected virtual void RecordCheckboxState(GuiElementID checkboxID, bool isChecked) { }
 
     /// <summary>
-    ///Records the selection of the popup list that has <c>popupListID</c>.
+    /// Records the selection of the popup list that has <c>popupListID</c>.
     /// </summary>
     /// <param name="popupListID">The popup list identifier.</param>
     /// <param name="selection">The selection.</param>
-    protected virtual void RecordPopupListState(GuiElementID popupListID, string selection) { }
+    /// <param name="convertedSelection">The converted selection.</param>
+    protected virtual void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) { }
 
     /// <summary>
     /// Records the value of the slider that has <c>sliderID</c>.

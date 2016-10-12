@@ -90,6 +90,9 @@ namespace CodeEnv.Master.GameContent {
 
         UserPlayerAIManager UserAIManager { get; }
 
+        void InitiateNewGame(GameSettings gameSettings);
+
+
         PlayerAIManager GetAIManagerFor(Player player);
 
         void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady);

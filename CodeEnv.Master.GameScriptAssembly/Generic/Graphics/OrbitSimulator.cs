@@ -114,7 +114,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     private float InitializeOrbitSpeed() {
         float orbitSpeedInUnitsPerHour = (2F * Mathf.PI * OrbitData.MeanRadius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
         if (!(this is ShipCloseOrbitSimulator)) {
-            D.Warn(orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed, "{0} orbitSpeed {1:0.0000} > max {2:0.00}.",
+            D.Warn(orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed, "{0} orbitSpeed {1:0.0000} > max {2:0.0000}.",
                 Name, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
         }
         return orbitSpeedInUnitsPerHour;

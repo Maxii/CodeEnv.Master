@@ -23,9 +23,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NewGamePreferenceSettings {
 
-        public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
-        public SystemDensityGuiSelection SystemDensitySelection { get; set; }
+        public UniverseSizeGuiSelection UniverseSizeGuiSelection { get; set; }
+
+        public UniverseSize UniverseSize { get; set; }  // 10.4.16 Reqd to know which Pref Property gets PlayerCount
         public int PlayerCount { get; set; }
+
+        public SystemDensityGuiSelection SystemDensitySelection { get; set; }
 
         public SpeciesGuiSelection UserPlayerSpeciesSelection { get; set; }
         public SpeciesGuiSelection[] AIPlayerSpeciesSelections { get; set; }

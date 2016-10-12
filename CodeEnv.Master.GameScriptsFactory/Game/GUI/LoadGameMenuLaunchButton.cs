@@ -35,8 +35,8 @@ public class LoadGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     private string _selectedGameCaption = string.Empty;
 
-    protected override void RecordPopupListState(GuiElementID popupListID, string selection) {
-        base.RecordPopupListState(popupListID, selection);
+    protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
+        base.RecordPopupListState(popupListID, selection, convertedSelection);
         switch (popupListID) {
             case GuiElementID.SavedGamesPopupList:
                 _selectedGameCaption = selection;

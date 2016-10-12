@@ -49,6 +49,7 @@ public class UnitDebugControlEditor : Editor {
             {
                 NGUIEditorTools.SetLabelWidth(200F);
                 NGUIEditorTools.DrawProperty("Current Owner's User Relations", serializedObject, "_currentOwnerUserRelations");
+                NGUIEditorTools.DrawProperty("Current Owner", serializedObject, "_ownerName");
             }
             EditorGUI.EndDisabledGroup();
 

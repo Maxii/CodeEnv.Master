@@ -139,7 +139,7 @@ public class FleetCreator : AAutoUnitCreator {
 
         if (!moveTgts.Any()) {
             D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", Name);
-            moveTgts.AddRange(SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
+            moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
         }
         IFleetNavigable destination;
         destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));

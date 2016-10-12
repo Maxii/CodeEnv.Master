@@ -27,6 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Principal builder of the Universe.
 /// </summary>
+[Obsolete]
 public class UniverseBuilder : AMonoSingleton<UniverseBuilder> {
 
     // 8.20.16 SystemDensity editor control moved to DebugControls
@@ -38,10 +39,13 @@ public class UniverseBuilder : AMonoSingleton<UniverseBuilder> {
     private GameManager _gameMgr;
     private SectorGrid _sectorGrid;
 
+    private NewGameSystemConfigurator _systemConfigurator;
+
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _gameMgr = GameManager.Instance;
         _sectorGrid = SectorGrid.Instance;
+        _systemConfigurator = new NewGameSystemConfigurator();
         Subscribe();
     }
 
@@ -108,43 +112,78 @@ public class UniverseBuilder : AMonoSingleton<UniverseBuilder> {
 
         var deployableSectorIndices = _sectorGrid.AllSectorIndexes.Where(index => !_sectorGrid.GetSector(index).IsOnPeriphery);
         int allowedSystemQty = CalcUniverseSystemsQty(deployableSectorIndices.Count());
-        var sectorIndicesAlreadyOccupiedBySystemCreators = HandleManuallyDeployedSystemCreators(allowedSystemQty);
-        var sectorIndicesOccupiedByStarbaseCreators = gameObject.GetComponentsInChildren<DebugStarbaseCreator>().Select(creator => creator.SectorIndex);
-        var unoccupiedDeployableSectorIndices = deployableSectorIndices.Except(sectorIndicesAlreadyOccupiedBySystemCreators).Except(sectorIndicesOccupiedByStarbaseCreators);
-        int additionalSystemQtyToDeploy = allowedSystemQty - sectorIndicesAlreadyOccupiedBySystemCreators.Count();
+        var sectorIndicesAlreadyOccupiedByDebugSystemCreators = HandleDebugSystemCreatorsDeployedInEditor(allowedSystemQty);
+        var sectorIndicesOccupiedByStarbaseCreators = gameObject.GetComponentsInChildren<DebugStarbaseCreator>().Select(sbc => sbc.SectorIndex);
+        var unoccupiedDeployableSectorIndices = deployableSectorIndices.Except(sectorIndicesAlreadyOccupiedByDebugSystemCreators)
+            .Except(sectorIndicesOccupiedByStarbaseCreators);
+        int additionalSystemQtyToDeploy = allowedSystemQty - sectorIndicesAlreadyOccupiedByDebugSystemCreators.Count();
         int additionalQtyDeployed = DeployAdditionalSystemCreators(additionalSystemQtyToDeploy, unoccupiedDeployableSectorIndices);
 
         __LogDuration("{0}.DeploySystemCreators".Inject(GetType().Name));
         D.Log("{0} built and deployed {1} additional {2}s.", GetType().Name, additionalQtyDeployed, typeof(SystemCreator).Name);
     }
+    //private void DeploySystemCreators() {
+    //    __RecordDurationStartTime();
+
+    //    var deployableSectorIndices = _sectorGrid.AllSectorIndexes.Where(index => !_sectorGrid.GetSector(index).IsOnPeriphery);
+    //    int allowedSystemQty = CalcUniverseSystemsQty(deployableSectorIndices.Count());
+    //    var sectorIndicesAlreadyOccupiedByDebugSystemCreators = HandleDebugSystemCreatorsDeployedInEditor(allowedSystemQty);
+    //    var sectorIndicesOccupiedByStarbaseCreators = gameObject.GetComponentsInChildren<DebugStarbaseCreator>().Select(sbc => sbc.SectorIndex);
+    //    var unoccupiedDeployableSectorIndices = deployableSectorIndices.Except(sectorIndicesAlreadyOccupiedByDebugSystemCreators)
+    //        .Except(sectorIndicesOccupiedByStarbaseCreators);
+    //    int additionalSystemQtyToDeploy = allowedSystemQty - sectorIndicesAlreadyOccupiedByDebugSystemCreators.Count();
+    //    int additionalQtyDeployed = DeployAdditionalSystemCreators(additionalSystemQtyToDeploy, unoccupiedDeployableSectorIndices);
+
+    //    __LogDuration("{0}.DeploySystemCreators".Inject(GetType().Name));
+    //    D.Log("{0} built and deployed {1} additional {2}s.", GetType().Name, additionalQtyDeployed, typeof(SystemCreator).Name);
+    //}
 
     private int CalcUniverseSystemsQty(int nonPeripheralSectorQty) {
         SystemDensity systemDensity = DebugControls.Instance.SystemDensity;
         if (systemDensity == SystemDensity.Existing_Debug) {
-            return gameObject.GetComponentsInChildren<SystemCreator>().Count();
+            return gameObject.GetComponentsInChildren<DebugSystemCreator>().Count();
         }
         return Mathf.FloorToInt(nonPeripheralSectorQty * systemDensity.SystemsPerSector());
     }
 
     /// <summary>
-    /// Handles any manually deployed system creators already present including accounting for their 
+    /// Handles any manually deployed system creators already present including accounting for their
     /// already assigned name, if any. Returns the sector indices where creators are already deployed.
     /// </summary>
+    /// <param name="allowedSystemQty">The allowed qty.</param>
     /// <returns></returns>
-    private IEnumerable<IntVector3> HandleManuallyDeployedSystemCreators(int allowedQty) {
-        var systemNameFactory = SystemNameFactory.Instance;
-        // need to have already manually deployed all named creators
-        var orderedCreators = gameObject.GetSafeComponentsInChildren<SystemCreator>().OrderBy(sysCreator => sysCreator.IsSystemNamed);
+    private IEnumerable<IntVector3> HandleDebugSystemCreatorsDeployedInEditor(int allowedSystemQty) {
 
-        var allowedCreators = orderedCreators.Take(allowedQty);
-        var namedAllowedCreators = allowedCreators.Where(c => c.IsSystemNamed);
-        namedAllowedCreators.ForAll(c => systemNameFactory.MarkNameAsUsed(c.SystemName));
-
-        var unallowedCreators = orderedCreators.Except(allowedCreators);
-        unallowedCreators.ForAll(c => GameUtility.Destroy(c.gameObject));
-
-        return allowedCreators.Select(c => c.SectorIndex);
+        return _systemConfigurator.ConfigureExistingDebugCreators(allowedSystemQty);
     }
+    //private IEnumerable<IntVector3> HandleDebugSystemCreatorsDeployedInEditor(int allowedSystemQty) {
+    //    var systemNameFactory = SystemNameFactory.Instance;
+    //    // need to have already manually deployed all named creators
+    //    var orderedCreators = gameObject.GetSafeComponentsInChildren<DebugSystemCreator>().OrderBy(sc => systemNameFactory.IsSystemProperlyNamed(sc.SystemName));
+
+    //    var allowedCreators = orderedCreators.Take(allowedSystemQty);
+    //    var properlyNamedAllowedCreators = allowedCreators.Where(sc => systemNameFactory.IsSystemProperlyNamed(sc.SystemName));
+    //    properlyNamedAllowedCreators.ForAll(sc => systemNameFactory.MarkNameAsUsed(sc.SystemName));
+
+    //    var unallowedCreators = orderedCreators.Except(allowedCreators);
+    //    unallowedCreators.ForAll(c => GameUtility.Destroy(c.gameObject));
+
+    //    return allowedCreators.Select(c => c.SectorIndex);
+    //}
+    //private IEnumerable<IntVector3> HandleDebugSystemCreatorsDeployedInEditor(int allowedQty) {
+    //    var systemNameFactory = SystemNameFactory.Instance;
+    //    // need to have already manually deployed all named creators
+    //    var orderedCreators = gameObject.GetSafeComponentsInChildren<SystemCreatorOld>().OrderBy(sysCreator => sysCreator.IsSystemNamed);
+
+    //    var allowedCreators = orderedCreators.Take(allowedQty);
+    //    var namedAllowedCreators = allowedCreators.Where(c => c.IsSystemNamed);
+    //    namedAllowedCreators.ForAll(c => systemNameFactory.MarkNameAsUsed(c.SystemName));
+
+    //    var unallowedCreators = orderedCreators.Except(allowedCreators);
+    //    unallowedCreators.ForAll(c => GameUtility.Destroy(c.gameObject));
+
+    //    return allowedCreators.Select(c => c.SectorIndex);
+    //}
 
     private int DeployAdditionalSystemCreators(int qty, IEnumerable<IntVector3> unoccupiedDeployableSectorIndices) {
         Utility.ValidateNotNegative(qty);
@@ -152,13 +191,26 @@ public class UniverseBuilder : AMonoSingleton<UniverseBuilder> {
             return Constants.Zero;
         }
 
-        SystemFactory factory = SystemFactory.Instance;
+        //SystemFactory factory = SystemFactory.Instance;
         var unoccupiedSectorIndices = unoccupiedDeployableSectorIndices.Shuffle();
         var sectorIndicesToDeployTo = unoccupiedSectorIndices.Take(qty);
         var sectorPositionsToDeployTo = sectorIndicesToDeployTo.Select(index => _sectorGrid.GetSectorPosition(index));
-        sectorPositionsToDeployTo.ForAll(position => factory.MakeCreatorInstance(position));
+        sectorPositionsToDeployTo.ForAll(position => _systemConfigurator.DeployAndConfigureRandomSystemCreatorTo(position));
         return sectorPositionsToDeployTo.Count();
     }
+    //private int DeployAdditionalSystemCreators(int qty, IEnumerable<IntVector3> unoccupiedDeployableSectorIndices) {
+    //    Utility.ValidateNotNegative(qty);
+    //    if (qty == Constants.Zero) {
+    //        return Constants.Zero;
+    //    }
+
+    //    SystemFactory factory = SystemFactory.Instance;
+    //    var unoccupiedSectorIndices = unoccupiedDeployableSectorIndices.Shuffle();
+    //    var sectorIndicesToDeployTo = unoccupiedSectorIndices.Take(qty);
+    //    var sectorPositionsToDeployTo = sectorIndicesToDeployTo.Select(index => _sectorGrid.GetSectorPosition(index));
+    //    sectorPositionsToDeployTo.ForAll(position => factory.MakeCreatorInstance(position));
+    //    return sectorPositionsToDeployTo.Count();
+    //}
 
     #endregion
 
@@ -167,7 +219,7 @@ public class UniverseBuilder : AMonoSingleton<UniverseBuilder> {
         if (UniverseCenter != null) {
             float radius = TempGameValues.UniverseCenterRadius;
             float lowOrbitRadius = radius + 5F;
-            FocusableItemCameraStat cameraStat = __MakeCameraStat(radius, lowOrbitRadius);
+            FocusableItemCameraStat cameraStat = __MakeUCenterCameraStat(radius, lowOrbitRadius);
             UniverseCenter.Name = "UniverseCenter";
             UniverseCenterData data = new UniverseCenterData(UniverseCenter, radius, lowOrbitRadius);
             UniverseCenter.CameraStat = cameraStat;
@@ -183,7 +235,7 @@ public class UniverseBuilder : AMonoSingleton<UniverseBuilder> {
         }
     }
 
-    private FocusableItemCameraStat __MakeCameraStat(float radius, float lowOrbitRadius) {
+    private FocusableItemCameraStat __MakeUCenterCameraStat(float radius, float lowOrbitRadius) {
         float minViewDistance = radius + 1F;
         float highOrbitRadius = lowOrbitRadius + TempGameValues.ShipCloseOrbitSlotDepth;
         float optViewDistance = highOrbitRadius + 1F;

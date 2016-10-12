@@ -387,13 +387,17 @@ namespace CodeEnv.Master.GameContent {
                 IFleetCmd fleetCmd = myCmd as IFleetCmd;
                 if (fleetCmd != null) {
                     if (GameTime.Instance.CurrentDate == GameTime.GameStartDate) {
+                        float hoursDelay = 1F;
+                        D.Log("{0} is issuing order to {1} with a {2} hour delay.", Name, fleetCmd.FullName, hoursDelay);
+
                         // makes sure Owner's knowledge of universe has been constructed before selecting its target
                         string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(Name);
-                        References.JobManager.WaitForHours(1F, jobName, waitFinished: delegate {
+                        References.JobManager.WaitForHours(hoursDelay, jobName, waitFinished: delegate {
                             __IssueFleetOrder(fleetCmd);
                         });
                     }
                     else {
+                        D.Log("{0} is issuing order to {1} with no delay.", Name, fleetCmd.FullName);
                         __IssueFleetOrder(fleetCmd);
                     }
                 }
@@ -584,6 +588,8 @@ namespace CodeEnv.Master.GameContent {
                 select eSys;
             if (explorableUnexploredSystems.Any()) {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
+                D.LogBold("{0} is issuing an explore order to {1} with target {2}. IsExploringAllowed = {3}, IsFullyExplored = {4}.",
+                    Name, fleetCmd.FullName, closestUnexploredSystem.FullName, closestUnexploredSystem.IsExploringAllowedBy(Owner), closestUnexploredSystem.IsFullyExploredBy(Owner));
                 fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.CmdStaff, closestUnexploredSystem);
             }
             else {

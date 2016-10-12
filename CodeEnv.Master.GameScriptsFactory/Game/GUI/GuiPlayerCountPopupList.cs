@@ -22,6 +22,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// PopupList allowing selection of the number of Players when starting a new game.
@@ -30,32 +31,67 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
 
+    private const string PrefPropertyNameFormat = "{0}PlayerCount";
+
     public override GuiElementID ElementID { get { return GuiElementID.PlayerCountPopupList; } }
 
-    protected override string[] Choices { get { return _countChoices; } }
+    protected override bool SelfInitializeSelection { get { return false; } }
 
     private string[] _countChoices;
+    protected override string[] Choices { get { return _countChoices; } }
+
     private IDictionary<GuiElementID, UIWidget> _aiPlayerContainerLookup;
+    GuiUniverseSizePopupList _universeSizePopupList;
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        InitializeCountChoices();
+        _universeSizePopupList = transform.parent.parent.gameObject.GetSingleComponentInChildren<GuiUniverseSizePopupList>(); // HACK
         PopulateAIPlayerContainerLookup();
     }
 
-    private void InitializeCountChoices() {
-        _countChoices = Enumerable.Range(start: 2, count: TempGameValues.MaxAIPlayers).Select(value => value.ToString()).ToArray();
+    protected override void Subscribe() {
+        base.Subscribe();
+        _universeSizePopupList.universeSizeChanged += UniverseSizeChangedEventHandler;
+    }
+
+    protected override void Start() {
+        base.Start();
+        InitializePlayerCountValues();
+    }
+
+    private void InitializePlayerCountValues() {
+        RefreshCountChoices();
+        AssignSelectionChoices();
+        TryMakePreferenceSelection();
+    }
+
+    private void RefreshCountChoices() {
+        //D.Log("{0}.RefreshCountChoices() called.", Name);
+        UniverseSize currentUniverseSizeSelection = Enums<UniverseSize>.Parse(_universeSizePopupList.ConvertedSelectedValue);
+        int maxAiPlayers = currentUniverseSizeSelection.MaxPlayerCount() - Constants.One;
+        _countChoices = Enumerable.Range(start: 2, count: maxAiPlayers).Select(value => value.ToString()).ToArray();
     }
 
     #region Event and Property Change Handlers
 
+    private void UniverseSizeChangedEventHandler(object sender, EventArgs e) {
+        RefreshCountChoices();
+        AssignSelectionChoices();
+        TryMakePreferenceSelection();
+    }
+
     protected override void PopupListSelectionChangedEventHandler() {
         base.PopupListSelectionChangedEventHandler();
-        int aiPlayerCount = int.Parse(_popupList.value) - Constants.One;
+        int aiPlayerCount = int.Parse(SelectedValue) - Constants.One;
         RefreshAIPlayerAvailability(aiPlayerCount);
     }
 
     #endregion
+
+    protected override string DeterminePreferencePropertyName() {
+        UniverseSize currentUniverseSizeSelection = Enums<UniverseSize>.Parse(_universeSizePopupList.ConvertedSelectedValue);
+        return PrefPropertyNameFormat.Inject(currentUniverseSizeSelection.GetValueName());
+    }
 
     #region Dynamic AI Player Show/Hide System
 
@@ -107,6 +143,11 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
     }
 
     #endregion
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        _universeSizePopupList.universeSizeChanged -= UniverseSizeChangedEventHandler;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler validatePlayerKnowledgeNow;
 
-        UniverseSize UniverseSize { get; }
-
     }
 }
 

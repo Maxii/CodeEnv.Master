@@ -63,6 +63,13 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
     private StarbaseCmdItem _command;
     private IList<FacilityItem> _elements;
 
+    protected override void ValidateStaticSetting() {
+        if (!gameObject.isStatic) {
+            D.Warn("{0} should start as static. Correcting.", Name);
+            gameObject.isStatic = true;
+        }
+    }
+
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
 

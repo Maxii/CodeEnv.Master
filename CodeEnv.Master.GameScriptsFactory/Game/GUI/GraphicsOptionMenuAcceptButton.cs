@@ -36,8 +36,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
     private string _qualitySetting;
     private bool _isElementIconsEnabled;
 
-    protected override void RecordPopupListState(GuiElementID popupListID, string selection) {
-        base.RecordPopupListState(popupListID, selection);
+    protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
+        base.RecordPopupListState(popupListID, selection, convertedSelection);
         switch (popupListID) {
             case GuiElementID.QualitySettingPopupList:
                 _qualitySetting = selection;

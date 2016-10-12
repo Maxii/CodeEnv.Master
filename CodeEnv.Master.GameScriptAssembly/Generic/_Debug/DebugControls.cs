@@ -52,83 +52,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     public event EventHandler showObstacleZonesChanged;
 
-    #region New Game Editor Fields
-
-    [Tooltip("Check to use these debug settings rather than the New Game Settings")]
-    [SerializeField]
-    private bool _useDebugSettings = true;
-
-    [Tooltip("Set the size of the Universe")]
-    [SerializeField]
-    private UniverseSize _universeSize = UniverseSize.Normal;
-    public UniverseSize UniverseSize {
-        get {
-            UniverseSize sizeToUse;
-            if (_useDebugSettings) {
-                sizeToUse = _universeSize;
-            }
-            else {
-                var gameSettingsSize = _gameMgr.GameSettings.UniverseSize;
-                sizeToUse = gameSettingsSize;
-                _universeSize = gameSettingsSize;
-            }
-            return sizeToUse;
-        }
-    }
-
-    [Tooltip("Set the density of Systems in the Universe")]
-    [SerializeField]
-    private SystemDensity _systemDensity = SystemDensity.Existing_Debug;
-    public SystemDensity SystemDensity {
-        get {
-            SystemDensity densityToUse;
-            if (_useDebugSettings) {
-                densityToUse = _systemDensity;
-            }
-            else {
-                var gameSettingsDensity = _gameMgr.GameSettings.SystemDensity;
-                densityToUse = gameSettingsDensity;
-                _systemDensity = gameSettingsDensity;
-            }
-            return densityToUse;
-        }
-    }
-
-    [Tooltip("Set the number of players in the game")]
-    [Range(1, TempGameValues.MaxPlayers)]
-    [SerializeField]
-    private int _playerCount = 5;
-    public IList<Player> Players {
-        get {
-            var gameSettings = _gameMgr.GameSettings;
-            if (!_useDebugSettings || _playerCount == gameSettings.PlayerCount) {
-                var players = new List<Player>(gameSettings.AIPlayers);
-                players.Add(gameSettings.UserPlayer);
-                return players;
-            }
-            else {
-                if (_playerCount < gameSettings.PlayerCount) {
-                    var players = new List<Player>(_playerCount);
-                    players.Add(gameSettings.UserPlayer);
-                    players.AddRange(gameSettings.AIPlayers.Take(_playerCount - 1));
-                    return players;
-                }
-                else {
-                    D.Assert(_playerCount > gameSettings.PlayerCount);
-                    var players = new List<Player>(_playerCount);
-                    players.Add(gameSettings.UserPlayer);
-                    players.AddRange(gameSettings.AIPlayers);
-                    int additionalPlayersNeeded = _playerCount - players.Count;
-                    var additionalPlayers = GenerateAdditionalAIPlayers(additionalPlayersNeeded, players);
-                    players.AddRange(additionalPlayers);
-                    return players;
-                }
-            }
-        }
-    }
-
-    #endregion
-
     #region Auto Unit and System Creator Editor Fields
 
     [Tooltip("Check to enable tracking labels for all auto unit creators")]
@@ -423,18 +346,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     }
 
     #endregion
-
-    private IEnumerable<Player> GenerateAdditionalAIPlayers(int qty, IEnumerable<Player> playersAlreadyInUse) {
-        var availableColors = new Stack<GameColor>(TempGameValues.AllPlayerColors.Except(playersAlreadyInUse.Select(p => p.Color)));
-        var availableSpecies = new Stack<Species>(Enums<Species>.GetValues(excludeDefault: true));
-        var availableTeams = new Stack<TeamID>(Enums<TeamID>.GetValues(excludeDefault: true).Except(playersAlreadyInUse.Select(p => p.Team).ToArray()));
-        IList<Player> generatedPlayers = new List<Player>(qty);
-        for (int i = 0; i < qty; i++) {
-            var player = new Player(availableSpecies.Pop(), availableTeams.Pop(), availableColors.Pop());
-            generatedPlayers.Add(player);
-        }
-        return generatedPlayers;
-    }
 
     #region Cleanup
 

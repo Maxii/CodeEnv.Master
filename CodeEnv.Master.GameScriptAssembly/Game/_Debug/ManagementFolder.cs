@@ -116,7 +116,7 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     /// The children transfered may subsequently persist themselves or they may be destroyed.
     /// </summary>
     //private void TransferChildren() {
-    //    D.Log("{0}_{1} has {2} children being reparented to {3}_{4}.",
+    //    D.Log("{0}_{1} has {2} children being re-parented to {3}_{4}.",
     //        this.name, this.InstanceCount, this.transform.childCount, Instance.name, Instance.InstanceCount);
     //    var children = this.gameObject.GetComponentsInImmediateChildren<Transform>();
     //    children.ForAll(child => {
@@ -130,7 +130,7 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     /// The instance that is persisting has this called before the new scene starts loading. 
     /// It records and then detaches its children so they can be destroyed (if they are 
     /// not themselves persistent). The recorded children are then used by ReattachPersistentChildren()
-    /// to find any that persist and reparent them to this persistent instance.
+    /// to find any that persist and re-parent them to this persistent instance.
     /// </summary>
     //private void RecordAndDetachChildren() {
     //    _formerChildren = gameObject.GetComponentsInImmediateChildren<Transform>();

@@ -99,10 +99,35 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     protected bool IsCompositionPreset { get { return _isCompositionPreset; } }
 
-    protected override void InitializeDeploymentSystem() {
-        D.Assert(!_gameMgr.IsRunning);
-        Subscribe();
+    //protected override void InitializeDeploymentSystem() {
+    //    D.Assert(!_gameMgr.IsRunning);
+    //    Subscribe();
+    //}
+
+    //protected override void HandleGameIsRunning() {
+    //    if (!ValidateConfiguration()) {  // only DebugCreators can be deployed without being assigned a configuration
+    //        return;
+    //    }
+    //    base.HandleGameIsRunning();
+    //}
+
+    public override void InitiateDeployment() {
+        if (ValidateConfiguration()) {
+            base.InitiateDeployment();
+        }
     }
+
+    private bool ValidateConfiguration() {
+        if (Configuration == null) {
+            string relationsMsg = _isOwnerUser ? "IsUser" : "DesiredUserRelations: {0}".Inject(_ownerRelationshipWithUser.GetValueName());
+            D.Log("{0} found Configuration unassigned so destroying unit before created. {1}.", Name, relationsMsg);
+            Destroy(gameObject);
+            return false;
+        }
+        return true;
+    }
+
+    protected abstract void ValidateStaticSetting();
 
     #region ExecuteInEditMode
 
@@ -111,6 +136,14 @@ public abstract class ADebugUnitCreator : AUnitCreator {
             return; // Uses ExecuteInEditMode
         }
         base.Awake();
+        ValidateStaticSetting();
+    }
+
+    protected sealed override void Start() {
+        if (!Application.isPlaying) {
+            return; // Uses ExecuteInEditMode
+        }
+        base.Start();
     }
 
     protected sealed override void Update() {

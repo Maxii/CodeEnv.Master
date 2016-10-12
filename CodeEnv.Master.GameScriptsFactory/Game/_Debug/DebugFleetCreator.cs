@@ -95,6 +95,13 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     private FleetCmdItem _command;
     private IList<ShipItem> _elements;
 
+    protected override void ValidateStaticSetting() {
+        if (gameObject.isStatic) {
+            D.Warn("{0} should not start as static. Correcting.", Name);
+            gameObject.isStatic = false;
+        }
+    }
+
     protected override void MakeElements() {
         _elements = new List<ShipItem>();
 
@@ -255,7 +262,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
         if (!moveTgts.Any()) {
             D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", Name);
-            moveTgts.AddRange(SectorGrid.Instance.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
+            moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
         }
         IFleetNavigable destination;
         if (_findFarthest) {

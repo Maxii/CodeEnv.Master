@@ -25,13 +25,6 @@ namespace CodeEnv.Master.GameContent {
     public interface IGeneralFactory {
 
         /// <summary>
-        /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitSlot.
-        /// </summary>
-        /// <param name="orbitingObject">The orbiting object.</param>
-        /// <param name="orbitData">The orbit slot.</param>
-        void InstallCelestialItemInOrbit(GameObject orbitingObject, OrbitData orbitData);
-
-        /// <summary>
         /// Makes and returns an instance of IShipOrbitSimulator for this ShipOrbitSlot.
         /// </summary>
         /// <param name="orbitData">The orbit slot.</param>

@@ -28,6 +28,14 @@ public class GuiSystemDensityPopupList : AGuiMenuPopupList<SystemDensityGuiSelec
 
     public override GuiElementID ElementID { get { return GuiElementID.SystemDensityPopupList; } }
 
+    public override string ConvertedSelectedValue {
+        get {
+            string unconvertedSelectedValue = SelectedValue;
+            SystemDensity convertedValue = Enums<SystemDensityGuiSelection>.Parse(unconvertedSelectedValue).Convert();
+            return convertedValue.GetValueName();
+        }
+    }
+
     protected override bool IncludesRandom { get { return true; } }
 
     protected override string[] Choices { get { return Enums<SystemDensityGuiSelection>.GetNames(excludeDefault: true); } }
