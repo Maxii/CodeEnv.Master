@@ -105,9 +105,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return creator;
     }
 
-
     /// <summary>
-    /// Makes an unparented, unenabled FleetCmd instance for the owner.
+    /// Makes an unenabled FleetCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="cameraStat">The camera stat.</param>
@@ -120,7 +119,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled FleetCmd instance for the owner.
+    /// Makes an unenabled FleetCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="cameraStat">The camera stat.</param>
@@ -191,16 +190,32 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Ships
 
-    public ShipItem MakeShipInstance(Player owner, FollowableItemCameraStat cameraStat, string designName) {
+    /// <summary>
+    /// Makes an unenabled ship instance parented to unitContainer.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="cameraStat">The camera stat.</param>
+    /// <param name="designName">Name of the design.</param>
+    /// <param name="unitContainer">The unit container.</param>
+    /// <returns></returns>
+    public ShipItem MakeShipInstance(Player owner, FollowableItemCameraStat cameraStat, string designName, GameObject unitContainer) {
         ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
-        return MakeShipInstance(owner, cameraStat, design);
+        return MakeShipInstance(owner, cameraStat, design, unitContainer);
     }
 
-    public ShipItem MakeShipInstance(Player owner, FollowableItemCameraStat cameraStat, ShipDesign design) {
+    /// <summary>
+    /// Makes an unenabled ship instance parented to unitContainer.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="cameraStat">The camera stat.</param>
+    /// <param name="design">The design.</param>
+    /// <param name="unitContainer">The unit container.</param>
+    /// <returns></returns>
+    public ShipItem MakeShipInstance(Player owner, FollowableItemCameraStat cameraStat, ShipDesign design, GameObject unitContainer) {
         ShipHullCategory hullCategory = design.HullCategory;
 
         GameObject hullPrefabGo = _shipHullPrefabs.Single(sHull => sHull.HullCategory == hullCategory).gameObject;
-        GameObject elementGoClone = UnityUtility.AddChild(null, _shipItemPrefab.gameObject);
+        GameObject elementGoClone = UnityUtility.AddChild(unitContainer, _shipItemPrefab.gameObject);
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
         hullGoClone.layer = (int)Layers.Cull_200;   // hull layer gets set to item layer by AddChild
 
@@ -215,6 +230,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, FollowableItemCameraStat cameraStat, ShipDesign design, ref ShipItem element) {
+        D.Assert(element.transform.parent != null, "{0}: {1} should already have a parent.", Name, element.FullName);
         D.Assert(!element.IsOperational, "{0} should not be operational.", element.FullName);
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         ShipHull hull = element.gameObject.GetSingleComponentInChildren<ShipHull>();
@@ -255,7 +271,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public StarbaseCreator MakeStarbaseCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
         GameObject creatorPrefabGo = _starbaseCreatorPrefab.gameObject;
         GameObject creatorGo = UnityUtility.AddChild(StarbasesFolder.Instance.gameObject, creatorPrefabGo);
-        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", GetType().Name, typeof(StarbaseCreator).Name);
+        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(StarbaseCreator).Name);
         creatorGo.transform.position = location;
         creatorGo.isStatic = true;
         var creator = creatorGo.GetComponent<StarbaseCreator>();
@@ -264,7 +280,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled StarbaseCmd instance for the owner.
+    /// Makes an unenabled StarbaseCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="cameraStat">The camera stat.</param>
@@ -277,7 +293,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled StarbaseCmd instance for the owner.
+    /// Makes an unenabled StarbaseCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="cameraStat">The camera stat.</param>
@@ -311,8 +327,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
     public void PopulateInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, ref StarbaseCmdItem cmd) {
-        D.Assert(!cmd.IsOperational, "{0} should not be operational.", cmd.FullName);
-        D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
+        D.Assert(!cmd.IsOperational, "{0}: {1} should not be operational.", Name, cmd.FullName);
+        D.Assert(cmd.transform.parent != null, "{0}: {1} should already have a parent.", Name, cmd.FullName);
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         cmd.Name = CommonTerms.Command;
         StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, design.CmdStat);
@@ -324,10 +340,16 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Settlements
 
+    /// <summary>
+    /// Makes a settlement creator instance installed in orbit around system.
+    /// </summary>
+    /// <param name="config">The configuration.</param>
+    /// <param name="system">The system.</param>
+    /// <returns></returns>
     public SettlementCreator MakeSettlementCreatorInstance(UnitCreatorConfiguration config, SystemItem system) {
         GameObject creatorPrefabGo = _settlementCreatorPrefab.gameObject;
         GameObject creatorGo = GameObject.Instantiate(creatorPrefabGo);
-        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", GetType().Name, typeof(SettlementCreator).Name);
+        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(SettlementCreator).Name);
         SystemFactory.Instance.InstallCelestialItemInOrbit(creatorGo, system.SettlementOrbitData);
         var creator = creatorGo.GetComponent<SettlementCreator>();
         creator.Configuration = config;
@@ -335,7 +357,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled SettlementCmd instance for the owner.
+    /// Makes an unenabled SettlementCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="cameraStat">The camera stat.</param>
@@ -348,7 +370,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled SettlementCmd instance for the owner.
+    /// Makes an unenabled SettlementCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="cameraStat">The camera stat.</param>
@@ -357,6 +379,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, GameObject unitContainer) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
+        //D.Log("{0}: {1}.localPosition = {2} after creation.", Name, design.CmdStat.UnitName, cmdGo.transform.localPosition);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
         PopulateInstance(owner, cameraStat, design, ref cmd);
         return cmd;
@@ -382,8 +405,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
     public void PopulateInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, ref SettlementCmdItem cmd) {
-        D.Assert(!cmd.IsOperational, "{0} should not be operational.", cmd.FullName);
-        D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
+        D.Assert(!cmd.IsOperational, "{0}: {1} should not be operational.", Name, cmd.FullName);
+        D.Assert(cmd.transform.parent != null, "{0}: {1} should already have a parent.", Name, cmd.FullName);
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         cmd.Name = CommonTerms.Command;
         SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, design.CmdStat);
@@ -395,16 +418,34 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Facilities
 
-    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, string designName) {
+    /// <summary>
+    /// Makes a facility instance parented to unitContainer.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="topography">The topography.</param>
+    /// <param name="cameraStat">The camera stat.</param>
+    /// <param name="designName">Name of the design.</param>
+    /// <param name="unitContainer">The unit container.</param>
+    /// <returns></returns>
+    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, string designName, GameObject unitContainer) {
         FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
-        return MakeFacilityInstance(owner, topography, cameraStat, design);
+        return MakeFacilityInstance(owner, topography, cameraStat, design, unitContainer);
     }
 
-    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design) {
+    /// <summary>
+    /// Makes a facility instance parented to unitContainer.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="topography">The topography.</param>
+    /// <param name="cameraStat">The camera stat.</param>
+    /// <param name="design">The design.</param>
+    /// <param name="unitContainer">The unit container.</param>
+    /// <returns></returns>
+    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design, GameObject unitContainer) {
         FacilityHullCategory hullCategory = design.HullCategory;
 
         GameObject hullPrefabGo = _facilityHullPrefabs.Single(fHull => fHull.HullCategory == hullCategory).gameObject;
-        GameObject elementGoClone = UnityUtility.AddChild(null, _facilityItemPrefab.gameObject);
+        GameObject elementGoClone = UnityUtility.AddChild(unitContainer, _facilityItemPrefab.gameObject);
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
         hullGoClone.layer = (int)Layers.Cull_400;   // hull layer gets set to item layer by AddChild
 
@@ -419,11 +460,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design, ref FacilityItem element) {
-        D.Assert(!element.IsOperational, "{0} should not be operational.", element.FullName);
+        D.Assert(element.transform.parent != null, "{0}: {1} should already have a parent.", Name, element.FullName);
+        D.Assert(!element.IsOperational, "{0}: {1} should not be operational.", Name, element.FullName);
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         FacilityHull hull = element.gameObject.GetSingleComponentInChildren<FacilityHull>();
         var hullCategory = design.HullCategory;
-        D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
+        D.Assert(hullCategory == hull.HullCategory, "{0}: {1} should be same as {2}.", Name, hullCategory.GetValueName(), hull.HullCategory.GetValueName());
         FacilityHullEquipment hullEquipment = new FacilityHullEquipment(design.HullStat);
         hullEquipment.Hull = hull;
 
@@ -568,7 +610,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     private IEnumerable<AWeapon> MakeWeapons(IEnumerable<WeaponDesign> weaponDesigns, AUnitElementItem element, AHull hull) {
-        //D.Log("{0}: Making Weapons for {1}.", GetType().Name, element.FullName);
+        //D.Log("{0}: Making Weapons for {1}.", Name, element.FullName);
         int nameCounter = Constants.One;
         var weapons = new List<AWeapon>(weaponDesigns.Count());
         foreach (var design in weaponDesigns) {
@@ -642,7 +684,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 shield = shieldGo.GetSafeComponent<Shield>();
             }
             shield.ParentItem = element;
-            //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(Shield).Name, generator.Name);
+            //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, element.FullName, typeof(Shield).Name, generator.Name);
         }
         shield.Add(generator);
     }
@@ -672,7 +714,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = monitorGo.GetSafeComponent<WeaponRangeMonitor>();
             }
             monitor.ParentItem = element;
-            //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+            //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
         monitor.Add(weapon);
     }
@@ -746,7 +788,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = monitorGo.GetSafeComponent<ActiveCountermeasureRangeMonitor>();
             }
             monitor.ParentItem = element;
-            //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
+            //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
         }
         monitor.Add(countermeasure);
     }
@@ -776,7 +818,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = monitorGo.GetSafeComponent<SensorRangeMonitor>();
             }
             monitor.ParentItem = command;
-            //D.Log("{0} has had a {1} chosen for {2}.", command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
+            //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
         }
         monitor.Add(sensor);
         return monitor;

@@ -116,7 +116,7 @@ public abstract class AFSMSingleton_NoCall<T, E> : AFSMSingleton<T, E>
 
     // A similar problem occurs if the state machine supports state change notification events. Changing state while executing 
     // CurrentState_set means the first state change notification that occurs is the new state, not the state that caused CurrentState_set
-    // to be called again. In otherwords, the state change notifications get out of sync. This problem is not present in 
+    // to be called again. In other words, the state change notifications get out of sync. This problem is not present in 
     // AMortalItemStateMachine as it doesn't support state change notifications.
 
     private bool __hasCurrentState_setFinishedWithoutInterveningSet = true;

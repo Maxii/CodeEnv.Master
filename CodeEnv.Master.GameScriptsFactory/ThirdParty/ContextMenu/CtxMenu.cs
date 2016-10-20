@@ -377,7 +377,7 @@ public class CtxMenu : AMonoBase {
     /// <summary>
     /// Show the context menu at the specified screen space position. The current items list
     /// will be replaced by the itemsArray parameter. This variant is useful in cases where
-    /// you have multiple disimilar objects that will share a single context menu instance.
+    /// you have multiple dissimilar objects that will share a single context menu instance.
     /// </summary>
     /// <param name="screenPos">Screen position.</param>
     /// <param name="itemsArray">Items array.</param>

@@ -27,6 +27,7 @@ using UnityEngine;
 public class SectorGridEditor : Editor {
 
     public override void OnInspectorGUI() {
+
         serializedObject.Update();
 
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
@@ -36,16 +37,23 @@ public class SectorGridEditor : Editor {
 
             GUILayout.Space(5F);
 
-            NGUIEditorTools.SetLabelWidth(160F);
-            SerializedProperty isDebugGridSizeLimitEnabledSP = NGUIEditorTools.DrawProperty("Enable Grid Size Limits", serializedObject, "_enableGridSizeLimit");
-
-            EditorGUI.BeginDisabledGroup(!isDebugGridSizeLimitEnabledSP.boolValue);
+            EditorGUI.BeginDisabledGroup(true);
             {
                 NGUIEditorTools.SetLabelWidth(100F);
-                NGUIEditorTools.DrawProperty("Max Grid Size", serializedObject, "_debugMaxGridSize");
-
+                NGUIEditorTools.DrawProperty("Grid Size", serializedObject, "_gridSize");
             }
             EditorGUI.EndDisabledGroup();
+
+            ////NGUIEditorTools.SetLabelWidth(160F);
+            ////SerializedProperty isDebugGridSizeLimitEnabledSP = NGUIEditorTools.DrawProperty("Enable Grid Size Limits", serializedObject, "_enableGridSizeLimit");
+
+            ////EditorGUI.BeginDisabledGroup(!isDebugGridSizeLimitEnabledSP.boolValue);
+            ////{
+            ////    NGUIEditorTools.SetLabelWidth(100F);
+            ////    NGUIEditorTools.DrawProperty("Max Grid Size", serializedObject, "_debugMaxGridSize");
+
+            ////}
+            ////EditorGUI.EndDisabledGroup();
         }
         EditorGUI.EndDisabledGroup();
 

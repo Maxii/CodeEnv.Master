@@ -206,7 +206,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     private void InitializeDebugShowObstacleZone() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
@@ -225,7 +225,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     private void CleanupDebugShowObstacleZone() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+            debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
         if (drawCntl != null) {

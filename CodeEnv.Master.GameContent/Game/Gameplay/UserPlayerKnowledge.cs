@@ -51,28 +51,28 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more ISectorViewHighlightables, <c>false</c> otherwise.
+        /// Returns <c>true</c> if the sector indicated by sectorID contains one or more ISectorViewHighlightables, <c>false</c> otherwise.
         /// </summary>
-        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="sectorID">ID of the sector.</param>
         /// <param name="highlightablesInSector">The highlightables in sector.</param>
         /// <returns></returns>
-        public bool TryGetSectorViewHighlightables(IntVector3 sectorIndex, out IEnumerable<ISectorViewHighlightable> highlightablesInSector) {
-            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        public bool TryGetSectorViewHighlightables(IntVector3 sectorID, out IEnumerable<ISectorViewHighlightable> highlightablesInSector) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
             List<ISectorViewHighlightable> sectorHighlightables = new List<ISectorViewHighlightable>();
             ISystem_Ltd system;
-            if (TryGetSystem(sectorIndex, out system)) {
+            if (TryGetSystem(sectorID, out system)) {
                 ISectorViewHighlightable sys = system as ISectorViewHighlightable;
                 D.Assert(sys != null);
                 sectorHighlightables.Add(sys);
             }
             IEnumerable<IStarbaseCmd_Ltd> starbases;
-            if (TryGetStarbases(sectorIndex, out starbases)) {
+            if (TryGetStarbases(sectorID, out starbases)) {
                 IEnumerable<ISectorViewHighlightable> highlightableStarbases = starbases.Cast<ISectorViewHighlightable>();
                 D.Assert(!highlightableStarbases.IsNullOrEmpty());
                 sectorHighlightables.AddRange(highlightableStarbases);
             }
             IEnumerable<IFleetCmd_Ltd> fleets;
-            if (TryGetFleets(sectorIndex, out fleets)) {
+            if (TryGetFleets(sectorID, out fleets)) {
                 IEnumerable<ISectorViewHighlightable> highlightableFleets = fleets.Cast<ISectorViewHighlightable>();
                 D.Assert(!highlightableFleets.IsNullOrEmpty());
                 sectorHighlightables.AddRange(highlightableFleets);

@@ -52,7 +52,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
         /// <param name="formation">The formation.</param>
         /// <param name="toMove">if set to <c>true</c> [to move].</param>
         /// <param name="findFarthest">if set to <c>true</c> [find farthest].</param>
@@ -60,9 +59,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stanceExclusions">The stance exclusions.</param>
         public FleetCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd, int activeCMs,
             GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors,
-            bool enableTrackingLabel, DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack, DebugShipCombatStanceExclusions stanceExclusions)
+            DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack, DebugShipCombatStanceExclusions stanceExclusions)
             : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers, passiveCMs,
-                shieldGens, sensors, enableTrackingLabel) {
+                shieldGens, sensors) {
             Formation = formation;
             Move = toMove;
             FindFarthest = findFarthest;
@@ -85,7 +84,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
         /// <param name="formation">The formation.</param>
         /// <param name="toMove">if set to <c>true</c> [to move].</param>
         /// <param name="findFarthest">if set to <c>true</c> [find farthest].</param>
@@ -94,10 +92,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="presetHullCats">The preset hull cats.</param>
         public FleetCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int activeCMs,
             GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors,
-            bool enableTrackingLabel, DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack,
+            DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack,
             DebugShipCombatStanceExclusions stanceExclusions, IList<ShipHullCategory> presetHullCats)
             : base(unitName, isOwnerUser, userRelations, cmsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers, passiveCMs,
-                shieldGens, sensors, enableTrackingLabel) {
+                shieldGens, sensors) {
             Formation = formation;
             Move = toMove;
             FindFarthest = findFarthest;

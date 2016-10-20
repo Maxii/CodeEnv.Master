@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public IntVector3 SectorIndex { get; private set; }
+        public IntVector3 SectorID { get; private set; }
 
         public SectorReport(SectorData data, Player player, ISector_Ltd item)
             : base(data, player, item) {
@@ -47,8 +47,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
-                SectorIndex = sData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+                SectorID = sData.SectorID;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {    // true if all members have access
                 Capacity = sData.Capacity;
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         //    Name = sData.Name;
         //    Owner = sData.Owner;
         //    Position = sData.Position;
-        //    SectorIndex = sData.SectorIndex;
+        //    SectorID = sData.SectorID;
         //    //Density = sData.Density;
         //}
 

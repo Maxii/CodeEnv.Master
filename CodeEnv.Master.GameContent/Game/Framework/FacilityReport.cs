@@ -82,8 +82,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.WeaponsRange)) {
                 WeaponsRange = fData.WeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
-                SectorIndex = fData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+                SectorID = fData.SectorID;
             }
         }
 

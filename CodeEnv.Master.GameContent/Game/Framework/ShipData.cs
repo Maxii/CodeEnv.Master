@@ -175,7 +175,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxTurnRate { get { return _enginesStat.MaxTurnRate; } }
 
-        public override IntVector3 SectorIndex { get { return References.SectorGrid.GetSectorIndexThatContains(Position); } }
+        public override IntVector3 SectorID { get { return References.SectorGrid.GetSectorIdThatContains(Position); } }
 
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
 

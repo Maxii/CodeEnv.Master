@@ -531,7 +531,7 @@ namespace Pathfinding {
 
             // populate all space with sector navigation waypoints separated by nodeSeparationDistance
             IList<Sector> allSectors = SectorGrid.Instance.Sectors.ToList();     //// = __GetAllowedSectorsToScan();
-            D.Log("{0}: Sectors to scan = {1}.", GetType().Name, allSectors.Count);
+            //D.Log("{0}: Sectors to scan = {1}.", GetType().Name, allSectors.Count);
             List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 25);
             float distanceToCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
             //D.Log("{0}: Distance to Sector Corners = {1:0.#}.", GetType().Name, distanceToCorners);
@@ -742,7 +742,7 @@ namespace Pathfinding {
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
         public void AddToGraph(StarbaseCmdItem baseCmd) {
-            D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.FullName);
+            //D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.FullName);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
 
             // forceCompletion is set by AstarPath internally 
@@ -1007,7 +1007,7 @@ namespace Pathfinding {
             int maxIndexZ = __MaxAllowedSectorGridSizeToScan.z / 2;
             var allSectors = SectorGrid.Instance.Sectors;
             allSectors.ForAll(s => {
-                var index = s.SectorIndex;
+                var index = s.SectorID;
                 if (Mathf.Abs(index.x) <= maxIndexX) {
                     if (Mathf.Abs(index.y) <= maxIndexY) {
                         if (Mathf.Abs(index.z) <= maxIndexZ) {

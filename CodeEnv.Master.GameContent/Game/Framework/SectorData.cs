@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SectorData : AIntelItemData, IDisposable {
 
-        public IntVector3 SectorIndex { get; private set; }
+        public IntVector3 SectorID { get; private set; }
 
         private int _capacity;
         public int Capacity {
@@ -62,20 +62,20 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="SectorData" /> class
         /// with the owner initialized to NoPlayer.
         /// </summary>
-        /// <param name="sectorTransform">The sector transform.</param>
-        /// <param name="index">The index.</param>
-        public SectorData(ISector sector, IntVector3 index)
-            : this(sector, index, TempGameValues.NoPlayer) { }
+        /// <param name="sector">The sector.</param>
+        /// <param name="sectorID">The sectorID.</param>
+        public SectorData(ISector sector, IntVector3 sectorID)
+            : this(sector, sectorID, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SectorData" /> class.
         /// </summary>
         /// <param name="sector">The sector.</param>
-        /// <param name="index">The index.</param>
+        /// <param name="sectorID">The sectorID.</param>
         /// <param name="owner">The owner.</param>
-        public SectorData(ISector sector, IntVector3 index, Player owner)
+        public SectorData(ISector sector, IntVector3 sectorID, Player owner)
             : base(sector, owner) {
-            SectorIndex = index;
+            SectorID = sectorID;
             Topography = Topography.OpenSpace;
         }
 

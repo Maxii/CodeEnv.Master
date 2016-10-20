@@ -183,7 +183,7 @@ namespace CodeEnv.Master.GameContent {
         //protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
         //    base.AssignIncrementalValues_IntelCoverageBasic(data);
         //    AUnitCmdData cmdData = data as AUnitCmdData;
-        //    SectorIndex = cmdData.SectorIndex;
+        //    SectorID = cmdData.SectorID;
         //}
 
         //protected void AssignValuesFrom(AUnitElementReport[] elementReports) {

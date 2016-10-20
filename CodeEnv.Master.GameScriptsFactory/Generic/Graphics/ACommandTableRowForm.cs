@@ -62,7 +62,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
     protected sealed override void AssignValueToLocationGuiElement() {
         base.AssignValueToLocationGuiElement();
         var report = Report as AUnitCmdReport;
-        _locationElement.SectorIndex = report.SectorIndex;
+        _locationElement.SectorID = report.SectorID;
         _locationElement.Position = report.Position;
     }
 

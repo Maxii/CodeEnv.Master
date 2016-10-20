@@ -39,7 +39,6 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        _gameMgr = GameManager.Instance;
     }
 
     /// <summary>
@@ -48,16 +47,14 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.LobbyScene) {
-            Subscribe();
-            BuildContent();
-        }
-        else {
-            // GameScene not ready to BuildContent on Awake
-            _gameMgr.isRunningOneShot += IsRunningEventHandler;
-        }
+        InitializeValuesAndReferences();
+        Subscribe();
     }
     #endregion
+
+    private void InitializeValuesAndReferences() {
+        _gameMgr = GameManager.Instance;
+    }
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
@@ -66,7 +63,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
             _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler));
             _subscriptions.Add(InputManager.Instance.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
         }
     }
@@ -74,13 +71,13 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     private void BuildContent() {
         _debugInfoContent = _debugInfoContent ?? new StringBuilder();
         _debugInfoContent.Clear();
-        _debugInfoContent.AppendLine("PauseState: " + _gameMgr.PauseState.GetValueName());
+        _debugInfoContent.AppendLine("PauseState: {0}".Inject(_gameMgr.PauseState.GetValueName()));
         _debugInfoContent.AppendLine(ConstructQualityText());
         if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
-            _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetValueName());
-            _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetValueName());
+            _debugInfoContent.AppendLine("CameraState: {0}".Inject(MainCameraControl.Instance.CurrentState.GetValueName()));
+            _debugInfoContent.AppendLine("ViewMode: {0}".Inject(PlayerViews.Instance.ViewMode.GetValueName()));
             _debugInfoContent.AppendLine(ConstructCameraSectorText());
-            _debugInfoContent.AppendLine("InputMode: " + InputManager.Instance.InputMode.GetValueName());
+            _debugInfoContent.AppendLine("InputMode: {0}".Inject(InputManager.Instance.InputMode.GetValueName()));
         }
     }
 
@@ -90,17 +87,12 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     }
 
     private string ConstructCameraSectorText() {
-        IntVector3 index = MainCameraControl.Instance.SectorIndex;
-        string sectorText = SectorGrid.Instance.__IsSectorPresentAt(index) ? index.ToString() : "None";
+        IntVector3 cameraSectorID = MainCameraControl.Instance.SectorID;
+        string sectorText = SectorGrid.Instance.__IsSectorPresentAt(cameraSectorID) ? cameraSectorID.ToString() : "None";
         return "Camera Sector: " + sectorText;
     }
 
     #region Event and Property Change Handlers
-
-    private void IsRunningEventHandler(object sender, EventArgs e) {
-        Subscribe();
-        BuildContent();
-    }
 
     // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
 
@@ -112,12 +104,15 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     private void QualitySettingPropChangedHandler() { BuildContent(); }
 
-    private void CameraSectorIndexPropChangedHandler() { BuildContent(); }
+    private void CameraSectorIdPropChangedHandler() { BuildContent(); }
 
     private void InputModePropChangedHandler() { BuildContent(); }
 
     private void TooltipEventHandler(bool show) {
         if (show) {
+            if (_debugInfoContent == null) {
+                BuildContent(); // handles first time use
+            }
             TooltipHudWindow.Instance.Show(_debugInfoContent);
         }
         else {

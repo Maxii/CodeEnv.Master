@@ -280,7 +280,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected sealed override void Initialize() {
             UnityEngine.Time.timeScale = Constants.OneF;
-            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision, "See {0}.HoursPrecision notes above.", GetType().Name);
+            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision, "See {0}.HoursPrecision notes above.", Name);
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             Subscribe();
@@ -290,7 +290,7 @@ namespace CodeEnv.Master.GameContent {
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
             _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangingHandler));
-            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, IsRunningPropChangedHandler));
+            _gameMgr.isReadyForPlayOneShot += IsReadyForPlayEventHandler;
         }
 
         public void PrepareToBeginNewGame() {
@@ -307,7 +307,7 @@ namespace CodeEnv.Master.GameContent {
             //// no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synced CurrentDate instance once Date is requested
             //// onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
             _currentDate = GameStartDate;   // 8.13.16 added as otherwise at the mercy of GameMgr calling CheckForDateChange() once IsRunning
-            D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", GetType().Name, Time.frameCount, Time.time, Utility.TimeStamp);
+            D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", Name, Time.frameCount, Time.time, Utility.TimeStamp);
         }
 
         public void PrepareToSaveGame() {
@@ -316,15 +316,15 @@ namespace CodeEnv.Master.GameContent {
             // _gameInstanceTimeCurrentPauseBegan will be set to a new value the next time a pause begins
             // _gameInstancePlayTimeAtLastCurrentDateTimeRefresh is not important to save as it is constantly kept current
             // currentDateTime is key! It should be accurate as it gets constantly refreshed       
-            D.Log("{0}.currentDateTime value being saved is {1:0.00}.", GetType().Name, _currentDateTime);
+            D.Log("{0}.currentDateTime value being saved is {1:0.00}.", Name, _currentDateTime);
             __savedCurrentDateTime = _currentDateTime; // FIXME bug? currentDateTime does not get properly restored
             _cumGameInstanceTimeInPriorUnitySessions = GameInstanceTime; // _cumGameInstanceTimeInPriorUnitySessions must be updated (last so it doesn't affect other values here) so it is current when saved
-            D.Log("{0}.PrepareToSaveGame called. CumGameInstanceTimeInPriorUnitySessions set to {1:0.##}.", GetType().Name, _cumGameInstanceTimeInPriorUnitySessions);
+            D.Log("{0}.PrepareToSaveGame called. CumGameInstanceTimeInPriorUnitySessions set to {1:0.##}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
         }
 
         public void PrepareToResumeSavedGame() {
             // _cumGameInstanceTimeInPriorUnitySessions was updated before saving, so it should be restored to the right value
-            D.Log("GameTime.PrepareToResumeSavedGame() called. CumGameInstanceTimeInPriorUnitySessions restored to {0:0.0)}.", _cumGameInstanceTimeInPriorUnitySessions);
+            D.Log("{0}.PrepareToResumeSavedGame() called. CumGameInstanceTimeInPriorUnitySessions restored to {1:0.0)}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
             // _currentUnitySessionTimeWhenGameInstanceBegan that was saved is irrelevant. It will be updated when the resumed GameInstance begins running
             // _cumGameInstanceTimePaused was updated before saving, so it should be restored to the right value
             // _gameInstanceTimeCurrentPauseBegan will be set to a new value on the next pause
@@ -332,7 +332,7 @@ namespace CodeEnv.Master.GameContent {
 
             // currentDateTime is key! It value when restored should be accurate as it is kept current up to the point it is saved
             _currentDateTime = __savedCurrentDateTime; // FIXME bug? currentDateTime does not get properly restored
-            D.Log("CurrentDateTime restored to {0:0.00}.", _currentDateTime);
+            D.Log("{0} CurrentDateTime restored to {1:0.00}.", Name, _currentDateTime);
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the GameSpeed when saved is not relevant to the resumed GameInstance
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
@@ -342,50 +342,50 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Checks for a change to the current date. Called by GameManager's Update
-        /// method to keep the date accurate. Does nothing if the game isn't running
-        /// or if it is paused.
+        /// method to keep the date accurate. Does nothing if the game is paused.
         /// </summary>
         public void CheckForDateChange() {
-            if (_gameMgr.IsRunning && !_gameMgr.IsPaused) {
-                RefreshCurrentDateTime();
+            D.Assert(_gameMgr.IsRunning, "{0}: Game should be running.", Name);
+            if (_gameMgr.IsPaused) {
+                return;
+            }
 
-                bool toFireCalenderDateChangedEvent = false;
-                bool toUpdateCurrentDate = false;
-                var updatedDate = new GameDate(_currentDateTime);
-                if (updatedDate > _currentDate) {
-                    // they are not within equivalence tolerance so update
-                    toUpdateCurrentDate = true;
-                }
+            RefreshCurrentDateTime();
 
-                if (!updatedDate.CalenderEquals(_currentDate)) {
-                    // Hours digit has changed so calender needs to hear about it
-                    toFireCalenderDateChangedEvent = true;
-                    // 3.26.16: CurrentDate needs to be updated as GuiDateReadout will acquire it to post.
-                    // A small change in hours from hourDigit.99 to hourDigitPlusOne.01 needs to fire a
-                    // calender date change event, but the two dates are within equivalence tolerance
-                    // and therefore won't update CurrentDate so we tell it to update just in case.
-                    toUpdateCurrentDate = true;
-                }
-                if (toUpdateCurrentDate) {
-                    //D.Log("{0}: Changing CurrentDate to {1}.", GetType().Name, updatedDate);
-                    CurrentDate = updatedDate;  // must be done before event fired
-                }
-                if (toFireCalenderDateChangedEvent) {
-                    OnCalenderDateChanged();
-                }
+            bool toFireCalenderDateChangedEvent = false;
+            bool toUpdateCurrentDate = false;
+            var updatedDate = new GameDate(_currentDateTime);
+            if (updatedDate > _currentDate) {
+                // they are not within equivalence tolerance so update
+                toUpdateCurrentDate = true;
+            }
+
+            if (!updatedDate.CalenderEquals(_currentDate)) {
+                // Hours digit has changed so calender needs to hear about it
+                toFireCalenderDateChangedEvent = true;
+                // 3.26.16: CurrentDate needs to be updated as GuiDateReadout will acquire it to post.
+                // A small change in hours from hourDigit.99 to hourDigitPlusOne.01 needs to fire a
+                // calender date change event, but the two dates are within equivalence tolerance
+                // and therefore won't update CurrentDate so we tell it to update just in case.
+                toUpdateCurrentDate = true;
+            }
+            if (toUpdateCurrentDate) {
+                //D.Log("{0}: Changing CurrentDate to {1}.", Name, updatedDate);
+                CurrentDate = updatedDate;  // must be done before event fired
+            }
+            if (toFireCalenderDateChangedEvent) {
+                OnCalenderDateChanged();
             }
         }
 
         #region Event and Property Change Handlers
 
-        private void IsRunningPropChangedHandler() {
-            //D.Log("{0}.IsRunningPropChangedHandler() called. IsRunning = {1}.", GetType().Name, _gameMgr.IsRunning);
-            if (_gameMgr.IsRunning) {
-                D.Assert(!_gameMgr.IsPaused);    // my practice - set IsRunning to true, THEN pause when isPauseOnLoad option enabled
-                _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
-                _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
-                // no reason to call RefreshCurrentDateTime here as it will get called as soon as CurrentDate is requested
-            }
+        private void IsReadyForPlayEventHandler(object sender, EventArgs e) {
+            D.Assert(_gameMgr.IsRunning);
+            D.Assert(!_gameMgr.IsPaused);   // my practice - set IsRunning to true, fire isReadyForPlay, THEN pause when isPauseOnLoad option enabled
+            _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
+            _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
+            // no reason to call RefreshCurrentDateTime here as it will get called as soon as CurrentDate is requested
         }
 
         private void IsPausedPropChangingHandler(bool isPausing) {
@@ -399,8 +399,8 @@ namespace CodeEnv.Master.GameContent {
                     // we are about to resume play
                     float gameInstanceTimeInCurrentPause = GameInstanceTime - _gameInstanceTimeCurrentPauseBegan;
                     _cumGameInstanceTimePaused += gameInstanceTimeInCurrentPause;
-                    //D.Log("CurrentUnitySessionTimeGameInstanceBegan = {0:0.00}, GameInstanceTimeCurrentPauseBegan = {1:0.00}", _currentUnitySessionTimeWhenGameInstanceBegan, _gameInstanceTimeCurrentPauseBegan);
-                    //D.Log("GameInstanceTimeInCurrentPause = {0:0.00}, GameInstanceTime = {1:0.00}.", gameInstanceTimeInCurrentPause, GameInstanceTime);
+                    //D.Log("{0} CurrentUnitySessionTimeGameInstanceBegan = {1:0.00}, GameInstanceTimeCurrentPauseBegan = {2:0.00}", Name, _currentUnitySessionTimeWhenGameInstanceBegan, _gameInstanceTimeCurrentPauseBegan);
+                    //D.Log("{0} GameInstanceTimeInCurrentPause = {1:0.00}, GameInstanceTime = {2:0.00}.", Name, gameInstanceTimeInCurrentPause, GameInstanceTime);
                     _gameInstanceTimeCurrentPauseBegan = Constants.ZeroF;
                 }
             }
@@ -419,7 +419,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnCalenderDateChanged() {
             if (calenderDateChanged != null) {
                 //string subscribers = calenderDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
-                //D.Log("{0}.calenderDateChanged. CalenderDate: {1}, Subscribers: {2}.", GetType().Name, _currentDate.CalenderFormattedDate, subscribers);
+                //D.Log("{0}.calenderDateChanged. CalenderDate: {1}, Subscribers: {2}.", Name, _currentDate.CalenderFormattedDate, subscribers);
                 calenderDateChanged(this, new EventArgs());
             }
         }
@@ -450,10 +450,11 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(_gameMgr.IsRunning);
             D.Assert(!_gameMgr.IsPaused);   // it keeps adding to currentDateTime
             float deltaGameInstancePlayTime = GameInstancePlayTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
-            //D.Warn(deltaGameInstancePlayTime > HoursEqualTolerance, "{0}.deltaGameInstacePlayTime increased by {1}.", GetType().Name, deltaGameInstancePlayTime);
+            // 10.16.16 significant deltaTimes > 0.1 secs still occurring after the game time clock starts
+            //D.Warn(deltaGameInstancePlayTime > HoursPrecision, "{0}.deltaGameInstancePlayTime increased by {1}.", Name, deltaGameInstancePlayTime);
             _currentDateTime += GameSpeedMultiplier * deltaGameInstancePlayTime;
             _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
-            //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", GetType().Name, _currentDateTime);
+            //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", Name, _currentDateTime);
         }
 
         private void Cleanup() {

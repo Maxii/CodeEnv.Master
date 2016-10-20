@@ -37,14 +37,13 @@ public class SettlementCreator : AAutoUnitCreator {
         foreach (var designName in Configuration.ElementDesignNames) {
             FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
             FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-            _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, cameraStat, design));
+            _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, cameraStat, design, gameObject));
         }
     }
 
     protected override void MakeCommand(Player owner) {
         CmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
         _command = _factory.MakeSettlementCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
-        _command.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
     }
 
     protected override void AddElementsToCommand() {
@@ -63,6 +62,12 @@ public class SettlementCreator : AAutoUnitCreator {
         var system = gameObject.GetSingleComponentInParents<SystemItem>();
         system.Settlement = _command;
         return true;
+    }
+
+    protected override void CompleteUnitInitialization() {
+        LogEvent();
+        _elements.ForAll(e => e.FinalInitialize());
+        _command.FinalInitialize();
     }
 
     protected override void AddUnitToGameKnowledge() {
@@ -92,12 +97,6 @@ public class SettlementCreator : AAutoUnitCreator {
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
-    }
-
-    protected override void CompleteUnitInitialization() {
-        LogEvent();
-        _elements.ForAll(e => e.FinalInitialize());
-        _command.FinalInitialize();
     }
 
     protected override void BeginElementsOperations() {

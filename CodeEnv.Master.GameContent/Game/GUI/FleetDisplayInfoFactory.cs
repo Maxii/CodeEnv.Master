@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Category,
             ItemInfoID.Composition,
             ItemInfoID.Owner,
-            ItemInfoID.SectorIndex,
+            ItemInfoID.SectorID,
 
             ItemInfoID.CurrentCmdEffectiveness,
             ItemInfoID.Formation,

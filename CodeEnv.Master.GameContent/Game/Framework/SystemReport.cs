@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public IntVector3 SectorIndex { get; private set; }
+        public IntVector3 SectorID { get; private set; }
 
         // 7.10.16 Eliminated usage of Star, Settlement and Planetoid Reports to calculate partial System values.
         // Access to Owner, Capacity and Resources values now determined (in SystemAccessController) by whether 
@@ -49,8 +49,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
-                SectorIndex = sData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+                SectorID = sData.SectorID;
             }
 
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {    // true if any member has access
@@ -135,7 +135,7 @@ namespace CodeEnv.Master.GameContent {
         //private void AssignValues(AItemData data) {
         //    var sysData = data as SystemData;
         //    Name = sysData.Name;
-        //    SectorIndex = sysData.SectorIndex;
+        //    SectorID = sysData.SectorID;
         //    Position = sysData.Position;
         //}
 

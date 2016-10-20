@@ -56,7 +56,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(UITrackingLabel).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(UITrackingLabel).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -83,7 +83,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(UITrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(UITrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -104,7 +104,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
         trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
         return trackingSprite;
     }
 
@@ -127,7 +127,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -153,7 +153,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -173,7 +173,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
         trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
         return trackingSprite;
     }
 
@@ -197,7 +197,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -231,7 +231,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers targetLayer = (Layers)trackedTgt.transform.gameObject.layer;
         Layers prefabLayer = (Layers)trackingWidgetPrefab.layer;
         if (prefabLayer != Layers.UI && prefabLayer != Layers.TransparentFX && prefabLayer != targetLayer) {
-            D.Warn("Target {0} of Layer {1} being assigned TrackingWidget of Layer {2}.", trackedTgt.transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
+            D.Warn("{0}: Target {1} of Layer {2} being assigned TrackingWidget of Layer {3}.", Name, trackedTgt.transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
         }
     }
 

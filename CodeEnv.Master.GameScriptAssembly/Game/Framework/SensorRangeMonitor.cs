@@ -352,7 +352,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     private void InitializeDebugShowSensor() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showSensorsChanged += ShowDebugSensorsChangedEventHandler;
+        debugValues.showSensors += ShowDebugSensorsChangedEventHandler;
         if (debugValues.ShowSensors) {
             EnableDebugShowSensor(true);
         }
@@ -393,7 +393,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     private void CleanupDebugShowSensor() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showSensorsChanged -= ShowDebugSensorsChangedEventHandler;
+            debugValues.showSensors -= ShowDebugSensorsChangedEventHandler;
         }
         DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
         if (drawCntl != null) {

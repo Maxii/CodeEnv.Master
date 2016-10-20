@@ -43,7 +43,6 @@ public class DebugSystemCreatorEditor : Editor {
         {
             NGUIEditorTools.SetLabelWidth(120F);
             NGUIEditorTools.DrawProperty("Planet Qty", serializedObject, "_planetsInSystem");
-            ////NGUIEditorTools.DrawProperty("Moon Qty", serializedObject, "_moonsInSystem");
         }
         EditorGUI.EndDisabledGroup();
 
@@ -51,8 +50,6 @@ public class DebugSystemCreatorEditor : Editor {
 
         NGUIEditorTools.SetLabelWidth(160F);
         NGUIEditorTools.DrawProperty("System Desirability", serializedObject, "_desirability");
-        ////NGUIEditorTools.DrawProperty("PassiveCMs/Planetoid", serializedObject, "_countermeasuresPerPlanetoid");
-        NGUIEditorTools.DrawProperty("Enable Tracking Label", serializedObject, "_enableTrackingLabel");
 
         serializedObject.ApplyModifiedProperties();
     }

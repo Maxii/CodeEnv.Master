@@ -102,7 +102,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     private void InitializeDebugShowFleetFormationStation() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showFleetFormationStationsChanged += ShowDebugFleetFormationStationsChangedEventHandler;
+        debugValues.showFleetFormationStations += ShowDebugFleetFormationStationsChangedEventHandler;
         if (debugValues.ShowFleetFormationStations) {
             EnableDebugShowFleetFormationStation(true);
         }
@@ -122,7 +122,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     private void CleanupDebugShowFleetFormationStation() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showFleetFormationStationsChanged -= ShowDebugFleetFormationStationsChangedEventHandler;
+            debugValues.showFleetFormationStations -= ShowDebugFleetFormationStationsChangedEventHandler;
         }
         DrawSphereGizmo drawCntl = gameObject.GetComponent<DrawSphereGizmo>();
         if (drawCntl != null) {

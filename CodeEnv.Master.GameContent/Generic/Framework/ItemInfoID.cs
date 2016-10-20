@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         Name,
         ParentName,
         Position,
-        SectorIndex,
+        SectorID,
 
         // Commonly available at IntelCoverage.Essential
         Owner,

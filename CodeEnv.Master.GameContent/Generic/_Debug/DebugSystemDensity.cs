@@ -21,7 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum DebugSystemDensity {
 
-        Existing_Debug,
         Sparse,
         Low,
         Normal,

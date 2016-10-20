@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AMortalItemReport : AIntelItemReport {
 
-        public IntVector3 SectorIndex { get; protected set; }
+        public IntVector3 SectorID { get; protected set; }
 
         public float? MaxHitPoints { get; protected set; }
 

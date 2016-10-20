@@ -20,8 +20,8 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// CustomYieldInstruction that waits until the predicate evaluates to false.
-    /// <remarks>Use WaitJobUtility.WaitWhileCondition() instead of making a new instance
-    /// as WaitJobUtility handles IsRunning and IsPaused changes.</remarks>
+    /// <remarks>Use JobManager.WaitWhileCondition() instead of making a new instance
+    /// as JobManager handles IsRunning and IsPaused changes.</remarks>
     /// </summary>
     public class MyWaitWhile : APausableKillableYieldInstruction {
 

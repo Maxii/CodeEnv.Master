@@ -25,6 +25,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICameraFocusable : ICameraTargetable {
 
+        /// <summary>
+        /// Indicates whether this item is the current focus of the camera.
+        /// Set this value to become or remove the camera's focus.
+        /// </summary>
         bool IsFocus { get; set; }
 
         bool IsRetainedFocusEligible { get; }

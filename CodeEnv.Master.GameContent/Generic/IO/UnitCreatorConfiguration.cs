@@ -35,15 +35,12 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<string> ElementDesignNames { get; private set; }
 
-        public bool IsTrackingLabelEnabled { get; private set; }
-
-        public UnitCreatorConfiguration(string unitName, Player owner, GameDate deployDate, string cmdDesignName, IEnumerable<string> elementDesignNames, bool enableTrackingLabel) {
+        public UnitCreatorConfiguration(string unitName, Player owner, GameDate deployDate, string cmdDesignName, IEnumerable<string> elementDesignNames) {
             UnitName = unitName;
             Owner = owner;
             DeployDate = deployDate;
             CmdDesignName = cmdDesignName;
             ElementDesignNames = elementDesignNames;
-            IsTrackingLabelEnabled = enableTrackingLabel;
             ValidateDeployDate();
         }
 

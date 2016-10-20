@@ -46,7 +46,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     public SystemItem ParentSystem { get; private set; }
 
-    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorID { get { return Data.SectorID; } }
 
     protected new StarDisplayManager DisplayMgr { get { return base.DisplayMgr as StarDisplayManager; } }
 
@@ -242,7 +242,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     private void InitializeDebugShowObstacleZone() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
@@ -261,7 +261,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     private void CleanupDebugShowObstacleZone() {
         var debugCntls = DebugControls.Instance;
         if (debugCntls != null) {
-            debugCntls.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+            debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) {
             DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();

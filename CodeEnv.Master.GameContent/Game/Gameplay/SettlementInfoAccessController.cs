@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Name:
                 case ItemInfoID.ParentName:
                 case ItemInfoID.Position:
-                case ItemInfoID.SectorIndex:
+                case ItemInfoID.SectorID:
                     return true;
                 case ItemInfoID.Owner:
                     // If gets here, Settlement IntelCoverage is Basic, but ParentSystem could be allowing access.

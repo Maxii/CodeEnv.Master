@@ -55,10 +55,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IList<OrbitData[]> MoonOrbitSlots { get; private set; }
 
-        public bool IsTrackingLabelEnabled { get; private set; }
-
         public SystemCreatorConfiguration(string systemName, string starDesignName, OrbitData settlementOrbitSlot, IList<string> planetDesignNames,
-            IList<OrbitData> planetOrbitSlots, IList<string[]> moonDesignNames, IList<OrbitData[]> moonOrbitSlots, bool enableTrackingLabel) {
+            IList<OrbitData> planetOrbitSlots, IList<string[]> moonDesignNames, IList<OrbitData[]> moonOrbitSlots) {
             SystemName = systemName;
             StarDesignName = starDesignName;
             SettlementOrbitSlot = settlementOrbitSlot;
@@ -66,7 +64,6 @@ namespace CodeEnv.Master.GameContent {
             PlanetOrbitSlots = planetOrbitSlots;
             MoonDesignNames = moonDesignNames;
             MoonOrbitSlots = moonOrbitSlots;
-            IsTrackingLabelEnabled = enableTrackingLabel;
         }
 
         public override string ToString() {

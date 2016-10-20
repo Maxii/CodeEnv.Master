@@ -26,6 +26,14 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler validatePlayerKnowledgeNow;
 
+        /// <summary>
+        /// Indicates whether fleets should automatically explore without countervailing orders.
+        /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
+        /// on DebugFleetCreators.</remarks>
+        /// </summary>
+        bool FleetsAutoExploreAsDefault { get; }
+
+
     }
 }
 

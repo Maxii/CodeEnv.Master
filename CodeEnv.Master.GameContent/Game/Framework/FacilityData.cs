@@ -30,11 +30,11 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
-        public override IntVector3 SectorIndex { get { return _sectorIndex; } }
+        public override IntVector3 SectorID { get { return _sectorID; } }
 
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
-        private IntVector3 _sectorIndex;
+        private IntVector3 _sectorID;
 
         #region Initialization 
 
@@ -67,14 +67,14 @@ namespace CodeEnv.Master.GameContent {
         public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
-            _sectorIndex = InitializeSectorIndex();
+            _sectorID = InitializeSectorID();
         }
 
-        private IntVector3 InitializeSectorIndex() {
-            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
-            D.Assert(sectorIndex != default(IntVector3));
+        private IntVector3 InitializeSectorID() {
+            IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(Position);
+            D.Assert(sectorID != default(IntVector3));
             MarkAsChanged();
-            return sectorIndex;
+            return sectorID;
         }
 
         #endregion

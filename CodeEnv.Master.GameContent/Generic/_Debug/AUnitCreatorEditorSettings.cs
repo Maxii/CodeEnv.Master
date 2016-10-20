@@ -49,8 +49,6 @@ namespace CodeEnv.Master.GameContent {
 
         public int SensorsPerElement { get; private set; }
 
-        public bool EnableTrackingLabel { get; private set; }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitCreatorEditorSettings" /> struct
         /// when the unit composition is NOT preset.
@@ -67,10 +65,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
         public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd,
             int activeCMs, GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens,
-            int sensors, bool enableTrackingLabel) {
+            int sensors) {
             UnitName = unitName;
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = false;
@@ -84,7 +81,6 @@ namespace CodeEnv.Master.GameContent {
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
             SensorsPerElement = sensors;
-            EnableTrackingLabel = enableTrackingLabel;
         }
 
         /// <summary>
@@ -102,10 +98,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
         public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int activeCMs,
-            GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors,
-            bool enableTrackingLabel) {
+            GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors) {
             UnitName = unitName;
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = true;
@@ -119,7 +113,6 @@ namespace CodeEnv.Master.GameContent {
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
             SensorsPerElement = sensors;
-            EnableTrackingLabel = enableTrackingLabel;
         }
 
     }

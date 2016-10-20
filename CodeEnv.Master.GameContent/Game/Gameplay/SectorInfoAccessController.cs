@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             switch (infoID) {
                 case ItemInfoID.Name:
                 case ItemInfoID.Position:
-                case ItemInfoID.SectorIndex:
+                case ItemInfoID.SectorID:
                     return true;
                 case ItemInfoID.Owner:
                     // If gets here, Sector IntelCoverage is Basic, but a member could be allowing access.
@@ -81,7 +81,7 @@ namespace CodeEnv.Master.GameContent {
         //    switch (infoID) {
         //        case ItemInfoID.Name:
         //        case ItemInfoID.Position:
-        //        case ItemInfoID.SectorIndex:
+        //        case ItemInfoID.SectorID:
         //        case ItemInfoID.Owner:
         //            return true;
         //        default:

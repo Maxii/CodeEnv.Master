@@ -58,8 +58,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        public override IntVector3 SectorIndex { get { return _sectorIndex; } }
-        private IntVector3 _sectorIndex;
+        public override IntVector3 SectorID { get { return _sectorID; } }
+        private IntVector3 _sectorID;
 
         /// <summary>
         /// The mass of this Planetoid.
@@ -105,14 +105,14 @@ namespace CodeEnv.Master.GameContent {
             Capacity = planetoidStat.Capacity;
             Resources = planetoidStat.Resources;
             Topography = Topography.System;
-            _sectorIndex = InitializeSectorIndex();
+            _sectorID = InitializeSectorID();
         }
 
-        private IntVector3 InitializeSectorIndex() {
-            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
-            D.Assert(sectorIndex != default(IntVector3));
+        private IntVector3 InitializeSectorID() {
+            IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(Position);
+            D.Assert(sectorID != default(IntVector3));
             MarkAsChanged();
-            return sectorIndex;
+            return sectorID;
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {

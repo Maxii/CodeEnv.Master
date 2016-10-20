@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetOrder {
 
-        private const string ToStringFormat = "Directive: {0}, Source: {1}, Target: {2}";
+        private const string ToStringFormat = "{0}[Directive: {1}, Source: {2}, Target: {3}]";
 
         public IFleetNavigable Target { get; private set; }
 
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ToString() {
             string targetText = Target != null ? Target.FullName : "null";
-            return ToStringFormat.Inject(Directive.GetValueName(), Source.GetValueName(), targetText);
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText);
         }
 
     }

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMortalItem.cs
-// Interface for easy access to MonoBehaviours that are AMortalItems.
+// File: IGameSettingsDebugControl.cs
+// Interface for access to GameSettingsDebugControl MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,17 +16,11 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// Interface for easy access to MonoBehaviours that are AMortalItems.
+    /// Interface for access to GameSettingsDebugControl MonoBehaviour.
     /// </summary>
-    public interface IMortalItem : IIntelItem {
+    public interface IGameSettingsDebugControl {
 
-        event EventHandler deathOneShot;
-
-        IntVector3 SectorID { get; }
 
     }
 }

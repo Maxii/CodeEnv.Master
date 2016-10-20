@@ -48,12 +48,12 @@ public class DebugSettlementCreator : ADebugUnitCreator {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<FacilityHull>().Select(hull => hull.HullCategory).ToList();
                     _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement, DateToDeploy,
                         _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _enableTrackingLabel, _formation, presetHullCats);
+                        _formation, presetHullCats);
                 }
                 else {
                     _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement,
                         DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _enableTrackingLabel, _formation);
+                        _formation);
                 }
             }
             return _editorSettings;
@@ -108,7 +108,7 @@ public class DebugSettlementCreator : ADebugUnitCreator {
             foreach (var designName in Configuration.ElementDesignNames) {
                 FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
                 FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-                _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, cameraStat, design));
+                _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, cameraStat, design, gameObject));
             }
         }
     }
@@ -122,7 +122,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
         else {
             _command = _factory.MakeSettlementCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
         }
-        _command.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
     }
 
     protected override void AddElementsToCommand() {
@@ -141,6 +140,12 @@ public class DebugSettlementCreator : ADebugUnitCreator {
         var system = gameObject.GetSingleComponentInParents<SystemItem>();
         system.Settlement = _command;
         return true;
+    }
+
+    protected override void CompleteUnitInitialization() {
+        LogEvent();
+        _elements.ForAll(e => e.FinalInitialize());
+        _command.FinalInitialize();
     }
 
     protected override void AddUnitToGameKnowledge() {
@@ -170,12 +175,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
-    }
-
-    protected override void CompleteUnitInitialization() {
-        LogEvent();
-        _elements.ForAll(e => e.FinalInitialize());
-        _command.FinalInitialize();
     }
 
     protected override void BeginElementsOperations() {

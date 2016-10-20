@@ -27,11 +27,6 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
-        /// Only manually deployed systems in the Universe.
-        /// </summary>
-        Existing_Debug,
-
-        /// <summary>
         /// Roughly 1% of deployable sectors will have a system.
         /// </summary>
         Sparse,

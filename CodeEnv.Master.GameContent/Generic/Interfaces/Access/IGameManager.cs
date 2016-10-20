@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
     public interface IGameManager : INotifyPropertyChanged, INotifyPropertyChanging, IChangeTracking {
 
         /// <summary>
-        /// Fires when GameState changes to Running, then clears all subscribers.
+        /// Fires when GameState changes to Running and is ready to play, then clears all subscribers.
         /// WARNING: This event will fire each time the GameState changes to Running, 
         /// but as it clears its subscribers each time, clients will need to resubscribe if
         /// they want to receive the event again. Clients which persist across scene changes
@@ -37,9 +37,9 @@ namespace CodeEnv.Master.GameContent {
         /// (or a Constructor) is only called once in the life of the client.
         /// </summary>
         /// <remarks>
-        /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
+        /// Current clients AGuiEnumSliderBase, FPSReadout and GameTime as of 10.14.16.
         /// </remarks>
-        event EventHandler isRunningOneShot;
+        event EventHandler isReadyForPlayOneShot;
 
         /// <summary>
         /// Occurs when GameState is about to change. 

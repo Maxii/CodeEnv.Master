@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        public IntVector3 SectorIndex { get; private set; }
+        public IntVector3 SectorID { get; private set; }
 
         public new StarInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarInfoAccessController; } }
 
@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
             Capacity = starStat.Capacity;
             Resources = starStat.Resources;
             Topography = Topography.System;
-            SectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
+            SectorID = References.SectorGrid.GetSectorIdThatContains(Position);
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {

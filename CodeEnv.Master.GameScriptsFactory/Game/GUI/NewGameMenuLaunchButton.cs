@@ -243,6 +243,9 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
         GameSettings settings = new GameSettings() {
             __IsStartup = false,
+            __UseDebugCreatorsOnly = false,
+            __DeployAdditionalAICreators = false,
+            __ZoomOnUser = true,
             UniverseSize = _universeSize,
             SystemDensity = _systemDensity,
             PlayerCount = _playerCount,

@@ -91,6 +91,15 @@ namespace CodeEnv.Master.GameContent {
             set { _jobManager = value; }
         }
 
+        private static IGameSettingsDebugControl _gameSettingsDebugControl;
+        public static IGameSettingsDebugControl GameSettingsDebugControl {
+            get {
+                D.Assert(_gameSettingsDebugControl != null);
+                return _gameSettingsDebugControl;
+            }
+            set { _gameSettingsDebugControl = value; }
+        }
+
         #endregion
 
         #region Non-persistent MonoBehaviour Singletons

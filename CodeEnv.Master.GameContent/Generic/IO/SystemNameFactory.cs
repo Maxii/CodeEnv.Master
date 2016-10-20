@@ -30,8 +30,6 @@ namespace CodeEnv.Master.GameContent {
 
         private static int DummyNameCounter = Constants.One;
 
-        private string Name { get { return GetType().Name; } }
-
         /// <summary>
         /// Proper names for Systems, loaded from Xml.
         /// <remarks>Systems can also be assigned programmatically created names when all ProperNames have been used.</remarks>
@@ -39,8 +37,6 @@ namespace CodeEnv.Master.GameContent {
         private IList<string> _allProperNames;
         private IList<string> _unusedProperNames;
         private IDictionary<Species, Stack<string>> _speciesHomeSystemNamesLookup;
-        [Obsolete]
-        private IDictionary<Player, string> _playerHomeSystemNameLookup;
         private SystemNameXmlReader _xmlReader;
 
         private SystemNameFactory() {
@@ -57,7 +53,6 @@ namespace CodeEnv.Master.GameContent {
         private void InitializeValuesAndReferences() {
             _xmlReader = SystemNameXmlReader.Instance;
             _speciesHomeSystemNamesLookup = new Dictionary<Species, Stack<string>>();
-            //_playerHomeSystemNameLookup = new Dictionary<Player, string>();
         }
 
         private void Subscribe() {
@@ -97,40 +92,6 @@ namespace CodeEnv.Master.GameContent {
             return homeSystemName;
         }
 
-        [Obsolete]
-        public string GetHomeSystemNameFor(Player player) {
-            string homeSystemName;
-            if (_playerHomeSystemNameLookup.TryGetValue(player, out homeSystemName)) {
-                return homeSystemName;
-            }
-
-            Species species = player.Species;
-            Stack<string> homeSystemNames;
-            if (!_speciesHomeSystemNamesLookup.TryGetValue(species, out homeSystemNames)) {
-                homeSystemNames = new Stack<string>(_xmlReader._LoadHomeSystemNamesFor(species));
-                _speciesHomeSystemNamesLookup.Add(species, homeSystemNames);
-            }
-            homeSystemName = homeSystemNames.Pop();
-            bool isRemoved = _unusedProperNames.Remove(homeSystemName);
-            D.Assert(isRemoved, "{0} could not validate {1}'s HomeSystemName {2}.", Name, species.GetValueName(), homeSystemName);
-            _playerHomeSystemNameLookup.Add(player, homeSystemName);
-            return homeSystemName;
-        }
-        //public string GetUnusedHomeSystemNameFor(Player player) {
-        //    Species species = player.Species;
-        //    Stack<string> homeSystemNames;
-        //    if (!_speciesHomeSystemNamesLookup.TryGetValue(species, out homeSystemNames)) {
-        //        homeSystemNames = new Stack<string>(_xmlReader.LoadHomeSystemNamesFor(species));
-        //        _speciesHomeSystemNamesLookup.Add(species, homeSystemNames);
-        //    }
-        //    string homeSystemName = homeSystemNames.Pop();
-        //    ////MarkNameAsUsed(homeSystemName);
-        //    bool isRemoved = _unusedProperNames.Remove(homeSystemName);
-        //    D.Assert(isRemoved, "{0} could not validate {1}'s HomeSystemName {2}.", Name, species.GetValueName(), homeSystemName);
-        //    _playerHomeSystemNameLookup.Add(player, homeSystemName);
-        //    return homeSystemName;
-        //}
-
         /// <summary>
         /// Returns <c>true</c> if the provided name is from the list
         /// of predetermined, properly named system names acquired from Xml, <c>false</c> otherwise.
@@ -153,12 +114,11 @@ namespace CodeEnv.Master.GameContent {
         [Obsolete]
         public void MarkNameAsUsed(string systemName) {
             bool isRemoved = _unusedProperNames.Remove(systemName);
-            D.Assert(isRemoved, "{0} did not find SystemName {1} in unused system names.", GetType().Name, systemName);
+            D.Assert(isRemoved, "{0} did not find SystemName {1} in unused system names.", Name, systemName);
         }
 
         public void Reset() {
             _speciesHomeSystemNamesLookup.Clear();
-            //_playerHomeSystemNameLookup.Clear();
             InitializeProperNamesFromXml();
             DummyNameCounter = Constants.One;
         }
@@ -261,39 +221,6 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(!names.IsNullOrEmpty());
                 return names;
             }
-            //internal IList<string> LoadAllProperSystemNames() {
-            //    var systemNameNodes = _xElement.Elements(_systemNameTagName);
-            //    int nameCount = systemNameNodes.Count();
-            //    IList<string> names = new List<string>(nameCount);
-            //    foreach (var nameNode in systemNameNodes) {
-            //        string systemName = nameNode.Value;
-            //        names.Add(systemName);
-            //    }
-            //    D.Assert(!names.IsNullOrEmpty());
-            //    return names;
-            //}
-
-            [Obsolete]
-            internal Stack<string> _LoadHomeSystemNamesFor(Species species) {
-                IList<string> homeSystemNames = null;
-                var speciesHomeSystemNameNodes = _xElement.Elements(_speciesHomeSystemNamesTagName);
-                foreach (var speciesHomeSystemNameNode in speciesHomeSystemNameNodes) {
-                    var speciesAttribute = speciesHomeSystemNameNode.Attribute(_speciesAttributeTagName);
-                    string speciesName = speciesAttribute.Value;
-                    if (speciesName == species.GetValueName()) {
-                        // found the right HomeSystemNames
-                        var nameNodes = speciesHomeSystemNameNode.Elements(_systemNameTagName);
-                        homeSystemNames = new List<string>(nameNodes.Count());
-                        foreach (var nameNode in nameNodes) {
-                            string homeSystemName = nameNode.Value;
-                            homeSystemNames.Add(homeSystemName);
-                        }
-                        break;
-                    }
-                }
-                D.Assert(homeSystemNames != null);
-                return new Stack<string>(homeSystemNames.Reverse());    // first name in list is on top of stack
-            }
 
             internal IEnumerable<string> LoadHomeSystemNamesFor(Species species) {
                 IList<string> homeSystemNames = null;
@@ -316,7 +243,6 @@ namespace CodeEnv.Master.GameContent {
                 return homeSystemNames;
             }
 
-
             public override string ToString() {
                 return new ObjectAnalyzer().ToString(this);
             }
@@ -324,7 +250,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
     }
 }

@@ -44,6 +44,11 @@ public class FpsReadout : AGuiLabelReadout {
     protected override void Awake() {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
+        _accumulatedFpsOverInterval = _yellowFramerate; // HACK starts FPS in Green if initial real FPS should be in Green
+    }
+
+    protected override void Start() {   // using Start to take out extra frame delay before Update starts running
+        base.Start();
         if (GameManager.Instance.CurrentSceneID == GameManager.SceneID.GameScene) {
             enabled = false;
             Subscribe();
@@ -52,7 +57,7 @@ public class FpsReadout : AGuiLabelReadout {
     }
 
     private void Subscribe() {
-        GameManager.Instance.isRunningOneShot += IsRunningEventHandler;
+        GameManager.Instance.isReadyForPlayOneShot += IsReadyForPlayEventHandler;
     }
 
     protected override void Update() {
@@ -87,7 +92,7 @@ public class FpsReadout : AGuiLabelReadout {
 
     #region Event and Property Change Handlers
 
-    private void IsRunningEventHandler(object sender, EventArgs e) {
+    private void IsReadyForPlayEventHandler(object sender, EventArgs e) {
         enabled = true;
     }
 

@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<FleetComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
 
-        public override IntVector3 SectorIndex { get { return HQElementData.SectorIndex; } }
+        public override IntVector3 SectorID { get { return HQElementData.SectorID; } }
 
         public new ShipData HQElementData {
             protected get { return base.HQElementData as ShipData; }

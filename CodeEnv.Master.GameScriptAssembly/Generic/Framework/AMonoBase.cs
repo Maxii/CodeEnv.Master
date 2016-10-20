@@ -498,7 +498,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     private const string AMonoBaseDebugLogEventMethodNameFormat = "{0}(from transform).{1}.{2}()";
     protected DebugSettings _debugSettings;
 
-    private System.DateTime __durationStartTime;
+    protected System.DateTime __durationStartTime;
 
     protected void __RecordDurationStartTime() {
         __durationStartTime = Utility.SystemTime;
@@ -511,7 +511,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     protected virtual string __DurationLogIntroText { get { return "[No intro text]"; } }
 
     /// <summary>
-    /// Logs the duration. [introText] is for use when __DurationLogIntroText is not used.
+    /// Logs the duration. "[introText] took x seconds to execute.".
     /// </summary>
     /// <param name="introText">The intro text.</param>
     protected void __LogDuration(string introText = null) {

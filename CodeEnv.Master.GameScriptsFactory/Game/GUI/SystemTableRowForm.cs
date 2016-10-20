@@ -29,7 +29,7 @@ public class SystemTableRowForm : ATableRowForm {
     protected override void AssignValueToLocationGuiElement() {
         base.AssignValueToLocationGuiElement();
         var report = Report as SystemReport;
-        _locationElement.SectorIndex = report.SectorIndex;
+        _locationElement.SectorID = report.SectorID;
         _locationElement.Position = report.Position;
     }
 

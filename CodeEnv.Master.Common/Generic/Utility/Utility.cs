@@ -35,7 +35,7 @@ namespace CodeEnv.Master.Common {
         /// if it is simply passed onto another method as a parameter, then this
         /// explicit test can be useful.
         /// </summary>
-        /// <param name="arg">The arg.</param>
+        /// <param name="arg">The argument.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public static void ValidateNotNull(object arg) {
             if (arg == null) {
@@ -155,7 +155,7 @@ namespace CodeEnv.Master.Common {
         /// Validates the objects provided are all of Type T.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="args">The args.</param>
+        /// <param name="args">The arguments.</param>
         /// <exception cref="System.ArgumentException"></exception>
         public static void ValidateType<T>(params object[] args) {
             foreach (object arg in args) {

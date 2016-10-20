@@ -48,12 +48,12 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<FacilityHull>().Select(hull => hull.HullCategory).ToList();
                     _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement, DateToDeploy,
                         _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _enableTrackingLabel, _formation, presetHullCats);
+                        _formation, presetHullCats);
                 }
                 else {
                     _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement,
                         DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _enableTrackingLabel, _formation);
+                        _formation);
                 }
             }
             return _editorSettings;
@@ -107,7 +107,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
             foreach (var designName in Configuration.ElementDesignNames) {
                 FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
                 FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-                _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.OpenSpace, cameraStat, design));
+                _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.OpenSpace, cameraStat, design, gameObject));
             }
         }
     }
@@ -121,7 +121,6 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         else {
             _command = _factory.MakeStarbaseCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
         }
-        _command.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
     }
 
     protected override void AddElementsToCommand() {
@@ -140,6 +139,12 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         // Starbases don't need to be deployed. They are already on location
         PathfindingManager.Instance.Graph.AddToGraph(_command);
         return true;
+    }
+
+    protected override void CompleteUnitInitialization() {
+        LogEvent();
+        _elements.ForAll(e => e.FinalInitialize());
+        _command.FinalInitialize();
     }
 
     protected override void AddUnitToGameKnowledge() {
@@ -169,12 +174,6 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
-    }
-
-    protected override void CompleteUnitInitialization() {
-        LogEvent();
-        _elements.ForAll(e => e.FinalInitialize());
-        _command.FinalInitialize();
     }
 
     protected override void BeginElementsOperations() {

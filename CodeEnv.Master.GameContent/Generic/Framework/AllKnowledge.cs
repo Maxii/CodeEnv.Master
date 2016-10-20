@@ -29,8 +29,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class AllKnowledge : AGenericSingleton<AllKnowledge> {
 
-        private string Name { get { return typeof(AllKnowledge).Name; } }
-
         public IUniverseCenter UniverseCenter { get; private set; }
 
         /// <summary>
@@ -56,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Systems currently present in the game.
         /// </summary>
-        public IEnumerable<ISystem> Systems { get { return _systemLookupBySectorIndex.Values; } }
+        public IEnumerable<ISystem> Systems { get { return _systemLookupBySectorID.Values; } }
 
         /// <summary>
         /// The Elements currently present in the game.
@@ -98,15 +96,15 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IEnumerable<IStarbaseCmd> Starbases {
             get {
-                IList<IStarbaseCmd> firstSectorBases = _starbasesLookupBySectorIndex.Values.First();
-                IEnumerable<IList<IStarbaseCmd>> otherSectorsBases = _starbasesLookupBySectorIndex.Values.Except(firstSectorBases);
+                IList<IStarbaseCmd> firstSectorBases = _starbasesLookupBySectorID.Values.First();
+                IEnumerable<IList<IStarbaseCmd>> otherSectorsBases = _starbasesLookupBySectorID.Values.Except(firstSectorBases);
                 return firstSectorBases.UnionBy(otherSectorsBases.ToArray());
                 //return _commands.Where(cmd => cmd is IStarbaseCmd).Cast<IStarbaseCmd>();
             }
         }
 
-        private IDictionary<IntVector3, ISystem> _systemLookupBySectorIndex = new Dictionary<IntVector3, ISystem>();
-        private IDictionary<IntVector3, IList<IStarbaseCmd>> _starbasesLookupBySectorIndex = new Dictionary<IntVector3, IList<IStarbaseCmd>>();
+        private IDictionary<IntVector3, ISystem> _systemLookupBySectorID = new Dictionary<IntVector3, ISystem>();
+        private IDictionary<IntVector3, IList<IStarbaseCmd>> _starbasesLookupBySectorID = new Dictionary<IntVector3, IList<IStarbaseCmd>>();
 
         private HashSet<IPlanetoid> _planetoids = new HashSet<IPlanetoid>();
         private HashSet<IStar> _stars = new HashSet<IStar>();
@@ -179,8 +177,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="excludedSystems">The excluded systems.</param>
         /// <param name="randomSystem">The random system.</param>
         /// <returns></returns>
-        public bool TryGetRandomSystem(IList<ISystem> excludedSystems, out ISystem randomSystem) {
-            var availableSystems = _systemLookupBySectorIndex.Values.Except(excludedSystems);
+        public bool TryGetRandomSystem(IEnumerable<ISystem> excludedSystems, out ISystem randomSystem) {
+            var availableSystems = _systemLookupBySectorID.Values.Except(excludedSystems);
             if (availableSystems.Any()) {
                 randomSystem = RandomExtended.Choice(availableSystems);
                 return true;
@@ -189,21 +187,21 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public bool TryGetSystem(IntVector3 sectorIndex, out ISystem system) {
-            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
-            return _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
+        public bool TryGetSystem(IntVector3 sectorID, out ISystem system) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+            return _systemLookupBySectorID.TryGetValue(sectorID, out system);
         }
 
         /// <summary>
-        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Starbases, <c>false</c> otherwise.
+        /// Returns <c>true</c> if the sector indicated by sectorID contains one or more Starbases, <c>false</c> otherwise.
         /// </summary>
-        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="sectorID">ID of the sector.</param>
         /// <param name="starbasesInSector">The resulting starbases in sector.</param>
         /// <returns></returns>
-        public bool TryGetStarbases(IntVector3 sectorIndex, out IEnumerable<IStarbaseCmd> starbasesInSector) {
-            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        public bool TryGetStarbases(IntVector3 sectorID, out IEnumerable<IStarbaseCmd> starbasesInSector) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
             IList<IStarbaseCmd> sBases;
-            if (_starbasesLookupBySectorIndex.TryGetValue(sectorIndex, out sBases)) {
+            if (_starbasesLookupBySectorID.TryGetValue(sectorID, out sBases)) {
                 starbasesInSector = sBases;
                 return true;
             }
@@ -212,14 +210,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Fleets, <c>false</c> otherwise.
+        /// Returns <c>true</c> if the sector indicated by sectorID contains one or more Fleets, <c>false</c> otherwise.
         /// </summary>
-        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="sectorID">ID of the sector.</param>
         /// <param name="fleetsInSector">The resulting fleets present in the sector.</param>
         /// <returns></returns>
-        public bool TryGetFleets(IntVector3 sectorIndex, out IEnumerable<IFleetCmd> fleetsInSector) {
-            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
-            fleetsInSector = Fleets.Where(fleet => fleet.SectorIndex == sectorIndex);
+        public bool TryGetFleets(IntVector3 sectorID, out IEnumerable<IFleetCmd> fleetsInSector) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+            fleetsInSector = Fleets.Where(fleet => fleet.SectorID == sectorID);
             if (fleetsInSector.Any()) {
                 return true;
             }
@@ -232,9 +230,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
         public Topography GetSpaceTopography(Vector3 worldLocation) {
-            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(worldLocation);
+            IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(worldLocation);
             ISystem system;
-            if (_systemLookupBySectorIndex.TryGetValue(sectorIndex, out system)) {
+            if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
                 // the sector containing worldLocation has a system
                 if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {
                     return Topography.System;
@@ -299,12 +297,12 @@ namespace CodeEnv.Master.GameContent {
             // populate Starbase lookup
             IStarbaseCmd sbCmd = command as IStarbaseCmd;
             if (sbCmd != null) {
-                var sbSectorIndex = sbCmd.SectorIndex;
+                var sbSectorID = sbCmd.SectorID;
 
                 IList<IStarbaseCmd> sbCmds;
-                if (!_starbasesLookupBySectorIndex.TryGetValue(sbSectorIndex, out sbCmds)) {
+                if (!_starbasesLookupBySectorID.TryGetValue(sbSectorID, out sbCmds)) {
                     sbCmds = new List<IStarbaseCmd>(2);
-                    _starbasesLookupBySectorIndex.Add(sbSectorIndex, sbCmds);
+                    _starbasesLookupBySectorID.Add(sbSectorID, sbCmds);
                 }
                 sbCmds.Add(sbCmd);
             }
@@ -321,18 +319,18 @@ namespace CodeEnv.Master.GameContent {
             // remove from Starbase lookup
             IStarbaseCmd sbCmd = deadCmd as IStarbaseCmd;
             if (sbCmd != null) {
-                var sbSectorIndex = sbCmd.SectorIndex;
+                var sbSectorID = sbCmd.SectorID;
 
-                IList<IStarbaseCmd> sbCmds = _starbasesLookupBySectorIndex[sbSectorIndex];
+                IList<IStarbaseCmd> sbCmds = _starbasesLookupBySectorID[sbSectorID];
                 sbCmds.Remove(sbCmd);
                 if (sbCmds.Count == Constants.Zero) {
-                    _starbasesLookupBySectorIndex.Remove(sbSectorIndex);
+                    _starbasesLookupBySectorID.Remove(sbSectorID);
                 }
             }
         }
 
         private void AddSystem(ISystem system) {
-            _systemLookupBySectorIndex.Add(system.SectorIndex, system);
+            _systemLookupBySectorID.Add(system.SectorID, system);
             bool isAdded = _items.Add(system);
             D.Assert(isAdded, "{0} tried to add System {1} it already has.", Name, system.FullName);
         }
@@ -377,10 +375,10 @@ namespace CodeEnv.Master.GameContent {
             UniverseCenter = null;
             _planetoids.Clear();
             _stars.Clear();
-            _systemLookupBySectorIndex.Clear();
+            _systemLookupBySectorID.Clear();
             _elements.Clear();
             _commands.Clear();
-            _starbasesLookupBySectorIndex.Clear();
+            _starbasesLookupBySectorID.Clear();
             _items.Clear();
         }
 

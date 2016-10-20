@@ -25,7 +25,15 @@ namespace CodeEnv.Master.GameContent {
     public interface IItem_Ltd : IDebugable {
 
         /// <summary>
-        /// Occurs when InfoAccess rights change for a player on an item.
+        /// Occurs when the owner of this item has changed.
+        /// <remarks>OK for client to have access to this, even if they don't have access
+        /// to Owner info as long as they use the event to properly check for Owner access.</remarks>
+        /// </summary>
+        event EventHandler ownerChanged;
+
+        /// <summary>
+        /// Occurs when InfoAccess rights change for a player on an item, directly attributable to
+        /// a change in the player's IntelCoverage of the item.
         /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
         /// </summary>
         event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;

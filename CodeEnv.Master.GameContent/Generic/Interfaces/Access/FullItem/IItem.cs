@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are AItems.
     /// </summary>
-    public interface IItem : IDebugable/*, IShowDebugLog*/ {
+    public interface IItem : IDebugable {
 
         /// <summary>
         /// Occurs when the owner of this <c>IItem</c> is about to change.

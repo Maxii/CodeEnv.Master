@@ -239,7 +239,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Systems this player has knowledge of.
         /// </summary>
-        public IEnumerable<ISystem_Ltd> Systems { get { return _systemLookupBySectorIndex.Values; } }
+        public IEnumerable<ISystem_Ltd> Systems { get { return _systemLookupBySectorID.Values; } }
 
         /// <summary>
         /// The Elements this player has knowledge of.
@@ -274,16 +274,17 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The Settlements this player has knowledge of.
         /// </summary>
-        public IEnumerable<ISettlementCmd_Ltd> Settlements { get { return _commands.Where(cmd => cmd is ISettlementCmd_Ltd).Cast<ISettlementCmd_Ltd>(); } }
+        public IEnumerable<ISettlementCmd_Ltd> Settlements { get { return _settlementLookupBySectorID.Values; } }
+        //public IEnumerable<ISettlementCmd_Ltd> Settlements { get { return _commands.Where(cmd => cmd is ISettlementCmd_Ltd).Cast<ISettlementCmd_Ltd>(); } }
 
         /// <summary>
         /// The Starbases this player has knowledge of.
         /// </summary>
         public IEnumerable<IStarbaseCmd_Ltd> Starbases {
             get {
-                if (_starbasesLookupBySectorIndex.Values.Count > Constants.Zero) {
-                    var firstSectorsBases = _starbasesLookupBySectorIndex.Values.First();
-                    var otherSectorsBases = _starbasesLookupBySectorIndex.Values.Except(firstSectorsBases);
+                if (_starbasesLookupBySectorID.Values.Count > Constants.Zero) {
+                    IList<IStarbaseCmd_Ltd> firstSectorsBases = _starbasesLookupBySectorID.Values.First();
+                    IEnumerable<IList<IStarbaseCmd_Ltd>> otherSectorsBases = _starbasesLookupBySectorID.Values.Except(firstSectorsBases);
                     return firstSectorsBases.UnionBy(otherSectorsBases.ToArray());
                 }
                 return Enumerable.Empty<IStarbaseCmd_Ltd>();
@@ -293,8 +294,9 @@ namespace CodeEnv.Master.GameContent {
 
         // Note: Other players this Player has met is held by the Player
 
-        private IDictionary<IntVector3, ISystem_Ltd> _systemLookupBySectorIndex;
-        private IDictionary<IntVector3, IList<IStarbaseCmd_Ltd>> _starbasesLookupBySectorIndex = new Dictionary<IntVector3, IList<IStarbaseCmd_Ltd>>();
+        private IDictionary<IntVector3, ISystem_Ltd> _systemLookupBySectorID;
+        private IDictionary<IntVector3, IList<IStarbaseCmd_Ltd>> _starbasesLookupBySectorID = new Dictionary<IntVector3, IList<IStarbaseCmd_Ltd>>();
+        private IDictionary<IntVector3, ISettlementCmd_Ltd> _settlementLookupBySectorID = new Dictionary<IntVector3, ISettlementCmd_Ltd>();
 
         private HashSet<IPlanetoid_Ltd> _planetoids = new HashSet<IPlanetoid_Ltd>();
         private HashSet<IStar_Ltd> _stars = new HashSet<IStar_Ltd>();
@@ -337,29 +339,46 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns true if the sector indicated by sectorIndex contains a System.
+        /// Returns true if the sector indicated by sectorID contains a System.
         /// </summary>
-        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="sectorID">ID of the sector.</param>
         /// <param name="system">The system if present in the sector.</param>
         /// <returns></returns>
-        public bool TryGetSystem(IntVector3 sectorIndex, out ISystem_Ltd system) {
-            bool isSystemFound = _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
+        public bool TryGetSystem(IntVector3 sectorID, out ISystem_Ltd system) {
+            bool isSystemFound = _systemLookupBySectorID.TryGetValue(sectorID, out system);
             if (isSystemFound) {
-                //D.Log("{0} found System {1} in Sector {2}.", Name, system.FullName, sectorIndex);
+                //D.Log("{0} found System {1} in Sector {2}.", Name, system.FullName, sectorID);
             }
             return isSystemFound;
         }
 
         /// <summary>
-        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Starbases, <c>false</c> otherwise.
+        /// Returns <c>true</c> if the sector indicated by sectorID contains a Settlement, <c>false</c> otherwise.
         /// </summary>
-        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="sectorID">ID of the sector.</param>
+        /// <param name="starbasesInSector">The resulting settlement in the sector.</param>
+        /// <returns></returns>
+        public bool TryGetSettlement(IntVector3 sectorID, out ISettlementCmd_Ltd settlementInSector) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
+            ISettlementCmd_Ltd settlements;
+            if (_settlementLookupBySectorID.TryGetValue(sectorID, out settlements)) {
+                settlementInSector = settlements;
+                return true;
+            }
+            settlementInSector = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the sector indicated by sectorID contains one or more Starbases, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="sectorID">ID of the sector.</param>
         /// <param name="starbasesInSector">The resulting starbases in sector.</param>
         /// <returns></returns>
-        public bool TryGetStarbases(IntVector3 sectorIndex, out IEnumerable<IStarbaseCmd_Ltd> starbasesInSector) {
-            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
+        public bool TryGetStarbases(IntVector3 sectorID, out IEnumerable<IStarbaseCmd_Ltd> starbasesInSector) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
             IList<IStarbaseCmd_Ltd> sBases;
-            if (_starbasesLookupBySectorIndex.TryGetValue(sectorIndex, out sBases)) {
+            if (_starbasesLookupBySectorID.TryGetValue(sectorID, out sBases)) {
                 starbasesInSector = sBases;
                 return true;
             }
@@ -368,20 +387,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if the sector indicated by sectorIndex contains one or more Fleets, <c>false</c> otherwise.
+        /// Returns <c>true</c> if the sector indicated by sectorID contains one or more Fleets, <c>false</c> otherwise.
         /// </summary>
-        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="sectorID">ID of the sector.</param>
         /// <param name="fleetsInSector">The resulting fleets present in the sector.</param>
         /// <returns></returns>
-        public bool TryGetFleets(IntVector3 sectorIndex, out IEnumerable<IFleetCmd_Ltd> fleetsInSector) {
-            D.Assert(sectorIndex != default(IntVector3), "{0}: SectorIndex of {1} is illegal.", GetType().Name, sectorIndex);
-            fleetsInSector = Fleets.Where(fleet => fleet.SectorIndex == sectorIndex);
+        public bool TryGetFleets(IntVector3 sectorID, out IEnumerable<IFleetCmd_Ltd> fleetsInSector) {
+            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
+            fleetsInSector = Fleets.Where(fleet => fleet.SectorID == sectorID);
             if (fleetsInSector.Any()) {
                 return true;
             }
             return false;
         }
-
 
         /// <summary>
         /// Indicates whether the Owner has knowledge of the provided item.
@@ -410,7 +428,7 @@ namespace CodeEnv.Master.GameContent {
                 return true;
             }
             if (item is ISystem_Ltd) {
-                D.Assert(_systemLookupBySectorIndex.Values.Contains(item as ISystem_Ltd));
+                D.Assert(_systemLookupBySectorID.Values.Contains(item as ISystem_Ltd));
                 D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
                 return true;
             }
@@ -448,7 +466,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AddAllSystems(IEnumerable<IStar_Ltd> allStars) {   // properly sizes the dictionary
-            _systemLookupBySectorIndex = allStars.ToDictionary(star => star.SectorIndex, star => star.ParentSystem);
+            _systemLookupBySectorID = allStars.ToDictionary(star => star.SectorID, star => star.ParentSystem);
             allStars.ForAll(star => _items.Add(star.ParentSystem));
         }
 
@@ -516,14 +534,25 @@ namespace CodeEnv.Master.GameContent {
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {
-                var sbSectorIndex = sbCmd.SectorIndex;
+                var sbSectorID = sbCmd.SectorID;
 
                 IList<IStarbaseCmd_Ltd> sbCmds;
-                if (!_starbasesLookupBySectorIndex.TryGetValue(sbSectorIndex, out sbCmds)) {
+                if (!_starbasesLookupBySectorID.TryGetValue(sbSectorID, out sbCmds)) {
                     sbCmds = new List<IStarbaseCmd_Ltd>(2);
-                    _starbasesLookupBySectorIndex.Add(sbSectorIndex, sbCmds);
+                    _starbasesLookupBySectorID.Add(sbSectorID, sbCmds);
                 }
+                D.Assert(!sbCmds.Contains(sbCmd));
                 sbCmds.Add(sbCmd);
+            }
+            else {
+                ISettlementCmd_Ltd settlementCmd = command as ISettlementCmd_Ltd;
+                if (settlementCmd != null) {
+                    var sSectorID = settlementCmd.SectorID;
+                    //if (_settlementLookupBySectorID.ContainsKey(sSectorID)) {
+                    //    D.Error("{0}.AddCmd({1}) found {2} already occupied by {3}.", Name, command.FullName, sSectorID, _settlementLookupBySectorID[sSectorID].FullName);
+                    //}
+                    _settlementLookupBySectorID.Add(sSectorID, settlementCmd);
+                }
             }
         }
 
@@ -535,12 +564,21 @@ namespace CodeEnv.Master.GameContent {
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {
-                var sbSectorIndex = sbCmd.SectorIndex;
+                var sbSectorID = sbCmd.SectorID;
 
-                IList<IStarbaseCmd_Ltd> sbCmds = _starbasesLookupBySectorIndex[sbSectorIndex];
-                sbCmds.Remove(sbCmd);
+                IList<IStarbaseCmd_Ltd> sbCmds = _starbasesLookupBySectorID[sbSectorID];
+                isRemoved = sbCmds.Remove(sbCmd);
+                D.Assert(isRemoved);
                 if (sbCmds.Count == Constants.Zero) {
-                    _starbasesLookupBySectorIndex.Remove(sbSectorIndex);
+                    _starbasesLookupBySectorID.Remove(sbSectorID);
+                }
+            }
+            else {
+                ISettlementCmd_Ltd settlement = command as ISettlementCmd_Ltd;
+                if (settlement != null) {
+                    var sSectorID = settlement.SectorID;
+                    isRemoved = _settlementLookupBySectorID.Remove(sSectorID);
+                    D.Assert(isRemoved);
                 }
             }
         }

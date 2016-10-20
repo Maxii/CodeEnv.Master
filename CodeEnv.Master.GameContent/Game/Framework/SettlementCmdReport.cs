@@ -127,8 +127,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitWeaponsRange)) {
                 UnitWeaponsRange = sData.UnitWeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
-                SectorIndex = sData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+                SectorID = sData.SectorID;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Formation)) {
                 UnitFormation = sData.UnitFormation;

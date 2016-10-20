@@ -25,6 +25,8 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="T"></typeparam>
     public abstract class AGenericSingleton<T> : APropertyChangeTracking where T : class {
 
+        public virtual string Name { get { return typeof(T).Name; } }
+
         #region Singleton Pattern
 
         private static T _instance;

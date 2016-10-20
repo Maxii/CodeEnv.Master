@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.ParentName, "Parent: {0}"},
                 {ItemInfoID.Owner, "Owner: {0}, UserRelations: {1}"},
                 {ItemInfoID.Category, "Category: {0}"},
-                {ItemInfoID.SectorIndex, "Sector: {0}"},
+                {ItemInfoID.SectorID, "Sector: {0}"},
                 {ItemInfoID.Position, "Position: {0}"},
 
                 {ItemInfoID.Composition, CommonTerms.Composition + ": {0}"},
@@ -175,10 +175,10 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
                 else {
-                    D.Warn("{0} reports missing {1}: {2}.", GetType().Name, typeof(ItemInfoID).Name, infoID.GetValueName());
+                    D.Warn("{0} reports missing {1}: {2}.", Name, typeof(ItemInfoID).Name, infoID.GetValueName());
                 }
             }
-            //D.Log("{0}.MakeInstance() returning {1}.", GetType().Name, csb.ToString());
+            //D.Log("{0}.MakeInstance() returning {1}.", Name, csb.ToString());
             return csb;
         }
 
@@ -259,7 +259,7 @@ namespace CodeEnv.Master.GameContent {
         //    Approval,
         //    Position,
 
-        //    SectorIndex,
+        //    SectorID,
 
         //    WeaponsRange,
         //    SensorRange,

@@ -143,6 +143,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         _helm = new ShipHelm(this, Rigidbody);
         CurrentState = ShipState.None;
         InitializeCollisionDetectionZone();
+    }
+
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
         InitializeDebugShowVelocityRay();
         InitializeDebugShowCoursePlot();
     }
@@ -255,7 +259,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             _helm.HandlePendingCollisionAverted(obstacle);
         }
     }
-
 
     #region Orders
 
@@ -428,6 +431,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region None
 
+    void None_UponPreconfigureState() {
+        LogEvent();
+    }
+
     void None_EnterState() {
         LogEvent();
     }
@@ -442,15 +449,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     // Idling is entered upon completion of an order or when the item initially commences operations
 
-    IEnumerator Idling_EnterState() {
+    void Idling_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
 
         Data.Target = null; // temp to remove target from data after order has been completed or failed
+    }
+
+    IEnumerator Idling_EnterState() {
+        LogEvent();
 
         if (CurrentOrder != null) {
             // FollowonOrders should always be executed before any StandingOrder is considered
@@ -585,12 +596,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    void Moving_EnterState() {
+    void Moving_UponPreconfigureState() {
         LogEvent();
+
         D.Assert(_fsmTgt != null);
         D.Assert(_apMoveSpeed != default(Speed));
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
         D.Assert(!(_fsmTgt is IShipCloseOrbitSimulator));
+    }
+
+    void Moving_EnterState() {
+        LogEvent();
 
         bool isFleetwideMove = false;
         Vector3 apTgtOffset = Vector3.zero;
@@ -662,7 +678,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void Moving_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void Moving_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == fsmTgt);
+        if (LastState == ShipState.ExecuteExploreOrder) {
+            // Note: FleetCmd handles not being allowed to explore
+            var exploreTgt = _fsmTgt as IShipExplorable;
+            if (exploreTgt.IsFullyExploredBy(Owner)) {
+                // not a failure so no failure code
+                Return();
+            }
+        }
+    }
+
+    void Moving_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
@@ -697,24 +726,32 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    IEnumerator ExecuteMoveOrder_EnterState() {
+    void ExecuteMoveOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
 
         var currentShipMoveOrder = CurrentOrder as ShipMoveOrder;
         D.Assert(currentShipMoveOrder != null);
 
-        TryBreakOrbit();
-
         _fsmTgt = currentShipMoveOrder.Target;
-        _apMoveSpeed = currentShipMoveOrder.Speed;
+
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+    }
+
+    IEnumerator ExecuteMoveOrder_EnterState() {
+        LogEvent();
+
+        TryBreakOrbit();
+
+        var currentShipMoveOrder = CurrentOrder as ShipMoveOrder;
+        _apMoveSpeed = currentShipMoveOrder.Speed;
 
         //D.Log(ShowDebugLog, "{0} calling {1}.{2}. Target: {3}, Speed: {4}, Fleetwide: {5}.", FullName, typeof(ShipState).Name,
         //ShipState.Moving.GetValueName(), _fsmTgt.FullName, _apMoveSpeed.GetValueName(), currentShipMoveOrder.IsFleetwide);
@@ -777,6 +814,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
+    void ExecuteMoveOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
     void ExecuteMoveOrder_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
@@ -784,7 +826,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void ExecuteMoveOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void ExecuteMoveOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         IssueAssumeStationOrderFromCaptain();
@@ -798,6 +840,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
     }
@@ -810,13 +853,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // is inside some local obstacle zone. Once HQ has arrived at the LocalAssyStation (if any), individual ships can 
     // still be a long way off trying to get there, so we need to rely on the AutoPilot to manage speed.
 
-    IEnumerator ExecuteAssumeStationOrder_EnterState() {
+    void ExecuteAssumeStationOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+
+        _fsmTgt = FormationStation;
+    }
+
+    IEnumerator ExecuteAssumeStationOrder_EnterState() {
+        LogEvent();
 
         TryBreakOrbit();
         _helm.ChangeSpeed(Speed.Stop);
@@ -830,7 +879,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             yield return null;
         }
 
-        _fsmTgt = FormationStation;
         _apMoveSpeed = Speed.Standard;
 
         string speedMsg = "{0}({1:0.##}) units/hr".Inject(_apMoveSpeed.GetValueName(), _apMoveSpeed.GetUnitsPerHour(Data));
@@ -902,9 +950,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for _fsmTgt infoAccessChgd event handler as FormationStations aren't Items
-
-    // No need for _fsmTgt death event handler as FormationStations don't die
+    // No need for _fsmTgt-related event handlers as the _fsmTgt is a FormationStation
 
     void ExecuteAssumeStationOrder_UponDeath() {
         LogEvent();
@@ -933,13 +979,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    IEnumerator ExecuteExploreOrder_EnterState() {
+    void ExecuteExploreOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
         D.Assert(CurrentOrder.ToNotifyCmd);
 
         var exploreTgt = CurrentOrder.Target as IShipExplorable;
@@ -948,14 +994,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Assert(!exploreTgt.IsFullyExploredBy(Owner));
         D.Assert(exploreTgt.IsCloseOrbitAllowedBy(Owner));
 
-        TryBreakOrbit();
-
         _fsmTgt = exploreTgt;
-        _apMoveSpeed = Speed.Standard;
+
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
-        D.Assert(isSubscribed); // all IShipExplorable are IItems
+        D.Assert(isSubscribed);
+        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+    }
 
+    IEnumerator ExecuteExploreOrder_EnterState() {
+        LogEvent();
+
+        TryBreakOrbit();
+
+        var exploreTgt = _fsmTgt as IShipExplorable;
+        _apMoveSpeed = Speed.Standard;
         Call(ShipState.Moving);
         yield return null;  // required so Return()s here
 
@@ -1063,7 +1117,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void ExecuteExploreOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void ExecuteExploreOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteExploreOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.TgtDeath);
@@ -1079,7 +1138,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
         bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
-        D.Assert(isUnsubscribed);   // all IShipExplorable are IItems
+        D.Assert(isUnsubscribed);
+        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
@@ -1092,24 +1153,32 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // 4.22.16: Currently Order is issued only by user or fleet. Once HQ has arrived at the IShipCloseOrbitable target, 
     // individual ships can still be a long way off trying to get there, so we need to rely on the AutoPilot to manage speed.
 
-    IEnumerator ExecuteAssumeCloseOrbitOrder_EnterState() {
+    void ExecuteAssumeCloseOrbitOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
+
+        var orbitTgt = CurrentOrder.Target as IShipCloseOrbitable;
+        D.Assert(orbitTgt != null);
+        _fsmTgt = orbitTgt;
+
+        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
+        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+    }
+
+    IEnumerator ExecuteAssumeCloseOrbitOrder_EnterState() {
+        LogEvent();
 
         TryBreakOrbit();
 
-        var orbitTgt = CurrentOrder.Target as IShipCloseOrbitable;
-        _fsmTgt = orbitTgt;
         _apMoveSpeed = Speed.Standard;
-        __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
-        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
-        D.Assert(isSubscribed); // all IShipCloseOrbitable are IItems
-
         Call(ShipState.Moving);
         yield return null;  // required so Return()s here
         //D.Log(ShowDebugLog, "{0} has just Return()ed from ShipState.Moving in ExecuteAssumeCloseOrbitOrder_EnterState.", FullName);
@@ -1194,7 +1263,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void ExecuteAssumeCloseOrbitOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         IssueAssumeStationOrderFromCaptain();
@@ -1209,7 +1283,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
         bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
-        D.Assert(isUnsubscribed);   // all IShipCloseOrbitable are Items
+        D.Assert(isUnsubscribed);
+        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
@@ -1224,16 +1300,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // 4.22.16: Currently a Call()ed state by either ExecuteAssumeCloseOrbitOrder or ExecuteExploreOrder. In both cases, the ship
     // should already be in HighOrbit and therefore close. Accordingly, speed is set to Slow.
 
-    IEnumerator AssumingCloseOrbit_EnterState() {
+    void AssumingCloseOrbit_UponPreconfigureState() {
         LogEvent();
+
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
         D.Assert(_orbitingJoint == null);
         D.Assert(!IsInOrbit);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
         IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
         D.Assert(closeOrbitTgt != null);
         // Note: _fsmTgt (now closeOrbitTgt) death has already been subscribed too if it can
+    }
 
+    IEnumerator AssumingCloseOrbit_EnterState() {
+        LogEvent();
+
+        IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
         // use autopilot to move into close orbit whether inside or outside slot
         IShipNavigable closeOrbitApTgt = closeOrbitTgt.CloseOrbitSimulator as IShipNavigable;
 
@@ -1316,7 +1398,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void AssumingCloseOrbit_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void AssumingCloseOrbit_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        D.Assert(_fsmTgt == fsmTgt);
+        if (LastState == ShipState.ExecuteExploreOrder) {
+            // Note: FleetCmd handles not being allowed to explore
+            var exploreTgt = _fsmTgt as IShipExplorable;
+            if (exploreTgt.IsFullyExploredBy(Owner)) {
+                Return();
+            }
+        }
+    }
+
+    void AssumingCloseOrbit_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
         _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
@@ -1404,23 +1498,27 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    IEnumerator ExecuteAttackOrder_EnterState() {
+    void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
         D.Assert(CurrentOrder.ToNotifyCmd);
+    }
+
+    IEnumerator ExecuteAttackOrder_EnterState() {
+        LogEvent();
 
         TryBreakOrbit();
 
         // The attack target acquired from the order. Can be a Command or a Planetoid
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
-        string attackTgtFromOrderName = unitAttackTgt.FullName;
+        string unitAttackTgtName = unitAttackTgt.FullName;
         if (!unitAttackTgt.IsOperational) {
             // if this occurs, it happened in the yield return null delay before EnterState execution
-            D.Warn("{0} was killed before {1} could begin attack. Canceling Attack Order.", attackTgtFromOrderName, FullName);
+            D.Warn("{0} was killed before {1} could begin attack. Canceling Attack Order.", unitAttackTgtName, FullName);
             CurrentState = ShipState.Idling;
             yield return null;
         }
@@ -1508,7 +1606,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             yield return null;
         }
         if (IsInOrbit) {
-            D.Error("{0} is in orbit around {1} after killing {2}.", FullName, _itemBeingOrbited.FullName, attackTgtFromOrderName);
+            D.Error("{0} is in orbit around {1} after killing {2}.", FullName, _itemBeingOrbited.FullName, unitAttackTgtName);
         }
         CurrentState = ShipState.Idling;
     }
@@ -1542,11 +1640,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(fsmTgt) as only subscribed to individual targets during Attacking state
+    // No need for _fsmTgt-related event handlers as only subscribed to individual targets during Attacking state
 
     // No need to subscribe to death of the unit target as it is checked constantly during EnterState()
-
-    // No need for ExecuteAttackOrder_UponFsmTargetDeath(deadFsmTgt) as only subscribed to individual targets during Attacking state
 
     void ExecuteAttackOrder_UponDeath() {
         LogEvent();
@@ -1639,15 +1735,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    void Attacking_EnterState() {
+    void Attacking_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_fsmTgt != null && _fsmTgt is IShipAttackable);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
+        D.Assert(_fsmTgt != null);
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed); // _fsmTgt as attack target is by definition mortal 
         isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
-        D.Assert(isSubscribed); // all IShipAttackable are IItems
+        D.Assert(isSubscribed);
+        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+
+        IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
+        D.Assert(primaryAttackTgt != null);
+    }
+
+    void Attacking_EnterState() {
+        LogEvent();
 
         IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
         AutoPilotDestinationProxy apAttackTgtProxy = MakePilotAttackTgtProxy(primaryAttackTgt);
@@ -1696,7 +1802,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void Attacking_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void Attacking_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void Attacking_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt);
         // never set _orderFailureCause = TgtDeath as it is not an error when attacking
@@ -1715,7 +1826,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
         D.Assert(isUnsubscribed); // all IShipAttackable can die
         isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
-        D.Assert(isUnsubscribed);   // all IShipAttackable are IItems
+        D.Assert(isUnsubscribed);
+        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
 
         _helm.DisengagePilot();  // maintains speed unless already Stopped
     }
@@ -1724,10 +1837,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region ExecuteJoinFleetOrder
 
+    void ExecuteJoinFleetOrder_UponPreconfigureState() {
+        LogEvent();
+
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.Assert(!CurrentOrder.ToNotifyCmd);
+    }
+
     void ExecuteJoinFleetOrder_EnterState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
-        D.Assert(!CurrentOrder.ToNotifyCmd);
 
         TryBreakOrbit();
 
@@ -1760,7 +1878,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // once joinFleetOrder takes, this ship state will be changed by its 'new' transferFleet Command
     }
 
-    // No time is spent in this state so no need to handle events that won't happen like _UponDamageIncurred()
+    // No time is spent in this state so no need to handle events that won't happen
 
     void ExecuteJoinFleetOrder_ExitState() {
         LogEvent();
@@ -1770,10 +1888,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region ExecuteEntrenchOrder
 
+    void ExecuteEntrenchOrder_UponPreconfigureState() {
+        LogEvent();
+
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.Assert(!CurrentOrder.ToNotifyCmd);
+    }
+
     void ExecuteEntrenchOrder_EnterState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
-        D.Assert(!CurrentOrder.ToNotifyCmd);
 
         TryBreakOrbit();
         _helm.ChangeSpeed(Speed.HardStop);
@@ -1802,7 +1925,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void ExecuteEntrenchOrder_UponDeath() {
         LogEvent();
@@ -1819,15 +1942,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     // 6.27.16 Currently a RepairInPlace state
 
-    IEnumerator ExecuteRepairOrder_EnterState() {
+    void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
-        D.Assert(!_debugSettings.DisableRepair);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
-        D.Assert(!CurrentOrder.ToNotifyCmd);
 
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.Assert(!_debugSettings.DisableRepair);
+        D.Assert(!CurrentOrder.ToNotifyCmd);
+    }
+
+    IEnumerator ExecuteRepairOrder_EnterState() {
+        LogEvent();
 
         //TryBreakOrbit();  // Ships can repair while in orbit
 
@@ -1878,7 +2005,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void ExecuteRepairOrder_UponDeath() {
         LogEvent();
@@ -1895,10 +2022,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     // 4.22.16 Currently a Call()ed state with no additional movement
 
+    void Repairing_UponPreconfigureState() {
+        LogEvent();
+
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.Assert(!_debugSettings.DisableRepair);
+    }
+
     IEnumerator Repairing_EnterState() {
         LogEvent();
-        D.Assert(!_debugSettings.DisableRepair);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
         StartEffectSequence(EffectSequenceID.Repairing);
 
@@ -1957,7 +2089,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void Repairing_UponOrbitedObjectDeath(IShipOrbitable deadOrbitedObject) {
         LogEvent();
@@ -1987,17 +2119,21 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     private WithdrawPurpose _fsmDisengagePurpose;
 
-    IEnumerator ExecuteDisengageOrder_EnterState() {
+    void ExecuteDisengageOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_fsmDisengagePurpose != WithdrawPurpose.None, "{0}: _fsmDisengagePurpose cannot be {1}.", FullName, _fsmDisengagePurpose.GetValueName());
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.Assert(_fsmDisengagePurpose != WithdrawPurpose.None, "{0}: _fsmDisengagePurpose cannot be {1}.", FullName, _fsmDisengagePurpose.GetValueName());
         D.Assert(!IsHQ, "{0} as HQ cannot initiate {1}.{2}.", FullName, typeof(ShipState).Name, ShipState.ExecuteDisengageOrder.GetValueName());
         D.Assert(CurrentOrder.Source == OrderSource.Captain, "Only {0} Captain can order {1} (to a more protected FormationStation).", FullName, ShipDirective.Disengage.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
+    }
+
+    IEnumerator ExecuteDisengageOrder_EnterState() {
+        LogEvent();
 
         AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria;
         bool isStationChangeNeeded = TryDetermineNeedForFormationStationChange(_fsmDisengagePurpose, out stationSelectionCriteria);
@@ -2039,7 +2175,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void ExecuteDisengageOrder_UponDeath() {
         LogEventWarning();
@@ -2105,9 +2241,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Dead
 
+    void Dead_UponPreconfigureState() {
+        LogEvent();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+    }
+
     void Dead_EnterState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
         HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
@@ -2693,9 +2833,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private CoursePlotLine __coursePlot;
 
     private void InitializeDebugShowCoursePlot() {
-        DebugControls debugValues = DebugControls.Instance;
-        debugValues.showShipCoursePlotsChanged += ShowDebugShipCoursePlotsChangedEventHandler;
-        if (debugValues.ShowShipCoursePlots) {
+        DebugControls debugControls = DebugControls.Instance;
+        debugControls.showShipCoursePlots += ShowDebugShipCoursePlotsChangedEventHandler;
+        if (debugControls.ShowShipCoursePlots) {
             EnableDebugShowCoursePlot(true);
         }
     }
@@ -2735,9 +2875,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     private void CleanupDebugShowCoursePlot() {
-        var debugValues = DebugControls.Instance;
-        if (debugValues != null) {
-            debugValues.showShipCoursePlotsChanged -= ShowDebugShipCoursePlotsChangedEventHandler;
+        var debugControls = DebugControls.Instance;
+        if (debugControls != null) {
+            debugControls.showShipCoursePlots -= ShowDebugShipCoursePlotsChangedEventHandler;
         }
         if (__coursePlot != null) {
             __coursePlot.Dispose();
@@ -2753,8 +2893,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     private void InitializeDebugShowVelocityRay() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showShipVelocityRaysChanged += ShowDebugShipVelocityRaysChangedEventHandler;
-        debugValues.showFleetVelocityRaysChanged += ShowDebugFleetVelocityRaysChangedEventHandler;
+        debugValues.showShipVelocityRays += ShowDebugShipVelocityRaysChangedEventHandler;
+        debugValues.showFleetVelocityRays += ShowDebugFleetVelocityRaysChangedEventHandler;
         if (debugValues.ShowShipVelocityRays) {
             EnableDebugShowVelocityRay(true);
         }
@@ -2794,8 +2934,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private void CleanupDebugShowVelocityRay() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showShipVelocityRaysChanged -= ShowDebugShipVelocityRaysChangedEventHandler;
-            debugValues.showFleetVelocityRaysChanged -= ShowDebugFleetVelocityRaysChangedEventHandler;
+            debugValues.showShipVelocityRays -= ShowDebugShipVelocityRaysChangedEventHandler;
+            debugValues.showFleetVelocityRays -= ShowDebugFleetVelocityRaysChangedEventHandler;
         }
         if (__velocityRay != null) {
             __velocityRay.Dispose();
@@ -4194,7 +4334,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
             D.Warn("{0}.ExecuteHeadingChange of {1:0.##} degrees. CurrentDate {2} > ErrorDate {3}. Turn accomplished: {4:0.##} degrees.",
                 Name, desiredTurn, currentDate, errorDate, resultingTurn);
-            D.Warn("Allowed vs Actual TurnSteps:\n {0}", allowedAndActualTurnSteps.Concatenate());
+            D.Log(ShowDebugLog, "Allowed vs Actual TurnSteps:\n {0}", allowedAndActualTurnSteps.Concatenate());
         }
 
         #endregion

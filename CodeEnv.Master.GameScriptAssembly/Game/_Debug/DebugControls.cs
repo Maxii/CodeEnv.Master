@@ -34,35 +34,27 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     public event EventHandler validatePlayerKnowledgeNow;
 
-    public event EventHandler showFleetCoursePlotsChanged;
+    public event EventHandler showFleetCoursePlots;
 
-    public event EventHandler showShipCoursePlotsChanged;
+    public event EventHandler showShipCoursePlots;
 
-    public event EventHandler showFleetVelocityRaysChanged;
+    public event EventHandler showFleetVelocityRays;
 
-    public event EventHandler showShipVelocityRaysChanged;
+    public event EventHandler showShipVelocityRays;
 
-    public event EventHandler showFleetFormationStationsChanged;
+    public event EventHandler showFleetFormationStations;
 
-    public event EventHandler showShipCollisionDetectionZonesChanged;
+    public event EventHandler showShipCollisionDetectionZones;
 
-    public event EventHandler showShieldsChanged;
+    public event EventHandler showShields;
 
-    public event EventHandler showSensorsChanged;
+    public event EventHandler showSensors;
 
-    public event EventHandler showObstacleZonesChanged;
+    public event EventHandler showObstacleZones;
 
-    #region Auto Unit and System Creator Editor Fields
+    public event EventHandler showSystemTrackingLabels;
 
-    [Tooltip("Check to enable tracking labels for all auto unit creators")]
-    [SerializeField]
-    private bool _areAutoUnitCreatorTrackingLabelsEnabled = false;
-    public bool AreAutoUnitCreatorTrackingLabelsEnabled { get { return _areAutoUnitCreatorTrackingLabelsEnabled; } }
-
-    [Tooltip("Check to enable tracking labels for all auto system creators")]
-    [SerializeField]
-    private bool _areAutoSystemCreatorTrackingLabelsEnabled = false;
-    public bool AreAutoSystemCreatorTrackingLabelsEnabled { get { return _areAutoSystemCreatorTrackingLabelsEnabled; } }
+    public event EventHandler showUnitTrackingLabels;
 
     #region Item Debug Log Editor Fields
 
@@ -102,6 +94,18 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     public bool ShowSystemDebugLogs { get { return _showSystemDebugLogs; } }
 
     #endregion
+
+    #region AI Editor Fields
+
+    [Tooltip("Check if fleets should auto explore without countervailing orders")]
+    [SerializeField]
+    private bool _fleetsAutoExplore = true;
+    /// <summary>
+    /// Indicates whether fleets should automatically explore without countervailing orders.
+    /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
+    /// on DebugFleetCreators.</remarks>
+    /// </summary>
+    public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
 
     #endregion
 
@@ -152,6 +156,16 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showObstacleZones = false;
     public bool ShowObstacleZones { get { return _showObstacleZones; } }
 
+    [Tooltip("Shows the tracking label for each unit")]
+    [SerializeField]
+    private bool _showUnitTrackingLabels = false;
+    public bool ShowUnitTrackingLabels { get { return _showUnitTrackingLabels; } }
+
+    [Tooltip("Shows the tracking label for each system")]
+    [SerializeField]
+    private bool _showSystemTrackingLabels = false;
+    public bool ShowSystemTrackingLabels { get { return _showSystemTrackingLabels; } }
+
     #endregion
 
     public override bool IsPersistentAcrossScenes { get { return true; } }  // GameScene -> GameScene retains values
@@ -198,6 +212,9 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         CheckShowShields();
         CheckShowSensors();
         CheckShowObstacleZones();
+
+        CheckShowSystemTrackingLabels();
+        CheckShowUnitTrackingLabels();
     }
 
     private bool _showFleetCoursePlotsPrev = false;
@@ -281,67 +298,98 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
+    private bool _showSystemTrackingLabelsPrev;
+    private void CheckShowSystemTrackingLabels() {
+        if (_showSystemTrackingLabels != _showSystemTrackingLabelsPrev) {
+            D.Log("{0}.ShowSystemTrackingLabels has changed from {1} to {2}.", Name, _showSystemTrackingLabelsPrev, _showSystemTrackingLabels);
+            _showSystemTrackingLabelsPrev = _showSystemTrackingLabels;
+            OnShowSystemTrackingLabels();
+        }
+    }
+
+    private bool _showUnitTrackingLabelsPrev;
+    private void CheckShowUnitTrackingLabels() {
+        if (_showUnitTrackingLabels != _showUnitTrackingLabelsPrev) {
+            D.Log("{0}.ShowUnitTrackingLabels has changed from {1} to {2}.", Name, _showUnitTrackingLabelsPrev, _showUnitTrackingLabels);
+            _showUnitTrackingLabelsPrev = _showUnitTrackingLabels;
+            OnShowUnitTrackingLabels();
+        }
+    }
+
+
     #endregion
 
     #region Event and Prop Change Handlers
 
     private void OnShowFleetCoursePlotsChanged() {
-        if (showFleetCoursePlotsChanged != null) {
-            showFleetCoursePlotsChanged(Instance, new EventArgs());
+        if (showFleetCoursePlots != null) {
+            showFleetCoursePlots(Instance, new EventArgs());
         }
     }
 
     private void OnShowShipCoursePlotsChanged() {
-        if (showShipCoursePlotsChanged != null) {
-            showShipCoursePlotsChanged(Instance, new EventArgs());
+        if (showShipCoursePlots != null) {
+            showShipCoursePlots(Instance, new EventArgs());
         }
     }
 
     private void OnShowFleetVelocityRaysChanged() {
-        if (showFleetVelocityRaysChanged != null) {
-            showFleetVelocityRaysChanged(Instance, new EventArgs());
+        if (showFleetVelocityRays != null) {
+            showFleetVelocityRays(Instance, new EventArgs());
         }
     }
 
     private void OnShowShipVelocityRaysChanged() {
-        if (showShipVelocityRaysChanged != null) {
-            showShipVelocityRaysChanged(Instance, new EventArgs());
+        if (showShipVelocityRays != null) {
+            showShipVelocityRays(Instance, new EventArgs());
         }
     }
 
     private void OnShowFormationStationsChanged() {
-        if (showFleetFormationStationsChanged != null) {
-            showFleetFormationStationsChanged(Instance, new EventArgs());
+        if (showFleetFormationStations != null) {
+            showFleetFormationStations(Instance, new EventArgs());
         }
     }
 
     private void OnShowShipCollisionDetectionZonesChanged() {
-        if (showShipCollisionDetectionZonesChanged != null) {
-            showShipCollisionDetectionZonesChanged(Instance, new EventArgs());
+        if (showShipCollisionDetectionZones != null) {
+            showShipCollisionDetectionZones(Instance, new EventArgs());
         }
     }
 
     private void OnShowShieldsChanged() {
-        if (showShieldsChanged != null) {
-            showShieldsChanged(Instance, new EventArgs());
+        if (showShields != null) {
+            showShields(Instance, new EventArgs());
         }
     }
 
     private void OnShowSensorsChanged() {
-        if (showSensorsChanged != null) {
-            showSensorsChanged(Instance, new EventArgs());
+        if (showSensors != null) {
+            showSensors(Instance, new EventArgs());
         }
     }
 
     private void OnShowObstacleZonesChanged() {
-        if (showObstacleZonesChanged != null) {
-            showObstacleZonesChanged(Instance, new EventArgs());
+        if (showObstacleZones != null) {
+            showObstacleZones(Instance, new EventArgs());
         }
     }
 
     public void OnValidatePlayerKnowledgeNow() {
         if (validatePlayerKnowledgeNow != null) {
             validatePlayerKnowledgeNow(Instance, new EventArgs());
+        }
+    }
+
+    private void OnShowSystemTrackingLabels() {
+        if (showSystemTrackingLabels != null) {
+            showSystemTrackingLabels(Instance, new EventArgs());
+        }
+    }
+
+    private void OnShowUnitTrackingLabels() {
+        if (showUnitTrackingLabels != null) {
+            showUnitTrackingLabels(Instance, new EventArgs());
         }
     }
 

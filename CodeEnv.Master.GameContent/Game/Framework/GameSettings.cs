@@ -20,6 +20,23 @@ namespace CodeEnv.Master.GameContent {
     public class GameSettings {
 
         public bool __IsStartup { get; set; }
+        public bool __UseDebugCreatorsOnly { get; set; }
+
+        /// <summary>
+        /// Indicates whether to deploy additional AI creators beyond those deployed 
+        /// due to the chosen player start level. These additional creators would use 
+        /// randomly generated deploy dates to provide more test coverage.
+        /// <remarks>Not used when __UseDebugCreatorsOnly is true.</remarks>
+        /// </summary>
+        public bool __DeployAdditionalAICreators { get; set; }
+
+        /// <summary>
+        /// Indicates whether the camera should zoom on a UserUnit
+        /// when starting a game.
+        /// <remarks>Not used when __UseDebugCreatorsOnly is true.</remarks>
+        /// </summary>
+        public bool __ZoomOnUser { get; set; }
+
         public bool IsSavedGame { get; set; }
 
         public UniverseSize UniverseSize { get; set; }

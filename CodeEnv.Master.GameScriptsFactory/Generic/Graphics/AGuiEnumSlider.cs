@@ -34,13 +34,13 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
 
     protected override void Awake() {
         base.Awake();
-        _slider = gameObject.GetSafeComponent<UISlider>();
         InitializeSlider();
         InitializeSliderValue();
         Subscribe();
     }
 
     private void InitializeSlider() {
+        _slider = gameObject.GetSafeComponent<UISlider>();
         var enumValues = Enums<E>.GetValues().Except(default(E)).ToArray();
         int numberOfSliderSteps = enumValues.Length;
         _slider.numberOfSteps = numberOfSliderSteps;
@@ -68,13 +68,14 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
     }
 
     private void Subscribe() {
-        GameManager.Instance.isRunningOneShot += IsRunningEventHandler;
+        GameManager.Instance.isReadyForPlayOneShot += IsReadyForPlayEventHandler;
     }
 
     #region Event and Property Change Handlers
 
-    private void IsRunningEventHandler(object sender, EventArgs e) {
-        // Note: UIProgressBar automatically sends a value change event on Start() if the delegate isn't null
+    private void IsReadyForPlayEventHandler(object sender, EventArgs e) {
+        // Note: UIProgressBar automatically sends a value change event on Start() if the delegate isn't null.
+        // Delaying subscription until Running avoids taking action on the change when the recipient doesn't expect it
         EventDelegate.Add(_slider.onChange, SliderValueChangedEventHandler);
     }
 

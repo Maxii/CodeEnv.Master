@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Name:
                 case ItemInfoID.ParentName:
                 case ItemInfoID.Position:
-                case ItemInfoID.SectorIndex:
+                case ItemInfoID.SectorID:
                 case ItemInfoID.OrbitalSpeed:
                     return true;
                 default:

@@ -80,12 +80,12 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<ShipHull>().Select(hull => hull.HullCategory).ToList();
                     _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement, DateToDeploy,
                         _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _enableTrackingLabel, _formation, _move, _findFarthest, _attack, _stanceExclusions, presetHullCats);
+                        _formation, _move, _findFarthest, _attack, _stanceExclusions, presetHullCats);
                 }
                 else {
                     _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement,
                         DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _enableTrackingLabel, _formation, _move, _findFarthest, _attack, _stanceExclusions);
+                        _formation, _move, _findFarthest, _attack, _stanceExclusions);
                 }
             }
             return _editorSettings;
@@ -139,7 +139,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
             foreach (var designName in Configuration.ElementDesignNames) {
                 ShipDesign design = _gameMgr.PlayersDesigns.GetShipDesign(Owner, designName);
                 FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-                _elements.Add(_factory.MakeShipInstance(Owner, cameraStat, design));
+                _elements.Add(_factory.MakeShipInstance(Owner, cameraStat, design, gameObject));
             }
         }
     }
@@ -153,7 +153,6 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         else {
             _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
         }
-        _command.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
     }
 
     protected override void AddElementsToCommand() {
@@ -171,6 +170,15 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         LogEvent();
         // Fleets don't need to be deployed. They are already on location.
         return true;
+    }
+
+    protected override void CompleteUnitInitialization() {
+        LogEvent();
+        _elements.ForAll(e => {
+            e.FinalInitialize();
+            __SetFtlDamagedState(e);
+        });
+        _command.FinalInitialize();
     }
 
     protected override void AddUnitToGameKnowledge() {
@@ -202,19 +210,6 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         ownerAIMgr.RegisterForOrders(_command);
     }
 
-    protected override void CompleteUnitInitialization() {
-        LogEvent();
-        _elements.ForAll(e => {
-            e.FinalInitialize();
-            __SetFtlDamagedState(e);
-        });
-        _command.FinalInitialize();
-    }
-
-    private void __SetFtlDamagedState(ShipItem element) {
-        element.Data.IsFtlDamaged = _ftlStartsDamaged;
-    }
-
     protected override void BeginElementsOperations() {
         LogEvent();
         _elements.ForAll(e => e.CommenceOperations());
@@ -223,6 +218,10 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     protected override void BeginCommandOperations() {
         LogEvent();
         _command.CommenceOperations();
+    }
+
+    private void __SetFtlDamagedState(ShipItem element) {
+        element.Data.IsFtlDamaged = _ftlStartsDamaged;
     }
 
     [Obsolete]

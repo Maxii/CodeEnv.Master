@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
+        private const string ToStringFormat = "{0}[Directive: {1}, Source: {2}, Target: {3}]";
+
         public IUnitAttackable Target { get; private set; }
 
         /// <summary>
@@ -45,8 +47,9 @@ namespace CodeEnv.Master.GameContent {
             Target = target;
         }
 
-        public override string ToString() { // IMPROVE
-            return new ObjectAnalyzer().ToString(this);
+        public override string ToString() {
+            string targetText = Target != null ? Target.FullName : "null";
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText);
         }
 
     }

@@ -49,7 +49,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     /// <summary>
-    /// Fires when GameState changes to Running, then clears all subscribers.
+    /// Fires when GameState changes to Running and is ready to play, then clears all subscribers.
     /// WARNING: This event will fire each time the GameState changes to Running, 
     /// but as it clears its subscribers each time, clients will need to resubscribe if
     /// they want to receive the event again. Clients which persist across scene changes
@@ -57,9 +57,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// (or a Constructor) is only called once in the life of the client.
     /// </summary>
     /// <remarks>
-    /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
+    /// Current clients AGuiEnumSliderBase, FPSReadout and GameTime as of 10.14.16.
     /// </remarks>
-    public event EventHandler isRunningOneShot;
+    public event EventHandler isReadyForPlayOneShot;
 
     /// <summary>
     /// Occurs just before a scene starts loading.
@@ -140,11 +140,11 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private bool _isRunning;
     /// <summary>
-    /// Indicates whether the game is in GameState.Running or not.
+    /// Indicates whether the game is in GameState.Running.
     /// </summary>
     public bool IsRunning {
         get { return _isRunning; }
-        private set { SetProperty<bool>(ref _isRunning, value, "IsRunning", IsRunningPropChangedHandler); }
+        private set { SetProperty<bool>(ref _isRunning, value, "IsRunning"); }
     }
 
     private PauseState _pauseState;
@@ -302,6 +302,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         // 9.19.16 Subscribe() moved from InitializeOnAwake() to avoid receiving SceneLoaded event during startup.
         // Previously, OnLevelWasLoaded() was not called during scene startup so this wasn't an issue.
         Subscribe();
+        enabled = false;    // 10.14.16 Added to keep Update() from starting until EnableGameTimeClock(true) called
     }
 
     /// <summary>
@@ -323,9 +324,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _gameStateProgressionReadinessLookup.Add(GameState.Loading, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.Building, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.Restoring, new List<MonoBehaviour>());
-        _gameStateProgressionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+        //_gameStateProgressionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.DeployingSystemCreators, new List<MonoBehaviour>());
-        //_gameStateProgressionReadinessLookup.Add(GameState.BuildAndDeploySystems, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.BuildingSystems, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.GeneratingPathGraphs, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.DesigningInitialUnits, new List<MonoBehaviour>());
@@ -422,10 +422,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void InitializePlayerAIManagers() {
-        var uCenter = UniverseCreator.UniverseCenter;   //UniverseBuilder.Instance.UniverseCenter;
-        IEnumerable<IStar_Ltd> allStars = GameKnowledge.Stars.Cast<IStar_Ltd>();
-        IDictionary<Player, PlayerAIManager> tempLookup = new Dictionary<Player, PlayerAIManager>(AllPlayers.Count);
+        if (_playerAiMgrLookup == null) {
+            _playerAiMgrLookup = new Dictionary<Player, PlayerAIManager>(AllPlayers.Count);
+        }
+        _playerAiMgrLookup.Clear();
 
+        var uCenter = UniverseCreator.UniverseCenter;
+        IEnumerable<IStar_Ltd> allStars = GameKnowledge.Stars.Cast<IStar_Ltd>();
         AllPlayers.ForAll(player => {
             PlayerAIManager plyrAiMgr;
             if (_debugSettings.AllIntelCoverageComprehensive) {
@@ -449,9 +452,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                     plyrAiMgr = new PlayerAIManager(player, plyrKnowledge);
                 }
             }
-            tempLookup.Add(player, plyrAiMgr);
+            _playerAiMgrLookup.Add(player, plyrAiMgr);
         });
-        _playerAiMgrLookup = tempLookup;
     }
 
     #region Event and Property Change Handlers
@@ -478,13 +480,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     // void OnLevelWasLoaded(level) deprecated by Unity 5.4.1. Replaced it with SceneLoadedEventHandler()
 
-    private void IsRunningPropChangedHandler() {
-        D.LogBold("{0}.IsRunning changed to {1}.", Name, IsRunning);
-        if (IsRunning) {
-            OnIsRunning();
-        }
-    }
-
     private void PauseStatePropChangedHandler() {
         switch (PauseState) {
             case PauseState.NotPaused:
@@ -504,13 +499,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.LogBold("{0}.IsPaused changed to {1}.", Name, IsPaused);
     }
 
-    private void OnIsRunning() {
+    private void OnIsReadyForPlay() {
         D.Assert(IsRunning);
-        if (isRunningOneShot != null) {
-            //var targetNames = isRunningOneShot.GetInvocationList().Select(d => d.Target.GetType().Name);
-            //D.Log("{0} is sending onIsRunning event to {1}.", Name, targetNames.Concatenate());
-            isRunningOneShot(this, new EventArgs());
-            isRunningOneShot = null;
+        if (isReadyForPlayOneShot != null) {
+            //var targetNames = isReadyForPlayOneShot.GetInvocationList().Select(d => d.Target.GetType().Name);
+            //D.Log("{0} is sending isReadyForPlay event to {1}.", Name, targetNames.Concatenate());
+            isReadyForPlayOneShot(this, new EventArgs());
+            isReadyForPlayOneShot = null;
         }
     }
 
@@ -551,14 +546,26 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
     }
 
-    protected override void Update() {
-        base.Update();
-        _gameTime.CheckForDateChange(); // CheckForDateChange() will ignore the call if a GameInstance isn't running or is paused
-    }
-
     protected override void OnApplicationQuit() {
         base.OnApplicationQuit();
         IsRunning = false;
+    }
+
+    #endregion
+
+    #region Game Time Controls
+
+    private void PrepareGameTimeForNewGame() {
+        _gameTime.PrepareToBeginNewGame();
+    }
+
+    private void EnableGameTimeClock(bool toEnable) {
+        enabled = toEnable; // controls Update() which calls _gameTime.CheckForDateChange()
+    }
+
+    protected override void Update() {
+        base.Update();
+        _gameTime.CheckForDateChange(); // CheckForDateChange() will ignore the call if the game is paused
     }
 
     #endregion
@@ -718,14 +725,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Lobby_EnterState() {
         LogEvent();
-        __RecordDurationStartTime();
+        //__RecordDurationStartTime();
     }
 
     void Lobby_ExitState() {
         LogEvent();
         // Transitioning to Loading (the level) whether a new or saved game
         D.Assert(CurrentState == GameState.Loading);
-        __LogDuration();
+        //__LogDuration();
     }
 
     #endregion
@@ -799,28 +806,28 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: false);
 
-        // Building is only for new or simulated games
+        // Building is only for new (or startup) games
         D.Assert(!GameSettings.IsSavedGame);
         OnNewGameBuilding();
-        _gameTime.PrepareToBeginNewGame();  // Done here as this state is unique to new or simulated games
+        PrepareGameTimeForNewGame();    // Done here as this state is unique to new or simulated games
 
         InitializePlayers();
         UniverseCreator.InitializeUniverseCenter(); // can't be earlier as Players are checked when Data is assigned
         GameKnowledge.Initialize(UniverseCreator.UniverseCenter);
-        UniverseCreator.BuildSectors(); // can't be earlier as Players are checked when Data is assigned
+        UniverseCreator.BuildSectors();             // can't be earlier as Players are checked when Data is assigned
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
     }
 
     void Building_UponProgressState() {
         LogEvent();
-        CurrentState = GameState.Waiting;
+        CurrentState = GameState.DeployingSystemCreators;
     }
 
     void Building_ExitState() {
         LogEvent();
-        // Building is only for new games, so next state is Waiting
-        D.Assert(CurrentState == GameState.Waiting);
+        // Building is only for new (or startup) games, so next state is DeployingSystemCreators
+        D.Assert(CurrentState == GameState.DeployingSystemCreators);
         __LogDuration();
     }
 
@@ -850,30 +857,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Restoring_UponProgressState() {
         LogEvent();
-        CurrentState = GameState.Waiting;
-    }
-
-    void Restoring_ExitState() {
-        LogEvent();
-        D.Assert(CurrentState == GameState.Waiting);
-        __LogDuration();
-    }
-
-    #endregion
-
-    #region Waiting
-
-    void Waiting_EnterState() {
-        LogEvent();
-        __RecordDurationStartTime();
-    }
-
-    void Waiting_UponProgressState() {
-        LogEvent();
         CurrentState = GameState.DeployingSystemCreators;
     }
 
-    void Waiting_ExitState() {
+    void Restoring_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.DeployingSystemCreators);
         __LogDuration();
@@ -887,7 +874,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
         __RecordDurationStartTime();
 
+        RecordGameStateProgressionReadiness(Instance, GameState.DeployingSystemCreators, isReady: false);
         UniverseCreator.DeployAndConfigureSystemCreators();
+        RecordGameStateProgressionReadiness(Instance, GameState.DeployingSystemCreators, isReady: true);
     }
 
     void DeployingSystemCreators_UponProgressState() {
@@ -909,7 +898,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
         __RecordDurationStartTime();
 
+        RecordGameStateProgressionReadiness(Instance, GameState.BuildingSystems, isReady: false);
         UniverseCreator.BuildSystems();
+        InitializePlayerAIManagers();   // Requires UCenter, Systems built and present in GameKnowledge
+        RecordGameStateProgressionReadiness(Instance, GameState.BuildingSystems, isReady: true);
     }
 
     void BuildingSystems_UponProgressState() {
@@ -920,7 +912,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void BuildingSystems_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.GeneratingPathGraphs);
-        InitializePlayerAIManagers();   // HACK needs another state rather than using Exit method
         __LogDuration();
     }
 
@@ -971,7 +962,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void BuildingAndDeployingInitialUnits_EnterState() {
         LogEvent();
         __RecordDurationStartTime();
+        RecordGameStateProgressionReadiness(Instance, GameState.BuildingAndDeployingInitialUnits, isReady: false);
         UniverseCreator.DeployAndConfigureInitialUnitCreators();
+        RecordGameStateProgressionReadiness(Instance, GameState.BuildingAndDeployingInitialUnits, isReady: true);
     }
 
     void BuildingAndDeployingInitialUnits_UponProgressState() {
@@ -993,7 +986,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LogEvent();
         __RecordDurationStartTime();
 
+        RecordGameStateProgressionReadiness(Instance, GameState.PreparingToRun, isReady: false);
         UniverseCreator.CompleteInitializationOfAllCelestialItems();
+        MainCameraControl.Instance.PrepareForActivation(GameSettings);
+        RecordGameStateProgressionReadiness(Instance, GameState.PreparingToRun, isReady: true);
     }
 
     void PreparingToRun_UponProgressState() {
@@ -1014,17 +1010,31 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void Running_EnterState() {
         LogEvent();
         IsRunning = true;   // Note: My practice - IsRunning THEN pause changes
-        if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
+        // 10.14.16 moved IsPauseonLoadEnabled later in EnterState
+
+        __RecordDurationStartTime();
+        UniverseCreator.CommenceOperationOfAllCelestialItems(); // before units so units detect 'operational' celestial objects
+        __LogDuration("{0}.CommenceOperationOfAllCelestialItems()".Inject(typeof(UniverseCreator).Name));
+        __RecordDurationStartTime();
+        UniverseCreator.CommenceUnitOperationsOnDeployDate();   // > 1 sec
+        __LogDuration("{0}.CommenceUnitOperationsOnDeployDate()".Inject(typeof(UniverseCreator).Name));
+
+        MainCameraControl.Instance.Activate();
+
+        EnableGameTimeClock(true);
+        OnIsReadyForPlay();
+        D.LogBold("{0}: Game is now ready for play.", Name);
+
+        if (_playerPrefsMgr.IsPauseOnLoadEnabled) { // Note: My practice - IsRunning THEN pause changes
             RequestPauseStateChange(toPause: true, toOverride: true);
         }
-
-        UniverseCreator.CommenceOperationOfAllCelestialItems(); // before units so units detect 'operational' celestial objects
-        UniverseCreator.CommenceUnitOperationsOnDeployDate();
+        UniverseCreator.AttemptFocusOnPrimaryUserUnit();
     }
 
     void Running_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Loading);
+        EnableGameTimeClock(false);
         IsRunning = false;
     }
 
@@ -1102,16 +1112,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #region Debug
 
     protected override string __DurationLogIntroText { get { return "{0}.{1}".Inject(typeof(GameState).Name, LastState); } }
-
-    /// <summary>
-    /// Gets the AIPlayers that the User has not yet met, that have been assigned the initialUserRelationship to begin with when they do meet.
-    /// </summary>
-    /// <param name="initialUserRelationship">The initial user relationship.</param>
-    /// <returns></returns>
-    //[Obsolete]
-    //public IEnumerable<Player> GetUnmetAiPlayersWithInitialUserRelationsOf(DiplomaticRelationship initialUserRelationship) {
-    //    return _newGameUnitConfigurator.GetUnmetAiPlayersWithInitialUserRelationsOf(initialUserRelationship);
-    //}
 
     #endregion
 

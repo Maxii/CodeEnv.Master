@@ -213,7 +213,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
 
     private void InitializeDebugShowCollisionDetectionZone() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showShipCollisionDetectionZonesChanged += ShowDebugCollisionDetectionZonesChangedEventHandler;
+        debugValues.showShipCollisionDetectionZones += ShowDebugCollisionDetectionZonesChangedEventHandler;
         if (debugValues.ShowShipCollisionDetectionZones) {
             EnableDebugShowCollisionDetectionZone(true);
         }
@@ -232,7 +232,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     private void CleanupDebugShowCollisionDetectionZone() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showShipCollisionDetectionZonesChanged -= ShowDebugCollisionDetectionZonesChangedEventHandler;
+            debugValues.showShipCollisionDetectionZones -= ShowDebugCollisionDetectionZonesChangedEventHandler;
         }
         DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
         if (drawCntl != null) {

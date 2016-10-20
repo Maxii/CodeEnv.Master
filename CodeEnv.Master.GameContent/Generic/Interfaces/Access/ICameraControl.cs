@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Read-only. The location of the camera in sector space.
         /// </summary>
-        IntVector3 SectorIndex { get; }
+        IntVector3 SectorID { get; }
 
         /// <summary>
         /// The position of the camera in world space.

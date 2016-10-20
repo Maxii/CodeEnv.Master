@@ -84,8 +84,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Mass)) {
                 Mass = pData.Mass;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
-                SectorIndex = pData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+                SectorID = pData.SectorID;
             }
         }
 
@@ -126,7 +126,7 @@ namespace CodeEnv.Master.GameContent {
         //    var planetoidData = data as PlanetoidData;
         //    Name = planetoidData.Name;
         //    ParentName = planetoidData.ParentName;
-        //    SectorIndex = planetoidData.SectorIndex;
+        //    SectorID = planetoidData.SectorID;
         //}
 
         #endregion

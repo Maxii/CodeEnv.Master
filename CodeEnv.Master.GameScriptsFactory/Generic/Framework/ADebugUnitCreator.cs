@@ -80,10 +80,6 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     [SerializeField]
     protected int _countermeasuresPerCmd = 2;
 
-    [Tooltip("Shows a label that tracks the Cmd")]
-    [SerializeField]
-    protected bool _enableTrackingLabel = false;
-
     #endregion
 
     public abstract AUnitCreatorEditorSettings EditorSettings { get; }
@@ -99,35 +95,11 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     protected bool IsCompositionPreset { get { return _isCompositionPreset; } }
 
-    //protected override void InitializeDeploymentSystem() {
-    //    D.Assert(!_gameMgr.IsRunning);
-    //    Subscribe();
-    //}
-
-    //protected override void HandleGameIsRunning() {
-    //    if (!ValidateConfiguration()) {  // only DebugCreators can be deployed without being assigned a configuration
-    //        return;
-    //    }
-    //    base.HandleGameIsRunning();
-    //}
-
-    public override void InitiateDeployment() {
-        if (ValidateConfiguration()) {
-            base.InitiateDeployment();
-        }
-    }
-
-    private bool ValidateConfiguration() {
-        if (Configuration == null) {
-            string relationsMsg = _isOwnerUser ? "IsUser" : "DesiredUserRelations: {0}".Inject(_ownerRelationshipWithUser.GetValueName());
-            D.Log("{0} found Configuration unassigned so destroying unit before created. {1}.", Name, relationsMsg);
-            Destroy(gameObject);
-            return false;
-        }
-        return true;
-    }
-
     protected abstract void ValidateStaticSetting();
+
+    // 10.12.16 Eliminated overridden InitiateDeployment() which checked ValidateConfiguration() as un-configured DebugUnitCreators
+    // are destroyed by UniverseCreator. It makes no sense for UniverseCreator to call InitiateDeployment on a Creator that
+    // hasn't been used and configured.
 
     #region ExecuteInEditMode
 

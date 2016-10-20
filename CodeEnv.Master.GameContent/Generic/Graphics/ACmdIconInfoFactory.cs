@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
                         if (criteriaIsEqual) {
                             IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
                             info = criteriaCache[criteriaKey];
-                            D.Log("{0} has been reused from cache.", info);
+                            D.Log("{0}: {1} has been reused from cache.", Name, info);
                             return true;
                         }
                     }
@@ -126,7 +126,7 @@ namespace CodeEnv.Master.GameContent {
             var criteriaCache = colorCache[color];
             if (!criteriaCache.ContainsKey(criteria)) {
                 criteriaCache.Add(criteria, info);
-                D.Log("{0} has been added to cache.", info);
+                D.Log("{0}: {1} has been added to cache.", Name, info);
             }
         }
 

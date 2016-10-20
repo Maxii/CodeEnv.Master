@@ -47,19 +47,19 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     [SerializeField]
     private int _distanceInSectorsFromCamera = 2;
 
-    private IntVector3 _currentSectorIndex;
+    private IntVector3 _currentSectorID;
     /// <summary>
-    /// The Location of this SectorExaminer expressed as the index of the Sector it is over.
+    /// The Location of this SectorExaminer expressed as the ID of the Sector it is over.
     /// </summary>
-    public IntVector3 CurrentSectorIndex {
+    public IntVector3 CurrentSectorID {
         get {
-            if (_currentSectorIndex == default(IntVector3)) {
+            if (_currentSectorID == default(IntVector3)) {
                 // First time initialization. Can't be done in Awake as it can run before SectorGrid.Awake?
-                _currentSectorIndex = _sectorGrid.GetSectorIndexThatContains(Position);
+                _currentSectorID = _sectorGrid.GetSectorIdThatContains(Position);
             }
-            return _currentSectorIndex;
+            return _currentSectorID;
         }
-        private set { SetProperty<IntVector3>(ref _currentSectorIndex, value, "CurrentSectorIndex", CurrentSectorIndexPropChangedHandler, CurrentSectorIndexPropChangingHandler); }
+        private set { SetProperty<IntVector3>(ref _currentSectorID, value, "CurrentSectorID", CurrentSectorIdPropChangedHandler, CurrentSectorIdPropChangingHandler); }
     }
 
     private bool IsSectorWireframeShowing { get { return _wireframe != null && _wireframe.IsShowing; } }
@@ -110,7 +110,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void DynamicallySubscribe(bool toSubscribe) {
         IDisposable d;
         if (toSubscribe) {
-            d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorIndex, CameraSectorIndexPropChangedHandler);
+            d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler);
             D.Assert(!_subscriptions.Contains(d), "{0} found duplicate subscription.", DisplayName);
             _subscriptions.Add(d);
             UICamera.onMouseMove += MouseMovedEventHandler;
@@ -134,20 +134,20 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         ShowSectorUnderMouse();
     }
 
-    private void CurrentSectorIndexPropChangingHandler(IntVector3 newSectorIndex) {
-        // Current Sector Index is about to change so turn off any Sector Highlights showing
+    private void CurrentSectorIdPropChangingHandler(IntVector3 newSectorID) {
+        // Current Sector ID is about to change so turn off any Sector Highlights showing
         HighlightSectorContents(false);
         ShowSectorDebugLog(false);
     }
 
-    private void CurrentSectorIndexPropChangedHandler() {
-        HandleCurrentSectorIndexChanged();
+    private void CurrentSectorIdPropChangedHandler() {
+        HandleCurrentSectorIdChanged();
     }
 
-    private void HandleCurrentSectorIndexChanged() {
+    private void HandleCurrentSectorIdChanged() {
         Vector3 sectorPosition;
-        bool isPositionFound = _sectorGrid.__TryGetSectorPosition(CurrentSectorIndex, out sectorPosition);
-        D.Assert(isPositionFound);  // CurrentSectorIndex doesn't change if no sector is present
+        bool isPositionFound = _sectorGrid.__TryGetSectorPosition(CurrentSectorID, out sectorPosition);
+        D.Assert(isPositionFound);  // CurrentSectorID doesn't change if no sector is present
         transform.position = sectorPosition;
         ShowSectorWireframe(true);
         UpdateSectorIDLabel();
@@ -155,7 +155,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         ShowSectorDebugLog(true);
     }
 
-    private void CameraSectorIndexPropChangedHandler() {
+    private void CameraSectorIdPropChangedHandler() {
         ShowSectorUnderMouse();
     }
 
@@ -188,7 +188,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
                 // OPTIMIZE cache sector
                 Sector sector;
-                if (_sectorGrid.__TryGetSector(CurrentSectorIndex, out sector)) {
+                if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
                     if (sector.IsHudShowing) {
                         sector.ShowHud(false);
                     }
@@ -206,9 +206,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void HandleHoveredChanged(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
-            D.Log(_showDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
+            D.Log(_showDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
             Sector sector;
-            if (_sectorGrid.__TryGetSector(CurrentSectorIndex, out sector)) {
+            if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
                 sector.ShowHud(isOver);
             }
         }
@@ -244,7 +244,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         if (_sectorIDLabel == null) {
             _sectorIDLabel = InitializeSectorIDLabel();
         }
-        _sectorIDLabel.Set(SectorIDLabelText.Inject(CurrentSectorIndex));
+        _sectorIDLabel.Set(SectorIDLabelText.Inject(CurrentSectorID));
     }
 
     private ITrackingWidget InitializeSectorIDLabel() {
@@ -258,10 +258,10 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             Vector3 mousePosition = Input.mousePosition;
             mousePosition.z = _distanceToHighlightedSector;
             Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
-            IntVector3 sectorIndexUnderMouse = _sectorGrid.GetSectorIndexThatContains(mouseWorldPoint);
-            if (_sectorGrid.__IsSectorPresentAt(sectorIndexUnderMouse)) {
-                if (CurrentSectorIndex != sectorIndexUnderMouse) {    // avoid the SetProperty equivalent warnings
-                    CurrentSectorIndex = sectorIndexUnderMouse;
+            IntVector3 sectorIdUnderMouse = _sectorGrid.GetSectorIdThatContains(mouseWorldPoint);
+            if (_sectorGrid.__IsSectorPresentAt(sectorIdUnderMouse)) {
+                if (CurrentSectorID != sectorIdUnderMouse) {    // avoid the SetProperty equivalent warnings
+                    CurrentSectorID = sectorIdUnderMouse;
                 }
             }
             else {
@@ -290,8 +290,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void HighlightSectorContents(bool toShow) {
         IEnumerable<ISectorViewHighlightable> highlightablesInSector;
-        if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorIndex, out highlightablesInSector)) {
-            D.Log(_showDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorIndex);
+        if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorID, out highlightablesInSector)) {
+            D.Log(_showDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorID);
             highlightablesInSector.ForAll(highlightable => {
                 if (highlightable.IsSectorViewHighlightShowing != toShow) {
                     highlightable.ShowSectorViewHighlight(toShow);
@@ -303,7 +303,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void ShowSectorDebugLog(bool toShow) {
         if (_showDebugLog) {
             Sector sector;
-            if (_sectorGrid.__TryGetSector(CurrentSectorIndex, out sector)) {
+            if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
                 sector.ShowDebugLog = toShow;
             }
         }

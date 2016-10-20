@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ResourceYield? Resources { get; private set; }
 
-        public IntVector3 SectorIndex { get; private set; }
+        public IntVector3 SectorID { get; private set; }
 
         public StarReport(StarData data, Player player, IStar_Ltd item) : base(data, player, item) { }
 
@@ -62,8 +62,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 Resources = sData.Resources;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorIndex)) {
-                SectorIndex = sData.SectorIndex;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+                SectorID = sData.SectorID;
             }
         }
 
@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
         //    ParentName = starData.ParentName;
         //    Position = starData.Position;
         //    Category = starData.Category;
-        //    SectorIndex = starData.SectorIndex;
+        //    SectorID = starData.SectorID;
         //}
 
         #endregion

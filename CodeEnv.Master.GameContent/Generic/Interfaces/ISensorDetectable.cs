@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     public interface ISensorDetectable : IDetectable {
 
         /// <summary>
-        /// Occurs when [owner changed].
+        /// Occurs when the owner of this ISensorDetectable has changed.
         /// <remarks>OK for client to have access to this, even if they don't have access
         /// to Owner info as long as they use the event to properly check for Owner access.</remarks>
         /// </summary>

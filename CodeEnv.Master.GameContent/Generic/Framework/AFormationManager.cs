@@ -143,8 +143,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void __ValidateSingleHqSlotAvailable() {
             int count = _availableStationSlots.Where(sInfo => sInfo.IsHQSlot).Count();
-            D.Assert(count == 1, "{0}: Expecting 1 HQ formation slot but found {1}. Formation = {2}, StationSlots = {3}.",
-                Name, count, _currentFormation.GetValueName(), _availableStationSlots.Concatenate());
+            D.Assert(count == 1, "{0}: Expecting 1 HQ formation slot but found {1}. Formation = {2}, AvailableSlots = {3}, OccupiedSlots = {4}.",
+                Name, count, _currentFormation.GetValueName(), _availableStationSlots.Concatenate(), _occupiedStationSlotLookup.Values.Concatenate());
         }
 
         /// <summary>

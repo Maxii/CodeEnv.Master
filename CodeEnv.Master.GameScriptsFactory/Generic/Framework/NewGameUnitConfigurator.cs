@@ -43,11 +43,10 @@ public class NewGameUnitConfigurator {
 
     private static FacilityHullCategory[] HQFacilityCategories { get { return new FacilityHullCategory[] { FacilityHullCategory.CentralHub }; } }
 
-
     private static ShipHullCategory[] ShipCategories {
         get {
             return new ShipHullCategory[] { ShipHullCategory.Frigate, ShipHullCategory.Destroyer, ShipHullCategory.Cruiser, ShipHullCategory.Carrier, ShipHullCategory.Dreadnought,
-        ShipHullCategory.Colonizer, ShipHullCategory.Investigator, ShipHullCategory.Troop, ShipHullCategory.Support};
+                ShipHullCategory.Colonizer, ShipHullCategory.Investigator, ShipHullCategory.Troop, ShipHullCategory.Support};
         }
     }
 
@@ -114,65 +113,113 @@ public class NewGameUnitConfigurator {
 
     #region Configure Existing Creators
 
-    public void AssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location) {
+    /// <summary>
+    /// Assigns a configuration to the provided existing DebugStarbaseCreator, using the DeployDate provided.
+    /// <remarks>The DebugCreator's EditorSettings specifying the DeployDate will be ignored.</remarks>
+    /// </summary>
+    /// <param name="creator">The creator.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    public void AssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location, GameDate deployDate) {
         var editorSettings = creator.EditorSettings as BaseCreatorEditorSettings;
 
         ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        GameDate deployDate = editorSettings.DateToDeploy;
         string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateFacilityHullStats(editorSettings, isSettlement: false);
         IList<string> elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, editorSettings.LosTurretsPerElement,
             editorSettings.MissileLaunchersPerElement, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
             editorSettings.SensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
-        bool enableTrackingLabel = editorSettings.EnableTrackingLabel;
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames,
-            enableTrackingLabel);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         creator.transform.position = location;
         //D.Log("{0} has placed a {1} for {2}.", Name, typeof(DebugStarbaseCreator).Name, owner);
     }
 
-    public void AssignConfigurationToExistingCreator(DebugSettlementCreator creator, Player owner, SystemItem system) {
+    /// <summary>
+    /// Assigns a configuration to the provided existing DebugStarbaseCreator, using the DeployDate specified by the DebugCreator.
+    /// </summary>
+    /// <param name="creator">The creator.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    public void AssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location) {
+        GameDate deployDate = creator.EditorSettings.DateToDeploy;
+        AssignConfigurationToExistingCreator(creator, owner, location, deployDate);
+    }
+
+    /// <summary>
+    /// Assigns a configuration to the provided existing DebugSettlementCreator, using the DeployDate provided.
+    /// <remarks>The DebugCreator's EditorSettings specifying the DeployDate will be ignored.</remarks>
+    /// </summary>
+    /// <param name="creator">The creator.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="system">The system to assign the settlement creator to.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    public void AssignConfigurationToExistingCreator(DebugSettlementCreator creator, Player owner, SystemItem system, GameDate deployDate) {
         var editorSettings = creator.EditorSettings as BaseCreatorEditorSettings;
 
         ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        GameDate deployDate = editorSettings.DateToDeploy;
         string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateFacilityHullStats(editorSettings, isSettlement: true);
         IList<string> elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, editorSettings.LosTurretsPerElement,
             editorSettings.MissileLaunchersPerElement, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
             editorSettings.SensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
-        bool enableTrackingLabel = editorSettings.EnableTrackingLabel;
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames,
-            enableTrackingLabel);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         SystemFactory.Instance.InstallCelestialItemInOrbit(creator.gameObject, system.SettlementOrbitData);
         D.Log("{0} has installed a {1} for {2} in System {3}.", Name, typeof(DebugSettlementCreator).Name, owner, system.FullName);
     }
 
-    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location) {
+    /// <summary>
+    /// Assigns a configuration to the provided existing DebugSettlementCreator, using the DeployDate specified by the DebugCreator.
+    /// </summary>
+    /// <param name="creator">The creator.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="system">The system to assign the settlement creator to.</param>
+    public void AssignConfigurationToExistingCreator(DebugSettlementCreator creator, Player owner, SystemItem system) {
+        GameDate deployDate = creator.EditorSettings.DateToDeploy;
+        AssignConfigurationToExistingCreator(creator, owner, system, deployDate);
+    }
+
+    /// <summary>
+    /// Assigns a configuration to the provided existing DebugFleetCreator, using the DeployDate provided.
+    /// <remarks>The DebugCreator's EditorSettings specifying the DeployDate will be ignored.</remarks>
+    /// </summary>
+    /// <param name="creator">The creator.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location, GameDate deployDate) {
         var editorSettings = creator.EditorSettings as FleetCreatorEditorSettings;
 
         ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        GameDate deployDate = editorSettings.DateToDeploy;
         string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateShipHullStats(editorSettings);
         ShipCombatStance stance = SelectCombatStance(editorSettings.StanceExclusions);
         IList<string> elementDesignNames = MakeAndRecordShipDesigns(owner, hullStats, editorSettings.LosTurretsPerElement,
             editorSettings.MissileLaunchersPerElement, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
             editorSettings.SensorsPerElement, editorSettings.ShieldGeneratorsPerElement, stance);
-        bool enableTrackingLabel = editorSettings.EnableTrackingLabel;
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames,
-             enableTrackingLabel);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         creator.transform.position = location;
         //D.Log("{0} has placed a {1} for {2}.", Name, typeof(DebugFleetCreator).Name, owner);
+    }
+
+    /// <summary>
+    /// Assigns a configuration to the provided existing DebugFleetCreator, using the DeployDate specified by the DebugCreator.
+    /// </summary>
+    /// <param name="creator">The creator.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location) {
+        GameDate deployDate = creator.EditorSettings.DateToDeploy;
+        AssignConfigurationToExistingCreator(creator, owner, location, deployDate);
     }
 
     private void ValidateOwner(Player owner, AUnitCreatorEditorSettings editorSettings) {
@@ -188,12 +235,17 @@ public class NewGameUnitConfigurator {
 
     #region Generate Random AutoCreators
 
-    public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
+    /// <summary>
+    /// Generates a random fleet creator, places it at location and deploys it on the provided date.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    /// <returns></returns>
+    public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoFleet");
-        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
-
         int cmsPerCmd = RandomExtended.Range(0, 3);
-        Formation formation = Enums<Formation>.GetRandom(excludeDefault: true);
+        Formation formation = Formation.Diamond; // = Enums<Formation>.GetRandom(excludeDefault: true);
         string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, unitName, cmsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
@@ -207,44 +259,35 @@ public class NewGameUnitConfigurator {
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
         var elementDesignNames = MakeAndRecordShipDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens, combatStance);
 
-        bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
-
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(FleetCreator).Name, owner);
         return UnitFactory.Instance.MakeFleetCreatorInstance(location, config);
     }
-    //public void GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
-    //    string unitName = GetUniqueUnitName("AutoFleet");
-    //    GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
-    //    int cmsPerCmd = RandomExtended.Range(0, 3);
-    //    Formation formation = Enums<Formation>.GetRandom(excludeDefault: true);
-    //    string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, unitName, cmsPerCmd, formation);
+    /// <summary>
+    /// Generates a random fleet creator, places it at location and deploys it on a random date.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <returns></returns>
+    public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
+        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
+        //GameTimeDuration deployDateDelay = new GameTimeDuration(0F);
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
+        return GenerateRandomAutoFleetCreator(owner, location, deployDate);
+    }
 
-    //    int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
-    //    var hullStats = CreateShipHullStats(elementQty);
-    //    var turretLoadout = DebugWeaponLoadout.Random;
-    //    var missileLoadout = DebugWeaponLoadout.Random;
-    //    int elementPassiveCMs = RandomExtended.Range(0, 3);
-    //    int elementActiveCMs = RandomExtended.Range(0, 3);
-    //    int elementSensors = RandomExtended.Range(1, 5);
-    //    int elementShieldGens = RandomExtended.Range(0, 3);
-    //    var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-    //    var elementDesignNames = MakeAndRecordShipDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens, combatStance);
-
-    //    bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
-
-    //    UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-    //    UnitFactory.Instance.MakeFleetCreatorInstance(location, config);
-    //    //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(FleetCreator).Name, owner);
-    //}
-
-    public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
+    /// <summary>
+    /// Generates a random starbase creator, places it at location and deploys it on the provided date.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    /// <returns></returns>
+    public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoStarbase");
-        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
-
         int cmsPerCmd = RandomExtended.Range(0, 3);
-        Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+        Formation formation = Formation.Diamond;    // Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
         string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, unitName, cmsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
@@ -257,43 +300,36 @@ public class NewGameUnitConfigurator {
         int elementShieldGens = RandomExtended.Range(0, 3);
         var elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens);
 
-        bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
-
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(StarbaseCreator).Name, owner);
         return UnitFactory.Instance.MakeStarbaseCreatorInstance(location, config);
     }
-    //public void GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
-    //    string unitName = GetUniqueUnitName("AutoStarbase");
-    //    GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
-    //    int cmsPerCmd = RandomExtended.Range(0, 3);
-    //    Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
-    //    string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, unitName, cmsPerCmd, formation);
+    /// <summary>
+    /// Generates a random starbase creator, places it at location and deploys it on a random date.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <returns></returns>
+    public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
+        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
+        //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
 
-    //    int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
-    //    var hullStats = CreateFacilityHullStats(elementQty, isSettlement: false);
-    //    var turretLoadout = DebugWeaponLoadout.Random;
-    //    var missileLoadout = DebugWeaponLoadout.Random;
-    //    int elementPassiveCMs = RandomExtended.Range(0, 3);
-    //    int elementActiveCMs = RandomExtended.Range(0, 3);
-    //    int elementSensors = RandomExtended.Range(1, 5);
-    //    int elementShieldGens = RandomExtended.Range(0, 3);
-    //    var elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens);
+        return GenerateRandomAutoStarbaseCreator(owner, location, deployDate);
+    }
 
-    //    bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
-
-    //    UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-    //    UnitFactory.Instance.MakeStarbaseCreatorInstance(location, config);
-    //    //D.Log("{0} has generated/placed a random {1} for {2}.", Name, typeof(StarbaseCreator).Name, owner);
-    //}
-
-    public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
+    /// <summary>
+    /// Generates a random settlement creator, places it in orbit around <c>system</c> and deploys it on the provided date.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="system">The system.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    /// <returns></returns>
+    public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoSettlement");
-        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
-
         int cmsPerCmd = RandomExtended.Range(0, 3);
-        Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+        Formation formation = Formation.Diamond;    //Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
         string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, unitName, cmsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
@@ -306,36 +342,24 @@ public class NewGameUnitConfigurator {
         int elementShieldGens = RandomExtended.Range(0, 3);
         var elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens);
 
-        bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
-
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-        D.Log("{0} has generated/installed a random {1} for {2} in System {3}.", Name, typeof(SettlementCreator).Name, owner, system.FullName);
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
+        D.Log("{0} has placed a random {1} for {2} in orbit in System {3}.", Name, typeof(SettlementCreator).Name, owner, system.FullName);
         return UnitFactory.Instance.MakeSettlementCreatorInstance(config, system);
     }
-    //public void GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
-    //    string unitName = GetUniqueUnitName("AutoSettlement");
-    //    GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F)));
 
-    //    int cmsPerCmd = RandomExtended.Range(0, 3);
-    //    Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
-    //    string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, unitName, cmsPerCmd, formation);
+    /// <summary>
+    /// Generates a random settlement creator, places it in orbit around <c>system</c> and deploys it on a random date.
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="system">The system.</param>
+    /// <returns></returns>
+    public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
+        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
+        //GameTimeDuration deployDateDelay = new GameTimeDuration(5F);
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
 
-    //    int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
-    //    var hullStats = CreateFacilityHullStats(elementQty, isSettlement: true);
-    //    var turretLoadout = DebugWeaponLoadout.Random;
-    //    var missileLoadout = DebugWeaponLoadout.Random;
-    //    int elementPassiveCMs = RandomExtended.Range(0, 3);
-    //    int elementActiveCMs = RandomExtended.Range(0, 3);
-    //    int elementSensors = RandomExtended.Range(1, 5);
-    //    int elementShieldGens = RandomExtended.Range(0, 3);
-    //    var elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, turretLoadout, missileLoadout, elementPassiveCMs, elementActiveCMs, elementSensors, elementShieldGens);
-
-    //    bool isTrackingLabelEnabled = DebugControls.Instance.AreAutoUnitCreatorTrackingLabelsEnabled;
-
-    //    UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames, isTrackingLabelEnabled);
-    //    UnitFactory.Instance.MakeSettlementCreatorInstance(config, system);
-    //    D.Log("{0} has generated/installed a random {1} for {2} in System {3}.", Name, typeof(SettlementCreator).Name, owner, system.FullName);
-    //}
+        return GenerateRandomAutoSettlementCreator(owner, system, deployDate);
+    }
 
     #endregion
 
@@ -651,8 +675,8 @@ public class NewGameUnitConfigurator {
 
     #region Element Designs
 
-    private IList<string> MakeAndRecordFacilityDesigns(Player owner, IEnumerable<FacilityHullStat> hullStats, DebugWeaponLoadout turretLoadout, DebugWeaponLoadout missileLoadout,
-        int passiveCMsPerElement, int activeCMsPerElement, int sensorsPerElement, int shieldGensPerElement) {
+    private IList<string> MakeAndRecordFacilityDesigns(Player owner, IEnumerable<FacilityHullStat> hullStats, DebugWeaponLoadout turretLoadout,
+        DebugWeaponLoadout missileLoadout, int passiveCMsPerElement, int activeCMsPerElement, int sensorsPerElement, int shieldGensPerElement) {
 
         IList<string> designNames = new List<string>();
         foreach (var hullStat in hullStats) {

@@ -55,9 +55,18 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     /// <summary>
     /// The layers the main 3DCameras light will shine on.
-    /// Cull_200 and Cull_400 are used by planet meshes, atmospheres, etc.
+    /// Cull_200 and Cull_400 are used by planet meshes, atmospheres, etc. as it is too bright.
     /// </summary>
     private static LayerMask _mainCamerasLightCullingMask = _mainCamerasCullingMask.RemoveFromMask(Layers.SystemOrbitalPlane, Layers.Cull_200, Layers.Cull_400);
+
+    /// <summary>
+    /// The universe edge culling mask. The UniverseEdge's layer is Default. The edge is only used 
+    /// when trying to find the spot to locate the DummyTarget by coming back in toward the universe
+    /// from outside. Objects in the universe should not be located outside to interfere in this
+    /// search for the edge, but SensorRangeMonitors and the like can extend colliders beyond the 
+    /// edge, thereby interfering in this search without using this mask.
+    /// </summary>
+    private static LayerMask _universeEdgeCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
 
     #region Camera Control Configurations
     // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
@@ -134,7 +143,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // Dragging the mouse with any button held down works off screen OK, but upon release off screen, immediately enables edge scrolling and panning
     // Implement Camera controls such as clip planes, FieldOfView, RenderSettings.[flareStrength, haloStrength, ambientLight]
 
-    #region Fields
+    #region Editor Fields
 
     [SerializeField]    // OPTIMIZE
     private CameraUpdateMode _focusingUpdateMode = CameraUpdateMode.LateUpdate;
@@ -145,14 +154,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     [SerializeField]
     private CameraUpdateMode _followUpdateMode = CameraUpdateMode.FixedUpdate;
 
+    #endregion
 
-    private IntVector3 _sectorIndex;
+    #region Fields
+
+    private IntVector3 _sectorID;
     /// <summary>
     /// Read only. The location of the camera in sector space.
     /// </summary>
-    public IntVector3 SectorIndex {
-        get { return _sectorIndex; }
-        private set { SetProperty<IntVector3>(ref _sectorIndex, value, "SectorIndex"); }
+    public IntVector3 SectorID {
+        get { return _sectorID; }
+        private set { SetProperty<IntVector3>(ref _sectorID, value, "SectorID"); }
     }
 
     /// <summary>
@@ -207,7 +219,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private PlayerPrefsManager _playerPrefsMgr;
     private InputManager _inputMgr;
     private SectorGrid _sectorGrid;
-    private GameManager _gameMgr;
+    //private GameManager _gameMgr;
     private GameTime _gameTime;
 
     private Camera[] _mainCameras;
@@ -218,12 +230,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private Transform _target;
     private Transform _dummyTarget;
     private SphereCollider _universeEdgeCollider;
-
     private float _universeRadius;
-
-    // not currently used
-    //private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
-
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -278,10 +285,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         //D.Log("{0}: EdgePan and EdgeTilt enabled = {1}.", GetType().Name, toEnable);
     }
 
-    private void __AssessEnabled() {
-        enabled = _gameMgr.IsRunning && !EditorApplication.isPaused;
-    }
-
     #endregion
 
     #region Initialization
@@ -293,14 +296,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        InitializeReferences();
+        InitializeValuesAndReferences();
         Subscribe();
         ValidateActiveConfigurations();
         __InitializeDebugEdgeMovementSettings();
         enabled = false;
     }
 
-    private void InitializeReferences() {
+    private void InitializeValuesAndReferences() {
         //if (LevelSerializer.IsDeserializing) { return; }
         MainCamera_Near = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
         MainCamera_Far = gameObject.GetSingleComponentInChildren<Camera>(excludeSelf: true);
@@ -308,7 +311,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _inputMgr = InputManager.Instance;
         _sectorGrid = SectorGrid.Instance;
-        _gameMgr = GameManager.Instance;
+        //_gameMgr = GameManager.Instance;
         _gameTime = GameTime.Instance;
     }
 
@@ -317,8 +320,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsCameraRollEnabled, IsCameraRollEnabledPropChangedHandler));
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, IsResetOnFocusEnabledPropChangedHandler));
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, IsZoomOutOnCursorEnabledPropChangedHandler));
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, IsRunningPropChangedHandler));
-        _gameMgr.gameStateChanged += GameStateChangedEventHandler;
         _inputMgr.unconsumedPress += UnconsumedPressEventHandler;
     }
 
@@ -328,18 +329,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             isValid = false;
         }
         D.Assert(isValid, "Incompatible Camera Configuration.");
-    }
-
-    private void InitializeMainCamera() {   // called from OnGameStateChanged()
-        InitializeFields();
-        SetCameraSettings();
-        InitializeCameraLight();
-        InitializeCameraPreferences();
-        PositionCameraForGame();
-    }
-
-    private void InitializeFields() {
-        _universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
     }
 
     private void SetCameraSettings() {
@@ -407,9 +396,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private void InitializeCameraPreferences() {
         // the initial Camera preference changed events occur earlier than we can subscribe so do it manually
-        IsResetOnFocusEnabledPropChangedHandler();
-        IsCameraRollEnabledPropChangedHandler();
-        IsZoomOutOnCursorEnabledPropChangedHandler();
+        HandleIsResetOnFocusPrefChanged();
+        HandleIsCameraRollEnabledPrefChanged();
+        HandleIsZoomOutOnCursorPrefChanged();
     }
 
     private void EnableCameraRoll(bool toEnable) {
@@ -429,7 +418,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         float yElevation = _universeRadius * 0.3F;
         float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
-        _sectorIndex = _sectorGrid.GetSectorIndexThatContains(Position);
+        _sectorID = _sectorGrid.GetSectorIdThatContains(Position);
         transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
 
         ResetAtCurrentLocation();
@@ -487,62 +476,30 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #region Events and Property Change Handlers
 
     private void IsZoomOutOnCursorEnabledPropChangedHandler() {
+        HandleIsZoomOutOnCursorPrefChanged();
+    }
+
+    private void HandleIsZoomOutOnCursorPrefChanged() {
         _isZoomOutOnCursorEnabled = _playerPrefsMgr.IsZoomOutOnCursorEnabled;
     }
 
     private void IsResetOnFocusEnabledPropChangedHandler() {
+        HandleIsResetOnFocusPrefChanged();
+    }
+
+    private void HandleIsResetOnFocusPrefChanged() {
         _isResetOnFocusEnabled = _playerPrefsMgr.IsResetOnFocusEnabled;
     }
 
     private void IsCameraRollEnabledPropChangedHandler() {
+        HandleIsCameraRollEnabledPrefChanged();
+    }
+
+    private void HandleIsCameraRollEnabledPrefChanged() {
         EnableCameraRoll(_playerPrefsMgr.IsCameraRollEnabled);
     }
 
-    //[DoNotSerialize]
-    private bool __restoredGameFlag = false;
-
-    private void GameStateChangedEventHandler(object sender, EventArgs e) {
-        GameState state = _gameMgr.CurrentState;
-        //D.Log("{0}{1} received GameState changed to {2}.", GetType().Name, InstanceCount, state.GetValueName());
-        switch (state) {
-            case GameState.Restoring:
-                // only saved games that are being restored enter Restoring state
-                __restoredGameFlag = true;
-                break;
-            case GameState.Waiting:
-                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.Waiting, isReady: false);
-                if (__restoredGameFlag) {
-                    // for a restored game, Waiting state is guaranteed to occur after OnDeserialized so we must be ready to proceed
-                    __restoredGameFlag = false;
-                }
-                else {
-                    InitializeMainCamera(); // deferred initialization until clear game is new
-                }
-                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.Waiting, isReady: true);
-                break;
-            case GameState.Lobby:
-            case GameState.Building:
-            case GameState.Loading:
-            case GameState.DeployingSystemCreators:
-            case GameState.BuildingSystems:
-            case GameState.GeneratingPathGraphs:
-            case GameState.DesigningInitialUnits:
-            case GameState.BuildingAndDeployingInitialUnits:
-            case GameState.PreparingToRun:
-            case GameState.Running:
-                // do nothing
-                break;
-            case GameState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
-        }
-    }
-
-    private void IsRunningPropChangedHandler() {
-        __AssessEnabled();
-    }
-
-    // Not currently used. Keep this for now as I expect there will be other reasons to modify camera behaviour during special modes.
+    [Obsolete]    // Keep this for now as I expect there will be other reasons to modify camera behaviour during special modes.
     private void ViewModePropChangedHandler() {
         bool toActivateDragging;
         switch (PlayerViews.Instance.ViewMode) {
@@ -641,10 +598,29 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <param name="isPaused">if set to <c>true</c> [is paused].</param>
     void OnApplicationPause(bool isPaused) {
         //D.Log("Camera ApplicationPauseEventHandler({0}) called.", isPaused);
-        __AssessEnabled();
+        enabled = !isPaused; //__AssessEnabled();
     }
 
     #endregion
+
+    /// <summary>
+    /// Prepares the camera for activation.
+    /// </summary>
+    /// <param name="gameSettings">The game settings.</param>
+    public void PrepareForActivation(GameSettings gameSettings) {
+        _universeRadius = gameSettings.UniverseSize.Radius();
+        SetCameraSettings();
+        InitializeCameraLight();
+        InitializeCameraPreferences();
+        PositionCameraForGame();
+    }
+
+    /// <summary>
+    /// Activates the main camera by enabling camera position updates.
+    /// </summary>
+    public void Activate() {
+        enabled = true;
+    }
 
     #region Camera StateMachine
 
@@ -1543,7 +1519,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     /// <summary>
     /// Processes the position change, implementing it if the position has changed and it is within
-    /// the boundaries of the universe. Also updates SectorIndex if the new position has crossed a 
+    /// the boundaries of the universe. Also updates SectorID if the new position has crossed a 
     /// sector boundary.
     /// </summary>
     /// <param name="proposedPosition">The proposed position.</param>
@@ -1552,9 +1528,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (currentPosition.IsSameAs(proposedPosition) || !ValidatePosition(proposedPosition)) {
             return;
         }
-        IntVector3 proposedSectorIndex = _sectorGrid.GetSectorIndexThatContains(proposedPosition);
-        if (!proposedSectorIndex.Equals(SectorIndex)) {
-            SectorIndex = proposedSectorIndex;
+        IntVector3 proposedSectorID = _sectorGrid.GetSectorIdThatContains(proposedPosition);
+        if (!proposedSectorID.Equals(SectorID)) {
+            SectorID = proposedSectorID;
         }
         Position = proposedPosition;
     }
@@ -1751,10 +1727,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;
-
         Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2F);
-        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, _universeRadius * 2F)) {
-            D.Assert(targetHit.collider == _universeEdgeCollider, "Expected to hit UniverseEdgeCollider. Instead hit {0}!", targetHit.collider.name);
+        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, _universeRadius * 2F, _universeEdgeCullingMask)) {
+            if (targetHit.collider != _universeEdgeCollider) {
+                float distanceToOrigin = targetHit.point.magnitude;
+                D.Error("{0}: Expected to hit UniverseEdgeCollider. Instead hit {1}! UniverseRadius = {2:0.}, HitDistanceFromOrigin = {3:0.}.",
+                    GetType().Name, targetHit.collider.name, _universeRadius, distanceToOrigin);
+            }
             // Place dummyTgt just inside UniverseEdge so its collider doesn't extend outside the UniverseEdge collider,
             // otherwise we might hit the dummyTgt collider rather than the UniverseEdge collider
             Vector3 hitPtOnUniverseEdgeCollider = targetHit.point;
@@ -1847,7 +1826,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(s => s.Dispose());
         _subscriptions.Clear();
-        _gameMgr.gameStateChanged -= GameStateChangedEventHandler;
+        //_gameMgr.gameStateChanged -= GameStateChangedEventHandler;
         _inputMgr.unconsumedPress -= UnconsumedPressEventHandler;
     }
 
@@ -2092,6 +2071,50 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     //    if (!_gameInput.IsDragging) {
     //        _contextMenuPickHandler.PressEventHandler(isDown);
     //        //D.Log("ContextMenu requested.");
+    //    }
+    //}
+
+    #endregion
+
+    #region Restoring Game Archive
+
+    //[DoNotSerialize]
+    //private bool __restoredGameFlag = false;
+
+    //private void GameStateChangedEventHandler(object sender, EventArgs e) {
+    //    GameState state = _gameMgr.CurrentState;
+    //    //D.Log("{0}{1} received GameState changed to {2}.", GetType().Name, InstanceCount, state.GetValueName());
+    //    switch (state) {
+    //        case GameState.Restoring:
+    //            // only saved games that are being restored enter Restoring state
+    //            __restoredGameFlag = true;
+    //            break;
+    //        case GameState.Waiting:
+    //            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.Waiting, isReady: false);
+    //            if (__restoredGameFlag) {
+    //                // for a restored game, Waiting state is guaranteed to occur after OnDeserialized so we must be ready to proceed
+    //                __restoredGameFlag = false;
+    //            }
+    //            else {
+    //                InitializeMainCamera(); // deferred initialization until clear game is new
+    //            }
+    //            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.Waiting, isReady: true);
+    //            break;
+    //        case GameState.Lobby:
+    //        case GameState.Building:
+    //        case GameState.Loading:
+    //        case GameState.DeployingSystemCreators:
+    //        case GameState.BuildingSystems:
+    //        case GameState.GeneratingPathGraphs:
+    //        case GameState.DesigningInitialUnits:
+    //        case GameState.BuildingAndDeployingInitialUnits:
+    //        case GameState.PreparingToRun:
+    //        case GameState.Running:
+    //            // do nothing
+    //            break;
+    //        case GameState.None:
+    //        default:
+    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
     //    }
     //}
 

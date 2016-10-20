@@ -53,10 +53,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         Restoring,
 
-        /// <summary>
-        ///  A waiting state to allow other players to signal their readiness to progress the state.
-        /// </summary>
-        Waiting,
+        ////Waiting,
 
         /// <summary>
         /// Deploys all SystemCreators that need to be deployed programmatically. 
@@ -83,8 +80,7 @@ namespace CodeEnv.Master.Common {
         DesigningInitialUnits,
 
         /// <summary>
-        /// Build and deploy all starting units to their starting location in the universe. Currently, a physical
-        /// change in location occurs only for Settlements as they are assigned to Systems.
+        /// Build and deploy all starting units to their starting location in the universe. 
         /// </summary>
         BuildingAndDeployingInitialUnits,
 

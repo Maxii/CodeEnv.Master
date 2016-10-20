@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISector : IIntelItem {
 
-        IntVector3 SectorIndex { get; }
+        IntVector3 SectorID { get; }
 
     }
 }

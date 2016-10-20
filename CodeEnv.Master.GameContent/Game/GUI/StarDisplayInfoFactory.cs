@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Owner,
             ItemInfoID.Capacity,
             ItemInfoID.Resources,
-            ItemInfoID.SectorIndex,
+            ItemInfoID.SectorID,
 
             ItemInfoID.Separator,
 
@@ -63,9 +63,9 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Category != StarCategory.None ? report.Category.GetValueName() : Unknown);
                         break;
-                    case ItemInfoID.SectorIndex:
+                    case ItemInfoID.SectorID:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.SectorIndex.ToString());
+                        colorizedText = _lineTemplate.Inject(report.SectorID.ToString());
                         break;
                     case ItemInfoID.Capacity:
                         isSuccess = true;

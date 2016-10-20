@@ -41,17 +41,8 @@ public class DebugSystemCreator : SystemCreator {
     [SerializeField]
     private int _planetsInSystem = 3;
 
-    //[Range(0, 2)]
-    //[SerializeField]
-    //private int _countermeasuresPerPlanetoid = 1;
-
-
     [SerializeField]
     private DebugSystemDesirability _desirability = DebugSystemDesirability.Normal;
-
-    [Tooltip("Shows a label containing the System name")]
-    [SerializeField]
-    private bool _enableTrackingLabel = false;
 
     #endregion
 
@@ -72,10 +63,10 @@ public class DebugSystemCreator : SystemCreator {
                         presetMoonCategories.Add(childMoonCategories);  //presetMoonCategories[planetIndex] = childMoonCategories;
 
                     }
-                    _editorSettings = new SystemCreatorEditorSettings(starCategory, presetPlanetCategories, presetMoonCategories, /*_countermeasuresPerPlanetoid,*/_desirability.Convert(), _enableTrackingLabel);
+                    _editorSettings = new SystemCreatorEditorSettings(starCategory, presetPlanetCategories, presetMoonCategories, _desirability.Convert()/*, _enableTrackingLabel*/);
                 }
                 else {
-                    _editorSettings = new SystemCreatorEditorSettings(_planetsInSystem, /*_countermeasuresPerPlanetoid,*/_desirability.Convert(), _enableTrackingLabel);
+                    _editorSettings = new SystemCreatorEditorSettings(_planetsInSystem, _desirability.Convert());
                 }
             }
             return _editorSettings;
@@ -115,26 +106,9 @@ public class DebugSystemCreator : SystemCreator {
 
     #endregion
 
-
     // 10.12.16 Eliminated overridden BuildAndDeploySystem() which checked ValidateConfiguration() as un-configured DebugSystemCreators
     // are destroyed by NewGameSystemConfigurator. It makes no sense for UniverseCreator to call BuildAndDeploySystem on a Creator that
     // hasn't been used and configured
-
-    //public override void BuildAndDeploySystem() {
-    //    if (!ValidateConfiguration()) {  // only DebugCreators can be deployed without being assigned a configuration
-    //        return;
-    //    }
-    //    base.BuildAndDeploySystem();
-    //}
-
-    //private bool ValidateConfiguration() {
-    //    if (Configuration == null) {
-    //        D.Error("{0} found Configuration unassigned. Destroying system.", Name);
-    //        Destroy(gameObject);
-    //        return false;
-    //    }
-    //    return true;
-    //}
 
     protected override void MakeSystem() {
         if (_isCompositionPreset) {
@@ -147,8 +121,7 @@ public class DebugSystemCreator : SystemCreator {
             D.Assert(_system.gameObject.isStatic, "{0} should be static after being positioned.", _system.FullName);
 
             _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
-            _system.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
-            SectorGrid.Instance.GetSector(_system.SectorIndex).System = _system;
+            SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
         }
         else {
             base.MakeSystem();

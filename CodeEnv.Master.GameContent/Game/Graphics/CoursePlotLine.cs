@@ -56,7 +56,15 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="course">The course.</param>
         public void UpdateCourse(IList<INavigable> course) {
-            Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3 list
+            Utility.ValidateNotNull(course);
+            List<Vector3> waypointLocations = new List<Vector3>(course.Count);
+            for (int i = 0; i < course.Count; i++) {
+                INavigable waypoint = course[i];
+                D.Assert(waypoint != null, "{0}: Course Waypoint[{1}] for {2} is null.", GetType().Name, i, LineName);
+                waypointLocations.Add(waypoint.Position);
+            }
+            Points = waypointLocations;
+            //Points = course.Select(wayPt => wayPt.Position).ToList();   // updating Points will update _line.points3 list
         }
 
         public override string ToString() {

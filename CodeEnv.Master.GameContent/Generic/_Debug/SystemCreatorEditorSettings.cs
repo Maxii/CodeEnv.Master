@@ -43,10 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IList<PlanetoidCategory[]> PresetMoonCategories { get; private set; }
 
-        //public int CMsPerPlanetoid { get; private set; }
         public SystemDesirability Desirability { get; private set; }
-
-        public bool IsTrackingLabelEnabled { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemCreatorEditorSettings" /> class for SystemCreators that have preset values.
@@ -54,33 +51,26 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="presetStarCat">The preset star cat.</param>
         /// <param name="presetPlanetCats">The preset planet cats.</param>
         /// <param name="presetMoonCats">The preset moon cats.</param>
-        /// <param name="cmsPerPlanetoid">The CMS per planetoid.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
+        /// <param name="desirability">The desirability.</param>
         public SystemCreatorEditorSettings(StarCategory presetStarCat, IList<PlanetoidCategory> presetPlanetCats,
-            IList<PlanetoidCategory[]> presetMoonCats, /*int cmsPerPlanetoid,*/ SystemDesirability desirability, bool enableTrackingLabel) {
+            IList<PlanetoidCategory[]> presetMoonCats, SystemDesirability desirability) {
             PresetStarCategory = presetStarCat;
             IsCompositionPreset = true;
             D.Assert(presetPlanetCats.Count <= TempGameValues.TotalOrbitSlotsPerSystem - 1, "{0} > {1}.", presetPlanetCats.Count, TempGameValues.TotalOrbitSlotsPerSystem - 1);
             PresetPlanetCategories = presetPlanetCats;
             PresetMoonCategories = presetMoonCats;
-            //CMsPerPlanetoid = cmsPerPlanetoid;
             Desirability = desirability;
-            IsTrackingLabelEnabled = enableTrackingLabel;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SystemCreatorEditorSettings"/> class for SystemCreators that do not have preset values.
+        /// Initializes a new instance of the <see cref="SystemCreatorEditorSettings" /> class for SystemCreators that do not have preset values.
         /// </summary>
         /// <param name="nonPresetPlanetQty">The non preset planet qty.</param>
-        /// <param name="nonPresetMoonQty">The non preset moon qty.</param>
-        /// <param name="cmsPerPlanetoid">The CMS per planetoid.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
-        public SystemCreatorEditorSettings(int nonPresetPlanetQty, /*int cmsPerPlanetoid,*/ SystemDesirability desirability, bool enableTrackingLabel) {
+        /// <param name="desirability">The desirability.</param>
+        public SystemCreatorEditorSettings(int nonPresetPlanetQty, SystemDesirability desirability) {
             IsCompositionPreset = false;
             NonPresetPlanetQty = nonPresetPlanetQty;
-            //CMsPerPlanetoid = cmsPerPlanetoid;
             Desirability = desirability;
-            IsTrackingLabelEnabled = enableTrackingLabel;
         }
 
         public override string ToString() {

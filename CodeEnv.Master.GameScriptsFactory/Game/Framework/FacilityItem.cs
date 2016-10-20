@@ -302,6 +302,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region None
 
+    void None_UponPreconfigureState() {
+        LogEvent();
+    }
+
     void None_EnterState() {
         LogEvent();
     }
@@ -316,9 +320,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     // Idling is entered upon completion of an order or when the item initially commences operations
 
-    IEnumerator Idling_EnterState() {
+    void Idling_UponPreconfigureState() {
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+    }
+
+    IEnumerator Idling_EnterState() {
+        LogEvent();
 
         if (CurrentOrder != null) {
             // check for a standing order to execute
@@ -378,11 +386,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private IElementAttackable _fsmPrimaryAttackTgt;    // UNDONE
 
-    IEnumerator ExecuteAttackOrder_EnterState() {
+    void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
-
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
         D.Assert(CurrentOrder.ToNotifyCmd);
+    }
+
+    IEnumerator ExecuteAttackOrder_EnterState() {
+        LogEvent();
 
         IUnitAttackable attackTgtFromOrder = CurrentOrder.Target;
 
@@ -430,7 +441,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    void ExecuteAttackOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         // TODO
     }
@@ -453,10 +469,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region ExecuteRepairOrder
 
-    IEnumerator ExecuteRepairOrder_EnterState() {
+    void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+    }
+
+    IEnumerator ExecuteRepairOrder_EnterState() {
+        LogEvent();
 
         Call(FacilityState.Repairing);
         yield return null;  // required so Return()s here
@@ -642,9 +662,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Dead
 
-    void Dead_EnterState() {
+    void Dead_UponPreconfigureState() {
         LogEvent();
         D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+    }
+
+    void Dead_EnterState() {
+        LogEvent();
 
         HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
@@ -739,7 +763,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private void InitializeDebugShowObstacleZone() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
@@ -758,7 +782,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private void CleanupDebugShowObstacleZone() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+            debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) { // can be null if creator destroys facility 
             DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();

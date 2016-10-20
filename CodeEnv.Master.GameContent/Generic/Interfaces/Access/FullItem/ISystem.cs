@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISystem : IIntelItem {
 
-        IntVector3 SectorIndex { get; }
+        IntVector3 SectorID { get; }
 
         ISettlementCmd Settlement { get; set; }
 

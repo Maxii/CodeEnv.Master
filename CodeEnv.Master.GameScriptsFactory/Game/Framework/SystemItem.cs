@@ -53,12 +53,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     /// </summary>
     private const float GuardStationDistanceMultiplier = 0.3F;
 
-    private bool _isTrackingLabelEnabled;
-    public bool IsTrackingLabelEnabled {
-        private get { return _isTrackingLabelEnabled; }
-        set { SetProperty<bool>(ref _isTrackingLabelEnabled, value, "IsTrackingLabelEnabled"); }
-    }
-
     private OrbitData _settlementOrbitData;
     /// <summary>
     ///  The orbit data describing the orbit that any current or future settlement can occupy. 
@@ -74,7 +68,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     private SettlementCmdItem _settlement;
-    //public SettlementCmdItem Settlement { get { return _settlement; } }
     public SettlementCmdItem Settlement {
         get { return _settlement; }
         set {
@@ -84,17 +77,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             SetProperty<SettlementCmdItem>(ref _settlement, value, "Settlement", SettlementPropChangedHandler);
         }
     }
-
-    //private ISettlementCreator _settlementCreator;
-    //public ISettlementCreator SettlementCreator {
-    //    private get { return _settlementCreator; }
-    //    set {
-    //        if (_settlementCreator != null && value != null) {
-    //            D.Error("{0} cannot assign {1} when {2} is already present.", FullName, value.Name, SettlementCreator.Name);
-    //        }
-    //        SetProperty<ISettlementCreator>(ref _settlementCreator, value, "SettlementCreator", SettlementCreatorPropChangedHandler);
-    //    }
-    //}
 
     private StarItem _star;
     public StarItem Star {
@@ -115,7 +97,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     public override float ClearanceRadius { get { return Data.Radius * RadiusMultiplierForApproachWaypointsInscribedSphere; } }
 
-    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorID { get { return Data.SectorID; } }
 
     private SystemPublisher _publisher;
     private SystemPublisher Publisher {
@@ -150,6 +132,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     protected override void InitializeOnFirstDiscernibleToUser() {
         base.InitializeOnFirstDiscernibleToUser();
         __InitializeOrbitalPlaneMeshCollider();
+        InitializeTrackingLabel();
     }
 
     private void __InitializeOrbitalPlaneMeshCollider() {
@@ -172,14 +155,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             ctxControl = owner.IsUser ? new SystemCtxControl_User(this) as ICtxControl : new SystemCtxControl_AI(this);
         }
         return ctxControl;
-    }
-
-    private ITrackingWidget InitializeTrackingLabel() {
-        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
-        trackingLabel.Set(DisplayName);
-        trackingLabel.Color = Owner.Color;
-        return trackingLabel;
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
@@ -283,39 +258,9 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
 
-    //private void AttachSettlementCreator(ISettlementCreator settlementCreator) {
-    //    SystemFactory.Instance.InstallCelestialItemInOrbit(settlementCreator.gameObject, SettlementOrbitData);
-    //    D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCreator.Name, FullName);
-    //}
-
-
-
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, UserReport);
     }
-
-    private void ShowTrackingLabel(bool toShow) {
-        if (IsTrackingLabelEnabled) {
-            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
-            _trackingLabel.Show(toShow);
-        }
-    }
-
-    //public void AssignSettlementCreator(ISettlementCreator settlementCreator) {
-    //    Utility.ValidateNotNull(settlementCreator);
-    //    if (_settlementCreator != null) {
-    //        D.Error("{0} cannot assign {1} when {2} is already present.", FullName, settlementCreator.Name, _settlementCreator.Name);
-    //    }
-    //    _settlementCreator = settlementCreator;
-    //    AttachSettlementCreator(settlementCreator);
-    //}
-
-    //public void RemoveSettlementCreator() {
-    //    if (_settlementCreator == null) {
-    //        D.Error("{0} cannot remove {1} that is not present.", FullName, typeof(ISettlementCreator).Name);
-    //    }
-    //    _settlementCreator = null;
-    //}
 
     #region Event and Property Change Handlers
 
@@ -323,26 +268,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         Data.StarData = Star.Data;
     }
 
-    //private void SettlementCreatorPropChangedHandler() {
-    //    HandleSettlementCreatorChanged();
-    //}
-
-    //private void HandleSettlementCreatorChanged() {
-    //    if (_settlementCreator != null) {
-    //        ////Settlement.ParentSystem = this;
-    //        ////Data.SettlementData = Settlement.Data;
-    //        AttachSettlementCreator(_settlementCreator);
-    //    }
-    //    else {
-    //        //// The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
-    //        //// The settlement's CelestialOrbitSimulator is destroyed as a new one is created with a new settlement
-    //        Data.SettlementData = null;
-    //    }
-    //    // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
-
-    //}
-
-    //[Obsolete]
     private void SettlementPropChangedHandler() {
         HandleSettlementChanged();
     }
@@ -363,19 +288,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
-    //private void HandleSettlementChanged() {
-    //    if (Settlement != null) {
-    //        Settlement.ParentSystem = this;
-    //        Data.SettlementData = Settlement.Data;
-    //        AttachSettlement(Settlement);
-    //    }
-    //    else {
-    //        // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
-    //        // The settlement's CelestialOrbitSimulator is destroyed as a new one is created with a new settlement
-    //        Data.SettlementData = null;
-    //    }
-    //    // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
-    //}
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
@@ -386,7 +298,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     protected override void HandleIsDiscernibleToUserChanged() {
         base.HandleIsDiscernibleToUserChanged();
-        ShowTrackingLabel(IsDiscernibleToUser);
+        AssessShowTrackingLabel();
         _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
     }
 
@@ -397,11 +309,59 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
+    #region Show Tracking Label
+
+    private void InitializeTrackingLabel() {
+        DebugControls debugControls = DebugControls.Instance;
+        debugControls.showSystemTrackingLabels += ShowSystemTrackingLabelsChangedEventHandler;
+        if (debugControls.ShowSystemTrackingLabels) {
+            EnableTrackingLabel(true);
+        }
+    }
+
+    private void EnableTrackingLabel(bool toEnable) {
+        if (toEnable) {
+            if (_trackingLabel == null) {
+                float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+                _trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
+                _trackingLabel.Set(DisplayName);
+                _trackingLabel.Color = Owner.Color;
+            }
+            AssessShowTrackingLabel();
+        }
+        else {
+            D.Assert(_trackingLabel != null);
+            GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+            _trackingLabel = null;
+        }
+    }
+
+    private void AssessShowTrackingLabel() {
+        if (_trackingLabel != null) {
+            bool toShow = IsDiscernibleToUser;
+            _trackingLabel.Show(toShow);
+        }
+    }
+
+    private void ShowSystemTrackingLabelsChangedEventHandler(object sender, EventArgs e) {
+        EnableTrackingLabel(DebugControls.Instance.ShowSystemTrackingLabels);
+    }
+
+    private void CleanupTrackingLabel() {
+        var debugControls = DebugControls.Instance;
+        if (debugControls != null) {
+            debugControls.showSystemTrackingLabels -= ShowSystemTrackingLabelsChangedEventHandler;
+        }
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+    }
+
+    #endregion
+
     #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
-        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+        CleanupTrackingLabel();
         if (Data != null) {  // GameObject can be destroyed during Universe Creation before initialized
             Data.Dispose();
         }

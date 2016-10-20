@@ -245,7 +245,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     private void InitializeDebugShowObstacleZone() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZonesChanged += ShowDebugObstacleZonesChangedEventHandler;
+        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
         if (debugValues.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
@@ -264,7 +264,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     private void CleanupDebugShowObstacleZone() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showObstacleZonesChanged -= ShowDebugObstacleZonesChangedEventHandler;
+            debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (ObstacleZoneCollider != null) {
             DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();

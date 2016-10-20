@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         // No Mass as no Rigidbody
-        // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
+        // No SectorID as UC is located at the origin at the intersection of 8 sectors
 
         #region Initialization 
 

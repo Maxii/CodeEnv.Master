@@ -40,9 +40,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected sealed override void Initialize() {
+            //D.Log("{0}.Initialize() called.", Name);
             _inputMgr = References.InputManager;
             _sfxMgr = References.SFXManager;
-            References.GameManager.isRunningOneShot += IsRunningEventHandler;
+            Subscribe();
         }
 
         private void Subscribe() {
@@ -50,10 +51,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Events and Property Change Handlers
-
-        private void IsRunningEventHandler(object sender, EventArgs e) {
-            Subscribe();
-        }
 
         private void UnconsumedPressEventHandler(object sender, EventArgs e) {
             if (References.InputHelper.IsLeftMouseButton) {

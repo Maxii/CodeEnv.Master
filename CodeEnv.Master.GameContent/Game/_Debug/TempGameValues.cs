@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         /// IDEA: Derive OrbitPeriod of each planetoid from this value?
         /// <remarks>Originally derived from reporting each planets orbit speed.</remarks>
         /// </summary>
-        public const float __MaxPlanetoidOrbitSpeed = 0.125F;    // 10.3.16 getting too many warnings at 0.11x
+        public const float __MaxPlanetoidOrbitSpeed = 0.130F;    // 10.15.16 getting warnings up to 0.1272
 
         /// <summary>
         /// The slowest ship speed value allowed under propulsion. Set above __MaxPlanetoidOrbitSpeed

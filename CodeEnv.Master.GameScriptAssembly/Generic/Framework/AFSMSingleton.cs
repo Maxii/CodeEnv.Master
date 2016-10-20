@@ -21,6 +21,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
 using UnityEngine;
@@ -138,7 +139,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         else {
             string parameters = string.Empty;
             if (!param.IsNullOrEmpty()) {
-                parameters = param.Concatenate();
+                parameters = param.Select(arg => arg.ToString()).Concatenate();
             }
             D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", transform.name, message, parameters);  // my addition
             return false;   // my addition
@@ -451,18 +452,20 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// Configures the state machine for the current state
     /// </summary>
     protected void ConfigureCurrentState() {
-        bool exitStateMethodReturnsIEnumerator = false;
+        bool doesExitStateMethodReturnIEnumerator = false;
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
-            exitStateMethodReturnsIEnumerator = state.exitState.Method.ReturnType == typeof(IEnumerator);
+            doesExitStateMethodReturnIEnumerator = state.exitState.Method.ReturnType == typeof(IEnumerator);
             exitStateCoroutine.Run(state.exitState());  // must call as null stops any prior IEnumerator still running
         }
 
         GetStateMethods();
 
         if (state.enterState != null) {
-            bool enterStateMethodReturnsVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
-            __ValidateMethodReturnTypes(exitStateMethodReturnsIEnumerator, enterStateMethodReturnsVoid);
+            PreconfigureCurrentState();
+
+            bool doesEnterStateMethodReturnVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
+            __ValidateMethodReturnTypes(doesExitStateMethodReturnIEnumerator, doesEnterStateMethodReturnVoid);
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
             enterStateCoroutine.Run(state.enterStateEnumerator);    // must call as null stops any prior IEnumerator still running
         }
@@ -490,6 +493,21 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
         state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
     }
+
+    /// <summary>
+    /// Hook that allows a derived class to do any state-specific work required in preparation 
+    /// for the state to run, starting with State_EnterState(). Default does nothing.
+    /// <remarks>Intended to bridge the gap in this FSM engine design that allows a state to be 
+    /// the 'CurrentState' for a period prior to the state's EnterState() executing. This is because
+    /// many EnterState()s execute as coroutines which means there is up to a 1 frame gap between 
+    /// the time the state becomes the 'CurrentState', to the time the state's EnterState() begins execution.
+    /// This is a guaranteed 'hard to find' bug if RelayToCurrentState is used to bring async events to the state.
+    /// As these events can happen at any time, they can also occur before EnterState() has begun, aka when no 
+    /// state condition really exists as nothing has been set. This method allows the derived class to 
+    /// configure the state for operation IMMEDIATELY (read: atomically) after the state becomes the 'CurrentState'.
+    /// </remarks>
+    /// </summary>
+    protected virtual void PreconfigureCurrentState() { }
 
     /// <summary>
     /// A cache of the delegates for a particular state and method

@@ -34,16 +34,6 @@ public class DebugControlsEditor : Editor {
 
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
         {
-            if (NGUIEditorTools.DrawHeader("Unit/System AutoCreator Debug Settings")) {
-                NGUIEditorTools.BeginContents();
-                {
-                    NGUIEditorTools.SetLabelWidth(180F);
-                    NGUIEditorTools.DrawProperty("Show Unit Tracking Labels", serializedObject, "_areAutoUnitCreatorTrackingLabelsEnabled");
-                    NGUIEditorTools.DrawProperty("Show System Tracking Labels", serializedObject, "_areAutoSystemCreatorTrackingLabelsEnabled");
-                }
-                NGUIEditorTools.EndContents();
-            }
-
             GUILayout.Space(10F);
 
             if (NGUIEditorTools.DrawHeader("Item Debug Settings")) {
@@ -60,16 +50,25 @@ public class DebugControlsEditor : Editor {
                 }
                 NGUIEditorTools.EndContents();
             }
+
+            if (NGUIEditorTools.DrawHeader("AI Debug Settings")) {
+                NGUIEditorTools.BeginContents();
+                {
+                    NGUIEditorTools.SetLabelWidth(100F);
+                    NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
+                }
+                NGUIEditorTools.EndContents();
+            }
         }
         EditorGUI.EndDisabledGroup();
 
         GUILayout.Space(10F);
 
-        if (NGUIEditorTools.DrawHeader("Runtime Display Controls", detailed: true)) {
+        if (NGUIEditorTools.DrawHeader("InGame Display Controls", detailed: true)) {
             NGUIEditorTools.BeginContents();
             {
                 GUILayout.Space(10F);
-                if (NGUIEditorTools.DrawHeader("Course Plots")) {
+                if (NGUIEditorTools.DrawHeader("Show Course Plots")) {
                     NGUIEditorTools.BeginContents();
                     {
                         NGUIEditorTools.SetLabelWidth(80F);
@@ -81,7 +80,7 @@ public class DebugControlsEditor : Editor {
 
                 GUILayout.Space(5F);
 
-                if (NGUIEditorTools.DrawHeader("Velocity Rays")) {
+                if (NGUIEditorTools.DrawHeader("Show Velocity Rays")) {
                     NGUIEditorTools.BeginContents();
                     {
                         NGUIEditorTools.SetLabelWidth(80F);
@@ -93,7 +92,7 @@ public class DebugControlsEditor : Editor {
 
                 GUILayout.Space(5F);
 
-                if (NGUIEditorTools.DrawHeader("Volume Displays")) {
+                if (NGUIEditorTools.DrawHeader("Show Volumes")) {
                     NGUIEditorTools.BeginContents();
                     {
                         NGUIEditorTools.SetLabelWidth(150F);
@@ -102,6 +101,18 @@ public class DebugControlsEditor : Editor {
                         NGUIEditorTools.DrawProperty("Shield Range", serializedObject, "_showShields");
                         NGUIEditorTools.DrawProperty("Sensor Range", serializedObject, "_showSensors");
                         NGUIEditorTools.DrawProperty("Obstacle Zones", serializedObject, "_showObstacleZones");
+                    }
+                    NGUIEditorTools.EndContents();
+                }
+
+                GUILayout.Space(5F);
+
+                if (NGUIEditorTools.DrawHeader("Show Tracking Labels")) {
+                    NGUIEditorTools.BeginContents();
+                    {
+                        NGUIEditorTools.SetLabelWidth(80F);
+                        NGUIEditorTools.DrawProperty("Unit", serializedObject, "_showUnitTrackingLabels");
+                        NGUIEditorTools.DrawProperty("System", serializedObject, "_showSystemTrackingLabels");
                     }
                     NGUIEditorTools.EndContents();
                 }

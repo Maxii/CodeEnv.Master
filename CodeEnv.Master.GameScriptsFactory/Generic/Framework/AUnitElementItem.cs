@@ -191,8 +191,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// Local position, rotation and scale auto adjust to keep element unchanged in worldspace.
     /// </summary>
     /// <param name="unitContainer">The unit container.</param>
-    protected internal virtual void AttachAsChildOf(Transform unitContainer) {
-        transform.parent = unitContainer;
+    internal void AttachAsChildOf(Transform unitContainer) {
+        if (transform.parent != unitContainer) {
+            // In most cases, the element is already a child of the UnitContainer. Conditions where
+            // this change is reqd include a ship 'joins' another fleet, a facility 'joins?' a base
+            transform.parent = unitContainer;
+        }
     }
 
     protected override void HandleDeathBeforeBeginningDeathEffect() {
@@ -631,9 +635,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Command.IsSelected = true;
     }
 
-    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
+    private void FsmTgtDeathEventHandler(object sender, EventArgs e) {
         IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
-        UponFsmTargetDeath(deadFsmTgt);
+        UponFsmTgtDeath(deadFsmTgt);
     }
 
     private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
@@ -645,6 +649,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (playerWhoseInfoAccessChgd == Owner) {
             UponFsmTgtInfoAccessChgd(fsmTgt);
         }
+    }
+
+    private void FsmTgtOwnerChgdEventHandler(object sender, EventArgs e) {
+        IItem_Ltd fsmTgt = sender as IItem_Ltd;
+        HandleFsmTgtOwnerChgd(fsmTgt);
+    }
+
+    private void HandleFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        UponFsmTgtOwnerChgd(fsmTgt);
     }
 
     #endregion
@@ -661,6 +674,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected UnitItemOrderFailureCause _orderFailureCause;
 
+    protected sealed override void PreconfigureCurrentState() {
+        base.PreconfigureCurrentState();
+        UponPreconfigureState();
+    }
+
     protected void Dead_ExitState() {
         LogEventWarning();
     }
@@ -676,21 +694,32 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected void UponDeath() { RelayToCurrentState(); }
 
-    protected void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
+    protected void UponNewOrderReceived() { RelayToCurrentState(); }
+
+    /// <summary>
+    /// Called from the StateMachine just after a state
+    /// change and just before state_EnterState() is called. When EnterState
+    /// is a coroutine method (returns IEnumerator), the relayed version
+    /// of this method provides an opportunity to configure the state
+    /// before any other event relay methods can be called during the state.
+    /// </summary>
+    private void UponPreconfigureState() { RelayToCurrentState(); }
+
+    private void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
 
     /// <summary>
     /// Called when the current target being used by the State Machine dies.
     /// </summary>
     /// <param name="deadFsmTgt">The dead target.</param>
-    protected void UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
+    private void UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
 
-    protected void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
+    private void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
-    protected bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) { return RelayToCurrentState(firingSolutions); }
+    private void UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
-    protected void UponNewOrderReceived() { RelayToCurrentState(); }
+    private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) { return RelayToCurrentState(firingSolutions); }
 
-    protected void UponDamageIncurred() { RelayToCurrentState(); }
+    private void UponDamageIncurred() { RelayToCurrentState(); }
 
     #endregion
 
@@ -767,7 +796,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
         {FsmTgtEventSubscriptionMode.TargetDeath, false },
-        {FsmTgtEventSubscriptionMode.InfoAccessChg, false }
+        {FsmTgtEventSubscriptionMode.InfoAccessChg, false },
+        {FsmTgtEventSubscriptionMode.OwnerChg, false }
     };
 
     /// <summary>
@@ -784,17 +814,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Utility.ValidateNotNull(fsmTgt);
         bool isSubscribeActionTaken = false;
         bool isDuplicateSubscriptionAttempted = false;
+        IItem_Ltd itemFsmTgt = null;
         bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
         switch (subscriptionMode) {
             case FsmTgtEventSubscriptionMode.TargetDeath:
                 var mortalFsmTgt = fsmTgt as IMortalItem_Ltd;
                 if (mortalFsmTgt != null) {
                     if (!toSubscribe) {
-                        mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
+                        mortalFsmTgt.deathOneShot -= FsmTgtDeathEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else if (!isSubscribed) {
-                        mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
+                        mortalFsmTgt.deathOneShot += FsmTgtDeathEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {
@@ -803,7 +834,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 }
                 break;
             case FsmTgtEventSubscriptionMode.InfoAccessChg:
-                var itemFsmTgt = fsmTgt as IItem_Ltd;
+                itemFsmTgt = fsmTgt as IItem_Ltd;
                 if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
                     if (!toSubscribe) {
                         itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
@@ -811,6 +842,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                     }
                     else if (!isSubscribed) {
                         itemFsmTgt.infoAccessChgd += FsmTgtInfoAccessChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else {
+                        isDuplicateSubscriptionAttempted = true;
+                    }
+                }
+                break;
+            case FsmTgtEventSubscriptionMode.OwnerChg:
+                itemFsmTgt = fsmTgt as IItem_Ltd;
+                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
+                    if (!toSubscribe) {
+                        itemFsmTgt.ownerChanged -= FsmTgtOwnerChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else if (!isSubscribed) {
+                        itemFsmTgt.ownerChanged += FsmTgtOwnerChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {

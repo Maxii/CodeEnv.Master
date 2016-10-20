@@ -38,7 +38,6 @@ public class GameSettingsDebugControlEditor : Editor {
                 {
                     NGUIEditorTools.SetLabelWidth(80F);
                     NGUIEditorTools.DrawProperty("Size", serializedObject, "_universeSize");
-                    NGUIEditorTools.DrawProperty("Density", serializedObject, "_systemDensity");
                     GUILayout.BeginHorizontal();
                     {
                         NGUIEditorTools.DrawProperty("Players", serializedObject, "_playerCount");
@@ -50,11 +49,25 @@ public class GameSettingsDebugControlEditor : Editor {
                     }
                     GUILayout.EndHorizontal();
 
-                    NGUIEditorTools.SetLabelWidth(120F);
-                    NGUIEditorTools.DrawProperty("Starting Level", serializedObject, "_startLevel");
+                    GUILayout.Space(10F);
+
                     NGUIEditorTools.SetLabelWidth(160F);
-                    NGUIEditorTools.DrawProperty("Home System Desirability", serializedObject, "_homeSystemDesirability");
-                    NGUIEditorTools.DrawProperty("AI Separation from User", serializedObject, "_aiPlayersSeparationFromUser");
+                    SerializedProperty onlyUseDebugCreatorsSP = NGUIEditorTools.DrawProperty("Existing Creators Only", serializedObject, "_useDebugCreatorsOnly");
+
+                    EditorGUI.BeginDisabledGroup(onlyUseDebugCreatorsSP.boolValue);
+                    {
+                        NGUIEditorTools.SetLabelWidth(120F);
+                        NGUIEditorTools.DrawProperty("System Density", serializedObject, "_systemDensity");
+                        NGUIEditorTools.DrawProperty("Starting Level", serializedObject, "_startLevel");
+                        NGUIEditorTools.SetLabelWidth(160F);
+                        NGUIEditorTools.DrawProperty("Home System Desirability", serializedObject, "_homeSystemDesirability");
+                        NGUIEditorTools.DrawProperty("AI Separation from User", serializedObject, "_aiPlayersSeparationFromUser");
+                        NGUIEditorTools.SetLabelWidth(200F);
+                        NGUIEditorTools.DrawProperty("Deploy Additional AI Creators", serializedObject, "_deployAdditionalAiCreators");
+                        NGUIEditorTools.SetLabelWidth(120F);
+                        NGUIEditorTools.DrawProperty("Zoom on User", serializedObject, "_zoomOnUser");
+                    }
+                    EditorGUI.EndDisabledGroup();
                 }
                 NGUIEditorTools.EndContents();
             }

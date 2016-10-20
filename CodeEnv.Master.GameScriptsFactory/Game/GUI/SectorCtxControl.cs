@@ -58,10 +58,10 @@ public class SectorCtxControl : ACtxControl {
     }
 
     protected override void PopulateMenu_UserRemoteFleetIsSelected() {
-        var sectorIndex = _sectorExaminerMenuOperator.CurrentSectorIndex;
-        if (!SectorGrid.Instance.__TryGetSector(sectorIndex, out _sector)) {
-            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(Sector).Name, sectorIndex, GetType().Name);
-            //D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorIndex, GetType().Name);
+        var sectorID = _sectorExaminerMenuOperator.CurrentSectorID;
+        if (!SectorGrid.Instance.__TryGetSector(sectorID, out _sector)) {
+            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(Sector).Name, sectorID, GetType().Name);
+            //D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorID, GetType().Name);
             // no sectorItem present underneath this examiner so don't build the menu
             return;
         }

@@ -685,9 +685,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     /// <summary>
-    ///Validates the 3 event dispatcher instances we currently have have not been destroyed.
-    ///This is accomplished by trying to access their gameObject. If they are destroyed, Unity will 
-    ///throw an error.
+    ///Validates the 3 event dispatcher (aka UICamera) instances have not been destroyed.
+    ///This is accomplished by trying to access their gameObject. If they are destroyed, Unity will throw an error.
     /// </summary>
     private void __ValidateEventDispatchersNotDestroyed() {
         if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {

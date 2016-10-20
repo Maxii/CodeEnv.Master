@@ -38,7 +38,7 @@ public abstract class AUnitCreator : AMonoBase {
         private set { transform.name = value; }
     }
 
-    public IntVector3 SectorIndex { get { return SectorGrid.Instance.GetSectorIndexThatContains(transform.position); } }
+    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIdThatContains(transform.position); } }
 
     private UnitCreatorConfiguration _configuration;
     public UnitCreatorConfiguration Configuration {
@@ -69,37 +69,12 @@ public abstract class AUnitCreator : AMonoBase {
 
     protected override void Start() {
         base.Start();
-        //D.Log("{0}.Start() called.", Name);
-        //InitializeDeploymentSystem();
         if (_gameMgr.IsRunning) {
-            InitiateDeployment();
+            AuthorizeDeployment();
         }
     }
 
-    /// <summary>
-    /// Initializes the deployment system.
-    /// <remarks>Do not call from Awake as Configuration will not yet be set.</remarks>
-    /// </summary>
-    //protected abstract void InitializeDeploymentSystem();
-
-    //protected void Subscribe() {
-    //    _gameMgr.isRunningOneShot += IsRunningEventHandler;
-    //}
-
     #region Event and Property Change Handlers
-
-    //private void IsRunningEventHandler(object sender, EventArgs e) {
-    //    HandleGameIsRunning();
-    //}
-
-    //protected virtual void HandleGameIsRunning() {
-    //    if (GameTime.Instance.CurrentDate >= Configuration.DeployDate) {
-    //        HandleDeployDateReached();
-    //    }
-    //    else {
-    //        BuildDeployAndBeginUnitOpsOnDeployDate();
-    //    }
-    //}
 
     protected void ConfigurationSetHandler() {
         UnitName = Configuration.UnitName;
@@ -108,23 +83,26 @@ public abstract class AUnitCreator : AMonoBase {
     #endregion
 
     /// <summary>
-    /// Initiates the deployment process which will deploy and commence operations
+    /// Authorizes the creator to deploy and commence operations of the Unit
     /// on the DeployDate specified by the Configuration.
     /// <remarks>If this creator is present in the scene before the game IsRunning
-    /// then UniverseCreator will call InitiateDeployment() when the game begins running
+    /// then UniverseCreator will call AuthorizeDeployment() when the game begins running
     /// but after all CelestialObjects have commenced operations. This way, celestial objects
     /// are operational before they can be detected by units. If this creator is placed in
-    /// the scene during runtime, then it will awake, detect the game is already running 
-    /// and call InitiateDeployment() itself.</remarks>
+    /// the scene during runtime, then it will wake, detect the game is already running 
+    /// and call AuthorizeDeployment() itself.</remarks>
     /// </summary>
-    public virtual void InitiateDeployment() {
-        if (GameTime.Instance.CurrentDate >= Configuration.DeployDate) {
+    public void AuthorizeDeployment() {
+        D.Log("{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", Name, Configuration.UnitName, Configuration.DeployDate);
+        D.Assert(Configuration != null);    // would only be called with a Configuration
+        var currentDate = GameTime.Instance.CurrentDate;
+        D.Assert(currentDate >= GameTime.GameStartDate, "{0}: Illegal Current Date {1}.", Name, currentDate);
+        if (currentDate >= Configuration.DeployDate) {
             HandleDeployDateReached();
         }
         else {
             BuildDeployAndBeginUnitOpsOnDeployDate();
         }
-
     }
 
     protected void BuildDeployAndBeginUnitOpsOnDeployDate() {
@@ -138,21 +116,19 @@ public abstract class AUnitCreator : AMonoBase {
 
     protected void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
         GameDate currentDate = GameTime.Instance.CurrentDate;
-        //D.Log("{0}.HandleDeployDateReached() called. Date: {1}.", Name, currentDate);
         GameDate dateToDeploy = Configuration.DeployDate;
-        if (currentDate >= dateToDeploy) {
-            D.Log(currentDate > dateToDeploy, "{0} recorded current date {1} beyond target date {2}.", Name, currentDate, dateToDeploy);
-            //D.Log("{0} is about to build, deploy and begin ops during runtime. Date: {1}.", Name, currentDate);
+        D.Assert(currentDate >= dateToDeploy, "{0}: {1} should not be < {2}.", Name, currentDate, dateToDeploy);
+        D.Log(currentDate > dateToDeploy, "{0} exceeded DeployDate {1}. Current date = {2}.", Name, dateToDeploy, currentDate);
+        //D.Log("{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", Name, Owner, Configuration.UnitName, currentDate);
 
-            MakeUnitAndPrepareForDeployment();
-            _isUnitDeployed = DeployUnit();
-            if (!_isUnitDeployed) {
-                Destroy(gameObject);
-                return;
-            }
-            PrepareForUnitOperations();
-            BeginUnitOperations();
+        MakeUnitAndPrepareForDeployment();
+        _isUnitDeployed = DeployUnit();
+        if (!_isUnitDeployed) {
+            Destroy(gameObject);
+            return;
         }
+        PrepareForUnitOperations();
+        BeginUnitOperations();
     }
 
     protected void MakeUnitAndPrepareForDeployment() {
@@ -185,11 +161,13 @@ public abstract class AUnitCreator : AMonoBase {
 
     protected void PrepareForUnitOperations() {
         LogEvent();
+        CompleteUnitInitialization();   // 10.19.16 Moved up from last as Knowledge organizes Cmds by their sectorID which this initializes
         AddUnitToGameKnowledge();
         AddUnitToOwnerAndAllysKnowledge();
         RegisterCommandForOrders();
-        CompleteUnitInitialization();
     }
+
+    protected abstract void CompleteUnitInitialization();
 
     /// <summary>
     /// Adds the unit to game knowledge.
@@ -208,7 +186,6 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     protected abstract void RegisterCommandForOrders();
 
-    protected abstract void CompleteUnitInitialization();
 
     protected void BeginUnitOperations() {
         LogEvent();

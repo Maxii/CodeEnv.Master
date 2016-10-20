@@ -177,12 +177,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return bestElement as FacilityItem;
     }
 
-    protected override void AttachCmdToHQElement() {
-        // For now, simply position the Cmd over the new HQElement. As it doesn't 
-        // yet move, there is no need yet for a fixedJoint attachment like FleetCmd
-        transform.position = HQElement.Position;
-    }
-
     protected override void InitiateDeadState() {
         UponDeath();
         CurrentState = BaseState.Dead;
@@ -226,9 +220,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         //D.Assert(CurrentState != BaseState.Attacking);
 
         if (CurrentOrder != null) {
-            D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
-            BaseDirective order = CurrentOrder.Directive;
-            switch (order) {
+            D.Log(ShowDebugLog, "{0} received new {1}.", FullName, CurrentOrder);
+            BaseDirective directive = CurrentOrder.Directive;
+            switch (directive) {
                 case BaseDirective.Attack:
                     CurrentState = BaseState.ExecuteAttackOrder;
                     break;
@@ -239,11 +233,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case BaseDirective.Repair:
                 case BaseDirective.Refit:
                 case BaseDirective.Disband:
-                    D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, order.GetValueName());
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, directive.GetValueName());
                     break;
                 case BaseDirective.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
         }
     }
@@ -268,6 +262,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region None
 
+    protected void None_UponPreconfigureState() {
+        LogEvent();
+    }
+
     protected void None_EnterState() {
         LogEvent();
     }
@@ -280,9 +278,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Idling
 
+    protected void Idling_UponPreconfigureState() {
+        LogEvent();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+    }
+
     protected IEnumerator Idling_EnterState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
         yield return null;
@@ -319,16 +322,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     private IUnitAttackable _fsmTgt; // UNCLEAR is there an _fsmTgt for other states?
 
-    protected void ExecuteAttackOrder_EnterState() {
+    protected void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
+        }
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
 
-        _fsmTgt = CurrentOrder.Target;
+        IUnitAttackable attackTgt = CurrentOrder.Target;
+        _fsmTgt = attackTgt;
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed);
         isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed);
+        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+        D.Assert(isSubscribed);
+    }
+
+    protected void ExecuteAttackOrder_EnterState() {
+        LogEvent();
 
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, toNotifyCmd: true, target: _fsmTgt);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
@@ -348,17 +361,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO
     }
 
-    protected void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
-        LogEvent();
-        // TODO
-    }
-
     protected void ExecuteAttackOrder_UponOwnerChanged() {
         LogEvent();
         // TODO
     }
 
-    protected void ExecuteAttackOrder_UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) {
+    protected void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmTgt.FullName, deadFsmTgt.FullName));
         // TODO Notify Superiors of success - unit target death
@@ -376,8 +394,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(isUnsubscribed);
         isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
         D.Assert(isUnsubscribed);
+        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
+        D.Assert(isUnsubscribed);
 
         _orderFailureCause = UnitItemOrderFailureCause.None;
+        _fsmTgt = null;
     }
 
     #endregion
@@ -431,9 +452,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
      *  to use an effect. Instead, the DisplayMgr will just shut off the Icon and HQ highlight.
      ***********************************************************************************/
 
+    protected void Dead_UponPreconfigureState() {
+        LogEvent();
+        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+    }
+
     protected void Dead_EnterState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
 
         UnregisterForOrders();
         HandleDeathBeforeBeginningDeathEffect();
@@ -450,6 +475,17 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #region StateMachine Support Members
+
+    /// <summary>
+    /// Handles an invalid order by idling and resuming availability.
+    /// </summary>
+    [Obsolete]
+    private void HandleInvalidOrder() {
+        D.LogBold(ShowDebugLog, "{0} received {1} that is no longer valid. Idling and resuming availability.", FullName, CurrentOrder);
+        // Note: Occurs during the 1 frame delay between order being issued and the execution of the EnterState this came from
+        // IMPROVE: return an UnitItemOrderFailureCause to source of order?
+        CurrentState = BaseState.Idling;
+    }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         base.HandleEffectSequenceFinished(effectID);

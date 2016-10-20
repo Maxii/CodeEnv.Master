@@ -125,7 +125,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
 
     private void InitializeDebugShowShield() {
         DebugControls debugValues = DebugControls.Instance;
-        debugValues.showShieldsChanged += ShowDebugShieldsChangedEventHandler;
+        debugValues.showShields += ShowDebugShieldsChangedEventHandler;
         if (debugValues.ShowShields) {
             EnableDebugShowShield(true);
         }
@@ -152,7 +152,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     private void CleanupDebugShowShield() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
-            debugValues.showShieldsChanged -= ShowDebugShieldsChangedEventHandler;
+            debugValues.showShields -= ShowDebugShieldsChangedEventHandler;
         }
         DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
         if (drawCntl != null) {

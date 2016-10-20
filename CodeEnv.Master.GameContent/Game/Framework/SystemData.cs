@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public IntVector3 SectorIndex { get; private set; }
+        public IntVector3 SectorID { get; private set; }
 
         public new SystemInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SystemInfoAccessController; } }
 
@@ -86,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public SystemData(ISystem system, Player owner)
             : base(system, owner) {
-            SectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
+            SectorID = References.SectorGrid.GetSectorIdThatContains(Position);
             Topography = Topography.System;
             Subscribe();
         }
@@ -214,6 +214,7 @@ namespace CodeEnv.Master.GameContent {
             // Existing settlements will always be destroyed (data = null) before changing to a new settlement
             if (SettlementData != null) {
                 SubscribeToSettlementDataValueChanges();
+                //D.Log("{0} is about to have its owner changed to {1}'s Owner {2}.", FullName, SettlementData.FullName, SettlementData.Owner);
                 Owner = SettlementData.Owner;
             }
             else {

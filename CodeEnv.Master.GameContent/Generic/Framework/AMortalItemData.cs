@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
             protected set { SetProperty<DamageStrength>(ref _damageMitigation, value, "DamageMitigation"); }
         }
 
-        public abstract IntVector3 SectorIndex { get; }
+        public abstract IntVector3 SectorID { get; }
 
         #region Initialization 
 

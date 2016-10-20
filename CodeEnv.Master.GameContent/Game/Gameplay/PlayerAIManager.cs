@@ -343,7 +343,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
             D.Assert(Owner == myUnitCmd.Owner);
-            myUnitCmd.isAvailableChanged += MyCmdIsAvailableChgdEventHandler;
+            //D.Log("{0} is registering {1} in prep for being issued orders. IsAvailable = {2}.", Name, myUnitCmd.FullName, myUnitCmd.IsAvailable);
             if (myUnitCmd.IsAvailable) {
                 D.Assert(!_availableCmds.Contains(myUnitCmd));
                 _availableCmds.Add(myUnitCmd);
@@ -352,6 +352,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(!_unavailableCmds.Contains(myUnitCmd));
                 _unavailableCmds.Add(myUnitCmd);
             }
+            myUnitCmd.isAvailableChanged += MyCmdIsAvailableChgdEventHandler;
         }
 
         /// <summary>
@@ -388,7 +389,7 @@ namespace CodeEnv.Master.GameContent {
                 if (fleetCmd != null) {
                     if (GameTime.Instance.CurrentDate == GameTime.GameStartDate) {
                         float hoursDelay = 1F;
-                        D.Log("{0} is issuing order to {1} with a {2} hour delay.", Name, fleetCmd.FullName, hoursDelay);
+                        //D.Log("{0} is issuing order to {1} with a {2} hour delay.", Name, fleetCmd.FullName, hoursDelay);
 
                         // makes sure Owner's knowledge of universe has been constructed before selecting its target
                         string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(Name);
@@ -397,7 +398,7 @@ namespace CodeEnv.Master.GameContent {
                         });
                     }
                     else {
-                        D.Log("{0} is issuing order to {1} with no delay.", Name, fleetCmd.FullName);
+                        //D.Log("{0} is issuing order to {1} with no delay.", Name, fleetCmd.FullName);
                         __IssueFleetOrder(fleetCmd);
                     }
                 }
@@ -496,7 +497,9 @@ namespace CodeEnv.Master.GameContent {
                     return;
                 }
             }
-            __IssueFleetExploreOrder(fleetCmd);
+            if (References.DebugControls.FleetsAutoExploreAsDefault) {
+                __IssueFleetExploreOrder(fleetCmd);
+            }
         }
 
         /// <summary>
@@ -588,8 +591,8 @@ namespace CodeEnv.Master.GameContent {
                 select eSys;
             if (explorableUnexploredSystems.Any()) {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
-                D.LogBold("{0} is issuing an explore order to {1} with target {2}. IsExploringAllowed = {3}, IsFullyExplored = {4}.",
-                    Name, fleetCmd.FullName, closestUnexploredSystem.FullName, closestUnexploredSystem.IsExploringAllowedBy(Owner), closestUnexploredSystem.IsFullyExploredBy(Owner));
+                //D.Log("{0} is issuing an explore order to {1} with target {2}. IsExploringAllowed = {3}, IsFullyExplored = {4}.",
+                //    Name, fleetCmd.FullName, closestUnexploredSystem.FullName, closestUnexploredSystem.IsExploringAllowedBy(Owner), closestUnexploredSystem.IsFullyExploredBy(Owner));
                 fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.CmdStaff, closestUnexploredSystem);
             }
             else {

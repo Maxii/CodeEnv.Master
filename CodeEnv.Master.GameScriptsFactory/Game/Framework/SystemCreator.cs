@@ -39,7 +39,7 @@ public class SystemCreator : AMonoBase {
         private set { transform.name = value; }
     }
 
-    public IntVector3 SectorIndex { get { return SectorGrid.Instance.GetSectorIndexThatContains(transform.position); } }
+    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIdThatContains(transform.position); } }
 
 
     private SystemCreatorConfiguration _configuration;
@@ -93,7 +93,8 @@ public class SystemCreator : AMonoBase {
         MakePlanetsAndPlaceInOrbits();
         MakeMoonsAndPlaceInOrbits();
         AddMembersToSystem();
-        AddToGameKnowledge();
+        AddToGameKnowledge();   // UNCLEAR This could be too early as FinalInitialize has yet to be called.
+                                // It was a problem with Bases as _sectorID didn't get initialized until FinalInitialize
     }
 
     protected virtual void MakeSystem() {
@@ -103,8 +104,7 @@ public class SystemCreator : AMonoBase {
         D.Assert(_system.gameObject.isStatic, "{0} should be static after being positioned.", _system.FullName);
 
         _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
-        _system.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
-        SectorGrid.Instance.GetSector(_system.SectorIndex).System = _system;
+        SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
     }
 
     protected OrbitData InitializeSettlementOrbitSlot() {
@@ -171,12 +171,6 @@ public class SystemCreator : AMonoBase {
         _moons.ForAll(m => _system.AddPlanetoid(m));
     }
 
-    private void InitializeTopographyMonitor() {
-        var monitor = gameObject.GetSingleComponentInChildren<TopographyMonitor>();
-        monitor.SurroundingTopography = Topography.OpenSpace;
-        monitor.ParentItem = _system;
-    }
-
     private void AddToGameKnowledge() {
         var planetoids = _planets.Cast<IPlanetoid>().Union(_moons.Cast<IPlanetoid>());
         _gameMgr.GameKnowledge.AddSystem(_star, planetoids);
@@ -215,6 +209,12 @@ public class SystemCreator : AMonoBase {
             child.parent = SystemsFolder.Instance.Folder;
         }
         Destroy(gameObject);
+    }
+
+    private void InitializeTopographyMonitor() {
+        var monitor = gameObject.GetSingleComponentInChildren<TopographyMonitor>();
+        monitor.SurroundingTopography = Topography.OpenSpace;
+        monitor.ParentItem = _system;
     }
 
     protected FocusableItemCameraStat MakeSystemCameraStat() {

@@ -25,7 +25,15 @@ namespace CodeEnv.Master.GameContent {
     public interface IExplorable : INavigable {
 
         /// <summary>
-        /// Occurs when InfoAccess rights change for a player on an item.
+        /// Occurs when the owner of this IExplorable has changed.
+        /// <remarks>OK for client to have access to this, even if they don't have access
+        /// to Owner info as long as they use the event to properly check for Owner access.</remarks>
+        /// </summary>
+        event EventHandler ownerChanged;
+
+        /// <summary>
+        /// Occurs when InfoAccess rights change for a player on an item, directly attributable to
+        /// a change in the player's IntelCoverage of the item.
         /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
         /// </summary>
         event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
@@ -41,8 +49,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Indicates whether the player is currently allowed to explore this item.
-        /// In general, a player are not allowed to explore items owned by a player
-        /// with whom they are at war.
+        /// A player is always allowed to explore items if the player doesn't know who, if anyone, is the owner.
+        /// A player is not allowed to explore items if the player knows who owns the item and they are at war.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>

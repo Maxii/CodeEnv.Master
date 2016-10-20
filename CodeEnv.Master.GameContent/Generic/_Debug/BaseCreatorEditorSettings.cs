@@ -44,13 +44,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
         /// <param name="formation">The formation.</param>
         public BaseCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd, int activeCMs,
             GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors,
-            bool enableTrackingLabel, DebugBaseFormation formation)
+            DebugBaseFormation formation)
             : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers, passiveCMs,
-                shieldGens, sensors, enableTrackingLabel) {
+                shieldGens, sensors) {
             Formation = formation;
         }
 
@@ -69,14 +68,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="sensors">The sensors.</param>
-        /// <param name="enableTrackingLabel">if set to <c>true</c> [enable tracking label].</param>
         /// <param name="formation">The formation.</param>
         /// <param name="presetHullCats">The preset hull cats.</param>
         public BaseCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int activeCMs,
             GameDate deployDate, DebugWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors,
-            bool enableTrackingLabel, DebugBaseFormation formation, IList<FacilityHullCategory> presetHullCats)
+            DebugBaseFormation formation, IList<FacilityHullCategory> presetHullCats)
             : base(unitName, isOwnerUser, userRelations, cmsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers, passiveCMs, shieldGens,
-                  sensors, enableTrackingLabel) {
+                  sensors) {
             Formation = formation;
             PresetElementHullCategories = presetHullCats;
         }

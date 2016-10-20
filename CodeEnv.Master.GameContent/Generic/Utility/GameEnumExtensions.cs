@@ -184,28 +184,25 @@ namespace CodeEnv.Master.GameContent {
             switch (sysDensity) {
                 case SystemDensity.None:
                     break;
-                case SystemDensity.Existing_Debug:
-                    D.Error("Don't use SystemsPerSector() to get {0} density.", sysDensity.GetValueName());
-                    break;
                 case SystemDensity.Sparse:
                     switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
-                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
-                            density = 0.20F;        // 6 systems
+                        case UniverseSize.Tiny:     // 56/184 sectors       6x6x6       2               6
+                            density = 0.12F;        // 6 systems
                             break;
-                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
-                            density = 0.08F;        // 9 systems
+                        case UniverseSize.Small:    // 136/408 sectors      8x8x8       3               9
+                            density = 0.08F;        // 10 systems
                             break;
-                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
-                            density = 0.03F;        // 15 systems
+                        case UniverseSize.Normal:   // 624/1256 sectors      12x12x12    5               15
+                            density = 0.03F;        // 18 systems
                             break;
-                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
-                            density = 0.015F;       // 21 systems
+                        case UniverseSize.Large:    // 1568/2728 sectors    16x16x16    7               21
+                            density = 0.015F;       // 23 systems
                             break;
-                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
-                            density = 0.008F;       // 33 systems
+                        case UniverseSize.Enormous: // 4512/6680 sectors    22x22x22    8               24
+                            density = 0.008F;       // 36 systems
                             break;
-                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
-                            density = 0.004F;       // 46 systems
+                        case UniverseSize.Gigantic: // 12112/16176 sectors  30x30x30    8               24
+                            density = 0.004F;       // 48 systems
                             break;
                         case UniverseSize.None:
                         default:
@@ -214,23 +211,23 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case SystemDensity.Low:
                     switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
-                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
-                            density = 0.25F;        // 8 systems
+                        case UniverseSize.Tiny:     // 56/184 sectors       6x6x6       2               6
+                            density = 0.17F;        // 9 systems
                             break;
-                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
-                            density = 0.10F;        // 12 systems
+                        case UniverseSize.Small:    // 136/408 sectors      8x8x8       3               9
+                            density = 0.10F;        // 13 systems
                             break;
-                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
-                            density = 0.05F;        // 25 systems
+                        case UniverseSize.Normal:   // 624/1256 sectors      12x12x12    5               15
+                            density = 0.05F;        // 31 systems
                             break;
-                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
-                            density = 0.03F;        // 42 systems
+                        case UniverseSize.Large:    // 1568/2728 sectors    16x16x16    7               21
+                            density = 0.03F;        // 47 systems
                             break;
-                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
-                            density = 0.015F;       // 62 systems
+                        case UniverseSize.Enormous: // 4512/6680 sectors    22x22x22    8               24
+                            density = 0.015F;       // 67 systems
                             break;
-                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
-                            density = 0.008F;       // 92 systems
+                        case UniverseSize.Gigantic: // 12112/16176 sectors  30x30x30    8               24
+                            density = 0.008F;       // 96 systems
                             break;
                         case UniverseSize.None:
                         default:
@@ -239,23 +236,23 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case SystemDensity.Normal:
                     switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
-                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
-                            density = 0.32F;        // 10 systems
+                        case UniverseSize.Tiny:     // 56/184 sectors       6x6x6       2               6
+                            density = 0.25F;        // 14 systems
                             break;
-                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
-                            density = 0.15F;        // 18 systems
+                        case UniverseSize.Small:    // 136/408 sectors      8x8x8       3               9
+                            density = 0.15F;        // 20 systems
                             break;
-                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
-                            density = 0.08F;        // 41 systems
+                        case UniverseSize.Normal:   // 624/1256 sectors      12x12x12    5               15
+                            density = 0.08F;        // 49 systems
                             break;
-                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
-                            density = 0.04F;        // 56 systems
+                        case UniverseSize.Large:    // 1568/2728 sectors    16x16x16    7               21
+                            density = 0.04F;        // 62 systems
                             break;
-                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
-                            density = 0.02F;        // 83 systems
+                        case UniverseSize.Enormous: // 4512/6680 sectors    22x22x22    8               24
+                            density = 0.02F;        // 90 systems
                             break;
-                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
-                            density = 0.012F;       // 138 systems
+                        case UniverseSize.Gigantic: // 12112/16176 sectors  30x30x30    8               24
+                            density = 0.012F;       // 145 systems
                             break;
                         case UniverseSize.None:
                         default:
@@ -264,23 +261,23 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case SystemDensity.High:
                     switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
-                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
-                            density = 0.40F;        // 13 systems
+                        case UniverseSize.Tiny:     // 56/184 sectors       6x6x6       2               6
+                            density = 0.33F;        // 18 systems
                             break;
-                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
-                            density = 0.25F;        // 30 systems
+                        case UniverseSize.Small:    // 136/408 sectors      8x8x8       3               9
+                            density = 0.25F;        // 34 systems
                             break;
-                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
-                            density = 0.15F;        // 77 systems
+                        case UniverseSize.Normal:   // 624/1256 sectors      12x12x12    5               15
+                            density = 0.15F;        // 93 systems
                             break;
-                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
-                            density = 0.10F;        // 141 systems
+                        case UniverseSize.Large:    // 1568/2728 sectors    16x16x16    7               21
+                            density = 0.10F;        // 156 systems
                             break;
-                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
-                            density = 0.07F;        // 291 systems  (FPS < 20)
+                        case UniverseSize.Enormous: // 4512/6680 sectors    22x22x22    8               24
+                            density = 0.07F;        // 315 systems  (FPS < 20)
                             break;
-                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
-                            density = 0.04F;        // 460 systems  (FPS ~ 15)
+                        case UniverseSize.Gigantic: // 12112/16176 sectors  30x30x30    8               24
+                            density = 0.04F;        // 484 systems  (FPS ~ 15)
                             break;
                         case UniverseSize.None:
                         default:
@@ -289,23 +286,23 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case SystemDensity.Dense:
                     switch (universeSize) {         // NonPeriphery/Total   Grid        MaxPlayer#      MinSystemRqmt
-                        case UniverseSize.Tiny:     // 33/93 sectors        6x6x6       2               6
-                            density = 0.50F;        // 16 systems
+                        case UniverseSize.Tiny:     // 56/184 sectors       6x6x6       2               6
+                            density = 0.40F;        // 22 systems
                             break;
-                        case UniverseSize.Small:    // 123/251 sectors      8x8x8       3               9
-                            density = 0.35F;        // 43 systems
+                        case UniverseSize.Small:    // 136/408 sectors      8x8x8       3               9
+                            density = 0.35F;        // 47 systems
                             break;
-                        case UniverseSize.Normal:   // 515/895 sectors      12x12x12    5               15
-                            density = 0.25F;        // 128 systems
+                        case UniverseSize.Normal:   // 624/1256 sectors      12x12x12    5               15
+                            density = 0.25F;        // 156 systems
                             break;
-                        case UniverseSize.Large:    // 1419/2103 sectors    16x16x16    7               21
-                            density = 0.15F;        // 212 systems
+                        case UniverseSize.Large:    // 1568/2728 sectors    16x16x16    7               21
+                            density = 0.15F;        // 235 systems
                             break;
-                        case UniverseSize.Enormous: // 4169/5497 sectors    22x22x22    8               24
-                            density = 0.10F;        // 416 systems (FPS ~ 15)
+                        case UniverseSize.Enormous: // 4512/6680 sectors    22x22x22    8               24
+                            density = 0.10F;        // 451 systems (FPS ~ 15)
                             break;
-                        case UniverseSize.Gigantic: // 11513/13997 sectors  30x30x30    8               24
-                            density = 0.06F;        // 690 systems  (FPS ~ 6)
+                        case UniverseSize.Gigantic: // 12112/16176 sectors  30x30x30    8               24
+                            density = 0.06F;        // 726 systems  (FPS ~ 6)
                             break;
                         case UniverseSize.None:
                         default:
@@ -432,6 +429,36 @@ namespace CodeEnv.Master.GameContent {
                     return PlayerSeparation.Distant;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(separationSelection));
+            }
+        }
+
+        /// <summary>
+        /// Converts this SpeciesGuiSelection value to a Species value.
+        /// </summary>
+        /// <param name="speciesSelection">The species selection.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static Species Convert(this SpeciesGuiSelection speciesSelection) {
+            switch (speciesSelection) {
+                case SpeciesGuiSelection.Random:
+                    return Enums<Species>.GetRandom(excludeDefault: true);
+                case SpeciesGuiSelection.Human:
+                    return Species.Human;
+                case SpeciesGuiSelection.Borg:
+                    return Species.Borg;
+                case SpeciesGuiSelection.Dominion:
+                    return Species.Dominion;
+                case SpeciesGuiSelection.Klingon:
+                    return Species.Klingon;
+                case SpeciesGuiSelection.Ferengi:
+                    return Species.Ferengi;
+                case SpeciesGuiSelection.Romulan:
+                    return Species.Romulan;
+                case SpeciesGuiSelection.GodLike:
+                    return Species.GodLike;
+                case SpeciesGuiSelection.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(speciesSelection));
             }
         }
 
@@ -1646,8 +1673,6 @@ namespace CodeEnv.Master.GameContent {
 
         public static SystemDensity Convert(this DebugSystemDensity debugSystemDensity) {
             switch (debugSystemDensity) {
-                case DebugSystemDensity.Existing_Debug:
-                    return SystemDensity.Existing_Debug;
                 case DebugSystemDensity.Sparse:
                     return SystemDensity.Sparse;
                 case DebugSystemDensity.Low:

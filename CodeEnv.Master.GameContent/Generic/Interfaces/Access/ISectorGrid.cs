@@ -28,11 +28,11 @@ namespace CodeEnv.Master.GameContent {
         IEnumerable<ISector> AllSectors { get; }
 
         /// <summary>
-        /// Gets the index of the sector.
+        /// Gets the ID of the sector.
         /// </summary>
         /// <param name="worldPoint">The world point.</param>
         /// <returns></returns>
-        IntVector3 GetSectorIndexThatContains(Vector3 worldPoint);
+        IntVector3 GetSectorIdThatContains(Vector3 worldPoint);
 
 
     }

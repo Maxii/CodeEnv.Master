@@ -139,15 +139,15 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
         }
         // this value is from HQ to the outside element, so add that element's formation station radius
         formationRadius += TempGameValues.FleetFormationStationRadius;
-        //D.Log("{0} generated a {1} Formation accommodating up to {2} elements with radius {3:0.#}.", GetType().Name, formation.GetValueName(), placeholderCount, formationRadius);
-        //D.Log("{0}: Generating a {1} Formation took {2:0.####} secs.", GetType().Name, formation.GetValueName(), (System.DateTime.UtcNow - startTime).TotalSeconds);
+        //D.Log("{0} generated a {1} Formation accommodating up to {2} elements with radius {3:0.#}.", Name, formation.GetValueName(), placeholderCount, formationRadius);
+        //D.Log("{0}: Generating a {1} Formation took {2:0.####} secs.", Name, formation.GetValueName(), (System.DateTime.UtcNow - startTime).TotalSeconds);
         ValidateSlotIDs(stationSlotInfos);
         return stationSlotInfos;
     }
 
     private void ValidateSlotIDs(IList<FormationStationSlotInfo> slotInfos) {
         FormationStationSlotID duplicate;
-        D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate), "{0} found duplicate {1}: {2}.", GetType().Name, typeof(FormationStationSlotID).Name, duplicate.GetValueName());
+        D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate), "{0} found duplicate {1}: {2}.", Name, typeof(FormationStationSlotID).Name, duplicate.GetValueName());
     }
 
     private void Cleanup() { }

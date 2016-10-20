@@ -31,12 +31,12 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     public override GuiElementID ElementID { get { return GuiElementID.Location; } }
 
-    private IntVector3 _sectorIndex;
-    public IntVector3 SectorIndex {
-        get { return _sectorIndex; }
+    private IntVector3 _sectorID;
+    public IntVector3 SectorID {
+        get { return _sectorID; }
         set {
-            D.Assert(_sectorIndex == default(IntVector3)); // only occurs once between Resets
-            SetProperty<IntVector3>(ref _sectorIndex, value, "SectorIndex", SectorIndexPropSetHandler);
+            D.Assert(_sectorID == default(IntVector3)); // only occurs once between Resets
+            SetProperty<IntVector3>(ref _sectorID, value, "SectorID", SectorIdPropSetHandler);
         }
     }
 
@@ -54,7 +54,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    protected virtual bool AreAllValuesSet { get { return _isPositionSet && SectorIndex != default(IntVector3); } }
+    protected virtual bool AreAllValuesSet { get { return _isPositionSet && SectorID != default(IntVector3); } }
 
     private float? _closestBaseDistanceInSectors;
     private UILabel _label;
@@ -66,7 +66,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     #region Event and Property Change Handlers
 
-    private void SectorIndexPropSetHandler() {
+    private void SectorIdPropSetHandler() {
         if (AreAllValuesSet) {
             PopulateElementWidgets();
         }
@@ -89,7 +89,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
             position = Position.Value;
             isPositionValid = true;
         }
-        else if (SectorGrid.Instance.__TryGetSectorPosition(SectorIndex, out position)) {
+        else if (SectorGrid.Instance.__TryGetSectorPosition(SectorID, out position)) {
             isPositionValid = true;
         }
 
@@ -98,11 +98,11 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         if (isPositionValid) {
             // can return false if there are no bases currently owned by the user
             if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(position, out myClosestBase)) {
-                _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorIndex, myClosestBase.SectorIndex);
+                _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorID, myClosestBase.SectorID);
                 distanceText = Constants.FormatFloat_1DpMax.Inject(_closestBaseDistanceInSectors.Value);
             }
         }
-        _label.text = LabelFormat.Inject(distanceText, SectorIndex);
+        _label.text = LabelFormat.Inject(distanceText, SectorID);
 
         string baseText = myClosestBase != null ? myClosestBase.DisplayName : _unknown;
         _tooltipContent = TooltipFormat.Inject(baseText, distanceText);
@@ -110,7 +110,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     public override void Reset() {
         _isPositionSet = false;
-        _sectorIndex = default(IntVector3);
+        _sectorID = default(IntVector3);
     }
 
     protected override void Cleanup() { }

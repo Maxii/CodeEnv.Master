@@ -40,9 +40,14 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
-        public override IntVector3 SectorIndex { get { return _sectorIndex; } }
+        public override IntVector3 SectorID {
+            get {
+                D.Assert(_sectorID != default(IntVector3), "{0}.SectorID has not been set.", FullName);
+                return _sectorID;
+            }
+        }
 
-        private IntVector3 _sectorIndex;
+        private IntVector3 _sectorID;
 
         #region Initialization 
 
@@ -52,14 +57,15 @@ namespace CodeEnv.Master.GameContent {
         public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
-            _sectorIndex = InitializeSectorIndex();
+            // D.Log("{0}.FinalInitialize() called. Initializing SectorID.", FullName);
+            _sectorID = InitializeSectorID();
         }
 
-        private IntVector3 InitializeSectorIndex() {
-            IntVector3 sectorIndex = References.SectorGrid.GetSectorIndexThatContains(Position);
-            D.Assert(sectorIndex != default(IntVector3));
+        private IntVector3 InitializeSectorID() {
+            IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(Position);
+            D.Assert(sectorID != default(IntVector3));
             MarkAsChanged();
-            return sectorIndex;
+            return sectorID;
         }
 
         #endregion

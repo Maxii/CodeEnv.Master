@@ -123,7 +123,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
-    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorID { get { return Data.SectorID; } }
 
     public SectorReport UserReport { get { return Publisher.GetUserReport(); } }
 
@@ -341,7 +341,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
                 }
             }
             IEnumerable<IStarbaseCmd> starbases;
-            if (gameKnowledge.TryGetStarbases(SectorIndex, out starbases)) {
+            if (gameKnowledge.TryGetStarbases(SectorID, out starbases)) {
                 foreach (var sbase in starbases) {
                     if (MyMath.IsPointInsideSphere(sbase.Position, sbase.ClearanceRadius, location)) {
                         return false;
@@ -351,7 +351,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
 
         IEnumerable<IFleetCmd> fleets;
-        if (gameKnowledge.TryGetFleets(SectorIndex, out fleets)) {
+        if (gameKnowledge.TryGetFleets(SectorID, out fleets)) {
             foreach (var fleet in fleets) {
                 if (MyMath.IsPointInsideSphere(fleet.Position, fleet.ClearanceRadius, location)) {
                     return false;
@@ -484,7 +484,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     #endregion
 
     public override string ToString() {
-        return ToStringFormat.Inject(GetType().Name, SectorIndex);
+        return ToStringFormat.Inject(GetType().Name, SectorID);
     }
 
     #region IDisposable

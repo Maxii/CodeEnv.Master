@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Singleton. Editor Debug controls for GameSettings.
 /// </summary>
-public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl> {
+public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>, IGameSettingsDebugControl {
 
     // Notes: Has custom editor that uses NguiEditorTools and SerializedObject. 
     // Allows concurrent use of [Tooltip("")]. NguiEditorTools do not offer a separate tooltip option because this concurrent use is allowed.
@@ -39,10 +39,6 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [SerializeField]
     private DebugUniverseSize _universeSize = DebugUniverseSize.Normal;
 
-    [Tooltip("Set the density of Systems in the Universe")]
-    [SerializeField]
-    private DebugSystemDensity _systemDensity = DebugSystemDensity.Existing_Debug;
-
     [Tooltip("The max number of players allowed for this size of universe")]
     [SerializeField]
     private int _maxPlayerCount = TempGameValues.MaxPlayers;
@@ -50,6 +46,16 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [Tooltip("Set the number of players in the game")]
     [SerializeField]
     private int _playerCount = 5;
+
+
+    [Tooltip("Check to only use the existing System and Unit DebugCreators")]
+    [SerializeField]
+    private bool _useDebugCreatorsOnly = false; // if true, the choices below will be disabled
+
+
+    [Tooltip("Set the density of Systems in the Universe")]
+    [SerializeField]
+    private DebugSystemDensity _systemDensity = DebugSystemDensity.Normal;
 
     [Tooltip("Set the advancement level that all players will start at")]
     [SerializeField]
@@ -62,6 +68,14 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [Tooltip("Set the degree of separation of all AIPlayer's from the User")]
     [SerializeField]
     private DebugPlayerSeparation _aiPlayersSeparationFromUser = DebugPlayerSeparation.Normal;
+
+    [Tooltip("Check to deploy additional creators on random dates. Not valid when _useDebugCreatorsOnly is checked")]
+    [SerializeField]
+    private bool _deployAdditionalAiCreators = false;
+
+    [Tooltip("Check to zoom on a user unit when starting a new game. Not valid when _useDebugCreatorsOnly is checked")]
+    [SerializeField]
+    private bool _zoomOnUser = false;
 
     #endregion
 
@@ -80,6 +94,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
+        References.GameSettingsDebugControl = Instance;
     }
 
     /// <summary>
@@ -211,6 +226,9 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
         Player userPlayer = new Player(userPlayerSpeciesStat, userPlayerLeaderStat, IQ.None, userPlayerTeamID, userPlayerColor, isUser: true);
         var gameSettings = new GameSettings {
             __IsStartup = isStartup,
+            __UseDebugCreatorsOnly = _useDebugCreatorsOnly,
+            __DeployAdditionalAICreators = !_useDebugCreatorsOnly && _deployAdditionalAiCreators,
+            __ZoomOnUser = !_useDebugCreatorsOnly && _zoomOnUser,
             UniverseSize = _universeSize.Convert(),
             SystemDensity = _systemDensity.Convert(),
             PlayerCount = _playerCount,
@@ -225,14 +243,15 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
         return gameSettings;
     }
 
-
     #region Event and Prop Change Handlers
 
     #endregion
 
     #region Cleanup
 
-    protected override void Cleanup() { }
+    protected override void Cleanup() {
+        References.GameSettingsDebugControl = null;
+    }
 
     #endregion
 

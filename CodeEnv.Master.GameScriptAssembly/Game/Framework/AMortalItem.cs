@@ -34,7 +34,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         set { base.Data = value; }
     }
 
-    public IntVector3 SectorIndex { get { return Data.SectorIndex; } }
+    public IntVector3 SectorID { get { return Data.SectorID; } }
 
     #region Initialization
 
@@ -256,7 +256,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     public enum FsmTgtEventSubscriptionMode {
         None,
         TargetDeath,
-        InfoAccessChg
+        InfoAccessChg,
+        OwnerChg
     }
 
     #endregion

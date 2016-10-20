@@ -65,12 +65,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public bool IsAttackCapable { get { return Elements.Where(e => e.IsAttackCapable).Any(); } }
 
-    private bool _isTrackingLabelEnabled;
-    public bool IsTrackingLabelEnabled {
-        private get { return _isTrackingLabelEnabled; }
-        set { SetProperty<bool>(ref _isTrackingLabelEnabled, value, "IsTrackingLabelEnabled", IsTrackingLabelEnabledChangedHandler); }
-    }
-
     public IconInfo IconInfo {
         get {
             if (DisplayMgr == null) {
@@ -113,6 +107,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected AFormationManager FormationMgr { get; private set; }
 
     private ITrackingWidget _trackingLabel;
+    private FixedJoint _hqJoint;
 
     #region Initialization
 
@@ -139,13 +134,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
 
-    private ITrackingWidget InitializeTrackingLabel() {
-        D.Assert(HQElement != null);
-        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.AboveRight, minShowDistance);
-        trackingLabel.Set(DisplayName);
-        trackingLabel.Color = Owner.Color;
-        return trackingLabel;
+    protected override void InitializeOnFirstDiscernibleToUser() {
+        base.InitializeOnFirstDiscernibleToUser();
+        InitializeTrackingLabel();
     }
 
     protected sealed override ADisplayManager MakeDisplayManagerInstance() {
@@ -180,6 +171,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         var iconTransform = DisplayMgr.Icon.WidgetTransform;
         float radius = Screen.height * 0.03F;
         return new CircleHighlightManager(iconTransform, radius, isCircleSizeDynamic: false);
+    }
+
+    private void InitializeHQAttachmentSystem() {
+        var rigidbody = gameObject.AddComponent<Rigidbody>();   // OPTIMIZE add to prefab
+        rigidbody.isKinematic = false; // FixedJoint needs a Rigidbody. If isKinematic acts as anchor for HQShip
+        rigidbody.useGravity = false;
+        rigidbody.mass = Constants.ZeroF;
+        rigidbody.drag = Constants.ZeroF;
+        rigidbody.angularDrag = Constants.ZeroF;
+        _hqJoint = gameObject.AddComponent<FixedJoint>();   // OPTIMIZE add to prefab
     }
 
     public override void FinalInitialize() {
@@ -304,7 +305,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    protected abstract void AttachCmdToHQElement();
+    private void AttachCmdToHQElement() {
+        if (_hqJoint == null) {
+            InitializeHQAttachmentSystem();
+        }
+        transform.position = HQElement.Position;
+        // Note: Assigning connectedBody links the two rigidbodies at their current relative positions. Therefore the Cmd must be
+        // relocated to the HQElement before the joint is made. Making the joint does not itself relocate Cmd to the newly connectedBody.
+        _hqJoint.connectedBody = HQElement.gameObject.GetSafeComponent<Rigidbody>();
+        //D.Log(ShowDebugLog, "{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, transform.position);
+        //D.Log(ShowDebugLog, "{0} after attached by FixedJoint, rotation = {1}, {2}.rotation = {3}.", HQElement.FullName, HQElement.transform.rotation, FullName, transform.rotation);
+    }
 
     public void AssessIcon() {
         if (DisplayMgr == null) { return; }
@@ -323,14 +334,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected abstract IconInfo MakeIconInfo();
-
-    private void ShowTrackingLabel(bool toShow) {
-        //D.Log(ShowDebugLog, "{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
-        if (IsTrackingLabelEnabled) {
-            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
-            _trackingLabel.Show(toShow);
-        }
-    }
 
     protected bool TryGetHQCandidatesOf(Priority priority, out IEnumerable<AUnitElementItem> hqCandidates) {
         D.Assert(priority != default(Priority));
@@ -375,10 +378,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    private void IsTrackingLabelEnabledChangedHandler() {
-        //D.LogBold(ShowDebugLog, "{0}.IsTrackingLabelEnabled changed to {1}.", FullName, IsTrackingLabelEnabled);
-    }
-
     private void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
         HandleHQElementChanging(newHQElement);
     }
@@ -410,7 +409,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void HandleHQElementChanged() {
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
-        D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
+        //D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
         FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
         if (DisplayMgr != null) {
@@ -420,7 +419,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
         IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
-        UponFsmTargetDeath(deadFsmTgt);
+        UponFsmTgtDeath(deadFsmTgt);
     }
 
     private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
@@ -432,6 +431,15 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (playerWhoseInfoAccessChgd == Owner) {
             UponFsmTgtInfoAccessChgd(fsmTgt);
         }
+    }
+
+    private void FsmTgtOwnerChgdEventHandler(object sender, EventArgs e) {
+        IItem_Ltd fsmTgt = sender as IItem_Ltd;
+        HandleFsmTgtOwnerChgd(fsmTgt);
+    }
+
+    private void HandleFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        UponFsmTgtOwnerChgd(fsmTgt);
     }
 
     protected override void HandleOwnerChanged() {
@@ -462,7 +470,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected override void HandleIsDiscernibleToUserChanged() {
         base.HandleIsDiscernibleToUserChanged();
-        ShowTrackingLabel(IsDiscernibleToUser);
+        AssessShowTrackingLabel();
     }
 
     protected override void HandleIsSelectedChanged() {
@@ -479,6 +487,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     protected UnitItemOrderFailureCause _orderFailureCause;
 
+    protected sealed override void PreconfigureCurrentState() {
+        base.PreconfigureCurrentState();
+        UponPreconfigureState();
+    }
+
     protected void UnregisterForOrders() {
         OwnerAIMgr.UnregisterForOrders(this);
     }
@@ -489,8 +502,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Relays
 
-    private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
-
     /// <summary>
     /// Called prior to entering the Dead state, this method notifies the current
     /// state that the unit is dying, allowing any current state housekeeping
@@ -498,17 +509,30 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     protected void UponDeath() { RelayToCurrentState(); }
 
-    private void UponFsmTargetDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
-
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
-    protected void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
+    private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
 
-    protected void UponOwnerChanged() { RelayToCurrentState(); }
+    /// <summary>
+    /// Called from the StateMachine just after a state
+    /// change and just before state_EnterState() is called. When EnterState
+    /// is a coroutine method (returns IEnumerator), the relayed version
+    /// of this method provides an opportunity to configure the state
+    /// before any other event relay methods can be called during the state.
+    /// </summary>
+    private void UponPreconfigureState() { RelayToCurrentState(); }
 
-    protected void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
+    private void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
+
+    private void UponOwnerChanged() { RelayToCurrentState(); }
+
+    private void UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
+
+    private void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
+
+    private void UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
     #endregion
 
@@ -587,11 +611,59 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #endregion
 
+    #region Show Tracking Label
+
+    private void InitializeTrackingLabel() {
+        DebugControls debugControls = DebugControls.Instance;
+        debugControls.showUnitTrackingLabels += ShowUnitTrackingLabelsChangedEventHandler;
+        if (debugControls.ShowUnitTrackingLabels) {
+            EnableTrackingLabel(true);
+        }
+    }
+
+    private void EnableTrackingLabel(bool toEnable) {
+        if (toEnable) {
+            if (_trackingLabel == null) {
+                float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+                _trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.AboveRight, minShowDistance);
+                _trackingLabel.Set(DisplayName);
+                _trackingLabel.Color = Owner.Color;
+            }
+            AssessShowTrackingLabel();
+        }
+        else {
+            D.Assert(_trackingLabel != null);
+            GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+            _trackingLabel = null;
+        }
+    }
+
+    private void AssessShowTrackingLabel() {
+        if (_trackingLabel != null) {
+            bool toShow = IsDiscernibleToUser;
+            _trackingLabel.Show(toShow);
+        }
+    }
+
+    private void ShowUnitTrackingLabelsChangedEventHandler(object sender, EventArgs e) {
+        EnableTrackingLabel(DebugControls.Instance.ShowUnitTrackingLabels);
+    }
+
+    private void CleanupTrackingLabel() {
+        var debugControls = DebugControls.Instance;
+        if (debugControls != null) {
+            debugControls.showUnitTrackingLabels -= ShowUnitTrackingLabelsChangedEventHandler;
+        }
+        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+    }
+
+    #endregion
+
     #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
-        GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+        CleanupTrackingLabel();
     }
 
     protected override void Unsubscribe() {
@@ -621,7 +693,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
         {FsmTgtEventSubscriptionMode.TargetDeath, false },
-        {FsmTgtEventSubscriptionMode.InfoAccessChg, false }
+        {FsmTgtEventSubscriptionMode.InfoAccessChg, false },
+        {FsmTgtEventSubscriptionMode.OwnerChg, false }
     };
 
     /// <summary>
@@ -638,6 +711,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         Utility.ValidateNotNull(fsmTgt);
         bool isSubscribeActionTaken = false;
         bool isDuplicateSubscriptionAttempted = false;
+        IItem_Ltd itemFsmTgt = null;
         bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
         switch (subscriptionMode) {
             case FsmTgtEventSubscriptionMode.TargetDeath:
@@ -657,7 +731,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 }
                 break;
             case FsmTgtEventSubscriptionMode.InfoAccessChg:
-                var itemFsmTgt = fsmTgt as IItem_Ltd;
+                itemFsmTgt = fsmTgt as IItem_Ltd;
                 if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
                     if (!toSubscribe) {
                         itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
@@ -665,6 +739,22 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                     }
                     else if (!isSubscribed) {
                         itemFsmTgt.infoAccessChgd += FsmTgtInfoAccessChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else {
+                        isDuplicateSubscriptionAttempted = true;
+                    }
+                }
+                break;
+            case FsmTgtEventSubscriptionMode.OwnerChg:
+                itemFsmTgt = fsmTgt as IItem_Ltd;
+                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
+                    if (!toSubscribe) {
+                        itemFsmTgt.ownerChanged -= FsmTgtOwnerChgdEventHandler;
+                        isSubscribeActionTaken = true;
+                    }
+                    else if (!isSubscribed) {
+                        itemFsmTgt.ownerChanged += FsmTgtOwnerChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {

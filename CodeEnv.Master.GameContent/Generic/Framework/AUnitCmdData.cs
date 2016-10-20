@@ -243,6 +243,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
+            //D.Log(ShowDebugLog, "{0}.HQElementData is about to change.", FullName);
             var previousHQElementData = HQElementData;
             if (previousHQElementData != null) {
                 previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;

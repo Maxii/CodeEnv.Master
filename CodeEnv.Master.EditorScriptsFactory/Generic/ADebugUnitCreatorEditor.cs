@@ -127,11 +127,6 @@ public abstract class ADebugUnitCreatorEditor : Editor {
             NGUIEditorTools.SetLabelWidth(120F);
             NGUIEditorTools.DrawProperty("Unit Formation", serializedObject, "_formation");
 
-            GUILayout.Space(5F);
-
-            NGUIEditorTools.SetLabelWidth(160F);
-            NGUIEditorTools.DrawProperty("Enable Tracking Label", serializedObject, "_enableTrackingLabel");
-
             GUILayout.Space(10F);
         }
         EditorGUI.EndDisabledGroup();

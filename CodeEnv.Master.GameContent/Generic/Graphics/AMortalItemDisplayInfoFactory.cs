@@ -29,9 +29,9 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case ItemInfoID.SectorIndex:
+                    case ItemInfoID.SectorID:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.SectorIndex.ToString());
+                        colorizedText = _lineTemplate.Inject(report.SectorID.ToString());
                         break;
                     case ItemInfoID.MaxHitPoints:
                         isSuccess = true;

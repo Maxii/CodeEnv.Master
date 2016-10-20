@@ -38,7 +38,7 @@ public class FleetCreator : AAutoUnitCreator {
         foreach (var designName in Configuration.ElementDesignNames) {
             ShipDesign design = _gameMgr.PlayersDesigns.GetShipDesign(Owner, designName);
             FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-            var ship = _factory.MakeShipInstance(Owner, cameraStat, design);
+            var ship = _factory.MakeShipInstance(Owner, cameraStat, design, gameObject);
             _elements.Add(ship);
         }
     }
@@ -46,7 +46,6 @@ public class FleetCreator : AAutoUnitCreator {
     protected override void MakeCommand(Player owner) {
         FleetCmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.ShipMaxRadius);
         _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
-        _command.IsTrackingLabelEnabled = Configuration.IsTrackingLabelEnabled;
     }
 
     protected override void AddElementsToCommand() {
@@ -64,6 +63,12 @@ public class FleetCreator : AAutoUnitCreator {
         LogEvent();
         // Fleets don't need to be deployed. They are already on location.
         return true;
+    }
+
+    protected override void CompleteUnitInitialization() {
+        LogEvent();
+        _elements.ForAll(e => e.FinalInitialize());
+        _command.FinalInitialize();
     }
 
     protected override void AddUnitToGameKnowledge() {
@@ -93,12 +98,6 @@ public class FleetCreator : AAutoUnitCreator {
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
-    }
-
-    protected override void CompleteUnitInitialization() {
-        LogEvent();
-        _elements.ForAll(e => e.FinalInitialize());
-        _command.FinalInitialize();
     }
 
     protected override void BeginElementsOperations() {
